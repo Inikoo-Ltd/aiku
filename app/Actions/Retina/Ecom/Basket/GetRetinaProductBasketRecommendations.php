@@ -63,7 +63,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
 
         $candidates = $this->getScoredCandidates($shop, $basketProductIds, $excludedProductIds, $referencePrice, $preferCheaper, $modelData['customer_id'] ?? null);
 
-        return $this->diversifyByFamily($candidates);
+        return $this->diversifyByFamily($candidates, $modelData['limit'] ?? self::MAX_PRODUCTS);
     }
 
     private function getBasketReferencePrice(Shop $shop, array $basketProductIds): float
@@ -79,22 +79,22 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
      * each family; if that leaves fewer than the minimum the runners-up (rank 2..N) top the list up.
      * Everything happens over the in-memory pool, so there is no second database round-trip.
      */
-    private function diversifyByFamily(Collection $candidates): Collection
+    private function diversifyByFamily(Collection $candidates, int $limit): Collection
     {
         $recommendations = $candidates
             ->where('family_rank', '<=', self::MAX_PER_FAMILY)
-            ->take(self::MAX_PRODUCTS)
+            ->take($limit)
             ->values();
 
-        if ($recommendations->count() >= self::MIN_PRODUCTS) {
+        if ($recommendations->count() >= min($limit, self::MIN_PRODUCTS)) {
             return $recommendations;
         }
 
         $widened = $candidates
             ->whereNotIn('id', $recommendations->pluck('id')->all())
-            ->take(self::MAX_PRODUCTS - $recommendations->count());
+            ->take($limit - $recommendations->count());
 
-        return $recommendations->concat($widened)->take(self::MAX_PRODUCTS)->values();
+        return $recommendations->concat($widened)->take($limit)->values();
     }
 
     private function getScoredCandidates(

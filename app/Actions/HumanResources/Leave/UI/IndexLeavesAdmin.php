@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\Leave\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
@@ -28,6 +29,27 @@ use App\Services\HumanResources\LeaveTypeResolver;
 class IndexLeavesAdmin extends OrgAction
 {
     use WithLeaveSubNavigation;
+    use WithHumanResourcesSectionAuthorisation {
+        authorize as authorizeHumanResourcesSection;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->isActiveLeaveApprover($request)) {
+            return true;
+        }
+
+        return $this->authorizeHumanResourcesSection($request);
+    }
+
+    private function isActiveLeaveApprover(ActionRequest $request): bool
+    {
+        return LeaveApprover::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('user_id', $request->user()->id)
+            ->where('is_active', true)
+            ->exists();
+    }
 
     public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
     {
@@ -52,6 +74,7 @@ class IndexLeavesAdmin extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Leave::class)
             ->where('organisation_id', $organisation->id)
+            ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('employee_id', $this->sectionEmployeeIds))
             ->with(['employee', 'leaveType'])
             ->allowedFilters([$globalSearch, $statusFilter, $typeFilter])
             ->allowedSorts(['start_date', 'end_date', 'created_at', 'employee_name'])
@@ -86,7 +109,7 @@ class IndexLeavesAdmin extends OrgAction
                         'title' => __('Leave')
                     ],
                     'title'         => __('Leave Requests'),
-                    'subNavigation' => $this->getLeaveSubNavigation($request),
+                    'subNavigation' => $this->isRestrictedToSection() ? [] : $this->getLeaveSubNavigation($request),
                 ],
                 'leaves' => LeaveResource::collection($leaves),
                 'type_options' => LeaveTypeResolver::optionsForOrganisation($this->organisation->id, false, $this->organisation->country?->code),
@@ -100,6 +123,7 @@ class IndexLeavesAdmin extends OrgAction
                 'can_record' => $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]),
                 'employee_options' => Employee::where('organisation_id', $this->organisation->id)
                     ->where('state', EmployeeStateEnum::WORKING)
+                    ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
                     ->orderBy('contact_name')
                     ->pluck('contact_name', 'id'),
             ]

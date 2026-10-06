@@ -283,7 +283,7 @@ const safeTheme = computed(() => {
         <main
             class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
-				usePage().component === 'Tickets/Ticket' ? 'pb-0' : ['Tasks/StaffTask', 'SupplyChain/SupplyChainPurchaseOrderJourney'].includes(usePage().component) ? 'pb-6' : 'pb-6 md:pb-24',
+				usePage().component === 'Tickets/Ticket' ? 'pb-0' : ['Tasks/StaffTask', 'SupplyChain/SupplyChainPurchaseOrderJourney', 'Tasks/StaffTasksBoard', 'Tickets/TicketsBoard'].includes(usePage().component) ? 'pb-6' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
 				'mr-6',
 				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-6' : 'md:mr-12'),

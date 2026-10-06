@@ -26,7 +26,8 @@ return [
     // Suggested replies are written by one of these, a third of the conversations each, so staff choices show which writes better.
     // CHAT_SUGGESTION_MODEL set to one of them ends the comparison.
     'suggestion_model' => env('CHAT_SUGGESTION_MODEL'),
-    'suggestion_models' => ['openai/gpt-5.6-luna', 'deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna'],
+    'suggestion_models' => ['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna', 'anthropic/claude-sonnet-5.5'],
+    'suggestion_min_covered' => env('CHAT_SUGGESTION_MIN_COVERED', 0.66),
     // A version Jev finds weak is rewritten from the critic's notes, up to this many times; the best version is kept.
     // The cheap writer rewrites; only the last try goes to the strong model, and only when Jev says the facts cover most of what is asked.
     'suggestion_rewrites' => (int) env('CHAT_SUGGESTION_REWRITES', 2),
@@ -38,8 +39,9 @@ return [
     // Hiding a real customer is worse than showing a junk mail, so the bar is low.
     'spam_rescue_min_probability' => (float) env('CHAT_SPAM_RESCUE_MIN_PROBABILITY', 0.3),
 
-    // An email from Gmail spam that came in anyway is tagged a possible scam only when a scam is probable.
-    'spam_rescue_scam_tag_probability' => (float) env('CHAT_SPAM_RESCUE_SCAM_TAG_PROBABILITY', 0.5),
+    // An email from Gmail spam that came in anyway is tagged a possible scam from this score. On the 74 brought in up to
+    // 6 Oct no genuine email scored above 0.16, while a customer's hijacked account sending an invitation scored 0.88.
+    'spam_rescue_scam_tag_probability' => (float) env('CHAT_SPAM_RESCUE_SCAM_TAG_PROBABILITY', 0.3),
 
     'urgent_model' => env('CHAT_URGENT_MODEL', 'openai/gpt-5.6-luna'),
 

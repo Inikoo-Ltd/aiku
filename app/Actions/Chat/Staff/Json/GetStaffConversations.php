@@ -63,7 +63,7 @@ class GetStaffConversations
                     DeliveryNote::class   => ['organisation', 'warehouse'],
                     Order::class          => ['organisation', 'shop'],
                     PickingSession::class => ['organisation', 'warehouse'],
-                    StaffTask::class      => ['collaborators'],
+                    StaffTask::class      => ['collaborators', 'model'],
                 ]),
             ])
             ->orderByRaw('staff_conversations.last_message_at desc nulls last')

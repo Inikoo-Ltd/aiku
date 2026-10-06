@@ -13,7 +13,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\EmployeeTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -35,7 +35,7 @@ class ShowEmployee extends OrgAction
 {
     use WithActionButtons;
     use WithEmployeeSubNavigation;
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesSectionAuthorisation;
 
 
     public function handle(Employee $employee): Employee
@@ -46,13 +46,14 @@ class ShowEmployee extends OrgAction
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): Employee
     {
         $this->initialisation($organisation, $request)->withTab(EmployeeTabsEnum::values());
+        abort_unless($this->canSeeEmployee($employee->id), 403);
 
         return $this->handle($employee);
     }
 
     public function htmlResponse(Employee $employee, ActionRequest $request): Response
     {
-        $user     = $employee->getUser();
+        $user     = $this->isRestrictedToSection() ? null : $employee->getUser();
         $response = Inertia::render(
             'Org/HumanResources/Employee',
             [
@@ -102,7 +103,7 @@ class ShowEmployee extends OrgAction
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                     ],
                 ],
-                'attachmentRoutes' => [
+                'attachmentRoutes' => $this->isRestrictedToSection() ? null : [
                     'attachRoute' => [
                         'name' => 'grp.models.employee.attachment.attach',
                         'parameters' => [
@@ -209,6 +210,7 @@ class ShowEmployee extends OrgAction
     {
         $previous = Employee::where('slug', '<', $employee->slug)
             ->where('organisation_id', $this->organisation->id)
+            ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
             ->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
@@ -218,6 +220,7 @@ class ShowEmployee extends OrgAction
     {
         $next = Employee::where('slug', '>', $employee->slug)
             ->where('organisation_id', $this->organisation->id)
+            ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
             ->orderBy('slug')->first();
 
         return $this->getNavigation($next, $request->route()->getName());

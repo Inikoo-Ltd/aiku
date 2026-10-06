@@ -28,6 +28,7 @@ const props = defineProps<{
     employeeOptions: { value: number; label: string }[]
     overtimeTypeOptions: { value: number; label: string }[]
     statusOptions: { value: string; label: string }[]
+    can_edit?: boolean
 }>()
 
 const showRequestModal = ref(false)
@@ -500,7 +501,7 @@ const submitRequest = () => {
             </template>
 
             <template #cell(options)="{ item }">
-                <div class="flex gap-2">
+                <div v-if="can_edit !== false" class="flex gap-2">
                     <Button
                         type="transparent"
                         size="xs"

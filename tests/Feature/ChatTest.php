@@ -3072,6 +3072,44 @@ describe('staff messaging archive', function () {
 
         expect(\App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)->firstWhere('id', $conversation->id))->toBeNull();
     });
+
+    test('a participant watches and unwatches a task chat, an outsider cannot', function () {
+        $task         = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Check the courier labels', 'description' => 'Labels on the blue shelf are smudged', 'department' => 'warehouse']);
+        $conversation = $task->conversation;
+
+        $conversationTask = (new \App\Http\Resources\Chat\StaffConversationResource($conversation->fresh()))->resolve()['task'];
+        expect($conversationTask['description'])->toBe('Labels on the blue shelf are smudged')
+            ->and($conversationTask)->toHaveKeys(['model_label', 'model_url']);
+
+        $isWatching = fn () => (bool) $conversation->participants()->where('users.id', $this->user->id)->first()?->pivot->is_watching;
+
+        expect($isWatching())->toBeFalse();
+
+        actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.watch', $conversation), ['is_watching' => true])
+            ->assertOk()
+            ->assertJson(['is_watching' => true]);
+
+        expect($isWatching())->toBeTrue();
+
+        $listed = actingAs($this->user)->getJson(route('grp.chat.staff.conversations.index'))->assertOk()->json('data');
+        expect(collect($listed)->firstWhere('ulid', $conversation->ulid)['is_watching'] ?? null)->toBeTrue();
+
+        actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.watch', $conversation), ['is_watching' => false])
+            ->assertOk()
+            ->assertJson(['is_watching' => false]);
+
+        expect($isWatching())->toBeFalse();
+
+        $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+        actingAs($outsider)
+            ->postJson(route('grp.chat.staff.conversations.watch', $conversation), ['is_watching' => true])
+            ->assertForbidden();
+
+        $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+    });
 });
 
 describe('staff messaging gifs', function () {
@@ -4126,6 +4164,37 @@ test('all tasks list counts tasks per status and tells who works on each row', f
         ->has('options.statuses', 4)
         ->has('options.priorities')
         ->where('showRoute.name', 'grp.tasks.show'));
+});
+
+test('all tasks list filters by assignee, including me and unassigned', function () {
+    $colleague = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+
+    $mine       = \App\Actions\Tasks\StoreStaffTask::run($colleague, ['subject' => 'Check the returns shelf', 'assignee_id' => $this->user->id]);
+    $theirs     = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Label the new pallets', 'assignee_id' => $colleague->id]);
+    $unassigned = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'Sweep the loading bay']);
+
+    actingAs($this->user);
+
+    $taskIdsFor = fn (string $assignee) => \Pest\Laravel\getJson(route('grp.tasks.list_all', ['filter' => ['assignee' => $assignee]]))
+        ->assertOk()
+        ->json('data.*.id');
+
+    expect($taskIdsFor('me'))->toContain($mine->id)->not->toContain($theirs->id)->not->toContain($unassigned->id)
+        ->and($taskIdsFor('unassigned'))->toContain($unassigned->id)->not->toContain($mine->id)
+        ->and($taskIdsFor((string) $colleague->id))->toContain($theirs->id)->not->toContain($mine->id);
+
+    get(route('grp.tasks.list_all', ['filter' => ['assignee' => 'me']]))->assertOk();
+    get(route('grp.tasks.list_all', ['filter' => ['organisation' => $this->organisation->slug]]))->assertOk();
+
+    get(route('grp.tasks.board', ['filter' => ['assignee' => 'me', 'department' => 'none']]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('appliedTaskFilters.assignee', 'me')
+            ->where('appliedTaskFilters.department', 'none')
+            ->has('taskFilterOptions.assignee.me')
+            ->where('columns', fn ($columns) => collect($columns)->flatMap(fn ($column) => $column['tasks'])->pluck('id')->diff([$mine->id])->isEmpty()));
+
+    \App\Models\Tasks\StaffTask::whereIn('id', [$mine->id, $theirs->id, $unassigned->id])->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
 });
 
 test('task page shows the task with its chat and only the people working on it can change it', function () {
@@ -8995,6 +9064,7 @@ test('a general question is answered from the knowledge base entry jev picks, an
         ],
         isset($questions['ask'])   => ['ask' => ['type' => 'choice', 'choice' => 'ship_to_country', 'probabilities' => ['ship_to_country' => 0.96]]],
         isset($questions['entry']) => ['entry' => ['type' => 'choice', 'choice' => 'e'.$note->id, 'probabilities' => ['e'.$note->id => 0.9, 'none' => 0.1]]],
+        isset($questions['covered']) => ['needs_reply' => ['type' => 'noul', 'noul' => 0.9], 'covered' => ['type' => 'score', 'score' => 3]],
         default                    => null,
     });
     $quote = 'We cannot ship from the UK to Germany because we do not have a LUCID registration.';
@@ -12024,7 +12094,7 @@ test('a website guest on a test email domain is put in spam by rule', function (
         ->and($rule)->toBeNull();
 });
 
-test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam labelled so it is never read twice', function () {
+test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam labelled so it is never read twice, vague buyers and replies to conversations put aside included', function () {
     Bus::fake();
     config()->set('services.openrouter.api_key', 'or-key');
 
@@ -12039,9 +12109,9 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
     $this->shop->update(['settings' => $settings]);
 
     $encode  = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
-    $message = fn (string $id, string $from, string $subject, array $extraHeaders = []) => \Illuminate\Support\Facades\Http::response([
+    $message = fn (string $id, string $from, string $subject, array $extraHeaders = [], ?string $threadId = null) => \Illuminate\Support\Facades\Http::response([
         'id'       => $id,
-        'threadId' => "t$id",
+        'threadId' => $threadId ?? "t$id",
         'labelIds' => ['SPAM', 'UNREAD'],
         'payload'  => [
             'mimeType' => 'multipart/mixed',
@@ -12060,12 +12130,14 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp2*' => $message('sp2', 'Deals <deals@promo.example.net>', 'Grow your SEO', [['name' => 'List-Unsubscribe', 'value' => '<mailto:x@promo.example.net>']]),
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp3*' => $message('sp3', 'New Shop <owner@newshop.example.net>', 'Wholesale account'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp4*' => $message('sp4', 'Prince <prince@scam.example.net>', 'Urgent transfer'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp5*' => $message('sp5', 'Sourcing <buyer@sourcing.example.net>', 'Send your price list'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/sp6*' => $message('sp6', 'New Shop <owner@newshop.example.net>', 'Re: Wholesale account', [], 'tsp3'),
         'openrouter.ai/api/alpha/decisions'                    => \Illuminate\Support\Facades\Http::sequence()
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'service_pitch', 'probabilities' => ['service_pitch' => 0.9, 'prospect' => 0.1]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.95]],
             ]])
-            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'account_warning', 'probabilities' => ['account_warning' => 0.7, 'none' => 0.3]]]])
+            ->push(['answers' => ['scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['link_to_details' => 0.35, 'none' => 0.65]]]])
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.35, 'vague_buyer' => 0.3, 'customer_request' => 0.05]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.9]],
@@ -12073,6 +12145,10 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
             ->push(['answers' => [
                 'kind'      => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.6, 'scam' => 0.4]],
                 'scam_form' => ['type' => 'choice', 'choice' => 'payment_copy', 'probabilities' => ['payment_copy' => 0.7, 'none' => 0.3]],
+            ]])
+            ->push(['answers' => [
+                'kind'      => ['type' => 'choice', 'choice' => 'vague_buyer', 'probabilities' => ['vague_buyer' => 0.5, 'prospect' => 0.4]],
+                'scam_form' => ['type' => 'choice', 'choice' => 'none', 'probabilities' => ['none' => 0.95]],
             ]]),
         'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LI', 'name' => 'aiku/imported'],
@@ -12108,7 +12184,14 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::PROSPECT)
         ->and($stranger->is_possible_scam)->toBeFalse()
         ->and($fromCustomer->spam_rescue_kind)->toBeNull()
-        ->and($inbound::run($this->shop, 'sp4'))->toBeNull();
+        ->and($inbound::run($this->shop, 'sp4'))->toBeNull()
+        ->and($inbound::run($this->shop, 'sp5'))->toBeNull();
+
+    $stranger->chatSession->update(['is_spam' => true]);
+    $askedBeforeReply = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->count();
+
+    expect($inbound::run($this->shop, 'sp6'))->toBeNull()
+        ->and(\Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->count())->toBe($askedBeforeReply);
 
     $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
         ->map(fn ($pair) => $pair[0]->data())->first();
@@ -12117,7 +12200,9 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and($filed('sp3'))->toBe(['addLabelIds' => ['LU'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
         ->and($filed('sp0'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
         ->and($filed('sp2'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
-        ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
+        ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp5'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp6'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
 
     \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop->fresh());
 
@@ -12319,6 +12404,7 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
         'wants_something' => $noul(0.9), 'problem' => $noul(0.97), 'about_existing_order' => $noul(0.95), 'one_question' => $noul(0.2),
         'act'             => ['type' => 'choice', 'choice' => 'asking', 'probabilities' => ['asking' => 0.9]],
         'problem_kind'    => ['type' => 'choice', 'choice' => 'damaged', 'probabilities' => ['damaged' => 0.95]],
+        'covered'         => ['type' => 'score', 'score' => 3],
     ]);
 
     $reply = 'Hello, I am sorry two mugs arrived broken. Could you send a photo of each mug and of the box? [[agent: replacement or credit?]]';
@@ -12445,12 +12531,9 @@ test('a weak suggestion is rewritten by the rewrite model from the critic notes,
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     [$covered, $reviews, $prompts] = [1, -10, []];
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And a candle holder is chipped too.']);
-    $cheapOnly = \App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh());
 
-    expect(data_get($cheapOnly?->facts, 'model'))->toBe('openai/gpt-5.6-luna')
-        ->and(collect($prompts)->where(0, 'anthropic/claude-sonnet-5.5'))->toBeEmpty();
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
 
-    $cheapOnly->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     $needsReply = 0.1;
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Chat session has been closed by agent']);
 
@@ -12691,8 +12774,11 @@ test('unauthenticated request cannot post as system', function () {
     expect($senderData['data']['sender_type'] ?? null)->not->toBe(ChatSenderTypeEnum::SYSTEM->value);
 });
 
-test('whatsapp calls ring for customer service agents but not for shop admins', function () {
+test('whatsapp calls ring for staff with the calls position but not for chat agents or shop admins', function () {
     setPermissionsTeamId($this->user->group_id);
+
+    $caller = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $caller->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CALLER->value, $this->shop));
 
     $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
@@ -12700,6 +12786,7 @@ test('whatsapp calls ring for customer service agents but not for shop admins', 
     $shopAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $shopAdmin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
 
-    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->toContain($this->shop->id)
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($caller)['customer_service_shops'])->toContain($this->shop->id)
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->not->toContain($this->shop->id)
         ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($shopAdmin)['customer_service_shops'])->not->toContain($this->shop->id);
 });

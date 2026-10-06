@@ -54,7 +54,7 @@ class RepairLocationOrgStockQuantityFromMovements
             }
 
             $before   = (float)$locationOrgStock->quantity;
-            $expected = GetLocationOrgStockQuantity::run($locationOrgStock->orgStock, $locationOrgStock->location);
+            $expected = GetLocationOrgStockQuantity::run($locationOrgStock->orgStock, $locationOrgStock->location, inCurrentTransaction: true);
 
             if (abs($before - $expected) <= 0.001) {
                 return null;

@@ -166,6 +166,7 @@ class UpdateOrgStock extends OrgAction
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
             'is_on_demand' => ['sometimes', 'boolean'],
             'is_fresh'     => ['sometimes', 'boolean'],
+            'is_made_in_house' => ['sometimes', 'boolean'],
             'is_excluded_from_auto_ordering' => ['sometimes', 'boolean'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'name'         => ['sometimes', 'string', 'max:255'],

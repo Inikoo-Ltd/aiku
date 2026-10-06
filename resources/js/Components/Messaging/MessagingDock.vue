@@ -11,16 +11,17 @@ import { usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faComments, faSearch, faUser, faChevronLeft, faTimes } from "@fal"
+import { faComments, faSearch, faUser, faChevronLeft, faTimes, faEye, faEyeSlash } from "@fal"
+import { faEye as faEyeSolid } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, bubblesStorageKey, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, bubblesStorageKey, isWorkThread, isHiddenChat, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 
-library.add(faComments, faSearch, faUser, faChevronLeft, faTimes)
+library.add(faComments, faSearch, faUser, faChevronLeft, faTimes, faEye, faEyeSlash, faEyeSolid)
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
@@ -60,6 +61,8 @@ watch(hasMobileOverlay, (open) => {
 const search = ref("")
 const coworkers = ref<StaffCoworker[]>([])
 const showAllCoworkers = ref(false)
+
+const listedConversations = computed(() => store.showHiddenChats ? store.conversations : store.conversations.filter((conversation) => !isHiddenChat(conversation)))
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const fetchCoworkers = async (q: string) => {
@@ -321,9 +324,19 @@ onUnmounted(() => {
                     </button>
                     <input v-model="search" type="text" :placeholder="ctrans('Search coworkers…')" autocapitalize="none" autocorrect="off" spellcheck="false"
                         class="w-full px-3 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
+                    <button
+                        type="button"
+                        class="shrink-0 p-3 transition-colors"
+                        :class="store.showHiddenChats ? 'text-[--app-accent-strong]' : 'text-gray-400'"
+                        :aria-pressed="store.showHiddenChats"
+                        :aria-label="store.showHiddenChats ? ctrans('Show hidden chat: on') : ctrans('Show hidden chat: off')"
+                        v-tooltip="store.showHiddenChats ? ctrans('Show hidden chat: on') : ctrans('Show hidden chat: off')"
+                        @click="store.toggleShowHiddenChats()">
+                        <FontAwesomeIcon :icon="store.showHiddenChats ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+                    </button>
                 </div>
                 <div class="flex-1 overflow-y-auto">
-                    <button v-if="!search" v-for="conversation in store.conversations" :key="conversation.ulid"
+                    <button v-if="!search" v-for="conversation in listedConversations" :key="conversation.ulid"
                         class="w-full flex items-center gap-x-3 px-4 py-3 hover:bg-gray-50 text-left"
                         @click="openFromPanel(() => openConversationFromList(conversation.ulid))">
                         <div class="relative h-10 w-10 rounded-full overflow-hidden bg-gray-200 shrink-0">
@@ -332,7 +345,16 @@ onUnmounted(() => {
                             <span v-if="conversation.type === 'dm'" class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-1 ring-white" :class="otherOnline(conversation) ? 'bg-green-500' : 'bg-gray-400'" />
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-base truncate">{{ otherName(conversation) }}</div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="min-w-0 truncate text-base">{{ otherName(conversation) }}</span>
+                                <FontAwesomeIcon
+                                    v-if="isWorkThread(conversation)"
+                                    :icon="conversation.is_watching ? 'fas fa-eye' : 'fal fa-eye-slash'"
+                                    :class="conversation.is_watching ? 'text-[--app-accent-strong]' : 'text-gray-400'"
+                                    fixed-width
+                                    class="shrink-0 text-xs"
+                                    aria-hidden="true" />
+                            </div>
                             <div class="text-sm text-gray-500 truncate">{{ lastMessagePreview(conversation.last_message) }}</div>
                         </div>
                         <span v-if="conversation.unread_count > 0" class="bg-[--app-accent] text-[--app-accent-text] rounded-full h-6 min-w-[1.5rem] px-1.5 flex items-center justify-center text-xs shrink-0">{{ conversation.unread_count }}</span>

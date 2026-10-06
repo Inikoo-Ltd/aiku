@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faAd, faEye, faBullhorn, faCashRegister, faChessQueen, faCube, faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from "@fal"
+import { faAd, faPhone, faEye, faBullhorn, faCashRegister, faChessQueen, faCube, faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from "@fal"
 import { faBoxUsd, faHelmetBattle, faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { get, set } from "lodash-es"
@@ -11,7 +11,7 @@ import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
 
 
-library.add(faAd, faEye, faBoxUsd, faHelmetBattle, faChessQueen, faCube, faStore, faCashRegister, faBullhorn, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle, fasCrown)
+library.add(faAd, faPhone, faEye, faBoxUsd, faHelmetBattle, faChessQueen, faCube, faStore, faCashRegister, faBullhorn, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle, fasCrown)
 
 interface TypeShop {
     id: number;
@@ -380,6 +380,23 @@ const optionsJob = reactive<optionsJob>({
         optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1
         // value: null
+    },
+
+    shop_calls: {
+        key: "shop_calls",
+        department: ctrans("Calls"),
+        icon: "fal fa-phone",
+        scope: "shop",
+        subDepartment: [
+            {
+                slug: "cus-call",
+                grade: "calls",
+                label: ctrans("Calls"),
+                optionsType: ["shops"],
+                number_employees: props.options.positions.data.find(position => position.slug == "cus-call")?.number_employees || 0
+            }
+        ],
+        isHide: shopsLength < 1
     },
 
     buy: {

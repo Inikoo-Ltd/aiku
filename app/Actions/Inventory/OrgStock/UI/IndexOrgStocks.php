@@ -51,6 +51,8 @@ class IndexOrgStocks extends OrgAction
 
     private string $bucket;
 
+    private ?array $artefactElementGroup = null;
+
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
@@ -157,6 +159,70 @@ class IndexOrgStocks extends OrgAction
                     $query->whereIn('org_stocks.state', $elements);
                 },
             ],
+            ...$this->getArtefactElementGroup($parent),
+        ];
+    }
+
+    protected function getBucketStates(): array
+    {
+        return match ($this->bucket ?? 'all') {
+            'active'        => [OrgStockStateEnum::ACTIVE],
+            'discontinuing' => [OrgStockStateEnum::DISCONTINUING],
+            'discontinued'  => [OrgStockStateEnum::DISCONTINUED],
+            'abnormality'   => [OrgStockStateEnum::ABNORMALITY],
+            default         => [OrgStockStateEnum::ACTIVE, OrgStockStateEnum::DISCONTINUING],
+        };
+    }
+
+    protected function getArtefactElementGroup(Organisation|OrgStockFamily|OrgPartner|OrgAgent $parent): array
+    {
+        if (!$parent instanceof Organisation) {
+            return [];
+        }
+
+        return $this->artefactElementGroup ??= $this->buildArtefactElementGroup($parent);
+    }
+
+    protected function buildArtefactElementGroup(Organisation $parent): array
+    {
+        if (!$parent->productions()->exists()) {
+            return [];
+        }
+
+        $hasArtefact = 'exists (select 1 from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null)';
+
+        $counts = DB::table('org_stocks')
+            ->where('organisation_id', $parent->id)
+            ->whereNull('deleted_at')
+            ->whereIn('state', $this->getBucketStates())
+            ->selectRaw("count(*) filter (where is_made_in_house and $hasArtefact) as with_artefact")
+            ->selectRaw("count(*) filter (where is_made_in_house and not $hasArtefact) as missing_artefact")
+            ->selectRaw('count(*) filter (where not is_made_in_house) as not_made_in_house')
+            ->first();
+
+        return [
+            'artefact' => [
+                'label'    => __('Artefact'),
+                'default'  => 'with_artefact,missing_artefact,not_made_in_house',
+                'elements' => [
+                    'with_artefact'     => [__('With artefact'), $counts->with_artefact],
+                    'missing_artefact'  => [__('Missing artefact'), $counts->missing_artefact],
+                    'not_made_in_house' => [__('Not made in-house'), $counts->not_made_in_house],
+                ],
+                'engine'   => function ($query, $elements) use ($hasArtefact) {
+                    $query->where(function ($query) use ($elements, $hasArtefact) {
+                        if (in_array('with_artefact', $elements)) {
+                            $query->orWhereRaw("org_stocks.is_made_in_house and $hasArtefact");
+                        }
+                        if (in_array('missing_artefact', $elements)) {
+                            $query->orWhereRaw("org_stocks.is_made_in_house and not $hasArtefact");
+                        }
+                        if (in_array('not_made_in_house', $elements)) {
+                            $query->orWhere('org_stocks.is_made_in_house', false);
+                        }
+                    });
+                },
+            ],
         ];
     }
 
@@ -207,8 +273,11 @@ class IndexOrgStocks extends OrgAction
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::DISCONTINUED);
         } elseif ($this->bucket == 'abnormality') {
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ABNORMALITY);
-        } elseif (!($parent instanceof Group)) {
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        }
+
+        $elementGroups = in_array($this->bucket, ['current', 'active', 'discontinuing', 'discontinued', 'abnormality']) ? $this->getArtefactElementGroup($parent) : $this->getElementGroups($parent);
+        if (!($parent instanceof Group)) {
+            foreach ($elementGroups as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
@@ -245,6 +314,7 @@ class IndexOrgStocks extends OrgAction
             'org_stock_stats.on_the_way_po_count',
             'org_stock_stats.week_of_cover as woc',
             'org_stock_stats.number_products as product_count',
+            DB::raw('(org_stocks.is_made_in_house and not exists (select 1 from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null)) as is_missing_artefact'),
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -374,15 +444,13 @@ class IndexOrgStocks extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            if ($bucket == 'all') {
-                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                    $table->elementGroup(
-                        key: $key,
-                        label: $elementGroup['label'],
-                        elements: $elementGroup['elements'],
-                        default: $elementGroup['default'] ?? null,
-                    );
-                }
+            foreach ($bucket == 'all' ? $this->getElementGroups($parent) : $this->getArtefactElementGroup($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
+                );
             }
 
             $table

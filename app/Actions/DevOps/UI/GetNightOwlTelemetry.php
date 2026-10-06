@@ -25,6 +25,9 @@ class GetNightOwlTelemetry
 
     public const int TOP = 25;
 
+    /** @var array{0: int, 1: int} seconds fresh, seconds served stale while refreshing */
+    public const array CACHE_TTL = [90, 900];
+
     public function db(): Connection
     {
         return DB::connection('nightowl');
@@ -38,7 +41,12 @@ class GetNightOwlTelemetry
     /** @return array<string, mixed> */
     public function overview(string $range): array
     {
-        return Cache::remember("devops-telemetry-$range", 60, fn () => $this->build($range));
+        return Cache::flexible(self::cacheKey($range), self::CACHE_TTL, fn () => $this->build($range));
+    }
+
+    public static function cacheKey(string $range): string
+    {
+        return "devops-telemetry-$range";
     }
 
     /** @return array<string, mixed> */

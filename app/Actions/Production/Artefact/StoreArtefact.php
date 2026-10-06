@@ -17,10 +17,12 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,11 +32,16 @@ class StoreArtefact extends OrgAction
     public function handle(Production $production, array $modelData): Artefact
     {
 
+        if (Arr::get($modelData, 'artefact_family_id')) {
+            data_set($modelData, 'artefact_department_id', ArtefactFamily::find($modelData['artefact_family_id'])->artefact_department_id);
+        }
+
         data_set($modelData, 'organisation_id', $this->organisation->id);
         data_set($modelData, 'group_id', $production->group_id);
 
         /** @var Artefact $artefact */
         $artefact = $production->artefacts()->create($modelData);
+        $artefact->orgStock?->update(['is_made_in_house' => true]);
         if ($artefact->artefactDepartment) {
             ArtefactDepartmentHydrateArtefacts::run($artefact->artefactDepartment);
         }

@@ -31,10 +31,6 @@ class RequestStaffTaskHelp
         $note  = $note ? trim($note) : null;
         $title = __(':name needs help with :reference', ['name' => $asker->chatName(), 'reference' => $task->reference]);
 
-        if ($task->conversation) {
-            SendStaffMessage::run($task->conversation, $asker, ['body' => $note ? $title."\n".$note : $title]);
-        }
-
         $departments = $task->department ? [$task->department] : StaffTask::departmentsOf($asker);
         $recipients  = collect([$task->requester])
             ->merge(collect($departments)->flatMap(fn (string $department) => StaffTask::departmentSupervisors($task->requester ?? $asker, $department)))
@@ -42,6 +38,11 @@ class RequestStaffTaskHelp
             ->reject(fn (User $user) => $user->id === $asker->id)
             ->unique('id')
             ->values();
+
+        if ($task->conversation) {
+            $task->conversation->watchFor($recipients->pluck('id')->all());
+            SendStaffMessage::run($task->conversation, $asker, ['body' => $note ? $title."\n".$note : $title]);
+        }
 
         if ($recipients->isNotEmpty()) {
             Notification::send($recipients, new StaffTaskNotification($task, $title, $note ?? $task->subject));

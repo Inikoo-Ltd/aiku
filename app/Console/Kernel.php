@@ -50,6 +50,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorAICredit;
 use App\Actions\DevOps\MonitorNightowlIngest;
+use App\Actions\DevOps\WarmNightOwlTelemetry;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorStockLocationIntegrity;
@@ -121,6 +122,7 @@ class Kernel extends ConsoleKernel
             ->name('prune-traffic-source-clicks')->dailyAt('04:30')->timezone('UTC')->onOneServer();
         $schedule->command('procurement:reprice_partner_purchase_orders')->dailyAt('01:00')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
+        $schedule->command('customers:product-suggestions')->weeklyOn(1, '02:00')->timezone('UTC')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
@@ -306,6 +308,13 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorNightowlIngest',
                 ),
                 name: 'MonitorNightowlIngest',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(WarmNightOwlTelemetry::makeJob())->everyMinute()->withoutOverlapping()->onOneServer(),
+                name: 'WarmNightOwlTelemetry',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

@@ -9,6 +9,9 @@
 namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\OrgAction;
+use App\Models\Inventory\OrgStock;
+use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -21,6 +24,15 @@ class CreateArtefact extends OrgAction
 
     public function handle(ActionRequest $request): Response
     {
+        $orgStock  = $request->integer('org_stock') ? OrgStock::where('organisation_id', $this->organisation->id)->find($request->integer('org_stock')) : null;
+        $tradeUnit = $orgStock?->tradeUnits()->when($request->integer('trade_unit'), fn ($query, $tradeUnitId) => $query->where('trade_units.id', $tradeUnitId))->first();
+        $family    = $orgStock?->org_stock_family_id && $this->parent instanceof Production
+            ? ArtefactFamily::where('production_id', $this->parent->id)->where('org_stock_family_id', $orgStock->org_stock_family_id)->first()
+            : null;
+        $familyArtefacts = $family ? Artefact::where('artefact_family_id', $family->id) : null;
+        $usualBatchSize  = $familyArtefacts?->clone()->whereNotNull('recommended_batch_size')->groupBy('recommended_batch_size')->orderByRaw('count(*) desc')->value('recommended_batch_size');
+        $usualShelfLife  = $familyArtefacts?->clone()->whereNotNull('shelf_life_days')->groupBy('shelf_life_days')->orderByRaw('count(*) desc')->value('shelf_life_days');
+
         return Inertia::render(
             'CreateModel',
             [
@@ -55,14 +67,14 @@ class CreateArtefact extends OrgAction
                                     'type'     => 'input',
                                     'label'    => __('Code'),
                                     'placeholder' => __('Enter new code') . ' (e.g. NewArtefact-001)',
-                                    'value'    => '',
+                                    'value'    => $orgStock?->code ?? '',
                                     'required' => true
                                 ],
                                 'name' => [
                                     'type'     => 'input',
                                     'label'    => __('Name'),
                                     'placeholder' => __('Enter new name') . ' (e.g. New Artefact)',
-                                    'value'    => '',
+                                    'value'    => $orgStock?->name ?? '',
                                     'required' => true
                                 ],
                                 'recommended_batch_size' => [
@@ -72,7 +84,7 @@ class CreateArtefact extends OrgAction
                                         'min' => 0,
                                         'placeholder' => __('Enter recommended batch size') . ' (e.g. 100)',
                                     ],
-                                    'value'    => '',
+                                    'value'    => $usualBatchSize ?? '',
                                     'required' => false
                                 ],
                                 'shelf_life_days' => [
@@ -82,14 +94,29 @@ class CreateArtefact extends OrgAction
                                         'min' => 0,
                                         'placeholder' => __('How long it keeps') . ' (365 = 1 year)',
                                     ],
-                                    'value'    => '',
+                                    'value'    => $usualShelfLife ?? '',
                                     'required' => false
                                 ],
+                                ...($this->parent instanceof Production ? [
+                                    'artefact_family_id' => [
+                                        'type'       => 'select_infinite',
+                                        'label'      => __('Family'),
+                                        'options'    => array_filter([$family ? ['id' => $family->id, 'name' => $family->name] : null]),
+                                        'fetchRoute' => [
+                                            'name'       => 'grp.json.production.artefact_families.index',
+                                            'parameters' => ['production' => $this->parent->id]
+                                        ],
+                                        'valueProp' => 'id',
+                                        'labelProp' => 'name',
+                                        'required'  => false,
+                                        'value'     => $family?->id,
+                                    ],
+                                ] : []),
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Trade unit'),
                                     'placeholder' => __('Select a trade unit'),
-                                    'options'    => [],
+                                    'options'    => array_filter([$tradeUnit ? ['id' => $tradeUnit->id, 'code' => $tradeUnit->code] : null]),
                                     'fetchRoute' => [
                                         'name'       => 'grp.goods.trade-units.index',
                                         'parameters' => []
@@ -97,13 +124,13 @@ class CreateArtefact extends OrgAction
                                     'valueProp' => 'id',
                                     'labelProp' => 'code',
                                     'required'  => false,
-                                    'value'     => null,
+                                    'value'     => $tradeUnit?->id,
                                 ],
                                 'org_stock_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Stock (SKU)'),
                                     'placeholder' => __('Select a stock'),
-                                    'options'    => [],
+                                    'options'    => array_filter([$orgStock ? ['id' => $orgStock->id, 'code' => $orgStock->code] : null]),
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.org_stocks.index',
                                         'parameters' => [
@@ -113,7 +140,7 @@ class CreateArtefact extends OrgAction
                                     'valueProp' => 'id',
                                     'labelProp' => 'code',
                                     'required'  => false,
-                                    'value'     => null,
+                                    'value'     => $orgStock?->id,
                                 ],
                             ]
                         ]

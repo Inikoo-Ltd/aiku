@@ -30,6 +30,11 @@ export interface CreatedTask {
 export interface TaskBadges {
     mine: Record<string, TaskBadgeRow>
     today: { done: number; open: number }
-    created?: { open: number; needs_answer: number; tasks: CreatedTask[] }
+    created?: {
+        open: number
+        needs_answer: number
+        tasks: CreatedTask[]
+        sections?: { eta_change: CreatedTask[]; help_request: CreatedTask[]; recent: CreatedTask[] }
+    }
     recent: TaskRecentUpdate[]
 }
