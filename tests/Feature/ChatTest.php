@@ -8679,6 +8679,44 @@ test('the mailbox history is archived as text for the customer it was with, leav
     \App\Models\Comms\EmailArchiveMessage::where('customer_id', $customer->id)->delete();
 });
 
+test('a mail in one shop mailbox about an order of another shop is archived for the customer of that order', function () {
+    $otherShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('id', '!=', $this->shop->id)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+    $email           = 'two.shops.'.Str::lower(Str::random(6)).'@example.com';
+    $here            = createOwnCustomer($this->shop, 'archive-two-shops-here-'.$email);
+    $there           = createOwnCustomer($otherShop, 'archive-two-shops-there-'.$email);
+    $here->update(['email' => $email]);
+    $there->update(['email' => $email]);
+    $orderReference  = 'AWD'.random_int(100000, 999999);
+    $order           = \App\Actions\Ordering\Order\StoreOrder::make()->action($there, [
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $order->update(['reference' => $orderReference]);
+
+    $mail = fn (string $id, string $subject) => [
+        'id'           => $id,
+        'threadId'     => 'th-'.$id,
+        'labelIds'     => ['SENT'],
+        'internalDate' => '1780000000000',
+        'payload'      => [
+            'mimeType' => 'text/plain',
+            'headers'  => [['name' => 'From', 'value' => 'care@shop.test'], ['name' => 'To', 'value' => $email], ['name' => 'Subject', 'value' => $subject]],
+            'body'     => ['data' => rtrim(strtr(base64_encode('Thank you for your order'), '+/', '-_'), '=')],
+        ],
+    ];
+    $archive = fn (array $raw) => \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make()->archive($this->shop, 'care@shop.test', $raw);
+
+    expect($archive($mail('x1-'.$order->id, "Transaction receipt for order $orderReference"))->customer_id)->toBe($there->id)
+        ->and($archive($mail('x2-'.$order->id, 'Broken jar'))->customer_id)->toBe($here->id);
+
+    $there->update(['email' => 'someone.else.'.Str::lower(Str::random(6)).'@example.com']);
+    expect($archive($mail('x3-'.$order->id, "Transaction receipt for order $orderReference"))->customer_id)->toBe($here->id);
+
+    \App\Models\Comms\EmailArchiveMessage::whereIn('customer_id', [$here->id, $there->id])->delete();
+});
+
 test('when gmail refuses the live fetch for its quota, the archive of that mailbox stands down so customer mail comes first', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];

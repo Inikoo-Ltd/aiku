@@ -15,6 +15,7 @@ use App\Models\Chat\ChatMessage;
 use App\Models\Comms\EmailArchiveMessage;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
+use App\Models\Ordering\Order;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use Illuminate\Console\Command;
@@ -413,7 +414,7 @@ class ArchiveShopMailbox
             return null;
         }
 
-        $customerId = $this->customerId($shop, $other);
+        $customerId = $this->customerOfOrderInAnotherShop($shop, $other, $subject) ?? $this->customerId($shop, $other);
 
         if (!$customerId || ChatMessage::where('metadata->gmail_message_id', (string) Arr::get($raw, 'id'))->exists()) {
             return null;
@@ -452,6 +453,26 @@ class ArchiveShopMailbox
                 'sent_at'             => Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate')),
             ]
         );
+    }
+
+    /**
+     * A mailbox that also wrote for another shop of the organisation (the UK one sent the
+     * dropshipping receipts until 2021) names that shop's order in the subject: the mail belongs
+     * to the customer of that order, when the address is theirs.
+     */
+    private function customerOfOrderInAnotherShop(Shop $shop, string $address, ?string $subject): ?int
+    {
+        preg_match_all('/\b[A-Z]{2,4}\d{4,}\b/', (string) $subject, $matches);
+
+        if (!$matches[0]) {
+            return null;
+        }
+
+        return Order::where('organisation_id', $shop->organisation_id)
+            ->where('shop_id', '!=', $shop->id)
+            ->whereIn('reference', $matches[0])
+            ->whereHas('customer', fn ($query) => $query->where('email', $address))
+            ->value('customer_id');
     }
 
     /**
