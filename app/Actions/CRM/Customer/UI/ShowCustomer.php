@@ -492,6 +492,12 @@ class ShowCustomer extends OrgAction
 
     private function getRetinaDashboard(Customer $customer): ?array
     {
-        return $customer->shop->type == ShopTypeEnum::B2B ? GetRetinaB2BDashboardInsights::run($customer) : null;
+        if ($customer->shop->type != ShopTypeEnum::B2B) {
+            return null;
+        }
+
+        return GetRetinaB2BDashboardInsights::run($customer) + [
+            'theme_colors' => Arr::get($customer->shop->website?->published_layout, 'theme.color', []),
+        ];
     }
 }

@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -208,6 +209,18 @@ class Offer extends Model implements Auditable
     public function targetCollectionIds(): array
     {
         return $this->offerAllowances()->where('target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)->pluck('target_id')->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function triggerCategoryIds(): array
+    {
+        if ($this->trigger_type != 'ProductCategory') {
+            return [];
+        }
+
+        return Arr::get($this->trigger_data, 'category_ids') ?: [$this->trigger_id];
     }
 
     public function hydratesCatalogueOffersData(): bool

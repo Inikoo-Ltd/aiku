@@ -53,6 +53,8 @@ enum ChatSpamRescueKindEnum: string
     /**
      * The shapes most scams take, asked in the same call as the kind. None is the only answer that
      * is not one. On 293 real emails no genuine one gave the scam forms together more than 0.14.
+     * Invitations and shared documents were named after a customer's hijacked account sent an
+     * event invitation behind a link: 0.30 before, 0.88 after, with no genuine email moving.
      *
      * @return array<string, string>
      */
@@ -61,7 +63,7 @@ enum ChatSpamRescueKindEnum: string
         return [
             'payment_copy'     => 'A payment, remittance, SWIFT or bank transfer copy or proof of payment to download or open',
             'fake_invoice'     => 'An invoice, statement or overdue bill from a company we never dealt with, or one that must be opened from a link or attachment',
-            'link_to_details'  => 'An order, complaint, damage report, quotation request, purchase requirements or document that can only be seen by opening a link or file',
+            'link_to_details'  => 'An order, complaint, damage report, quotation request, purchase requirements, invitation, event, shared document, voicemail, e-signature request or other document that can only be seen by opening a link or file',
             'account_warning'  => 'A warning about a mailbox, password, account, domain, payment method or security that asks to click, log in or confirm',
             'policy_violation' => 'A copyright, trademark, policy or legal violation notice, or a verification badge offer',
             'money_offer'      => 'Investment, funding, loans, crypto, inheritance, prizes, or a commission or fee to be paid first',

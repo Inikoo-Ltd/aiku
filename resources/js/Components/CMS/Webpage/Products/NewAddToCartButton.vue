@@ -156,7 +156,8 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
                 product: product.id
             }),
             {
-                quantity: get(basket, ['quantity_ordered_new'], basket.quantity_ordered)
+                quantity: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+                ...props.addToBasketRoute.body,
             }
         )
 

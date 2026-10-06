@@ -206,6 +206,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
 use Illuminate\Support\Facades\Cache;
@@ -5110,6 +5111,99 @@ test('b2b dashboard recommendations carry the customer favourites and basket so 
         ->and($recommendation['transaction_id'])->toBeNull()
         ->and($recommendation['quantity_ordered'])->toBe(0)
         ->and($recommendation)->toHaveKeys(['stock', 'price', 'price_per_unit', 'product_offers_data']);
+});
+
+test('weekly product suggestions give the AI half AI picks with reasons and fall back to bought together when the AI reply is unusable', function () {
+    [, $sharedProduct] = createProduct($this->shop);
+    $newProduct = fn () => StoreProduct::make()->action($sharedProduct->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $sharedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+    ));
+    $seed       = $newProduct();
+    $candidates = collect(range(1, 6))->map(fn () => $newProduct());
+
+    foreach ($candidates->concat([$seed]) as $product) {
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+    }
+
+    do {
+        $customer = freshCustomerLike($this->shop, $this->customer);
+    } while (\App\Actions\CRM\Customer\GenerateCustomerProductSuggestions::arm($customer->id) !== 'ai');
+
+    $customerOrder = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($customerOrder, $seed->currentHistoricProduct, Transaction::factory()->definition());
+    $customerOrder->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays(5), 'net_amount' => 10]);
+
+    $otherOrder = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    foreach ($candidates->concat([$seed]) as $product) {
+        StoreTransaction::make()->action($otherOrder, $product->currentHistoricProduct, Transaction::factory()->definition());
+    }
+
+    config(['services.openrouter.api_key' => 'test']);
+    $aiReply = fn (string $content) => ['choices' => [['message' => ['content' => $content]]]];
+    $picks   = $candidates->reverse()->map(fn (Product $product) => ['id' => $product->id, 'reason' => "Sells well with your $seed->name"])->values()->push(['id' => 999999999, 'reason' => 'invented']);
+
+    Http::fake(['*' => Http::sequence()
+        ->push($aiReply("```json\n".json_encode(['suggestions' => $picks->all()])."\n```"))
+        ->push($aiReply('Sorry, I can not help with that'))]);
+    \App\Actions\CRM\Customer\GenerateCustomerProductSuggestions::run($customer->fresh());
+    $insights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh());
+
+    expect($insights['recommendations_source'])->toBe('ai_suggestions')
+        ->and(collect($insights['recommendations'])->pluck('id')->all())->toBe($candidates->reverse()->pluck('id')->values()->all())
+        ->and($insights['recommendations'][0]['suggestion_reason'])->toBe("Sells well with your $seed->name")
+        ->and(\App\Actions\CRM\Customer\ReportCustomerProductSuggestions::run(0)[0]->suggested)->toBe(6);
+
+    $this->travel(1)->minutes();
+    \App\Actions\CRM\Customer\GenerateCustomerProductSuggestions::run($customer->fresh());
+    $insights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh());
+
+    expect($insights['recommendations_source'])->toBe('bought_together')
+        ->and($insights['recommendations'])->not->toBeEmpty()
+        ->and(collect($insights['recommendations'])->pluck('suggestion_reason')->filter()->all())->toBe([]);
+});
+
+test('adds from the customer dashboard are logged per section and counted as ordered once the basket is submitted', function () {
+    $website = createWebsite($this->shop);
+    $website->update(['status' => true]);
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $webUser  = createWebUser($customer);
+    [, $bulk] = createProduct($this->shop);
+    [$suggested, $repeated] = collect(range(1, 2))->map(fn () => StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    )))->all();
+    foreach ([$suggested, $repeated] as $product) {
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'available_quantity' => 100]);
+    }
+
+    $pastOrder = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($pastOrder, $repeated->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+    $pastOrder->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays(20)]);
+
+    $base = 'http://'.$website->domain.'/app/models';
+    $this->actingAs($webUser, 'retina')
+        ->postJson("$base/product/$suggested->id/add-to-basket", ['quantity' => 3, 'dashboard_section' => 'suggestions_ai_suggestions'])
+        ->assertOk();
+    $this->actingAs($webUser, 'retina')
+        ->postJson("$base/product/$suggested->id/add-to-basket", ['quantity' => 4, 'dashboard_section' => 'made_up'])
+        ->assertUnprocessable();
+    $this->actingAs($webUser, 'retina')
+        ->postJson("$base/order/$pastOrder->id/repeat", ['dashboard_section' => 'repeat_order'])
+        ->assertOk();
+
+    $adds = DB::table('retina_dashboard_basket_adds')->where('customer_id', $customer->id)->get()->keyBy('section');
+    expect($adds->keys()->sort()->values()->all())->toBe(['repeat_order', 'suggestions_ai_suggestions'])
+        ->and($adds['suggestions_ai_suggestions']->product_id)->toBe($suggested->id)
+        ->and((float) $adds['suggestions_ai_suggestions']->quantity)->toBe(3.0)
+        ->and($adds['repeat_order']->product_id)->toBe($repeated->id);
+
+    $report = fn () => collect(\App\Actions\Retina\UI\Dashboard\ReportRetinaDashboardBasketAdds::run(1))->keyBy('section');
+    expect($report()['suggestions_ai_suggestions']->products_ordered)->toBe(0);
+
+    Order::find($adds['suggestions_ai_suggestions']->order_id)->update(['state' => OrderStateEnum::SUBMITTED]);
+    expect($report()['suggestions_ai_suggestions']->products_ordered)->toBe(1)
+        ->and($report()['repeat_order']->orders)->toBe(1);
 });
 
 test('basket recommendations never suggest a product sold exclusively to another customer', function () {

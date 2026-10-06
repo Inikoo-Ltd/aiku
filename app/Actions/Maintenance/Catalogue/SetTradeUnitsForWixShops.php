@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Symfony\Component\Console\Helper\ProgressBar;
 
@@ -33,11 +34,17 @@ class SetTradeUnitsForWixShops
             return $proposal;
         }
 
-        $product = UpdateProduct::make()->action($product, ['units' => $proposal['units']], strict: false);
+        try {
+            DB::transaction(function () use ($product, $proposal) {
+                $product = UpdateProduct::make()->action($product, ['units' => $proposal['units']], strict: false);
 
-        UpdateTradeUnitsForExternalProduct::make()->action($product, [
-            'trade_units' => $proposal['trade_units']
-        ]);
+                UpdateTradeUnitsForExternalProduct::make()->action($product, [
+                    'trade_units' => $proposal['trade_units']
+                ]);
+            });
+        } catch (ValidationException $e) {
+            return [...$proposal, 'status' => 'skip', 'summary' => collect($e->errors())->flatten()->join(' ')];
+        }
 
         $command?->info('Linked '.$product->code.' => '.$proposal['summary']);
 
@@ -135,6 +142,16 @@ class SetTradeUnitsForWixShops
     private function getLinkProposal(array $proposal, Product $seederProduct, string $method, array $tradeUnits): array
     {
         $tradeUnitCodes = TradeUnit::whereIn('id', array_column($tradeUnits, 'id'))->pluck('code', 'id');
+
+        $notDivisible = TradeUnit::whereIn('id', collect($tradeUnits)
+            ->filter(fn (array $tradeUnit) => fmod(round($tradeUnit['quantity'], 3), 1.0) !== 0.0)
+            ->pluck('id'))
+            ->where('is_divisible', false)
+            ->pluck('code');
+
+        if ($notDivisible->isNotEmpty()) {
+            return [...$proposal, 'seeder' => $seederProduct->code, 'summary' => 'trade unit '.$notDivisible->join(', ').' is not divisible'];
+        }
 
         return [
             ...$proposal,

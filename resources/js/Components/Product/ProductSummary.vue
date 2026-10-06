@@ -231,6 +231,11 @@ library.add(
 											</span>
 										</div>
 
+										<div v-if="pick.barcode" v-tooltip="ctrans('SKO barcode')"
+											class="text-xs text-gray-500 tabular-nums">
+											<FontAwesomeIcon :icon="faBarcode" class="mr-1" fixed-width aria-hidden="true" />{{ pick.barcode }}
+										</div>
+
 										<div v-if="pick.note" v-tooltip="ctrans('Note')"
 											class="text-[11px] text-gray-400 truncate max-w-[90%]">
 											{{ pick.note }}

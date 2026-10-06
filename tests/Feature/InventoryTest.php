@@ -1583,6 +1583,32 @@ test('stock location integrity monitor reports a location that no longer matches
     $this->organisation->update(['is_aiku_stock_control' => $wasAikuStockControl]);
 });
 
+test('an aurora receipt brings the location to its movements without losing a pick or its own open transaction', function () {
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+
+    AuditLocationOrgStock::run($slot, ['quantity' => 11]);
+    StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => -1, 'type' => OrgStockMovementTypeEnum::PICKED]);
+
+    DB::transaction(function () use ($orgStock, $location) {
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => 80, 'type' => OrgStockMovementTypeEnum::PURCHASE], strict: false);
+    });
+    expect((float)$slot->refresh()->quantity)->toBe(90.0);
+
+    StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'quantity' => 160,
+        'type'     => OrgStockMovementTypeEnum::PURCHASE,
+        'date'     => now()->subDays(3),
+    ], strict: false);
+    expect((float)$slot->refresh()->quantity)->toBe(90.0);
+
+    DB::table('location_org_stocks')->where('id', $slot->id)->update(['quantity' => 85]);
+    expect(\App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements::run($slot))->toBe(90.0)
+        ->and((float)$slot->refresh()->quantity)->toBe(90.0);
+});
+
 test('an emptied slot stays listed on a shelf but not in a goods out bay', function () {
     $warehouse = createWarehouse();
     $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
