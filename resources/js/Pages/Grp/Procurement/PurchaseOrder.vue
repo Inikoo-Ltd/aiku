@@ -381,7 +381,8 @@ const formatDate = (date: Date | null): string | null => {
 }
 
 const submitDialogAction = ref<any>(null)
-const sendVia = ref<string | null>(null)
+const doNotSend = "none"
+const sendVia = ref<string>(doNotSend)
 
 const submitPurchaseOrder = (action: any) => {
 	if (action.send_channels?.length && !submitDialogAction.value) {
@@ -390,12 +391,12 @@ const submitPurchaseOrder = (action: any) => {
 		return
 	}
 
-	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value }, {
+	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value === doNotSend ? null : sendVia.value }, {
 		onStart: () => { submitLoading.value = true },
 		onFinish: () => {
 			submitLoading.value = false
 			submitDialogAction.value = null
-			sendVia.value = null
+			sendVia.value = doNotSend
 		},
 		onError: () => {
 			notify({
@@ -1102,7 +1103,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				</span>
 			</label>
 			<label class="flex cursor-pointer items-start gap-3">
-				<RadioButton v-model="sendVia" :value="null" inputId="purchase-order-send-none" />
+				<RadioButton v-model="sendVia" :value="doNotSend" inputId="purchase-order-send-none" />
 				<span class="text-sm text-gray-700">{{ ctrans("Don't send, I will send it myself") }}</span>
 			</label>
 			<p class="text-xs text-gray-500">{{ ctrans("Replies arrive in the procurement inbox.") }}</p>
@@ -1111,7 +1112,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<template #footer>
 			<Button :label="ctrans('Cancel')" type="secondary" @click="submitDialogAction = null" />
 			<Button
-				:label="sendVia ? ctrans('Submit and send') : ctrans('Submit')"
+				:label="sendVia !== doNotSend ? ctrans('Submit and send email') : ctrans('Submit')"
 				type="save"
 				:icon="faPaperPlane"
 				:loading="submitLoading"
