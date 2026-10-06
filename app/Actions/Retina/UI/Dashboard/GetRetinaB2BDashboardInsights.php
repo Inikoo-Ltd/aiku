@@ -24,6 +24,7 @@ use App\Http\Resources\Catalogue\IrisProductBasketRecommendationResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferHasCustomer;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -199,10 +200,14 @@ class GetRetinaB2BDashboardInsights
      */
     private function getVouchers(Customer $customer): array
     {
+        $customerCodes = OfferHasCustomer::where('customer_id', $customer->id)->pluck('code', 'offer_id');
+
         $vouchers = Offer::query()
             ->where('shop_id', $customer->shop_id)
-            ->whereNotNull('voucher')
             ->whereNull('customer_id')
+            ->where(fn ($query) => $query
+                ->where(fn ($query) => $query->whereNotNull('voucher')->whereDoesntHave('customerList'))
+                ->orWhereIn('id', $customerCodes->keys()))
             ->where('status', true)
             ->where('settings->show_on_customer_dashboard', true)
             ->where(fn ($query) => $query->whereNull('start_at')->orWhere('start_at', '<=', now()))
@@ -220,11 +225,11 @@ class GetRetinaB2BDashboardInsights
 
         return $vouchers
             ->reject(fn (Offer $voucher) => $usedVoucherIds->has($voucher->id) && !data_get($voucher->settings, 'can_customer_reuse', false))
-            ->map(function (Offer $voucher) {
+            ->map(function (Offer $voucher) use ($customerCodes) {
                 $allowance = $voucher->offerAllowances->first();
 
                 return [
-                    'code'               => $voucher->code,
+                    'code'               => $customerCodes->get($voucher->id) ?? $voucher->code,
                     'name'               => $voucher->name,
                     'percentage_off'     => $allowance?->type == OfferAllowanceType::PERCENTAGE_OFF ? (float) data_get($allowance->data, 'percentage_off') : null,
                     'amount_off'         => $allowance?->type == OfferAllowanceType::AMOUNT_OFF ? (float) data_get($allowance->data, 'amount_off') : null,

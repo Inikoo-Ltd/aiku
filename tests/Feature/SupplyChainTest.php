@@ -919,6 +919,17 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
             ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
                 ->where('ribbons.0.reference', $purchaseOrder->reference)
                 ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done')));
+
+    $partial = $this->withHeaders([
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => \Illuminate\Support\Facades\Vite::manifestHash('grp'),
+        'X-Inertia-Partial-Component' => 'SupplyChain/SupplyChainPurchaseOrderJourney',
+        'X-Inertia-Partial-Data'      => 'filters,active,summary,blockages,quickStats,ribbons,pagination',
+    ])->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference, 'page' => 1]));
+
+    $partial->assertOk();
+    expect($partial->json('props'))->toHaveKeys(['filters', 'active', 'summary', 'blockages', 'quickStats', 'ribbons', 'pagination'])
+        ->and($partial->json('deferredProps'))->toBeNull();
 })->depends('create independent supplier 2');
 
 test('UI create suppliers product in supplier', function () {

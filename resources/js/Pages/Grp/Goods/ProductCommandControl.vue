@@ -7,6 +7,9 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
+import { useElementSize } from "@vueuse/core"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
 import ProductDetailDrawer from "@/Components/Goods/ProductDetailDrawer.vue"
@@ -161,6 +164,13 @@ watch(
     },
     { deep: true }
 )
+
+const pagerBar = ref<HTMLElement | null>(null)
+const { height: pagerBarHeight } = useElementSize(pagerBar, undefined, { box: "border-box" })
+const tableHead = ref<HTMLElement | null>(null)
+const { height: tableHeadHeight } = useElementSize(tableHead, undefined, { box: "border-box" })
+const tableScroller = ref<HTMLElement | null>(null)
+const { canScrollUp, canScrollDown, scrollVerticallyBy } = useScrollArrows(tableScroller)
 
 const loading = ref(false)
 let stopStart: (() => void) | undefined
@@ -572,9 +582,22 @@ function openDrawer(row: Row): void {
             </div>
         </div>
     </div>
-    <div v-else class="mx-4 mb-8 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm transition-opacity" :class="{ 'opacity-60': loading }">
+    <div v-else class="relative isolate mx-4 mb-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div ref="tableScroller" class="max-h-[80vh] overflow-auto transition-opacity" :class="{ 'opacity-60': loading }">
+        <div ref="pagerBar" class="sticky left-0 top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 text-xs text-gray-600">
+            <span>{{ ctrans(":total products", { total: quantity(pagination.total) }) }}</span>
+            <div class="flex items-center gap-3">
+                <button type="button" :class="pagerButtonClass" :disabled="loading || pagination.page <= 1" @click="load({}, pagination.page - 1)">
+                    {{ ctrans("Previous") }}
+                </button>
+                <span>{{ ctrans("Page :page of :pages", { page: pagination.page, pages: pagination.last_page }) }}</span>
+                <button type="button" :class="pagerButtonClass" :disabled="loading || pagination.page >= pagination.last_page" @click="load({}, pagination.page + 1)">
+                    {{ ctrans("Next") }}
+                </button>
+            </div>
+        </div>
         <table class="min-w-full text-xs">
-            <thead class="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+            <thead ref="tableHead" :style="{ top: pagerBarHeight + 'px' }" class="sticky z-10 border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-600">
                 <tr>
                     <th class="px-3 py-2.5">
                         <button type="button" class="uppercase tracking-wide transition-colors hover:text-[--app-accent]" @click="toggleSort('code')">{{ ctrans("Code — description") }} {{ sortArrow("code") }}</button>
@@ -594,7 +617,7 @@ function openDrawer(row: Row): void {
             <tbody class="divide-y divide-gray-100 text-gray-700">
                 <tr v-for="row in rows" :key="row.id" class="transition-colors hover:bg-[--app-accent-soft]">
                     <td class="max-w-[220px] truncate px-3 py-2" :title="`${row.code} — ${row.name ?? ''}${row.family_code ? ' (' + row.family_code + ')' : ''}`">
-                        <button type="button" class="group text-left" @click="openDrawer(row)">
+                        <button type="button" class="group block w-full truncate text-left" @click="openDrawer(row)">
                             <span class="font-medium text-gray-900 group-hover:text-[--app-accent] group-hover:underline">{{ row.code }}</span>
                             <span> — {{ row.name }}</span>
                         </button>
@@ -666,18 +689,11 @@ function openDrawer(row: Row): void {
                 </tr>
             </tbody>
         </table>
-        <div class="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-600">
-            <span>{{ ctrans(":total products", { total: quantity(pagination.total) }) }}</span>
-            <div class="flex items-center gap-3">
-                <button type="button" :class="pagerButtonClass" :disabled="pagination.page <= 1" @click="load({}, pagination.page - 1)">
-                    {{ ctrans("Previous") }}
-                </button>
-                <span>{{ ctrans("Page :page of :pages", { page: pagination.page, pages: pagination.last_page }) }}</span>
-                <button type="button" :class="pagerButtonClass" :disabled="pagination.page >= pagination.last_page" @click="load({}, pagination.page + 1)">
-                    {{ ctrans("Next") }}
-                </button>
-            </div>
-        </div>
+    </div>
+    <div class="pointer-events-none absolute inset-x-0 bottom-0" :style="{ top: pagerBarHeight + tableHeadHeight + 'px' }">
+        <ScrollFadeArrow direction="up" :visible="canScrollUp" @click="scrollVerticallyBy(-1)" />
+        <ScrollFadeArrow direction="down" :visible="canScrollDown" @click="scrollVerticallyBy(1)" />
+    </div>
     </div>
 
     <OrgStockDiscontinuePreviewModal

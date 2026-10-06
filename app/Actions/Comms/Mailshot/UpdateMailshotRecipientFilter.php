@@ -150,6 +150,9 @@ class UpdateMailshotRecipientFilter extends OrgAction
             'recipients_recipe.due_to_reorder.value' => ['sometimes', 'array'],
             'recipients_recipe.due_to_reorder.value.value' => ['sometimes', 'boolean'],
 
+            'recipients_recipe.voucher_recipients' => ['sometimes', 'array'],
+            'recipients_recipe.voucher_recipients.value' => ['sometimes', 'nullable', 'integer'],
+
             // by_family_never_ordered filter
             'recipients_recipe.by_family_never_ordered' => ['sometimes', 'array'],
             'recipients_recipe.by_family_never_ordered.value' => ['sometimes', 'array'],

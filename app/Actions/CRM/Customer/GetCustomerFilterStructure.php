@@ -8,8 +8,10 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Comms\Mailshot\Filters\FilterTopCustomersByRevenue;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Tag;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -43,6 +45,18 @@ class GetCustomerFilterStructure
             ->toArray();
 
         $currencySymbol = $shop->currency->symbol ?? '£';
+
+        $voucherOptions = Offer::query()
+            ->where('shop_id', $shop->id)
+            ->where('settings->has_customer_list', true)
+            ->whereIn('state', [OfferStateEnum::IN_PROCESS, OfferStateEnum::ACTIVE])
+            ->orderByDesc('id')
+            ->get(['id', 'code', 'name'])
+            ->map(fn (Offer $offer) => [
+                'value' => $offer->id,
+                'label' => $offer->name.' ('.$offer->code.')',
+            ])
+            ->all();
 
         return [
             'marketing' => [
@@ -306,7 +320,16 @@ class GetCustomerFilterStructure
                                 'placeholder' => 'Any time',
                             ]
                         ],
-                    ]
+                    ],
+                    ...($voucherOptions ? [
+                        'voucher_recipients' => [
+                            'label'       => 'Voucher Recipients',
+                            'type'        => 'select',
+                            'description' => 'Targets the customers on a voucher\'s customer list. Use the [Voucher] merge tag to show each customer their code.',
+                            'multiple'    => false,
+                            'options'     => $voucherOptions,
+                        ],
+                    ] : []),
                 ]
             ]
         ];

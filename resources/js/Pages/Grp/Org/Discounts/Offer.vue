@@ -37,6 +37,7 @@ import PreviewProductDiscount from '@/Components/Offers/PreviewOffer/PreviewProd
 import PreviewFreeItems from '@/Components/Offers/PreviewOffer/PreviewFreeItems.vue'
 import CustomerViewOffer from '@/Components/Offers/PreviewOffer/CustomerViewOffer.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import TableOfferCustomerList from '@/Components/Offers/TableOfferCustomerList.vue'
 import OfferShowcase from '@/Components/Offers/OfferShowcase.vue'
 
 library.add(faFlagCheckered)
@@ -53,6 +54,7 @@ const props = defineProps<{
         current: string
         navigation: Record<string, { title: string; icon?: string; type?: string; align?: string }>
     }
+    vouchers?: object
     showcase?: object
     customers?: object
     orders?: object
@@ -169,6 +171,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tabComponent = computed(() => {
     const components: Record<string, unknown> = {
+        vouchers: TableOfferCustomerList,
         showcase: OfferShowcase,
         customers: TableCustomers,
         orders: TableOrders,
@@ -289,7 +292,7 @@ const irisOffersData = computed(() => {
                 <div class="rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-600">
                     {{ data.offer.type }}
                 </div>
-                
+
                 <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" :offer_allowances="data.offer_allowances" />
                 <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
                     :offers_data="{
@@ -559,7 +562,7 @@ const irisOffersData = computed(() => {
                     </div>
                 </div>
             </div>
-            
+
         </div>
     </div>
 
@@ -579,5 +582,3 @@ const irisOffersData = computed(() => {
         <component :is="tabComponent" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :useTopPagination="true" />
     </div>
 </template>
-
-
