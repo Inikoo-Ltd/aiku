@@ -5624,8 +5624,9 @@ describe('partner shopping list', function () {
 
         expect($recommendation())->toBe(80.0);
 
-        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
-        StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $orgStock->fresh(), ['quantity_ordered' => 40]);
+        $purchaseOrder = $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first()
+            ?? StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        $onOrder = StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $orgStock->fresh(), ['quantity_ordered' => 40]);
         expect($recommendation())->toBe(70.0);
 
         $orgStock->update(['estimated_lead_time_days' => null]);
@@ -5640,8 +5641,7 @@ describe('partner shopping list', function () {
         $orgStock->update(['quantity_available' => 200]);
         expect($recommendation())->toBe(0.0);
 
-        $purchaseOrder->purchaseOrderTransactions()->delete();
-        $purchaseOrder->delete();
+        $onOrder->delete();
     });
 
     test('intercompany customer resolved by normalised name and mapping persisted', function () {
