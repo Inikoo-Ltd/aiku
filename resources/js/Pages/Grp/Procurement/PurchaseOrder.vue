@@ -489,7 +489,7 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 		message: ctrans("Are you sure the supplier confirmed they will fulfil this purchase order?"),
 		header: ctrans("Confirm Purchase Order"),
 		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: ctrans("Confirm") },
+		acceptProps: { label: ctrans("Yes, confirm"), class: "buttonPrimary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {
 				estimated_receiving_date: formatDate(estimatedReceivingDate.value),
