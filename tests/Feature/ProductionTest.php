@@ -3358,7 +3358,7 @@ test('a labelled run is prepared only with its batch code, and keeping the expir
     $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $this->organisation->id)->first()
         ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($buyer, $this->organisation);
 
-    $line = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $makerOrgStock, ['quantity' => 4]);
+    $line = submittedPartnerShoppingListItem($orgPartner, $makerOrgStock, ['quantity' => 4]);
     expect($line->org_stock_id)->not->toBe($makerOrgStock->id)
         ->and($line->stock_id)->toBe($stocks[0]->id);
 
