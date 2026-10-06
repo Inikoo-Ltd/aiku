@@ -9,6 +9,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
@@ -236,6 +237,11 @@ class StockDelivery extends Model implements HasMedia, Auditable
             StockDeliveryStateEnum::CHECKED,
             StockDeliveryStateEnum::BOOKING_IN,
         ], true);
+    }
+
+    public function hasNoProducts(): bool
+    {
+        return !$this->items()->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)->exists();
     }
 
     public function isManagedByPartner(): bool
