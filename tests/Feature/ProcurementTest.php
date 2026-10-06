@@ -215,7 +215,6 @@ use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
-use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use Illuminate\Support\Facades\Cache;
@@ -4829,6 +4828,26 @@ describe('partner shopping list', function () {
         expect($customerId)->toBe($order->customer_id);
     });
 
+    test('hub partners buy at the hub partner discount from settings, not from shop offers', function () {
+        $hub              = $this->orgPartner->partner;
+        $originalSettings = $hub->settings;
+        $hub->update([
+            'is_manufacturing_hub' => true,
+            'settings'             => array_replace_recursive($hub->settings ?? [], ['procurement' => ['partner_discount' => 0.3]]),
+        ]);
+
+        $item        = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $result      = CherryPickPartnerShoppingListItems::make()->action($hub->refresh(), [['id' => $item->id]]);
+        $transaction = $item->refresh()->transaction;
+        $factor      = GetPartnerBuyingPriceFactor::run($this->orgPartner->refresh());
+
+        $hub->update(['is_manufacturing_hub' => false, 'settings' => $originalSettings]);
+
+        expect($factor)->toBe(0.7)
+            ->and((float) $transaction->discretionary_offer)->toBe(0.3)
+            ->and($result['orders'][0]->refresh()->discretionary_offers_data)->toHaveKey((string) $transaction->id);
+    });
+
     test('cherry pick partial quantity splits remainder to open child', function () {
         $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 30,
@@ -5619,71 +5638,6 @@ describe('partner shopping list', function () {
         expect($resolved)->not->toBeNull()
             ->and($normalise($resolved->company_name))->toBe($normalise($this->orgPartner->organisation->name))
             ->and(data_get($this->orgPartner->refresh()->data, "intercompany_customers.{$this->sellerShop->id}"))->toBe($resolved->id);
-    });
-
-    test('partner customer discount factor is median of recent order net over gross', function () {
-        $item   = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
-        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
-        $order  = $result['orders'][0];
-
-        DB::table('orders')->where('customer_id', $order->customer_id)
-            ->update(['state' => OrderStateEnum::SUBMITTED->value, 'gross_amount' => 100, 'net_amount' => 55]);
-        Cache::forget("partner_customer_discount_factor_{$order->customer_id}");
-
-        expect(GetPartnerCustomerDiscount::run($order->customer))->toBe(0.55);
-
-        DB::table('orders')->where('customer_id', $order->customer_id)
-            ->update(['state' => OrderStateEnum::CREATING->value, 'gross_amount' => 0, 'net_amount' => 0]);
-        Cache::forget("partner_customer_discount_factor_{$order->customer_id}");
-    });
-
-    test('partner customer discount factor follows the standing customer offer over the order history', function () {
-        $item     = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
-        $customer = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]])['orders'][0]->customer;
-        $offerId  = DB::table('offers')->insertGetId([
-            'group_id'          => $customer->group_id,
-            'organisation_id'   => $customer->organisation_id,
-            'shop_id'           => $customer->shop_id,
-            'offer_campaign_id' => DB::table('offer_campaigns')->where('shop_id', $customer->shop_id)->value('id'),
-            'customer_id'       => $customer->id,
-            'code'              => 'partner-test-'.$customer->id,
-            'slug'              => 'partner-test-'.$customer->id,
-            'name'              => 'Partner 45%',
-            'type'              => \App\Enums\Discounts\Offer\OfferTypeEnum::CUSTOMER_ANY_ORDER->value,
-            'state'             => \App\Enums\Discounts\Offer\OfferStateEnum::ACTIVE->value,
-            'trigger_type'      => 'Customer',
-            'trigger_id'        => $customer->id,
-            'trigger_data'      => '{}',
-            'data'              => '{}',
-            'settings'          => '{}',
-            'source_data'       => '{}',
-            'created_at'        => now(),
-            'updated_at'        => now(),
-        ]);
-        DB::table('offer_allowances')->insert([
-            'group_id'        => $customer->group_id,
-            'organisation_id' => $customer->organisation_id,
-            'shop_id'         => $customer->shop_id,
-            'offer_campaign_id' => DB::table('offers')->where('id', $offerId)->value('offer_campaign_id'),
-            'offer_id'        => $offerId,
-            'slug'            => 'partner-test-'.$customer->id,
-            'state'           => \App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum::ACTIVE->value,
-            'type'            => \App\Enums\Discounts\OfferAllowance\OfferAllowanceType::PERCENTAGE_OFF->value,
-            'target_type'     => \App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
-            'data'            => json_encode(['percentage_off' => 0.45]),
-            'source_data'     => '{}',
-            'created_at'      => now(),
-            'updated_at'      => now(),
-        ]);
-        Cache::forget("partner_customer_discount_factor_$customer->id");
-
-        $factor = GetPartnerCustomerDiscount::run($customer);
-
-        DB::table('offer_allowances')->where('offer_id', $offerId)->delete();
-        DB::table('offers')->where('id', $offerId)->delete();
-        Cache::forget("partner_customer_discount_factor_$customer->id");
-
-        expect($factor)->toBe(0.55);
     });
 
     test('exclusive products for the intercompany customer appear in partner browse query', function () {

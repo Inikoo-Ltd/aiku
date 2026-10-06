@@ -10,7 +10,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
@@ -411,9 +411,7 @@ class ShowPartnerBrowse extends OrgAction
         abort_unless($this->shopId, 404);
 
         $this->intercompanyCustomer = GetPartnerIntercompanyCustomer::run($orgPartner, $this->shopId);
-        if ($this->intercompanyCustomer) {
-            $this->priceFactor = GetPartnerCustomerDiscount::run($this->intercompanyCustomer);
-        }
+        $this->priceFactor          = GetPartnerBuyingPriceFactor::run($orgPartner);
 
         $this->initialisation($organisation, $request);
 

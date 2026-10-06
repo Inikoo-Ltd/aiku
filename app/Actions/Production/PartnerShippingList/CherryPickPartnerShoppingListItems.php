@@ -15,6 +15,9 @@ use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
@@ -147,6 +150,13 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 ]);
             }
 
+            if ($seller->is_manufacturing_hub) {
+                $transaction->update([
+                    'discretionary_offer'       => GetPartnerBuyingPriceFactor::hubPartnerDiscount($seller),
+                    'discretionary_offer_label' => __('Intercompany partner discount'),
+                ]);
+            }
+
             $item->update([
                 'quantity' => $quantityPicked,
                 'state'          => ShoppingListItemStateEnum::ORDERED,
@@ -158,6 +168,10 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         }
 
         foreach ($orders as $order) {
+            if ($seller->is_manufacturing_hub) {
+                OrderHydrateDiscretionaryOffersData::run($order);
+                CalculateOrderDiscounts::run($order->refresh());
+            }
             if (!$order->at_gate_at) {
                 $order->update(['at_gate_at' => now()]);
             }
