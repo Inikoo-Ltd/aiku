@@ -12802,3 +12802,48 @@ test('whatsapp calls ring for staff with the calls position but not for chat age
         ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agent)['customer_service_shops'])->not->toContain($this->shop->id)
         ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($shopAdmin)['customer_service_shops'])->not->toContain($this->shop->id);
 });
+
+test('a customer chasing an unanswered email keeps their place in the queue', function () {
+    [, , $queueShop] = createOwnShop(__FILE__.':chase-keeps-place');
+
+    $emailSession = fn (array $messages) => tap(ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'channel'          => ChatChannelEnum::EMAIL,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $queueShop->id,
+        'ai_model_version' => 'default',
+    ]), function (ChatSession $session) use ($messages) {
+        foreach ($messages as [$senderType, $writtenAt]) {
+            ChatMessage::create([
+                'chat_session_id' => $session->id,
+                'message_type'    => ChatMessageTypeEnum::TEXT->value,
+                'sender_type'     => $senderType->value,
+                'message_text'    => 'Any update?',
+                'is_read'         => false,
+                'created_at'      => $writtenAt,
+                'updated_at'      => $writtenAt,
+            ]);
+        }
+    });
+
+    $chaser = $emailSession([
+        [ChatSenderTypeEnum::GUEST, now()->subHours(5)],
+        [ChatSenderTypeEnum::AGENT, now()->subHours(4)],
+        [ChatSenderTypeEnum::GUEST, now()->subHours(3)],
+        [ChatSenderTypeEnum::SYSTEM, now()->subHours(3)->addSecond()],
+        [ChatSenderTypeEnum::GUEST, now()->subMinutes(5)],
+    ]);
+    $patient = $emailSession([
+        [ChatSenderTypeEnum::GUEST, now()->subHours(2)],
+    ]);
+
+    $queue = collect(GetChatSessions::make()->handle([
+        'shop_id'  => $queueShop->id,
+        'statuses' => [ChatSessionStatusEnum::ACTIVE->value],
+    ])->items())->pluck('id')->intersect([$chaser->id, $patient->id])->values()->all();
+
+    expect($queue)->toBe([$chaser->id, $patient->id]);
+});
