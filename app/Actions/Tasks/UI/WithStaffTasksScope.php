@@ -82,6 +82,50 @@ trait WithStaffTasksScope
         return ['me' => __('Me'), 'unassigned' => __('Unassigned')] + $assignees;
     }
 
+    public const array DRILL_DOWN_FILTERS = ['assignee', 'involved', 'collaborator', 'requester', 'unassigned', 'has_assignee'];
+
+    /**
+     * Lists open on the viewer's own tasks unless a filter already says whose tasks to show.
+     */
+    protected function appliedAssigneeFilter(): string
+    {
+        $filters = (array) request()->input('filter', []);
+
+        if (array_key_exists('assignee', $filters)) {
+            return (string) $filters['assignee'] === '' ? 'all' : (string) $filters['assignee'];
+        }
+
+        return Arr::hasAny($filters, self::DRILL_DOWN_FILTERS) ? 'all' : 'me';
+    }
+
+    /**
+     * @return array{organisation: array<int, array{value: string, label: string}>, assignee: array<int, array{value: string, label: string}>, department: array<int, array{value: string, label: string}>}
+     */
+    protected function taskFilterOptions(Group|Organisation $parent, User $viewer): array
+    {
+        $asList = fn (array $options) => collect($options)->map(fn (string $label, string|int $value) => ['value' => (string) $value, 'label' => $label])->values()->all();
+
+        return [
+            'organisation' => $asList($this->organisationFilterOptions($viewer)),
+            'assignee'     => $asList(['all' => __('All')] + $this->assigneeFilterOptions($parent, $viewer)),
+            'department'   => $asList($this->departmentFilterOptions($parent)),
+        ];
+    }
+
+    /**
+     * @return array{organisation: string|null, assignee: string, department: string|null}
+     */
+    protected function appliedTaskFilters(): array
+    {
+        $filters = (array) request()->input('filter', []);
+
+        return [
+            'organisation' => Arr::get($filters, 'organisation'),
+            'assignee'     => $this->appliedAssigneeFilter(),
+            'department'   => Arr::get($filters, 'department'),
+        ];
+    }
+
     /**
      * @return array<string, string>
      */
@@ -96,7 +140,7 @@ trait WithStaffTasksScope
     protected function applyAssigneeFilter(Builder $query, User $viewer, mixed $value): Builder
     {
         return match ((string) $value) {
-            ''           => $query,
+            '', 'all'    => $query,
             'me'         => $query->where('staff_tasks.assignee_id', $viewer->id),
             'unassigned' => $query->whereNull('staff_tasks.assignee_id'),
             default      => $query->where('staff_tasks.assignee_id', (int) $value),

@@ -9,11 +9,12 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import draggable from "vuedraggable"
-import { Dialog, Textarea, Button, Select } from "primevue"
+import { Dialog, Textarea, Button } from "primevue"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import { useBoardDropZones } from "@/Composables/useBoardDropZones"
+import StaffTaskFilters from "@/Components/Tasks/StaffTaskFilters.vue"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
@@ -38,34 +39,9 @@ const props = defineProps<{
     showRoute: { name: string; parameters: string[] }
     createdIntervals: Record<string, string>
     createdInterval: string
-    taskFilterOptions: { organisation: Record<string, string>; assignee: Record<string, string>; department: Record<string, string> }
-    appliedTaskFilters: { organisation: string | null; assignee: string | null; department: string | null }
+    taskFilterOptions: Record<"organisation" | "assignee" | "department", { value: string; label: string }[]>
+    appliedTaskFilters: { organisation: string | null; assignee: string; department: string | null }
 }>()
-
-type TaskFilterKey = "organisation" | "assignee" | "department"
-
-const taskFilters: { key: TaskFilterKey; label: string; allLabel: string }[] = [
-    { key: "organisation", label: ctrans("Organisation"), allLabel: ctrans("Whole group") },
-    { key: "assignee", label: ctrans("Assignee"), allLabel: ctrans("All") },
-    { key: "department", label: ctrans("Department"), allLabel: ctrans("All") },
-]
-
-const taskFilterSelectOptions = (key: TaskFilterKey) =>
-    Object.entries(props.taskFilterOptions[key] ?? {}).map(([value, label]) => ({ value, label }))
-
-const applyTaskFilter = (key: TaskFilterKey, value: string | null) => {
-    const query: Record<string, any> = {}
-    new URLSearchParams(window.location.search).forEach((paramValue, paramKey) => {
-        if (!paramKey.startsWith("filter[")) query[paramKey] = paramValue
-    })
-
-    const filter = Object.fromEntries(
-        Object.entries({ ...props.appliedTaskFilters, [key]: value }).filter(([, filterValue]) => filterValue !== null && filterValue !== "")
-    )
-    if (key === "organisation") delete filter.assignee
-
-    router.get(window.location.pathname, Object.keys(filter).length ? { ...query, filter } : query, { preserveScroll: true })
-}
 
 const taskUrl = (task: { reference: string }) => route(props.showRoute.name, [...props.showRoute.parameters, task.reference])
 
@@ -331,23 +307,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
     <div class="min-w-0 p-4">
         <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
 
-        <div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm">
-            <template v-for="taskFilter in taskFilters" :key="taskFilter.key">
-                <div v-if="taskFilter.key !== 'organisation' || Object.keys(taskFilterOptions.organisation ?? {}).length > 1" class="flex items-center gap-1.5">
-                    <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ taskFilter.label }}</span>
-                    <Select
-                        :modelValue="appliedTaskFilters[taskFilter.key]"
-                        :options="taskFilterSelectOptions(taskFilter.key)"
-                        optionLabel="label"
-                        optionValue="value"
-                        :placeholder="taskFilter.allLabel"
-                        showClear
-                        :filter="Object.keys(taskFilterOptions[taskFilter.key] ?? {}).length > 8"
-                        size="small"
-                        class="min-w-[9rem]"
-                        @update:modelValue="(value) => applyTaskFilter(taskFilter.key, value)" />
-                </div>
-            </template>
+        <StaffTaskFilters :options="taskFilterOptions" :applied="appliedTaskFilters" class="mb-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5">
 
             <div v-for="key in ['priority_label'] as const" v-show="filterOptions[key].length" :key="key" class="flex flex-wrap items-center gap-1.5">
                 <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ filterLabels[key] }}</span>
@@ -366,7 +326,7 @@ const subtaskSummary = (task: any) => task.subtasks?.length
             </div>
 
             <button v-if="activeFilters" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="clearFilters">× {{ ctrans("Clear") }}</button>
-        </div>
+        </StaffTaskFilters>
 
         <div class="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
             <div class="flex w-max min-w-full gap-3">
