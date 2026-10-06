@@ -3037,6 +3037,52 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 });
 
+test('to produce board lists each artisan and their share of a split job order', function () {
+    $stocks   = createStocks($this->group);
+    $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'SPLIT-01', 'name' => 'Shared between artisans']);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    [$artisanA, $artisanB] = collect(range(1, 2))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    })->all();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $line     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 1000]);
+
+    actingAs($this->guest->getUser());
+    patch(route('grp.models.job-order-item.split', ['jobOrderItem' => $line->id]), ['assignments' => [
+        ['id' => $line->id, 'employee_id' => $artisanA->id, 'quantity' => 600],
+        ['employee_id' => $artisanB->id, 'quantity' => 400],
+    ]])->assertSessionHasNoErrors();
+
+    \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $orgStock->stock_id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 5,
+        'job_order_id'    => $jobOrder->id,
+    ]);
+
+    $card = collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn ($lane) => $lane['items'])
+        ->first(fn ($item) => data_get($item, 'job_order_id') === $jobOrder->id);
+
+    expect(collect(data_get($card, 'job_order_sub_jobs'))->map(fn ($subJob) => [$subJob['reference'], $subJob['artisan'], $subJob['quantity']])->all())->toBe([
+        [$jobOrder->reference.'-A', $artisanA->contact_name, 600.0],
+        [$jobOrder->reference.'-B', $artisanB->contact_name, 400.0],
+    ]);
+});
+
 test('to produce queue only shows lines with an artefact in this factory', function () {
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
