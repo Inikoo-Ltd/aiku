@@ -48,7 +48,7 @@ class GetRetinaB2BDashboardInsights
     use HasGrData;
     use WithCustomerPurchasableProduct;
 
-    private const int REGULAR_PRODUCTS = 20;
+    public const int REGULAR_PRODUCTS = 20;
 
     /**
      * ponytail: the order again picker lists the top spend products only, 99% of customers bought fewer.
@@ -73,6 +73,11 @@ class GetRetinaB2BDashboardInsights
      * ponytail: the co-purchase search is most of the time spent here and suggestions need not be live.
      */
     private const int RECOMMENDATIONS_CACHE_HOURS = 6;
+
+    /**
+     * ponytail: the lists are made weekly, two missed runs and the dashboard falls back to the live co-purchase search.
+     */
+    private const int STORED_SUGGESTIONS_MAX_AGE_DAYS = 15;
 
     protected Shop $shop;
 
@@ -103,7 +108,7 @@ class GetRetinaB2BDashboardInsights
         }
 
         [$recommendationsSource, $recommendations] = Cache::remember(
-            "retina_b2b_recommendations:v3:$customer->id",
+            self::recommendationsCacheKey($customer),
             now()->addHours(self::RECOMMENDATIONS_CACHE_HOURS),
             fn () => $this->getRecommendations($customer, $productSales)
         );
@@ -121,6 +126,11 @@ class GetRetinaB2BDashboardInsights
             'recommendations'        => $this->withCustomerRecommendationsData($customer, $recommendations, $basketTransactions),
             'recommendations_source' => $recommendationsSource,
         ];
+    }
+
+    public static function recommendationsCacheKey(Customer $customer): string
+    {
+        return "retina_b2b_recommendations:v4:$customer->id";
     }
 
     /**
@@ -232,7 +242,7 @@ class GetRetinaB2BDashboardInsights
     /**
      * Every product the customer bought since the given date (ever, when none), best spend first.
      */
-    private function getProductSales(Customer $customer, ?Carbon $since = null): Collection
+    public function getProductSales(Customer $customer, ?Carbon $since = null): Collection
     {
         return DB::table('orders')
             ->join('transactions', 'transactions.order_id', 'orders.id')
@@ -443,6 +453,10 @@ class GetRetinaB2BDashboardInsights
      */
     private function getRecommendations(Customer $customer, Collection $productSales): array
     {
+        if ($stored = $this->getStoredSuggestions($customer)) {
+            return $stored;
+        }
+
         if ($productSales->isEmpty()) {
             return ['shop_best_sellers', $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($this->getShopBestSellers($customer))->resolve())];
         }
@@ -458,6 +472,53 @@ class GetRetinaB2BDashboardInsights
         );
 
         return ['bought_together', $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($products)->resolve())];
+    }
+
+    /**
+     * The customer's latest weekly list (GenerateCustomerProductSuggestions), with the products no longer for sale left out.
+     *
+     * @return array{0: string, 1: array}|null
+     */
+    private function getStoredSuggestions(Customer $customer): ?array
+    {
+        $generatedAt = DB::table('customer_product_suggestions')
+            ->where('customer_id', $customer->id)
+            ->where('generated_at', '>=', now()->subDays(self::STORED_SUGGESTIONS_MAX_AGE_DAYS))
+            ->max('generated_at');
+
+        if (!$generatedAt) {
+            return null;
+        }
+
+        $suggestions = DB::table('customer_product_suggestions')
+            ->where('customer_id', $customer->id)
+            ->where('generated_at', $generatedAt)
+            ->get(['product_id', 'position', 'reason', 'model'])
+            ->keyBy('product_id');
+
+        $products = Product::query()
+            ->whereIn('products.id', $suggestions->keys())
+            ->visibleToCustomer($customer->id)
+            ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
+            ->where('products.state', ProductStateEnum::ACTIVE->value)
+            ->where('products.has_live_webpage', true)
+            ->where('products.available_quantity', '>', 0)
+            ->where('products.price', '>', 0)
+            ->select('products.*', 'webpages.canonical_url', 'products.offers_data as product_offers_data')
+            ->get()
+            ->sortBy(fn (Product $product) => $suggestions[$product->id]->position)
+            ->values();
+
+        if ($products->isEmpty()) {
+            return null;
+        }
+
+        $recommendations = array_map(
+            fn (array $product) => $product + ['suggestion_reason' => $suggestions[$product['id']]->reason],
+            $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($products)->resolve())
+        );
+
+        return [$suggestions->first()->model ? 'ai_suggestions' : 'bought_together', $recommendations];
     }
 
     /**
