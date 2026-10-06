@@ -81,6 +81,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $is_fresh
+ * @property bool $is_made_in_house
  * @property bool $is_excluded_from_auto_ordering
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
@@ -197,6 +198,7 @@ class OrgStock extends Model implements Auditable, HasMedia
         'state',
         'is_on_demand',
         'is_fresh',
+        'is_made_in_house',
         'is_excluded_from_auto_ordering',
         'packed_in',
         'barcode',

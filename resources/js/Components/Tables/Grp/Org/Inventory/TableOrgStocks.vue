@@ -409,6 +409,11 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 												class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700">
 												On Demand
 											</span>
+                <span v-if="stock?.is_missing_artefact"
+                    class="text-[10px] px-1.5 rounded bg-amber-100 text-amber-700 whitespace-nowrap"
+                    v-tooltip="ctrans('Made in-house but no artefact (recipe) is attached')">
+                    {{ ctrans('No artefact') }}
+                </span>
             </div>
         </template>
         <template #cell(family_code)="{ item: stock }">
