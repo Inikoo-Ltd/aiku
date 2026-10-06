@@ -292,6 +292,10 @@ class Product extends Model implements Auditable, HasMedia
             if ($product->wasChanged(['is_for_sale', 'is_variant_leader', 'is_minion_variant', 'webpage_id'])) {
                 HydrateIsInWebsite::run($product);
             }
+
+            if ($product->wasChanged(['code', 'name', 'is_for_sale', 'variant_id', 'is_variant_leader'])) {
+                $product->reindexVariantLeaders();
+            }
         });
     }
 
@@ -371,6 +375,8 @@ class Product extends Model implements Auditable, HasMedia
                 'is_in_website',
                 'is_on_demand',
                 'barcode',
+                'variant_id',
+                'is_variant_leader',
                 'web_images',
                 'created_at'
             ]);
@@ -390,10 +396,44 @@ class Product extends Model implements Auditable, HasMedia
             'is_for_sale'       => $this->is_for_sale,
             'is_in_website'     => (bool) $this->is_in_website,
             'barcode'           => (string) $this->barcode,
+            'variant_codes'     => $this->searchableVariantCodes(),
             'is_on_demand'      => $this->is_on_demand,
             'image'             => json_encode(Arr::get($this->web_images, 'main.gallery')),
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
+    }
+
+    /**
+     * The leader of a variant group carries the codes and names of its other options, so searching
+     * any option's code finds the leader page those options are sold from.
+     */
+    public function reindexVariantLeaders(): void
+    {
+        $variantIds = array_filter(array_unique([$this->variant_id, $this->getOriginal('variant_id')]));
+        if (!$variantIds) {
+            return;
+        }
+
+        Product::whereIn('variant_id', $variantIds)
+            ->where('is_variant_leader', true)
+            ->where('id', '!=', $this->id)
+            ->get()
+            ->searchable();
+    }
+
+    public function searchableVariantCodes(): string
+    {
+        if (!$this->is_variant_leader || !$this->variant_id) {
+            return '';
+        }
+
+        return Product::where('variant_id', $this->variant_id)
+            ->where('id', '!=', $this->id)
+            ->where('is_for_sale', true)
+            ->orderBy('code')
+            ->get(['code', 'name'])
+            ->map(fn (Product $option) => trim($option->code.' '.$option->name))
+            ->implode(' | ');
     }
 
     public function generateTags(): array

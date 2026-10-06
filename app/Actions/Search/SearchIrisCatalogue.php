@@ -32,7 +32,7 @@ class SearchIrisCatalogue extends IrisAction
             'orders_customer_id' => $customerId,
         ]);
 
-        data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));
+        data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true, query: $query));
         data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class, largeImage: true));
         data_set($results, 'results.collections', $this->enrichItems(Arr::get($results, 'results.collections', []), Collection::class));
 
