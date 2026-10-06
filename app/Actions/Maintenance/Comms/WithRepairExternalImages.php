@@ -79,7 +79,7 @@ trait WithRepairExternalImages
             }
 
             $url = preg_match('~^url\([\'"]?(.+?)[\'"]?\)$~', $value, $match) ? $match[1] : $value;
-            if (!Str::startsWith($url, ['http://', 'https://']) || $this->isAikuUrl($url)) {
+            if (!Str::startsWith($url, ['http://', 'https://']) || $this->isAikuUrl($url) || preg_match(RepairEmailSocialIcons::BEEFREE_ICON_PATTERN, $url)) {
                 return;
             }
 

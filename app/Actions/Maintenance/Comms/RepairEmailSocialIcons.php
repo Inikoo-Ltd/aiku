@@ -16,7 +16,7 @@ class RepairEmailSocialIcons
 
     private const string BEEFREE_ICON_PATH = '/public/resources/social-networks-icon-sets/';
 
-    private const string BEEFREE_ICON_PATTERN = '~^https?://[^/]+/public/resources/social-networks-icon-sets/([^/]+)/([^/@]+)@2x\.png$~';
+    public const string BEEFREE_ICON_PATTERN = '~^https?://[^/]+/public/resources/social-networks-icon-sets/([^/]+)/([^/@]+)@2x\.png$~';
 
     /**
      * @var array<string, string|null> beefree icon url => own icon url, null when the icon is not in our seeded set
