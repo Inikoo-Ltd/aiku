@@ -57,23 +57,26 @@ class GetOrgStocksStockDeliveries
             ])
             ->selectRaw('sum(stock_delivery_items.unit_quantity) as quantity')
             ->selectRaw('sum(stock_delivery_items.unit_quantity_placed) as quantity_placed')
+            ->selectRaw('sum(greatest(stock_delivery_items.unit_quantity - stock_delivery_items.unit_quantity_placed, 0)) as quantity_to_place')
             ->get()
             ->groupBy('org_stock_id');
 
         $labels = StockDeliveryStateEnum::labels();
 
         return $lines->map(function (Collection $deliveries) use ($labels) {
-            $lastReceived = $deliveries->where('state', StockDeliveryStateEnum::PLACED->value)->sortByDesc('received_at')->first();
+            $lastReceived = $deliveries->filter(fn ($delivery) => $delivery->state === StockDeliveryStateEnum::PLACED->value || ($delivery->received_at && $delivery->quantity_placed > 0))
+                ->sortByDesc('received_at')->first();
 
             return [
                 'coming'        => $deliveries->where('state', '!=', StockDeliveryStateEnum::PLACED->value)
+                    ->where('quantity_to_place', '>', 0)
                     ->sortBy('reference')
                     ->map(fn ($delivery) => [
                         'slug'        => $delivery->slug,
                         'reference'   => $delivery->reference,
                         'state'       => $delivery->state,
                         'state_label' => $labels[$delivery->state] ?? $delivery->state,
-                        'quantity'    => (float) $delivery->quantity,
+                        'quantity'    => (float) $delivery->quantity_to_place,
                     ])->values(),
                 'last_received' => $lastReceived ? [
                     'slug'        => $lastReceived->slug,
