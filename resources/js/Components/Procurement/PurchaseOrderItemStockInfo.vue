@@ -25,6 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const locale = useLocaleStore()
+const routeParams = route().params
 
 const MAX_DAYS = 730
 
@@ -343,11 +344,11 @@ const stockTooltip = computed(() => {
 })
 
 function stockDeliveryRoute(slug: string) {
-	return route("grp.org.procurement.stock_deliveries.show", [route().params.organisation, slug])
+	return route("grp.org.procurement.stock_deliveries.show", [routeParams.organisation, slug])
 }
 
 function purchaseOrderRoute(slug: string) {
-	return route("grp.org.procurement.purchase_orders.show", [route().params.organisation, slug])
+	return route("grp.org.procurement.purchase_orders.show", [routeParams.organisation, slug])
 }
 </script>
 
