@@ -10,6 +10,7 @@ namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -190,13 +191,30 @@ class CherryPickPartnerShoppingListItems extends OrgAction
 
     public function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer
     {
+        $buyer        = $orgPartner->organisation;
+        $buyerAddress = $buyer->address?->only([
+            'address_line_1',
+            'address_line_2',
+            'sorting_code',
+            'postal_code',
+            'locality',
+            'dependent_locality',
+            'administrative_area',
+            'country_id',
+        ]);
+
         $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
         if ($customer) {
+            if (!$customer->address_id && $buyerAddress) {
+                $customer = UpdateCustomer::make()->action($customer, ['contact_address' => $buyerAddress], strict: false);
+                if (!$customer->delivery_address_id) {
+                    $customer->updateQuietly(['delivery_address_id' => $customer->address_id]);
+                }
+            }
+
             return $customer;
         }
 
-        $buyer        = $orgPartner->organisation;
-        $buyerAddress = $buyer->address;
         if (!$buyerAddress) {
             return null;
         }
@@ -204,16 +222,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         $customer = StoreCustomer::make()->action($shop, [
             'company_name'    => $buyer->name,
             'contact_name'    => $buyer->name,
-            'contact_address' => $buyerAddress->only([
-                'address_line_1',
-                'address_line_2',
-                'sorting_code',
-                'postal_code',
-                'locality',
-                'dependent_locality',
-                'administrative_area',
-                'country_id',
-            ]),
+            'contact_address' => $buyerAddress,
         ]);
 
         $orgPartner->update([

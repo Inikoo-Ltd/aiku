@@ -146,6 +146,18 @@ class SendPartnerPurchaseOrderToSeller
         return $order->refresh();
     }
 
+    /**
+     * A purchase order the partner never got goes back to in process, so staff see it was not sent
+     * and Submit carries on from the partner order already started, instead of it sitting as submitted.
+     */
+    public function jobFailed(\Throwable $e, PurchaseOrder $purchaseOrder): void
+    {
+        $purchaseOrder->refresh();
+        if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+            UpdatePurchaseOrderStateToInProcess::make()->action($purchaseOrder);
+        }
+    }
+
     private function addLines(PurchaseOrder $purchaseOrder, OrgPartner $orgPartner, Shop $shop, Order $order): void
     {
         DB::transaction(function () use ($purchaseOrder, $orgPartner, $shop, $order) {

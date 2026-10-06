@@ -5661,6 +5661,26 @@ describe('partner shopping list', function () {
             ->and(data_get($this->orgPartner->refresh()->data, "intercompany_customers.{$this->sellerShop->id}"))->toBe($resolved->id);
     });
 
+    test('intercompany customer with no address takes the buying organisation address', function () {
+        $originalData = $this->orgPartner->data;
+        $customer     = StoreCustomer::make()->action($this->sellerShop, [
+            'company_name' => $this->orgPartner->organisation->name,
+            'contact_name' => 'Trade',
+        ], strict: false);
+        $this->orgPartner->update(['data' => ['intercompany_customers' => [$this->sellerShop->id => $customer->id]]]);
+
+        expect($customer->address_id)->toBeNull();
+
+        $resolved = CherryPickPartnerShoppingListItems::make()->resolveIntercompanyCustomer($this->orgPartner->refresh(), $this->sellerShop);
+
+        expect($resolved->id)->toBe($customer->id)
+            ->and($resolved->address->country_id)->toBe($this->orgPartner->organisation->address->country_id)
+            ->and($resolved->address->postal_code)->toBe($this->orgPartner->organisation->address->postal_code)
+            ->and($resolved->delivery_address_id)->toBe($resolved->address_id);
+
+        $this->orgPartner->update(['data' => $originalData]);
+    });
+
     test('exclusive products for the intercompany customer appear in partner browse query', function () {
         $customer = GetPartnerIntercompanyCustomer::run($this->orgPartner, $this->sellerShop->id)
             ?? StoreCustomer::make()->action($this->sellerShop, [
