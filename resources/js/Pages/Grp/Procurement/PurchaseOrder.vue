@@ -25,6 +25,10 @@ import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatch
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Checkbox from "primevue/checkbox"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
+import Image from "@common/Components/Image.vue"
 import RadioButton from "primevue/radiobutton"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
@@ -44,7 +48,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -102,6 +106,7 @@ const props = defineProps < {
         code: string | null
         name: string | null
         quantity_ordered: number | string
+        image_thumbnail: object | null
     }[]
     tabs: {
         current: string
@@ -367,6 +372,19 @@ watch(
 onUnmounted(stopPartnerOrderPoll)
 
 const selectedDeliveryItemIds = ref<number[]>([])
+const deliveryItemsSearch = ref("")
+
+const filteredDeliveryItems = computed(() => {
+	const search = deliveryItemsSearch.value.trim().toLowerCase()
+
+	if (!search) {
+		return props.delivery_items
+	}
+
+	return props.delivery_items.filter((item) =>
+		(item.code ?? "").toLowerCase().includes(search) || (item.name ?? "").toLowerCase().includes(search)
+	)
+})
 
 const formatDate = (date: Date | null): string | null => {
 	if (!date) {
@@ -568,6 +586,7 @@ const confirmUndoConfirmPurchaseOrder = (action: any) => {
 const openDeliveryScopeModal = (action: any) => {
 	newStockDeliveryAction.value = action
 	selectedDeliveryItemIds.value = []
+	deliveryItemsSearch.value = ""
 	deliveryScopeModalOpen.value = true
 }
 
@@ -592,10 +611,10 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 			deliveryItemsModalOpen.value = false
 		},
 		onFinish: () => { newStockDeliveryLoading.value = false },
-		onError: () => {
+		onError: (errors) => {
 			notify({
-				title: ctrans("Something went wrong"),
-				text: ctrans("Failed to create delivery"),
+				title: ctrans("Failed to create delivery"),
+				text: Object.values(errors)[0] || ctrans("Something went wrong"),
 				type: "error",
 			})
 		},
@@ -738,7 +757,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 
 		<template #button-new-stock-delivery="{ action }">
+			<span v-if="action.disabled_reason" v-tooltip="action.disabled_reason" class="inline-flex cursor-not-allowed items-center gap-2">
+				<Button
+					:style="action.style"
+					:label="action.label"
+					:icon="action.icon"
+					disabled
+					class="pointer-events-none"
+				/>
+			</span>
 			<Button
+				v-else
 				:style="action.style"
 				:label="action.label"
 				:icon="action.icon"
@@ -1203,13 +1232,23 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
+		<IconField class="mb-3">
+			<InputIcon>
+				<FontAwesomeIcon :icon="faSearch" fixed-width aria-hidden="true" />
+			</InputIcon>
+			<InputText v-model="deliveryItemsSearch" class="w-full" :placeholder="ctrans('Search code or name')" />
+		</IconField>
+
 		<div class="flex max-h-[60vh] flex-col divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200">
 			<label
-				v-for="item in delivery_items"
+				v-for="item in filteredDeliveryItems"
 				:key="item.id"
 				class="flex cursor-pointer items-center gap-3 p-3 hover:bg-gray-50"
 			>
 				<Checkbox v-model="selectedDeliveryItemIds" :value="item.id" />
+				<div class="h-12 w-12 flex-none overflow-hidden rounded border border-gray-100">
+					<Image :src="item.image_thumbnail" imageCover class="h-12 w-12" />
+				</div>
 				<span class="min-w-0 flex-1">
 					<span class="block font-medium text-gray-800">{{ item.code || ctrans("No code") }}</span>
 					<span class="block truncate text-sm text-gray-500">{{ item.name }}</span>
@@ -1218,6 +1257,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					{{ ctrans("Quantity") }}: {{ locale.number(Number(item.quantity_ordered)) }}
 				</span>
 			</label>
+			<p v-if="filteredDeliveryItems.length === 0" class="p-4 text-center text-sm text-gray-500">
+				{{ ctrans("No items match your search") }}
+			</p>
 		</div>
 
 		<template #footer>
@@ -1227,7 +1269,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				@click="deliveryItemsModalOpen = false; deliveryScopeModalOpen = true"
 			/>
 			<Button
-				:label="ctrans('Create delivery')"
+				:label="selectedDeliveryItemIds.length === 1
+					? ctrans('Create delivery (1 SKO)')
+					: ctrans('Create delivery (:count SKOs)', { count: selectedDeliveryItemIds.length })"
 				type="create"
 				:loading="newStockDeliveryLoading"
 				:disabled="selectedDeliveryItemIds.length === 0"

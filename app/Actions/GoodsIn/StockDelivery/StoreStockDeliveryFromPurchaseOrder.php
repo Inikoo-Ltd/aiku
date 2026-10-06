@@ -46,9 +46,10 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
         }
 
-        if ($this->partnerCreatesItsOwnDeliveries($purchaseOrder)) {
+        $partnerDeliveryBlockedReason = self::partnerDeliveryBlockedReason($purchaseOrder);
+        if ($partnerDeliveryBlockedReason) {
             throw ValidationException::withMessages([
-                'purchase_order_transaction_ids' => __(':partner deliveries are created automatically when :partner dispatches the order, book the goods in on it in Procurement > Partners', ['partner' => $purchaseOrder->parent->partner->name]),
+                'purchase_order_transaction_ids' => $partnerDeliveryBlockedReason,
             ]);
         }
 
@@ -212,7 +213,16 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         return new StockDeliveryResource($stockDelivery);
     }
 
-    private function partnerCreatesItsOwnDeliveries(PurchaseOrder $purchaseOrder): bool
+    public static function partnerDeliveryBlockedReason(PurchaseOrder $purchaseOrder): ?string
+    {
+        if (!self::partnerCreatesItsOwnDeliveries($purchaseOrder)) {
+            return null;
+        }
+
+        return __(':partner deliveries are created automatically when :partner dispatches the order, book the goods in on it in Procurement > Partners', ['partner' => $purchaseOrder->parent->partner->name]);
+    }
+
+    private static function partnerCreatesItsOwnDeliveries(PurchaseOrder $purchaseOrder): bool
     {
         if (!$purchaseOrder->parent instanceof OrgPartner) {
             return false;
