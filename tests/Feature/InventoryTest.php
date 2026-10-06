@@ -263,14 +263,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(11);
+        ->and($warehouse->roles()->count())->toBe(13);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(11);
+    expect($warehouse->roles()->count())->toBe(13);
 });
 
 
@@ -3212,7 +3212,16 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
     $held   = $stocks[1];
 
     [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
-    createOrgStocks($this->organisation, [$held]);
+    [$heldOrgStock] = createOrgStocks($this->organisation, [$held]);
+
+    $supplier            = StoreSupplier::make()->action($group, Supplier::factory()->definition());
+    StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $empty->id]));
+    $orgSupplier         = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+        ?? StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $purchaseOrder       = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $openTransaction     = StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $emptyOrgStock, PurchaseOrderTransaction::factory()->definition());
+    $openStockDelivery   = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'SD-MERGE-'.uniqid(), 'date' => now()->toDateString()], strict: false);
+    $openDeliveryItem    = \App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem::make()->action($openStockDelivery, null, $emptyOrgStock, ['unit_quantity' => 30], strict: false);
 
     // The merge only retires org stocks holding nothing, and the fixture stock is shared with earlier tests
     DB::table('location_org_stocks')->where('org_stock_id', $emptyOrgStock->id)->update(['quantity' => 0]);
@@ -3231,7 +3240,9 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
         ->and($emptyOrgStock->refresh()->state)->toBe(\App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED)
         ->and($held->refresh()->code)->toBe('ArtTT-MERGE')
         ->and($held->slug)->toBe('arttt-merge')
-        ->and($empty->refresh()->slug)->not->toBe('arttt-merge');
+        ->and($empty->refresh()->slug)->not->toBe('arttt-merge')
+        ->and($openTransaction->refresh()->org_stock_id)->toBe($heldOrgStock->id)
+        ->and($openDeliveryItem->refresh()->org_stock_id)->toBe($heldOrgStock->id);
 });
 
 describe('product available quantity resync', function () {

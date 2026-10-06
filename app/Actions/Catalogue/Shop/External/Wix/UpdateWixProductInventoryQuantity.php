@@ -21,6 +21,10 @@ class UpdateWixProductInventoryQuantity extends OrgAction
 
     public function handle(Product $product): void
     {
+        if(! app()->isProduction()) {
+            return;
+        }
+
         if (!$product->marketplace_id || !$product->marketplace_second_id) {
             return;
         }

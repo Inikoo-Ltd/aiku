@@ -925,6 +925,7 @@ class UpdateShop extends OrgAction
             ],
 
             'name'                                                    => ['sometimes', 'required', 'string', 'max:255'],
+            'short_name'                                              => ['sometimes', 'nullable', 'string', 'max:32'],
             'code'                                                    => [
                 'sometimes',
                 'required',

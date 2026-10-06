@@ -2,7 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpsertStockDeliveryItemPlaced extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     private StockDeliveryItem $stockDeliveryItem;
 
     public function rules(): array

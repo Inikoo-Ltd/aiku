@@ -8,7 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Validation\Rule;
@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemAsPlaced extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
         $remaining = ((float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed) / $stockDeliveryItem->unitsPerSko();

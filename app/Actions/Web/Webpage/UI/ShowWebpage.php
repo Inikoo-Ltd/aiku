@@ -21,6 +21,7 @@ use App\Actions\Web\Website\GetCruxReport;
 use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\GetWebpageSeo;
+use App\Actions\Web\Webpage\GetWebpageStructuredDataSource;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -394,6 +395,10 @@ class ShowWebpage extends OrgAction
                 'seo' => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => GetWebpageSeo::run($webpage)
                     : Inertia::optional(fn () => GetWebpageSeo::run($webpage)),
+
+                'structured_data_source' => $this->tab == WebpageTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => GetWebpageStructuredDataSource::run($webpage), 'structured_data_source')
+                    : null,
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))
