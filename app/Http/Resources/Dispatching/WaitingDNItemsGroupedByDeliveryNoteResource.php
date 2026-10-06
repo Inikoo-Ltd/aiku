@@ -62,7 +62,6 @@ class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
             'shop_engine'                       => $this->shop_engine,
             'organisation_slug'                 => $this->organisation_slug,
             'opposite_waiting_count'            => (int) $this->opposite_waiting_count,
-            'notes'                             => $this->notes,
             'items'                             => $deliveryNote
                 ? collect(WaitingDNItemsGroupedByDeliveryNoteForItemsResource::collection(
                     IndexDeliveryNoteItemsStateHandling::run(
