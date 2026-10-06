@@ -37,6 +37,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
+use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
@@ -220,6 +221,7 @@ Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.product
 Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNotForSaleInShop::class)->name('shop.products_including_not_for_sale');
 
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
+Route::get('shop/{shop}/dynamic-block-email-templates', GetDynamicBlockEmailTemplates::class)->name('shop.dynamic_block_email_templates');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 
 

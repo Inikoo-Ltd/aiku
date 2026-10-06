@@ -57,8 +57,9 @@ class IndexMailshotTemplates extends OrgAction
                 'email_templates.state',
                 'email_templates.created_at',
                 'email_templates.updated_at',
-                'email_templates.compiled_layout'
+                'email_templates.compiled_layout',
             ])
+            ->selectRaw("coalesce(email_templates.data->>'dynamic_block', 'false') = 'true' as is_dynamic_block")
             ->allowedSorts(['state', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
