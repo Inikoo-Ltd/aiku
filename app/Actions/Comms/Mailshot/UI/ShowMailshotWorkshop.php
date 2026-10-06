@@ -193,7 +193,7 @@ class ShowMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'journey' => $this->getMailshotJourney($mailshot, 'compose'),
-                'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
+                'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && !$request->boolean('blank') && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
                 'mailshot' => [
                     'subject'      => $mailshot->subject,
                     'name'         => $mailshot->name,

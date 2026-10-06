@@ -8,7 +8,7 @@ import {
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck,
+    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -19,6 +19,8 @@ import EmailWorkshopSettings from './EmailWorkshopSettings.vue'
 import EmailWorkshopInlineEditor from './EmailWorkshopInlineEditor.vue'
 import EmailWorkshopTableEditor from './EmailWorkshopTableEditor.vue'
 import EmailWorkshopPlaceholder from './EmailWorkshopPlaceholder.vue'
+import WorkshopShortcutsDialog from '@/Components/Workshop/WorkshopShortcutsDialog.vue'
+import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/Composables/useWorkshopShortcuts'
 import { ctrans } from '@/Composables/useTrans'
 import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
@@ -32,7 +34,7 @@ library.add(
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck,
+    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard,
 )
 
 const props = withDefaults(defineProps<{
@@ -375,31 +377,6 @@ const applyHistory = async (index: number) => {
 const undo = () => applyHistory(historyIndex.value - 1)
 const redo = () => applyHistory(historyIndex.value + 1)
 
-const isTypingTarget = (target: EventTarget | null): boolean => {
-    const element = target as HTMLElement | null
-    return !!element && (['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) || element.isContentEditable)
-}
-
-const onKeydown = (event: KeyboardEvent) => {
-    if (!(event.ctrlKey || event.metaKey)) {
-        return
-    }
-    if (event.key.toLowerCase() === 's') {
-        event.preventDefault()
-        saveDraftNow()
-        return
-    }
-    if (event.key.toLowerCase() !== 'z' || isTypingTarget(event.target)) {
-        return
-    }
-    event.preventDefault()
-    if (event.shiftKey) {
-        redo()
-    } else {
-        undo()
-    }
-}
-
 const exportFiles = () => ({
     jsonFile: JSON.stringify(withDerivedHtml(email.value)),
     htmlFile: renderEmailHtml(email.value),
@@ -481,6 +458,75 @@ const saveDraftNow = () => {
     }
 }
 
+const isShortcutsDialogVisible = ref(false)
+
+const moveSelectedModule = (direction: -1 | 1) => {
+    const location = findModuleLocation(selectedModuleUuid.value)
+    if (!location) {
+        return
+    }
+    const target = location.index + direction
+    if (target < 0 || target >= location.column.modules.length) {
+        return
+    }
+    location.column.modules.splice(target, 0, location.column.modules.splice(location.index, 1)[0])
+}
+
+const hasSelection = () => !!selectedModule.value || !!selectedRow.value
+
+const shortcuts: WorkshopShortcut[] = [
+    {
+        id: 'save', group: 'Editor', label: 'Save and publish', combos: [['Mod', 'S']],
+        run: () => save(), allowWhileTyping: true,
+    },
+    {
+        id: 'undo', group: 'History', label: 'Undo', combos: [['Mod', 'Z']],
+        run: () => undo(), isAvailable: () => canUndo.value,
+    },
+    {
+        id: 'redo', group: 'History', label: 'Redo', combos: [['Mod', 'Shift', 'Z'], ['Mod', 'Y']],
+        run: () => redo(), isAvailable: () => canRedo.value,
+    },
+    {
+        id: 'duplicate', group: 'Blocks', label: 'Duplicate selected block or row', combos: [['Mod', 'D']],
+        run: () => duplicateSelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value,
+    },
+    {
+        id: 'delete', group: 'Blocks', label: 'Delete selected block or row', combos: [['Delete'], ['Backspace']],
+        run: () => deleteSelection(), isAvailable: () => hasSelection() && !isSelectionLocked.value,
+    },
+    {
+        id: 'move-up', group: 'Blocks', label: 'Move selected block up', combos: [['Alt', 'ArrowUp']],
+        run: () => moveSelectedModule(-1), isAvailable: () => !!selectedModule.value,
+    },
+    {
+        id: 'move-down', group: 'Blocks', label: 'Move selected block down', combos: [['Alt', 'ArrowDown']],
+        run: () => moveSelectedModule(1), isAvailable: () => !!selectedModule.value,
+    },
+    {
+        id: 'deselect', group: 'Blocks', label: 'Deselect', combos: [['Escape']],
+        run: () => clearSelection(), isAvailable: hasSelection,
+    },
+    {
+        id: 'device', group: 'View', label: 'Switch between desktop and mobile', combos: [['Mod', 'Shift', 'M']],
+        run: () => device.value = device.value === 'desktop' ? 'mobile' : 'desktop',
+    },
+    {
+        id: 'structure', group: 'View', label: 'Show or hide structure', combos: [['Mod', 'Shift', 'O']],
+        run: () => isStructureVisible.value = !isStructureVisible.value,
+    },
+    {
+        id: 'shortcuts', group: 'View', label: 'Show keyboard shortcuts', combos: [['?'], ['Mod', '/']],
+        run: () => isShortcutsDialogVisible.value = true,
+    },
+]
+
+const publishShortcutLabel = formatShortcutCombo(['Mod', 'S'])
+
+const isShortcutBlocked = () => isShortcutsDialogVisible.value || !!document.querySelector('.p-dialog-mask')
+
+const { listenTo: listenForShortcuts } = useWorkshopShortcuts(shortcuts, isShortcutBlocked)
+
 const onBeforeUnload = (event: BeforeUnloadEvent) => {
     if (isDirty.value || isAutoSaveRunning) {
         event.preventDefault()
@@ -538,7 +584,7 @@ onMounted(async () => {
     if (wrapperRef.value) {
         wrapperTop.value = Math.round(wrapperRef.value.getBoundingClientRect().top)
     }
-    window.addEventListener('keydown', onKeydown)
+    listenForShortcuts(window)
     window.addEventListener('beforeunload', onBeforeUnload)
     emits('ready', true)
 })
@@ -551,7 +597,6 @@ onBeforeUnmount(() => {
     if (textSyncTimer) {
         clearTimeout(textSyncTimer)
     }
-    window.removeEventListener('keydown', onKeydown)
     window.removeEventListener('beforeunload', onBeforeUnload)
 })
 
@@ -607,7 +652,7 @@ defineExpose({
                         </template>
                         <template v-else-if="autoSaveStatus === 'pending' || isDirty">
                             <span class="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                            <span class="text-gray-500" v-tooltip="ctrans('Saved automatically in a few seconds, or press Ctrl+S')">{{ ctrans('Unsaved changes') }}</span>
+                            <span class="text-gray-500" v-tooltip="ctrans('Saved automatically in a few seconds')">{{ ctrans('Unsaved changes') }}</span>
                         </template>
                         <template v-else-if="autoSaveStatus === 'saved'">
                             <FontAwesomeIcon icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
@@ -618,6 +663,11 @@ defineExpose({
                 </div>
 
                 <div class="flex items-center gap-x-1">
+                     <button type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-600 hover:bg-gray-100"
+                        v-tooltip="`${ctrans('Keyboard shortcuts')} (?)`" :aria-label="ctrans('Keyboard shortcuts')" @click="isShortcutsDialogVisible = true">
+                        <FontAwesomeIcon icon="fal fa-keyboard" fixed-width aria-hidden="true" />
+                    </button>
+                    <span class="mx-1 h-5 w-px bg-gray-200" />
                     <slot name="toolbar" />
                     <button type="button" class="flex h-8 items-center gap-x-1.5 rounded px-3 text-[13px] text-gray-700 hover:bg-gray-100" @click="sendTest">
                         <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
@@ -626,9 +676,11 @@ defineExpose({
                     <button type="button" class="h-8 rounded border border-gray-300 px-3 text-[13px] text-gray-700 hover:bg-gray-50" @click="saveAsTemplate">
                         {{ ctrans('Save as template') }}
                     </button>
-                    <button type="button" class="h-8 rounded bg-[var(--theme-color-4)] px-5 text-[13px] font-medium text-[var(--theme-color-5)] hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]" @click="save">
-                        {{ ctrans('Save') }}
-                    </button>
+                 
+                    <!-- <span class="hidden items-center gap-x-1.5 text-xs text-gray-500 lg:flex" v-tooltip="ctrans('Saves and publishes the email. Drafts are saved automatically.')">
+                        {{ ctrans('Publish') }}
+                        <kbd class="rounded border border-b-2 border-gray-200 bg-gray-50 px-1.5 py-0.5 font-sans text-[11px] leading-none text-gray-600">{{ publishShortcutLabel }}</kbd>
+                    </span> -->
                 </div>
             </div>
 
@@ -844,6 +896,8 @@ defineExpose({
                 </div>
             </div>
         </Dialog>
+
+        <WorkshopShortcutsDialog v-model:visible="isShortcutsDialogVisible" :shortcuts="shortcuts" />
     </div>
 </template>
 

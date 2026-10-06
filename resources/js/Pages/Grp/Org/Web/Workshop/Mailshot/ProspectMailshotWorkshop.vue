@@ -402,7 +402,7 @@ onMounted(() => {
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-3xl mb-3" fixed-width />
             <h2 class="text-lg font-semibold mb-2">{{ ctrans('Your email is not saved yet') }}</h2>
             <p class="text-gray-600 mb-4">
-                {{ ctrans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
+                {{ ctrans('Press Ctrl+S (⌘S on Mac) in the editor to publish your email, otherwise it cannot be sent.') }}
             </p>
             <div class="flex justify-center gap-x-2">
                 <Button type="tertiary" :label="ctrans('Review & send anyway')" @click="goToReviewAnyway" />

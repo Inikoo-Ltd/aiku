@@ -9,10 +9,8 @@ import {
     Legend,
     ArcElement,
 } from "chart.js";
-import Modal from "@/Components/Utils/Modal.vue"
-import { faExpand } from "@fal";
-import ScreenView from "@/Components/ScreenView.vue"
-import { setIframeView } from "@/Composables/Workshop"
+import Dialog from "primevue/dialog"
+import { faExpand, faDesktop, faMobile } from "@fal";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -21,17 +19,15 @@ import {
     faEnvelopeOpen, faHandPointer, faUserSlash, faPaperPlane, faEyeSlash,
     faSkull, faDungeon, faExclamationTriangle
 } from '@fal';
-import { trans } from 'laravel-vue-i18n';
-import { Link, router } from "@inertiajs/vue3"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import { ctrans } from '@/Composables/useTrans'
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
-import EmailTemplateCarousel from "@/Components/EmailTemplateCarousel.vue"
+import MailshotGettingStarted from "./MailshotGettingStarted.vue"
 import { routeType } from "@/types/route";
 
 library.add(
     faUser, faEnvelope, faSeedling, faShare, faInboxOut, faCheck,
     faEnvelopeOpen, faHandPointer, faUserSlash, faPaperPlane, faEyeSlash,
-    faSkull, faDungeon, faExclamationTriangle
+    faSkull, faDungeon, faExclamationTriangle, faDesktop, faMobile
 );
 ChartJS.register(Title, Tooltip, Legend, ArcElement);
 
@@ -50,6 +46,7 @@ const props = defineProps<{
         },
         compiled_layout: any,
         compiled_layout_size: number
+        is_composed?: boolean
     }
     liveStats?: any[]
     ownShopTemplates?: Array<{
@@ -72,7 +69,7 @@ const props = defineProps<{
 }>()
 
 const previewOpen = ref(false)
-const iframeClass = ref('w-full h-full')
+const previewDevice = ref<'desktop' | 'mobile'>('desktop')
 
 const stats = computed(
     () => props.liveStats && props.liveStats.length
@@ -146,23 +143,23 @@ const tabsBox = computed(() => {
 
     return [
         {
-            label: trans('Errors & Rejected Emails'),
+            label: ctrans('Errors & Rejected Emails'),
             tabs: buildTabs([0, 1]),
         },
         {
-            label: trans('Sent & Delivered Emails'),
+            label: ctrans('Sent & Delivered Emails'),
             tabs: buildTabs([2, 3]),
         },
         {
-            label: trans('Hard & Soft Bounced Emails'),
+            label: ctrans('Hard & Soft Bounced Emails'),
             tabs: buildTabs([4, 5]),
         },
         {
-            label: trans('Opened & Clicked Emails'),
+            label: ctrans('Opened & Clicked Emails'),
             tabs: buildTabs([6, 7]),
         },
         {
-            label: trans('Spam & Unsubscribed Emails'),
+            label: ctrans('Spam & Unsubscribed Emails'),
             tabs: buildTabs([8, 9]),
         },
     ]
@@ -172,16 +169,6 @@ const mailshotState = computed(() => props.data.mailshot.data.state)
 
 const isInProcess = computed(() => mailshotState.value === "in_process")
 const isReady = computed(() => mailshotState.value === "ready")
-const isLoadingVisit = ref(false)
-
-// Computed properties to use real data when available, otherwise use dummy data
-const effectiveOwnShopTemplates = computed(() =>
-    props.ownShopTemplates
-)
-
-const effectiveOtherShopTemplates = computed(() =>
-    props.otherShopTemplates
-)
 
 </script>
 
@@ -223,11 +210,12 @@ const effectiveOtherShopTemplates = computed(() =>
             <div class="grid gap-4 mt-8" :class="isReady ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
                 <div class="h-auto mb-3">
                     <div class="bg-white p-4 rounded-lg shadow relative overflow-auto">
-                        <button @click="previewOpen = true"
-                            class="absolute top-4 right-3 bg-gray-300 text-white px-2 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            <FontAwesomeIcon :icon="faExpand" fixed-width />
+                        <button v-if="data.compiled_layout" type="button" @click="previewOpen = true" v-tooltip="ctrans('Full preview')"
+                            class="absolute right-3 top-3 z-10 rounded-md border border-gray-200 bg-white px-2 py-1 text-gray-600 shadow-sm hover:text-[var(--theme-color-4)]">
+                            <FontAwesomeIcon :icon="faExpand" fixed-width aria-hidden="true" />
                         </button>
-                        <div v-if="data.compiled_layout" v-html="data.compiled_layout"></div>
+                        <iframe v-if="data.compiled_layout" :srcdoc="data.compiled_layout" sandbox="allow-popups" :title="ctrans('Email preview')"
+                            class="h-[640px] w-full border-0 bg-white" />
                         <EmptyState v-else :data="{ title: 'You don’t have any preview' }" />
                     </div>
                 </div>
@@ -244,49 +232,34 @@ const effectiveOtherShopTemplates = computed(() =>
                 </div>
             </div>
 
-            <!-- Full preview modal -->
-            <Modal :isOpen="previewOpen" @onClose="previewOpen = false">
-                <div class="border">
-                    <div class="bg-gray-300">
-                        <ScreenView @screenView="(e) => iframeClass = setIframeView(e)" />
+            <Dialog v-model:visible="previewOpen" modal dismissableMask :draggable="false" :header="data.mailshot.data.subject"
+                :style="{ width: '64rem' }" :breakpoints="{ '1100px': '95vw' }"
+                :pt="{ header: { class: '!px-5 !py-3 border-b border-gray-200' }, content: { class: '!p-0' } }">
+                <div class="flex items-center justify-center border-b border-gray-200 bg-white py-2">
+                    <div class="flex items-center rounded-md bg-gray-100 p-0.5">
+                        <button type="button" class="flex h-7 items-center gap-x-1.5 rounded px-3 text-xs"
+                            :class="previewDevice === 'desktop' ? 'bg-white font-medium text-[var(--theme-color-4)] shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                            @click="previewDevice = 'desktop'">
+                            <FontAwesomeIcon :icon="faDesktop" fixed-width aria-hidden="true" />
+                            {{ ctrans('Desktop') }}
+                        </button>
+                        <button type="button" class="flex h-7 items-center gap-x-1.5 rounded px-3 text-xs"
+                            :class="previewDevice === 'mobile' ? 'bg-white font-medium text-[var(--theme-color-4)] shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                            @click="previewDevice = 'mobile'">
+                            <FontAwesomeIcon :icon="faMobile" fixed-width aria-hidden="true" />
+                            {{ ctrans('Mobile') }}
+                        </button>
                     </div>
-                    <div v-html="data.compiled_layout"></div>
                 </div>
-            </Modal>
+                <div class="flex h-[75vh] justify-center bg-gray-100 p-4">
+                    <iframe :srcdoc="data.compiled_layout" sandbox="allow-popups" :title="ctrans('Email preview')"
+                        class="h-full border-0 bg-white shadow-sm transition-all"
+                        :class="previewDevice === 'mobile' ? 'w-[395px] rounded-[24px] border-[10px] border-gray-800' : 'w-full'" />
+                </div>
+            </Dialog>
         </template>
-        <div v-if="isInProcess && data.is_composed">
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-2">
-                    {{ trans(`:mailshotSubject is composed but not published yet`, {
-                        mailshotSubject: props.data.mailshot.data.subject
-                            ?? ''
-                    }) }}
-                </h2>
-                <p class="text-gray-600 mb-4">
-                    {{ trans('Open the workshop and press Save to publish the email, then it will be ready to send.') }}
-                </p>
-                <Link v-if="props.workshopRoute" :href="route(props.workshopRoute.name, props.workshopRoute.parameters)">
-                    <Button :label="trans('Go to Compose')" type="primary" iconRight="fal fa-arrow-right" />
-                </Link>
-            </div>
-        </div>
-        <div v-else-if="isInProcess">
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-2">
-                    {{ trans(`:mailshotSubject is still in process`, {
-                        mailshotSubject: props.data.mailshot.data.subject
-                            ?? ''
-                    }) }}
-                </h2>
-                <p class="text-gray-600 mb-4">
-                    {{ trans('Choose an email template to get started with your mailshot.') }}
-                </p>
-            </div>
-
-            <!-- Template Carousel -->
-            <EmailTemplateCarousel :own-shop-templates="effectiveOwnShopTemplates"
-                :other-shop-templates="effectiveOtherShopTemplates" :workshop-route="props.workshopRoute" />
-        </div>
+        <MailshotGettingStarted v-if="isInProcess" :subject="data.mailshot.data.subject" :isComposed="!!data.is_composed"
+            :workshopRoute="workshopRoute" :ownShopTemplates="ownShopTemplates" :otherShopTemplates="otherShopTemplates" />
     </div>
 </template>
 
