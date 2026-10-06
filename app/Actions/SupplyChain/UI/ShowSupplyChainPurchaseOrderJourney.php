@@ -49,7 +49,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        return $this->handle($request);
+        return [];
     }
 
     public function handle(ActionRequest $request): array
@@ -367,6 +367,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                             and purchase_order_transactions.org_stock_id is not null
                             and purchase_order_transactions.state not in ('cancelled', 'not_received')
                     ) stock_lines
+                    offset 0
                 ) line
             ) lines on true";
     }
@@ -704,6 +705,13 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
+        $journeyData = null;
+        $journey     = function (string $key) use (&$journeyData, $request) {
+            $journeyData ??= $this->handle($request);
+
+            return $journeyData[$key];
+        };
+
         return Inertia::render(
             'SupplyChain/SupplyChainPurchaseOrderJourney',
             [
@@ -716,7 +724,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                     ],
                     'title' => __('PO journey'),
                 ],
-                'view'          => $data['view'],
+                'view'          => $request->query('view') === 'purchase_orders' ? 'purchase_orders' : 'supplier_orders',
                 'groupCurrency' => $this->group->currency->code,
                 'canMark'       => $this->canEdit,
                 'stages'        => collect(PurchaseOrderJourneyStageEnum::cases())->map(fn (PurchaseOrderJourneyStageEnum $stage) => [
@@ -725,13 +733,13 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                     'description' => PurchaseOrderJourneyStageEnum::descriptions()[$stage->value],
                     'markable'    => $stage->markColumn() !== null,
                 ])->all(),
-                'filters'    => $data['filters'],
-                'active'     => $data['active'],
-                'summary'    => $data['summary'],
-                'blockages'  => $data['blockages'],
-                'quickStats' => $data['quickStats'],
-                'ribbons'    => $data['ribbons'],
-                'pagination' => $data['pagination'],
+                'filters'    => Inertia::defer(fn () => $journey('filters'), 'journey'),
+                'active'     => Inertia::defer(fn () => $journey('active'), 'journey'),
+                'summary'    => Inertia::defer(fn () => $journey('summary'), 'journey'),
+                'blockages'  => Inertia::defer(fn () => $journey('blockages'), 'journey'),
+                'quickStats' => Inertia::defer(fn () => $journey('quickStats'), 'journey'),
+                'ribbons'    => Inertia::defer(fn () => $journey('ribbons'), 'journey'),
+                'pagination' => Inertia::defer(fn () => $journey('pagination'), 'journey'),
             ]
         );
     }

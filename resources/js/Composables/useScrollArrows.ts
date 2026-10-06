@@ -10,16 +10,24 @@ import { onBeforeUnmount, onMounted, ref, watch, type Ref } from "vue"
 export const useScrollArrows = (scroller: Readonly<Ref<HTMLElement | null>>) => {
     const canScrollLeft = ref(false)
     const canScrollRight = ref(false)
+    const canScrollUp = ref(false)
+    const canScrollDown = ref(false)
 
     const update = () => {
         const element = scroller.value
         if (!element) return
         canScrollLeft.value = element.scrollLeft > 1
         canScrollRight.value = element.scrollLeft + element.clientWidth < element.scrollWidth - 1
+        canScrollUp.value = element.scrollTop > 1
+        canScrollDown.value = element.scrollTop + element.clientHeight < element.scrollHeight - 1
     }
 
     const scrollBy = (direction: 1 | -1) => {
         scroller.value?.scrollBy({ left: direction * scroller.value.clientWidth * 0.7, behavior: "smooth" })
+    }
+
+    const scrollVerticallyBy = (direction: 1 | -1) => {
+        scroller.value?.scrollBy({ top: direction * scroller.value.clientHeight * 0.7, behavior: "smooth" })
     }
 
     const dragThresholdInPixels = 5
@@ -107,6 +115,8 @@ export const useScrollArrows = (scroller: Readonly<Ref<HTMLElement | null>>) => 
         mutationObserver?.disconnect()
         canScrollLeft.value = false
         canScrollRight.value = false
+        canScrollUp.value = false
+        canScrollDown.value = false
     }
 
     watch(scroller, (element, previousElement) => {
@@ -127,5 +137,5 @@ export const useScrollArrows = (scroller: Readonly<Ref<HTMLElement | null>>) => 
         window.removeEventListener("pointercancel", onPointerUp)
     })
 
-    return { canScrollLeft, canScrollRight, scrollBy }
+    return { canScrollLeft, canScrollRight, canScrollUp, canScrollDown, scrollBy, scrollVerticallyBy }
 }

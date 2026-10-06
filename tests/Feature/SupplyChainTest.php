@@ -1492,3 +1492,17 @@ test('only supply chain editors attach and detach agent and supplier documents',
     expect($agent->attachments()->count())->toBe(0)
         ->and($supplier->attachments()->count())->toBeGreaterThan(0);
 });
+
+test('purchase order journey rows query runs for both views', function () {
+    $journey = \App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney::make();
+    $group   = $this->group;
+
+    $rows = fn (bool $splitAgentOrders) => (function () use ($group, $splitAgentOrders) {
+        $this->group = $group;
+
+        return $this->rows($splitAgentOrders);
+    })->call($journey);
+
+    expect($rows(true))->toBeArray()
+        ->and($rows(false))->toBeArray();
+});
