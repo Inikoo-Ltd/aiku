@@ -59,6 +59,27 @@ class RoundPartnerQuantityToBatches
             ->all();
     }
 
+    /**
+     * The hub's order step in SKOs per stock, in one query.
+     *
+     * @param  array<int, int>  $stockIds
+     * @return array<int, int> stock id => SKOs per step
+     */
+    public static function quantaByStockId(OrgPartner $orgPartner, array $stockIds): array
+    {
+        if (!$orgPartner->partner->is_manufacturing_hub || !$stockIds) {
+            return [];
+        }
+
+        return DB::table('org_stocks as hub_org_stock')
+            ->where('hub_org_stock.organisation_id', $orgPartner->partner_id)
+            ->whereIn('hub_org_stock.stock_id', $stockIds)
+            ->selectRaw('hub_org_stock.stock_id, '.self::quantumSql('hub_org_stock').' as quantum')
+            ->pluck('quantum', 'stock_id')
+            ->map(fn ($quantum) => (int) $quantum)
+            ->all();
+    }
+
     public static function roundUp(?float $quantity, int $quantum): ?float
     {
         return $quantity === null || $quantum <= 1 ? $quantity : ceil(round($quantity / $quantum, 6)) * $quantum;

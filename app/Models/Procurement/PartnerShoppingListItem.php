@@ -178,6 +178,14 @@ class PartnerShoppingListItem extends Model
             ->where('state', ShoppingListItemStateEnum::OPEN);
     }
 
+    public static function draftPartnerLineFor(int $orgPartnerId, int $orgStockId): EloquentBuilder
+    {
+        return static::query()
+            ->where('org_partner_id', $orgPartnerId)
+            ->where('org_stock_id', $orgStockId)
+            ->where('state', ShoppingListItemStateEnum::DRAFT);
+    }
+
     public static function openPartnerLineFor(int $orgPartnerId, int $orgStockId): EloquentBuilder
     {
         return static::query()

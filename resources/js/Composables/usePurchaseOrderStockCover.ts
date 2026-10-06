@@ -77,7 +77,9 @@ export function usePurchaseOrderStockCover(getItem: () => any, getIsPartner: () 
 		Math.min(Math.max(leadDays.value + 30, 2 * leadDays.value), Math.max(leadDays.value + 14, overstockDays.value - 7))
 	)
 
-	const cartonSkos = computed(() => (getIsPartner() ? 1 : Math.max(1, (Number(getItem().units_per_carton) || 1) / pack.value)))
+	const cartonSkos = computed(() =>
+		Math.max(1, (Number(getIsPartner() ? getItem().partner_units_per_carton : getItem().units_per_carton) || 1) / pack.value)
+	)
 
 	const suggestion = computed(() => {
 		if (!hasHistory.value) {
@@ -85,7 +87,15 @@ export function usePurchaseOrderStockCover(getItem: () => any, getIsPartner: () 
 		}
 		const need = demandOver(targetDays.value) - stock.value - incoming.value
 
-		return need <= 0 ? 0 : Math.ceil(need / cartonSkos.value) * cartonSkos.value
+		if (need <= 0) {
+			return 0
+		}
+		const wholeCartons = Math.ceil(need / cartonSkos.value) * cartonSkos.value
+		if (getIsPartner() && !getItem().whole_cartons_only && coverDays(stock.value + incoming.value + wholeCartons) > overstockDays.value) {
+			return Math.ceil(need)
+		}
+
+		return wholeCartons
 	})
 
 	return {

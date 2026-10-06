@@ -34,7 +34,7 @@ class StoreRescuePurchaseOrder extends OrgAction
      * every A/B bestseller, biggest lost sales first. Lines go onto the order already being prepared
      * for that partner, if there is one; lines already on it are left as they are. Nothing is created
      * or flagged when there is nothing new to add, and the partner row is locked so a double click
-     * cannot build two orders. With a budget (in our currency, for the whole order) a line that would
+     * cannot build two orders. With a budget (in our currency, for the lines added this time) a line that would
      * take the order over it is skipped and the next, cheaper ones still get their chance.
      *
      * @throws ValidationException
@@ -70,7 +70,7 @@ class StoreRescuePurchaseOrder extends OrgAction
             $storeTransaction->batched = true;
             $added                     = 0;
             $skippedForBudget          = 0;
-            $spent                     = (float) $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount');
+            $spent                     = 0.0;
 
             foreach ($lines as $line) {
                 if ($alreadyOrdered->has($line['org_stock_id']) || !$orgStock = $orgStocks->get($line['org_stock_id'])) {
@@ -98,7 +98,7 @@ class StoreRescuePurchaseOrder extends OrgAction
 
             if ($added === 0) {
                 $fail($skippedForBudget
-                    ? __('Nothing more fits in the budget, :reference is already at :amount', ['reference' => $purchaseOrder->reference, 'amount' => $orgPartner->organisation->currency->code.' '.number_format($spent, 2)])
+                    ? __('Nothing fits in a budget of :amount', ['amount' => $orgPartner->organisation->currency->code.' '.number_format($budget, 2)])
                     : __('Everything :partner can rescue is already on :reference', ['partner' => $orgPartner->partner->name, 'reference' => $purchaseOrder->reference]));
             }
 

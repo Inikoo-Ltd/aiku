@@ -29,6 +29,7 @@ type BucketItem = {
     price: number | null
     shopping_list_item_id: number | null
     ordered_quantity: number
+    sent_quantity: number
     order_quantum: number
 }
 
@@ -159,6 +160,11 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
                                     noSaveButton
                                     @update:modelValue="(value: number) => setQuantity(item, value)"
                                 />
+                                <span
+                                    v-if="item.sent_quantity > 0"
+                                    v-tooltip="ctrans('Already sent to the partner')"
+                                    class="cursor-help whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500"
+                                >{{ ctrans(':count sent', { count: useLocaleStore().number(item.sent_quantity) }) }}</span>
                                 <span
                                     v-if="item.order_quantum > 1"
                                     v-tooltip="ctrans('Made in batches: ordered in multiples of :quantum SKOs', { quantum: item.order_quantum })"

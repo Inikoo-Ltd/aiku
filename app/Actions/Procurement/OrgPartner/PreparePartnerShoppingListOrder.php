@@ -9,7 +9,13 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
+use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Events\BroadcastProductionQueuesChanged;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
@@ -19,7 +25,6 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PreparePartnerShoppingListOrder extends OrgAction
 {
@@ -30,8 +35,8 @@ class PreparePartnerShoppingListOrder extends OrgAction
      * hub makes, worst first, go onto its shopping list (picked with the same rules as a sister company
      * rescue, see GetPartnerStockCoverBuckets). The hub makes what it is asked for, so quantities are
      * not capped by its stock. Lines already on the list are left as they
-     * are. With a budget (in our currency, for the whole open list) a line that would go over it is
-     * skipped and the next, cheaper ones still get their chance.
+     * are. With a budget (in our currency, for the lines added this time, so it can be run again and again
+     * in small steps) a line that would go over it is skipped and the next, cheaper ones still get their chance.
      *
      * @param  array<int, string>  $buckets
      *
@@ -53,39 +58,84 @@ class PreparePartnerShoppingListOrder extends OrgAction
                 $fail(__('Nothing to order from :partner right now', ['partner' => $orgPartner->partner->name]));
             }
 
-            $orgStocks        = OrgStock::whereIn('id', array_column($lines, 'org_stock_id'))->get()->keyBy('id');
-            $exchange         = $orgPartner->exchangeToOrgCurrency();
+            $orgStocks = OrgStock::whereIn('id', array_column($lines, 'org_stock_id'))
+                ->whereIn('organisation_id', [$orgPartner->organisation_id, $orgPartner->partner_id])
+                ->get()
+                ->keyBy('id');
+
+            $stockIds   = $orgStocks->pluck('stock_id')->unique()->values()->all();
+            $mismatched = array_flip(EnsurePartnerOrderPackedInMatches::make()->mismatchedStockIds($orgPartner, $stockIds));
+            $quanta     = RoundPartnerQuantityToBatches::quantaByStockId($orgPartner, $stockIds);
+            $drafts     = PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::DRAFT)
+                ->whereIn('org_stock_id', $orgStocks->keys())
+                ->get()
+                ->keyBy('org_stock_id');
+
+            $now              = now();
+            $userId           = request()->user()?->id;
+            $rows             = [];
             $added            = 0;
             $skippedForBudget = 0;
-            $spent            = round((float) $orgPartner->stats?->open_shopping_list_items_value * $exchange * GetPartnerBuyingPriceFactor::run($orgPartner), 2);
+            $spent            = 0.0;
 
             foreach ($lines as $line) {
                 if (!$orgStock = $orgStocks->get($line['org_stock_id'])) {
                     continue;
                 }
 
+                if (isset($mismatched[$orgStock->stock_id])) {
+                    continue;
+                }
+
+                $quantity = RoundPartnerQuantityToBatches::roundUp((float) $line['skos'], $quanta[$orgStock->stock_id] ?? 1);
+                $cost     = (float) $line['skos'] > 0 ? round($line['cost'] * $quantity / (float) $line['skos'], 2) : (float) $line['cost'];
+
                 if ($budget !== null) {
-                    if ($line['cost'] <= 0) {
+                    if ($cost <= 0) {
                         continue;
                     }
-                    if ($spent + $line['cost'] > $budget) {
+                    if ($spent + $cost > $budget) {
                         $skippedForBudget++;
                         continue;
                     }
                 }
 
-                try {
-                    StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, ['quantity' => $line['skos']]);
-                    $spent += $line['cost'];
-                    $added++;
-                } catch (HttpException|ValidationException) {
-                    continue;
+                if ($draft = $drafts->get($orgStock->id)) {
+                    $draft->update(['quantity' => $quantity]);
+                } else {
+                    $rows[] = [
+                        'group_id'                => $orgPartner->group_id,
+                        'organisation_id'         => $orgPartner->organisation_id,
+                        'org_partner_id'          => $orgPartner->id,
+                        'partner_organisation_id' => $orgPartner->partner_id,
+                        'org_stock_id'            => $orgStock->id,
+                        'stock_id'                => $orgStock->stock_id,
+                        'quantity'                => $quantity,
+                        'priority'                => ShoppingListItemPriorityEnum::NORMAL->value,
+                        'state'                   => ShoppingListItemStateEnum::DRAFT->value,
+                        'added_by_user_id'        => $userId,
+                        'created_at'              => $now,
+                        'updated_at'              => $now,
+                    ];
                 }
+
+                $spent += $cost;
+                $added++;
+            }
+
+            foreach (array_chunk($rows, 500) as $chunk) {
+                PartnerShoppingListItem::insert($chunk);
+            }
+
+            if ($added > 0) {
+                BroadcastProductionQueuesChanged::dispatch($orgPartner->partner_id);
+                OrgPartnerHydrateShoppingListItems::dispatch($orgPartner);
             }
 
             if ($added === 0) {
                 $fail($skippedForBudget
-                    ? __('Nothing more fits in the budget, the shopping list is already at :amount', ['amount' => $orgPartner->organisation->currency->code.' '.number_format($spent, 2)])
+                    ? __('Nothing fits in a budget of :amount', ['amount' => $orgPartner->organisation->currency->code.' '.number_format($budget, 2)])
                     : __('Everything to order from :partner is already on the shopping list', ['partner' => $orgPartner->partner->name]));
             }
 

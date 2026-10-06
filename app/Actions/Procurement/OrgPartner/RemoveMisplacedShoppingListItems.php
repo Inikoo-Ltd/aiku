@@ -34,7 +34,7 @@ class RemoveMisplacedShoppingListItems extends OrgAction
 
         $items = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->where('state', ShoppingListItemStateEnum::DRAFT)
             ->whereIn('stock_id', $stockIds)
             ->get();
 

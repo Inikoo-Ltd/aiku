@@ -52,7 +52,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
             ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
                 $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
                     ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-                    ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+                    ->whereIn('partner_shopping_list_items.state', ShoppingListItemStateEnum::onPartnerBuyerList())
                     ->whereNull('partner_shopping_list_items.deleted_at');
             })
             ->where('org_stocks.organisation_id', $orgPartner->partner_id)
