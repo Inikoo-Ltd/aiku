@@ -44,6 +44,7 @@ const props = defineProps<{
     unpublished_layout: any
     compiledLayout: string | null
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     mergeContents: Array<any> | null
     status: string
     publishRoute: routeType
@@ -409,7 +410,7 @@ onMounted(() => {
         </div> -->
 
         <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
+            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"
             :mailshot="mailshotData" :updateMailshotRoute="updateMailshotRoute" @mailshotSaved="onMailshotSaved"

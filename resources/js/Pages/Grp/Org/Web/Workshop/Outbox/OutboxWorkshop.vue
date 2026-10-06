@@ -42,6 +42,7 @@ const props = defineProps<{
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     status: string
     publishRoute: routeType
     sendTestRoute: routeType
@@ -312,7 +313,7 @@ const schedulePublish = async () => {
 
     <!-- email workshop -->
     <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
+        :snapshot="activeSnapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
         :shopId="shopId" @onSave="onSendPublish"
         @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
         @ready="isBeefreeReady = $event" />

@@ -26,7 +26,7 @@ import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     createMergeContentModule, createModule, createRow, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
-    rowHasUnsubscribeBlock, rowLayouts,
+    rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources,
 } from './emailWorkshopBlocks'
 import { columnWidth, createRenderContext, messageWidth, renderEmailHtml, renderModuleHtml, styleToString, withDerivedHtml } from './renderEmailHtml'
 
@@ -43,6 +43,7 @@ const props = withDefaults(defineProps<{
     snapshot: any
     unpublished_layout?: any
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     mergeContents?: Array<any> | null
     organisationSlug: string
     shopSlug?: string
@@ -69,6 +70,8 @@ const AUTOSAVE_MAX_WAIT_MS = 20000
 const HISTORY_DEBOUNCE_MS = 400
 const HISTORY_LIMIT = 50
 const MOBILE_CANVAS_WIDTH = 375
+
+setSocialIconSources(props.socialIcons)
 
 const email = ref<EmailJson>(normaliseEmailJson(props.unpublished_layout ?? props.snapshot?.layout))
 const selectedModuleUuid = ref<string | null>(null)

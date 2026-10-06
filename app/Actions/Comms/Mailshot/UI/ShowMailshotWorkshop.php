@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
@@ -237,6 +238,7 @@ class ShowMailshotWorkshop extends OrgAction
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'mergeContents' => GetMailshotMergeContents::run(),
                 'status' => $email->outbox->state,
+                'socialIcons' => GetEmailSocialIcons::run($this->organisation->group),
                 'organisationSlug' => $this->organisation->slug,
                 'shopSlug' => $mailshot->shop->slug,
                 'shopId' => $mailshot->shop_id,

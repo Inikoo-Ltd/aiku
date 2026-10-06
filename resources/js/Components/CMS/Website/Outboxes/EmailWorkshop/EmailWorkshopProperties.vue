@@ -11,9 +11,9 @@ import EmailWorkshopSection from './EmailWorkshopSection.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import {
-    EmailBody, EmailModule, EmailRow, MODULE_TYPES, addTableColumn, addTableRow, createIconItem, getModuleText, isTableModule, isUnsubscribeModule,
-    moduleTextToggles, removeTableColumn, removeTableRow, setModuleText, tableColumnCount,
-    videoThumbnailFromUrl, vimeoVideoId,
+    DEFAULT_SOCIAL_ICON_SET, EmailBody, EmailModule, EmailRow, MODULE_TYPES, SOCIAL_ICON_SETS, SOCIAL_NETWORKS, addTableColumn, addTableRow, applySocialIconSet,
+    createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, setModuleText,
+    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId,
 } from './emailWorkshopBlocks'
 
 library.add(faArrowUp, faArrowDown, faTrashAlt, faPlus, faImage, faLock)
@@ -300,6 +300,37 @@ const removeIcon = (index: number) => {
     descriptor.value.iconsList.icons.splice(index, 1)
 }
 
+const socialIconSet = computed({
+    get: () => iconItems.value.map((icon) => socialIconSetOf(icon)).find(Boolean) ?? DEFAULT_SOCIAL_ICON_SET,
+    set: (iconSet: string) => applySocialIconSet(iconItems.value, iconSet),
+})
+
+const socialNetworkToAdd = ref('')
+
+const addSocialIcon = (network: string) => {
+    if (!network) {
+        return
+    }
+    ensureObject(descriptor.value, 'iconsList')
+    descriptor.value.iconsList.icons = [...iconItems.value, createSocialIcon(network, socialIconSet.value)]
+    socialNetworkToAdd.value = ''
+}
+
+const socialNetworkLabel = (icon: Record<string, any>, index: number): string =>
+    SOCIAL_NETWORKS.find((network) => network.name === icon.name)?.label ?? icon.name ?? icon.image?.title ?? String(index + 1)
+
+const isCustomSocialIcon = (icon: Record<string, any>): boolean => !socialIconSetOf(icon)
+
+const pickSocialIconImage = (icon: Record<string, any>) => openImagePicker((url) => {
+    ensureObject(icon, 'image').src = url
+    icon.iconSet = null
+})
+
+const resetSocialIconImage = (icon: Record<string, any>) => {
+    icon.iconSet = socialIconSet.value
+    icon.image.src = socialIconSrc(icon.name, socialIconSet.value)
+}
+
 const rowContentStyle = computed(() => props.row ? ensureObject(props.row.content, 'style') : {})
 const rowContentComputedStyle = computed(() => props.row ? ensureObject(props.row.content, 'computedStyle') : {})
 const rowContainerStyle = computed(() => props.row ? ensureObject(props.row.container, 'style') : {})
@@ -479,14 +510,47 @@ const contentSectionTitle = computed(() => ({
 
                 <template v-else-if="moduleType === MODULE_TYPES.social">
                     <EmailWorkshopField v-model="moduleStyle['text-align']" type="align" :label="ctrans('Align')" />
-                    <div v-for="(icon, index) in descriptor.iconsList?.icons ?? []" :key="icon.id ?? index" class="my-2 rounded border border-gray-200 px-3 py-1">
-                        <div class="flex items-center justify-between pt-1.5">
-                            <span class="text-[13px] font-medium capitalize text-gray-700">{{ icon.name ?? icon.title ?? index + 1 }}</span>
-                            <button type="button" class="text-xs text-red-500 hover:text-red-700" @click="removeIcon(index)">{{ ctrans('Remove') }}</button>
+                    <EmailWorkshopField v-model="socialIconSet" type="select" :options="SOCIAL_ICON_SETS" :label="ctrans('Icon style')" />
+                    <EmailWorkshopField v-model="moduleComputedStyle.iconsDefaultWidth" type="number" :min="16" :max="96" :step="4" :label="ctrans('Icon size')" />
+
+                    <div class="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-700">{{ ctrans('Social networks') }} ({{ iconItems.length }})</div>
+                    <div v-for="(icon, index) in iconItems" :key="icon.id ?? index" class="my-2 rounded border border-gray-200 px-3 py-2">
+                        <div class="flex items-center gap-x-2">
+                            <button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300 bg-gray-50 hover:border-[var(--theme-color-4)]"
+                                v-tooltip="ctrans('Upload or browse icon image')" @click="pickSocialIconImage(icon)">
+                                <img v-if="icon.image?.src" :src="icon.image.src" :alt="icon.image.alt ?? ''" class="max-h-full max-w-full object-contain" />
+                                <FontAwesomeIcon v-else icon="fal fa-image" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </button>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate text-[13px] font-medium text-gray-700">{{ socialNetworkLabel(icon, index) }}</div>
+                                <button v-if="isCustomSocialIcon(icon) && icon.name" type="button" class="text-[11px] text-gray-500 hover:text-[var(--theme-color-4)]" @click="resetSocialIconImage(icon)">
+                                    {{ ctrans('Use default icon') }}
+                                </button>
+                            </div>
+                            <div class="flex shrink-0 items-center text-gray-500">
+                                <button type="button" class="h-6 w-6 rounded hover:bg-gray-100 disabled:opacity-30" :disabled="index === 0" :aria-label="ctrans('Move up')" @click="moveIconItem(index, -1)">
+                                    <FontAwesomeIcon icon="fal fa-arrow-up" fixed-width aria-hidden="true" />
+                                </button>
+                                <button type="button" class="h-6 w-6 rounded hover:bg-gray-100 disabled:opacity-30" :disabled="index === iconItems.length - 1" :aria-label="ctrans('Move down')" @click="moveIconItem(index, 1)">
+                                    <FontAwesomeIcon icon="fal fa-arrow-down" fixed-width aria-hidden="true" />
+                                </button>
+                                <button type="button" class="h-6 w-6 rounded hover:bg-gray-100 hover:text-red-500" :aria-label="ctrans('Remove')" @click="removeIcon(index)">
+                                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                </button>
+                            </div>
                         </div>
-                        <EmailWorkshopField v-if="icon.image && typeof icon.image === 'object'" v-model="icon.image.href" :label="ctrans('Link')" />
+                        <template v-if="icon.image && typeof icon.image === 'object'">
+                            <EmailWorkshopField v-model="icon.image.href" :label="ctrans('Link')" />
+                            <EmailWorkshopField v-model="icon.image.alt" :label="ctrans('Alternate text')" />
+                        </template>
                         <EmailWorkshopField v-else v-model="icon.href" :label="ctrans('Link')" />
                     </div>
+                    <select v-model="socialNetworkToAdd" :aria-label="ctrans('Add social network')"
+                        class="mb-2 h-9 w-full rounded border-dashed border-gray-300 py-0 pl-3 pr-7 text-[13px] text-gray-600 hover:border-[var(--theme-color-4)] focus:border-[var(--theme-color-4)] focus:ring-[var(--theme-color-4)]"
+                        @change="addSocialIcon(socialNetworkToAdd)">
+                        <option value="" disabled>+ {{ ctrans('Add social network') }}</option>
+                        <option v-for="network in SOCIAL_NETWORKS" :key="network.name" :value="network.name">{{ network.label }}</option>
+                    </select>
                 </template>
 
                 <template v-else-if="moduleType === MODULE_TYPES.video">

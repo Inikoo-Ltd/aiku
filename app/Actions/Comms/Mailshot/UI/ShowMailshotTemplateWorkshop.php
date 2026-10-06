@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
 use App\Actions\OrgAction;
@@ -141,6 +142,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     null,
                     'value'
                 )),
+                'socialIcons' => GetEmailSocialIcons::run($this->organisation->group),
                 'organisationSlug' => $this->organisation->slug,
             ]
         );

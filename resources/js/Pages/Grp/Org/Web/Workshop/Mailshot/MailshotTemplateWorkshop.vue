@@ -33,6 +33,7 @@ const props = defineProps<{
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     sendTestRoute: routeType
     storeTemplateRoute: routeType
     deleteTemplateRoute: routeType
@@ -229,7 +230,7 @@ const handleDelete = async () => {
 
     <!-- email workshop -->
     <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSave"
+        :snapshot="snapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSave"
         :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <div v-else>

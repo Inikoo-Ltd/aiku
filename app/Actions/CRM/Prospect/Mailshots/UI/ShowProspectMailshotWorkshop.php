@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
+use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Models\Catalogue\Shop;
@@ -242,6 +243,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
                 ],
                 'mergeTags' => GetProspectMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
+                'socialIcons' => GetEmailSocialIcons::run($this->organisation->group),
                 'organisationSlug' => $this->organisation->slug,
                 'tabs' => [
                     'current'    => $this->tab,

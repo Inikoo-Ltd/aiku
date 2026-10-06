@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
+use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\Email\StoreEmail;
 use App\Actions\Comms\Email\UpdateEmail;
 use App\Actions\Comms\EmailAddress\StoreEmailAddress;
@@ -102,6 +103,7 @@ use App\Actions\Comms\SubscriptionEvent\StoreSubscriptionEvent;
 use App\Actions\Comms\SubscriptionEvent\UpdateSubscriptionEvent;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\SysAdmin\Group\Seeders\SeedEmailSocialIcons;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
@@ -775,6 +777,16 @@ test('UI edit mailshot', function (Mailshot $mailShot) {
     });
 })->depends('update mailshot');
 
+test('seed email social icons stores each icon once in our own media', function () {
+    $this->artisan('group:seed_email_social_icons')->assertSuccessful();
+
+    $socialIcons = GetEmailSocialIcons::run($this->group);
+
+    expect($socialIcons)->toHaveCount(count(glob(resource_path('art/email_social_icons/*/*.png'))))
+        ->and($socialIcons['circle-color/facebook'])->toBeString()->not->toContain('getbee.io')
+        ->and(SeedEmailSocialIcons::run($this->group))->toBe(0);
+});
+
 test('UI show mailshot in workshop', function (Mailshot $mailShot) {
     $this->withoutExceptionHandling();
     UpdateGroupSettings::make()->action($this->group, [
@@ -813,6 +825,7 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
             ->has('snapshot')
             ->has('builder')
             ->has('imagesUploadRoute')
+            ->has('socialIcons')
             ->has('updateRoute')
             ->has('loadRoute')
             ->has('publishRoute')

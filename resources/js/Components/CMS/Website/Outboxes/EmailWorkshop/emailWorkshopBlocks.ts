@@ -193,20 +193,7 @@ const moduleDescriptorFactories: Record<string, () => Record<string, any>> = {
     [MODULE_TYPES.social]: () => ({
         style: { 'text-align': 'center', ...defaultPadding() },
         iconsList: {
-            icons: ['facebook', 'instagram', 'linkedin'].map((network) => ({
-                id: uuidv4(),
-                name: network,
-                type: 'follow',
-                text: null,
-                image: {
-                    alt: network,
-                    title: network,
-                    src: `https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-outline-circle-dark-black/${network}@2x.png`,
-                    href: `https://www.${network}.com/`,
-                    prefix: `https://www.${network}.com/`,
-                    target: '_blank',
-                },
-            })),
+            icons: ['facebook', 'instagram', 'linkedin'].map((network) => createSocialIcon(network)),
         },
         computedStyle: { iconsDefaultWidth: 32, padding: '0 5px 0 5px', hideContentOnMobile: false },
     }),
@@ -273,6 +260,92 @@ export const createIconItem = (): Record<string, any> => ({
     target: '_blank',
     textPosition: 'bottom',
 })
+
+const SOCIAL_ICON_BASE_URL = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets'
+
+export const DEFAULT_SOCIAL_ICON_SET = 't-outline-circle-dark-black'
+
+export const SOCIAL_ICON_SETS: Array<{ label: string, value: string }> = [
+    { label: 'Circle · Color', value: 'circle-color' },
+    { label: 'Circle · Black', value: 'circle-black' },
+    { label: 'Circle · Dark gray', value: 'circle-dark-gray' },
+    { label: 'Circle · Gray', value: 'circle-gray' },
+    { label: 'Circle · Blue', value: 'circle-blue' },
+    { label: 'Outline · Black', value: 't-outline-circle-dark-black' },
+    { label: 'Outline · Dark gray', value: 't-outline-circle-dark-gray' },
+    { label: 'Outline · White', value: 't-outline-circle-white' },
+    { label: 'Logo only · Color', value: 't-only-logo-color' },
+    { label: 'Logo only · Dark gray', value: 't-only-logo-dark-gray' },
+    { label: 'Logo only · White', value: 't-only-logo-white' },
+]
+
+export const SOCIAL_NETWORKS: Array<{ name: string, label: string, url: string }> = [
+    { name: 'facebook', label: 'Facebook', url: 'https://www.facebook.com/' },
+    { name: 'instagram', label: 'Instagram', url: 'https://www.instagram.com/' },
+    { name: 'linkedin', label: 'LinkedIn', url: 'https://www.linkedin.com/' },
+    { name: 'x', label: 'X', url: 'https://x.com/' },
+    { name: 'youtube', label: 'YouTube', url: 'https://www.youtube.com/' },
+    { name: 'tiktok', label: 'TikTok', url: 'https://www.tiktok.com/' },
+    { name: 'pinterest', label: 'Pinterest', url: 'https://www.pinterest.com/' },
+    { name: 'threads', label: 'Threads', url: 'https://www.threads.net/' },
+    { name: 'whatsapp', label: 'WhatsApp', url: 'https://wa.me/' },
+    { name: 'telegram', label: 'Telegram', url: 'https://t.me/' },
+    { name: 'snapchat', label: 'Snapchat', url: 'https://www.snapchat.com/' },
+    { name: 'discord', label: 'Discord', url: 'https://discord.gg/' },
+    { name: 'spotify', label: 'Spotify', url: 'https://open.spotify.com/' },
+    { name: 'vimeo', label: 'Vimeo', url: 'https://vimeo.com/' },
+    { name: 'website', label: 'Website', url: 'https://' },
+    { name: 'mail', label: 'Email', url: 'mailto:' },
+]
+
+const BEEFREE_ICON_SRC_PATTERN = /\/social-networks-icon-sets\/([^/]+)\/([^/@]+)@2x\.png$/
+
+let socialIconSources: Record<string, string> = {}
+
+export const setSocialIconSources = (sources: Record<string, string> | null | undefined): void => {
+    socialIconSources = sources ?? {}
+}
+
+export const socialIconSrc = (network: string, iconSet: string = DEFAULT_SOCIAL_ICON_SET): string =>
+    socialIconSources[`${iconSet}/${network}`] ?? `${SOCIAL_ICON_BASE_URL}/${iconSet}/${network}@2x.png`
+
+export const socialIconSetOf = (icon: Record<string, any>): string | null =>
+    icon.iconSet ?? BEEFREE_ICON_SRC_PATTERN.exec(String(icon.image?.src ?? ''))?.[1] ?? null
+
+const socialIconNetworkOf = (icon: Record<string, any>): string | null =>
+    icon.name ?? BEEFREE_ICON_SRC_PATTERN.exec(String(icon.image?.src ?? ''))?.[2] ?? null
+
+export const createSocialIcon = (network: string, iconSet: string = DEFAULT_SOCIAL_ICON_SET): Record<string, any> => {
+    const socialNetwork = SOCIAL_NETWORKS.find((candidate) => candidate.name === network)
+    const label = socialNetwork?.label ?? network
+    const url = socialNetwork?.url ?? `https://www.${network}.com/`
+
+    return {
+        id: uuidv4(),
+        name: network,
+        type: 'follow',
+        text: null,
+        iconSet,
+        image: {
+            alt: label,
+            title: label,
+            src: socialIconSrc(network, iconSet),
+            href: url,
+            prefix: url,
+            target: '_blank',
+        },
+    }
+}
+
+export const applySocialIconSet = (icons: Array<Record<string, any>>, iconSet: string): void => {
+    icons.forEach((icon) => {
+        const network = socialIconNetworkOf(icon)
+        if (network && socialIconSetOf(icon)) {
+            icon.iconSet = iconSet
+            icon.image.src = socialIconSrc(network, iconSet)
+        }
+    })
+}
 
 export const youtubeVideoId = (url: string): string | null =>
     url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/)?.[1] ?? null
