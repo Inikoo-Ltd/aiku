@@ -131,6 +131,8 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     ")
             ])
             ->allowedSorts(array_merge($this->getDeliveryNoteItemBaseSorts(), ['picking_position']))
+            ->orderBy('org_stocks.code')
+            ->orderBy('delivery_note_items.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($ignoreParentPagination ? 'deliveryNoteItems' : $prefix, tableName: request()->route()->getName())
             ->withQueryString();

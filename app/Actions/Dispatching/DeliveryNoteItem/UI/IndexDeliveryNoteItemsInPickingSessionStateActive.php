@@ -102,6 +102,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'indivisible_set' => $this->getIndivisibleSetSubquery(),
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
+            ->orderBy('org_stocks.code')
+            ->orderBy('delivery_note_items.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

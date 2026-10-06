@@ -67,6 +67,7 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
@@ -4932,6 +4933,47 @@ test('the orders backlog can be filtered to partner or direct orders and counts 
         ->and($counts['direct'] + $counts['partner'])->toBe((clone $creating)->count());
 
     expect(array_sum($partnerOnly['backlog_filters']['counts']['scope']))->toBe($partnerCount);
+});
+
+test('a partner organisation orders from a manufacturing hub only through the shopping list', function () {
+    $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
+        ?? StoreSalesChannel::make()->action($this->group, [
+            'code' => 'intercompany',
+            'name' => 'Intercompany',
+            'type' => SalesChannelTypeEnum::OTHER,
+        ]);
+
+    $partnerCustomer = Customer::where('shop_id', $this->shop->id)->where('as_organisation_id', $this->organisation->id)->first();
+    if (!$partnerCustomer) {
+        $partnerCustomer = freshCustomerLike($this->shop, $this->customer);
+        $partnerCustomer->update(['as_organisation_id' => $this->organisation->id]);
+    }
+
+    $wasHub = $this->organisation->is_manufacturing_hub;
+    $this->organisation->update(['is_manufacturing_hub' => true]);
+    $this->shop->refresh();
+
+    try {
+        expect(fn () => StoreOrder::make()->action($partnerCustomer, Order::factory()->definition()))
+            ->toThrow(ValidationException::class);
+
+        $shoppingListOrder = StoreOrder::make()->action($partnerCustomer, [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]);
+        expect($shoppingListOrder->sales_channel_id)->toBe($intercompany->id);
+
+        $directOrder = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+        expect($directOrder->exists)->toBeTrue();
+
+        expect(fn () => StoreSubmittedOrder::make()->handle($partnerCustomer, ['sales_channel_id' => $intercompany->id]))
+            ->toThrow(ValidationException::class);
+
+        actingAs(createAdminGuest($this->group)->getUser());
+        get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $partnerCustomer->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('can_add_order', false));
+        get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $directOrder->customer->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('can_add_order', true));
+    } finally {
+        $this->organisation->update(['is_manufacturing_hub' => $wasHub]);
+    }
 });
 
 test('the shop orders list sends the warehouse note so its icon shows next to the order', function () {
