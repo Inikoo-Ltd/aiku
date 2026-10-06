@@ -333,6 +333,31 @@ watch(openedBlockSideEditor, (newVal) => {
 	}
 })
 
+const blockListEl = ref<HTMLElement | null>(null)
+
+const scrollToOpenedBlockInList = async () => {
+	if (openedBlockSideEditor.value === null) {
+		return
+	}
+	await nextTick()
+	const container = blockListEl.value
+	const item = container?.querySelector<HTMLElement>(`[data-block-index="${openedBlockSideEditor.value}"]`)
+	if (!container || !item) {
+		return
+	}
+	const containerRect = container.getBoundingClientRect()
+	const itemRect = item.getBoundingClientRect()
+	if (itemRect.top >= containerRect.top && itemRect.bottom <= containerRect.bottom) {
+		return
+	}
+	container.scrollTo({
+		top: container.scrollTop + itemRect.top - containerRect.top - (container.clientHeight - itemRect.height) / 2,
+		behavior: 'smooth',
+	})
+}
+
+watch([openedBlockSideEditor, () => props.selectedTab], scrollToOpenedBlockInList)
+
 watch(
 	() => props.selectedTab,
 	(tabIndex) => {
@@ -554,7 +579,7 @@ const showBlockVisibilityOptions = computed(
 						</div>
 
 						<!-- Blocks List -->
-						<div class="flex-1 min-h-0 overflow-y-auto">
+						<div ref="blockListEl" class="flex-1 min-h-0 overflow-y-auto">
 						<template v-if="webpage?.layout?.web_blocks.length">
 							<draggable
 								:list="webpage.layout.web_blocks"
@@ -568,6 +593,7 @@ const showBlockVisibilityOptions = computed(
 								<template #item="{ element, index }">
 									<div
 										v-if="showWebpage(element)"
+										:data-block-index="index"
 										class="group relative overflow-hidden rounded transition-colors"
 										:class="[
 											openedBlockSideEditor === index

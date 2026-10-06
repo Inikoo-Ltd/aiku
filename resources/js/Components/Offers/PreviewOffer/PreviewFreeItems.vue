@@ -276,7 +276,7 @@ const meterTooltip = computed(() => {
                 min="0"
                 :max="maxAdjustQuantity"
                 step="1"
-                class="w-full"
+                class="w-full cursor-pointer accent-[var(--app-accent)]"
             >
             <InputNumber
                 v-model.number="sanitizedOrderedQuantity"

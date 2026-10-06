@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import SideEditorArrayEdit from "./SideEditorArrayEdit.vue";
-import { ref, toRaw } from "vue";
+import { inject, ref, toRaw, watch } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrash, faPen } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -62,6 +62,20 @@ const openEditor = (index: number) => {
   activeIndex.value = index;
   showDrawer.value = true;
 };
+
+const activeChildBlockArray = inject("activeChildBlockArray", ref<number | null>(null));
+
+watch(
+  activeChildBlockArray,
+  (index) => {
+    if (typeof index !== "number" || !modelValue.value[index]) {
+      return;
+    }
+    openEditor(index);
+    activeChildBlockArray.value = null;
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

@@ -133,6 +133,10 @@ class ShowOffer extends OrgAction
         }
 
         $tabComponentData = [
+            OfferTabsEnum::SHOWCASE->value => $this->tab == OfferTabsEnum::SHOWCASE->value
+                ? Inertia::defer(fn () => GetOfferShowcaseData::make()->forOffer($offer))
+                : Inertia::optional(fn () => GetOfferShowcaseData::make()->forOffer($offer)),
+
             OfferTabsEnum::CUSTOMERS->value => $this->tab == OfferTabsEnum::CUSTOMERS->value
                 ? fn () => CustomersResource::collection(IndexCustomers::run($offer, OfferTabsEnum::CUSTOMERS->value))
                 : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run($offer, OfferTabsEnum::CUSTOMERS->value))),

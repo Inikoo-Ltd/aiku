@@ -84,6 +84,33 @@ class IndexOrders extends OrgAction
     }
 
     /**
+     * Offers keep no per-state order stats, so the state split is counted live from the orders that used the offer.
+     */
+    protected function getOfferElementGroups(Offer $offer): array
+    {
+        $countsByState = $this->baseQuery($offer)->toBase()
+            ->selectRaw('orders.state, count(*) as count')
+            ->groupBy('orders.state')
+            ->pluck('count', 'state')
+            ->all();
+
+        $stateCounts = [];
+        foreach (OrderStateEnum::cases() as $state) {
+            $stateCounts[$state->value] = (int) ($countsByState[$state->value] ?? 0);
+        }
+
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(OrderStateEnum::labels(), $stateCounts),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('orders.state', $elements);
+                }
+            ],
+        ];
+    }
+
+    /**
      * A partner order comes from a sister organisation's customer account, whatever channel it was placed through,
      * or through the intercompany channel used when a partner purchase order is sent to the seller.
      */
@@ -287,6 +314,15 @@ class IndexOrders extends OrgAction
                     prefix: $prefix
                 );
             }
+        } elseif ($this->bucket == 'offer' && $parent instanceof Offer) {
+            foreach ($this->getOfferElementGroups($parent) as $key => $elementGroup) {
+                $query->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
     }
 
@@ -388,6 +424,14 @@ class IndexOrders extends OrgAction
 
             if ($bucket == 'all') {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
+            } elseif ($bucket == 'offer' && $parent instanceof Offer) {
+                foreach ($this->getOfferElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],

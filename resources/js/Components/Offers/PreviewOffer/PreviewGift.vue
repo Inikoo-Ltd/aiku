@@ -270,7 +270,7 @@ const adjustLabel = computed(() => isQuantityTrigger.value
                 min="0"
                 :max="maxAdjustValue"
                 :step="isQuantityTrigger ? 1 : 0.01"
-                class="w-full"
+                class="w-full cursor-pointer accent-[var(--app-accent)]"
             >
             <InputNumber
                 v-model.number="sanitizedCurrentValue"
