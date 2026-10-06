@@ -25,6 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const locale = useLocaleStore()
+const routeParams = route().params
 
 const MAX_DAYS = 730
 
@@ -343,11 +344,11 @@ const stockTooltip = computed(() => {
 })
 
 function stockDeliveryRoute(slug: string) {
-	return route("grp.org.procurement.stock_deliveries.show", [route().params.organisation, slug])
+	return route("grp.org.procurement.stock_deliveries.show", [routeParams.organisation, slug])
 }
 
 function purchaseOrderRoute(slug: string) {
-	return route("grp.org.procurement.purchase_orders.show", [route().params.organisation, slug])
+	return route("grp.org.procurement.purchase_orders.show", [routeParams.organisation, slug])
 }
 </script>
 
@@ -421,7 +422,7 @@ function purchaseOrderRoute(slug: string) {
 			<button
 				v-if="!isOrderClosed && suggestion !== null && suggestion > 0"
 				type="button"
-				v-tooltip="ctrans('Enough for :time after it arrives, counting what is in stock and coming', { time: weeksLabel(targetDays - leadDays) })"
+				v-tooltip="ctrans('Enough for :time after it arrives, counting what is in stock and coming. Click to set quantity order to :quantityOrder.', { time: weeksLabel(targetDays - leadDays), quantityOrder: formatNumber(suggestion) })"
 				class="shrink-0 rounded border px-1.5 py-0.5 font-medium"
 				:class="Math.round(thisOrder) === suggestion ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
 				@click="emit('suggest', suggestion)">

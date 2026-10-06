@@ -252,6 +252,7 @@ class IndexWarehouseAreas extends OrgAction
                     ]
                 ],
                 'data'        => WarehouseAreaResource::collection($warehouseAreas),
+                'canEditPickingPosition' => $this->canEditPickingPosition($request),
                 'upload_warehouse_areas' => [
                     'title' => [
                         'label' => __('Upload locations'),
@@ -286,6 +287,18 @@ class IndexWarehouseAreas extends OrgAction
                 ],
             ]
         )->table($this->tableStructure($this->parent));
+    }
+
+    private function canEditPickingPosition(ActionRequest $request): bool
+    {
+        if (!$this->parent instanceof Warehouse) {
+            return false;
+        }
+
+        return $request->user()->authTo([
+            'supervisor-locations.'.$this->parent->id,
+            'locations.'.$this->parent->id.'.edit',
+        ]);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

@@ -43,6 +43,9 @@ class ReceiveStockDelivery extends OrgAction
         if (!in_array($this->stockDelivery->state, self::RECEIVABLE_STATES, true)) {
             $validator->errors()->add('state', __('You can not receive this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
         }
+        if ($this->stockDelivery->hasNoProducts()) {
+            $validator->errors()->add('state', __('This delivery has no products to receive, cancel it instead'));
+        }
     }
 
     public function handle(StockDelivery $stockDelivery): StockDelivery

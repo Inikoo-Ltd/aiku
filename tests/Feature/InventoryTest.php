@@ -1028,6 +1028,28 @@ test("UI Index warehouse areas", function () {
     });
 });
 
+test("UI Index warehouse areas only lets location editors change the picking order", function () {
+    $warehouse = Warehouse::first();
+    $route     = route("grp.org.warehouses.show.infrastructure.warehouse_areas.index", [
+        $this->organisation->slug,
+        $warehouse->slug
+    ]);
+
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $user->givePermissionTo("locations.{$warehouse->id}.view");
+    actingAs($user->fresh());
+
+    get($route)->assertInertia(fn (AssertableInertia $page) => $page->where("canEditPickingPosition", false));
+
+    $user->givePermissionTo("locations.{$warehouse->id}.edit");
+    actingAs($user->fresh());
+
+    get($route)->assertInertia(fn (AssertableInertia $page) => $page->where("canEditPickingPosition", true));
+});
+
 test("UI Show warehouse area", function () {
     $warehouse     = Warehouse::first();
     $warehouseArea = $warehouse->warehouseAreas->first();
