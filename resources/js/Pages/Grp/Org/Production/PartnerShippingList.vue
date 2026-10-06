@@ -384,8 +384,16 @@ const pendingDefaultMaker = computed(() => {
     return makers.size === 1 ? pendingFirst.value : null
 })
 
-type BoardFilterKey = "family" | "requester" | "priority" | "artisan"
-const boardFilters = reactive<Record<BoardFilterKey, string[]>>({ family: [], requester: [], priority: [], artisan: [] })
+type BoardFilterKey = "source" | "family" | "requester" | "priority" | "artisan"
+const boardSourceKey = "to-produce-board-source"
+const boardFilters = reactive<Record<BoardFilterKey, string[]>>({ source: JSON.parse(localStorage.getItem(boardSourceKey) || "[]"), family: [], requester: [], priority: [], artisan: [] })
+watch(() => boardFilters.source, (value) => localStorage.setItem(boardSourceKey, JSON.stringify(value)), { deep: true })
+
+const sourceLabels: Record<string, string> = { own: ctrans("Own customers"), partners: ctrans("Partners") }
+
+function sourceOf(item: { buyer_code?: string | null }): string {
+    return item.buyer_code ? "partners" : "own"
+}
 
 function requesterOf(item: { buyer_code: string | null, customer_name: string | null }): string {
     return item.buyer_code ?? item.customer_name ?? ""
@@ -399,6 +407,7 @@ const boardFilterOptions = computed(() => {
         return Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([value, count]) => ({ value, count }))
     }
     return {
+        source: counted(items.map(sourceOf)),
         family: counted(items.map(item => item.family ?? "")),
         requester: counted(items.map(requesterOf)),
         priority: counted(items.map(item => item.priority)),
@@ -415,7 +424,8 @@ const filteredGroups = computed(() =>
     (props.groups ?? []).map((lane, laneIndex) => ({
         ...lane,
         items: lane.items.filter(item =>
-            (!boardFilters.family.length || boardFilters.family.includes(item.family ?? ""))
+            (!boardFilters.source.length || boardFilters.source.includes(sourceOf(item)))
+            && (!boardFilters.family.length || boardFilters.family.includes(item.family ?? ""))
             && (!boardFilters.requester.length || boardFilters.requester.includes(requesterOf(item)))
             && (!boardFilters.priority.length || boardFilters.priority.includes(item.priority))
             && (laneIndex < LANE_ASSIGNED || !boardFilters.artisan.length || artisansOf(item).some(artisan => boardFilters.artisan.includes(artisan)))
@@ -660,7 +670,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
 
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-4 text-sm">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
-            <div v-for="(label, key) in { family: ctrans('Category'), requester: ctrans('Requester'), priority: ctrans('Urgency') }" :key="key" class="flex flex-wrap items-center gap-1.5">
+            <div v-for="(label, key) in { source: ctrans('Source'), family: ctrans('Category'), requester: ctrans('Requester'), priority: ctrans('Urgency') }" :key="key" class="flex flex-wrap items-center gap-1.5">
                 <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ label }}</span>
                 <button
                     v-for="option in boardFilterOptions[key]"
@@ -671,7 +681,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
                         : option.value === 'urgent' ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                     @click="toggleBoardFilter(key, option.value)">
-                    <span class="capitalize">{{ option.value }}</span>
+                    <span class="capitalize">{{ key === "source" ? sourceLabels[option.value] : option.value }}</span>
                     <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters[key].includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ option.count }}</span>
                 </button>
             </div>
@@ -697,7 +707,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 <button v-if="boardFilters.artisan.length" type="button" class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50" @click="boardFilters.artisan = []">{{ ctrans("Everybody") }}</button>
             </div>
         </div>
-            <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ ctrans("Clear") }}</button>
+            <button v-if="boardFilters.source.length || boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.source = []; boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ ctrans("Clear") }}</button>
         </div>
     </div>
 
