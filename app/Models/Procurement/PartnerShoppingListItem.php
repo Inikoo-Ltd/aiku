@@ -135,13 +135,13 @@ class PartnerShoppingListItem extends Model
                     and staged.location_id = (select ".OrgPartner::bayIdSql('to_partner', 'bay_stock.is_cosmetic')." from org_partners to_partner join stocks bay_stock on bay_stock.id = promised.stock_id
                         where to_partner.organisation_id = promised.partner_organisation_id and to_partner.partner_id = promised.organisation_id limit 1)
             ), 0)))
-            from (select organisation_id, partner_organisation_id, stock_id, sum(quantity) as quantity from partner_shopping_list_items
-                where partner_organisation_id = $seller
-                    and stock_id = $stock
-                    and state = 'open'
-                    and pre_picked_at is not null
-                    and deleted_at is null
-                group by organisation_id, partner_organisation_id, stock_id) promised), 0)";
+            from (select picked.organisation_id, picked.partner_organisation_id, picked.stock_id, sum(picked.quantity) as quantity from partner_shopping_list_items picked
+                where picked.partner_organisation_id = $seller
+                    and picked.stock_id = $stock
+                    and picked.state = 'open'
+                    and picked.pre_picked_at is not null
+                    and picked.deleted_at is null
+                group by picked.organisation_id, picked.partner_organisation_id, picked.stock_id) promised), 0)";
     }
 
     /** What the free stock cannot cover of this line once the lines ahead of it are served. */

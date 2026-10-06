@@ -3280,6 +3280,17 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
         'quantity'                => $quantity,
         'created_at'              => $createdAt,
     ]);
+    $otherStock = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $otherOrgStock = createOrgStocks($this->organisation, [$otherStock])[0];
+    \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $otherStock->id,
+        'org_stock_id'            => $otherOrgStock->id,
+        'quantity'                => 1000,
+        'pre_picked_at'           => now(),
+    ]);
     $covered  = $line(6, '2026-10-01 08:00:00');
     $boundary = $line(50, '2026-10-01 09:00:00');
     $behind   = $line(10, '2026-10-01 10:00:00');
@@ -3326,7 +3337,7 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
         ->and(\App\Actions\Production\PartnerShippingList\UI\IndexPrePickList::automationStatus(40, 40, 40, 0))->toBe('held_buffer');
 
     $this->organisation->update(['is_manufacturing_hub' => $wasHub]);
-    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $stocks[0]->id)->delete();
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', [$stocks[0]->id, $otherStock->id])->delete();
     \App\Models\Production\Artefact::where('org_stock_id', $orgStocks[0]->id)->delete();
 });
 
