@@ -309,12 +309,12 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
-                            'label'   => __("Offers dashboard"),
-                            "tooltip" => __("Offers dashboard"),
-                            "icon"    => ["fal", "fa-chart-network"],
-                            'root'    => 'grp.org.shops.show.discounts.dashboard',
+                            "label"   => __("Insights"),
+                            "tooltip" => __("Insights"),
+                            "icon"    => ["fal", "fa-analytics"],
+                            'root'    => 'grp.org.shops.show.discounts.insights',
                             "route"   => [
-                                "name"       => 'grp.org.shops.show.discounts.dashboard',
+                                "name"       => "grp.org.shops.show.discounts.insights",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
@@ -335,16 +335,6 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.discounts.offers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.discounts.offers.index",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
-                        [
-                            "label"   => __("Insights"),
-                            "tooltip" => __("Insights"),
-                            "icon"    => ["fal", "fa-analytics"],
-                            'root'    => 'grp.org.shops.show.discounts.insights',
-                            "route"   => [
-                                "name"       => "grp.org.shops.show.discounts.insights",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

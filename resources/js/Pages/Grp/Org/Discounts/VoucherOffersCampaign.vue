@@ -23,6 +23,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle, faStore } from '@fal'
 import ModalCreateVoucherOffers from '@/Components/Offers/ModalCreateVoucherOffers.vue'
 import ModalCreateCustomerListVoucher from '@/Components/Offers/ModalCreateCustomerListVoucher.vue'
+import CustomerListVouchers from '@/Components/Offers/CustomerListVouchers.vue'
 
 library.add(faCommentDollar, faInfoCircle, faStore)
 
@@ -45,6 +46,10 @@ const props = defineProps<{
         currency_code: string
         organisation: string
         offercampaign: string
+    }
+    customer_list_vouchers: {
+        vouchers: []
+        can_edit: boolean
     }
 }>()
 
@@ -74,4 +79,10 @@ const component = computed(() => {
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <CustomerListVouchers
+        v-if="currentTab === 'overview'"
+        :vouchers="customer_list_vouchers.vouchers"
+        :canEdit="customer_list_vouchers.can_edit"
+        :currencyCode="shop_data.currency_code"
+    />
 </template>

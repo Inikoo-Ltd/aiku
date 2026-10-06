@@ -6,12 +6,12 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Discounts\UI;
+namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferCampaign;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -24,12 +24,13 @@ class GetCustomerListVouchersOverview
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function handle(Shop $shop): array
+    public function handle(OfferCampaign $offerCampaign): array
     {
+        $shop = $offerCampaign->shop;
+
         $vouchers = Offer::query()
-            ->where('shop_id', $shop->id)
+            ->where('offer_campaign_id', $offerCampaign->id)
             ->where('settings->has_customer_list', true)
-            ->with('offerCampaign:id,slug')
             ->withCount('customerList')
             ->orderByDesc('id')
             ->limit(self::LIMIT)
@@ -64,7 +65,7 @@ class GetCustomerListVouchersOverview
                 'parameters' => [
                     'organisation'  => $shop->organisation->slug,
                     'shop'          => $shop->slug,
-                    'offerCampaign' => $voucher->offerCampaign->slug,
+                    'offerCampaign' => $offerCampaign->slug,
                     'offer'         => $voucher->slug,
                 ],
             ],

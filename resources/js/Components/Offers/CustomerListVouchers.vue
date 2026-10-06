@@ -3,7 +3,6 @@ import { inject, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
-import ModalCreateCustomerListVoucher from "@/Components/Offers/ModalCreateCustomerListVoucher.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -33,14 +32,6 @@ const props = defineProps<{
 	vouchers: CustomerListVoucher[]
 	canEdit: boolean
 	currencyCode: string
-	shopData: {
-		id: number
-		slug: string
-		organisation: string
-		offercampaign: string
-		currency_code: string
-		default_dates: { start: string; end: string }
-	} | null
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -63,15 +54,10 @@ const emailCustomers = (voucher: CustomerListVoucher) => {
 
 <template>
 	<section class="px-4 py-6 border-t border-gray-200">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div>
-				<h2 class="text-lg font-semibold">{{ ctrans("Customer vouchers") }}</h2>
-				<p class="text-sm text-gray-500">
-					{{ ctrans("Vouchers given to a list of customers, such as Potential Comebacks, Dormant, or customers who ordered only once.") }}
-				</p>
-			</div>
-			<ModalCreateCustomerListVoucher v-if="canEdit && shopData" :shop_data="shopData" />
-		</div>
+		<h2 class="text-lg font-semibold">{{ ctrans("Customer vouchers") }}</h2>
+		<p class="text-sm text-gray-500">
+			{{ ctrans("Vouchers given to a list of customers, such as Potential Comebacks, Dormant, or customers who ordered only once.") }}
+		</p>
 
 		<p v-if="!vouchers.length" class="mt-4 text-sm text-gray-500">
 			{{ ctrans("No customer vouchers yet. Create one to pick the customers, the reward and the code.") }}
