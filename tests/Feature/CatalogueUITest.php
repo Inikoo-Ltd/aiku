@@ -1939,7 +1939,11 @@ test('accounts can edit billables, staff without product or accounting edit cann
         return $user->refresh();
     };
 
-    actingAs($newUser(["accounting.{$this->organisation->id}.view"]));
+    $accountsViewer = $newUser(["accounting.{$this->organisation->id}.view"]);
+    expect(GetShopNavigation::run($this->shop, $accountsViewer))->toHaveKey('billables')
+        ->and(GetShopNavigation::run($this->shop, $newUser([])))->not->toHaveKey('billables');
+
+    actingAs($accountsViewer);
     get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0', false));
     patch(route('grp.models.shop.services.update', $this->service->id), ['name' => 'Viewer rename'])->assertForbidden();
