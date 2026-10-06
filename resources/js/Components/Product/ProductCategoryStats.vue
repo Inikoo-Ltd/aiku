@@ -30,38 +30,38 @@ const outOfStockPercentage = computed(() => {
     <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-fit">
         <div class="p-4">
              <!-- State Stats -->
-             <div class="grid grid-cols-4 min-w-max divide-x divide-gray-200 border border-gray-200 rounded mb-4">
+             <div class="grid grid-cols-4 divide-x divide-gray-200 border border-gray-200 rounded mb-4">
                 <!-- In Process -->
-                <div v-tooltip="ctrans('In Process')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white first:rounded-l">
+                <div v-tooltip="ctrans('In Process')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white first:rounded-l">
                      <FontAwesomeIcon :icon="faChild" class="text-gray-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_in_process }}</span>
                 </div>
                 <!-- Active -->
-                <div v-tooltip="ctrans('Active')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white">
+                <div v-tooltip="ctrans('Active')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white">
                      <FontAwesomeIcon :icon="faCube" class="text-gray-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_active }}</span>
                 </div>
                 <!-- Discontinuing -->
-                <div v-tooltip="ctrans('Discontinuing')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white">
+                <div v-tooltip="ctrans('Discontinuing')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white">
                      <FontAwesomeIcon :icon="faCube" class="text-orange-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_discontinuing }}</span>
                 </div>
                 <!-- Discontinued -->
-                <div v-tooltip="ctrans('Discontinued')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white last:rounded-r">
+                <div v-tooltip="ctrans('Discontinued')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white last:rounded-r">
                      <FontAwesomeIcon :icon="faCube" class="text-gray-300" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_discontinued }}</span>
                 </div>
             </div>
 
             <!-- Additional Stats -->
-            <div class="grid grid-cols-3 min-w-max divide-x divide-gray-200 border border-gray-200 rounded">
+            <div class="grid grid-cols-3 divide-x divide-gray-200 border border-gray-200 rounded">
                 <!-- Product Online -->
-                <div v-tooltip="ctrans('Product Online')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white first:rounded-l">
+                <div v-tooltip="ctrans('Product Online')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white first:rounded-l">
                      <FontAwesomeIcon :icon="faMicrophone" class="text-blue-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_current_products }}</span>
                 </div>
                 <!-- Out of Stock -->
-                <div v-tooltip="ctrans('Out of Stock')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white">
+                <div v-tooltip="ctrans('Out of Stock')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white">
                      <FontAwesomeIcon :icon="faBan" class="text-red-500" fixed-width />
                      <div class="flex items-baseline gap-1">
                         <span class="text-sm text-gray-900">{{ stats.number_products_status_out_of_stock }}</span>
@@ -69,7 +69,7 @@ const outOfStockPercentage = computed(() => {
                      </div>
                 </div>
                 <!-- Product Offline -->
-                <div v-tooltip="ctrans('Product Offline')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white last:rounded-r">
+                <div v-tooltip="ctrans('Product Offline')" class="flex min-w-0 justify-center items-center gap-1.5 px-1 py-2 cursor-pointer hover:bg-gray-50 bg-white last:rounded-r">
                      <FontAwesomeIcon :icon="faMicrophoneSlash" class="text-gray-400" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_status_not_for_sale }}</span>
                 </div>

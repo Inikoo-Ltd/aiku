@@ -60,6 +60,7 @@ const props = defineProps<{
     },
     salesData?: object
     salesAnalysisTeaser?: object
+    breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
 }>()
 
 const isModalOpen = ref(false)
@@ -121,19 +122,19 @@ const navigateTo = () => {
             </Message>
         </div>
 
-         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
-            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-1">
                   <ProductCategoryCard subtle :data="data.subDepartment" />
             </div>
-            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-1">
                 <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
 
-                <div class="flex flex-col gap-4 lg:flex-row">
-                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:max-w-[23rem]" />
-                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="min-w-0 flex-1" />
+                <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap">
+                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:grow lg:basis-[23rem]" />
+                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" :breakdownRoute="breakdownRoute" class="min-w-[22rem] lg:grow-[2] lg:basis-[22rem]" />
                 </div>
             </div>
-            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 2xl:col-span-1 space-y-4">
                 <!-- Product State Stats -->
                 <ProductCategoryStats v-if="data.subDepartment.stats" :stats="data.subDepartment.stats" />
 

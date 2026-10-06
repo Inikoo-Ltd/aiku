@@ -48,6 +48,7 @@ const props = defineProps<{
     },
     salesData?: object
     salesAnalysisTeaser?: object
+    breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
     actions?: any
 }>();
 
@@ -125,8 +126,8 @@ function offerRoute(offer: {}) {
             </Message>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
-            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-1">
                 <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
                     <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
                         class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
@@ -136,12 +137,12 @@ function offerRoute(offer: {}) {
                 <ProductCategoryCard subtle :data="data.family?.data"  />
             </div>
 
-            <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-1 offer">
                 <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
 
-                <div class="flex flex-col gap-4 lg:flex-row">
-                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:max-w-[23rem]" />
-                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="min-w-0 flex-1" />
+                <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap">
+                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:grow lg:basis-[23rem]" />
+                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" :breakdownRoute="breakdownRoute" class="min-w-[22rem] lg:grow-[2] lg:basis-[22rem]" />
                 </div>
 
                 <template v-if="data.show_gr_vol">
@@ -167,7 +168,7 @@ function offerRoute(offer: {}) {
                 <FamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
-            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 2xl:col-span-1 space-y-4">
                 <!-- Product State Stats -->
                 <ProductCategoryStats v-if="data.family?.data.stats" :stats="data.family?.data.stats" />
 

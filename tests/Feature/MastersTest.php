@@ -632,6 +632,22 @@ test('UI Show Master Family sales analysis tab', function (MasterProductCategory
         ->and($teaser['totals']['current']['sales'])->toEqual(0);
 })->depends('create master family');
 
+test('sales analysis links each shop row to the scope record in that shop, or to the shop dashboard', function () {
+    $shop  = Shop::with('organisation')->firstOrFail();
+    $build = fn (array $slugs) => new SalesAnalysisScope(
+        currency: 'GBP',
+        amountColumn: 'grp_net_amount',
+        productIds: [],
+        shopNodeStates: [$shop->id => 'active'],
+        shopNodeSlugs: $slugs,
+        shopNodeRoute: 'grp.org.shops.show.catalogue.families.show',
+    );
+    $shopUrl = fn (SalesAnalysisScope $scope) => collect(GetSalesAnalysis::make()->handle($scope, [])['shops'])->firstWhere('shop_id', $shop->id)['shop_url'];
+
+    expect($shopUrl($build([$shop->id => 'test-family'])))->toBe(route('grp.org.shops.show.catalogue.families.show', [$shop->organisation->slug, $shop->slug, 'test-family', 'tab' => 'sales_analysis']))
+        ->and($shopUrl($build([])))->toBe(route('grp.org.shops.show.dashboard.show', [$shop->organisation->slug, $shop->slug, 'section' => 'sales_analysis']));
+});
+
 test("UI Show master shop", function (MasterShop $masterShop) {
     $this->withoutExceptionHandling();
     $response = get(
