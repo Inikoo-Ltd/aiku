@@ -196,7 +196,7 @@ beforeEach(function () {
         $this->product
     ) = createProduct($this->shop);
 
-    $product2 = $this->shop->products()->skip(1)->first();
+    $product2 = $this->shop->products()->whereKeyNot($this->product->id)->orderBy('id')->first();
 
     if (!$product2) {
         $productData = array_merge(
@@ -4172,7 +4172,7 @@ test('replacing a waiting item on a replacement note keeps it free', function ()
         'products' => [['id' => $this->product2->id, 'quantity' => 1]],
     ]);
 
-    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
+    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->where('is_gift', true)->first();
 
     expect($replacement)->not->toBeNull()
         ->and((float)$replacement->net_amount)->toBe(0.0)
