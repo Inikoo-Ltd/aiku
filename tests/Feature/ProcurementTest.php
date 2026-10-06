@@ -5158,6 +5158,21 @@ describe('partner shopping list', function () {
         }
     });
 
+    test('a discontinued -error SKO of the seller does not hide the live one it sells', function () {
+        $sellerOrgStock    = $this->sellerProduct->orgStocks()->first();
+        $errorOrgStock     = $sellerOrgStock->replicate();
+        $errorOrgStock->code  = $sellerOrgStock->code.'-error';
+        $errorOrgStock->slug  = $sellerOrgStock->slug.'-error';
+        $errorOrgStock->state = OrgStockStateEnum::DISCONTINUED;
+        $errorOrgStock->save();
+
+        try {
+            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)?->id)->toBe($this->sellerProduct->id);
+        } finally {
+            $errorOrgStock->forceDelete();
+        }
+    });
+
     test('a partner sells from its procurement shop when no list of shops is set', function () {
         $seller           = $this->orgPartner->partner;
         $originalSettings = $seller->settings;
