@@ -5,7 +5,7 @@ import { Head, router, usePage } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
-import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
+import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Dialog from 'primevue/dialog';
@@ -310,8 +310,8 @@ const schedulePublish = async () => {
             @select-snapshot="onSelectTemplateSnapshot" />
     </Modal>
 
-    <!-- beefree -->
-    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <!-- email workshop -->
+    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
         :shopId="shopId" @onSave="onSendPublish"
         @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"

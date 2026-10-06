@@ -10,6 +10,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Http\UploadedFile;
 use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
@@ -186,6 +187,7 @@ use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\BackInStockReminderSnapshot;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -818,6 +820,38 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
     });
 })->depends('update mailshot');
 
+test('upload images to email from workshop', function (Mailshot $mailShot) {
+    $email = StoreEmail::make()->action($mailShot, null, [
+        'subject'               => 'Upload test',
+        'body'                  => 'Upload test',
+        'layout'                => ['body' => 'Upload test'],
+        'compiled_layout'       => 'xxx',
+        'state'                 => 'active',
+        'builder'               => EmailBuilderEnum::BEEFREE,
+        'snapshot_state'        => SnapshotStateEnum::LIVE,
+        'snapshot_recyclable'   => true,
+        'snapshot_first_commit' => true,
+    ], strict: false);
+
+    $uploadRoute = route('grp.models.email.images.store', ['email' => $email->id]);
+
+    $response = postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->image('hero.png', 20, 20)],
+    ])->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.source.original'))->toBeString()->not->toBeEmpty()
+        ->and($email->shop->images()->wherePivot('scope', 'email')->count())->toBe(1);
+
+    postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->create('brochure.pdf', 10, 'application/pdf')],
+    ])->assertUnprocessable();
+
+    postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->image('hero.webp', 20, 20)],
+    ])->assertUnprocessable();
+})->depends('update mailshot');
+
 test('mailshot hydrate', function (Mailshot $mailShot) {
     HydrateMailshots::run($mailShot);
     $this->artisan('hydrate:mailshots --slugs '.$mailShot->slug)->assertExitCode(0);
@@ -977,6 +1011,11 @@ test('ensure email has unsubscribe link adds link when missing', function () {
 
 test('ensure email has unsubscribe link leaves existing link untouched', function () {
     $html = '<html><body>hello {{unsubscribe}}</body></html>';
+    expect(EnsureEmailHasUnsubscribeLink::run($html))->toBe($html);
+});
+
+test('ensure email has unsubscribe link accepts the workshop unsubscribe url tag', function () {
+    $html = '<html><body><a ses:no-track href="[Unsubscribe Url]" style="color:#fff">Unsubscribe</a></body></html>';
     expect(EnsureEmailHasUnsubscribeLink::run($html))->toBe($html);
 });
 

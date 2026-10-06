@@ -135,8 +135,8 @@ class ShowOutboxWorkshop extends OrgAction
                 'snapshot' => $email->unpublishedSnapshot,
                 'builder' => $email->builder,
                 'imagesUploadRoute' => [
-                    'name' => 'grp.models.email-templates.images.store',
-                    'parameters' => $email->id
+                    'name' => 'grp.models.email.images.store',
+                    'parameters' => ['email' => $email->id]
                 ],
                 'updateRoute' => [
                     'name' => 'grp.models.shop.outboxes.workshop.update',

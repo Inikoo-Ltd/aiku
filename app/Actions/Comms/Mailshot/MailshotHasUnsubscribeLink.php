@@ -19,7 +19,7 @@ class MailshotHasUnsubscribeLink
     {
         $emailHtmlBody = GetHtmlLayout::run($mailshot);
 
-        if (preg_match('/\{\{unsubscribe}}|\[unsubscribe]/i', $emailHtmlBody)) {
+        if (preg_match('/\{\{unsubscribe}}|\[unsubscribe(?: url)?]/i', $emailHtmlBody)) {
             return true;
         }
         return false;

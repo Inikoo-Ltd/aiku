@@ -3,7 +3,7 @@ import { ref, computed, watch, inject } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
+import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Dialog from 'primevue/dialog';
@@ -227,8 +227,8 @@ const handleDelete = async () => {
         </template>
     </PageHeading>
 
-    <!-- beefree -->
-    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <!-- email workshop -->
+    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSave"
         :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 

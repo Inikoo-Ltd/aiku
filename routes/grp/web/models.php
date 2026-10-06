@@ -88,6 +88,7 @@ use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
+use App\Actions\Comms\Email\UploadImagesToEmail;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
@@ -1585,6 +1586,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 });
 
 Route::name('email.')->prefix('email/')->group(function () {
+    Route::post('{email:id}/images', UploadImagesToEmail::class)->name('images.store');
     Route::name('snapshot.')->prefix('snapshot/{snapshot:id}')->group(function () {
         Route::patch('/update', UpdateEmailUnpublishedSnapshot::class)->name('update');
     });

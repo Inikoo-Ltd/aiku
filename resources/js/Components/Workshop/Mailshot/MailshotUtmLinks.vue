@@ -6,7 +6,7 @@ import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faRedo, faExclamationTriangle } from '@fal'
 import { faSpinnerThird } from '@fad'
-import Modal from '@/Components/Utils/Modal.vue'
+import Dialog from 'primevue/dialog'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -217,12 +217,13 @@ watch(() => props.isOpen, isOpen => {
 </script>
 
 <template>
-    <Modal :isOpen="isOpen" @onClose="emits('onClose')" width="w-full max-w-4xl">
+    <Dialog :visible="isOpen" @update:visible="(isVisible: boolean) => !isVisible && emits('onClose')" modal :draggable="false"
+        :header="ctrans('Link tracking')" :style="{ width: '56rem' }" :breakpoints="{ '960px': '95vw' }"
+        :pt="{ header: { class: '!px-5 !py-3 border-b border-gray-200' }, content: { class: '!px-5 !pb-5 !pt-3' } }">
         <div class="border-b border-gray-200 pb-4">
             <div class="flex items-start justify-between gap-x-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-gray-900">{{ ctrans('Link tracking') }}</h2>
-                    <p class="text-sm text-gray-600 mt-1">
+                    <p class="text-sm text-gray-600">
                         {{ ctrans('Links to your own websites are tagged automatically, so your analytics can tell which email and which element brought a visitor. Links to other sites are left untouched.') }}
                     </p>
                 </div>
@@ -365,5 +366,5 @@ watch(() => props.isOpen, isOpen => {
                 </div>
             </div>
         </template>
-    </Modal>
+    </Dialog>
 </template>

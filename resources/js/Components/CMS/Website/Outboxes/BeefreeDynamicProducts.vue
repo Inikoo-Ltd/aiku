@@ -1,30 +1,31 @@
 <script setup lang="ts">
-import { ref, inject, watch } from "vue";
-import axios from "axios"
-import { routeType } from "@/types/route";
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n';
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import Modal from '@/Components/Utils/Modal.vue'
-import PureInput from '@/Components/Pure/PureInput.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import { computed, ref, watch } from 'vue'
+import axios from 'axios'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faSearch, faCheck, faTimes, faImage, faBoxOpen, faChevronLeft, faChevronRight } from '@fal'
+import Dialog from 'primevue/dialog'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import { ctrans } from '@/Composables/useTrans'
 
+library.add(faSearch, faCheck, faTimes, faImage, faBoxOpen, faChevronLeft, faChevronRight)
 
-// Tab types for product search modal
 const PRODUCT_TABS = {
     PRODUCTS: 'products',
     NEW_IN: 'new_in',
     TRENDING: 'trending',
-    COLLECTION_FAMILY: 'collection_family'
-}
+    COLLECTION_FAMILY: 'collection_family',
+} as const
 
-// Time filter options
 const TIME_FILTERS = {
     WEEK: 'week',
     MONTH: 'month',
-    YEAR: 'year'
-}
+    YEAR: 'year',
+} as const
+
+const PER_PAGE = 12
+const SEARCH_DEBOUNCE_MS = 300
+const MAX_SELECTED_PRODUCTS = 12
 
 const props = defineProps<{
     shopSlug?: string
@@ -32,592 +33,463 @@ const props = defineProps<{
     organisationSlug: string
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
+interface DynamicProduct {
+    id: number
+    code: string
+    name: string | null
+    description: string | null
+    product_image: string | null
+    url: string | null
+}
 
-// Product search dialog state
-const productSearchModalOpen = ref(false)
-const productSearchQuery = ref('')
-const productSearchResults = ref<Array<any>>([])
-const productSearchLoading = ref(false)
-const activeTab = ref(PRODUCT_TABS.PRODUCTS)
-const timeFilter = ref(TIME_FILTERS.WEEK)
-const selectedButtonColor = ref('#11161c')
+const isOpen = ref(false)
+const activeTab = ref<string>(PRODUCT_TABS.PRODUCTS)
+const searchQuery = ref('')
+const timeFilter = ref<string>(TIME_FILTERS.WEEK)
+const selectedCollection = ref<string>('')
+const selectedFamily = ref<string>('')
+const selectedSubDepartment = ref<string>('')
 
-// Pagination state
+const results = ref<DynamicProduct[]>([])
+const isLoading = ref(false)
 const currentPage = ref(1)
 const totalPages = ref(0)
 const totalItems = ref(0)
-const paginationData = ref<any>(null)
 
-// Collection filtering state
-const collections = ref<Array<any>>([])
-const selectedCollection = ref<string>('')
-const collectionsLoading = ref(false)
+const selectedProducts = ref<DynamicProduct[]>([])
+const productsPerRow = ref(2)
+const showDescription = ref(true)
+const buttonLabel = ref('SHOP NOW')
+const buttonColor = ref('#1d252e')
 
-// Family filtering state
-const families = ref<Array<any>>([])
-const selectedFamily = ref<string>('')
-const familiesLoading = ref(false)
+let resolveSelection: ((value: { name: string, value: string }) => void) | null = null
+let rejectSelection: (() => void) | null = null
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let latestRequestId = 0
 
-// Sub-department filtering state
-const subDepartments = ref<Array<any>>([])
-const selectedSubDepartment = ref<string>('')
-const subDepartmentsLoading = ref(false)
+const tabs = computed(() => [
+    { key: PRODUCT_TABS.PRODUCTS, label: ctrans('All products') },
+    { key: PRODUCT_TABS.NEW_IN, label: ctrans('New in') },
+    { key: PRODUCT_TABS.TRENDING, label: ctrans('Trending') },
+    { key: PRODUCT_TABS.COLLECTION_FAMILY, label: ctrans('By category') },
+])
 
-// Resolve/reject handlers for product selection
-let productSearchResolve: ((value: any) => void) | null = null
-let productSearchReject: (() => void) | null = null
-let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null
+const timeFilters = computed(() => [
+    { key: TIME_FILTERS.WEEK, label: ctrans('This week') },
+    { key: TIME_FILTERS.MONTH, label: ctrans('This month') },
+    { key: TIME_FILTERS.YEAR, label: ctrans('This year') },
+])
 
-const emits = defineEmits<{
-    (e: 'product-selected', value: { name: string, value: string }): void
-}>()
+const hasActiveFilters = computed(() => !!(selectedCollection.value || selectedFamily.value || selectedSubDepartment.value))
+const isSelected = (product: DynamicProduct) => selectedProducts.value.some((selected) => selected.id === product.id)
+const selectionIndex = (product: DynamicProduct) => selectedProducts.value.findIndex((selected) => selected.id === product.id) + 1
+const isSelectionFull = computed(() => selectedProducts.value.length >= MAX_SELECTED_PRODUCTS)
 
-// Product search functions
-const searchProducts = async (page: number = 1) => {
+const firstItemNumber = computed(() => results.value.length ? (currentPage.value - 1) * PER_PAGE + 1 : 0)
+const lastItemNumber = computed(() => (currentPage.value - 1) * PER_PAGE + results.value.length)
+
+const entityFetchRoutes = computed(() => ({
+    family: { name: 'grp.json.shop.families', parameters: { shop: props.shopId } },
+    subDepartment: { name: 'grp.json.shop.sub_departments', parameters: { shop: props.shopId } },
+    collection: { name: 'grp.json.shop.catalogue.collections', parameters: { shop: props.shopSlug, scope: props.shopSlug } },
+}))
+
+const searchParams = (page: number): Record<string, any> => {
+    const params: Record<string, any> = {
+        search: searchQuery.value.trim(),
+        tab_type: activeTab.value,
+        per_page: PER_PAGE,
+        page,
+    }
+    if (activeTab.value === PRODUCT_TABS.TRENDING) {
+        params.time_filter = timeFilter.value
+    }
+    if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
+        params.collection_id = selectedCollection.value ? parseInt(selectedCollection.value) : null
+        params.family_id = selectedFamily.value ? parseInt(selectedFamily.value) : null
+        params.sub_department_id = selectedSubDepartment.value ? parseInt(selectedSubDepartment.value) : null
+    }
+
+    return params
+}
+
+const searchProducts = async (page = 1) => {
     if (!props.shopSlug) {
-        productSearchResults.value = []
+        results.value = []
         return
     }
 
-    productSearchLoading.value = true
+    const requestId = ++latestRequestId
+    isLoading.value = true
     try {
-        let response
-
-        switch (activeTab.value) {
-            case PRODUCT_TABS.PRODUCTS:
-                response = await searchProductsAPI(page)
-                break
-            case PRODUCT_TABS.NEW_IN:
-                response = await searchNewInProductsAPI(page)
-                break
-            case PRODUCT_TABS.TRENDING:
-                response = await searchTrendingProductsAPI(page)
-                break
-            case PRODUCT_TABS.COLLECTION_FAMILY:
-                response = await searchCollectionFamilyProductsAPI(page)
-                break
-            default:
-                response = await searchProductsAPI(page)
+        const { data } = await axios.get(route('grp.json.shop.products_beefree_search', { shop: props.shopSlug }), { params: searchParams(page) })
+        if (requestId !== latestRequestId) {
+            return
         }
-
-        productSearchResults.value = response.data.data || []
-
-        // Extract pagination metadata
-        if (response.data.meta) {
-            paginationData.value = response.data.meta
-            currentPage.value = response.data.meta.current_page || 1
-            totalPages.value = response.data.meta.last_page || 0
-            totalItems.value = response.data.meta.total || 0
-        } else {
-            // Fallback if no pagination metadata
-            currentPage.value = page
-            totalPages.value = 1
-            totalItems.value = response.data.data?.length || 0
-            paginationData.value = null
+        results.value = data?.data ?? []
+        currentPage.value = data?.meta?.current_page ?? page
+        totalPages.value = data?.meta?.last_page ?? 1
+        totalItems.value = data?.meta?.total ?? results.value.length
+    } catch {
+        if (requestId !== latestRequestId) {
+            return
         }
-    } catch (error) {
-        console.error('Product search error:', error)
-        productSearchResults.value = []
-        // Reset pagination on error
+        results.value = []
         currentPage.value = 1
         totalPages.value = 0
         totalItems.value = 0
-        paginationData.value = null
     } finally {
-        productSearchLoading.value = false
-    }
-}
-
-const searchProductsAPI = async (page: number = 1) => {
-    if (!props.shopSlug) {
-        return { data: { data: [] } }
-    }
-
-    return await axios.get(
-        route('grp.json.shop.products_beefree_search', {
-            shop: props.shopSlug!,
-        }), {
-        params: {
-            search: productSearchQuery.value.trim(),
-            tab_type: 'products',
-            per_page: 10,
-            page: page
+        if (requestId === latestRequestId) {
+            isLoading.value = false
         }
     }
-    )
-}
-
-const searchNewInProductsAPI = async (page: number = 1) => {
-    if (!props.shopSlug) {
-        return { data: { data: [] } }
-    }
-
-    return await axios.get(
-        route('grp.json.shop.products_beefree_search', {
-            shop: props.shopSlug!,
-        }), {
-        params: {
-            search: productSearchQuery.value.trim(),
-            tab_type: 'new_in',
-            per_page: 10,
-            page: page
-        }
-    }
-    )
-}
-
-const searchTrendingProductsAPI = async (page: number = 1) => {
-    if (!props.shopSlug) {
-        return { data: { data: [] } }
-    }
-
-    return await axios.get(
-        route('grp.json.shop.products_beefree_search', {
-            shop: props.shopSlug!,
-        }), {
-        params: {
-            search: productSearchQuery.value.trim(),
-            tab_type: 'trending',
-            time_filter: timeFilter.value,
-            per_page: 10,
-            page: page
-        }
-    }
-    )
-}
-
-const fetchCollections = async () => {
-    if (!props.shopSlug) {
-        collections.value = []
-        return
-    }
-
-    collectionsLoading.value = true
-    try {
-        const response = await axios.get(
-            route('grp.json.shop.catalogue.collections', {
-                shop: props.shopSlug!,
-                scope: props.shopSlug!
-            })
-        )
-        collections.value = response.data.data || []
-    } catch (error) {
-        console.error('Collections fetch error:', error)
-        collections.value = []
-    } finally {
-        collectionsLoading.value = false
-    }
-}
-
-const fetchFamilies = async () => {
-    if (!props.shopId) {
-        families.value = []
-        return
-    }
-
-    familiesLoading.value = true
-    try {
-        const response = await axios.get(
-            route('grp.json.shop.families', {
-                shop: props.shopId!
-            })
-        )
-        families.value = response.data.data || []
-    } catch (error) {
-        console.error('Families fetch error:', error)
-        families.value = []
-    } finally {
-        familiesLoading.value = false
-    }
-}
-
-const fetchSubDepartments = async () => {
-    if (!props.shopId) {
-        subDepartments.value = []
-        return
-    }
-
-    subDepartmentsLoading.value = true
-    try {
-        const response = await axios.get(
-            route('grp.json.shop.sub_departments', {
-                shop: props.shopId!
-            })
-        )
-        subDepartments.value = response.data.data || []
-    } catch (error) {
-        console.error('Sub-departments fetch error:', error)
-        subDepartments.value = []
-    } finally {
-        subDepartmentsLoading.value = false
-    }
-}
-
-// Route configuration for infinite scroll components
-function getEntityFetchRoute(entityType: string) {
-    if (entityType === 'family') {
-        return {
-            name: 'grp.json.shop.families',
-            parameters: { shop: props.shopId }
-        }
-    }
-
-    if (entityType === 'sub_department') {
-        return {
-            name: 'grp.json.shop.sub_departments',
-            parameters: { shop: props.shopId }
-        }
-    }
-
-    if (entityType === 'collection') {
-        return {
-            name: 'grp.json.shop.catalogue.collections',
-            parameters: { shop: props.shopSlug, scope: props.shopSlug }
-        }
-    }
-
-    return null
-}
-
-const searchCollectionFamilyProductsAPI = async (page: number = 1) => {
-    if (!props.shopSlug) {
-        return { data: { data: [] } }
-    }
-
-    return await axios.get(
-        route('grp.json.shop.products_beefree_search', {
-            shop: props.shopSlug!,
-        }), {
-        params: {
-            search: productSearchQuery.value.trim(),
-            tab_type: 'collection_family',
-            collection_id: selectedCollection.value ? parseInt(selectedCollection.value) : null,
-            family_id: selectedFamily.value ? parseInt(selectedFamily.value) : null,
-            sub_department_id: selectedSubDepartment.value ? parseInt(selectedSubDepartment.value) : null,
-            per_page: 10,
-            page: page
-        }
-    }
-    )
 }
 
 const onSearchInput = () => {
-    if (searchDebounceTimeout) {
-        clearTimeout(searchDebounceTimeout)
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer)
     }
-    // Reset to page 1 when searching
-    currentPage.value = 1
-    searchDebounceTimeout = setTimeout(() => {
-        searchProducts(1)
-    }, 300)
-}
-
-const hasActiveFilters = () => {
-    return selectedCollection.value || selectedFamily.value || selectedSubDepartment.value
-}
-
-const generateProductHtmlValue = (product: any, shopSlug: string): string => {
-    const imageUrl = product.product_image || ''
-    const title = product.name || product.code || 'Unknown Product'
-    const description = product.description || ''
-    const truncatedDescription = description
-    const productUrl = product.url || '#'
-    const buttonColor = selectedButtonColor.value
-
-    return `
-        <div style="width: 100%; font-family: Arial, sans-serif;">
-            ${imageUrl ? `
-                <div style="margin-bottom: 12px;">
-                    <img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; border-radius: 8px;" />
-                </div>
-            ` : ''}
-            <div style="margin-bottom: 12px; text-align: center;">
-                <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #333;">${title}</h3>
-                ${truncatedDescription ? `
-                    <p style=" margin: 0; color: #000; direction: ltr; font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 14px; font-weight: 400; letter-spacing: 0; line-height: 1.2; text-align: center; mso-line-height-alt: 17px;">${truncatedDescription}</p>
-                ` : ''}
-            </div>
-            <div style="text-align: center;">
-                 <a href="${productUrl}" style="background-color: #1d252e; border: 0px solid transparent; border-radius: 4px; color: #ffffff; display: inline-block; font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 17px; font-weight: 400; text-align: center; text-decoration: none; word-break: keep-all; letter-spacing: normal; padding-left: 30px; padding-right: 30px; padding-top: 5px; padding-bottom: 5px; line-height: 34px;">${trans('SHOP NOW')}</a>
-            </div>
-        </div>
-    `.trim()
-}
-
-const selectProduct = (product: any) => {
-    if (productSearchResolve) {
-        const productLink = {
-            name: product.name || product.code,
-            value: generateProductHtmlValue(product, props.shopSlug!)
-        }
-        productSearchResolve(productLink)
-        productSearchResolve = null
-        productSearchReject = null
-    }
-    productSearchModalOpen.value = false
-    productSearchQuery.value = ''
-    productSearchResults.value = []
-}
-
-const closeProductSearchModal = () => {
-    if (productSearchReject) {
-        productSearchReject()
-        productSearchReject = null
-        productSearchResolve = null
-    }
-    productSearchModalOpen.value = false
-    productSearchQuery.value = ''
-    productSearchResults.value = []
+    searchDebounceTimer = setTimeout(() => searchProducts(1), SEARCH_DEBOUNCE_MS)
 }
 
 const switchTab = (tab: string) => {
+    if (activeTab.value === tab) {
+        return
+    }
     activeTab.value = tab
-    productSearchQuery.value = ''
-    // Reset to page 1 when switching tabs
-    currentPage.value = 1
     searchProducts(1)
 }
 
 const changeTimeFilter = (filter: string) => {
     timeFilter.value = filter
-    if (activeTab.value === PRODUCT_TABS.NEW_IN || activeTab.value === PRODUCT_TABS.TRENDING) {
-        // Reset to page 1 when changing time filter
-        currentPage.value = 1
-        searchProducts(1)
-    }
+    searchProducts(1)
 }
 
-// Watchers for infinite scroll components
-watch(selectedCollection, (newValue) => {
+watch([selectedCollection, selectedFamily, selectedSubDepartment], () => {
     if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
-        // Reset to page 1 when changing collection
-        currentPage.value = 1
         searchProducts(1)
     }
 })
 
-watch(selectedFamily, (newValue) => {
-    if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
-        // Reset to page 1 when changing family
-        currentPage.value = 1
-        searchProducts(1)
-    }
-})
-
-watch(selectedSubDepartment, (newValue) => {
-    if (activeTab.value === PRODUCT_TABS.COLLECTION_FAMILY) {
-        // Reset to page 1 when changing sub-department
-        currentPage.value = 1
-        searchProducts(1)
-    }
-})
-
-// Pagination functions
 const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
-        currentPage.value = page
         searchProducts(page)
     }
 }
 
-const goToPreviousPage = () => {
-    if (currentPage.value > 1) {
-        goToPage(currentPage.value - 1)
+const toggleProduct = (product: DynamicProduct) => {
+    if (isSelected(product)) {
+        selectedProducts.value = selectedProducts.value.filter((selected) => selected.id !== product.id)
+        return
+    }
+    if (!isSelectionFull.value) {
+        selectedProducts.value = [...selectedProducts.value, product]
     }
 }
 
-const goToNextPage = () => {
-    if (currentPage.value < totalPages.value) {
-        goToPage(currentPage.value + 1)
-    }
+const removeSelected = (product: DynamicProduct) => {
+    selectedProducts.value = selectedProducts.value.filter((selected) => selected.id !== product.id)
 }
 
-const setupProductSearchHandlers = (resolve: (value: any) => void, reject: () => void) => {
-    productSearchResolve = resolve
-    productSearchReject = reject
-    // Open product search modal
-    productSearchModalOpen.value = true
-    productSearchQuery.value = ''
-    productSearchResults.value = []
+const escapeHtml = (value: unknown): string =>
+    String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+const readableTextColor = (hexColor: string): string => {
+    const match = hexColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+    if (!match) {
+        return '#ffffff'
+    }
+    const [red, green, blue] = match.slice(1).map((channel) => parseInt(channel, 16))
+    const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+
+    return luminance > 0.6 ? '#111111' : '#ffffff'
+}
+
+const productCardHtml = (product: DynamicProduct): string => {
+    const title = product.name || product.code || ctrans('Product')
+    const url = product.url || '#'
+    const image = product.product_image
+        ? `<a href="${escapeHtml(url)}" style="text-decoration:none"><img src="${escapeHtml(product.product_image)}" alt="${escapeHtml(title)}" width="100%" style="display:block;width:100%;max-width:100%;height:auto;border:0;border-radius:8px"></a>`
+        : ''
+    const description = showDescription.value && product.description
+        ? `<div style="margin:0 0 12px 0;color:#333333;font-family:Arial,Helvetica Neue,Helvetica,sans-serif;font-size:14px;line-height:1.4;text-align:center">${product.description}</div>`
+        : ''
+    const color = buttonColor.value
+
+    return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse">`
+        + `<tr><td style="padding:0 0 12px 0">${image}</td></tr>`
+        + `<tr><td style="padding:0 0 8px 0;text-align:center;font-family:Arial,Helvetica Neue,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:#333333">${escapeHtml(title)}</td></tr>`
+        + (description ? `<tr><td>${description}</td></tr>` : '')
+        + `<tr><td style="text-align:center"><a href="${escapeHtml(url)}" style="display:inline-block;background-color:${escapeHtml(color)};color:${readableTextColor(color)};border-radius:4px;font-family:Arial,Helvetica Neue,Helvetica,sans-serif;font-size:16px;line-height:34px;padding:4px 28px;text-decoration:none;word-break:keep-all">${escapeHtml(buttonLabel.value || ctrans('SHOP NOW'))}</a></td></tr>`
+        + `</table>`
+}
+
+const generatedHtml = computed(() => {
+    const perRow = Math.max(1, productsPerRow.value)
+    const cellWidth = `${(100 / perRow).toFixed(2)}%`
+    const rows: string[] = []
+
+    for (let index = 0; index < selectedProducts.value.length; index += perRow) {
+        const rowProducts = selectedProducts.value.slice(index, index + perRow)
+        const cells = rowProducts.map((product) => `<td class="product-cell" width="${cellWidth}" valign="top" style="width:${cellWidth};padding:8px;vertical-align:top">${productCardHtml(product)}</td>`)
+        while (cells.length < perRow) {
+            cells.push(`<td width="${cellWidth}" style="width:${cellWidth};padding:8px"></td>`)
+        }
+        rows.push(`<tr>${cells.join('')}</tr>`)
+    }
+
+    return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;width:100%">${rows.join('')}</table>`
+})
+
+const previewDocument = computed(() =>
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:12px;background:#ffffff}</style></head><body>${generatedHtml.value}</body></html>`
+)
+
+const insertName = computed(() => {
+    const names = selectedProducts.value.map((product) => product.name || product.code)
+    if (names.length === 1) {
+        return names[0]
+    }
+
+    return `${names.length} ${ctrans('products')}: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`
+})
+
+const resetState = () => {
     activeTab.value = PRODUCT_TABS.PRODUCTS
+    searchQuery.value = ''
+    timeFilter.value = TIME_FILTERS.WEEK
     selectedCollection.value = ''
     selectedFamily.value = ''
     selectedSubDepartment.value = ''
-    // Reset pagination when opening modal
+    results.value = []
+    selectedProducts.value = []
     currentPage.value = 1
     totalPages.value = 0
     totalItems.value = 0
-    paginationData.value = null
-    fetchCollections()
-    fetchFamilies()
-    fetchSubDepartments()
-    searchProducts(1)
 }
 
-// Expose method for parent component
+const insertSelected = () => {
+    if (!selectedProducts.value.length) {
+        return
+    }
+    resolveSelection?.({ name: insertName.value, value: generatedHtml.value })
+    resolveSelection = null
+    rejectSelection = null
+    isOpen.value = false
+}
+
+const onHide = () => {
+    rejectSelection?.()
+    resolveSelection = null
+    rejectSelection = null
+}
+
+const close = () => {
+    isOpen.value = false
+}
+
 const openModal = () => {
     return new Promise((resolve, reject) => {
-        setupProductSearchHandlers(resolve, reject)
+        resolveSelection = resolve
+        rejectSelection = reject
+        resetState()
+        isOpen.value = true
+        searchProducts(1)
     })
 }
 
 defineExpose({
-    openModal
+    openModal,
 })
 </script>
 
 <template>
-    <!-- Product Search Modal -->
-    <Modal :isOpen="productSearchModalOpen" @onClose="closeProductSearchModal" width="w-full max-w-4xl"
-        :closeButton="true">
-        <div class="p-4">
-            <h3 class="text-lg font-semibold mb-4">{{ trans('Search Products') }}</h3>
+    <Dialog v-model:visible="isOpen" modal :draggable="false" :header="ctrans('Insert products')"
+        :style="{ width: '80rem' }" :breakpoints="{ '1360px': '95vw' }" @hide="onHide"
+        :pt="{ header: { class: '!px-5 !py-3 border-b border-gray-200' }, content: { class: '!px-5 !pb-4 !pt-0' } }">
+        <div class="flex h-[78vh] min-h-[520px] flex-col">
+            <p class="border-b border-gray-100 py-2 text-sm text-gray-500">{{ ctrans('Pick one or more products, adjust how they look, then insert them into the email.') }}</p>
 
-            <!-- Tabs -->
-            <div class="border-b border-gray-200 mb-4">
-                <nav class="flex space-x-8" aria-label="Tabs">
-                    <button v-for="tab in [
-                        { key: PRODUCT_TABS.PRODUCTS, label: trans('Products') },
-                        { key: PRODUCT_TABS.NEW_IN, label: trans('New In') },
-                        { key: PRODUCT_TABS.TRENDING, label: trans('Trending Products') },
-                        { key: PRODUCT_TABS.COLLECTION_FAMILY, label: trans('Collection/Family') }
-                    ]" :key="tab.key" @click="switchTab(tab.key)" :class="[
-                        activeTab === tab.key
-                            ? 'border-indigo-500 text-indigo-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                        'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm cursor-pointer transition-colors'
-                    ]">
-                        {{ tab.label }}
-                    </button>
-                </nav>
-            </div>
+            <div class="flex min-h-0 flex-1">
+                <section class="flex min-w-0 flex-1 flex-col pr-4 pt-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex rounded-lg bg-gray-100 p-1">
+                            <button v-for="tab in tabs" :key="tab.key" type="button"
+                                class="rounded-md px-3 py-1.5 text-sm transition"
+                                :class="activeTab === tab.key ? 'bg-white font-medium text-[var(--theme-color-4)] shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                @click="switchTab(tab.key)">
+                                {{ tab.label }}
+                            </button>
+                        </div>
 
-            <!-- Filters Section -->
-            <div class="mb-4 flex flex-col sm:flex-row gap-4 items-center">
-                <!-- Search Input (only for Products tab) -->
-                <div v-if="activeTab === PRODUCT_TABS.PRODUCTS" class="flex-1">
-                    <PureInput v-model="productSearchQuery" :placeholder="trans('Type SKO or product name...')"
-                        @input="onSearchInput" :autofocus="true" />
-                </div>
-
-                <!-- Time Filter (for Trending only) -->
-                <div v-if="activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('Filter by') }}</label>
-                    <select v-model="timeFilter" @change="changeTimeFilter(timeFilter)"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option :value="TIME_FILTERS.WEEK">{{ trans('Weekly') }}</option>
-                        <option :value="TIME_FILTERS.MONTH">{{ trans('monthly') }}</option>
-                        <option :value="TIME_FILTERS.YEAR">{{ trans('Yearly') }}</option>
-                    </select>
-                </div>
-
-                <!-- Family Filter (for Collection/Family) -->
-                <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
-                    <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('family')" mode="single"
-                        v-model="selectedFamily" :initOptions="families || []"
-                        :fetchRoute="getEntityFetchRoute('family')!" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select a family')" />
-                </div>
-
-                <!-- Sub-Department Filter (for Collection/Family) -->
-                <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
-                    <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('sub_department')" mode="single"
-                        v-model="selectedSubDepartment" :initOptions="subDepartments || []"
-                        :fetchRoute="getEntityFetchRoute('sub_department')!" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select a sub-department')" />
-                </div>
-
-                <!-- Collection Filter (for Collection/Family) -->
-                <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="sm:w-48">
-                    <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('collection')" mode="single"
-                        v-model="selectedCollection" :initOptions="collections || []"
-                        :fetchRoute="getEntityFetchRoute('collection')!" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select a collection')" />
-                </div>
-
-                <!-- Button Color Picker -->
-                <div class="sm:w-32">
-                    <label v-tooltip="trans('custom color will be use for button shop now')"
-                        class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ trans('Custom Color') }}
-                    </label>
-                    <div v-tooltip="trans('custom color will be use for button shop now')"
-                        class="flex items-center gap-2">
-                        <input type="color" v-model="selectedButtonColor"
-                            class="h-6 w-16 border border-gray-300 rounded cursor-pointer" />
-                        <span class="text-xs text-gray-500">{{ selectedButtonColor }}</span>
+                        <div class="relative min-w-[220px] flex-1">
+                            <FontAwesomeIcon icon="fal fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" fixed-width aria-hidden="true" />
+                            <input v-model="searchQuery" type="search" :placeholder="ctrans('Search by product code or name')" :aria-label="ctrans('Search products')"
+                                class="w-full rounded-lg border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-[var(--theme-color-4)] focus:ring-[var(--theme-color-4)]"
+                                @input="onSearchInput" />
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Loading State -->
-            <div v-if="productSearchLoading" class="flex justify-center py-8">
-                <LoadingIcon class="text-3xl" />
-            </div>
+                    <div v-if="activeTab === PRODUCT_TABS.TRENDING" class="mt-3 flex items-center gap-2 text-sm">
+                        <span class="text-gray-500">{{ ctrans('Best sellers') }}:</span>
+                        <button v-for="filter in timeFilters" :key="filter.key" type="button"
+                            class="rounded-full border px-3 py-1 text-xs transition"
+                            :class="timeFilter === filter.key ? 'border-[var(--theme-color-4)] bg-[color-mix(in_srgb,var(--theme-color-4)_10%,white)] text-[var(--theme-color-4)]' : 'border-gray-300 text-gray-600 hover:border-gray-400'"
+                            @click="changeTimeFilter(filter.key)">
+                            {{ filter.label }}
+                        </button>
+                    </div>
 
-            <!-- Results List -->
-            <div v-else-if="productSearchResults.length > 0" class="max-h-96 overflow-y-auto">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div v-for="product in productSearchResults" :key="product.id"
-                        class="flex items-center gap-4 p-4 hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors">
-                        <!-- Product Image -->
-                        <div class="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                            <img v-if="product.product_image" :src="product.product_image" :alt="product.name"
-                                class="w-full h-full object-cover" />
-                            <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                {{ trans('No Image') }}
+                    <div v-if="activeTab === PRODUCT_TABS.COLLECTION_FAMILY" class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <PureMultiselectInfiniteScroll v-if="shopId" mode="single" v-model="selectedFamily" :fetchRoute="entityFetchRoutes.family"
+                            valueProp="id" labelProp="name" :placeholder="ctrans('Any family')" />
+                        <PureMultiselectInfiniteScroll v-if="shopId" mode="single" v-model="selectedSubDepartment" :fetchRoute="entityFetchRoutes.subDepartment"
+                            valueProp="id" labelProp="name" :placeholder="ctrans('Any sub-department')" />
+                        <PureMultiselectInfiniteScroll v-if="shopSlug" mode="single" v-model="selectedCollection" :fetchRoute="entityFetchRoutes.collection"
+                            valueProp="id" labelProp="name" :placeholder="ctrans('Any collection')" />
+                    </div>
+
+                    <div class="mt-3 min-h-0 flex-1 overflow-y-auto rounded-lg bg-gray-50 p-3">
+                        <div v-if="isLoading" class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                            <div v-for="placeholder in 8" :key="placeholder" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                <div class="aspect-square animate-pulse bg-gray-100" />
+                                <div class="space-y-2 p-3">
+                                    <div class="h-3 w-3/4 animate-pulse rounded bg-gray-100" />
+                                    <div class="h-3 w-1/3 animate-pulse rounded bg-gray-100" />
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Product Info -->
-                        <div class="flex-1 min-w-0">
-                            <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
-                            <div class="text-sm text-gray-500">{{ trans('Product Code') }}: {{ product.code }}</div>
+                        <div v-else-if="!results.length" class="flex h-full flex-col items-center justify-center py-12 text-center">
+                            <FontAwesomeIcon icon="fal fa-box-open" class="mb-3 text-4xl text-gray-300" fixed-width aria-hidden="true" />
+                            <div class="text-sm font-medium text-gray-700">
+                                <template v-if="searchQuery.trim()">{{ ctrans('No products found for') }} “{{ searchQuery.trim() }}”</template>
+                                <template v-else-if="hasActiveFilters">{{ ctrans('No products match these filters') }}</template>
+                                <template v-else>{{ ctrans('No products to show') }}</template>
+                            </div>
+                            <div class="mt-1 text-xs text-gray-500">{{ ctrans('Try another search or a different tab.') }}</div>
                         </div>
 
-                        <!-- Select Button -->
-                        <Button type="secondary" :label="trans('Select')" size="sm"
-                            @click.stop="selectProduct(product)" />
+                        <div v-else class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                            <button v-for="product in results" :key="product.id" type="button"
+                                class="group relative flex flex-col overflow-hidden rounded-lg border bg-white text-left transition"
+                                :class="isSelected(product)
+                                    ? 'border-[var(--theme-color-4)] ring-2 ring-[var(--theme-color-4)]'
+                                    : (isSelectionFull ? 'cursor-not-allowed border-gray-200 opacity-60' : 'border-gray-200 hover:border-[var(--theme-color-4)] hover:shadow-md')"
+                                :aria-pressed="isSelected(product)"
+                                @click="toggleProduct(product)">
+                                <span class="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold"
+                                    :class="isSelected(product) ? 'border-[var(--theme-color-4)] bg-[var(--theme-color-4)] text-[var(--theme-color-5)]' : 'border-gray-300 bg-white/90 text-transparent group-hover:text-gray-300'">
+                                    <template v-if="isSelected(product)">{{ selectionIndex(product) }}</template>
+                                    <FontAwesomeIcon v-else icon="fal fa-check" fixed-width aria-hidden="true" />
+                                </span>
+                                <div class="flex aspect-square items-center justify-center bg-white p-2">
+                                    <img v-if="product.product_image" :src="product.product_image" :alt="product.name ?? product.code" loading="lazy" class="max-h-full max-w-full object-contain" />
+                                    <FontAwesomeIcon v-else icon="fal fa-image" class="text-3xl text-gray-300" fixed-width aria-hidden="true" />
+                                </div>
+                                <div class="border-t border-gray-100 px-3 py-2">
+                                    <div class="line-clamp-2 text-sm font-medium leading-snug text-gray-900" :title="product.name ?? ''">{{ product.name ?? product.code }}</div>
+                                    <div class="mt-1 inline-block rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-600">{{ product.code }}</div>
+                                </div>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Pagination Controls -->
-            <div v-if="productSearchResults.length > 0 && totalPages > 1"
-                class="mt-4 flex items-center justify-between border-t pt-4">
-                <!-- Page Information -->
-                <div class="text-sm text-gray-600">
-                    <span>{{ trans('Page') }} {{ currentPage }} {{ trans('of') }} {{ totalPages }}</span>
-                    <span v-if="totalItems > 0" class="ml-2">({{ totalItems }} {{ trans('total items') }})</span>
-                </div>
+                    <div class="flex items-center justify-between py-2 text-xs text-gray-500">
+                        <span v-if="totalItems">{{ firstItemNumber }}–{{ lastItemNumber }} {{ ctrans('of') }} {{ totalItems }}</span>
+                        <span v-else />
+                        <div v-if="totalPages > 1" class="flex items-center gap-x-1">
+                            <button type="button" class="h-7 w-7 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40"
+                                :disabled="currentPage <= 1 || isLoading" :aria-label="ctrans('Previous page')" @click="goToPage(currentPage - 1)">
+                                <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
+                            </button>
+                            <span class="px-2">{{ currentPage }} / {{ totalPages }}</span>
+                            <button type="button" class="h-7 w-7 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40"
+                                :disabled="currentPage >= totalPages || isLoading" :aria-label="ctrans('Next page')" @click="goToPage(currentPage + 1)">
+                                <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
+                </section>
 
-                <!-- Navigation Buttons -->
-                <div class="flex items-center gap-2">
-                    <Button type="secondary" :label="trans('Previous')" size="sm" @click="goToPreviousPage"
-                        :disabled="currentPage === 1 || productSearchLoading"
-                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 || productSearchLoading }" />
-                    <Button type="secondary" :label="trans('Next')" size="sm" @click="goToNextPage"
-                        :disabled="currentPage === totalPages || productSearchLoading"
-                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages || productSearchLoading }" />
-                </div>
-            </div>
+                <aside class="flex w-80 shrink-0 flex-col border-l border-gray-200 pl-4 pt-3">
+                    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+                        <div>
+                            <div class="mb-2 flex items-center justify-between">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                    {{ ctrans('Selected') }} ({{ selectedProducts.length }}/{{ MAX_SELECTED_PRODUCTS }})
+                                </span>
+                                <button v-if="selectedProducts.length" type="button" class="text-xs text-red-500 hover:text-red-700" @click="selectedProducts = []">
+                                    {{ ctrans('Clear') }}
+                                </button>
+                            </div>
+                            <div v-if="!selectedProducts.length" class="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500">
+                                {{ ctrans('Click products on the left to add them here.') }}
+                            </div>
+                            <ul v-else class="space-y-1.5">
+                                <li v-for="(product, index) in selectedProducts" :key="product.id" class="flex items-center gap-x-2 rounded border border-gray-200 bg-white p-1.5">
+                                    <span class="w-4 text-center text-[11px] text-gray-400">{{ index + 1 }}</span>
+                                    <img v-if="product.product_image" :src="product.product_image" :alt="product.name ?? product.code" class="h-8 w-8 shrink-0 rounded object-contain" />
+                                    <span class="min-w-0 flex-1 truncate text-xs text-gray-800">{{ product.name ?? product.code }}</span>
+                                    <button type="button" class="h-6 w-6 shrink-0 rounded text-gray-400 hover:bg-gray-100 hover:text-red-500" :aria-label="ctrans('Remove')" @click="removeSelected(product)">
+                                        <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
 
-            <!-- Empty State -->
-            <div v-else-if="(productSearchQuery.trim() || hasActiveFilters()) && !productSearchLoading && productSearchResults.length === 0"
-                class="text-center py-8 text-gray-500">
-                <template v-if="productSearchQuery.trim()">
-                    {{ trans('No products found matching') }} "{{ productSearchQuery }}"
-                </template>
-                <template v-else>
-                    {{ trans('No Products found matching with the filter') }}
-                </template>
-            </div>
+                        <div class="space-y-3">
+                            <div class="text-xs font-semibold uppercase tracking-wider text-gray-700">{{ ctrans('Appearance') }}</div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">{{ ctrans('Products per row') }}</span>
+                                <div class="flex overflow-hidden rounded border border-gray-300">
+                                    <button v-for="count in [1, 2, 3]" :key="count" type="button" class="h-8 w-9 border-l border-gray-200 text-sm first:border-l-0"
+                                        :class="productsPerRow === count ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)]' : 'bg-white text-gray-600 hover:bg-gray-50'"
+                                        @click="productsPerRow = count">
+                                        {{ count }}
+                                    </button>
+                                </div>
+                            </div>
+                            <label class="flex cursor-pointer items-center justify-between">
+                                <span class="text-sm text-gray-600">{{ ctrans('Show description') }}</span>
+                                <input v-model="showDescription" type="checkbox" class="rounded border-gray-300 text-[var(--theme-color-4)] focus:ring-[var(--theme-color-4)]" />
+                            </label>
+                            <label class="block">
+                                <span class="text-sm text-gray-600">{{ ctrans('Button text') }}</span>
+                                <input v-model="buttonLabel" type="text" class="mt-1 w-full rounded border-gray-300 px-2 py-1.5 text-sm focus:border-[var(--theme-color-4)] focus:ring-[var(--theme-color-4)]" />
+                            </label>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">{{ ctrans('Button color') }}</span>
+                                <label class="flex h-8 cursor-pointer items-center gap-x-2 rounded border border-gray-300 bg-white pl-1 pr-2">
+                                    <input v-model="buttonColor" type="color" class="h-6 w-6 cursor-pointer border-0 p-0" />
+                                    <span class="font-mono text-xs text-gray-600">{{ buttonColor }}</span>
+                                </label>
+                            </div>
+                        </div>
 
-            <!-- Cancel Button -->
-            <div class="mt-6 flex justify-end">
-                <Button type="tertiary" :label="trans('Cancel')" @click="closeProductSearchModal" />
+                        <div v-if="selectedProducts.length">
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-700">{{ ctrans('Preview') }}</div>
+                            <iframe :srcdoc="previewDocument" sandbox="" :title="ctrans('Products preview')"
+                                class="h-72 w-full rounded border border-gray-200 bg-white" />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-x-2 border-t border-gray-200 pt-3">
+                        <button type="button" class="h-9 rounded border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-50" @click="close">
+                            {{ ctrans('Cancel') }}
+                        </button>
+                        <button type="button"
+                            class="h-9 rounded bg-[var(--theme-color-4)] px-4 text-sm font-medium text-[var(--theme-color-5)] hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)] disabled:cursor-not-allowed disabled:opacity-50"
+                            :disabled="!selectedProducts.length" @click="insertSelected">
+                            {{ selectedProducts.length > 1 ? `${ctrans('Insert')} ${selectedProducts.length} ${ctrans('products')}` : ctrans('Insert product') }}
+                        </button>
+                    </div>
+                </aside>
             </div>
         </div>
-    </Modal>
+    </Dialog>
 </template>

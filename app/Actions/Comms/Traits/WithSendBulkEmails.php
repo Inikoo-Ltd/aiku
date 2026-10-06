@@ -138,6 +138,7 @@ trait WithSendBulkEmails
                 "<a ses:no-track href=\"$unsubscribeUrl\">%s</a>",
                 __('Unsubscribe')
             ),
+            'unsubscribe-url' => $unsubscribeUrl,
             'unsubscribe_fallback' => sprintf(
                 "<a ses:no-track href=\"$unsubscribeUrl\" style=\"color: white;\">%s</a>",
                 __('Unsubscribe')
