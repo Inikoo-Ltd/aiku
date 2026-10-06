@@ -55,37 +55,51 @@ class GetStaffTaskBadgeData
     }
 
     /**
-     * The open tasks a person raised, the ones waiting for their answer (a new ETA to accept, a call for help) first.
+     * The open tasks a person raised, in three groups: a new ETA waiting for their answer, a call for help, and the rest, newest first.
      *
-     * @return array{open: int, needs_answer: int, tasks: array<int, array<string, mixed>>}
+     * @return array{open: int, needs_answer: int, tasks: array<int, array<string, mixed>>, sections: array{eta_change: array<int, array<string, mixed>>, help_request: array<int, array<string, mixed>>, recent: array<int, array<string, mixed>>}}
      */
     private function createdTasks(User $user): array
     {
         $created     = fn () => StaffTask::query()->where('group_id', $user->group_id)->open()->where('requester_id', $user->id);
         $needsAnswer = fn (Builder $query) => $query->where(fn (Builder $waiting) => $waiting->whereNotNull('data->eta_proposal')->orWhereNotNull('data->help_requested'));
 
+        $rows = fn (Builder $query, int $limit) => $query
+            ->with('assignee')
+            ->limit($limit)
+            ->get()
+            ->map(fn (StaffTask $task) => $this->createdTaskRow($task))
+            ->values()
+            ->all();
+
         return [
             'open'         => $created()->count(),
             'needs_answer' => $needsAnswer($created())->count(),
-            'tasks'        => $created()
-                ->with('assignee')
-                ->orderByRaw("(data->'eta_proposal') is null, (data->'help_requested') is null, due_at asc nulls last, id desc")
-                ->limit(6)
-                ->get()
-                ->map(fn (StaffTask $task) => [
-                    'id'               => $task->id,
-                    'reference'        => $task->reference,
-                    'subject'          => $task->subject,
-                    'status'           => $task->status->value,
-                    'status_icon'      => StaffTaskStatusEnum::stateIcon()[$task->status->value],
-                    'due_at'           => $task->due_at?->toDateString(),
-                    'assignee'         => $task->assignee?->chatName() ?? ($task->department ? StaffTask::departmentLabel($task->department) : null),
-                    'has_eta_proposal' => isset($task->data['eta_proposal']),
-                    'asked_for_help'   => isset($task->data['help_requested']),
-                    'route'            => route('grp.tasks.show', $task->reference),
-                ])
-                ->values()
-                ->all(),
+            'tasks'        => $rows($created()->orderByRaw("(data->'eta_proposal') is null, (data->'help_requested') is null, due_at asc nulls last, id desc"), 6),
+            'sections'     => [
+                'eta_change'   => $rows($created()->whereNotNull('data->eta_proposal')->orderByDesc('id'), 5),
+                'help_request' => $rows($created()->whereNotNull('data->help_requested')->orderByDesc('id'), 5),
+                'recent'       => $rows($created()->whereNull('data->eta_proposal')->whereNull('data->help_requested')->orderByDesc('id'), 5),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function createdTaskRow(StaffTask $task): array
+    {
+        return [
+            'id'               => $task->id,
+            'reference'        => $task->reference,
+            'subject'          => $task->subject,
+            'status'           => $task->status->value,
+            'status_icon'      => StaffTaskStatusEnum::stateIcon()[$task->status->value],
+            'due_at'           => $task->due_at?->toDateString(),
+            'assignee'         => $task->assignee?->chatName() ?? ($task->department ? StaffTask::departmentLabel($task->department) : null),
+            'has_eta_proposal' => isset($task->data['eta_proposal']),
+            'asked_for_help'   => isset($task->data['help_requested']),
+            'route'            => route('grp.tasks.show', $task->reference),
         ];
     }
 

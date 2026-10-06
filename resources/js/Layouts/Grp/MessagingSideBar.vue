@@ -10,8 +10,8 @@ import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { compactCount } from "@/Composables/useCompactCount"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks } from "@fal"
-import { faStar as faStarSolid } from "@fas"
+import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks, faEye, faEyeSlash } from "@fal"
+import { faStar as faStarSolid, faEye as faEyeSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
@@ -20,12 +20,12 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, isAlerting, isWorkThread, canArchiveConversation, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, isAlerting, isWorkThread, isHiddenChat, canArchiveConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks)
+library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks, faEye, faEyeSlash, faEyeSolid)
 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
@@ -288,9 +288,11 @@ const tabHeader = computed(() => {
     return `${ctrans('Messages')} (${conversationsSummary.value.total}, ${conversationsSummary.value.unread} ${ctrans('unread')})`
 })
 
+const listedConversations = computed(() => store.showHiddenChats ? store.conversations : store.conversations.filter((conversation) => !isHiddenChat(conversation)))
+
 const conversationsSummary = computed(() => ({
-    total: store.conversations.length,
-    unread: store.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0),
+    total: listedConversations.value.length,
+    unread: listedConversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0),
 }))
 
 const tabs = computed(() => [
@@ -320,7 +322,7 @@ const workThreadLabel = (conversation: any) => (isWorkThread(conversation) ? WOR
 
 const RAIL_NEWEST_CHATS = 3
 
-const newestConversationsAll = computed(() => [...store.conversations].sort((a, b) => Date.parse(b.last_message_at ?? "") - Date.parse(a.last_message_at ?? "") || 0))
+const newestConversationsAll = computed(() => [...listedConversations.value].sort((a, b) => Date.parse(b.last_message_at ?? "") - Date.parse(a.last_message_at ?? "") || 0))
 const newestConversations = computed(() => newestConversationsAll.value.slice(0, RAIL_NEWEST_CHATS))
 const newerConversationsHidden = computed(() => Math.max(0, newestConversationsAll.value.length - RAIL_NEWEST_CHATS))
 
@@ -465,9 +467,20 @@ onUnmounted(() => {
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
                 <span class="text-xs text-[var(--chat-text)]">{{ ctrans('Messaging') }}</span>
             </button>
-            <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="ctrans('New message')">
-                <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-            </button>
+            <span class="flex shrink-0 items-center gap-x-2">
+                <button
+                    type="button"
+                    class="shrink-0 transition-colors"
+                    :class="store.showHiddenChats ? 'text-[var(--chat-accent)] hover:text-[var(--chat-text)]' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :aria-pressed="store.showHiddenChats"
+                    v-tooltip="store.showHiddenChats ? ctrans('Show hidden chat: on') : ctrans('Show hidden chat: off')"
+                    @click="store.toggleShowHiddenChats()">
+                    <FontAwesomeIcon :icon="store.showHiddenChats ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+                </button>
+                <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="ctrans('New message')">
+                    <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                </button>
+            </span>
         </div>
 
         <!-- COLLAPSED: avatar rail -->
@@ -592,6 +605,13 @@ onUnmounted(() => {
                                 v-tooltip="ctrans('Rings only when you are mentioned')"
                                 class="shrink-0 rounded bg-[var(--chat-line)] px-1 text-[9px] uppercase tracking-wide text-[var(--chat-label)]">
                                 {{ workThreadLabel(conversation) }}
+                            </span>
+                            <span
+                                v-if="isWorkThread(conversation)"
+                                v-tooltip="conversation.is_watching ? ctrans('Watching: always listed') : ctrans('Not watching: only listed when hidden chats are shown')"
+                                class="shrink-0"
+                                :class="conversation.is_watching ? 'text-[var(--chat-accent)]' : 'text-[var(--chat-muted)] opacity-70'">
+                                <FontAwesomeIcon :icon="conversation.is_watching ? 'fas fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
                             </span>
                             <span v-if="conversation.task?.status_label" v-tooltip="ctrans('Task status')" class="inline-flex shrink-0 items-center gap-0.5 text-[var(--chat-label)]">
                                 <FontAwesomeIcon v-if="conversation.task.status_icon" :icon="conversation.task.status_icon.icon" :class="conversation.task.status_icon.class" fixed-width aria-hidden="true" />
