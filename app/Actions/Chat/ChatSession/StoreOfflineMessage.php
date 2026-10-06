@@ -29,10 +29,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreOfflineMessage
 {
     use AsAction;
+    use WithTrustedChatWebUser;
 
     public function handle(Shop $shop, array $data): ChatSession
     {
-        $data = $this->withWebUserContact($data);
+        $data['web_user_id'] = $data['trusted_web_user_id'] ?? $this->trustedWebUserId($data['web_user_id'] ?? null);
+        $data                = $this->withWebUserContact($data);
 
         return DB::transaction(function () use ($shop, $data) {
             $session = $this->findSession($shop, $data['session_ulid'] ?? null)
@@ -156,8 +158,8 @@ class StoreOfflineMessage
     {
         return StoreChatSession::run([
             'shop_id' => $shop->id ?? null,
-            'web_user_id' => $data['web_user_id'] ?? null,
-            'language_id' => $data['language_id'] ?? null,
+            'trusted_web_user_id' => $data['web_user_id'] ?? null,
+            'language_id'         => $data['language_id'] ?? null,
             'priority' => ChatPriorityEnum::NORMAL,
         ]);
     }
@@ -212,7 +214,7 @@ class StoreOfflineMessage
         $messageData = [
             'message_text' => $data['message'],
             'message_type' => ChatMessageTypeEnum::TEXT->value,
-            'sender_type' => $data['sender_type'] === ChatSenderTypeEnum::USER->value
+            'sender_type' => $data['sender_type'] === ChatSenderTypeEnum::USER->value && !blank($data['web_user_id'] ?? null)
                 ? ChatSenderTypeEnum::USER->value
                 : ChatSenderTypeEnum::GUEST->value,
             'sender_id' => $data['web_user_id'] ?? null,

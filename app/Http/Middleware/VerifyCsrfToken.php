@@ -14,6 +14,9 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         'webhooks',
         'shopify-user/*',
-        'redirect-unsubscribe/*'
+        'redirect-unsubscribe/*',
+        'app/api/chats/sessions',
+        'app/api/chats/offline-message',
+        'app/api/chats/messages/*/send',
     ];
 }

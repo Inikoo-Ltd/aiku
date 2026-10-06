@@ -5,51 +5,31 @@ namespace App\Http\Middleware;
 use App\Models\Dropshipping\ShopifyUser;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class VerifyShopifyWebhook
 {
     /**
-     * Routes subscribed after signatures were checked from the start have no unsigned traffic to
-     * break, so they always refuse a bad signature. A forged products-deleted call would unlink a
-     * merchant's products.
+     * Shopify sends the fulfilment service stock lookup as an unsigned GET, so it cannot be
+     * verified. It only reads the store's own cached stock levels and writes nothing.
      */
-    private const array ALWAYS_ENFORCED_ROUTES = [
-        'webhooks.shopify.products_deleted',
+    private const array UNSIGNED_ROUTES = [
+        'webhooks.shopify.fetch_stock',
     ];
 
     /**
-     * Shopify signs every webhook body with the app secret. Routes that were never given this
-     * middleware accepted anonymous callers, so while app.enforce_webhook_signatures is off an
-     * unsigned call is recorded and allowed through: the log says whether any real traffic would
-     * break before the rejection is switched on.
+     * Shopify signs every webhook body with the app secret; anything else is refused.
      */
     public function handle(Request $request, Closure $next)
     {
-        $refusal = match (true) {
-            !$this->hasValidSignature($request)   => 'signature',
-            !$this->shopMatchesRoute($request)    => 'shop mismatch',
-            default                               => null,
-        };
-
-        if (!$refusal) {
+        if (in_array($request->route()?->getName(), self::UNSIGNED_ROUTES, true)) {
             return $next($request);
         }
 
-        if (!config('app.enforce_webhook_signatures') && !in_array($request->route()?->getName(), self::ALWAYS_ENFORCED_ROUTES, true)) {
-            Log::warning('Unverified Shopify webhook allowed', [
-                'reason' => $refusal,
-                'route'  => $request->route()?->getName(),
-                'path'   => $request->path(),
-                'ip'     => $request->ip(),
-                'shop'   => $request->header('x-shopify-shop-domain'),
-                'signed' => $request->hasHeader('x-shopify-hmac-sha256'),
-            ]);
-
-            return $next($request);
+        if (!$this->hasValidSignature($request) || !$this->shopMatchesRoute($request)) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        return response()->json(['message' => 'Unauthorized'], 401);
+        return $next($request);
     }
 
     /**

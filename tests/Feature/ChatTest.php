@@ -3255,6 +3255,21 @@ describe('staff chat audience seeding', function () {
     });
 });
 
+test('an offline message cannot borrow another customers name and email', function () {
+    $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    \Illuminate\Support\Facades\Auth::guard('retina')->logout();
+
+    $session = StoreOfflineMessage::make()->handle($this->shop, [
+        'web_user_id' => $victim->id,
+        'message'     => 'Send my replies here',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::USER->value,
+    ]);
+
+    expect($session->web_user_id)->toBeNull()
+        ->and(\Illuminate\Support\Arr::get($session->metadata, 'email_from'))->not->toBe($victim->email);
+});
+
 test('a chat session cannot be bound to a web user the caller is not logged in as', function () {
     $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
 
@@ -3265,7 +3280,6 @@ test('a chat session cannot be bound to a web user the caller is not logged in a
         'shop_id'     => $this->shop->id,
     ];
 
-    config()->set('app.enforce_chat_identity', true);
     \Illuminate\Support\Facades\Auth::guard('retina')->logout();
 
     $hijacked = $this->action->handle($modelData);
@@ -3278,25 +3292,6 @@ test('a chat session cannot be bound to a web user the caller is not logged in a
     $legitimate = $this->action->handle($modelData);
 
     expect($legitimate->web_user_id)->toBe($victim->id);
-});
-
-test('a claimed chat web user is recorded but honoured while enforcement is off', function () {
-    $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
-
-    config()->set('app.enforce_chat_identity', false);
-    \Illuminate\Support\Facades\Auth::guard('retina')->logout();
-    \Illuminate\Support\Facades\Log::spy();
-
-    $chatSession = $this->action->handle([
-        'web_user_id' => $victim->id,
-        'language_id' => 68,
-        'priority'    => ChatPriorityEnum::NORMAL->value,
-        'shop_id'     => $this->shop->id,
-    ]);
-
-    expect($chatSession->web_user_id)->toBe($victim->id);
-    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
-        ->withArgs(fn ($message) => $message === 'Chat web user claimed without a matching login');
 });
 
 test('an agent queue can only be read by the agent it belongs to', function () {
