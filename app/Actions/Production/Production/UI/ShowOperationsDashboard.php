@@ -69,6 +69,7 @@ class ShowOperationsDashboard extends OrgAction
             'Org/Production/OperationsDashboard',
             [
                 'title'                            => __('Operations'),
+                'server_time'                      => now()->toIso8601ZuluString('millisecond'),
                 'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'                       => [
                     'previous' => $this->getPrevious($production, $request),

@@ -1199,6 +1199,7 @@ test('UI show manufacture floor', function () {
             ->has('breadcrumbs', 3)
             ->where('breadcrumbs.2.simple.label', 'Manufacture floor')
             ->has('tasks')
+            ->where('server_time', fn (string $serverTime) => abs(now()->diffInSeconds($serverTime)) < 60)
             ->has('today', fn (AssertableInertia $page) => $page
                 ->has('sessions')
                 ->has('quantity_made')
