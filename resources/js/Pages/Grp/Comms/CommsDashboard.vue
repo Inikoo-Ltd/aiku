@@ -11,15 +11,17 @@ import type { Component } from "vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faChartNetwork, faBell, faSatelliteDish } from "@fal";
+import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faChartNetwork, faBell, faSatelliteDish, faFolderOpen } from "@fal";
 import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
+import BeefreeFileManager from "@/Components/Coms/BeefreeFileManager.vue";
 
-library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faChartNetwork, faBell, faSatelliteDish);
+library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faChartNetwork, faBell, faSatelliteDish, faFolderOpen);
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
+    file_manager?: { shop: string }
 
 
 }>();
@@ -30,7 +32,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components: Component = {
-        dashboard: ComsDashboard
+        dashboard: ComsDashboard,
+        file_manager: BeefreeFileManager
     };
 
     return components[currentTab.value];

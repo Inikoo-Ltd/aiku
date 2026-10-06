@@ -71,6 +71,8 @@ use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 use App\Actions\Comms\BeeFreeSDK\BeefreeConvertEmailJsonToPageJson;
+use App\Actions\Comms\BeeFreeSDK\DownloadBeefreeFile;
+use App\Actions\Comms\BeeFreeSDK\IndexBeefreeFiles;
 use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
@@ -221,6 +223,8 @@ Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.product
 Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNotForSaleInShop::class)->name('shop.products_including_not_for_sale');
 
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
+Route::get('shop/{shop}/beefree-files', IndexBeefreeFiles::class)->name('shop.beefree_files.index');
+Route::get('shop/{shop}/beefree-files/download', DownloadBeefreeFile::class)->name('shop.beefree_files.download');
 Route::get('shop/{shop}/dynamic-block-email-templates', GetDynamicBlockEmailTemplates::class)->name('shop.dynamic_block_email_templates');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 

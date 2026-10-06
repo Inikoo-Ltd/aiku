@@ -17,6 +17,7 @@ enum CommsDashboardTabsEnum: string
     use HasTabs;
 
     case DASHBOARD = 'dashboard';
+    case FILE_MANAGER = 'file_manager';
 
     public function blueprint(): array
     {
@@ -24,6 +25,10 @@ enum CommsDashboardTabsEnum: string
             CommsDashboardTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            CommsDashboardTabsEnum::FILE_MANAGER => [
+                'title' => __('File manager'),
+                'icon'  => 'fal fa-folder-open',
             ],
         };
     }

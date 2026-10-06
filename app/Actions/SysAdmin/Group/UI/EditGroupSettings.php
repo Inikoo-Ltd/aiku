@@ -161,6 +161,11 @@ class EditGroupSettings extends OrgAction
                                 "label"       => __("Beefree Client Secret"),
                                 "value"       => $group->settings['beefree']['client_secret'] ?? '',
                             ],
+                            "file_manager_api_key" => [
+                                "type"        => "input",
+                                "label"       => __("Beefree File Manager API Key"),
+                                "value"       => Arr::get($group->settings, 'beefree.file_manager_api_key', ''),
+                            ],
                             // "grant_type" => [
                             //     "type"        => "input",
                             //     "label"       => __("Grant Type"),

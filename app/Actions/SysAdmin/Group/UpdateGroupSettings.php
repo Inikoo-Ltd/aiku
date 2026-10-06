@@ -50,6 +50,9 @@ class UpdateGroupSettings extends OrgAction
         if (Arr::has($modelData, 'client_secret')) {
             data_set($modelData, 'settings.beefree.client_secret', Arr::pull($modelData, 'client_secret'));
         }
+        if (Arr::has($modelData, 'file_manager_api_key')) {
+            data_set($modelData, 'settings.beefree.file_manager_api_key', Arr::pull($modelData, 'file_manager_api_key'));
+        }
         if (Arr::has($modelData, 'page_builder_client_id')) {
             data_set($modelData, 'settings.beefree.page_builder.client_id', Arr::pull($modelData, 'page_builder_client_id'));
         }
@@ -133,6 +136,7 @@ class UpdateGroupSettings extends OrgAction
             ],
             'client_id'                         => ['sometimes', 'string', 'nullable'],
             'client_secret'                     => ['sometimes', 'string', 'nullable'],
+            'file_manager_api_key'              => ['sometimes', 'string', 'nullable'],
             'page_builder_client_id'            => ['sometimes', 'string', 'nullable'],
             'page_builder_client_secret'        => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],

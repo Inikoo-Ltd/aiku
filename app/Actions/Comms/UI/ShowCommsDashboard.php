@@ -70,6 +70,10 @@ class ShowCommsDashboard extends OrgAction
                     'navigation' => CommsDashboardTabsEnum::navigation()
                 ],
 
+                CommsDashboardTabsEnum::FILE_MANAGER->value => [
+                    'shop' => $parent instanceof Fulfilment ? $parent->shop->slug : $parent->slug,
+                ],
+
 
             ]
         );
