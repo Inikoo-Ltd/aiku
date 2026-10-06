@@ -12020,6 +12020,35 @@ test('a WhatsApp reaction from the customer opens the 24 hour window so the agen
     $session->forceDelete();
 });
 
+test('the WhatsApp reply window counts down from the customer message and our replies do not extend it', function () {
+    $this->freezeSecond();
+
+    $session = noiseTestWhatsappSession($this->shop, '+447500000482', 'The boxes arrived damaged');
+    $customerSaidAt = now()->subDay()->addMinute();
+    $session->messages()->update(['created_at' => $customerSaidAt]);
+    $session->update(['last_visitor_message_at' => $customerSaidAt]);
+    $session->messages()->create([
+        'meta_channel_id' => $session->meta_channel_id,
+        'meta_message_id' => 'wamid.reply-'.Str::random(8),
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'Sorry to hear that',
+    ]);
+
+    $session->refresh();
+    expect($session->can_send_non_template_message)->toBeTrue()
+        ->and($session->whatsapp_window_seconds_left)->toBe(60);
+
+    $this->travel(61)->seconds();
+
+    $session->refresh();
+    expect($session->can_send_non_template_message)->toBeFalse()
+        ->and($session->whatsapp_window_seconds_left)->toBe(0);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
 test('chat availability answers offline for a shop without a website and needs a shop', function () {
     $shop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
 

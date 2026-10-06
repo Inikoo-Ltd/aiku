@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
-import { useElementSize } from "@vueuse/core"
+import { useElementSize, useNow } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
@@ -257,6 +257,36 @@ const reopenChat = () =>
 
 const canSendNonTemplate = ref<boolean | undefined>(undefined)
 const templateOnly = computed(() => canSendNonTemplate.value === false)
+
+const now = useNow({ interval: 250 })
+const windowClosesAt = ref<number | null>(null)
+
+const setWindowSecondsLeft = (seconds: number | undefined) => {
+    if (seconds === undefined) return
+    windowClosesAt.value = seconds > 0 ? Date.now() + seconds * 1000 : null
+}
+
+const windowSecondsLeft = computed(() =>
+    windowClosesAt.value === null ? null : Math.max(0, Math.ceil((windowClosesAt.value - now.value.getTime()) / 1000))
+)
+
+watch(windowSecondsLeft, (seconds) => {
+    if (seconds === 0) canSendNonTemplate.value = false
+})
+
+const windowLeftLabel = computed(() => {
+    const seconds = windowSecondsLeft.value
+    if (!seconds) return null
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${Math.floor(seconds / 3600)}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`
+})
+
+const windowLeftClass = computed(() => {
+    const seconds = windowSecondsLeft.value ?? 0
+    if (seconds <= 600) return "text-red-600 font-semibold"
+    if (seconds <= 3600) return "text-amber-600 font-medium"
+    return "text-gray-400"
+})
 
 const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
@@ -530,6 +560,7 @@ const getMessages = async (loadMore = false) => {
         }
 
         canSendNonTemplate.value = data?.data?.can_send_non_template_message
+        setWindowSecondsLeft(data?.data?.whatsapp_window_seconds_left)
 
         const page = data?.data?.pagination
         canLoadMore.value = !!page?.has_more
@@ -892,12 +923,13 @@ const initSocket = () => {
 
     chatChannel = window.Echo.private(`meta-chat-session.${chatSession.value.ulid}`)
 
-    onMessage = ({ message, can_send_non_template_message }: any) => {
+    onMessage = ({ message, can_send_non_template_message, whatsapp_window_seconds_left }: any) => {
         if (!message?.id) return
 
         if (can_send_non_template_message !== undefined) {
             canSendNonTemplate.value = can_send_non_template_message
         }
+        setWindowSecondsLeft(whatsapp_window_seconds_left)
 
         closingAt.value = null
         onCustomerWaitMessage(message)
@@ -922,12 +954,13 @@ const initSocket = () => {
         scrollBottom()
     }
 
-    onReaction = ({ message, can_send_non_template_message }: any) => {
+    onReaction = ({ message, can_send_non_template_message, whatsapp_window_seconds_left }: any) => {
         if (!message?.id) return
 
         if (can_send_non_template_message !== undefined) {
             canSendNonTemplate.value = can_send_non_template_message
         }
+        setWindowSecondsLeft(whatsapp_window_seconds_left)
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
 
@@ -975,6 +1008,7 @@ watch(
     () => chatSession.value?.ulid,
     async () => {
         messagesLocal.value = []
+        windowClosesAt.value = null
         nextCursor.value = null
         canLoadMore.value = false
         clearTemplate()
@@ -1347,9 +1381,15 @@ onUnmounted(() => {
                             <ChatFormattingToolbar :editor="messageEditor?.editor" />
                         </template>
                     </div>
-                    <Button @click="sendMessage" :loading="isSending"
-                        :disabled="hasTemplate ? !canSendTemplate : templateOnly"
-                        :icon="faPaperPlane"></Button>
+                    <div class="flex items-center gap-2">
+                        <span v-if="windowLeftLabel && !templateOnly" class="text-[11px] tabular-nums" :class="windowLeftClass"
+                            v-tooltip="ctrans('WhatsApp lets you type freely until 24 hours after the customer\'s last message. Your replies do not extend it. After that only template messages can be sent.')">
+                            ⏳ {{ ctrans('Reply window closes in :time', { time: windowLeftLabel }) }}
+                        </span>
+                        <Button @click="sendMessage" :loading="isSending"
+                            :disabled="hasTemplate ? !canSendTemplate : templateOnly"
+                            :icon="faPaperPlane"></Button>
+                    </div>
                 </div>
             </div>
         </footer>
