@@ -4991,6 +4991,7 @@ describe('partner shopping list', function () {
             'date'                          => $landedHistoryDate,
             'fifo_per_sku'                  => 0.4 * (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity,
         ]);
+        $sellerOrgStock->update(['current_supplier_sku_cost' => 0.4 * (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity]);
 
         $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner, []);
         $line          = StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $this->buyerOrgStock->refresh(), ['quantity_ordered' => 3 * $unitsPerProduct]);

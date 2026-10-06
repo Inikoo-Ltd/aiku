@@ -5010,3 +5010,84 @@ test('a job order planned by hand is one job with its lines on the board, even f
         'lines'  => [],
     ]))->toThrow(ValidationException::class);
 });
+
+test('SKO made in-house without an artefact can get one from the trade unit composition', function () {
+    $organisation = $this->production->organisation;
+    $stock        = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock  = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($organisation, $stock);
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $orgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+
+    $compositionRow = fn () => collect(\App\Actions\Goods\TradeUnit\UI\GetTradeUnitComposition::run($tradeUnit)['org_stocks'])->firstWhere('id', $orgStock->id);
+
+    expect($orgStock->refresh()->is_made_in_house)->toBeFalse()
+        ->and($compositionRow()['missing_artefact'])->toBeNull();
+
+    \App\Actions\Inventory\OrgStock\UpdateOrgStock::make()->action($orgStock, ['is_made_in_house' => true]);
+
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'INHDEP', 'name' => 'In-house department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'INHFAM', 'name' => 'In-house family']);
+    $stockFamily    = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action($this->group, array_merge(\App\Models\Goods\StockFamily::factory()->definition(), ['code' => 'INHSF']));
+    $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($organisation, $stockFamily, []);
+    $orgStock->update(['org_stock_family_id' => $orgStockFamily->id]);
+    $family->update(['org_stock_family_id' => $orgStockFamily->id]);
+    StoreArtefact::make()->action($this->production, ['code' => 'INHSIB', 'name' => 'Sibling', 'artefact_family_id' => $family->id, 'recommended_batch_size' => 48, 'shelf_life_days' => 730]);
+
+    $missing = $compositionRow()['missing_artefact'];
+    expect($missing)->not->toBeNull()
+        ->and($missing['create_route']['parameters']['org_stock'])->toBe($orgStock->id)
+        ->and($missing['link_data'])->toBe(['org_stock_id' => $orgStock->id, 'trade_unit_id' => $tradeUnit->id]);
+
+    get(route($missing['create_route']['name'], $missing['create_route']['parameters']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('CreateModel')
+            ->where('formData.blueprint.0.fields.code.value', $orgStock->code)
+            ->where('formData.blueprint.0.fields.org_stock_id.value', $orgStock->id)
+            ->where('formData.blueprint.0.fields.trade_unit_id.value', $tradeUnit->id)
+            ->where('formData.blueprint.0.fields.artefact_family_id.value', $family->id)
+            ->where('formData.blueprint.0.fields.recommended_batch_size.value', 48)
+            ->where('formData.blueprint.0.fields.shelf_life_days.value', 730));
+
+    expect(StoreArtefact::make()->action($this->production, ['code' => 'INHFAMART', 'name' => 'Family only', 'artefact_family_id' => $family->id])->artefact_department_id)
+        ->toBe($department->id);
+
+    $missingArtefactCodes = function () use ($organisation) {
+        request()->merge(['elements' => ['artefact' => 'missing_artefact'], 'perPage' => 500]);
+
+        return \App\Actions\Inventory\OrgStock\UI\IndexOrgStocks::make()
+            ->initialisation($organisation, [])
+            ->handle($organisation, bucket: 'current')
+            ->pluck('code');
+    };
+
+    expect($missingArtefactCodes())->toContain($orgStock->code);
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-LINK', 'name' => 'Link me']);
+
+    $this->getJson(route($missing['artefacts_route']['name'], $missing['artefacts_route']['parameters']).'?filter[global]=INHOUSE-LINK')
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $artefact->id);
+
+    $this->patchJson(route($missing['link_route']['name'], [...$missing['link_route']['parameters'], 'artefact' => $artefact->id]), $missing['link_data'])
+        ->assertOk();
+
+    expect($missingArtefactCodes())->not->toContain($orgStock->code);
+
+    $row = $compositionRow();
+    expect($row['missing_artefact'])->toBeNull()
+        ->and($row['artefacts'][0]['code'])->toBe('INHOUSE-LINK')
+        ->and($artefact->refresh()->trade_unit_id)->toBe($tradeUnit->id);
+
+    $otherStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    ));
+    StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-NEW', 'name' => 'New', 'org_stock_id' => $otherStock->id]);
+
+    expect($otherStock->refresh()->is_made_in_house)->toBeTrue();
+});

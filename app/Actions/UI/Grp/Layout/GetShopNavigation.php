@@ -165,72 +165,72 @@ class GetShopNavigation
                     ],
                 ],
             ];
+        }
 
-            if ($shop->type !== ShopTypeEnum::EXTERNAL) {
-                $navigation["billables"] = [
-                    "root" => "grp.org.shops.show.billables.",
-                    "icon" => ["fal", "fa-ballot"],
-                    "label" => __("Billables"),
-                    "route" => [
-                        "name" => 'grp.org.shops.show.billables.dashboard',
-                        "parameters" => [$shop->organisation->slug, $shop->slug],
-                    ],
-                    "topMenu" => [
-                        "subSections" => [
-                            [
-                                'label'   => __("Shop"),
-                                "tooltip" => __("Shop"),
-                                "icon" => ["fal", "fa-store-alt"],
-                                'root' => 'grp.org.shops.show.billables.dashboard',
-                                "route" => [
-                                    "name" => 'grp.org.shops.show.billables.dashboard',
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
+        if ($shop->type !== ShopTypeEnum::EXTERNAL && $user->hasAnyPermission(["products.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
+            $navigation["billables"] = [
+                "root" => "grp.org.shops.show.billables.",
+                "icon" => ["fal", "fa-ballot"],
+                "label" => __("Billables"),
+                "route" => [
+                    "name" => 'grp.org.shops.show.billables.dashboard',
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "topMenu" => [
+                    "subSections" => [
+                        [
+                            'label'   => __("Shop"),
+                            "tooltip" => __("Shop"),
+                            "icon" => ["fal", "fa-store-alt"],
+                            'root' => 'grp.org.shops.show.billables.dashboard',
+                            "route" => [
+                                "name" => 'grp.org.shops.show.billables.dashboard',
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                            [
-                                "label" => __("Shipping"),
-                                "tooltip" => __("Shipping"),
-                                "icon" => ["fal", "fa-shipping-fast"],
-                                'root' => 'grp.org.shops.show.billables.shipping.',
-                                "route" => [
-                                    "name" => "grp.org.shops.show.billables.shipping.index",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
+                        ],
+                        [
+                            "label" => __("Shipping"),
+                            "tooltip" => __("Shipping"),
+                            "icon" => ["fal", "fa-shipping-fast"],
+                            'root' => 'grp.org.shops.show.billables.shipping.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.billables.shipping.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                            [
-                                "label" => __("Charges"),
-                                "tooltip" => __("Charges"),
-                                "icon" => ["fal", "fa-charging-station"],
-                                'root' => 'grp.org.shops.show.billables.charges.',
-                                "route" => [
-                                    "name" => "grp.org.shops.show.billables.charges.index",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
+                        ],
+                        [
+                            "label" => __("Charges"),
+                            "tooltip" => __("Charges"),
+                            "icon" => ["fal", "fa-charging-station"],
+                            'root' => 'grp.org.shops.show.billables.charges.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.billables.charges.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                            [
-                                "label" => __("Services"),
-                                "tooltip" => __("Services"),
-                                "icon" => ["fal", "fa-concierge-bell"],
-                                'root' => 'grp.org.shops.show.billables.services.',
-                                "route" => [
-                                    "name" => "grp.org.shops.show.billables.services.index",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
+                        ],
+                        [
+                            "label" => __("Services"),
+                            "tooltip" => __("Services"),
+                            "icon" => ["fal", "fa-concierge-bell"],
+                            'root' => 'grp.org.shops.show.billables.services.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.billables.services.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                            [
-                                "label" => __("Packagings"),
-                                "tooltip" => __("Packagings"),
-                                "icon" => ["fal", "fa-box-open"],
-                                'root' => 'grp.org.shops.show.billables.packagings.',
-                                "route" => [
-                                    "name" => "grp.org.shops.show.billables.packagings.index",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
+                        ],
+                        [
+                            "label" => __("Packagings"),
+                            "tooltip" => __("Packagings"),
+                            "icon" => ["fal", "fa-box-open"],
+                            'root' => 'grp.org.shops.show.billables.packagings.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.billables.packagings.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
                     ],
-                ];
-            }
+                ],
+            ];
         }
 
         $navigation["reviews"] = [

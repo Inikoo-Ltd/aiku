@@ -102,7 +102,7 @@ interface Insights {
     favourites: Favourite[]
     recent_orders: RecentOrder[]
     recommendations: Record<string, any>[]
-    recommendations_source: "bought_together" | "shop_best_sellers"
+    recommendations_source: "bought_together" | "shop_best_sellers" | "ai_suggestions"
 }
 
 const props = defineProps<{
@@ -270,13 +270,16 @@ const inBasket = (item: BasketItem) => basketQuantities[item.id] ?? item.quantit
 
 const addingProductIds = ref<number[]>([])
 
-const addToBasket = async (item: BasketItem, quantity: number) => {
+type DashboardSection = "order_again" | "favourites"
+
+const addToBasket = async (item: BasketItem, quantity: number, section: DashboardSection) => {
     if (props.readOnly || addingProductIds.value.includes(item.id)) return
     addingProductIds.value.push(item.id)
     const newQuantity = inBasket(item) + quantity
     try {
         const { data } = await axios.post(route("retina.models.product.add-to-basket", { product: item.id }), {
             quantity: newQuantity,
+            dashboard_section: section,
         })
         basketQuantities[item.id] = data?.quantity_ordered ?? newQuantity
         notify({ title: ctrans("Added to basket"), type: "success" })
@@ -373,7 +376,7 @@ const repeatOrder = async (order: RecentOrder) => {
     if (props.readOnly) return
     repeatingOrderId.value = order.id
     try {
-        const { data } = await axios.post(route("retina.models.order.repeat", { order: order.id }))
+        const { data } = await axios.post(route("retina.models.order.repeat", { order: order.id }), { dashboard_section: "repeat_order" })
         notify({
             title: data.added === 1 ? ctrans("1 product added to your basket") : ctrans(":count products added to your basket", { count: String(data.added) }),
             text: data.skipped.length
@@ -441,9 +444,11 @@ const recommendationsTitle = computed(() => props.insights.recommendations_sourc
     ? ctrans("Popular with other shops")
     : (isLapsed.value ? ctrans("New for you since your last order") : ctrans("Suggested for your shop")))
 
-const recommendationsSubtitle = computed(() => props.insights.recommendations_source === "shop_best_sellers"
-    ? ctrans("What other shops are ordering most at the moment, a good place to start.")
-    : ctrans("Products that sell well alongside the ones you order, and new to you."))
+const recommendationsSubtitle = computed(() => {
+    if (props.insights.recommendations_source === "shop_best_sellers") return ctrans("What other shops are ordering most at the moment, a good place to start.")
+    if (props.insights.recommendations_source === "ai_suggestions") return ctrans("Picked for your shop from what you order, new launches and what sells this season.")
+    return ctrans("Products that sell well alongside the ones you order, and new to you.")
+})
 
 const overview = computed(() => {
     const k = props.insights.kpis
@@ -603,7 +608,7 @@ const overview = computed(() => {
                                     :icon="faShoppingBasket"
                                     :loading="addingProductIds.includes(regular.id)"
                                     :disabled="readOnly"
-                                    @click="addToBasket(regular, quantityFor(regular.id, suggestedQuantity(regular)))"
+                                    @click="addToBasket(regular, quantityFor(regular.id, suggestedQuantity(regular)), 'order_again')"
                                 />
                             </div>
                             <Button
@@ -656,7 +661,7 @@ const overview = computed(() => {
                                 :tooltip="ctrans('Add to basket')"
                                 :loading="addingProductIds.includes(favourite.id)"
                                 :disabled="readOnly"
-                                @click="addToBasket(favourite, 1)"
+                                @click="addToBasket(favourite, 1, 'favourites')"
                             />
                             <Button
                                 v-else-if="favourite.stock_status === 'out_of_stock'"
@@ -760,7 +765,7 @@ const overview = computed(() => {
                         :basketButton="true"
                         :isLoadingFavourite="togglingFavouriteIds.includes(product.id)"
                         :isLoadingRemindBackInStock="togglingReminderIds.includes(product.id)"
-                        :addToBasketRoute="{ name: 'retina.models.product.add-to-basket', method: 'post' }"
+                        :addToBasketRoute="{ name: 'retina.models.product.add-to-basket', method: 'post', body: { dashboard_section: `suggestions_${insights.recommendations_source}` } }"
                         :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
                         :routeGettransactionProductData="{ name: 'retina.json.basket_transaction_product_data' }"
                         @setFavorite="toggleRecommendationFavourite"
@@ -768,6 +773,7 @@ const overview = computed(() => {
                         @setBackInStock="toggleRecommendationBackInStock"
                         @unsetBackInStock="toggleRecommendationBackInStock"
                     />
+                    <p v-if="product.suggestion_reason" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ product.suggestion_reason }}</p>
                 </SwiperSlide>
             </Swiper>
             <div v-else class="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
@@ -782,6 +788,7 @@ const overview = computed(() => {
                     </a>
                     <span class="mt-2 line-clamp-2 text-sm font-semibold text-gray-900">{{ product.name }}</span>
                     <p class="text-xs text-gray-500">{{ product.code }}</p>
+                    <p v-if="product.suggestion_reason" class="mt-1 line-clamp-2 text-xs text-gray-500">{{ product.suggestion_reason }}</p>
                     <div class="mt-auto flex items-center justify-between gap-2 pt-2">
                         <p class="text-xs tabular-nums text-gray-700">{{ packLine(product.discounted_price ?? product.price, product.units, product.unit) }}</p>
                         <span v-if="inBasket(product)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-green-600">

@@ -80,6 +80,14 @@ class IndexArtefacts extends OrgAction
         return $this->handle(parent: $production, prefix: ArtefactsTabsEnum::ARTEFACTS->value);
     }
 
+    public function inJson(Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $production;
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($production);
+    }
+
     protected function getElementGroups(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
         $assignmentCounts = $this->getAssignmentCounts($parent);
@@ -245,6 +253,7 @@ class IndexArtefacts extends OrgAction
                     'artefacts.state',
                     'artefacts.recommended_batch_size',
                     'org_stocks.packed_in',
+                    'org_stocks.code as org_stock_code',
                     'artefacts.shelf_life_days',
                     'artefact_departments.name as artefact_department_name',
                     'artefact_departments.slug as artefact_department_slug',

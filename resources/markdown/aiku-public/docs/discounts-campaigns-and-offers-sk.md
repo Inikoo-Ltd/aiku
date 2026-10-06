@@ -1,8 +1,8 @@
 ---
 title: Zľavy: kampane a ponuky
 summary: Ako sú zľavy v obchode usporiadané do kampaní, ako sa vytvára a časuje jednotlivá ponuka a ako sa zľava napokon prejaví na objednávke.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-10-06
+source_date: 2026-10-06
 tags: discounts, offers, campaigns
 category: shop
 ---
@@ -49,6 +49,8 @@ Celá ponuka po vytvorení nesie aj:
 - Jednu alebo viac **allowances** — samotnú odmenu. Každá allowance má typ: **Percentage Off**, **Amount Off**, **Free Items**, **Gift**, **Shipping**, alebo kombináciu **Mixed**.
 
 Spúšťač ponuky — čo musí zákazník urobiť, aby si ju zaslúžil — závisí od typu kampane, v ktorej sa nachádza. Kampaň typu product-offers sa spúšťa objednaním daného produktu alebo jeho množstva; kampaň typu category-offers sa spúšťa oddelením, pod-oddelením, rodinou alebo kategóriou; kampaň typu shop-offers sa spúšťa celkovou sumou objednávky za celý obchod; kampaň typu first-order sa spúšťa tým, že ide o prvú objednávku zákazníka; kampaň typu voucher sa spúšťa zadaním kódu poukazu; a kampaň typu shipping dáva namiesto zníženia ceny allowance na dopravu zadarmo.
+
+Keď v **Create Category Offer** vyberiete viac ako jednu kategóriu, určíte, ako budú fungovať. **One offer: the selected categories count together** vytvorí jedinú ponuku: to, čo zákazník objedná naprieč všetkými vybranými kategóriami, sa spočíta do spúšťača a zľava sa uplatní na všetko z týchto kategórií. Napríklad vyberiete štyri rodiny s **By minimum amount** £250 a 25 % a £100 z jednej rodiny plus £150 z druhej získa 25 % zľavu na obe. **One offer per category** vytvorí samostatnú ponuku pre každú kategóriu a každá z nich musí dosiahnuť spúšťač sama. Minimálna suma sa meria pred zľavami, takže ponuka zostane zapnutá aj po tom, čo sa uplatnila.
 
 ## Kde sa jednotlivé ponuky naozaj vytvárajú
 

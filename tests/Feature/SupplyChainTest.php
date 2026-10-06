@@ -847,13 +847,14 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
     $this->get(route('grp.supply-chain.dashboard', ['journey' => 'supplier']))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('SupplyChain/SupplyChainPurchaseOrderJourney')
-            ->has('filters.buyer')
-            ->has('blockages')
-            ->has('quickStats')
-            ->where('active.journey', 'supplier')
-            ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
-                fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'po_created'
-            )));
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->has('filters.buyer')
+                ->has('blockages')
+                ->has('quickStats')
+                ->where('active.journey', 'supplier')
+                ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
+                    fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'po_created'
+                ))));
 
     $this->patch(route('grp.models.purchase-order.journey_stage', ['purchaseOrder' => $purchaseOrder->id]), [
         'stage' => 'production',
@@ -864,8 +865,9 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
 
     $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('ribbons.0.reference', $purchaseOrder->reference)
-            ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done'));
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('ribbons.0.reference', $purchaseOrder->reference)
+                ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done')));
 })->depends('create independent supplier 2');
 
 test('UI create suppliers product in supplier', function () {
