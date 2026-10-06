@@ -8,8 +8,10 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
@@ -89,8 +91,11 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->keyBy('stock_id');
 
         $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
+        $landedCosts = GetPartnerLandedCost::appliesTo($this->orgPartner) ? GetPartnerLandedCost::run($sellerOrgStockIds->all()) : [];
+        $quanta      = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStockIds->all());
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor) {
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor, $landedCosts, $quanta) {
+            $quantum       = $quanta[$orgStock->id] ?? 1;
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
             $buyerOrgStock = $buyerOrgStocks->get($orgStock->stock_id);
@@ -109,11 +114,14 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     ? (int) $buyerOrgStock->stats->days_of_cover
                     : null,
                 'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
-                    ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                    ? (int) RoundPartnerQuantityToBatches::roundUp(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum)
                     : null,
-                'price'                 => $product && $product->price !== null && $unitsPerSko
+                'order_quantum'         => $quantum,
+                'price'                 => isset($landedCosts[$orgStock->id]) && (float) $orgStock->packed_in > 0
+                    ? round($landedCosts[$orgStock->id] * $this->orgPartner->exchangeToOrgCurrency() / (float) $orgStock->packed_in, 4)
+                    : ($product && $product->price !== null && $unitsPerSko
                     ? round((float) $product->price * $priceFactor * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
-                    : null,
+                    : null),
                 'shopping_list_item_id' => $openItem?->id,
                 'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
             ];

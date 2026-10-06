@@ -2,7 +2,7 @@
 title: Quitar productos de un canal
 summary: Saca un producto de My Products, o rompe solo su vínculo con tu tienda, y conoce qué pasa con el anuncio en tu tienda en cada caso.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-05
 tags: productos, my products, quitar, eliminar, desvincular, interrumpido
 category: products
 shops: awd, dssk, dse
@@ -53,12 +53,14 @@ En un canal manual pulsa la cruz roja, <b>Eliminar producto de la lista</b>. No 
 
 Esto funciona en canales de plataforma, no en un canal manual.
 
-1. Marca los productos en la lista.
+1. Marca los productos en la lista. Para marcar todos los productos de la página, marca la casilla de la parte superior de la columna de casillas. Para ir más rápido, muestra más filas por página con el selector que hay debajo de la lista, hasta 150.
 2. Pulsa uno de los botones que aparecen encima de la lista:
    - <b>Unlink (...)</b>: rompe el vínculo con tu tienda. Los productos se quedan en <b>Mis productos</b> y los anuncios se quedan en tu tienda.
    - <b>Unlink & Delete (...)</b>: rompe el vínculo y quita los productos de <b>Mis productos</b>. Los anuncios se quedan en tu tienda, así que elimínalos ahí si ya no los quieres.
 
-No hay ventana de confirmación para estos dos botones. Comprueba lo que has marcado antes de pulsar.
+Los dos botones abren una ventana que muestra cuántos productos has marcado y te pide confirmar. Léela antes de pulsar <b>Yes</b>: ninguna de las dos acciones se puede deshacer. Después de <b>Unlink & Delete</b>, los productos, con los nombres, precios y descripciones que les pusiste, desaparecen de <b>Mis productos</b>, y tendrás que volver a añadirlos tú mismo si cambias de opinión.
+
+Para vaciar cientos de productos, por ejemplo después de importar demasiados por error, repite estos pasos página por página: muestra 150 filas, marca la casilla de la parte superior, pulsa <b>Unlink & Delete (...)</b> y los siguientes productos suben a la página. Cuando quitas más de 20 productos a la vez, los quitamos en segundo plano, a razón de uno por segundo: actualiza la página pasados unos minutos para ver la lista sin ellos.
 
 ## Quitar un pack
 

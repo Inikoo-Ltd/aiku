@@ -247,10 +247,13 @@ class GetPartnerOrderCapacity
 
     public static function guardAdd(OrgPartner $orgPartner, OrgStock $sellerOrgStock): void
     {
+        if (!static::isNeverStocked($orgPartner, $sellerOrgStock)) {
+            return;
+        }
+
         $capacity = static::run($orgPartner);
 
-
-        if ($capacity['warehouse']['total_locations'] > 0 && static::isNeverStocked($orgPartner, $sellerOrgStock)) {
+        if ($capacity['warehouse']['total_locations'] > 0) {
             if ($capacity['blocked']['warehouse_full']) {
                 abort(422, __("Warehouse has fewer than 5% locations free — new products can't be added until space frees up."));
             }

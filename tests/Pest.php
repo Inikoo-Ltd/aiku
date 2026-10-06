@@ -107,6 +107,34 @@ function loadDB(): void
     if ($exitCode !== 0) {
         throw new RuntimeException("Restoring {$databaseName} failed:\n".implode("\n", $output));
     }
+
+    assertTestDumpHasAllMigrations($databaseName);
+}
+
+/**
+ * Tests run on the restored dump without migrating, so a dump older than the code fails far from
+ * the cause, often inside a catch that swallows the missing column (orders silently not created).
+ */
+function assertTestDumpHasAllMigrations(string $databaseName): void
+{
+    $pdo = new PDO(
+        'pgsql:host='.env('DB_HOST').';port='.env('DB_PORT').';dbname='.$databaseName,
+        env('DB_USERNAME'),
+        env('DB_PASSWORD')
+    );
+
+    $migrationsInDump = $pdo->query('select migration from migrations')->fetchAll(PDO::FETCH_COLUMN);
+    $migrationFiles   = array_map(fn (string $file) => str_replace('.php', '', basename($file)), glob(__DIR__.'/../database/migrations/*.php'));
+
+    $missingMigrations = array_values(array_diff($migrationFiles, $migrationsInDump));
+
+    if ($missingMigrations) {
+        throw new RuntimeException(
+            "tests/datasets/db_dumps/aiku.dump is older than the code, it lacks these migrations:\n"
+            .implode("\n", $missingMigrations)
+            ."\nRegenerate it: PATH=\"/opt/homebrew/opt/postgresql@18/bin:\$PATH\" ./generate_testing_db_dumps.sh php aiku localhost 5432 C"
+        );
+    }
 }
 
 function createGroup(): Group

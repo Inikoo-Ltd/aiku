@@ -486,7 +486,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 const isOffersData = (offersData: any): boolean => {
     if (!offersData) return false
     const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
-    return Object.keys(parsed || {}).length > 0 && parseFloat(offersData.o.p ?? 0)
+    return Object.keys(parsed || {}).length > 0 && parseFloat(parsed?.o?.p ?? 0)
 }
 </script>
 
@@ -802,6 +802,9 @@ const isOffersData = (offersData: any): boolean => {
                                   class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
+                            <span v-if="Number(item.gross_amount) > Number(item.net_amount) && !isOffersData(item.offers_data)" class="ml-1 text-xs">
+                                -{{ locale.number(Math.round((1 - item.net_amount / item.gross_amount) * 1000) / 10) }}%
+                            </span>
                             <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift && !locked">
                                 <Button
                                     @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"

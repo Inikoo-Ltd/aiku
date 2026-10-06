@@ -429,6 +429,7 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Procurement\OrgPartner\PreparePartnerShoppingListOrder;
 use App\Actions\Procurement\OrgPartner\StoreRescuePurchaseOrder;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -486,7 +487,9 @@ use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
+use App\Actions\Production\JobOrderItem\SplitJobOrderItem;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
+use App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -1449,9 +1452,11 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
 Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order.update');
 Route::post('/job-order/{jobOrder:id}/item', StoreJobOrderItem::class)->name('job-order.item.store')->withoutScopedBindings();
 Route::patch('/job-order-item/{jobOrderItem:id}', UpdateJobOrderItem::class)->name('job-order-item.update')->withoutScopedBindings();
+Route::patch('/job-order-item/{jobOrderItem:id}/split', SplitJobOrderItem::class)->name('job-order-item.split')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
+Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/under-target-review', ReviewUnderTargetManufactureTaskSession::class)->name('manufacture-task-session.under_target_review')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.attach')->withoutScopedBindings();
@@ -1557,6 +1562,7 @@ Route::name('org-agent.')->prefix('org-agent/{orgAgent:id}')->group(function () 
 Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgPartner'])->name('purchase-order.store');
     Route::post('rescue-purchase-order', StoreRescuePurchaseOrder::class)->name('rescue_purchase_order.store');
+    Route::post('shopping-list-order', PreparePartnerShoppingListOrder::class)->name('shopping_list_order.store');
 });
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {

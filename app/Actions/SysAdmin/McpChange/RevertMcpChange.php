@@ -81,7 +81,7 @@ class RevertMcpChange
             $previous = $before['lines'][$stockId] ?? null;
 
             if ($previous) {
-                UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => $previous['quantity'], 'notes' => $previous['notes']]);
+                UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => $previous['quantity'], 'notes' => $previous['notes'], 'break_batch' => true]);
             } else {
                 DeletePartnerShoppingListItem::make()->action($item);
             }

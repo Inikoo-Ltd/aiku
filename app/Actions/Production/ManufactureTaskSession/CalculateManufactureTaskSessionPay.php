@@ -34,15 +34,16 @@ class CalculateManufactureTaskSessionPay
             return $session;
         }
 
-        $band0 = $bands->firstWhere('code', '0');
+        $band0        = $bands->firstWhere('code', '0');
+        $standardRate = $session->standard_rate !== null ? (float) $session->standard_rate : $session->recipeStandardRate();
 
-        $band = $this->selectBand($session, $bands, $hours);
+        $band = $this->selectBand($session, $bands, $hours, $standardRate);
         if (!$band) {
             return $session;
         }
 
         $unitsPerHour = null;
-        if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $session->manufactureTask?->standard_rate !== null) {
+        if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $standardRate !== null) {
             $unitsPerHour = round($session->quantity_made / $hours, 0);
         }
 
@@ -63,7 +64,7 @@ class CalculateManufactureTaskSessionPay
         return $session;
     }
 
-    private function selectBand(ManufactureTaskSession $session, Collection $bands, float $hours): ?ManufacturePayBand
+    private function selectBand(ManufactureTaskSession $session, Collection $bands, float $hours, ?float $standardRate): ?ManufacturePayBand
     {
         if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT) {
             return $bands->firstWhere('code', 'D') ?? $bands->firstWhere('code', 'DG') ?? $bands->firstWhere('code', '0');
@@ -73,7 +74,6 @@ class CalculateManufactureTaskSessionPay
             return $bands->firstWhere('code', '0');
         }
 
-        $standardRate = $session->manufactureTask?->standard_rate;
         if ($standardRate === null) {
             return $bands->firstWhere('code', '0');
         }

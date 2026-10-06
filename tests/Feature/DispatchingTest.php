@@ -19,6 +19,7 @@ use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
 use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\Dispatching\BatchCode\StoreBatchCode;
@@ -1525,6 +1526,25 @@ test('delivery note finalise and dispatch', function () {
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+});
+
+test('printing the label of a packed replacement dispatches it', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    $deliveryNote->update(['type' => DeliveryNoteTypeEnum::REPLACEMENT]);
+    $orderState = $deliveryNote->orders()->first()->state;
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote->refresh(), $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($deliveryNote->orders()->first()->state)->toBe($orderState)
+        ->and($deliveryNote->orders()->first()->invoices()->count())->toBe(0);
 });
 
 test('dispatching an intra-EU delivery note queues the intrastat export time series', function () {
@@ -5418,6 +5438,7 @@ test('a product made of parts counts complete sets when indivisible and each par
 function deliveryNoteWithOnePartNotFound($ctx): array
 {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->delete();
     StoreDeliveryNoteItem::make()->action($deliveryNote, [
         'delivery_note_id'  => $deliveryNote->id,
         'org_stock_id'      => makeOrgStock($ctx)->id,
@@ -5426,7 +5447,7 @@ function deliveryNoteWithOnePartNotFound($ctx): array
     ]);
     $deliveryNote->deliveryNoteItems()
         ->whereKeyNot($item->id)
-        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0]);
+        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0, 'quantity_not_picked' => 10]);
 
     return [$deliveryNote->refresh(), $item];
 }
@@ -5462,6 +5483,23 @@ test('a set sold only complete waits until its other parts are put back, then re
         ->and((float)$item->quantity_picked)->toBe(0.0)
         ->and($item->is_handled)->toBeTrue()
         ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
+});
+
+test('a set sold only complete marks its parts never picked as not picked in one go when another part is not found (HELP-3703)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+    $item->pickings()->delete();
+    $item->update(['quantity_picked' => 0, 'quantity_not_picked' => 0, 'is_handled' => false]);
+
+    expect($deliveryNote->refresh()->incompleteSetItems()->pluck('id')->all())->toBe([$item->id])
+        ->and(\App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote::make()->getPutBackIncompleteSetsAction($deliveryNote)['parts'])->toBe([]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    $item->refresh();
+    expect((float)$item->quantity_not_picked)->toBe((float)$item->quantity_required)
+        ->and($item->is_handled)->toBeTrue()
+        ->and($deliveryNote->refresh()->hasIncompleteSets())->toBeFalse();
 });
 
 test('a set sold only complete waiting on a part not found goes back to picking with that part to look for again (HELP-3548)', function () {
@@ -5624,4 +5662,40 @@ test('the picking list shows which set sold only complete an item is a part of (
         ->and($indivisibleSet['sets_ordered'])->toBe((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus)
         ->and($indivisibleSet['route'])->toBeNull()
         ->and($part)->toBe(['code' => $tradeUnit->code, 'name' => $tradeUnit->name, 'quantity' => 9.0]);
+});
+
+test('shop delivery note state hydrator does not query delivery note items', function () {
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    ShopHydrateDeliveryNotesState::run($this->shop->id, DeliveryNoteStateEnum::HANDLING);
+
+    expect(collect($queries)->filter(fn ($sql) => str_contains($sql, 'delivery_note_items')))->toBeEmpty()
+        ->and($this->shop->orderHandlingStats()->first())->not->toBeNull();
+});
+
+test('delivery note items list only aggregates packings of its own delivery note', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    [$otherDeliveryNote, $otherDeliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    StorePacking::make()->action($deliveryNoteItem, $this->user, ['quantity' => 4]);
+    StorePacking::make()->action($otherDeliveryNoteItem, $this->user, ['quantity' => 3]);
+    StorePacking::make()->action($otherDeliveryNoteItem, $this->user, ['quantity' => 2]);
+
+    request()->setRouteResolver(fn () => (new Route('GET', 'test', []))->name('test'));
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+
+    $row = IndexDeliveryNoteItems::make()->handle($deliveryNote->refresh())->firstWhere('id', $deliveryNoteItem->id);
+    $otherRow = IndexDeliveryNoteItems::make()->handle($otherDeliveryNote->refresh())->firstWhere('id', $otherDeliveryNoteItem->id);
+
+    expect((float) $row->packings_quantity)->toBe(4.0)
+        ->and($row->packings_count)->toBe(1)
+        ->and((float) $otherRow->packings_quantity)->toBe(5.0)
+        ->and($otherRow->packings_count)->toBe(2)
+        ->and(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "packings" where "delivery_note_id" = ?')))->not->toBeEmpty();
 });

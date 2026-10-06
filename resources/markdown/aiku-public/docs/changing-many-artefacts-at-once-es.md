@@ -51,6 +51,7 @@ La ventana muestra los pasos a la izquierda y los artefactos que marcaste a la d
 
 - **Task** (tarea): el trabajo en sí, elegido entre las tareas de fabricación de la fábrica. Escribe para buscar por nombre o código.
 - **Units per artefact** (unidades por artefacto): cuántas unidades de esa tarea necesita un artefacto. Una orden de trabajo de 10 artefactos a 2 unidades por artefacto pide al artesano 20 unidades de trabajo.
+- **Target units per hour** (objetivo de unidades por hora): cuántas unidades se espera que un artesano haga en una hora en este paso, a la tarifa base. Si se deja vacío se usa la cifra de la propia tarea. Más abajo hay más detalle.
 - **Raw materials** (materias primas): lo que consume el paso por cada unidad de trabajo, con una cantidad para cada una.
 
 Pulsa **Add step** (añadir paso) para otra tarjeta. Las flechas de una tarjeta la suben o bajan, y la papelera la quita. Los pasos se numeran en el orden en que se hacen, el paso 1 primero, y los artesanos los ven en ese orden en la planta. Una tarea solo puede usarse una vez en la lista. Si la tarea que necesitas todavía no existe, el enlace **Task missing? Create a manufacture task** (¿falta una tarea? crear una tarea de fabricación) te lleva a la página donde se crean.
@@ -72,6 +73,14 @@ Un artefacto con materiales propios lleva la etiqueta **Own materials** (materia
 La ventana te lo recuerda en un recuadro amarillo encima de los botones. El botón de guardar sigue en gris hasta que marcas **I understand the existing steps will be replaced** (entiendo que los pasos existentes se sustituirán). El botón dice cuántos artefactos va a cambiar, por ejemplo **Replace steps on 5 artefacts** (sustituir los pasos de 5 artefactos).
 
 **Órdenes de trabajo en marcha.** Las órdenes de trabajo todavía abiertas reciben los pasos nuevos. Un paso quitado desaparece de esas órdenes solo si nadie lo ha empezado. El trabajo ya registrado en la planta se conserva.
+
+## Objetivos y niveles de pago
+
+El **Target units per hour** de un paso es el objetivo mínimo para ese producto. Los artesanos cobran por hora, y la tarifa sube cuantas más unidades hacen por hora: cada nivel de pago de la fábrica (Tier 0 a Tier 3) empieza en un múltiplo de este objetivo. En la pestaña **Manufacture tasks** de un artefacto, cada paso con objetivo muestra las unidades por hora necesarias para cada nivel y la tarifa por hora que paga. Los niveles y sus tarifas son los mismos para toda la fábrica, así que el objetivo es la única cifra que se fija por producto.
+
+El objetivo se puede fijar en un solo artefacto desde su pestaña **Manufacture tasks**, o para toda una gama a la vez en la ventana unificada descrita arriba. Las tareas ya no llevan costes, objetivos ni recompensas: una tarea es solo el nombre de un trabajo.
+
+**Trabajos por debajo del objetivo.** Cuando un artesano termina un paso y sus unidades por hora quedan por debajo del objetivo del paso, la entrada aparece marcada como **Under target / action required** en la pestaña **Performance**. Un responsable de producción la abre con **Log reason**, elige el motivo (avería de máquina, falta de material, calidad o retrabajo, formación del operario, otro) y puede añadir una nota. Marque **Under target only** encima de la lista para ver solo esas entradas. La línea de cada trabajador indica cuántas suyas siguen sin motivo.
 
 ## Qué hace y qué no hace discontinuar
 

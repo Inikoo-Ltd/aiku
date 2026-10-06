@@ -112,9 +112,10 @@ The site is down until traffic reaches boro. Target: back up in 10 minutes.
 1. In Cloudflare, point the origin records for aiku.io, app.aiku.io, media.aiku.io and the customer
    domains at boro. They are proxied, so the change is immediate; the move script used for the
    migration does it zone by zone. boro's HAProxy and Varnish carry the same rules as litio's.
-   Product images keep working only while boro still runs its own imgproxy (same signing key);
-   realtime updates (soketi) have no standby and stay down until litio is back: pages still work,
-   they just stop updating live.
+   boro's imgproxy is kept installed but stopped: start it (same signing key) or product images
+   stay broken; its image cache starts cold, so images are slow for a while. Realtime updates
+   (soketi) have no standby and stay down until litio is back: pages still work, they just stop
+   updating live.
 2. On boro, start the standby cache Redis instance (capped, evicts old keys). Point `db-replica`
    and `redis-cache` at boro. Everyone gets logged out once: sessions lived in litio's Redis.
 3. Raise boro's Octane and SSR workers to full size.

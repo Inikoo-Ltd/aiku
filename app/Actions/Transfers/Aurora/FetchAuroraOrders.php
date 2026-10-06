@@ -10,6 +10,9 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
@@ -80,6 +83,7 @@ class FetchAuroraOrders extends FetchAuroraAction
 
 
         if (in_array('full', $this->with)) {
+            $auroraDeliveryNoteSourceIds = [];
             foreach (
                 DB::connection('aurora')
                     ->table('Delivery Note Dimension')
@@ -88,7 +92,10 @@ class FetchAuroraOrders extends FetchAuroraAction
                     ->orderBy('source_id')->get() as $deliveryNote
             ) {
                 FetchAuroraDeliveryNotes::run($organisationSource, $deliveryNote->source_id, true);
+                $auroraDeliveryNoteSourceIds[] = $sourceData[0].':'.$deliveryNote->source_id;
             }
+
+            $this->cancelDeliveryNotesGoneFromAurora($order->refresh(), $auroraDeliveryNoteSourceIds);
         }
 
         if (in_array('full', $this->with)) {
@@ -262,6 +269,28 @@ class FetchAuroraOrders extends FetchAuroraAction
         $this->processFetchAttachments($order, 'Order', $orderData['order']['source_id']);
 
         return $order;
+    }
+
+    /**
+     * Aurora deletes the delivery note when an order is cancelled, so its aiku copy would stay open forever.
+     *
+     * @param  array<int, string>  $auroraDeliveryNoteSourceIds
+     */
+    private function cancelDeliveryNotesGoneFromAurora(Order $order, array $auroraDeliveryNoteSourceIds): void
+    {
+        if ($order->state !== OrderStateEnum::CANCELLED) {
+            return;
+        }
+
+        $openDeliveryNotes = $order->deliveryNotes()
+            ->whereNotNull('delivery_notes.source_id')
+            ->whereNotIn('delivery_notes.source_id', $auroraDeliveryNoteSourceIds)
+            ->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])
+            ->get();
+
+        foreach ($openDeliveryNotes as $deliveryNote) {
+            CancelDeliveryNote::make()->action($deliveryNote, null, false, true, $order->cancelled_at?->toDateTimeString());
+        }
     }
 
     private function fetchPayments($organisationSource, Order $order): void

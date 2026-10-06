@@ -371,6 +371,24 @@ test('asking the reporter posts the question and cancels the ticket when its own
         ->and($ticket->fresh()->waiting_until)->toBeNull();
 });
 
+test('asking the reporter can attach a screenshot to the question', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Which upload']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    post(route('grp.models.ticket.update', $ticket->id), [
+        '_method'       => 'patch',
+        'status'        => 'waiting',
+        'question'      => 'Is it this upload box?',
+        'waiting_hours' => 72,
+        'images'        => [UploadedFile::fake()->image('where.png')],
+    ])->assertRedirect();
+
+    $question = $ticket->comments()->where('body', 'Is it this upload box?')->first();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::WAITING)
+        ->and($question)->not->toBeNull()
+        ->and($question->getMedia('ticket_images'))->toHaveCount(1);
+});
+
 test('staff reporter is told of the question by email and slack as their profile prefers', function () {
     Notification::fake();
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
@@ -864,6 +882,21 @@ test('assistant asks a QA user to check a ticket through MCP, with the comment a
     UpdateTicket::make()->action($ticket, ['qa_status' => null]);
 });
 
+test('any staff user raises and comments on their own help ticket through MCP but cannot change tickets', function () {
+    $staff = User::factory()->create(['group_id' => $this->group->id]);
+
+    AikuServer::actingAs($staff)->tool(TicketWriteTool::class, ['subject' => 'Label printer offline'])->assertOk();
+    $ticket = Ticket::where('subject', 'Label printer offline')->firstOrFail();
+
+    expect($ticket->reporter_id)->toBe($staff->id);
+    AikuServer::actingAs($staff)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'resolved'])->assertHasErrors();
+    AikuServer::actingAs($staff)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'It is the one in bay 3'])->assertOk();
+    expect($ticket->comments()->where('body', 'like', '%bay 3%')->count())->toBe(1);
+
+    $otherStaff = User::factory()->create(['group_id' => $this->group->id]);
+    AikuServer::actingAs($otherStaff)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Me too'])->assertHasErrors();
+});
+
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
     $created = AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['subject' => 'Picking screen freezes', 'module' => 'dispatching', 'priority' => 'high']);
     $created->assertOk();
@@ -1287,8 +1320,8 @@ test('list and board show only tickets created in the chosen interval', function
     $old->update(['created_at' => now()->subYear()->subMonth()]);
 
     $fresh->update(['created_at' => now()->subHours(2)]);
-    get(route('grp.tickets.list', ['created' => '1h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->not->toContain($fresh->reference));
-    get(route('grp.tickets.list', ['created' => '3h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->toContain($fresh->reference));
+    get(route('grp.tickets.list', ['created' => '1h', 'perPage' => 1000]))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->not->toContain($fresh->reference));
+    get(route('grp.tickets.list', ['created' => '3h', 'perPage' => 1000]))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->toContain($fresh->reference));
 
     get(route('grp.tickets.board', ['created' => '24h']))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
         $references = collect($page->toArray()['props']['columns'])->flatMap(fn ($column) => $column['tickets'])->pluck('reference');
@@ -1701,7 +1734,6 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
         ->and($count($reporter, 'mine', 'in_progress'))->toBe(0)
         ->and($count($reporter, 'mine', 'waiting'))->toBe(0)
         ->and($count($this->user, 'queue', 'new_unassigned'))->toBe($baseline['new_unassigned']['count'] + 1)
-        ->and($count($this->user, 'queue', 'todo_week'))->toBe($baseline['todo_week']['count'] + 1)
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'])
         ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
 
@@ -1709,12 +1741,14 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
     $ticket->update(['created_at' => now()->subDays(2)]);
 
     expect($count($reporter, 'mine', 'waiting'))->toBe(1)
-        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
+        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count'])
+        ->and($count($this->user, 'queue', 'waiting'))->toBe($baseline['waiting']['count'] + 1);
 
     StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'The red one']);
     Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'new comment'));
 
-    expect($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count'] + 1)
+    expect($count($this->user, 'queue', 'replied'))->toBe($baseline['replied']['count'] + 1)
+        ->and($count($this->user, 'queue', 'waiting'))->toBe($baseline['waiting']['count'])
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'] + 1);
 
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
@@ -1745,7 +1779,7 @@ test('tickets reports link to filtered lists by assignee and dates', function ()
     }
 });
 
-test('engineers raise task and qa tickets, staff cannot, and internal tickets stay out of the to-do rail count', function () {
+test('engineers raise task and qa tickets, staff cannot', function () {
     Mail::fake();
     Notification::fake();
     $engineer = User::factory()->create(['group_id' => $this->group->id]);
@@ -1756,8 +1790,6 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support', 'aurora'])
         ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support', 'aurora']);
 
-    $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
-
     actingAs($staff);
     post(route('grp.models.ticket.store'), ['subject' => 'Do it for me', 'kind' => 'task'])->assertSessionHasErrors('kind');
 
@@ -1767,8 +1799,63 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
 
     $qaTicket = Ticket::where('subject', 'Please test totals')->first();
     expect($qaTicket->kind)->toBe(TicketKindEnum::QA)
-        ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24)
-        ->and(GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'])->toBe($todoBefore + 1);
+        ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24);
+});
+
+test('recent ticket updates in each popup are about that popup\'s own tickets', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+
+    $reported = StoreTicket::make()->action($this->group, ['subject' => 'I reported this', 'reporter_type' => 'User', 'reporter_id' => $engineer->id]);
+    $assigned = StoreTicket::make()->action($this->group, ['subject' => 'I work on this', 'assignee_id' => $engineer->id]);
+    $other    = StoreTicket::make()->action($this->group, ['subject' => 'Someone else entirely']);
+
+    $engineer->notifications()->delete();
+    foreach ([$reported, $assigned, $other] as $ticket) {
+        $engineer->notifications()->create([
+            'id'   => (string) Str::uuid(),
+            'type' => TicketNotification::class,
+            'data' => ['type' => 'ticket', 'ticket_id' => $ticket->id, 'title' => $ticket->subject, 'body' => '', 'route' => ''],
+        ]);
+    }
+
+    $badges = GetTicketBadgeData::run($engineer);
+
+    expect(collect($badges['recent'])->pluck('title')->all())->toBe(['I reported this'])
+        ->and(collect($badges['queue_recent'])->pluck('title')->all())->toBe(['I work on this']);
+});
+
+test('the tickets to fix popup groups the team queue, my work and my QA checks by role', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $engineerRows = GetTicketBadgeData::run($engineer)['queue'];
+    $qaRows       = GetTicketBadgeData::run($qa)['queue'];
+
+    expect(collect($engineerRows)->map(fn ($row) => $row['section'])->all())->toBe([
+        'new_unassigned' => 'team', 'overdue' => 'team',
+        'assigned_to_me' => 'mine', 'collaborating' => 'mine', 'waiting' => 'mine', 'replied' => 'mine', 'qa_failed' => 'mine', 'qa_passed' => 'mine',
+    ])
+        ->and(array_keys($qaRows))->toContain('qa_to_check')
+        ->and(array_keys($qaRows))->not->toContain('assigned_to_me');
+
+    $failed = StoreTicket::make()->action($this->group, ['subject' => 'Fix me again', 'assignee_id' => $engineer->id]);
+    $failed->update(['qa_status' => TicketQaStatusEnum::FAILED]);
+    $passed = StoreTicket::make()->action($this->group, ['subject' => 'Good to go', 'assignee_id' => $engineer->id]);
+    $passed->update(['qa_status' => TicketQaStatusEnum::PASSED]);
+    $toCheck = StoreTicket::make()->action($this->group, ['subject' => 'Check me']);
+    $toCheck->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id]);
+
+    expect(GetTicketBadgeData::run($engineer)['queue']['qa_failed']['count'])->toBe($engineerRows['qa_failed']['count'] + 1)
+        ->and(GetTicketBadgeData::run($engineer)['queue']['qa_passed']['count'])->toBe($engineerRows['qa_passed']['count'] + 1)
+        ->and(GetTicketBadgeData::run($qa)['queue']['qa_to_check']['count'])->toBe($qaRows['qa_to_check']['count'] + 1);
+
+    UpdateTicket::make()->action($passed, ['status' => TicketStatusEnum::RESOLVED->value]);
+    expect(GetTicketBadgeData::run($engineer)['queue']['qa_passed']['count'])->toBe($engineerRows['qa_passed']['count']);
 });
 
 test('ticket search ranks subject over description over comments, understands key:value tokens and jumps to a reference', function () {
@@ -3974,4 +4061,21 @@ test('the project tools let a team member run a project through the AI assistant
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'post_update', 'project' => 'factory-move', 'body' => 'hi'])->assertHasErrors();
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'move_work', 'project' => 'factory-move', 'references' => $task->reference, 'remove' => true])->assertHasErrors();
     expect($task->fresh()->ticket_project_id)->toBe($project->id);
+});
+
+test('a deployment closes a pending deploy ticket whose fix commit was rewritten by a rebase once a commit naming it is deployed', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Rebased fix']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'commit' => 'deadbeef00', 'comment' => 'Live now'])->assertOk();
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY);
+
+    $ticket->update(['data' => array_merge($ticket->fresh()->data, ['commits' => [['hash' => '5f525f2033']]])]);
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
 });

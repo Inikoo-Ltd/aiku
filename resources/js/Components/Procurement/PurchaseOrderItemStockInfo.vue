@@ -150,6 +150,12 @@ const currentQuarter = (() => {
 const quarters = computed<QuarterUsage[]>(() => props.item.quarterly_usage ?? [])
 const quarterMax = computed(() => Math.max(1, ...quarters.value.map((record) => Number(record.sales) || 0)))
 
+const lastQuarters = computed(() => quarters.value.filter((record) => record.period !== currentQuarter).slice(-4))
+const salesPerQuarter = computed(() =>
+	lastQuarters.value.length ? lastQuarters.value.reduce((total, record) => total + (Number(record.sales) || 0), 0) / lastQuarters.value.length : null
+)
+const daysOutOfStock = computed(() => lastQuarters.value.reduce((total, record) => total + (Number(record.days_out_of_stock) || 0), 0))
+
 const quarterTooltip = (record: QuarterUsage) =>
 	[
 		`${record.period}: ${formatNumber(record.sales)} ${ctrans("SKOs")}`,
@@ -219,6 +225,11 @@ function purchaseOrderRoute(slug: string) {
 				<div class="absolute inset-y-0 w-0.5 bg-red-500" :style="{ left: percent(leadDays) + '%' }" />
 				<div class="absolute inset-y-0 w-0.5 bg-amber-500" :style="{ left: percent(overstockDays) + '%' }" />
 			</div>
+
+			<span v-if="salesPerQuarter !== null" class="shrink-0 text-gray-500">
+				~{{ formatNumber(salesPerQuarter) }}/{{ ctrans("qtr") }}
+				<span v-if="daysOutOfStock" class="text-red-600">· {{ ctrans(":days d out of stock", { days: String(daysOutOfStock) }) }}</span>
+			</span>
 
 			<div v-if="quarters.length" class="flex h-4 items-end gap-0.5">
 				<div

@@ -73,6 +73,11 @@ class UpdateOrgStock extends OrgAction
             }
         }
 
+        if (Arr::exists($modelData, 'carton_barcode')) {
+            $orgStock->stock?->update(['carton_barcode' => blank($modelData['carton_barcode']) ? null : trim($modelData['carton_barcode'])]);
+            Arr::forget($modelData, 'carton_barcode');
+        }
+
         if (Arr::exists($modelData, 'unit_barcode')) {
             $modelData['unit_barcode'] = blank($modelData['unit_barcode']) ? null : trim($modelData['unit_barcode']);
         }
@@ -178,6 +183,7 @@ class UpdateOrgStock extends OrgAction
                 $this->orgStockBarcodeUniqueRule(),
             ],
             'unit_barcode' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[\x20-\x7E]+$/'],
+            'carton_barcode' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[\x20-\x7E]+$/'],
             'note_to_pickers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'note_to_packers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'consumables'     => [

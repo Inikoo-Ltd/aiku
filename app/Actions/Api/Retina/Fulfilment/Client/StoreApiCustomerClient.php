@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Client;
 
+use App\Actions\Api\Retina\Client\WithApiClientAddress;
 use App\Actions\Api\Retina\Fulfilment\Resource\CustomerClientApiResource;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaApiAction;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreApiCustomerClient extends RetinaApiAction
 {
+    use WithApiClientAddress;
+
     /**
      * @throws \Throwable
      */
@@ -28,7 +31,7 @@ class StoreApiCustomerClient extends RetinaApiAction
 
     public function rules(): array
     {
-        return StoreCustomerClient::make()->getBaseRules($this->customer);
+        return array_merge(StoreCustomerClient::make()->getBaseRules($this->customer), $this->apiAddressRules());
     }
 
     /**

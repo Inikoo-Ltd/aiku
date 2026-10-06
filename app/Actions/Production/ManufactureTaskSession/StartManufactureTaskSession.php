@@ -45,7 +45,7 @@ class StartManufactureTaskSession extends OrgAction
         }
 
         $employee = GetUserCurrentEmployee::run($user, $jobOrderItemTask->organisation_id);
-        $isMine   = $employee && $jobOrder->employee_id == $employee->id;
+        $isMine   = $employee && ($jobOrderItemTask->jobOrderItem->employee_id ?? $jobOrder->employee_id) == $employee->id;
 
         if (!$isMine && !ShowManufactureFloor::canPickOpenJobs($user, $jobOrderItemTask->production)) {
             throw ValidationException::withMessages([

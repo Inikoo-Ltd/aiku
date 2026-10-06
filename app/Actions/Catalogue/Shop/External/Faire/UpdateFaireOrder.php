@@ -369,6 +369,43 @@ class UpdateFaireOrder extends OrgAction
             ->first();
     }
 
+    /**
+     * Faire only adds the VAT on shipping once the shipment is pushed at dispatch, after the last full
+     * sync, so dispatched orders kept the items-only tax (HELP-3694). Only that exact case is fixed:
+     * any other difference from Faire on an issued invoice is left alone, never rewritten.
+     */
+    public function syncFaireTax(Order $order): void
+    {
+        $orderFaireData = $order->shop->getFaireOrder($order->external_id);
+        $taxes          = collect(Arr::get($orderFaireData, 'payout_costs.taxes', []));
+        if ($taxes->isEmpty()) {
+            return;
+        }
+
+        $itemsTaxData = ['payout_costs' => ['taxes' => $taxes->where('taxable_item_type', 'ORDER_ITEM')->values()->all()]];
+        $itemsTax     = $this->getFaireTaxAmount($itemsTaxData, $order->shop);
+        $faireTax     = $this->getFaireTaxAmount($orderFaireData, $order->shop);
+
+        $order->refresh();
+        if ($faireTax - $itemsTax < 0.01 || abs((float)$order->tax_amount - $itemsTax) >= 0.01) {
+            return;
+        }
+
+        $order->update([
+            'data->marketplace_tax_amount' => $faireTax,
+            'tax_amount'                   => $faireTax,
+            'total_amount'                 => $order->net_amount + $faireTax,
+        ]);
+
+        $invoice = $this->getInvoiceToDiscount($order);
+        if ($invoice && abs((float)$invoice->tax_amount - $itemsTax) < 0.01) {
+            $invoice->update([
+                'tax_amount'   => $faireTax,
+                'total_amount' => $invoice->net_amount + $faireTax,
+            ]);
+        }
+    }
+
     public function getFaireTaxAmount(array $orderFaireData, Shop $shop): float
     {
         $tax      = 0;

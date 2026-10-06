@@ -31,6 +31,9 @@ class DeletePortfolio extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
+    public string $jobQueue = 'ds';
+
+    public bool $jobDeleteWhenMissingModels = true;
 
     private Portfolio $portfolio;
 

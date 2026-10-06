@@ -65,7 +65,7 @@ class SettleShortJobOrderItemTask
             $original = $item->jobOrder;
             $root     = (int) Arr::get($original->data, 'carried_from', $original->id);
             $carried  = StoreJobOrder::make()->action($original->production, [
-                'employee_id' => $original->employee_id,
+                'employee_id' => $item->employee_id ?? $original->employee_id,
                 'reference'   => $this->carriedReference($original, $root),
             ]);
             $carried->update(['data' => array_merge($carried->data, ['carried_from' => $root])]);
@@ -121,9 +121,16 @@ class SettleShortJobOrderItemTask
     {
         $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
 
+        $plannedByItem = $original->jobOrderItems()
+            ->where('artefact_id', $item->artefact_id)
+            ->pluck('quantity', 'id')
+            ->map(fn ($quantity) => (float) $quantity)
+            ->all();
+        $plannedByItem[$item->id] = (float) $madeArtefacts;
+
         $coveredUnits = [];
-        foreach (GetJobOrderDestinationAllocation::run($original, [$item->id => (float) $madeArtefacts]) as $allocation) {
-            if ($allocation['line'] && $allocation['item']->id === $item->id) {
+        foreach (GetJobOrderDestinationAllocation::run($original, $plannedByItem) as $allocation) {
+            if ($allocation['line'] && $allocation['item']->artefact_id === $item->artefact_id) {
                 $coveredUnits[$allocation['line']->id] = ($coveredUnits[$allocation['line']->id] ?? 0) + $allocation['quantity'];
             }
         }
@@ -156,6 +163,7 @@ class SettleShortJobOrderItemTask
                     'priority',
                     'needed_by',
                     'notes',
+                    'transaction_id',
                     'added_by_user_id',
                     'state',
                 ]),

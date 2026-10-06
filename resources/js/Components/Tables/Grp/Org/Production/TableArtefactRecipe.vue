@@ -35,9 +35,11 @@ interface RecipeRow {
     slug: string
     code: string
     name: string
-    task_work_cost: number | string
+    task_standard_rate: number | string | null
     position: number
     units_per_artefact: number | string
+    standard_rate: number | string | null
+    targets: { code: string, name: string, hourly_rate: number, units_per_hour: number }[]
     raw_materials: RecipeStepRawMaterial[]
 }
 
@@ -70,6 +72,7 @@ const rawMaterialProcessing = ref(false)
 
 const positionDraft = ref<Record<number, number>>({})
 const unitsDraft = ref<Record<number, number>>({})
+const rateDraft = ref<Record<number, number | null>>({})
 const quantityDraft = ref<Record<string, number>>({})
 
 const locale = useLocaleStore()
@@ -84,6 +87,7 @@ function syncDraftsWithRecipe() {
     props.data.recipe.forEach(row => {
         positionDraft.value[row.id] = Number(row.position)
         unitsDraft.value[row.id] = Number(row.units_per_artefact)
+        rateDraft.value[row.id] = row.standard_rate === null ? null : Number(row.standard_rate)
         newRawMaterialQuantity.value[row.step_id] ??= 1
         row.raw_materials.forEach(material => {
             quantityDraft.value[materialKey(row.step_id, material.raw_material_id)] = Number(material.quantity_per_unit)
@@ -95,7 +99,7 @@ function syncDraftsWithRecipe() {
 syncDraftsWithRecipe()
 watch(() => props.data.recipe, syncDraftsWithRecipe, { deep: true })
 
-function attach(taskId: number, position: number, units: number) {
+function attach(taskId: number, position: number, units: number, standardRate?: number | null) {
     processing.value = true
     router.post(
         route(props.data.routes.attach.name, props.data.routes.attach.parameters),
@@ -103,6 +107,7 @@ function attach(taskId: number, position: number, units: number) {
             manufacture_task_id: taskId,
             position: position,
             units_per_artefact: units,
+            ...(standardRate !== undefined ? { standard_rate: standardRate } : {}),
         },
         {
             preserveScroll: true,
@@ -130,11 +135,12 @@ async function commitStep(row: RecipeRow) {
 
     const position = positionDraft.value[row.id]
     const units = unitsDraft.value[row.id]
+    const standardRate = rateDraft.value[row.id] || null
 
     if (!position || !units) return
-    if (isSameNumber(position, row.position) && isSameNumber(units, row.units_per_artefact)) return
+    if (isSameNumber(position, row.position) && isSameNumber(units, row.units_per_artefact) && isSameNumber(standardRate, row.standard_rate)) return
 
-    attach(row.id, position, units)
+    attach(row.id, position, units, standardRate)
 }
 
 function stepMaterialsCost(row: RecipeRow): number {
@@ -201,10 +207,6 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <span class="font-medium">{{ row.code }}</span>
                         <span class="ml-2 text-gray-500">{{ row.name }}</span>
                     </div>
-                    <div class="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
-                        {{ ctrans('Pay per unit') }}: <span class="tabular-nums">{{ asMoney(row.task_work_cost) }}</span>
-                        <InformationIcon :information="ctrans('What the artisan earns for each unit of this task. It belongs to the task itself, so change it on the manufacture task; salaried tasks that are not paid by piece rate show 0.')" />
-                    </div>
                 </div>
 
                 <ModalConfirmationDelete
@@ -257,6 +259,33 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         @blur="commitStep(row)"
                         @keyup.enter="commitStep(row)" />
                 </label>
+
+                <label class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Target units per hour') }}
+                        <InformationIcon :information="ctrans('The lower target: units per hour an artisan makes on this step at the base pay rate. The higher pay tiers are worked out from it. Runs below it are flagged for a manager on the Performance tab.')" />
+                    </span>
+                    <InputNumber
+                        v-model="rateDraft[row.id]"
+                        :min="0.01"
+                        :minFractionDigits="0"
+                        :maxFractionDigits="2"
+                        :useGrouping="false"
+                        :placeholder="row.task_standard_rate ? String(Number(row.task_standard_rate)) : ''"
+                        size="small"
+                        inputClass="w-24"
+                        @blur="commitStep(row)"
+                        @keyup.enter="commitStep(row)" />
+                </label>
+            </div>
+
+            <div v-if="row.targets.length" class="flex flex-wrap gap-2 px-4 pb-3 text-xs">
+                <span
+                    v-for="target in row.targets"
+                    :key="target.code"
+                    class="rounded border border-gray-200 bg-gray-50 px-2 py-1 tabular-nums text-gray-600">
+                    {{ target.name }}: {{ target.units_per_hour }}/{{ ctrans('hr') }} · {{ asMoney(target.hourly_rate) }}/{{ ctrans('hr') }}
+                </span>
             </div>
 
             <section class="border-t border-gray-100 bg-gray-50 px-4 py-3">

@@ -4,8 +4,8 @@ import axios from "axios"
 import { faChevronDown } from "@far"
 import { faChartLine, faPlay, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Head } from "@inertiajs/vue3"
-import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, faChartLine as falChartLine, faCity } from "@fal"
+import { Head, Deferred } from "@inertiajs/vue3"
+import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, faChartLine as falChartLine, faCity, faDolly } from "@fal"
 import "tippy.js/dist/tippy.css"
 import { ref, provide, computed } from "vue"
 import { Link } from "@inertiajs/vue3"
@@ -23,10 +23,11 @@ import ShopIntervalStats from "@/Components/DataDisplay/Dashboard/ShopIntervalSt
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
 import GroupWarehouseOverview from "@/Components/DataDisplay/Dashboard/GroupWarehouseOverview.vue"
+import OperationsDashboard from "@/Components/DataDisplay/Dashboard/OperationsDashboard.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 
-library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, falChartLine, faCity)
+library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, falChartLine, faCity, faDolly)
 
 const locale = useLocaleStore()
 
@@ -66,6 +67,7 @@ const props = defineProps<{
 		}[]
 	} | null
 	warehouseOverview?: InstanceType<typeof GroupWarehouseOverview>['$props']['overview'] | null
+	operations?: { section: string; route: { name: string } } | null
 }>()
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
@@ -82,13 +84,38 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isExpanded = ref(false)
 
-const sectionNavigation = computed(() => props.stockHistoryGroup
-	? {
-		sales: { title: ctrans("Sales"), icon: "fal fa-chart-line" },
-		warehouse: { title: ctrans("Warehouse"), icon: "fal fa-warehouse" },
+const hasSales = computed(() => (props.dashboard?.super_blocks?.length ?? 0) > 0)
+
+const sectionNavigation = computed(() => {
+	const sections: Record<string, { title: string; icon: string }> = {}
+	if (hasSales.value) {
+		sections.sales = { title: ctrans("Sales"), icon: "fal fa-chart-line" }
 	}
-	: null)
-const currentSection = ref("sales")
+	if (props.stockHistoryGroup) {
+		sections.warehouse = { title: ctrans("Stock"), icon: "fal fa-boxes-alt" }
+	}
+	if (props.operations) {
+		sections.operations = { title: ctrans("Operations (In/Out)"), icon: "fal fa-dolly" }
+	}
+	return Object.keys(sections).length > 1 ? sections : null
+})
+
+const initialSection = (): string => {
+	const saved = props.operations?.section
+	if (saved === "operations" && props.operations) {
+		return "operations"
+	}
+	if (saved === "warehouse" && props.stockHistoryGroup) {
+		return "warehouse"
+	}
+	return hasSales.value || !props.operations ? "sales" : "operations"
+}
+const currentSection = ref(initialSection())
+
+const changeSection = (section: string): void => {
+	currentSection.value = section
+	axios.patch(route("grp.models.profile.update"), { settings: { group_dashboard_section: section } }).catch(() => {})
+}
 
 const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 	const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
@@ -134,7 +161,9 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 	<Head :title="capitalize(title)" />
 
 	<div>
-		<Tabs v-if="sectionNavigation" :navigation="sectionNavigation" :current="currentSection" @update:tab="(section: string) => currentSection = section" />
+		<Tabs v-if="sectionNavigation" :navigation="sectionNavigation" :current="currentSection" @update:tab="changeSection" />
+
+		<OperationsDashboard v-if="operations" v-show="currentSection === 'operations'" :fetch-route="operations.route" :active="currentSection === 'operations'" />
 
 		<div v-if="stockHistoryGroup" v-show="currentSection === 'warehouse'" class="px-3 sm:px-6 mt-4 mb-4">
 			<dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
@@ -292,7 +321,16 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			</div>
 		</div>
 
-		<GroupWarehouseOverview v-if="warehouseOverview && stockHistoryGroup" v-show="currentSection === 'warehouse'" :overview="warehouseOverview" />
+		<div v-if="stockHistoryGroup" v-show="currentSection === 'warehouse'">
+			<Deferred data="warehouseOverview">
+				<template #fallback>
+					<div class="px-3 sm:px-6 mb-4 grid grid-cols-1 xl:grid-cols-3 gap-4" aria-busy="true">
+						<div v-for="index in 3" :key="index" class="h-72 animate-pulse rounded-lg bg-gray-100" />
+					</div>
+				</template>
+				<GroupWarehouseOverview v-if="warehouseOverview" :overview="warehouseOverview" />
+			</Deferred>
+		</div>
 
 		<div v-show="currentSection === 'sales'">
 		<ShopMonthTarget
@@ -354,7 +392,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		/>
 		</div>
 
-		<div v-if="!props.dashboard?.super_blocks?.length" class="flex flex-col items-center justify-center px-4 py-24" role="status">
+		<div v-if="!props.dashboard?.super_blocks?.length && !operations" class="flex flex-col items-center justify-center px-4 py-24" role="status">
 			<FontAwesomeIcon icon="fal fa-chart-line" class="mb-4 text-6xl text-gray-300" fixed-width aria-hidden="true" />
 			<h3 class="mb-2 text-center text-lg font-medium text-gray-500">
 				{{ ctrans('No sales data to show') }}

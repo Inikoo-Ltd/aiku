@@ -61,6 +61,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Dropshipping\Shopify\Order\SweepShopifyMissedOrders;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
@@ -1298,8 +1299,8 @@ test('installing the app registers the uninstall webhook, reads the store and cr
     (new ShopifyAppInstalledListener())->handle(new AppInstalledEvent(ShopId::fromNative($shopifyUser->id)));
 
     $webhook = ShopifyFake::calls('webhookSubscriptionCreate');
-    expect($webhook)->toHaveCount(1)
-        ->and($webhook[0]['variables']['topic'])->toBe('APP_UNINSTALLED')
+    expect($webhook)->toHaveCount(2)
+        ->and(array_column(array_column($webhook, 'variables'), 'topic'))->toBe(['APP_UNINSTALLED', 'PRODUCTS_DELETE'])
         ->and($webhook[0]['variables']['webhookSubscription']['callbackUrl'])->toBe('https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/app-uninstalled')
         ->and($channel->refresh()->platform_status)->toBeTrue()
         ->and($shopifyUser->refresh()->shopify_location_id)->toBe('gid://shopify/Location/1700');
@@ -1356,7 +1357,7 @@ test('resetting a channel rebuilds only aiku webhooks and fulfilment service on 
     expect(collect(ShopifyFake::calls('fulfillmentServiceDelete'))->pluck('variables.id')->all())->toBe(['gid://shopify/FulfillmentService/501'])
         ->and(ShopifyFake::calls('webhookSubscriptionDelete'))->toHaveCount(1)
         ->and(ShopifyFake::calls('fulfillmentServiceCreate'))->toHaveCount(1)
-        ->and(ShopifyFake::calls('webhookSubscriptionCreate'))->toHaveCount(1)
+        ->and(collect(ShopifyFake::calls('webhookSubscriptionCreate'))->pluck('variables.topic')->all())->toBe(['APP_UNINSTALLED', 'PRODUCTS_DELETE'])
         ->and($shopifyUser->refresh()->shopify_fulfilment_service_id)->toBe('gid://shopify/FulfillmentService/700')
         ->and($channel->refresh()->platform_status)->toBeTrue();
 });
@@ -1484,4 +1485,91 @@ test('a shopify order reuses the end customer whose name differs only in capital
     $second = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6202')->firstOrFail();
 
     expect($second->customer_client_id)->toBe($first->customer_client_id);
+});
+
+function signedShopifyProductDelete($test, ShopifyUser $shopifyUser, array $payload, ?string $secret = null)
+{
+    $body = json_encode($payload);
+    $hmac = base64_encode(hash_hmac('sha256', $body, $secret ?? (string) config('shopify-app.api_secret'), true));
+
+    return $test->call('POST', 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-deleted', [], [], [], [
+        'CONTENT_TYPE'                => 'application/json',
+        'HTTP_X_SHOPIFY_HMAC_SHA256'  => $hmac,
+        'HTTP_X_SHOPIFY_SHOP_DOMAIN'  => $shopifyUser->name,
+    ], $body);
+}
+
+test('a product deleted in shopify is unlinked in that store only, from a queued job', function () {
+    Queue::fake();
+    config(['app.enforce_webhook_signatures' => false]);
+    $shopifyUser  = shopifyOrderChannel($this, 'product-delete-hook');
+    $otherUser    = shopifyOrderChannel($this, 'product-delete-other');
+    $deleted      = shopifyPortfolioFor($this, $shopifyUser, 'gid://shopify/Product/7001');
+    $kept         = shopifyPortfolioFor($this, $otherUser, 'gid://shopify/Product/7001');
+
+    signedShopifyProductDelete($this, $shopifyUser, ['id' => 7001])->assertOk();
+
+    Queue::assertPushedOn('shopify-bulk', \Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductDelete
+        && $job->getParameters()[0]->id === $shopifyUser->id
+        && $job->getParameters()[1] === 'gid://shopify/Product/7001');
+
+    expect(\App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductDelete::make()->handle($shopifyUser, 'gid://shopify/Product/7001'))->toBe(1)
+        ->and($deleted->refresh()->platform_product_id)->toBeNull()
+        ->and($deleted->exist_in_platform)->toBeFalse()
+        ->and(Portfolio::find($deleted->id))->not->toBeNull()
+        ->and($kept->refresh()->platform_product_id)->toBe('gid://shopify/Product/7001');
+});
+
+test('a product deleted webhook without a valid signature is refused even while signatures are not enforced', function () {
+    Queue::fake();
+    config(['app.enforce_webhook_signatures' => false]);
+    $shopifyUser = shopifyOrderChannel($this, 'product-delete-forged');
+    shopifyPortfolioFor($this, $shopifyUser, 'gid://shopify/Product/7001');
+
+    signedShopifyProductDelete($this, $shopifyUser, ['id' => 7001], 'not-the-app-secret')->assertUnauthorized();
+
+    Queue::assertNotPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductDelete);
+});
+
+test('a product deleted webhook for a store we no longer serve gets a 200 so shopify stops retrying', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'product-delete-gone');
+
+    $storeDomain = $shopifyUser->name;
+    $shopifyUser->delete();
+    DB::table('shopify_users')->where('id', $shopifyUser->id)->update(['name' => (string) Str::ulid()]);
+    $gone = ShopifyUser::withTrashed()->find($shopifyUser->id);
+    $gone->name = $storeDomain;
+
+    signedShopifyProductDelete($this, $gone, ['id' => 7001])->assertOk();
+    $this->postJson('https://'.config('app.domain').'/webhooks/shopify/999999999/products-deleted', ['id' => 7001])->assertOk();
+
+    Queue::assertNotPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductDelete);
+});
+
+test('repairing shopify webhooks removes products update and adds products delete, and only reports without apply', function () {
+    $shopifyUser = shopifyOrderChannel($this, 'webhook-repair');
+
+    ShopifyFake::fake([
+        'webhookSubscriptions'      => ShopifyFake::graphql(['webhookSubscriptions' => ['edges' => [
+            ['node' => ['id' => 'gid://shopify/WebhookSubscription/11', 'topic' => 'APP_UNINSTALLED', 'endpoint' => ['__typename' => 'WebhookHttpEndpoint', 'callbackUrl' => 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/app-uninstalled'], 'format' => 'JSON', 'createdAt' => '2026-01-01T00:00:00Z', 'updatedAt' => '2026-01-01T00:00:00Z']],
+            ['node' => ['id' => 'gid://shopify/WebhookSubscription/12', 'topic' => 'PRODUCTS_UPDATE', 'endpoint' => ['__typename' => 'WebhookHttpEndpoint', 'callbackUrl' => 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-updated'], 'format' => 'JSON', 'createdAt' => '2025-07-26T00:00:00Z', 'updatedAt' => '2025-07-26T00:00:00Z']],
+        ]]]),
+        'webhookSubscriptionDelete' => ShopifyFake::graphql(['webhookSubscriptionDelete' => ['deletedWebhookSubscriptionId' => 'gid://shopify/WebhookSubscription/12', 'userErrors' => []]]),
+        'webhookSubscriptionCreate' => fn (array $variables) => ShopifyFake::graphql(['webhookSubscriptionCreate' => ['webhookSubscription' => ['id' => 'gid://shopify/WebhookSubscription/13', 'topic' => $variables['topic'], 'endpoint' => ['__typename' => 'WebhookHttpEndpoint', 'callbackUrl' => $variables['webhookSubscription']['callbackUrl']], 'format' => 'JSON'], 'userErrors' => []]]),
+    ]);
+
+    $dryRun = \App\Actions\Maintenance\Dropshipping\RepairWebhookShopifyUsers::make()->handle($shopifyUser);
+
+    expect($dryRun)->toBe(['status' => 'ok', 'removed_update' => 1, 'added_delete' => true])
+        ->and(ShopifyFake::calls('webhookSubscriptionDelete'))->toHaveCount(0)
+        ->and(ShopifyFake::calls('webhookSubscriptionCreate'))->toHaveCount(0);
+
+    \App\Actions\Maintenance\Dropshipping\RepairWebhookShopifyUsers::make()->handle($shopifyUser, apply: true);
+
+    $created = ShopifyFake::calls('webhookSubscriptionCreate');
+    expect(ShopifyFake::calls('webhookSubscriptionDelete'))->toHaveCount(1)
+        ->and($created)->toHaveCount(1)
+        ->and($created[0]['variables']['topic'])->toBe('PRODUCTS_DELETE')
+        ->and($created[0]['variables']['webhookSubscription']['callbackUrl'])->toBe('https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-deleted');
 });

@@ -240,7 +240,7 @@ const applyBarcodeChange = (value: string | null) => {
     const route_ = barcodeRouteForLevel(editingLevel.value)
     if (!route_ || isSavingBarcode.value) return
 
-    const field = editingLevel.value === "unit" ? "unit_barcode" : "barcode"
+    const field = { unit: "unit_barcode", carton: "carton_barcode" }[editingLevel.value] ?? "barcode"
 
     router.patch(
         route(route_.name, route_.parameters),
@@ -256,7 +256,7 @@ const applyBarcodeChange = (value: string | null) => {
             onError: (errors) => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: errors[field] || errors.unit_barcode || ctrans("Could not save the barcode"),
+                    text: errors[field] || ctrans("Could not save the barcode"),
                     type: "error",
                 })
             },
@@ -466,10 +466,10 @@ const saveBarcode = (value: string | null) => {
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
                         <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
                             v-tooltip="ctrans(barcode.label)">
-                            {{ barcode.level === 'sko' ? ctrans('SKO') : ctrans('Unit') }}
+                            {{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}
                         </div>
 
-                        <button v-if="barcode.number && data.label_route && data.label_options"
+                        <button v-if="barcode.number && barcode.level !== 'carton' && data.label_route && data.label_options"
                             type="button"
                             v-tooltip="ctrans('Print PDF label')"
                             class="min-w-0 max-w-full justify-self-start transition hover:opacity-60"

@@ -13,20 +13,23 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing } from "@fal"
-library.add(faLifeRing)
+import { faLifeRing, faClipboardList } from "@fal"
+library.add(faLifeRing, faClipboardList)
 
 interface RescueItem {
 	org_stock_id: number
 	code: string
 	name: string
 	rank: string | null
-	bucket: "out" | "w1" | "w2"
+	bucket: "out" | "w1" | "w2" | "w3"
 	our_stock: number
-	spare: number
+	spare: number | null
+	their_stock: number
 	quantity: number
 	days_of_cover: number | null
 	lost: number | null
+	hub_name: string | null
+	order_quantum: number
 }
 
 const props = defineProps<{
@@ -34,9 +37,9 @@ const props = defineProps<{
 	title: string
 	currency_code: string
 	can_create_purchase_orders?: boolean
-	orgPartner: { id: number; name: string }
+	orgPartner: { id: number; name: string; is_hub: boolean }
 	rescueBuckets: {
-		bucket: "out" | "w1" | "w2"
+		bucket: "out" | "w1" | "w2" | "w3"
 		label: string
 		count: number
 		cost: number
@@ -64,11 +67,17 @@ const wholeMoney = (amount: number) =>
 		maximumFractionDigits: 0,
 	}).format(amount)
 
-const bucketLabel = { out: ctrans("Out of stock"), w1: ctrans("Doomed"), w2: ctrans("Critical") }
+const bucketLabel = {
+	out: ctrans("Out of stock"),
+	w1: ctrans("Doomed"),
+	w2: ctrans("Critical"),
+	w3: ctrans("Danger"),
+}
 const bucketClass = {
 	out: "bg-red-100 text-red-800",
 	w1: "bg-rose-50 text-rose-700",
 	w2: "bg-orange-50 text-orange-700",
+	w3: "bg-amber-50 text-amber-700",
 }
 </script>
 
@@ -82,6 +91,7 @@ const bucketClass = {
 				:partnerName="orgPartner.name"
 				:currencyCode="currency_code"
 				:draftReference="draftReference"
+				:isHub="orgPartner.is_hub"
 				:buckets="rescueBuckets" />
 		</template>
 	</PageHeading>
@@ -89,9 +99,14 @@ const bucketClass = {
 	<div class="max-w-6xl p-4 text-sm text-gray-700">
 		<p class="mb-3 text-gray-500">
 			{{
-				ctrans(
-					"Our selling SKOs that are out or about to run out, with nothing on order, that they can spare without putting their own stock at risk. Worst offenders first."
-				)
+				orgPartner.is_hub
+					? ctrans(
+							"Our selling SKOs that are out or about to run out, with nothing on order, that :partner makes. Worst offenders first.",
+							{ partner: orgPartner.name }
+						)
+					: ctrans(
+							"Our selling SKOs that are out or about to run out, with nothing on order, that they can spare without putting their own stock at risk. Worst offenders first."
+						)
 			}}
 		</p>
 
@@ -122,7 +137,9 @@ const bucketClass = {
 							class="text-right">
 							{{ ctrans("Suggested order") }}
 						</th>
-						<th class="text-right">{{ ctrans("Can spare") }}</th>
+						<th class="text-right">
+							{{ orgPartner.is_hub ? ctrans("Their stock") : ctrans("Can spare") }}
+						</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-gray-100">
@@ -130,7 +147,18 @@ const bucketClass = {
 						v-for="item in items.data"
 						:key="item.org_stock_id"
 						class="[&_td]:px-3 [&_td]:py-1.5">
-						<td class="whitespace-nowrap font-medium text-gray-900">{{ item.code }}</td>
+						<td class="whitespace-nowrap font-medium text-gray-900">
+							{{ item.code }}
+							<span
+								v-if="item.hub_name"
+								v-tooltip="
+									ctrans(
+										':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time',
+										{ hub: item.hub_name }
+									)
+								"
+								class="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-red-500 align-middle" />
+						</td>
 						<td class="max-w-xs truncate text-gray-500">{{ item.name }}</td>
 						<td class="text-gray-600">{{ item.rank ?? "-" }}</td>
 						<td>
@@ -145,10 +173,23 @@ const bucketClass = {
 							{{ item.lost ? wholeMoney(item.lost) : "-" }}
 						</td>
 						<td class="text-right font-medium tabular-nums text-gray-900">
+							<span
+								v-if="item.order_quantum > 1"
+								v-tooltip="
+									ctrans(
+										'Made in batches: ordered in multiples of :quantum SKOs',
+										{
+											quantum: item.order_quantum,
+										}
+									)
+								"
+								class="mr-1 cursor-help text-xs font-normal text-gray-400"
+								>×{{ item.order_quantum }}</span
+							>
 							{{ locale.number(item.quantity) }}
 						</td>
 						<td class="text-right tabular-nums text-gray-500">
-							{{ locale.number(item.spare) }}
+							{{ locale.number(item.spare ?? item.their_stock) }}
 						</td>
 					</tr>
 					<tr v-if="!items.data.length">

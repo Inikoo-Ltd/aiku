@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
@@ -105,6 +106,9 @@ class EditShop extends OrgAction
 
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
+        $isWixConnected = $shop->engine === ShopEngineEnum::WIX && $shop->wixUser()->exists();
+        $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
+
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
         $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
@@ -131,7 +135,7 @@ class EditShop extends OrgAction
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
-            __('Wix Keys'),
+            __('Wix Settings'),
             __('Chat widget'),
         ];
         $salesChannels          = SalesChannel::orderBy('id')->get();
@@ -782,14 +786,46 @@ class EditShop extends OrgAction
                             ],
                         ],
                         ShopEngineEnum::WIX => [
-                            'label'  => __('Wix Keys'),
+                            'label'  => __('Wix Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'wix_access_token' => [
+                                'wix_site_url'        => [
+                                    'type'         => 'input_with_warning',
+                                    'readonly'     => true,
+                                    'label'        => __('Wix Site Url'),
+                                    'value'        => Arr::get($shop->settings, 'wix.site_url', ''),
+                                    'showWarning'  => !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle' => __('We are having troubles connecting to the platform'),
+                                    'warningBody'  => __('Error Message').": ".$shop->external_shop_connection_error
+                                ],
+                                'wix_install_url'     => [
+                                    'type'        => 'input',
+                                    'disabled'    => true,
+                                    'label'       => __('Wix connect link'),
+                                    'value'       => $wixInstallUrl,
+                                    'information' => __('Open this link to connect or reconnect a Wix site to this shop. It is valid for 2 hours.'),
+                                ],
+                                'wix__connect'        => [
+                                    'type'        => 'action',
+                                    'label'       => __('Wix site'),
+                                    'information' => $isWixConnected
+                                        ? __('Connected to :site.', ['site' => Arr::get($shop->settings, 'wix.site_url', '')])
+                                        : __('Not connected yet.'),
+                                    'action'      => [
+                                        'type'  => 'button',
+                                        'style' => $isWixConnected ? 'tertiary' : 'save',
+                                        'label' => $isWixConnected ? __('Reconnect Wix site') : __('Connect Wix site'),
+                                        'route' => [
+                                            'url'       => $wixInstallUrl,
+                                            'openBlank' => true,
+                                        ],
+                                    ],
+                                ],
+                                'wix_order_from_days' => [
                                     'type'  => 'input',
-                                    'label' => __('Wix Access Token'),
-                                    'value' => Arr::get($shop->settings, 'wix.access_token', ''),
-                                ]
+                                    'label' => __('Wix Order From Days'),
+                                    'value' => Arr::get($shop->settings, 'wix.order_from_days', '30')
+                                ],
                             ],
                         ],
                         ShopEngineEnum::SHOPIFY => [

@@ -76,6 +76,11 @@ function mailshotRoute(mailshot: Mailshot) {
                     {{ mailshot["name"] }}
                 </Link>
 
+                <span v-if="mailshot.is_dynamic_block"
+                    class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded">
+                    {{ ctrans("For dynamic content") }}
+                </span>
+
                 <span
                     v-tooltip="mailshot.has_compiled_layout ? null : ctrans('Please save the email template by clicking the SAVE button in the BeeFree workspace before it can be used')"
                     class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium text-slate-600 rounded hover:bg-slate-200 cursor-pointer transition">

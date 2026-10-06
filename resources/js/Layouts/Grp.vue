@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
-import { Link, usePage } from "@inertiajs/vue3"
+import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
 import DeploymentChangeLog from "@/Components/DevOps/DeploymentChangeLog.vue"
 import { useLayoutStore } from "@/Stores/layout"
@@ -36,6 +36,13 @@ import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgr
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
+import AlertToast from "@/Components/Utils/AlertToast.vue"
+import { useMediaQuery, useWindowSize } from "@vueuse/core"
+import axios from "axios"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBellSlash, faShoppingCart, faLifeRing } from "@fal"
+
+library.add(faBellSlash, faShoppingCart, faLifeRing)
 
 
 import "@/Composables/Icon/ImportGrpFalIcon"
@@ -57,6 +64,38 @@ const layout = useLayoutStore()
 const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)
+
+const isDesktop = useMediaQuery("(min-width: 1024px)")
+const isTablet = useMediaQuery("(min-width: 768px)")
+const maxAlertPopups = computed(() => isDesktop.value ? 5 : (isTablet.value ? 2 : 3))
+const { width: windowWidth } = useWindowSize()
+const alertPopupsRightPx = computed(() => layout.messagingSidebar.show ? 224 : (layout.messagingSidebar.micro || !isTablet.value ? 24 : 48))
+const alertPopupsWidth = computed(() => Math.min(340, windowWidth.value - alertPopupsRightPx.value - 8))
+const alertPopupsStyle = computed(() => ({ top: "3.5rem", right: `${alertPopupsRightPx.value}px` }))
+
+const orderAmountClass = (orderAlertType: string | undefined) => ({
+    ecom_small: "text-gray-500",
+    ecom_normal: "text-blue-600",
+    ecom_big: "text-emerald-600 font-bold",
+    dropshipping_unpaid: "text-amber-600",
+}[orderAlertType ?? ""] ?? "text-gray-700")
+
+const stopOrderPopups = async (close: () => void) => {
+    close()
+    try {
+        await axios.patch(route("grp.models.profile.update"), { order_alerts_popup: false })
+        if (layout.order_alerts) {
+            layout.order_alerts.popup.show = false
+        }
+        notify({
+            title: ctrans("Order pop-ups turned off"),
+            text: ctrans("You can turn them back on in Personal settings → Alerts."),
+            type: "success",
+        })
+    } catch {
+        notify({ title: ctrans("Something went wrong"), text: ctrans("Order pop-ups are still on. Please try again."), type: "error" })
+    }
+}
 
 // Section: Notification
 watch(
@@ -246,8 +285,8 @@ const safeTheme = computed(() => {
             :class="[
 				usePage().component === 'Tickets/Ticket' ? 'pb-0' : usePage().component === 'Tasks/StaffTask' ? 'pb-6' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
-				'mr-4',
-				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
+				'mr-6',
+				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-6' : 'md:mr-12'),
 				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />
@@ -417,45 +456,44 @@ const safeTheme = computed(() => {
     </notifications>
 
     <notifications
-        group="order-alerts"
+        group="alert-popups"
         position="top right"
-        :max="5"
-        width="340"
+        :max="maxAlertPopups"
+        :width="alertPopupsWidth"
         :pauseOnHover="true"
-        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
+        :style="alertPopupsStyle">
         <template #body="{ item, close }">
-            <Link
-                role="status"
-                :href="item.data.url"
-                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
-                @click="close">
-                <div class="flex items-center justify-between gap-x-2 text-xs text-gray-500">
-                    <span>{{ item.title }}</span>
-                    <span v-if="item.data.is_unpaid" class="rounded bg-amber-100 px-1.5 text-amber-800">{{ ctrans("Unpaid") }}</span>
-                </div>
-                <div class="mt-1 truncate text-sm font-semibold text-gray-900">{{ item.data.reference }} · {{ item.data.customer }}</div>
-                <div class="mt-0.5 text-lg font-bold tabular-nums text-gray-900">{{ item.data.money }}</div>
+            <AlertToast
+                v-if="item.data.kind === 'order'"
+                icon="fal fa-shopping-cart"
+                :icon-class="item.data.is_unpaid ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'"
+                :eyebrow="item.title"
+                :heading="`${item.data.reference} · ${item.data.customer}`"
+                :url="item.data.url"
+                @close="close">
+                <div class="text-sm font-semibold tabular-nums" :class="orderAmountClass(item.data.type)">{{ item.data.money }}</div>
                 <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
-            </Link>
-        </template>
-    </notifications>
-
-    <notifications
-        group="ticket-alerts"
-        position="top right"
-        :max="5"
-        width="340"
-        :pauseOnHover="true"
-        :style="{ top: '3.5rem', right: layout.messagingSidebar.show ? '14rem' : (layout.messagingSidebar.micro ? '1rem' : '3rem') }">
-        <template #body="{ item, close }">
-            <Link
-                role="status"
-                :href="item.data.url"
-                class="mt-2 mr-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xl"
-                @click="close">
-                <div class="text-sm font-semibold text-gray-900">{{ item.title }}</div>
-                <div class="mt-1 truncate text-xs text-gray-500">{{ item.text }}</div>
-            </Link>
+                <template #actions>
+                    <button
+                        v-tooltip="ctrans('Stop order pop-ups')"
+                        type="button"
+                        class="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 opacity-0 transition hover:bg-gray-100 hover:text-gray-700 focus:opacity-100 group-hover:opacity-100"
+                        :aria-label="ctrans('Stop order pop-ups')"
+                        @click="stopOrderPopups(close)">
+                        <FontAwesomeIcon icon="fal fa-bell-slash" fixed-width aria-hidden="true" />
+                    </button>
+                </template>
+            </AlertToast>
+            <AlertToast
+                v-else
+                icon="fal fa-life-ring"
+                icon-class="bg-emerald-100 text-emerald-600"
+                :eyebrow="ctrans('Ticket')"
+                :heading="item.title"
+                :url="item.data.url"
+                @close="close">
+                <div class="line-clamp-2 text-xs text-gray-500">{{ item.text }}</div>
+            </AlertToast>
         </template>
     </notifications>
     </template>

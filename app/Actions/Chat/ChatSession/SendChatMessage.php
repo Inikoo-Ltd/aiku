@@ -36,6 +36,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,6 +50,12 @@ class SendChatMessage
     public const ATTACHMENT_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip'];
 
     public const MAX_ATTACHMENTS = 30;
+
+    public const MAX_AGENT_FILE_KB = 100 * 1024;
+
+    public const MAX_CUSTOMER_FILE_BYTES = 10 * 1024 * 1024;
+
+    public const MAX_CUSTOMER_DAILY_BYTES = 100 * 1024 * 1024;
 
     /**
      * @throws \Throwable
@@ -329,13 +336,13 @@ class SendChatMessage
             'image'          => [
                 'sometimes',
                 'nullable',
-                File::image()->max(10 * 1024)
+                File::image()->max(self::MAX_AGENT_FILE_KB)
             ],
             'file'           => [
                 'sometimes',
                 'nullable',
                 File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip'])
-                    ->max(20 * 1024)
+                    ->max(self::MAX_AGENT_FILE_KB)
             ],
             'attachments'    => [
                 'sometimes',
@@ -344,7 +351,7 @@ class SendChatMessage
             ],
             'attachments.*'  => [
                 File::types(self::ATTACHMENT_TYPES)
-                    ->max(20 * 1024)
+                    ->max(self::MAX_AGENT_FILE_KB)
             ],
             'is_email_notif' => [
                 'sometimes',
@@ -390,6 +397,14 @@ class SendChatMessage
         }
 
         $validated = array_merge($validated, $senderResult['data']);
+
+        if ($validated['sender_type'] !== ChatSenderTypeEnum::AGENT->value) {
+            $refusal = $this->customerUploadRefusal($request);
+
+            if ($refusal) {
+                return $refusal;
+            }
+        }
 
         $chatMessage = $this->handle($chatSession, $validated);
 
@@ -500,11 +515,52 @@ class SendChatMessage
         ];
     }
 
+    /**
+     * Agents may send up to 100MB, but anyone on the website can post here, so customer files
+     * are kept small and each IP gets a daily allowance: a script posting files in a loop fills
+     * its allowance, not our disk.
+     *
+     * @return array{ok: false, message: string, code: int}|null
+     */
+    public function customerUploadRefusal(Request $request): ?array
+    {
+        $files = array_filter([$request->file('image'), $request->file('file'), ...($request->file('attachments') ?? [])]);
+
+        if (!$files) {
+            return null;
+        }
+
+        $bytes = array_sum(array_map(fn (UploadedFile $file) => $file->getSize(), $files));
+
+        foreach ($files as $file) {
+            if ($file->getSize() > self::MAX_CUSTOMER_FILE_BYTES) {
+                return ['ok' => false, 'message' => 'Maximum file size 10MB', 'code' => 422];
+            }
+        }
+
+        $key = 'chat-customer-upload-bytes:'.$request->ip();
+
+        if (RateLimiter::attempts($key) + $bytes > self::MAX_CUSTOMER_DAILY_BYTES) {
+            return ['ok' => false, 'message' => 'Upload limit reached, please try again tomorrow', 'code' => 429];
+        }
+
+        RateLimiter::increment($key, 86400, $bytes);
+
+        return null;
+    }
+
+    private function isAuthenticatedChatAgent(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User && ChatAgent::where('user_id', $user->id)->exists();
+    }
+
     protected function determineSenderData(array $validated, ChatSession $chatSession): array
     {
         $senderType = $validated['sender_type'] ?? null;
 
-        if ($senderType === ChatSenderTypeEnum::SYSTEM->value) {
+        if ($senderType === ChatSenderTypeEnum::SYSTEM->value && $this->isAuthenticatedChatAgent()) {
             return [
                 'ok'   => true,
                 'data' => [

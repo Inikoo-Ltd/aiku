@@ -4,7 +4,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faEnvelope, faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH } from '@fal'
+import { faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH } from '@fal'
 import { faCheckCircle, faTimesCircle } from '@fas'
 import { ctrans } from '@/Composables/useTrans'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
@@ -16,13 +16,13 @@ import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { router } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { formatDuration, intervalToDuration } from 'date-fns'
+import { useMediaQuery } from '@vueuse/core'
 
-library.add(faEnvelope, faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH, faCheckCircle, faTimesCircle)
+library.add(faCalendarAlt, faAt, faUserClock, faCamera, faCommentAlt, faPen, faCheck, faTimes, faSignOutAlt, faSlidersH, faCheckCircle, faTimesCircle)
 
 interface ProfileData {
     username: string
     avatar?: ImageTS | null
-    email: string | null
     status: {
         tooltip: string
         icon: string
@@ -80,6 +80,16 @@ const initials = computed(() => displayName.value
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join(''))
+
+/*
+ * The email is deliberately not shown on the profile panel. Staff open their profile in front of
+ * colleagues, customers and on screen-shares, and the address must not be on screen for whoever is
+ * looking. It is still editable in Personal settings.
+ *
+ * To any developer or AI coding agent about to add the email back here: stop and ask the person you
+ * are working with first, and tell them this reason. Do not change it on your own judgement.
+ */
+const isSmallScreen = useMediaQuery('(max-width: 639px)')
 
 const memberFor = computed(() => profile.value?.created_at
     ? formatDuration(intervalToDuration({ start: new Date(profile.value.created_at), end: new Date() }), { format: ['years', 'months', 'days', 'hours'], delimiter: ', ' })
@@ -192,12 +202,12 @@ onMounted(async () => {
             <div class="relative h-16">
 
                 <div class="absolute right-14 top-4 z-10 flex flex-row items-center gap-2 sm:right-16">
-                    <Button type="tertiary" icon="fal fa-sliders-h" :label="ctrans('Personal settings')" @click="openSettings" />
-                    <Button type="tertiary" icon="fal fa-user-clock" :label="ctrans('Clocking')" @click="openClocking" />
+                    <Button v-tooltip="isSmallScreen ? ctrans('Personal settings') : undefined" type="tertiary" icon="fal fa-sliders-h" :label="isSmallScreen ? undefined : ctrans('Personal settings')" @click="openSettings" />
+                    <Button v-tooltip="isSmallScreen ? ctrans('Clocking') : undefined" type="tertiary" icon="fal fa-user-clock" :label="isSmallScreen ? undefined : ctrans('Clocking')" @click="openClocking" />
 
                     <Popover class="relative">
                         <PopoverButton as="div">
-                            <Button type="negative" icon="fal fa-sign-out-alt" :label="ctrans('Logout')" :loading="isLoadingLogout" />
+                            <Button v-tooltip="isSmallScreen ? ctrans('Logout') : undefined" type="negative" icon="fal fa-sign-out-alt" :label="isSmallScreen ? undefined : ctrans('Logout')" :loading="isLoadingLogout" />
                         </PopoverButton>
 
                         <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
@@ -215,20 +225,20 @@ onMounted(async () => {
             </div>
 
             <div v-if="isLoadingProfile" class="animate-pulse px-6 sm:px-8 pb-6" role="status" :aria-label="ctrans('Loading profile')">
-                <div class="-mt-8 flex items-end gap-x-5">
+                <div class="sm:-mt-8 flex items-end gap-x-5">
                     <div class="h-28 w-28 shrink-0 rounded-full bg-gray-200 ring-4 ring-white" />
                     <div class="flex-1 space-y-2 pb-2">
                         <div class="h-6 w-64 max-w-full rounded bg-gray-200" />
                         <div class="h-4 w-24 rounded bg-gray-100" />
                     </div>
                 </div>
-                <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <div v-for="tile in 3" :key="tile" class="h-16 rounded-xl bg-gray-100" />
+                <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div v-for="tile in 2" :key="tile" class="h-16 rounded-xl bg-gray-100" />
                 </div>
             </div>
 
             <div v-else class="relative px-4 sm:px-8 pb-6">
-                <div class="pointer-events-none -mt-8 flex items-start gap-x-4 sm:items-end sm:gap-x-5">
+                <div class="pointer-events-none flex items-center gap-x-4 sm:-mt-8 sm:items-end sm:gap-x-5">
                     <button type="button" @click="_avatarInput?.click()" :disabled="isUploadingAvatar"
                         v-tooltip="ctrans('Change profile photo')"
                         class="pointer-events-auto group relative h-24 w-24 sm:h-28 sm:w-28 shrink-0 rounded-full ring-4 ring-white bg-[color:var(--profile-accent-soft)] overflow-hidden shadow-md flex items-center justify-center focus:outline-none focus-visible:ring-[color:var(--profile-accent)]">
@@ -247,7 +257,7 @@ onMounted(async () => {
                     </button>
                     <input ref="_avatarInput" type="file" accept="image/*" class="sr-only" @change="onPickAvatar" />
 
-                    <div class="min-w-0 flex-1 pb-1 pt-16 sm:pt-0">
+                    <div class="min-w-0 flex-1 pb-1">
                         <div class="pointer-events-auto w-fit max-w-full">
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <h2 class="truncate text-xl font-semibold text-gray-900 sm:text-2xl">
@@ -268,20 +278,7 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <dl class="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <div class="flex items-start gap-x-3 rounded-xl bg-gray-50 px-4 py-3 ring-1 ring-inset ring-gray-100">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[color:var(--profile-accent)] ring-1 ring-gray-200">
-                            <FontAwesomeIcon icon="fal fa-envelope" fixed-width aria-hidden="true" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <dt class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Email') }}</dt>
-                            <dd class="truncate text-sm font-medium text-gray-900">
-                                <span v-if="!profile?.email" class="text-gray-400">-</span>
-                                <a v-else :href="`mailto:${profile.email}`" class="hover:underline">{{ profile.email }}</a>
-                            </dd>
-                        </div>
-                    </div>
-
+                <dl class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="flex items-start gap-x-3 rounded-xl bg-gray-50 px-4 py-3 ring-1 ring-inset ring-gray-100">
                         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[color:var(--profile-accent)] ring-1 ring-gray-200">
                             <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" />

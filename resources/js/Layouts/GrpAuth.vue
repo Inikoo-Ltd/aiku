@@ -30,7 +30,7 @@ const publicSiteUrl = typeof window !== 'undefined' ? `${window.location.protoco
 </script>
 
 <template>
-    <ScreenWarning v-if="layout.app.environment === 'staging'" />
+    <ScreenWarning v-if="usePage().props.environment === 'staging'" large />
     <div :style="{'background-image': watercolourBackground(), 'background-size': 'cover', 'background-position': 'center'}"
           class="relative min-h-[100dvh] w-screen overflow-hidden flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
         <Head><link rel="stylesheet" href="https://fonts.bunny.net/css?family=caveat:400&display=swap" /></Head>

@@ -403,24 +403,26 @@ const confirmDeletePurchaseOrder = (action: any) => {
 	})
 }
 
+const cancelDialogAction = ref<any>(null)
+const cancelConfirmationText = ref("")
+const isCancelConfirmed = computed(() => cancelConfirmationText.value.trim().toLowerCase() === "yes")
+
 const confirmCancelPurchaseOrder = (action: any) => {
-	confirm.require({
-		group: "purchase-order",
-		message: ctrans("Are you sure you want to cancel this purchase order? All item amounts will be set to zero."),
-		header: ctrans("Cancel Purchase Order"),
-		rejectProps: { label: ctrans("Keep"), severity: "secondary", outlined: true },
-		acceptProps: { label: ctrans("Cancel order"), severity: "danger" },
-		accept: () => {
-			router.patch(route(action.route.name, action.route.parameters), {}, {
-				onStart: () => { cancelLoading.value = true },
-				onFinish: () => { cancelLoading.value = false },
-				onError: () => {
-					notify({
-						title: ctrans("Something went wrong"),
-						text: ctrans("Failed to cancel purchase order"),
-						type: "error",
-					})
-				},
+	cancelConfirmationText.value = ""
+	cancelDialogAction.value = action
+}
+
+const cancelPurchaseOrder = () => {
+	const action = cancelDialogAction.value
+	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes" }, {
+		onStart: () => { cancelLoading.value = true },
+		onFinish: () => { cancelLoading.value = false },
+		onSuccess: () => { cancelDialogAction.value = null },
+		onError: () => {
+			notify({
+				title: ctrans("Something went wrong"),
+				text: ctrans("Failed to cancel purchase order"),
+				type: "error",
 			})
 		},
 	})
@@ -1011,6 +1013,48 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			</div>
 		</template>
 	</ConfirmDialog>
+
+	<Dialog
+		:visible="!!cancelDialogAction"
+		modal
+		:header="ctrans('Cancel purchase order')"
+		:style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+		@update:visible="(visible) => { if (!visible) cancelDialogAction = null }"
+	>
+		<div class="flex flex-col gap-4">
+			<div class="flex items-start gap-3 rounded-md border-2 border-red-500 bg-red-50 p-4 text-red-800">
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-1 text-3xl text-red-600" fixed-width />
+				<div class="flex flex-col gap-2">
+					<p class="text-lg font-bold uppercase">{{ ctrans("Cancelling here does not tell the supplier") }}</p>
+					<p class="text-sm">{{ ctrans("It is your responsibility to inform the supplier, agent or partner that you no longer want this order. If they are not told, they may still produce and send it.") }}</p>
+				</div>
+			</div>
+			<p class="text-sm text-gray-700">{{ ctrans("All item amounts will be set to zero. This cannot be undone.") }}</p>
+			<label for="purchase-order-cancel-confirmation" class="text-sm font-medium text-gray-700">
+				{{ ctrans("Have you already informed them? Type yes to cancel this order.") }}
+			</label>
+			<input
+				id="purchase-order-cancel-confirmation"
+				v-model="cancelConfirmationText"
+				type="text"
+				autocomplete="off"
+				class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-red-500"
+				@keyup.enter="isCancelConfirmed && cancelPurchaseOrder()"
+			/>
+		</div>
+
+		<template #footer>
+			<Button :label="ctrans('Keep')" type="secondary" @click="cancelDialogAction = null" />
+			<Button
+				:label="ctrans('Cancel order')"
+				type="delete"
+				:disabled="!isCancelConfirmed"
+				:loading="cancelLoading"
+				@click="cancelPurchaseOrder"
+			/>
+		</template>
+	</Dialog>
 
 	<Dialog
 		:visible="!!submitDialogAction"

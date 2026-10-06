@@ -200,7 +200,7 @@ watch(clusterElement, (element, _previous, onCleanup) => {
     onCleanup(() => observer.disconnect())
 }, { flush: "post" })
 
-const desktopAnchorRem = computed(() => (layout.messagingSidebar.show ? 15 : (layout.messagingSidebar.micro ? 2 : 4)))
+const desktopAnchorRem = computed(() => (layout.messagingSidebar.show ? 15 : (layout.messagingSidebar.micro ? 2.5 : 4)))
 
 const hideIfMakingRoom = (element: Element) => {
     const ulid = (element as HTMLElement).dataset.windowUlid

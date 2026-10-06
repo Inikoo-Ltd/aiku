@@ -2,7 +2,7 @@
 title: Kdo co vyrábí
 summary: Naučte aiku, kteří řemeslníci obvykle vyrábějí kterou kategorii nebo artefakt, aby se seznam To produce sám roztřídil na hromádky jednotlivých lidí. Doporučení, nikdy zámek.
 date: 2026-09-08
-source_date: 2026-09-08
+source_date: 2026-10-05
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -35,6 +35,16 @@ Na každé stránce department a každé stránce artefaktu je pod nadpisem řá
 aiku to čte takto. U řádku v To produce se nejdřív podívá na artefakt. Pokud má artefakt řemeslníky, řádek patří prvnímu z nich. Pokud ne, podívá se na department artefaktu a vezme prvního řemeslníka tam. Pokud nemá nikoho ani jedno z toho, řádek spadá pod *Unassigned* (Nepřiřazeno) a na nástěnce Board otázka *Kdo to vyrobí?* přijde bez navrženého jména.
 
 Nejlevnější způsob, jak nastavit továrnu, je proto: připojit řemeslníky k departments a jednotlivých artefaktů se dotknout jen u výjimek. Jeden člověk vyrábí veškeré mýdlo kromě jednoho druhu, který potřebuje jiné ruce.
+
+## Sdílení jedné zakázky mezi řemeslníky
+
+Velký řádek lze rozdělit. V zakázce klikněte vedle množství řádku na **Split / Assign multiple artisans** (Rozdělit / Přiřadit více řemeslníků). U každého řádku vyberte řemeslníka a počet kusů, které vyrobí; **Add artisan** (Přidat řemeslníka) přidá další řádek. Řádky se musí přesně sečíst na celkové množství řádku, v tom případě box zezelená. Poté **Save assignments** (Uložit přiřazení).
+
+- Každý řádek se stane dílčí zakázkou, pojmenovanou podle zakázky s písmenem: JOaroma-0101-A, -B, -C. Všechny nesou stejný kód šarže, takže se zásoby naskladní jako jedna šarže.
+- Na dílně vidí každý řemeslník jako svou jen vlastní část. Čas, kusy i odměna se jako vždy připíšou tomu, kdo zaznamená relaci.
+- Řádek ukazuje celkový postup všech svých částí a tabulku dílčích zakázek s cílem každého řemeslníka, hotovými kusy, stavem, časem a odměnou.
+- Stejným tlačítkem lze znovu otevřít okno a přesunout kusy nebo změnit jména. Část, kterou už někdo začal, nelze odstranit ani nastavit pod množství, které je již vyrobeno. První řádek vždy zůstává.
+- Jakmile bylo cokoli z řádku přijato do zásob, už ho nelze rozdělit.
 
 ## Co to není
 
