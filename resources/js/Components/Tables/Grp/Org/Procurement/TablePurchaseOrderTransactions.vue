@@ -56,6 +56,8 @@ const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
 
+const isTransactionClosed = (item: { state?: string }) => ['settled', 'cancelled', 'not_received'].includes(item.state ?? '')
+
 const levels = computed(() => getOrderingLevels().filter(l => !props.isPartner || l.key === 'skos'))
 
 const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
@@ -474,7 +476,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         <template v-if="item.partner_stock !== null">· </template>{{ ctrans('their carton ~:count sko', { count: formatQuantity(skosPerCarton({ units_per_pack: item.units_per_pack, units_per_carton: item.partner_units_per_carton })) }) }}
                     </span>
                 </div>
-                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" @suggest="(skos) => applySuggestion(item, skos)" />
+                <PurchaseOrderItemStockInfo :item="item" :isPartner="isPartner" :typedSkos="typedSkos[item.id]" :isOrderClosed="isTransactionClosed(item)" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>
         </template>
 

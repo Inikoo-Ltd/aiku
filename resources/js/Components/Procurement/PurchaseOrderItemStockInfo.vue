@@ -15,6 +15,7 @@ const props = defineProps<{
 	item: any
 	isPartner?: boolean
 	typedSkos?: number | null
+	isOrderClosed?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -40,11 +41,15 @@ const incoming = computed(
 		otherOrders.value.reduce((total, order) => total + Number(order.quantity_ordered || 0), 0) / pack.value
 )
 
-const thisOrder = computed(() =>
-	props.typedSkos !== undefined && props.typedSkos !== null
+const thisOrder = computed(() => {
+	if (props.isOrderClosed) {
+		return 0
+	}
+
+	return props.typedSkos !== undefined && props.typedSkos !== null
 		? Number(props.typedSkos) || 0
 		: (Number(props.item.quantity_ordered) || 0) / pack.value
-)
+})
 
 const weeklyForecast = computed<number[]>(() => cover.value?.weekly_forecast ?? [])
 
@@ -103,23 +108,74 @@ const suggestion = computed(() => {
 const daysNow = computed(() => coverDays(stock.value + incoming.value))
 const daysAfter = computed(() => coverDays(stock.value + incoming.value + thisOrder.value))
 
+const suggestedQuantityHint = computed(() => {
+	if (suggestion.value === null) {
+		return ""
+	}
+	if (suggestion.value === 0) {
+		return ctrans("Stock in hand and coming is already enough, so no order is needed.")
+	}
+
+	return ctrans("Suggested quantity: :quantity SKOs.", { quantity: formatNumber(suggestion.value) })
+})
+
 const verdict = computed(() => {
 	if (!hasHistory.value) {
-		return { label: ctrans("No sales history"), class: "text-gray-400" }
+		return {
+			label: ctrans("No sales history"),
+			class: "text-gray-400",
+			tooltip: ctrans("This product has no recent sales, so there is no way to tell how long the stock will last"),
+		}
 	}
 	const days = thisOrder.value > 0 ? daysAfter.value : daysNow.value
+	const times = { time: weeksLabel(days), lead: weeksLabel(leadDays.value), overstock: weeksLabel(overstockDays.value) }
 	if (days < leadDays.value) {
 		return thisOrder.value > 0
-			? { label: ctrans("Too little"), class: "text-red-600" }
-			: { label: ctrans("Order now"), class: "text-red-600" }
+			? {
+					label: ctrans("Understock"),
+					class: "text-red-600",
+					tooltip: [
+						ctrans("Understock: with this order the stock lasts only :time, but a new order takes :lead to arrive.", times),
+						ctrans("The stock will run out before the next delivery, so increase the quantity."),
+						suggestedQuantityHint.value,
+					]
+						.filter(Boolean)
+						.join(" "),
+				}
+			: {
+					label: ctrans("Order now"),
+					class: "text-red-600",
+					tooltip: ctrans("Stock lasts :time, less than the :lead lead time. Order now or it will run out before a new order arrives", times),
+				}
 	}
 	if (days > overstockDays.value) {
 		return thisOrder.value > 0
-			? { label: ctrans("Too much"), class: "text-amber-600" }
-			: { label: ctrans("Not needed"), class: "text-gray-400" }
+			? {
+					label: ctrans("Overstock"),
+					class: "text-amber-600",
+					tooltip: [
+						ctrans("Overstock: with this order the stock lasts :time, beyond the :overstock limit.", times),
+						ctrans("The extra stock ties up money and warehouse space, so reduce the quantity."),
+						suggestedQuantityHint.value,
+					]
+						.filter(Boolean)
+						.join(" "),
+				}
+			: {
+					label: ctrans("Not needed"),
+					class: "text-gray-400",
+					tooltip: ctrans("Stock already lasts :time, more than the :overstock overstock limit. No need to order this product", times),
+				}
 	}
 
-	return { label: ctrans("OK"), class: "text-green-600" }
+	return {
+		label: ctrans("OK"),
+		class: "text-green-600",
+		tooltip:
+			thisOrder.value > 0
+				? ctrans("With this order the stock lasts :time, between the :lead lead time and the :overstock overstock limit. The quantity is right", times)
+				: ctrans("Stock lasts :time, between the :lead lead time and the :overstock overstock limit. No need to order yet", times),
+	}
 })
 
 function weeksLabel(days: number): string {
@@ -160,7 +216,7 @@ const currentCoverZones = computed(() =>
 			key: "safe-range",
 			from: leadDays.value,
 			to: overstockDays.value,
-			explanation: ctrans("From :from to :to: safe range. If the bar ends here, there is enough stock for now", {
+			explanation: ctrans("From :from to :to: safe range. If the bar ends here (between red line and yellow line), there is enough stock for now", {
 				from: weeksLabel(leadDays.value),
 				to: weeksLabel(overstockDays.value),
 			}),
@@ -226,6 +282,20 @@ const salesPerQuarter = computed(() =>
 )
 const daysOutOfStock = computed(() => lastQuarters.value.reduce((total, record) => total + (Number(record.days_out_of_stock) || 0), 0))
 
+const salesPerQuarterTooltip = computed(() =>
+	ctrans("Average sales per quarter (3 months): about :quantity SKOs, based on the last :count completed quarters", {
+		quantity: formatNumber(salesPerQuarter.value ?? 0),
+		count: String(lastQuarters.value.length),
+	})
+)
+
+const daysOutOfStockTooltip = computed(() =>
+	ctrans(
+		"This product was out of stock for :days days in the last :count completed quarters. Sales were lost on those days, so real demand is likely higher than the average shown",
+		{ days: String(daysOutOfStock.value), count: String(lastQuarters.value.length) }
+	)
+)
+
 const quarterTooltip = (record: QuarterUsage) =>
 	[
 		`${record.period}: ${formatNumber(record.sales)} ${ctrans("SKOs")}`,
@@ -279,11 +349,11 @@ function purchaseOrderRoute(slug: string) {
 					· {{ ctrans("lasts") }} <span class="font-semibold text-gray-800">{{ weeksLabel(daysNow) }}</span>
 				</template>
 			</span>
-			<span v-if="!(thisOrder > 0 && hasHistory)" class="font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
+			<span v-if="!(thisOrder > 0 && hasHistory)" v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>
 
 		<div v-if="hasHistory" class="flex items-center gap-3">
-			<div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150">
+			<div class="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
 				<div
 					v-for="zone in currentCoverZones"
 					:key="zone.key"
@@ -311,8 +381,10 @@ function purchaseOrderRoute(slug: string) {
 			</div>
 
 			<span v-if="salesPerQuarter !== null" class="shrink-0 text-gray-500">
-				~{{ formatNumber(salesPerQuarter) }}/{{ ctrans("qtr") }}
-				<span v-if="daysOutOfStock" class="text-red-600">· {{ ctrans(":days d out of stock", { days: String(daysOutOfStock) }) }}</span>
+				<span v-tooltip="salesPerQuarterTooltip" class="cursor-help">~{{ formatNumber(salesPerQuarter) }}/{{ ctrans("qtr") }}</span>
+				<span v-if="daysOutOfStock" v-tooltip="daysOutOfStockTooltip" class="cursor-help text-red-600">
+					· {{ ctrans(":days d out of stock", { days: String(daysOutOfStock) }) }}
+				</span>
 			</span>
 
 			<div v-if="quarters.length" class="flex h-4 items-end gap-0.5">
@@ -328,7 +400,7 @@ function purchaseOrderRoute(slug: string) {
 			</div>
 
 			<button
-				v-if="suggestion !== null && suggestion > 0"
+				v-if="!isOrderClosed && suggestion !== null && suggestion > 0"
 				type="button"
 				v-tooltip="ctrans('Enough for :time after it arrives, counting what is in stock and coming', { time: weeksLabel(targetDays - leadDays) })"
 				class="shrink-0 rounded border px-1.5 py-0.5 font-medium"
@@ -340,7 +412,7 @@ function purchaseOrderRoute(slug: string) {
 
 		<div v-if="thisOrder > 0 && hasHistory" class="flex items-center gap-x-2 text-gray-500">
 			<span>{{ ctrans("With this order: lasts :time", { time: weeksLabel(daysAfter) }) }}</span>
-			<span class="font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
+			<span v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>
 
 		<div v-if="comingDeliveries.length || otherOrders.length" class="flex flex-wrap gap-x-2 text-gray-500">
