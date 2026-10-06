@@ -21,4 +21,5 @@ Route::prefix('stock-images')->name('stock-images')->group(function () {
 Route::prefix('uploaded-images')->name('uploaded-images')->group(function () {
     Route::get('', IndexUploadedImages::class)->name('.index');
     Route::get('banner', IndexUploadedBannerImages::class)->name('.banner.index');
+    Route::get('email', [IndexUploadedImages::class, 'email'])->name('.email.index');
 });

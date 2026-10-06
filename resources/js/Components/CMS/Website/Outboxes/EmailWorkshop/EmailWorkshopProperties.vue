@@ -700,6 +700,7 @@ const contentSectionTitle = computed(() => ({
         </template>
 
         <TiptapImageDialog v-if="isImagePickerOpen" :show="isImagePickerOpen" :uploadImageRoute="imagesUploadRoute"
+            :imagesUploadedRoute="{ name: 'grp.gallery.uploaded-images.email.index' }"
             @insert="onImagePicked" @close="isImagePickerOpen = false" />
     </div>
 </template>

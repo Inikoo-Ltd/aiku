@@ -90,6 +90,7 @@ const removeFavicon = () => {
         <EmailWorkshopProperties :body="email.page.body" />
 
         <TiptapImageDialog v-if="isFaviconPickerOpen" :show="isFaviconPickerOpen" :uploadImageRoute="imagesUploadRoute"
+            :imagesUploadedRoute="{ name: 'grp.gallery.uploaded-images.email.index' }"
             @insert="onFaviconPicked" @close="isFaviconPickerOpen = false" />
     </div>
 </template>

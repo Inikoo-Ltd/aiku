@@ -2,12 +2,13 @@
 import Dialog from 'primevue/dialog'
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, watch } from 'vue'
 
 const props = defineProps<{
   show: boolean
   uploadImageRoute?: routeType
+  imagesUploadedRoute?: routeType
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +48,7 @@ function onSuccessUpload(value: any) {
   <Dialog
     v-model:visible="visible"
     modal
-    :header="trans('Select Image')"
+    :header="ctrans('Select Image')"
     class="w-full max-w-5xl"
     dismissableMask
     @hide="closeDialog"
@@ -58,6 +59,7 @@ function onSuccessUpload(value: any) {
       @submitSelectedImages="onPick"
       @onSuccessUpload="onSuccessUpload"
       :uploadRoute="uploadImageRoute"
+      :imagesUploadedRoutes="imagesUploadedRoute"
       :tabs="uploadImageRoute ? undefined : ['images_uploaded', 'stock_images']"
     />
   </Dialog>
