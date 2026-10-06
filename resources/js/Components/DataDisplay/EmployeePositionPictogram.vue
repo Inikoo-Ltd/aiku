@@ -373,6 +373,29 @@ const optionsJob = reactive<optionsJob>({
         // value: null
     },
 
+    gi: {
+        key: 'gi',
+        department: ctrans("Goods in"),
+        icon: "fal fa-arrow-to-bottom",
+        subDepartment: [
+            {
+                slug: "gi-m",
+                grade: "manager",
+                label: ctrans("Supervisor"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'gi-m')?.number_employees || 0,
+            },
+            {
+                slug: "gi-c",
+                grade: "clerk",
+                label: ctrans("Worker"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'gi-c')?.number_employees || 0,
+            }
+        ],
+        isHide: warehousesLength < 1,
+    },
+
     dist: {
         key: 'dist',
         department: ctrans("Goods out"),

@@ -2,7 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnreceiveStockDelivery extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     use AsAction;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
@@ -28,6 +28,11 @@ class UnreceiveStockDelivery extends OrgAction
     public int $hydratorsDelay = 0;
 
     private StockDelivery $stockDelivery;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->authToBookIn($request, 'supervisor-incoming.%d');
+    }
 
     public function afterValidator(Validator $validator): void
     {

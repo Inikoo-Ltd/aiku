@@ -456,6 +456,34 @@ return [
                 OrganisationTypeEnum::AGENT
             ],
         ],
+        'gi-m'     => [
+            'code'               => 'gi-m',
+            'name'               => 'Goods in supervisor',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::GOODS_IN_SUPERVISOR
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT
+            ],
+        ],
+        'gi-c'     => [
+            'code'               => 'gi-c',
+            'name'               => 'Goods in worker',
+            'scope'              => JobPositionScopeEnum::WAREHOUSES,
+            'team'               => 'warehouse',
+            'department'         => 'warehouse',
+            'roles'              => [
+                RolesEnum::GOODS_IN_CLERK
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::AGENT
+            ],
+        ],
         'dist-m'   => [
             'code'               => 'dist-m',
             'name'               => 'Dispatching supervisor',

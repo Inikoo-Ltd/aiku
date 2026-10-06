@@ -3168,6 +3168,19 @@ test('pickers handle returns in goods in without seeing stock deliveries', funct
     $this->actingAs($userWithoutReturns)->get($returnsRoute)->assertForbidden();
 });
 
+test('goods in supervisor and worker positions hold the goods in roles', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($warehouse->organisation);
+
+    $supervisor = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'gi-m')->firstOrFail();
+    $worker     = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'gi-c')->firstOrFail();
+
+    expect($supervisor->roles()->pluck('name')->all())->toBe([RolesEnum::getRoleName(RolesEnum::GOODS_IN_SUPERVISOR->value, $warehouse)])
+        ->and($worker->roles()->pluck('name')->all())->toBe([RolesEnum::getRoleName(RolesEnum::GOODS_IN_CLERK->value, $warehouse)]);
+});
+
 test('an admin holds no other position below them, so a customer service position does not make them a chat agent', function () {
     [$organisation, , $shop] = createShop();
     setPermissionsTeamId($organisation->group_id);

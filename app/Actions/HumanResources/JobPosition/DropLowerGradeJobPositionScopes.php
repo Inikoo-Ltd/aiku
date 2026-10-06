@@ -26,6 +26,7 @@ class DropLowerGradeJobPositionScopes
         [['mrk-m'], ['mrk-c']],
         [['cus-m'], ['cus-c', 'cus-call'], ['cus-v']],
         [['wah-m'], ['wah-sc']],
+        [['gi-m'], ['gi-c']],
         [['dist-m'], ['dist-pik', 'dist-excp-pick', 'dist-pak']],
         [['prod-m'], ['prod-p', 'prod-d', 'prod-c']],
         [['ful-m'], ['ful-wc', 'ful-c']],
