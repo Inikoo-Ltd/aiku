@@ -13,11 +13,14 @@ use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\UpcomingTransaction;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -81,6 +84,16 @@ class GetChatClaimCase
                 ->all(),
             'replacement'     => ['name' => 'grp.models.order.replacement_delivery_note.store', 'parameters' => ['order' => $order->id]],
             'replacements'    => $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->pluck('reference')->all(),
+            'follow_on'       => !$order->customer_client_id && request()->user()?->authTo("crm.{$order->shop_id}.edit")
+                ? ['name' => 'grp.models.order.claim_follow_on', 'parameters' => ['order' => $order->id]]
+                : null,
+            'follow_ons'      => $customer->upcomingTransactions()
+                ->where('type', UpcomingTransactionTypeEnum::FOLLOW_ON)
+                ->where('state', UpcomingTransactionStateEnum::READY)
+                ->with('product:id,code')
+                ->get()
+                ->map(fn (UpcomingTransaction $followOn) => $followOn->product?->code.' ×'.(float) $followOn->quantity)
+                ->all(),
             ...$this->refund($order),
         ];
     }

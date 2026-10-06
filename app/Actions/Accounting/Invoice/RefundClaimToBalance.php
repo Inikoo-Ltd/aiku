@@ -33,6 +33,8 @@ use Lorisleiva\Actions\ActionRequest;
  * and the balance entry points at its refund. The claim counts in delivery note units, which are
  * not always the invoice's (a pack, a piece), so each line refunds the share of its invoice
  * line that was claimed: two of six units refund a third of what that line was invoiced at.
+ * A percentage refunds only that part of it, a goodwill refund for a damaged item the customer
+ * keeps (HELP-3767).
  */
 class RefundClaimToBalance extends OrgAction
 {
@@ -49,6 +51,7 @@ class RefundClaimToBalance extends OrgAction
             'delivery_note_items'            => ['required', 'array', 'min:1'],
             'delivery_note_items.*.id'       => ['required', 'integer'],
             'delivery_note_items.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'percentage'                     => ['sometimes', 'numeric', 'gt:0', 'max:100'],
         ];
     }
 
@@ -57,9 +60,9 @@ class RefundClaimToBalance extends OrgAction
      *
      * @throws \Throwable
      */
-    public function handle(Order $order, array $claimedItems): Invoice
+    public function handle(Order $order, array $claimedItems, float $percentage = 100): Invoice
     {
-        $shares = self::sharesByTransaction($order, $claimedItems);
+        $shares = array_map(fn (float $share) => $share * $percentage / 100, self::sharesByTransaction($order, $claimedItems));
 
         $invoice = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->where(fn ($query) => $query->where('in_process', false)->orWhereNull('in_process'))->latest('id')->first();
         if (!$invoice || $shares === []) {
@@ -150,7 +153,7 @@ class RefundClaimToBalance extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData['delivery_note_items']);
+        return $this->handle($order, $this->validatedData['delivery_note_items'], (float) ($this->validatedData['percentage'] ?? 100));
     }
 
     public function jsonResponse(Invoice $refund): JsonResponse
