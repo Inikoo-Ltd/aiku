@@ -77,7 +77,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.item_quantity
             if (isset($editOffer['trigger_item_quantity']) && $editOffer['trigger_item_quantity'] !== '') {
-                $triggerData = $newTriggerData;
+                $triggerData = $newTriggerData ?? $offer->trigger_data;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {
@@ -93,7 +93,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.min_amount
             if (isset($editOffer['trigger_min_amount']) && $editOffer['trigger_min_amount'] !== '') {
-                $triggerData = $newTriggerData;
+                $triggerData = $newTriggerData ?? $offer->trigger_data;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {
@@ -109,7 +109,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.order_number
             if (isset($editOffer['trigger_order_number']) && $editOffer['trigger_order_number'] !== '') {
-                $triggerData = $newTriggerData;
+                $triggerData = $newTriggerData ?? $offer->trigger_data;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {

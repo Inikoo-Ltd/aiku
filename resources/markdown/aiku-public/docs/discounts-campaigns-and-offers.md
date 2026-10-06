@@ -1,7 +1,7 @@
 ---
 title: Discounts: campaigns and offers
 summary: How a shop's discounts are organised into campaigns, how an individual offer is built and timed, and how the discount ends up showing on an order.
-date: 2026-09-02
+date: 2026-10-06
 tags: discounts, offers, campaigns
 category: shop
 help_routes: grp.org.shops.show.discounts.campaigns, grp.org.shops.show.discounts.offers
@@ -49,6 +49,8 @@ The full offer, once built, also carries:
 - One or more **allowances** — the actual reward. Each allowance has a type: **Percentage Off**, **Amount Off**, **Free Items**, **Gift**, **Shipping**, or a **Mixed** combination.
 
 An offer's trigger — what a customer has to do to earn it — depends on the campaign type it lives in. A product-offers campaign triggers on ordering a given product or quantity of it; a category-offers campaign triggers on a department, sub-department, family or category; a shop-offers campaign triggers on the order total for the whole shop; a first-order campaign triggers on being a customer's first order; a voucher campaign triggers on a voucher code being entered; and a shipping campaign gives a free-shipping allowance instead of a price reduction.
+
+When you pick more than one category in **Create Category Offer**, you choose how they work. **One offer: the selected categories count together** makes a single offer: what the customer orders across all the chosen categories adds up towards the trigger, and the discount goes on everything from those categories. For example, choose four families with **By minimum amount** £250 and 25%, and £100 from one family plus £150 from another earns 25% off both. **One offer per category** makes a separate offer for each category, and each one has to reach the trigger on its own. The minimum amount is measured before discounts, so the offer stays on once it has applied.
 
 ## Where each offer is actually created
 
