@@ -562,21 +562,21 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				<h2 class="text-lg font-bold text-gray-800">{{ ctrans("Birthdays this month") }}</h2>
 			</div>
 
-			<ul v-if="birthdays.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
+			<ul v-if="birthdays.length" class="max-h-64 space-y-1 overflow-y-auto overflow-x-hidden">
 				<li
 					v-for="person in birthdays"
 					:key="person.id"
-					class="flex items-center gap-3 py-2.5"
-					:class="{ 'bg-pink-50 -mx-2 px-2 rounded': person.is_today }">
-					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" loading="lazy" decoding="async" />
-<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(person.name) }}</div>
+					class="flex items-center gap-3 rounded-md px-2 py-2"
+					:class="person.is_today ? 'bg-pink-50 ring-1 ring-inset ring-pink-200' : person.day < new Date().getDate() ? 'opacity-60' : ''">
+					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 shrink-0 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" loading="lazy" decoding="async" />
+					<div v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(person.name) }}</div>
 					<div class="min-w-0 flex-1">
-						<div class="font-medium text-gray-900 truncate">{{ person.name }}</div>
-						<div class="text-xs text-gray-500 truncate">{{ person.job_title || "—" }}</div>
+						<div class="truncate text-sm font-medium text-gray-900">{{ person.name }}</div>
+						<div class="truncate text-xs text-gray-500">{{ person.job_title || "—" }}</div>
 					</div>
-					<div class="text-right">
-						<div class="text-sm font-medium text-gray-700">{{ person.date_label }}</div>
-						<div v-if="person.is_today" class="text-xs font-semibold text-pink-600">🎂 {{ ctrans("Today") }}</div>
+					<div class="flex shrink-0 flex-col items-end gap-0.5">
+						<span class="whitespace-nowrap text-sm font-medium tabular-nums text-gray-700">{{ person.date_label }}</span>
+						<span v-if="person.is_today" class="rounded-full bg-pink-500 px-2 py-px text-[10px] font-semibold uppercase tracking-wide text-white">🎂 {{ ctrans("Today") }}</span>
 					</div>
 				</li>
 			</ul>
