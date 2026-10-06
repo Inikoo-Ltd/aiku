@@ -3294,12 +3294,13 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
 
     actingAs($this->guest->getUser());
     $routeParameters = [$this->organisation->slug, $this->production->slug];
-    $backlog = collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+    $backlogCards = collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
-        ->firstWhere('label', 'Backlog')['items'])->pluck('id')->all();
-    expect($backlog)->toContain($restock->first()->id)
+        ->firstWhere('label', 'Backlog')['items'])->keyBy('id');
+    expect($backlogCards->keys()->all())->toContain($restock->first()->id)
         ->toContain($behind->id)
-        ->not->toContain($boundary->id);
+        ->not->toContain($boundary->id)
+        ->and((float) $backlogCards[$behind->id]['stock_promised'])->toEqual(6.0);
 
     $prePick = collect(get(route('grp.org.productions.show.pre_pick.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');

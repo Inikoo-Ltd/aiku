@@ -152,7 +152,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     return item.job_order_sub_jobs?.length
@@ -198,6 +198,7 @@ function mixDropTarget(laneIndex: number): boolean {
 function onMixDrop(laneIndex: number, event: DragEvent) {
     if (mixDropTarget(laneIndex)) openPicker("assign-mix", event)
 }
+const freeStock = (item: BoardItem) => Math.max(0, Number(item.stock_available ?? 0) - Number(item.stock_promised ?? 0))
 const LANE_BACKLOG = 0
 const LANE_PREPARING = 1
 const LANE_ASSIGNED = 2
@@ -790,8 +791,8 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink" :class="laneIndex === LANE_ASSIGNED && isReassignable(item) ? '' : 'ml-auto'">{{ item.job_order_reference }}</Link>
                     </div>
                     <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
-                        <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
-                        <span v-else>{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                        <span :class="freeStock(item) >= Number(item.quantity) ? 'text-emerald-600' : ''">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                        <span v-if="Number(item.stock_promised) > 0"> · {{ ctrans("promised to pre-picks") }}: {{ useLocaleStore().number(Number(item.stock_promised)) }} · {{ ctrans("free") }}: {{ useLocaleStore().number(freeStock(item)) }}</span>
                     </div>
                     <div
                         v-if="laneIndex === LANE_PREPARING && item.batch_code"
