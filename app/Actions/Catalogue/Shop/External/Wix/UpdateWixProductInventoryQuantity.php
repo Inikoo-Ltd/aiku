@@ -21,15 +21,11 @@ class UpdateWixProductInventoryQuantity extends OrgAction
 
     public function handle(Product $product): void
     {
-        if(! app()->isProduction()) {
+        if (! app()->isProduction()) {
             return;
         }
 
         if (!$product->marketplace_id || !$product->marketplace_second_id) {
-            return;
-        }
-
-        if ($product->state == ProductStateEnum::IN_PROCESS || $product->state == ProductStateEnum::DISCONTINUED) {
             return;
         }
 
@@ -39,12 +35,19 @@ class UpdateWixProductInventoryQuantity extends OrgAction
             return;
         }
 
-        $result = $this->setWixVariantInventory(
-            $wixUser,
-            $product->marketplace_second_id,
-            $product->marketplace_id,
-            (int) floor($product->available_quantity)
-        );
+        $variantQuantities = Product::where('shop_id', $product->shop_id)
+            ->where('marketplace_second_id', $product->marketplace_second_id)
+            ->whereNotNull('marketplace_id')
+            ->whereNotIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])
+            ->get(['marketplace_id', 'available_quantity'])
+            ->mapWithKeys(fn (Product $variant) => [$variant->marketplace_id => max((int) floor($variant->available_quantity), 0)])
+            ->all();
+
+        if (empty($variantQuantities)) {
+            return;
+        }
+
+        $result = $this->setWixProductInventory($wixUser, $product->marketplace_second_id, $variantQuantities);
 
         if (Arr::has($result, 'message')) {
             Sentry::captureMessage('Wix inventory update failed for '.$product->slug.': '.Arr::get($result, 'message'));
@@ -58,10 +61,15 @@ class UpdateWixProductInventoryQuantity extends OrgAction
         $shop = Shop::where('slug', $command->argument('model'))->first();
         if ($shop) {
             $command->info("Updating inventory for shop $shop->name");
-            foreach ($shop->products as $product) {
-                $command->info("Updating inventory for product $product->code");
-                $this->handle($product);
-            }
+            $shop->products()
+                ->whereNotNull('marketplace_second_id')
+                ->whereNotIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::DISCONTINUED])
+                ->get()
+                ->unique('marketplace_second_id')
+                ->each(function (Product $product) use ($command) {
+                    $command->info("Updating inventory for Wix product of $product->code");
+                    $this->handle($product);
+                });
 
             return 0;
         }
