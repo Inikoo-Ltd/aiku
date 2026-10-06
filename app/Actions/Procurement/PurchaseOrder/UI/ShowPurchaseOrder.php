@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Events\BroadcastPurchaseOrderLastEdited;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -204,6 +205,7 @@ class ShowPurchaseOrder extends OrgAction
                 ],
                 'upload_excel'             => $uploadExcel ? $this->uploadExcel($purchaseOrder) : null,
                 'data'                     => PurchaseOrderResource::make($purchaseOrder),
+                'last_edit'                => BroadcastPurchaseOrderLastEdited::lastEdit($purchaseOrder),
                 'timelines'                => $this->getTimeline($purchaseOrder),
                 'stock_delivery_timelines' => $this->getStockDeliveryTimelines($purchaseOrder),
                 'delivery_items'            => $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED

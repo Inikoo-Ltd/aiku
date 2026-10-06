@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use Illuminate\Support\Facades\Event;
+use App\Events\BroadcastPurchaseOrderLastEdited;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
@@ -1421,6 +1423,32 @@ test('update purchase order', function ($purchaseOrder) {
     $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, $dataToUpdate);
     $this->assertModelExists($purchaseOrder);
 })->depends('create purchase order independent supplier');
+
+test('editing a purchase order or its lines broadcasts who edited it and when, and its page shows the last edit', function (PurchaseOrder $purchaseOrder) {
+    Event::fake([BroadcastPurchaseOrderLastEdited::class]);
+    PurchaseOrder::enableAuditing();
+    PurchaseOrderTransaction::enableAuditing();
+    $purchaseOrder = PurchaseOrder::findOrFail($purchaseOrder->id);
+    $user          = $this->adminGuest->getUser();
+    actingAs($user);
+
+    UpdatePurchaseOrder::make()->action($purchaseOrder, ['notes' => 'edited '.now()->timestamp]);
+
+    $expectedUser = $user->contact_name ?: $user->username;
+    Event::assertDispatched(
+        BroadcastPurchaseOrderLastEdited::class,
+        fn (BroadcastPurchaseOrderLastEdited $event) => $event->purchaseOrderId === $purchaseOrder->id && $event->lastEdit['user'] === $expectedUser
+    );
+    expect(BroadcastPurchaseOrderLastEdited::lastEdit($purchaseOrder))->toMatchArray(['user' => $expectedUser]);
+
+    $item = $purchaseOrder->purchaseOrderTransactions()->first();
+    UpdatePurchaseOrderTransaction::make()->action($item, ['quantity_ordered' => (float) $item->quantity_ordered + 1]);
+
+    Event::assertDispatched(
+        BroadcastPurchaseOrderLastEdited::class,
+        fn (BroadcastPurchaseOrderLastEdited $event) => $event->purchaseOrderId === $purchaseOrder->id
+    );
+})->depends('add item to purchase order');
 
 test('UI edit purchase order sets reference and delivery address', function ($purchaseOrder) {
     $purchaseOrder->refresh();
