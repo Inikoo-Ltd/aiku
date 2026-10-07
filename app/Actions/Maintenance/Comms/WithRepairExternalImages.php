@@ -19,6 +19,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
+use Carbon\CarbonInterval;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -136,18 +137,26 @@ trait WithRepairExternalImages
             )
             ->when($shopSlug, fn (Builder $query) => $query->where('shop_id', Shop::where('slug', $shopSlug)->firstOrFail()->id));
 
-        $total   = $query->clone()->count();
-        $current = 0;
+        $total     = $query->clone()->count();
+        $current   = 0;
+        $startedAt = microtime(true);
 
         foreach ($query->lazyById() as $model) {
             $current++;
-            $res = $this->handle($model);
-            $command->line("[$current/$total] $model->slug: {$res['msg']}");
+            $res     = $this->handle($model);
+            $elapsed = microtime(true) - $startedAt;
+            $eta     = $elapsed / $current * max(0, $total - $current);
+            $command->line("[$current/$total] $model->slug: {$res['msg']} (ETA {$this->formatDuration($eta)})");
         }
 
-        $command->info("Done: $current processed");
+        $command->info("Done: $current processed in {$this->formatDuration(microtime(true) - $startedAt)}");
 
         return 0;
+    }
+
+    private function formatDuration(float $seconds): string
+    {
+        return CarbonInterval::seconds((int) round($seconds))->cascade()->forHumans(['short' => true, 'parts' => 2]);
     }
 
     private function isAikuUrl(string $url): bool
