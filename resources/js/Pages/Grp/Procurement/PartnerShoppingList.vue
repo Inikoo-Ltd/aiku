@@ -634,21 +634,20 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 			<span v-if="item.added_by_name" class="text-gray-400">· {{ item.added_by_name }}</span>
 		</template>
 		<template #cell(actions)="{ item }">
-			<Button
-				v-if="item.can_be_poked"
-				icon="fal fa-bells"
-				:tooltip="
-					pokedIds[item.id] || item.is_recently_poked
-						? ctrans('Poked :at, you can poke again an hour later', { at: useFormatTime(item.poked_at ?? new Date(), { formatTime: 'dd MMM HH:mm' }) })
-						: ctrans('Poke the partner: tell their production you urgently need this')
-				"
-				type="tertiary"
-				size="xs"
-				class="mr-1"
-				:loading="pokingId === item.id"
-				:disabled="pokedIds[item.id] || item.is_recently_poked"
-				@click="pokePartner(item)" />
 			<div class="flex flex-wrap justify-end gap-1">
+				<Button
+					v-if="item.can_be_poked"
+					icon="fal fa-bells"
+					:tooltip="
+						pokedIds[item.id] || item.is_recently_poked
+							? ctrans('Poked :at, you can poke again an hour later', { at: useFormatTime(item.poked_at ?? new Date(), { formatTime: 'dd MMM HH:mm' }) })
+							: ctrans('Poke the partner: tell their production you urgently need this')
+					"
+					type="tertiary"
+					size="xs"
+					:loading="pokingId === item.id"
+					:disabled="pokedIds[item.id] || item.is_recently_poked"
+					@click="pokePartner(item)" />
 				<Button
 					v-if="
 						isEditable(item) && Number(item.order_quantum) > 1
