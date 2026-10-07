@@ -1263,6 +1263,19 @@ test('products export ends with the weight unit columns', function () {
         ->and(array_slice($row, -2))->toBe(['g', null]);
 });
 
+test('products export unit price follows the current outer price and units', function () {
+    $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
+    $original = $product->only(['price', 'units']);
+    $product->updateQuietly(['price' => 8.5, 'units' => 2]);
+
+    $export = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all', ['price', 'unit_price']);
+    $row    = $export->mapRow($export->dataQuery()->where('products.id', $product->id)->first());
+    $product->updateQuietly($original);
+
+    expect((float) $row[0])->toBe(8.5)
+        ->and((float) $row[1])->toBe(4.25);
+});
+
 test('UI show product sends the available stock of each part', function () {
     $this->withoutExceptionHandling();
     $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->first();
