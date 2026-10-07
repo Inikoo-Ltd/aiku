@@ -45,6 +45,7 @@ const props = defineProps<{
 	isSentView: boolean
 	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
+	filterGroups: { key: string; label: string; options: { value: string; label: string; count: number }[] }[]
 	upload_excel: {
 		title: { label: string; information: string }
 		progressDescription: string
@@ -63,6 +64,21 @@ const tableLoadingEvents = {
 	onFinish: () => (isTableLoading.value = false),
 }
 const confirm = useConfirm()
+
+const selectedFilters = (key: string) =>
+	(new URLSearchParams(location.search).get(`filter[${key}]`) ?? "").split(",").filter(Boolean)
+
+const toggleFilter = (key: string, value: string) => {
+	const url = new URL(location.href)
+	const selected = selectedFilters(key).includes(value)
+		? selectedFilters(key).filter((item) => item !== value)
+		: [...selectedFilters(key), value]
+	selected.length
+		? url.searchParams.set(`filter[${key}]`, selected.join(","))
+		: url.searchParams.delete(`filter[${key}]`)
+	url.searchParams.delete("page")
+	router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true, ...tableLoadingEvents })
+}
 const routeParams = route().params
 
 function confirmDeleteAll() {
@@ -382,6 +398,30 @@ function deleteItem(item: { id: number }) {
 			<Toggle v-model="isBraveMode" />
 			{{ ctrans("Brave mode") }}
 		</label>
+	</div>
+	<div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm">
+		<div
+			v-for="group in filterGroups.filter((group) => group.options.length)"
+			:key="group.key"
+			class="flex flex-wrap items-center gap-1.5">
+			<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ group.label }}</span>
+			<button
+				v-for="option in group.options"
+				:key="option.value"
+				type="button"
+				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+				:class="selectedFilters(group.key).includes(option.value)
+					? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+					: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+				@click="toggleFilter(group.key, option.value)">
+				<span>{{ option.label }}</span>
+				<span
+					class="rounded-full px-1.5 text-xs tabular-nums"
+					:class="selectedFilters(group.key).includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">
+					{{ option.count }}
+				</span>
+			</button>
+		</div>
 	</div>
 	<div class="mt-2 h-[3px]">
 		<ProgressBar v-if="isTableLoading" mode="indeterminate" style="height: 3px" />

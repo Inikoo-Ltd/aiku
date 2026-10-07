@@ -46,6 +46,8 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     private bool $isSentView = false;
 
+    private ?array $filterGroups = null;
+
     /**
      * The ongoing PO is the drafts staff build and submit; the sent view follows, read only, what the
      * partner does with the submitted lines.
@@ -66,10 +68,14 @@ class IndexPartnerShoppingListItems extends OrgAction
         order by artefacts.id limit 1)';
 
     /**
-     * @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}>
+     * @return array<string, array{label: string, options: array<int, array{value: string, label: string, count: int}>, engine: Closure}>
      */
-    private function getElementGroups(OrgPartner $orgPartner): array
+    private function filterGroups(OrgPartner $orgPartner): array
     {
+        if ($this->filterGroups !== null) {
+            return $this->filterGroups;
+        }
+
         $items = fn () => DB::table('partner_shopping_list_items')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->whereIn('partner_shopping_list_items.state', $this->statesInView())
@@ -78,8 +84,8 @@ class IndexPartnerShoppingListItems extends OrgAction
         $stateCounts = $items()->selectRaw('state, count(*) as total')->groupBy('state')->pluck('total', 'state');
         $rankCounts  = $items()
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
-            ->selectRaw("coalesce(org_stocks.health_rank, '-') as rank, count(*) as total")
-            ->groupByRaw("coalesce(org_stocks.health_rank, '-')")
+            ->selectRaw('org_stocks.health_rank as rank, count(*) as total')
+            ->groupBy('org_stocks.health_rank')
             ->pluck('total', 'rank');
         $categoryCounts = $items()
             ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
@@ -89,39 +95,40 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->selectRaw(self::CATEGORY_SQL.' as category_id, count(*) as total')
             ->groupByRaw(self::CATEGORY_SQL)
             ->pluck('total', 'category_id');
-        $categoryNames = DB::table('artefact_departments')->whereIn('id', $categoryCounts->keys()->filter())->orderBy('name')->pluck('name', 'id');
 
-        $states = [
-            ShoppingListItemStateEnum::OPEN->value    => __('Waiting for the partner'),
-            ShoppingListItemStateEnum::ORDERED->value => __('Ordered'),
-        ];
+        $option     = fn (string $value, string $label, $count) => ['value' => $value, 'label' => $label, 'count' => (int) $count];
+        $withCounts = fn (Collection $options) => $options->filter(fn ($option) => $option['count'] > 0)->values()->all();
 
-        return [
+        return $this->filterGroups = [
             ...($this->isSentView ? ['state' => [
-                'label'    => __('State'),
-                'elements' => collect($states)->map(fn ($label, $state) => [$label, (int) ($stateCounts[$state] ?? 0)])->all(),
-                'engine'   => fn ($query, $elements) => $query->whereIn('partner_shopping_list_items.state', $elements),
+                'label'   => __('State'),
+                'options' => $withCounts(collect([
+                    $option(ShoppingListItemStateEnum::OPEN->value, __('Waiting for the partner'), $stateCounts[ShoppingListItemStateEnum::OPEN->value] ?? 0),
+                    $option(ShoppingListItemStateEnum::ORDERED->value, __('Ordered'), $stateCounts[ShoppingListItemStateEnum::ORDERED->value] ?? 0),
+                ])),
+                'engine'  => fn ($query, array $values) => $query->whereIn('partner_shopping_list_items.state', $values),
             ]] : []),
-            'rank'     => [
-                'label'    => __('Rank'),
-                'elements' => collect(HealthRankEnum::cases())->mapWithKeys(fn (HealthRankEnum $rank) => [
-                    $rank->value => [$rank->value, (int) ($rankCounts[$rank->value] ?? 0)],
-                ])->all(),
-                'engine'   => fn ($query, $elements) => $query->whereIn('org_stocks.health_rank', $elements),
-            ],
             'category' => [
-                'label'    => __('Category'),
-                'elements' => $categoryNames->mapWithKeys(fn ($name, $id) => [(string) $id => [$name, (int) $categoryCounts[$id]]])
-                    ->put(self::NO_CATEGORY, [__('Other'), (int) ($categoryCounts[''] ?? 0)])
-                    ->all(),
-                'engine'   => function ($query, $elements) {
-                    $query->where(function ($query) use ($elements) {
-                        $query->whereIn(DB::raw(self::CATEGORY_SQL), array_map('intval', array_diff($elements, [self::NO_CATEGORY])));
-                        if (in_array(self::NO_CATEGORY, $elements, true)) {
+                'label'   => __('Category'),
+                'options' => $withCounts(
+                    DB::table('artefact_departments')->whereIn('id', $categoryCounts->keys()->filter())->pluck('name', 'id')
+                        ->map(fn ($name, $id) => $option((string) $id, $name, $categoryCounts[$id]))
+                        ->sortByDesc('count')
+                        ->push($option(self::NO_CATEGORY, __('Other'), $categoryCounts[''] ?? 0))
+                ),
+                'engine'  => function ($query, array $values) {
+                    $query->where(function ($query) use ($values) {
+                        $query->whereIn(DB::raw(self::CATEGORY_SQL), array_map('intval', array_diff($values, [self::NO_CATEGORY])));
+                        if (in_array(self::NO_CATEGORY, $values, true)) {
                             $query->orWhereRaw(self::CATEGORY_SQL.' is null');
                         }
                     });
                 },
+            ],
+            'rank'     => [
+                'label'   => __('Rank'),
+                'options' => $withCounts(collect(HealthRankEnum::cases())->map(fn (HealthRankEnum $rank) => $option($rank->value, $rank->value, $rankCounts[$rank->value] ?? 0))),
+                'engine'  => fn ($query, array $values) => $query->whereIn('org_stocks.health_rank', $values),
             ],
         ];
     }
@@ -155,14 +162,6 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->leftJoin('orders', 'orders.id', 'transactions.order_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->whereIn('partner_shopping_list_items.state', $this->statesInView());
-
-        foreach ($this->getElementGroups($orgPartner) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-            );
-        }
 
         $paginator = $queryBuilder
             ->select([
@@ -200,7 +199,10 @@ class IndexPartnerShoppingListItems extends OrgAction
             ])
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko')
             ->defaultSort('-created_at')
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([
+                $globalSearch,
+                ...collect($this->filterGroups($orgPartner))->map(fn ($group, $key) => AllowedFilter::callback($key, fn ($query, $value) => $group['engine']($query, (array) $value)))->values(),
+            ])
             ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
@@ -334,10 +336,6 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->withGlobalSearch()
                 ->withLabelRecord([__('line'), __('lines')]);
 
-            foreach ($this->getElementGroups($orgPartner) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
-            }
-
             $table
                 ->withEmptyState([
                     'title' => $this->isSentView ? __('Nothing sent to the partner is open') : __('The ongoing PO is empty'),
@@ -454,6 +452,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'draftsCount' => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
                     ->where('state', ShoppingListItemStateEnum::DRAFT)
                     ->count(),
+                'filterGroups' => collect($this->filterGroups($this->orgPartner))->map(fn ($group, $key) => ['key' => $key, 'label' => $group['label'], 'options' => $group['options']])->values(),
                 'data' => $items,
             ]
         )->table($this->tableStructure($this->orgPartner));

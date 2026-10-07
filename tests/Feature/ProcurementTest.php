@@ -6694,8 +6694,14 @@ test('UI partner shopping list index', function () {
             ->component('Procurement/PartnerShoppingList')
             ->has('title')
             ->has('data')
-            ->has('orgStockFetchRoute');
+            ->has('orgStockFetchRoute')
+            ->where('filterGroups', fn ($groups) => collect($groups)->pluck('key')->all() === ['category', 'rank'])
+            ->where('queryBuilderProps.default.elementGroups', []);
     });
+
+    $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [
+        $this->organisation->slug, $this->orgPartner->id, 'filter[category]' => 'none,999999', 'filter[rank]' => 'A',
+    ]))->assertOk();
 });
 
 test('UI partner shipping list index', function () {
