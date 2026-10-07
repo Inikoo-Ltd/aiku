@@ -126,7 +126,7 @@ class UpdateShopifyProductInventoryQuantity extends OrgAction implements ShouldB
 
     public function isShopifyPushAllowed(): bool
     {
-        return app()->isProduction();
+        return $this->isShopifyExternalShopWriteAllowed();
     }
 
     public function canPushInventory(Product $product): bool

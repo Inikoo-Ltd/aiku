@@ -27,6 +27,12 @@ class TakeOverShopifyFulfilmentService extends OrgAction
      */
     public function handle(Shop $shop, ?Command $command = null, bool $closeChannel = false): ?string
     {
+        $isWriteAllowed = $this->isShopifyExternalShopWriteAllowed();
+
+        if (!$isWriteAllowed) {
+            $command?->warn($this->getShopifyExternalShopWriteBlockedMessage().'. Everything else runs on this database only.');
+        }
+
         if ($closeChannel) {
             $this->closeDropshippingChannel($shop, $command);
         }
@@ -43,15 +49,26 @@ class TakeOverShopifyFulfilmentService extends OrgAction
             return $message;
         }
 
+        if ($isWriteAllowed && !$this->isOurFulfilmentService($fulfilmentService)) {
+            return __('The fulfilment service calls :url, not this server (:domain); nothing changed', [
+                'url'    => Arr::get($fulfilmentService, 'callbackUrl'),
+                'domain' => config('app.domain'),
+            ]);
+        }
+
         $copied = CopyShopifyPortfoliosToExternalShop::run($shop, $command);
         $command?->info("Portfolios: copied {$copied['copied']}, updated {$copied['updated']}, skipped {$copied['skipped']}");
 
         GetShopifyProducts::run($shop, $command);
 
-        $result = $this->updateShopifyExternalShopFulfilmentServiceCallback($shopifyUser, $fulfilmentServiceId, $this->getShopifyExternalShopFulfilmentServiceCallbackUrl($shopifyUser));
+        if ($isWriteAllowed) {
+            $result = $this->updateShopifyExternalShopFulfilmentServiceCallback($shopifyUser, $fulfilmentServiceId, $this->getShopifyExternalShopFulfilmentServiceCallbackUrl($shopifyUser));
 
-        if ($message = Arr::get($result, 'message')) {
-            return $message;
+            if ($message = Arr::get($result, 'message')) {
+                return $message;
+            }
+        } else {
+            $command?->warn('Fulfilment service left calling '.Arr::get($fulfilmentService, 'callbackUrl'));
         }
 
         $settings = $shop->settings ?? [];
@@ -81,10 +98,14 @@ class TakeOverShopifyFulfilmentService extends OrgAction
             return __('This shop has not taken over a fulfilment service');
         }
 
-        $result = $this->updateShopifyExternalShopFulfilmentServiceCallback($shopifyUser, $fulfilmentServiceId, 'https://'.config('app.domain')."/webhooks/shopify/$shopifyUser->id");
+        if ($this->isShopifyExternalShopWriteAllowed()) {
+            $result = $this->updateShopifyExternalShopFulfilmentServiceCallback($shopifyUser, $fulfilmentServiceId, 'https://'.config('app.domain')."/webhooks/shopify/$shopifyUser->id");
 
-        if ($message = Arr::get($result, 'message')) {
-            return $message;
+            if ($message = Arr::get($result, 'message')) {
+                return $message;
+            }
+        } else {
+            $command?->warn($this->getShopifyExternalShopWriteBlockedMessage());
         }
 
         $settings = $shop->settings ?? [];
@@ -96,6 +117,15 @@ class TakeOverShopifyFulfilmentService extends OrgAction
         $command?->info('Fulfilment requests go to dropshipping again; reopen the dropshipping channel to process them there');
 
         return null;
+    }
+
+    /**
+     * The service must already call this very server, so a misconfigured environment can never point a live
+     * store's orders somewhere else.
+     */
+    public function isOurFulfilmentService(array $fulfilmentService): bool
+    {
+        return parse_url((string) Arr::get($fulfilmentService, 'callbackUrl'), PHP_URL_HOST) === config('app.domain');
     }
 
     /**

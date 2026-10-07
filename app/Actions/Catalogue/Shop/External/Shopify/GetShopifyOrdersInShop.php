@@ -136,6 +136,10 @@ class GetShopifyOrdersInShop extends OrgAction
             return $status;
         }
 
+        if (!$this->isShopifyExternalShopWriteAllowed()) {
+            return $status === 'created' ? 'created_not_accepted_read_only' : 'not_accepted_read_only';
+        }
+
         if ($message = Arr::get($this->acceptShopifyExternalShopFulfillmentRequest($shopifyUser, $fulfillmentOrderId), 'message')) {
             $command?->error("Shopify fulfilment request $fulfillmentOrderId not accepted: $message");
             Sentry::captureMessage("Shopify fulfilment request $fulfillmentOrderId not accepted ($shop->slug): $message");
@@ -177,6 +181,10 @@ class GetShopifyOrdersInShop extends OrgAction
      */
     private function answerCancellationRequests(Shop $shop, ShopifyUser $shopifyUser, array $summary, ?Command $command): array
     {
+        if (!$this->isShopifyExternalShopWriteAllowed()) {
+            return $summary;
+        }
+
         $requests = $this->getShopifyExternalShopAssignedFulfillmentOrders($shopifyUser, self::CANCELLATION_REQUESTED);
 
         foreach ($requests['fulfillment_orders'] as $fulfillmentOrder) {

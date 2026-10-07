@@ -6,7 +6,11 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Actions\Dropshipping\Shopify\ShopifyThrottleRetryMiddleware;
+use Gnikyt\BasicShopifyAPI\Contracts\GraphRequester;
 use Gnikyt\BasicShopifyAPI\ResponseAccess;
+use Gnikyt\BasicShopifyAPI\Session;
+use Osiset\ShopifyApp\Contracts\ApiHelper as IApiHelper;
 use Illuminate\Support\Arr;
 use Throwable;
 
@@ -41,6 +45,21 @@ trait WithShopifyExternalShopApi
         zip
         phone
     ';
+
+    /**
+     * Shopify stores have no sandbox and a database copied from production holds their real tokens, so anything
+     * that changes a store (stock, fulfilments, requests, settings) is only sent from production. Reading is safe
+     * anywhere, which lets a copy fetch the real products and orders.
+     */
+    public function isShopifyExternalShopWriteAllowed(): bool
+    {
+        return app()->isProduction();
+    }
+
+    public function getShopifyExternalShopWriteBlockedMessage(): string
+    {
+        return __('Shopify was not changed: outside production (this is :environment) the store is only read', ['environment' => app()->environment()]);
+    }
 
     public function getShopifyExternalShopUser(Shop $shop): ?ShopifyUser
     {
@@ -90,7 +109,7 @@ trait WithShopifyExternalShopApi
      */
     public function getShopifyExternalShopFulfilmentService(ShopifyUser $shopifyUser, string $fulfilmentServiceId): array
     {
-        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+        $response = $this->shopifyExternalShopQuery($shopifyUser, '
             query ($id: ID!) {
                 fulfillmentService(id: $id) {
                     id
@@ -110,7 +129,7 @@ trait WithShopifyExternalShopApi
 
     public function updateShopifyExternalShopFulfilmentServiceCallback(ShopifyUser $shopifyUser, string $fulfilmentServiceId, string $callbackUrl): array
     {
-        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+        $response = $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($id: ID!, $callbackUrl: URL) {
                 fulfillmentServiceUpdate(id: $id, callbackUrl: $callbackUrl) {
                     fulfillmentService { id callbackUrl }
@@ -140,7 +159,7 @@ trait WithShopifyExternalShopApi
         $cursor            = null;
 
         for ($page = 0; $page < $this->shopifyMaxPages; $page++) {
-            $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            $response = $this->shopifyExternalShopQuery($shopifyUser, '
                 query ($first: Int!, $after: String, $assignmentStatus: FulfillmentOrderAssignmentStatus!, $lineItems: Int!) {
                     shop {
                         assignedFulfillmentOrders(first: $first, after: $after, assignmentStatus: $assignmentStatus) {
@@ -230,7 +249,7 @@ trait WithShopifyExternalShopApi
 
     protected function answerShopifyExternalShopRequest(ShopifyUser $shopifyUser, string $mutation, string $fulfillmentOrderId, string $message): array
     {
-        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+        $response = $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($id: ID!, $message: String) {
                 '.$mutation.'(id: $id, message: $message) {
                     fulfillmentOrder { id status requestStatus }
@@ -252,16 +271,50 @@ trait WithShopifyExternalShopApi
     /**
      * @return array<string, mixed> the "data" of the answer, or ['message' => string] when Shopify could not be asked or refused
      */
-    public function shopifyExternalShopRequest(ShopifyUser $shopifyUser, string $query, array $variables = []): array
+    public function shopifyExternalShopQuery(ShopifyUser $shopifyUser, string $query, array $variables = []): array
     {
-        $client = $shopifyUser->getShopifyClient(true);
+        if ($this->isShopifyExternalShopMutationText($query)) {
+            return ['message' => __('A Shopify mutation can not be sent as a query')];
+        }
+
+        return $this->sendShopifyExternalShopGraphQL($shopifyUser, $query, $variables);
+    }
+
+    /**
+     * @return array<string, mixed> the "data" of the answer, or ['message' => string] when it was not sent or Shopify refused
+     */
+    public function shopifyExternalShopMutation(ShopifyUser $shopifyUser, string $mutation, array $variables = []): array
+    {
+        if (!$this->isShopifyExternalShopWriteAllowed()) {
+            return ['message' => $this->getShopifyExternalShopWriteBlockedMessage(), 'write_blocked' => true];
+        }
+
+        if (!$this->isShopifyExternalShopMutationText($mutation)) {
+            return ['message' => __('Only a Shopify mutation can be sent as a mutation')];
+        }
+
+        return $this->sendShopifyExternalShopGraphQL($shopifyUser, $mutation, $variables);
+    }
+
+    protected function isShopifyExternalShopMutationText(string $graphQL): bool
+    {
+        return (bool) preg_match('/(^|})\s*mutation\b/i', $graphQL);
+    }
+
+    private function sendShopifyExternalShopGraphQL(ShopifyUser $shopifyUser, string $graphQL, array $variables): array
+    {
+        if (app()->runningUnitTests()) {
+            return ['message' => __('Shopify stores are never called from tests')];
+        }
+
+        $client = $this->getShopifyExternalShopGraphClient($shopifyUser);
 
         if (!$client) {
             return ['message' => __('Could not connect to the Shopify store')];
         }
 
         try {
-            $response = $client->request($query, $variables);
+            $response = $client->request($graphQL, $variables);
         } catch (Throwable $e) {
             return ['message' => $e->getMessage()];
         }
@@ -277,6 +330,31 @@ trait WithShopifyExternalShopApi
         }
 
         return Arr::get($body, 'data') ?? [];
+    }
+
+    /**
+     * In production the client may refresh or migrate the store's token, as it must to keep it valid. A copy of
+     * the database uses the stored token as it is: refreshing it there would rotate the token at Shopify and leave
+     * production with one that no longer works.
+     */
+    protected function getShopifyExternalShopGraphClient(ShopifyUser $shopifyUser): ?GraphRequester
+    {
+        try {
+            $api = $this->isShopifyExternalShopWriteAllowed()
+                ? $shopifyUser->api()
+                : resolve(IApiHelper::class)->make(new Session($shopifyUser->getDomain()->toNative(), $shopifyUser->getAccessToken()->toNative()))->getApi();
+            $api->getOptions()->setGuzzleOptions([
+                'timeout'                  => 90.0,
+                'max_retry_attempts'       => 0,
+                'default_retry_multiplier' => 0.0,
+            ]);
+            $api->removeMiddleware(ShopifyThrottleRetryMiddleware::NAME)
+                ->addMiddleware(new ShopifyThrottleRetryMiddleware(), ShopifyThrottleRetryMiddleware::NAME);
+
+            return $api->getGraphClient();
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     protected function getShopifyExternalShopErrorMessage(array $response): string
@@ -316,7 +394,7 @@ trait WithShopifyExternalShopApi
 
     public function getShopifyExternalShopStoreData(ShopifyUser $shopifyUser): array
     {
-        return $this->shopifyExternalShopRequest($shopifyUser, '
+        return $this->shopifyExternalShopQuery($shopifyUser, '
             query {
                 shop {
                     name
@@ -341,7 +419,7 @@ trait WithShopifyExternalShopApi
         $cursor   = null;
 
         for ($page = 0; $page < $this->shopifyMaxPages; $page++) {
-            $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            $response = $this->shopifyExternalShopQuery($shopifyUser, '
                 query ($first: Int!, $after: String) {
                     productVariants(first: $first, after: $after) {
                         nodes {
@@ -409,7 +487,7 @@ trait WithShopifyExternalShopApi
         $cursor = null;
 
         for ($page = 0; $page < $this->shopifyMaxPages; $page++) {
-            $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            $response = $this->shopifyExternalShopQuery($shopifyUser, '
                 query ($first: Int!, $after: String, $search: String, $lineItems: Int!) {
                     orders(first: $first, after: $after, query: $search, sortKey: CREATED_AT) {
                         nodes {
@@ -504,7 +582,7 @@ trait WithShopifyExternalShopApi
         $cursor    = Arr::get($order, 'lineItems.pageInfo.endCursor');
 
         for ($page = 0; $hasMore && $cursor && $page < $this->shopifyMaxPages; $page++) {
-            $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            $response = $this->shopifyExternalShopQuery($shopifyUser, '
                 query ($id: ID!, $first: Int!, $after: String) {
                     order(id: $id) {
                         lineItems(first: $first, after: $after) {
@@ -534,7 +612,7 @@ trait WithShopifyExternalShopApi
 
     public function getShopifyExternalShopOrderFulfillmentOrders(ShopifyUser $shopifyUser, string $orderGid): array
     {
-        return $this->shopifyExternalShopRequest($shopifyUser, '
+        return $this->shopifyExternalShopQuery($shopifyUser, '
             query ($id: ID!) {
                 order(id: $id) {
                     id
@@ -562,7 +640,7 @@ trait WithShopifyExternalShopApi
 
     public function createShopifyExternalShopFulfillment(ShopifyUser $shopifyUser, array $fulfillment): array
     {
-        return $this->shopifyExternalShopRequest($shopifyUser, '
+        return $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($fulfillment: FulfillmentInput!) {
                 fulfillmentCreate(fulfillment: $fulfillment) {
                     fulfillment { id status }
@@ -574,7 +652,7 @@ trait WithShopifyExternalShopApi
 
     public function updateShopifyExternalShopFulfillmentTracking(ShopifyUser $shopifyUser, string $fulfillmentId, array $trackingInfo): array
     {
-        return $this->shopifyExternalShopRequest($shopifyUser, '
+        return $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($fulfillmentId: ID!, $trackingInfoInput: FulfillmentTrackingInput!, $notifyCustomer: Boolean) {
                 fulfillmentTrackingInfoUpdate(fulfillmentId: $fulfillmentId, trackingInfoInput: $trackingInfoInput, notifyCustomer: $notifyCustomer) {
                     fulfillment { id }
@@ -594,7 +672,7 @@ trait WithShopifyExternalShopApi
      */
     public function setShopifyExternalShopInventoryQuantities(ShopifyUser $shopifyUser, array $quantities): array
     {
-        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+        $response = $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($input: InventorySetQuantitiesInput!) {
                 inventorySetQuantities(input: $input) {
                     inventoryAdjustmentGroup { id }
@@ -631,7 +709,7 @@ trait WithShopifyExternalShopApi
 
     public function activateShopifyExternalShopInventoryItem(ShopifyUser $shopifyUser, string $inventoryItemId, string $locationId, int $quantity): array
     {
-        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+        $response = $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($inventoryItemId: ID!, $locationId: ID!, $available: Int) {
                 inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) {
                     inventoryLevel { id }
@@ -653,7 +731,7 @@ trait WithShopifyExternalShopApi
 
     public function trackShopifyExternalShopInventoryItem(ShopifyUser $shopifyUser, string $inventoryItemId): array
     {
-        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+        $response = $this->shopifyExternalShopMutation($shopifyUser, '
             mutation ($id: ID!, $input: InventoryItemInput!) {
                 inventoryItemUpdate(id: $id, input: $input) {
                     inventoryItem { id tracked }

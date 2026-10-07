@@ -122,7 +122,7 @@ class UpdateShippingShopifyOrder extends OrgAction
 
     public function isShopifyPushAllowed(): bool
     {
-        return app()->isProduction();
+        return $this->isShopifyExternalShopWriteAllowed();
     }
 
     /**
