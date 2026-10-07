@@ -846,7 +846,7 @@ defineExpose({
             </div>
 
             <div class="flex min-h-0 flex-1">
-                <main class="min-h-0 flex-1 overflow-auto py-8" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop' }" :style="{ backgroundColor: bodyBackground }" @click.self="clearSelection">
+                <main class="min-h-0 flex-1 overflow-auto py-1" :class="{ 'show-structure': isStructureVisible, 'mobile-canvas': device === 'mobile', 'desktop-canvas': device === 'desktop' }" :style="{ backgroundColor: bodyBackground }" @click.self="clearSelection">
                     <div :style="bodyStyle">
                         <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="opacity-40" class="min-h-[200px]">
                             <template #item="{ element: row }">
