@@ -1270,6 +1270,12 @@ test('UI show manufacture floor', function () {
     });
 });
 
+test('every app database connection talks to the database in UTC so start times do not shift with the server timezone', function () {
+    foreach (['aiku', 'aiku_no_sticky', 'aiku_read_only', 'archive'] as $connection) {
+        expect(config("database.connections.$connection.timezone"))->toBe('UTC');
+    }
+});
+
 test('floor marks a later step as blocked until the earlier step is done, then flags who is working it', function () {
     $secondTask = stepTestManufactureTask($this->production);
 
