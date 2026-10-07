@@ -17,7 +17,7 @@ to replace all of them before the subscription goes.
 | --- | --- | --- |
 | Site Audit | Phase 1 | Our own crawler |
 | Organic Research (our own sites) | Phase 1 | Google Search Console |
-| Page speed and Core Web Vitals | Phase 1 | PageSpeed Insights API, CrUX (already fetched) |
+| Page speed and Core Web Vitals | Already in Aiku | CrUX and our visitors' web vitals (HELP-3303 replaced the lab test) |
 | Keyword Overview, Keyword Magic Tool | Phase 2 | Google Ads Keyword Planner, through the Google Ads connection shops already have |
 | Position Tracking | Phase 2 | A SERP data provider, plus Search Console for the positions Google reports itself |
 | Backlink Analytics, Backlink Gap | Phase 3 | A backlink data provider |
@@ -39,14 +39,13 @@ Already in Aiku and used by the plan:
 - On-page SEO fields, a preview of them on the webpage page, sitemaps, `robots.txt`, `llms.txt`,
   structured data and 301 redirects.
 - Core Web Vitals from CrUX (weekly) and from our own visitors.
-- A partial Search Console connection: the webpage Analytics tab queries it live and stores
-  nothing.
+- Search Console history stored daily (Phase 1.1).
 
 ## The phases
 
 1. **Our own sites, from free and first-party sources.** Search Console history, a real SEO
-   crawler, a 404 log, PageSpeed scores. When this phase ships, Site Audit and Organic Research for
-   our own sites can be done in Aiku.
+   crawler and a 404 log. When this phase ships, Site Audit and Organic Research for our own sites
+   can be done in Aiku. Page speed is already covered by CrUX and our visitors' web vitals.
 2. **Keywords.** Keyword research through Keyword Planner and daily or weekly rank tracking for a
    chosen list of keywords per shop, with competitor positions read from the same results.
 3. **The outside world.** Backlinks, competitor domains, keyword gaps and AI visibility.

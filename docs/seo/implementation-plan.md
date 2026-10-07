@@ -175,23 +175,19 @@ visit came from, filtered to Open by default (Open, Fixed, Ignored).
   This is computed, not stored, so redirects made elsewhere also count.
 - "Ignore" hides probes such as `/wp-login.php`; "Restore" brings them back.
 
-### 1.4 PageSpeed scores
+### 1.4 PageSpeed scores (not built)
 
-**Today.** Migration `2026_09_11_072327_add_pagespeed_to_webpage_time_series_records_table.php`
-added `pagespeed_{desktop,mobile}_{performance,accessibility,best_practices,seo}`. Nothing writes
-them and nothing calls the PageSpeed Insights API. `ProcessWebpageTimeSeriesRecords` uses
-`upsertTimeSeriesRecords()`, which only updates the columns it writes, so values stored here
-survive the nightly rebuild.
+Dropped on 7 October 2026. HELP-3303 (commit `92f37c381f`, 24 September 2026) deliberately replaced
+the Lighthouse lab test with field data: the lab test scored pages such as the stationery family at
+49 while real desktop visitors passed, so staff chased a number customers never saw. Page speed in
+Aiku is judged on the Chrome UX Report (`FetchCruxHistory`, needs `GOOGLE_CRUX_API_KEY`) and the web
+vitals measured in our visitors' browsers, both shown as Real user speed on the website and webpage
+pages. That covers what Semrush shows for Core Web Vitals.
 
-**Build.**
-
-- `FetchPageSpeedScores` weekly per website: one run per page type for a sample of pages, plus the
-  most viewed pages of the last 28 days. Both strategies, mobile and desktop.
-- Because of the ground rule above, store the scores in `pagespeed_runs` (webpage_id, strategy,
-  fetched_at, the four category scores, LCP, CLS, TBT from the lab run) instead of the time series
-  columns. Drop the unused columns once nothing reads them.
-- Show lab scores next to the CrUX field data the pages already show. Label them as lab and field;
-  they disagree often and both are right.
+- The `pagespeed_{desktop,mobile}_*` columns on `webpage_time_series_records` still hold the history
+  of the removed nightly crawl (29,428 rows for 12,646 webpages in the 7 October restore). Nothing
+  writes or reads them now. They are kept until the owner of HELP-3303 decides to drop them.
+- `GOOGLE_PAGESPEED_API_KEY` is no longer read by any config.
 
 ### Phase 1 is done when
 
@@ -200,7 +196,7 @@ survive the nightly rebuild.
   the same site closely enough that the team trusts it. (Built; the comparison with Semrush is still
   to do.)
 - 404 paths are visible and redirects can be created from them. (Done)
-- PageSpeed scores are fetched weekly.
+- Page speed: covered by the Chrome UX Report and our visitors' web vitals (see 1.4).
 
 ## Phase 2: keywords
 
