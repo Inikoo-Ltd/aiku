@@ -11,6 +11,13 @@ import Cookies from "js-cookie"
 import { usePage } from "@inertiajs/vue3"
 import { resolveIsLoggedIn } from "@/Composables/irisAuthFlag"
 
+let firstHitRequest: Promise<unknown> | null = null
+
+const afterFirstHitSessionIsSet = (callback: () => void) => {
+  setTimeout(() => {
+    Promise.allSettled([firstHitRequest]).then(callback)
+  }, 0)
+}
 
 export const initialiseIrisVarnish = async (layoutStore) => {
   const layout = layoutStore()
@@ -52,7 +59,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
   const getVarnishData = async () => {
     try {
       set(layout, ["iris_varnish", "isFetching"], true)
-      const response = await axios.get(selectedUrl, { headers })
+      firstHitRequest = axios.get(selectedUrl, { headers })
+      const response = await firstHitRequest
       set(layout, ["iris_varnish", "isFetching"], false)
 
       // console.log('Iris Varnish', response.data)
@@ -205,8 +213,7 @@ export const recordWebsiteHit = () => {
     "X-Requested-With": "XMLHttpRequest",
   }
 
-  // Fire-and-forget request used only to record hit analytics.
-  void axios.post("/analytics/hit", {
+  const hit = {
       original_route: route().current(),
       original_params: route().params,
       webpage_id: usePage().props.webpage_id,
@@ -214,5 +221,10 @@ export const recordWebsiteHit = () => {
       analytics_webpage: usePage().props.webpage_slug,
       analytics_page_title: document.title,
       analytics_app: isRetina ? "retina" : "iris",
-  }, { headers }).catch(() => {})
+  }
+
+  // Fire-and-forget request used only to record hit analytics.
+  afterFirstHitSessionIsSet(() => {
+    void axios.post("/analytics/hit", hit, { headers }).catch(() => {})
+  })
 }

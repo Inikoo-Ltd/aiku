@@ -15,10 +15,14 @@ class UpdateWebsiteVisitor
 {
     use AsAction;
 
+    public const int MAX_IDLE_SECONDS = 1800;
+
     public function handle(WebsiteVisitor $visitor, string $currentUrl): WebsiteVisitor
     {
-        $now      = now();
-        $duration = $now->timestamp - $visitor->first_seen_at->timestamp;
+        $now         = now();
+        $lastSeenAt  = $visitor->last_seen_at ?? $visitor->first_seen_at;
+        $secondsIdle = max(0, $now->timestamp - $lastSeenAt->timestamp);
+        $duration    = $visitor->duration_seconds + min($secondsIdle, self::MAX_IDLE_SECONDS);
 
         $visitor->last_seen_at     = $now;
         $visitor->page_views       = $visitor->page_views + 1;

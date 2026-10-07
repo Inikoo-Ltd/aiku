@@ -265,6 +265,7 @@ const placeMobileTabOptions = () => {
 					<template v-for="(tab, tabSlug) in navigation" :key="tabSlug">
 						<button
 							v-if="tab.align !== 'right'"
+							v-tooltip="tab.tooltip"
 							@click="onChangeTab(tabSlug)"
 							:class="tabButtonClass(tab, tabSlug === currentTab)"
 							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -297,6 +298,11 @@ const placeMobileTabOptions = () => {
 								:rotation="tab.icon_rotation" />
 							<span class="relative">
 								{{ tab.title }}
+								<FontAwesomeIcon
+									v-if="tab.tooltip"
+									icon="fal fa-question-circle"
+									class="ml-0.5 text-xs text-gray-400"
+									fixed-width aria-hidden="true" />
 								<span
 									v-if="tabSlug === 'bundles'"
 									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded
