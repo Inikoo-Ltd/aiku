@@ -6740,8 +6740,10 @@ describe('partner shopping list', function () {
     test('removing a line with do not suggest again keeps the SKO out of prepared orders until unblocked', function () {
         $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
         PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
-        $this->sellerProduct->orgStocks()->first()->update(['state' => OrgStockStateEnum::ACTIVE]);
-        $this->buyerOrgStock->update(['quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        createOrgStocks($this->orgPartner->partner, [$stock])[0]->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$stock])[0];
+        $this->buyerOrgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
         $this->buyerOrgStock->stats()->updateOrCreate([], ['predicted_daily_usage' => 2, 'days_of_cover' => 0]);
         $orgPartner = $this->orgPartner->refresh();
         $rescued    = fn () => GetPartnerStockCoverBuckets::make()->rescueItems($orgPartner)->pluck('org_stock_id')->map(fn ($id) => (int) $id)->all();
@@ -6919,9 +6921,10 @@ describe('partner browse', function () {
 
         $this->buyerOrgStock->update(['health_rank' => null]);
         Cache::forget("partner-order-capacity:{$this->orgPartner->id}");
-        foreach ([$firstItem, $outOfStockItem, $aRankItem] as $item) {
-            DeletePartnerShoppingListItem::make()->action($item);
-        }
+        expect($outOfStockItem->id)->toBe($firstItem->id)
+            ->and($aRankItem->id)->toBe($firstItem->id)
+            ->and(DeletePartnerShoppingListItem::make()->action($firstItem))->toBeTrue();
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
     });
 
     test('browse card shows the component that runs out first', function () {
