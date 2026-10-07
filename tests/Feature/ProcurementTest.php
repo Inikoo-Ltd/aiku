@@ -8119,6 +8119,33 @@ test('repair supplier drift leaves rows whose correct twin already exists', func
         ->and($drifted->refresh()->org_supplier_id)->toBe($orgSupplierA->id);
 });
 
+test('storing an org supplier product twice for the same org supplier returns the first row', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'ONCE-1',
+        'name'             => 'Stored once',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    $first = OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->firstOrFail();
+    expect($first->source_id)->toBeNull();
+
+    $second = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct, ['source_id' => '1:999999']);
+
+    expect($second->id)->toBe($first->id)
+        ->and(OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->count())->toBe(1)
+        ->and($first->refresh()->source_id)->toBe('1:999999')
+        ->and($first->stats()->count())->toBe(1);
+});
+
 test('attach a supplier product to an org stock that has none, first one becomes preferred', function () {
     $orgStock = $this->orgStocks[1];
     expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(0);
