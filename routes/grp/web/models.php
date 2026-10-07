@@ -514,6 +514,10 @@ use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
+use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
+use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
+use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
+use App\Actions\SupplyChain\SupplierProduct\Upload\UpdateSupplierProductUploadRecord;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
@@ -1506,6 +1510,16 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product', StoreSupplierProduct::class)->name('supplier-product.store');
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
+});
+
+Route::name('supplier_product_upload.')->prefix('supplier-product-upload/{upload:id}')->group(function () {
+    Route::patch('record/{record:id}', UpdateSupplierProductUploadRecord::class)->name('record.update')->withoutScopedBindings();
+    Route::patch('new-draft', SetSupplierProductUploadNewDraft::class)->name('new_draft');
+    Route::post('import', ConfirmSupplierProductUpload::class)->name('import');
+    Route::post('cancel', CancelSupplierProductUpload::class)->name('cancel');
+});
+
+Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inSupplier'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inSupplier'])->name('attachment.detach')->withoutScopedBindings();
 });

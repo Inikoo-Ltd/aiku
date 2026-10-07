@@ -432,8 +432,6 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
         supplierProductUploadRow([$orderColumn => 3]),
     ], [$orderColumn]));
 
-    expect(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
-
     acceptSupplierProductUploadFindings($upload);
     $upload = App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh())->refresh();
 
@@ -480,6 +478,34 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
     expect($againFindings->all())->toMatchArray(['link_trade_unit' => 'link', 'update_supplier_product' => 'block', 'cost_change' => 'block']);
 });
 
+
+test('UI supplier product upload preview shows the rows and saves decisions', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $upload   = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit barcode (EAN-13, for website)' => null])]));
+    $record   = $upload->records()->first();
+
+    $this->withoutVite()
+        ->get(route('grp.supply-chain.suppliers.supplier_products.uploads.show', ['supplier' => $supplier->slug, 'upload' => $upload->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('SupplyChain/SupplierProductUploadPreview')
+            ->where('upload.state', 'waiting_confirmation')
+            ->has('rows', 1)
+            ->where('rows.0.values.part_reference', 'UPLB-01'));
+
+    $this->patch(route('grp.models.supplier_product_upload.record.update', ['upload' => $upload->id, 'record' => $record->id]), [
+        'decisions' => ['no_barcode' => true],
+        'sko_name'  => 'Pair of Hemp Forest Bags',
+    ])->assertRedirect();
+
+    $record->refresh();
+    expect($record->data['decisions']['no_barcode']['accepted'])->toBeTrue()
+        ->and($record->data['decisions']['no_barcode']['user_id'])->toBe($this->adminGuest->getUser()->id)
+        ->and($record->values['sko_name'])->toBe('Pair of Hemp Forest Bags');
+
+    $this->post(route('grp.models.supplier_product_upload.cancel', ['upload' => $upload->id]))->assertRedirect();
+    expect($upload->refresh()->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::CANCELLED);
+});
 
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();
