@@ -556,16 +556,6 @@ class GetShopNavigation
                     "topMenu" => [
                         "subSections" => [
                             [
-                                "label"   => __("Keywords"),
-                                "tooltip" => __("Keywords"),
-                                "icon"    => ["fal", "fa-key"],
-                                "root"    => "grp.org.shops.show.seo.keywords.",
-                                "route"   => [
-                                    "name"       => "grp.org.shops.show.seo.keywords.show",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
-                            ],
-                            [
                                 "label"   => __("Visitors"),
                                 "tooltip" => __("Visitors"),
                                 "icon"    => ["fal", "fa-users"],

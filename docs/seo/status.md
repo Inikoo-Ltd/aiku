@@ -14,7 +14,6 @@ All work is on the `seo` branch and has not been deployed yet.
 | 1.1 Search Console history | 16 months of clicks, impressions, CTR and position, fetched daily, per website, page and query | SEO dashboard: Google Search card, Search queries and Low CTR queries tabs, search columns on Webpages; Webpage > Performance tab |
 | 1.2 Site Audit | Weekly crawl of every live website, 23 issue types, health score and trend, pages per issue | SEO > Site audit |
 | 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO > Missing pages |
-| Tracked keywords and competitors | The team sets the keyword list (country, language, device, frequency) and competitor domains per shop, ready for rank tracking | SEO > Keywords |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -23,29 +22,30 @@ All work is on the `seo` branch and has not been deployed yet.
 | --- | --- |
 | 1.4 PageSpeed lab scores | HELP-3303 (commit `92f37c381f`) replaced the Lighthouse lab test with field data from the Chrome UX Report and our visitors' web vitals, because the lab score sent staff after numbers customers never saw. Page speed stays on Real user speed. The old `pagespeed_*` columns on `webpage_time_series_records` keep their history until the owner of HELP-3303 decides to drop them. |
 
-## Taken out
-
-| Part | Why | To bring it back |
-| --- | --- | --- |
-| 2.1 Keyword research | Keyword Planner refuses the developer token, which has Explorer access only, and the paid alternative waits on the provider decision. | Get Google Ads Basic access or choose a keyword data provider, then restore the files from commit `f370bbc652`. |
-
-## Waiting on a decision
-
-| Part | Decision needed |
-| --- | --- |
-| 2.2 Rank tracking | SERP provider and monthly budget. The tracked keyword list and competitors are already set in SEO > Keywords. |
-| 3.1 Backlinks, 3.2 Competitor research | Backlink and competitor data provider, ideally the same as the SERP one |
-| 3.3 AI visibility | Models and prompts per shop |
-| 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
-| 3.5 Non-Google demand | Which platforms to collect search signals from |
-
 ## Not started
 
-- 3.4 Content help: meta title and description suggestions through the AI gateway. The first Site
-  Audit found many product pages with an empty meta description, which is where this would start.
-- Bing Webmaster Tools keyword data (3.5), free.
-- Comparing Site Audit results with a Semrush Site Audit of the same website, needed before the team
-  relies on it.
+### Phase 2: keywords
+
+| Part | What has to happen first |
+| --- | --- |
+| 2.1 Keyword research | Google Ads Basic access for the developer token (it has Explorer access, and Keyword Planner refuses it), or a keyword data provider |
+| 2.2 Rank tracking | Choose a SERP provider and a monthly budget |
+| Tracked keywords and competitors per shop | Part of 2.1 and 2.2: the list, countries, devices, check frequency and competitor domains |
+
+### Phase 3: the outside world
+
+| Part | What has to happen first |
+| --- | --- |
+| 3.1 Backlinks, 3.2 Competitor research | Choose a backlink and competitor data provider, ideally the same as the SERP one |
+| 3.3 AI visibility | Choose the models and write the prompts per shop |
+| 3.4 Content help | Nothing; can start any time. The first Site Audit found many product pages with an empty meta description, which is where this would start. |
+| 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
+| 3.5 Non-Google demand | Choose the platforms; Bing Webmaster Tools keyword data is free |
+
+### Still open in Phase 1
+
+- Compare Site Audit results with a Semrush Site Audit of the same website before the team relies on
+  them.
 
 ## After deploying
 
@@ -66,6 +66,6 @@ external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC.
 | --- | --- | --- |
 | `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
 | `GOOGLE_CRUX_API_KEY` | Real user speed from the Chrome UX Report (existing feature) | Yes, for Real user speed |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | Keyword research, if 2.1 comes back | Only with Basic access |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | Keyword research (2.1, not started) | Needs Basic access |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 is skipped | No |
 | `OPENROUTER_API_KEY` | AI visibility and content help (Phase 3) | Not yet |

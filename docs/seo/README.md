@@ -7,7 +7,7 @@ cancelled. Written on 7 October 2026. Nothing in the plan is built yet apart fro
 | Document | Audience |
 | --- | --- |
 | [implementation-plan.md](implementation-plan.md) | Engineers. Data sources, tables, jobs, screens and the order to build them in. |
-| [status.md](status.md) | Everyone. What is done, skipped, taken out or waiting on a decision, and the steps after deploying. |
+| [status.md](status.md) | Everyone. What is done, skipped or not started, and the steps after deploying. |
 
 ## What the team uses Semrush for
 
@@ -47,9 +47,8 @@ Already in Aiku and used by the plan:
 1. **Our own sites, from free and first-party sources.** Search Console history, a real SEO
    crawler and a 404 log. When this phase ships, Site Audit and Organic Research for our own sites
    can be done in Aiku. Page speed is already covered by CrUX and our visitors' web vitals.
-2. **Keywords.** Daily or weekly rank tracking for a chosen list of keywords per shop, with
-   competitor positions read from the same results. Keyword research is taken out until Google Ads
-   Basic access or a keyword data provider is in place.
+2. **Keywords.** Keyword research through Keyword Planner and daily or weekly rank tracking for a
+   chosen list of keywords per shop, with competitor positions read from the same results.
 3. **The outside world.** Backlinks, competitor domains, keyword gaps and AI visibility.
 
 Semrush is cancelled after Phase 3 has run alongside it long enough to compare the figures. The
