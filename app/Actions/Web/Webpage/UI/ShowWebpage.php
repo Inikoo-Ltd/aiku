@@ -31,6 +31,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Web\WebpageTrafficSourceResource;
 use App\Http\Resources\Web\ExternalLinksResource;
 use App\Http\Resources\Web\RedirectsResource;
 use App\Http\Resources\Web\WebpageResource;
@@ -42,6 +43,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -318,9 +320,9 @@ class ShowWebpage extends OrgAction
          * judged on instead is how the visitors it is bought for behave. A page that is not live
          * has nothing published to measure, so it gets no report either.
          */
-        $pagespeed = match (true) {
+        $realUserSpeed = match (true) {
             $isHiddenFromSearchEngines, $webpage->state != WebpageStateEnum::LIVE => null,
-            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'pagespeed'),
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'real_user_speed'),
             default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
         };
 
@@ -386,7 +388,11 @@ class ShowWebpage extends OrgAction
                     fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
                     : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
-                'pagespeed' => $pagespeed,
+                WebpageTabsEnum::TRAFFIC_SOURCES->value => $this->tab == WebpageTabsEnum::TRAFFIC_SOURCES->value ?
+                    fn () => $this->trafficSources($webpage)
+                    : Inertia::optional(fn () => $this->trafficSources($webpage)),
+
+                'real_user_speed' => $realUserSpeed,
 
                 'engagement' => $isHiddenFromSearchEngines && $this->tab == WebpageTabsEnum::SHOWCASE->value
                     ? Inertia::defer(fn () => GetWebpageEngagementMetrics::run($webpage), 'engagement')
@@ -441,7 +447,24 @@ class ShowWebpage extends OrgAction
             IndexHistory::make()->tableStructure(
                 prefix: WebpageTabsEnum::CHANGELOG->value
             )
+        )
+        ->table(
+            IndexWebpageTrafficSources::make()->tableStructure(
+                prefix: WebpageTabsEnum::TRAFFIC_SOURCES->value
+            )
         );
+    }
+
+    private function trafficSources(Webpage $webpage): AnonymousResourceCollection
+    {
+        return WebpageTrafficSourceResource::collection(
+            IndexWebpageTrafficSources::run($webpage, WebpageTabsEnum::TRAFFIC_SOURCES->value)
+        )->additional([
+            'summary' => [
+                'window_days'    => IndexWebpageTrafficSources::WINDOW_DAYS,
+                'total_arrivals' => IndexWebpageTrafficSources::make()->totalArrivals($webpage),
+            ],
+        ]);
     }
 
     /**

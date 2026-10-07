@@ -44,7 +44,7 @@ trait WithWebAuthorisation
             return $user->authTo("group-overview");
         }
 
-        if (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
+        if (str_starts_with($routeName, 'grp.org.shops.show.web.') || str_starts_with($routeName, 'grp.org.shops.show.seo.')) {
             $this->canEdit = $user->authTo([
                 "websites-view.{$this->organisation?->id}",
                 "web.{$this->shop->id}.edit",

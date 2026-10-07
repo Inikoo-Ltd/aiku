@@ -63,7 +63,7 @@ const props = defineProps<{
         problems: string[]
         review: { status?: string; note?: string; partial?: boolean; summary?: string; rows?: Record<string, string> } | null
         ai: string | null
-        purchase_orders: Record<string, { purchase_order?: string; lines?: number; errors?: string[]; error?: string }> | null
+        purchase_orders: Record<string, { purchase_order?: string; organisation?: string | null; parent_name?: string | null; state?: string | null; route?: { name: string; parameters: Record<string, string> } | null; lines?: number; errors?: string[]; error?: string }> | null
     }
     supplier: { code: string; name: string; currency: string | null; products_route: RouteDef }
     rows: Row[]
@@ -381,14 +381,35 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
 
         <div v-if="upload.purchase_orders" class="rounded border border-gray-200 p-3">
             <div class="font-semibold">{{ ctrans("Draft purchase orders created") }}</div>
-            <ul class="mt-1 space-y-0.5 text-xs">
-                <li v-for="(order, key) in upload.purchase_orders" :key="key">
-                    <span class="font-medium">{{ key }}</span>:
-                    <span v-if="order.error" class="text-red-700">{{ order.error }}</span>
-                    <span v-else>{{ order.purchase_order }}, {{ order.lines }} {{ ctrans("lines") }}</span>
-                    <span v-for="error in order.errors ?? []" :key="error" class="block text-red-700">{{ error }}</span>
-                </li>
-            </ul>
+            <table class="mt-2 w-full text-xs">
+                <thead>
+                    <tr class="text-left text-gray-500">
+                        <th class="py-1.5 pr-3 font-medium">{{ ctrans("Column") }}</th>
+                        <th class="py-1.5 pr-3 font-medium">{{ ctrans("Organisation") }}</th>
+                        <th class="py-1.5 pr-3 font-medium">{{ ctrans("Purchase order") }}</th>
+                        <th class="py-1.5 pr-3 font-medium">{{ ctrans("Ordered from") }}</th>
+                        <th class="py-1.5 pr-3 font-medium">{{ ctrans("State") }}</th>
+                        <th class="py-1.5 text-right font-medium">{{ ctrans("Lines added") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(order, key) in upload.purchase_orders" :key="key" class="border-t border-gray-100 align-top">
+                        <td class="py-1.5 pr-3 font-medium">{{ key }}</td>
+                        <td class="py-1.5 pr-3">{{ order.organisation ?? "—" }}</td>
+                        <td v-if="order.error" colspan="4" class="py-1.5 text-red-700">{{ order.error }}</td>
+                        <template v-else>
+                            <td class="py-1.5 pr-3">
+                                <a v-if="order.route" :href="route(order.route.name, order.route.parameters)" target="_blank" rel="noopener" class="font-medium text-[--app-accent-strong] hover:underline">{{ order.purchase_order }}</a>
+                                <span v-else class="font-medium">{{ order.purchase_order }}</span>
+                                <span v-for="error in order.errors ?? []" :key="error" class="block text-red-700">{{ error }}</span>
+                            </td>
+                            <td class="py-1.5 pr-3">{{ order.parent_name ?? "—" }}</td>
+                            <td class="py-1.5 pr-3">{{ order.state ?? "—" }}</td>
+                            <td class="py-1.5 text-right tabular-nums">{{ order.lines }}</td>
+                        </template>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="space-y-2">

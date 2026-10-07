@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Web\SearchConsole\GetWebpageSearchConsoleDays;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
@@ -19,7 +20,6 @@ use App\Models\Web\Webpage;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Throwable;
 
 class GetWebpagePerformance
 {
@@ -33,20 +33,11 @@ class GetWebpagePerformance
         $endDate   = Carbon::parse(Arr::get($modelData, 'endDate') ?? now()->toDateString())->endOfDay();
         $startDate = Carbon::parse(Arr::get($modelData, 'startDate') ?? $endDate->copy()->subDays(90)->toDateString())->startOfDay();
 
-        try {
-            $search = GetWebpageGoogleCloud::make()->action($webpage, [
-                'startDate' => $startDate->toDateString(),
-                'endDate'   => $endDate->toDateString(),
-            ]);
-        } catch (Throwable) {
-            $search = [];
-        }
-
         return [
             'start_date'          => $startDate->toDateString(),
             'end_date'            => $endDate->toDateString(),
             'currency'            => $webpage->shop->currency->code,
-            'search'              => $search,
+            'search'              => GetWebpageSearchConsoleDays::run($webpage, $startDate->toDateString(), $endDate->toDateString()),
             'sales'               => $this->sales($webpage, $startDate, $endDate),
             'events'              => $this->events($webpage, $startDate, $endDate),
         ];
