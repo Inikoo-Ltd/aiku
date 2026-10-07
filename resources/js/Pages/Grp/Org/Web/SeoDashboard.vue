@@ -12,6 +12,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TableWebpagesPerformance from "@/Components/Tables/Grp/Org/Web/TableWebpagesPerformance.vue"
+import TableSearchConsoleQueries from "@/Components/Tables/Grp/Org/Web/TableSearchConsoleQueries.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -19,6 +22,11 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 import { routeType } from "@/types/route"
+import { Navigation } from "@/types/Tabs"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBrowser, faSearch, faMousePointer } from "@fal"
+
+library.add(faBrowser, faSearch, faMousePointer)
 
 type DailyTraffic = {
     day: string
@@ -44,6 +52,27 @@ type WebsitePerformance = {
     daily: DailyTraffic[]
 }
 
+type DailySearch = {
+    day: string
+    clicks: number
+    impressions: number
+}
+
+type SearchPerformance = {
+    is_connected: boolean
+    site_url: string | null
+    service_account_email: string | null
+    latest_stored_day: string | null
+    days_with_data: number
+    first_day: string | null
+    last_day: string | null
+    clicks: number
+    impressions: number
+    ctr: number
+    position: number | null
+    daily: DailySearch[]
+}
+
 type PerformanceWebsite = {
     name: string
     domain: string
@@ -65,8 +94,22 @@ const props = defineProps<{
     settings: Settings
     website: PerformanceWebsite | null
     performance: WebsitePerformance | null
-    webpages: object | null
+    search: SearchPerformance | null
+    tabs: {
+        current: string
+        navigation: Navigation
+    }
+    webpages?: object | null
+    search_queries?: object | null
+    search_opportunities?: object | null
 }>()
+
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const tabComponent = computed(() => currentTab.value === "webpages" ? TableWebpagesPerformance : TableSearchConsoleQueries)
+
+const reloadOnly = computed(() => ["intervals", "performance", "search", currentTab.value])
 
 const locale = useLocaleStore()
 
@@ -163,11 +206,14 @@ const toDayKey = (date: Date) => [
     String(date.getDate()).padStart(2, "0"),
 ].join("-")
 
-const dailyTraffic = computed(() => {
-    const records = props.performance?.daily ?? []
+const fillCalendar = <Key extends string>(records: Array<{ day: string } & Record<Key, number>>, keys: Key[]) => {
+    const toCalendarDay = (day: string, record?: Record<Key, number>) => ({
+        day,
+        ...Object.fromEntries(keys.map((key) => [key, record?.[key] ?? null])),
+    }) as { day: string } & Record<Key, number | null>
 
     if (records.length < 2) {
-        return records.map((record) => ({ day: record.day, visitors: record.visitors as number | null, page_views: record.page_views as number | null }))
+        return records.map((record) => toCalendarDay(record.day, record))
     }
 
     const recordsByDay = new Map(records.map((record) => [record.day, record]))
@@ -177,14 +223,15 @@ const dailyTraffic = computed(() => {
 
     while (cursor <= lastDay) {
         const day = toDayKey(cursor)
-        const record = recordsByDay.get(day)
 
-        calendar.push({ day, visitors: record?.visitors ?? null, page_views: record?.page_views ?? null })
+        calendar.push(toCalendarDay(day, recordsByDay.get(day)))
         cursor.setDate(cursor.getDate() + 1)
     }
 
     return calendar
-})
+}
+
+const dailyTraffic = computed(() => fillCalendar(props.performance?.daily ?? [], ["visitors", "page_views"]))
 
 const showDailyChart = computed(() => (props.performance?.daily.length ?? 0) > 1)
 
@@ -233,6 +280,90 @@ const dailyChartOptions = {
     },
 }
 
+const isSearchConnected = computed(() => props.search?.is_connected ?? false)
+
+const hasSearchData = computed(() => (props.search?.days_with_data ?? 0) > 0)
+
+const searchPeriodText = computed(() => {
+    if (!props.search?.first_day || !props.search?.last_day) {
+        return ""
+    }
+
+    return ctrans(":from to :to, :days days with data", {
+        from: formatDay(props.search.first_day, "mdy"),
+        to: formatDay(props.search.last_day, "mdy"),
+        days: locale.number(props.search.days_with_data),
+    })
+})
+
+const latestSearchDayText = computed(() => props.search?.latest_stored_day
+    ? ctrans("Latest day from Google: :day", { day: formatDay(props.search.latest_stored_day, "mdy") })
+    : "")
+
+const searchMetrics = computed(() => {
+    const search = props.search
+
+    if (!search) {
+        return []
+    }
+
+    return [
+        { label: ctrans("Impressions"), value: locale.number(search.impressions) },
+        { label: ctrans("CTR"), value: `${locale.number(search.ctr)}%` },
+        { label: ctrans("Avg. position"), value: search.position !== null ? locale.number(search.position) : "-" },
+    ]
+})
+
+const dailySearch = computed(() => fillCalendar(props.search?.daily ?? [], ["clicks", "impressions"]))
+
+const showSearchChart = computed(() => (props.search?.daily.length ?? 0) > 1)
+
+const searchChartData = computed(() => {
+    const pointRadius = dailySearch.value.length > 45 ? 0 : 2
+
+    return {
+        labels: dailySearch.value.map((record) => formatDay(record.day, "d MMM")),
+        datasets: [
+            {
+                label: ctrans("Clicks"),
+                data: dailySearch.value.map((record) => record.clicks),
+                yAxisID: "y",
+                spanGaps: false,
+                borderColor: accentColor(),
+                backgroundColor: accentColor(),
+                borderWidth: 2,
+                pointRadius,
+                tension: 0.25,
+            },
+            {
+                label: ctrans("Impressions"),
+                data: dailySearch.value.map((record) => record.impressions),
+                yAxisID: "impressions",
+                spanGaps: false,
+                borderColor: "#9ca3af",
+                backgroundColor: "#9ca3af",
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                pointRadius,
+                tension: 0.25,
+            },
+        ],
+    }
+})
+
+const searchChartOptions = {
+    ...dailyChartOptions,
+    scales: {
+        ...dailyChartOptions.scales,
+        impressions: { position: "right", beginAtZero: true, border: { display: false }, grid: { display: false }, ticks: { color: "#9ca3af", precision: 0, maxTicksLimit: 5 } },
+    },
+}
+
+const searchChartSummary = computed(() => ctrans("Google Search clicks and impressions per day, :from to :to", {
+    from: props.search?.first_day ? formatDay(props.search.first_day, "mdy") : "",
+    to: props.search?.last_day ? formatDay(props.search.last_day, "mdy") : "",
+}))
+
 const dailyChartSummary = computed(() => ctrans("Visitors and page views per day, :from to :to", {
     from: props.performance?.first_day ? formatDay(props.performance.first_day, "mdy") : "",
     to: props.performance?.last_day ? formatDay(props.performance.last_day, "mdy") : "",
@@ -243,7 +374,7 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="pt-3">
-        <DashboardSettings :intervals="intervals" :settings="settings" currentTab="seo" :reloadOnly="['intervals', 'performance', 'webpages']" />
+        <DashboardSettings :intervals="intervals" :settings="settings" currentTab="seo" :reloadOnly="reloadOnly" />
     </div>
 
     <section
@@ -356,14 +487,81 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
     </section>
 
     <section
-        v-if="webpages"
-        :aria-label="ctrans('Webpage performance')"
+        v-if="search"
+        :aria-label="ctrans('Google Search performance')"
         :aria-busy="isLoadingOnTable"
-        class="relative mx-4 mb-4 rounded-xl bg-white p-5 ring-1 ring-gray-200">
+        class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
         <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
             <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
         </div>
 
-        <TableWebpagesPerformance :data="webpages" tab="webpages" />
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
+            <p class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
+                <span class="font-medium text-gray-900">{{ ctrans("Google Search") }}</span>
+                <span v-if="search.site_url" class="break-all text-gray-600">{{ search.site_url }}</span>
+            </p>
+            <span v-if="hasSearchData" class="text-xs text-gray-500">{{ searchPeriodText }}</span>
+        </div>
+
+        <div v-if="!isSearchConnected" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+            <p>{{ ctrans("Aiku cannot read Google Search Console for :domain yet.", { domain: website?.domain ?? "" }) }}</p>
+            <p v-if="search.service_account_email" class="mt-1">
+                {{ ctrans("Add this account as a user on the domain's Search Console property:") }}
+                <span class="break-all font-mono text-xs text-gray-900">{{ search.service_account_email }}</span>
+            </p>
+            <p v-else class="mt-1">{{ ctrans("No Google service account is set up on this installation.") }}</p>
+        </div>
+
+        <p v-else-if="!search.latest_stored_day" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+            {{ ctrans("Search Console data is fetched every night. The first fetch loads the last 16 months.") }}
+        </p>
+
+        <p v-else-if="!hasSearchData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+            {{ ctrans("No Google Search data in this period. Google sends it two to three days late.") }}
+            <span class="text-gray-500">{{ latestSearchDayText }}</span>
+        </p>
+
+        <template v-else>
+            <div
+                class="grid grid-cols-1 gap-x-8 gap-y-6 px-5 pb-5 pt-5"
+                :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showSearchChart }">
+                <div class="flex flex-col justify-between gap-y-5">
+                    <div>
+                        <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(search.clicks) }}</div>
+                        <div class="mt-1 text-sm text-gray-600">{{ ctrans("Clicks") }}</div>
+                        <div class="text-xs text-gray-500">{{ latestSearchDayText }}</div>
+                    </div>
+
+                    <dl class="space-y-1 text-sm">
+                        <div v-for="metric in searchMetrics" :key="metric.label" class="flex items-baseline gap-2">
+                            <dt class="text-gray-600">{{ metric.label }}</dt>
+                            <dd class="ml-auto tabular-nums text-gray-900">{{ metric.value }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div v-if="showSearchChart" class="min-w-0">
+                    <div class="h-56 sm:h-64" role="img" :aria-label="searchChartSummary">
+                        <Chart type="line" :data="searchChartData" :options="searchChartOptions" class="h-full" />
+                    </div>
+                </div>
+            </div>
+        </template>
+    </section>
+
+    <section
+        v-if="website"
+        :aria-label="ctrans('Webpages and search queries')"
+        :aria-busy="isLoadingOnTable"
+        class="relative mx-4 mb-4 rounded-xl bg-white pb-5 ring-1 ring-gray-200">
+        <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
+            <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
+        </div>
+
+        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+        <div class="px-5">
+            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" />
+        </div>
     </section>
 </template>

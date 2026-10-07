@@ -11,11 +11,14 @@ are suggestions; rename them freely, but keep the boundaries.
   `website_visitors`, which is pruned after 30 days, and `UpsertsTimeSeriesRecords::syncTimeSeriesRecords()`
   deletes periods it does not rebuild. Search Console keeps 16 months and providers charge per
   request, so our copy is the long-term copy and must never be on a delete path.
-- **Fetch jobs run on their own queue** (`seo`), so a slow provider cannot hold up `analytics`.
+- **Fetch jobs run on `long-low-priority`**, the long-running queue the time series redo jobs use, so a
+  slow provider cannot hold up `analytics`. A dedicated `seo` queue would need a Horizon supervisor in
+  every environment; add one only if fetches start to crowd that queue.
 - **Every fetch is idempotent per day.** Unique keys include the date, and a re-run upserts.
 - **Provider calls go through one client per provider**, with the API key in `config/services.php`,
-  a per-run budget cap, and a log row per request (endpoint, units used, cost if the provider
-  reports it). Phase 2 and 3 costs are only visible this way.
+  a per-run budget cap, and a log row per request in `seo_api_requests` (provider, endpoint, rows,
+  duration, error, cost if the provider reports it). Phase 2 and 3 costs are only visible this way.
+  `App\Services\SearchConsole\SearchConsoleClient` is the first one.
 - **The SEO dashboard stays the entry point.** Each phase adds sections or tabs to
   `ShowSeoDashboard` (`app/Actions/Web/Website/UI/ShowSeoDashboard.php`), filtered by the dashboard
   interval like the existing performance card.
@@ -40,42 +43,51 @@ Done on 7 October 2026.
 
 ### 1.1 Search Console history
 
-**Today.** `app/Actions/Web/Webpage/GetWebpageGoogleCloud.php` calls the Search Analytics API live
-from the webpage Analytics tab and stores nothing. `app/Actions/Web/Website/GetWebsiteGoogleCloud.php`
-is a console prototype that calls `dd()` when the secret is missing.
-`WebsiteHydrateGoogleCloudSearch` finds the property and saves it in `website.data.gcp.siteUrl`.
-The credential is the service account JSON in `GOOGLE_OAUTH_CLIENT_SECRET`, with the
-`WEBMASTERS_READONLY` scope.
+Done on 7 October 2026.
 
-**Build.**
+**Credential.** The service account JSON, base64 encoded, in the group settings
+(`gcp.oauthClientSecret`) or `config('app.analytics.google.client_oauth_secret')`, with the
+`WEBMASTERS_READONLY` scope. The service account has to be a user on each Search Console property.
 
-- `FetchSearchConsoleAnalytics` (command `seo:fetch-search-console {website?} {--from} {--to}`),
-  scheduled daily per website on the `seo` queue. It requests the days from 4 days ago back to the
-  last stored day, because Search Console data arrives with a delay of a few days. A first run
-  backfills the 16 months the API keeps.
-- Two requests per website per day:
-  - dimensions `date, page, query`: one row per page and query per day.
-  - dimensions `date, country, device`: website totals per country and device.
-- Page rows are paged with `startRow` until a short page comes back.
-- Tables:
-  - `search_console_page_queries`: website_id, webpage_id (matched from the URL, nullable), date,
-    page_url, query, clicks, impressions, ctr, position. Partitioned by month on `date`, unique on
-    (website_id, date, page_url hash, query hash).
-  - `search_console_website_days`: website_id, date, country, device, clicks, impressions, ctr,
-    position.
-- Position is stored as Google returns it. Rollups weight it by impressions, never a plain average.
-- Match `page_url` to `webpages` by canonical URL, the same lookup `StoreWebsitePageView::resolveWebpage()`
-  uses. Unmatched URLs are kept with a null `webpage_id`; they are often redirects or deleted pages
-  and are worth seeing.
-- Replace the live call in the webpage Analytics tab with a read from the new table.
-- Delete `GetWebsiteGoogleCloud` once the command replaces it.
+**Fetch.** `FetchSearchConsoleAnalytics` (`app/Actions/Web/SearchConsole/`), command
+`search_console:fetch {website?} {--from=} {--to=} {--async}`, scheduled daily at 02:30 UTC with
+`--async`.
 
-**Ops step.** The service account has to be added as a user on every Search Console property. List
-the websites without a `siteUrl` on the dashboard so nobody has to guess which ones are missing.
+- `SearchConsoleClient::forWebsite()` reads `website.data.gcp.siteUrl`. When it is missing, it lists
+  the properties the service account can see and saves the first exact match for the domain
+  (`sc-domain:`, then `https://www.`, `https://`, `http://www.`, `http://`). A website without a
+  match is skipped.
+- A first run backfills 16 months. Later runs start 3 days before the last stored day, because
+  Google finalises data with a delay, and stop yesterday. Only final data is stored
+  (`dataState=final`).
+- Per day, three requests, each paged with `startRow` in pages of 25,000 rows:
+  - `date, country, device` into `search_console_website_days`: website totals. When this returns
+    nothing the day has no data yet, and the other two requests are skipped.
+  - `date, page` into `search_console_page_days`: page totals, including the clicks of anonymised
+    queries that the page and query rows leave out.
+  - `date, page, query` into `search_console_page_queries`.
+- Every row is upserted on (website, date, hash), so re-runs are safe.
+- `page_url` is matched to `webpages` by the path of the canonical URL or by `url`, live pages
+  first. Unmatched URLs are kept with a null `webpage_id`.
+- Volume: the largest site (ancientwisdom.biz) had about 11,000 page and query rows a day in 2025
+  and about 1,700 in October 2026. A row takes about 300 bytes with its indexes, so 16 months of all
+  websites is a few GB. The tables are not partitioned yet; partition `search_console_page_queries`
+  by month on `date` if queries on it slow down or old months need dropping.
 
-**Screens.** On the SEO dashboard: clicks, impressions, CTR and position for the period with a daily
-trend; top queries; top pages; queries with high impressions and low CTR. On the webpage table: add
-clicks, impressions and position columns beside the traffic ones.
+**Screens.**
+
+- SEO dashboard: a Google Search card with clicks, impressions, CTR, average position and a daily
+  chart for the dashboard interval. When the website has no readable property, the card names the
+  service account to add instead.
+- Tabs under the cards:
+  - Webpages: search clicks, impressions and position added beside the traffic columns, from
+    `search_console_page_days`.
+  - Search queries: by query, with clicks, impressions, CTR, position and the number of pages shown.
+  - Low CTR queries: at least 100 impressions, average position 10 or better, CTR under 2%
+    (constants on `IndexSearchConsoleQueries`).
+- Position is always weighted by impressions.
+- The webpage Performance tab (and the blog webpage one) reads `search_console_page_days` instead of
+  calling the API. `GetWebpageGoogleCloud` and `GetWebsiteGoogleCloud` are deleted.
 
 ### 1.2 SEO crawler (Site Audit)
 
@@ -143,7 +155,7 @@ survive the nightly rebuild.
 
 ### Phase 1 is done when
 
-- Search Console history is stored for every website with a property, and the webpage tab reads it.
+- Search Console history is stored for every website with a property, and the webpage tab reads it. (Done)
 - Every website has had at least one audit, and the issue list matches a Semrush Site Audit run on
   the same site closely enough that the team trusts it.
 - 404 paths are visible and redirects can be created from them.
@@ -320,7 +332,7 @@ Similarweb API (licensed, priced) for competitor traffic before building it.
 
 | Decision | Needed before |
 | --- | --- |
-| Which websites have a Search Console property, and who adds the service account | Phase 1 |
+| Who adds the service account to the properties that are still missing | Phase 1 |
 | SERP provider and monthly budget | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency | Phase 2 |
 | Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |

@@ -1301,6 +1301,17 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('search_console:fetch --async')
+                    ->dailyAt('02:30')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchSearchConsoleAnalytics',
+                    ),
+                name: 'FetchSearchConsoleAnalytics',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:prune-agent-presence')->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'PruneStaleChatAgentPresence',
                 ),

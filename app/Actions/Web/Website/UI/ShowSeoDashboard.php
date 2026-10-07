@@ -13,12 +13,18 @@ use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
+use App\Actions\Web\SearchConsole\GetWebsiteSearchConsoleStats;
+use App\Actions\Web\SearchConsole\UI\IndexSearchConsoleQueries;
 use App\Actions\Web\Webpage\UI\IndexWebpagesPerformance;
 use App\Actions\Web\Website\GetWebsitePerformanceStats;
+use App\Enums\UI\Web\SeoDashboardTabsEnum;
+use App\Http\Resources\Web\SearchConsoleQueryResource;
 use App\Http\Resources\Web\WebpagePerformanceResource;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Website;
+use Closure;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +43,7 @@ class ShowSeoDashboard extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(SeoDashboardTabsEnum::values());
 
         return $this->handle($shop);
     }
@@ -77,20 +83,52 @@ class ShowSeoDashboard extends OrgAction
                         'parameters' => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                     ],
                 ] : null,
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => SeoDashboardTabsEnum::navigation(),
+                ],
                 'performance' => fn () => $shop->website
                     ? GetWebsitePerformanceStats::run($shop->website, $fromDate, $toDate)
                     : null,
-                'webpages'    => fn () => $shop->website
-                    ? WebpagePerformanceResource::collection(IndexWebpagesPerformance::run($shop->website, $fromDate, $toDate, 'webpages'))
+                'search'      => fn () => $shop->website
+                    ? GetWebsiteSearchConsoleStats::run($shop->website, $fromDate, $toDate)
                     : null,
+
+                SeoDashboardTabsEnum::WEBPAGES->value => $this->tabProp(
+                    SeoDashboardTabsEnum::WEBPAGES,
+                    $shop->website,
+                    fn (Website $website) => WebpagePerformanceResource::collection(IndexWebpagesPerformance::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::WEBPAGES->value))
+                ),
+
+                SeoDashboardTabsEnum::SEARCH_QUERIES->value => $this->tabProp(
+                    SeoDashboardTabsEnum::SEARCH_QUERIES,
+                    $shop->website,
+                    fn (Website $website) => SearchConsoleQueryResource::collection(IndexSearchConsoleQueries::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::SEARCH_QUERIES->value))
+                ),
+
+                SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value => $this->tabProp(
+                    SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES,
+                    $shop->website,
+                    fn (Website $website) => SearchConsoleQueryResource::collection(IndexSearchConsoleQueries::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value, lowCtrOnly: true))
+                ),
             ]
         );
 
         if ($shop->website) {
-            $inertiaResponse->table(IndexWebpagesPerformance::make()->tableStructure(prefix: 'webpages'));
+            $inertiaResponse
+                ->table(IndexWebpagesPerformance::make()->tableStructure(prefix: SeoDashboardTabsEnum::WEBPAGES->value))
+                ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_QUERIES->value))
+                ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value, lowCtrOnly: true));
         }
 
         return $inertiaResponse;
+    }
+
+    private function tabProp(SeoDashboardTabsEnum $tab, ?Website $website, Closure $resolver): mixed
+    {
+        $prop = fn () => $website ? $resolver($website) : null;
+
+        return $this->tab === $tab->value ? $prop : Inertia::optional($prop);
     }
 
     public function getBreadcrumbs(array $routeParameters): array

@@ -28,6 +28,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $avg_time_on_page
  * @property mixed $add_to_baskets
  * @property mixed $conversion_rate
+ * @property mixed $search_clicks
+ * @property mixed $search_impressions
+ * @property mixed $search_position
  */
 class WebpagePerformanceResource extends JsonResource
 {
@@ -36,24 +39,27 @@ class WebpagePerformanceResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'               => $this->id,
-            'slug'             => $this->slug,
-            'code'             => $this->code,
-            'title'            => $this->title,
-            'url'              => $this->url,
-            'canonical_url'    => $this->canonical_url,
-            'type'             => $this->type,
-            'typeIcon'         => $this->type->stateIcon()[$this->type->value] ?? ['fal', 'fa-browser'],
-            'state'            => $this->state,
-            'route'            => [
+            'id'                 => $this->id,
+            'slug'               => $this->slug,
+            'code'               => $this->code,
+            'title'              => $this->title,
+            'url'                => $this->url,
+            'canonical_url'      => $this->canonical_url,
+            'type'               => $this->type,
+            'typeIcon'           => $this->type->stateIcon()[$this->type->value] ?? ['fal', 'fa-browser'],
+            'state'              => $this->state,
+            'route'              => [
                 'name'       => 'grp.org.shops.show.seo.visitors.webpage',
                 'parameters' => [$this->organisation_slug, $this->shop_slug, $this->slug],
             ],
-            'visitors'         => (int) $this->visitors,
-            'page_views'       => (int) $this->page_views,
-            'avg_time_on_page' => (int) $this->avg_time_on_page,
-            'add_to_baskets'   => (int) $this->add_to_baskets,
-            'conversion_rate'  => (float) $this->conversion_rate,
+            'visitors'           => (int) $this->visitors,
+            'page_views'         => (int) $this->page_views,
+            'avg_time_on_page'   => (int) $this->avg_time_on_page,
+            'add_to_baskets'     => (int) $this->add_to_baskets,
+            'conversion_rate'    => (float) $this->conversion_rate,
+            'search_clicks'      => (int) $this->search_clicks,
+            'search_impressions' => (int) $this->search_impressions,
+            'search_position'    => $this->search_position !== null ? (float) $this->search_position : null,
         ];
     }
 }

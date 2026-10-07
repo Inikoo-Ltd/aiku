@@ -25,6 +25,9 @@ type WebpagePerformanceRow = {
     avg_time_on_page: number
     add_to_baskets: number
     conversion_rate: number
+    search_clicks: number
+    search_impressions: number
+    search_position: number | null
 }
 
 defineProps<{
@@ -76,6 +79,19 @@ const formatDuration = (totalSeconds: number) => {
 
         <template #cell(conversion_rate)="{ item: webpage }: { item: WebpagePerformanceRow }">
             <span class="tabular-nums">{{ locale.number(webpage.conversion_rate) }}%</span>
+        </template>
+
+        <template #cell(search_clicks)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span class="tabular-nums">{{ locale.number(webpage.search_clicks) }}</span>
+        </template>
+
+        <template #cell(search_impressions)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span class="tabular-nums">{{ locale.number(webpage.search_impressions) }}</span>
+        </template>
+
+        <template #cell(search_position)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span v-if="webpage.search_position !== null" class="tabular-nums">{{ locale.number(webpage.search_position) }}</span>
+            <span v-else class="text-gray-400">-</span>
         </template>
     </Table>
 </template>
