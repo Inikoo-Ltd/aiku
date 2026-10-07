@@ -45,6 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $status
  * @property string|null $label
  * @property bool $is_label_reviewed
+ * @property array<string, string> $option_translations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProduct
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProductForSale
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -82,6 +83,7 @@ class Variant extends Model implements Auditable, HasMedia
     protected $guarded = [];
     protected $casts = [
         'data'                        => 'array',
+        'option_translations'         => 'array',
         'follow_master_variant_order' => 'boolean',
     ];
 

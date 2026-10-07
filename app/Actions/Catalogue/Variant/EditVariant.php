@@ -127,6 +127,16 @@ class EditVariant extends OrgAction
                         'reviewed'      => $variant->is_label_reviewed,
                         'information'   => __('Shown as the product title on the website product cards. When empty, the leader product name is used.'),
                     ],
+                    'option_translations' => [
+                        'type'        => 'variant_option_translations',
+                        'label'       => __('Option names on the website'),
+                        'hidden'      => $variant->shop->language->code === 'en',
+                        'terms'       => LocaliseVariantData::make()->terms($variant->data),
+                        'language'    => $variant->shop->language->name,
+                        'value'       => (object) ($variant->option_translations ?? []),
+                        'full'        => true,
+                        'information' => __('How the option groups and options, e.g. Plug and EU Plug, read on the website. Left empty, the English name is shown. New ones are machine translated when the variant changes.'),
+                    ],
                     'variants' => [
                         'type'               => 'variant_field',
                         'label'              => __('Variants'),
