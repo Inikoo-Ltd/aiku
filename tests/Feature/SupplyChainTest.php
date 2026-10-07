@@ -472,6 +472,8 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
         ->and((float)$purchaseOrder->purchaseOrderTransactions()->where('supplier_product_id', $supplierProduct->id)->value('quantity_ordered'))->toBe(240.0)
         ->and($upload->data['purchase_orders'][strtoupper($this->organisation->code)]['lines'])->toBe(1);
 
+    expect(App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder::make()->estimatedExpenses($purchaseOrder))->toEqual(24.0);
+
     $again = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit cost (Sup Cur)' => 3])]));
     $againFindings = collect($again->records()->first()->data['findings'])->pluck('level', 'code');
 
