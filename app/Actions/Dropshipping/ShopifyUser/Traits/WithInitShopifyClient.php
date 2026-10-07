@@ -20,9 +20,9 @@ trait WithInitShopifyClient
 {
     public function getShopifyClient($graphQl = false): GraphRequester|RestRequester|null
     {
-//        if (PlatformOutboundGuard::blocks('Shopify')) {
-//            return null;
-//        }
+        if (PlatformOutboundGuard::blocks('Shopify')) {
+            return null;
+        }
 
         try {
             $api = $this->api();
