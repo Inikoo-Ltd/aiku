@@ -17,4 +17,6 @@ enum UploadRecordStatusEnum: string
     case PROCESSING = 'processing';
     case COMPLETE   = 'complete';
     case FAILED     = 'failed';
+    case PREVIEW    = 'preview';
+    case SKIPPED    = 'skipped';
 }

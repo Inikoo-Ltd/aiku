@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed> $errors
  * @property string|null $fail_column
  * @property string $status
+ * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $fetched_at
@@ -38,6 +39,7 @@ class UploadRecord extends Model
     protected $casts = [
         'values'        => 'array',
         'errors'        => 'array',
+        'data'          => 'array',
 
 
     ];
@@ -45,6 +47,7 @@ class UploadRecord extends Model
     protected $attributes = [
         'values'     => '{}',
         'errors'     => '{}',
+        'data'       => '{}',
     ];
 
     protected $guarded = [];

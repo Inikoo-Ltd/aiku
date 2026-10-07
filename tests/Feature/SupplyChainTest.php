@@ -24,7 +24,6 @@ use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Agent\UpdateAgent;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Models\Procurement\PurchaseOrder;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
@@ -44,12 +43,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
-use App\Enums\Helpers\Import\UploadRecordStatusEnum;
-use App\Actions\Goods\Stock\StoreStock;
-use App\Actions\Goods\StockFamily\StoreStockFamily;
-use App\Imports\SupplyChain\SupplierProductImport;
 use App\Models\Analytics\AikuScopedSection;
-use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Upload;
 use App\Models\Procurement\OrgAgent;
@@ -290,195 +284,202 @@ test('create supplier product in agent supplier', function ($supplier) {
         ->and($this->group->supplyChainStats->number_supplier_products_in_agents)->toBe(1);
 })->depends('create supplier in agent');
 
-test('import supplier product row creates trade unit and stock family', function ($supplier) {
-    $upload = Upload::create([
-        'group_id'          => $this->group->id,
-        'organisation_id'   => $this->organisation->id,
-        'model'             => 'SupplierProduct',
-        'parent_type'       => $supplier->getMorphClass(),
-        'parent_id'         => $supplier->id,
-        'original_filename' => 'supplier_products.xlsx',
-        'filename'          => 'supplier_products.xlsx',
-        'filesize'          => 0,
-    ]);
+function supplierProductUploadSheet(array $rows, array $extraHeadings = []): string
+{
+    $headings = [...App\Exports\SupplyChain\SupplierProductTemplateExport::headings(), ...$extraHeadings];
 
-    $import = new SupplierProductImport($supplier, $upload);
-
-    $row = collect([
-        'id_supplier_part_key'                => 'new',
-        'suppliers_product_code'               => 'IMP-SUP-001',
-        'suppliers_unit_description'           => 'Imported unit',
-        'family'                               => 'IMP-FAM',
-        'part_reference'                       => 'IMP-TU-001',
-        'unit_label'                           => 'Imported trade unit',
-        'units_per_sko'                        => 12,
-        'skos_per_carton'                      => 4,
-        'minimum_order_cartons'                => 1,
-        'average_delivery_time_days'           => 21,
-        'carton_cbm'                           => 0.08,
-        'unit_cost'                            => 1.25,
-        'unit_extra_costs'                     => 0,
-        'unit_recommended_description_website' => 'Imported product description',
-        'unit_barcode_ean_13_for_website'      => '5000000000001',
-        'unit_weight_kg'                       => 0.5,
-        'unit_dimensions_l_x_w_x_h_in_cm'      => '10 x 5 x 3',
-        'country_of_origin'                    => 'GBR',
-    ]);
-
-    $uploadRecord = $upload->records()->create(['values' => $row->all(), 'row_number' => 2]);
-    $import->storeModel($row, $uploadRecord);
-
-    $tradeUnit = TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->first();
-    expect($tradeUnit)->not->toBeNull()
-        ->and($tradeUnit->name)->toBe('Imported trade unit')
-        ->and($tradeUnit->description)->toBe('Imported product description');
-
-    $stockFamily = StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->first();
-    expect($stockFamily)->not->toBeNull();
-
-    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->first();
-    expect($supplierProduct)->not->toBeNull()
-        ->and((int)$supplierProduct->tradeUnits()->first()->pivot->quantity)->toBe(12);
-
-    $uploadRecord->refresh();
-    expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::COMPLETE->value);
-
-    $secondRow          = clone $row;
-    $secondUploadRecord = $upload->records()->create(['values' => $secondRow->all(), 'row_number' => 3]);
-    $import->storeModel($secondRow, $secondUploadRecord);
-
-    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->count())->toBe(1)
-        ->and(StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->count())->toBe(1)
-        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1)
-        ->and($tradeUnit->barcode)->toBe('5000000000001');
-
-    $autoBarcodeRow = $row->merge(['suppliers_product_code' => 'IMP-SUP-002', 'part_reference' => 'IMP-TU-002', 'unit_barcode_ean_13_for_website' => 'auto']);
-    $import->storeModel($autoBarcodeRow, $upload->records()->create(['values' => $autoBarcodeRow->all(), 'row_number' => 4]));
-
-    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-002')->value('barcode'))->toBeNull();
-})->depends('create supplier in agent');
-
-test('supplier product sheet with mistakes creates nothing and lists every mistake by row', function ($supplier) {
-    $dressFamily = StoreStockFamily::make()->action($this->group, ['code' => 'CHK-DRESS', 'name' => 'Dresses'], strict: false);
-    StoreStock::make()->action($dressFamily, ['code' => 'CHKD-01', 'name' => 'Dress'], strict: false);
-
-    $headings = ['Id: Supplier Part Key', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'Unit cost', 'Unit label', 'Unit barcode (EAN-13, for website)', 'Units per SKO', 'SKOs per carton'];
-    $sheetFile = function (array $rows) use ($headings) {
-        $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $spreadsheet->getActiveSheet()->fromArray([$headings, ...$rows]);
-        $spreadsheet->getActiveSheet()->setCellValue('A20', null);
-        $spreadsheet->createSheet()->setTitle('Country codes')->fromArray([['Nepal', 'NPL'], ['Spain', 'ESP']]);
-        $path = sys_get_temp_dir().'/supplier_products_'.uniqid().'.xlsx';
-        (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
-
-        return $path;
-    };
-    $import = function (string $path) use ($supplier) {
-        $upload = Upload::create([
-            'group_id'          => $this->group->id,
-            'organisation_id'   => $this->organisation->id,
-            'model'             => 'SupplierProduct',
-            'parent_type'       => $supplier->getMorphClass(),
-            'parent_id'         => $supplier->id,
-            'original_filename' => 'trousers.xlsx',
-            'filename'          => 'trousers.xlsx',
-            'filesize'          => 0,
-        ]);
-        Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
-
-        return $upload->refresh();
-    };
-
-    $upload = $import($sheetFile([
-        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
-        ['new', 'CHK-DRESS', 'CHKT-02', 'CHKT-02', 'Trousers L/XL', 825, 'Trousers', 'auto', 1, 30],
-        ['new', 'CHK-DRESS', 'CHKT-03', 'CHKT-02', 'Trousers S/M', 'Rs', 'Trousers', '12345', 1, 30],
-    ]));
-
-    $errors = $upload->records()->whereNotNull('row_number')->orderBy('row_number')->get()->mapWithKeys(fn ($record) => [$record->row_number => $record->errors]);
-    expect($upload->number_rows)->toBe(3)
-        ->and($upload->number_fails)->toBe(3)
-        ->and($upload->number_success)->toBe(0)
-        ->and($errors->keys()->all())->toBe([2, 3, 4])
-        ->and($errors[2])->toBe(['CHKT products have different families in this sheet: CHK-TROUSER (rows 2), CHK-DRESS (rows 3-4). Use one family.'])
-        ->and($errors[4])->toContain('Unit cost must be a number above zero, found "Rs".')
-        ->and($errors[4])->toContain('Unit barcode "12345" is not a barcode (8 to 14 digits).')
-        ->and($errors[4])->toContain("Supplier's product code CHKT-02 appears in rows 3-4.")
-        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'like', 'CHKT-%')->exists())->toBeFalse()
-        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'like', 'CHKT-%')->exists())->toBeFalse();
-
-    $upload = $import($sheetFile([
-        ['new', 'CHK-DRESS', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
-    ]));
-    expect($upload->records()->first()->errors)->toBe(['Family CHK-DRESS holds CHKD products, CHKT does not look like it belongs there.'])
-        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'CHKT-01')->exists())->toBeFalse();
-
-    $upload = $import($sheetFile([
-        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
-        ['new', 'CHK-TROUSER', 'CHKT-02', 'CHKT-02', 'Trousers L/XL', 825, 'Trousers', 'auto', 1, 30],
-    ]));
-    expect($upload->number_success)->toBe(2)
-        ->and($upload->number_fails)->toBe(0)
-        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'like', 'CHKT-%')->count())->toBe(2)
-        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'CHKT-01')->value('barcode'))->toBeNull();
-
-    $upload = $import($sheetFile([
-        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
-    ]));
-    expect($upload->records()->first()->errors)->toBe(['CHKT-01 already exists for this supplier, use its Id instead of "new".']);
-})->depends('create supplier in agent');
-
-
-test('v7 supplier product sheet with notes above the headings saves SKO description, barcodes, weights and sizes', function ($supplier) {
     $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->setTitle('Product data');
     $spreadsheet->getActiveSheet()->fromArray([
-        ['AW new supplier parts - upload template v7'],
-        ['AW', 'Supplier'],
-        ['Id: Supplier Part Key', 'Supplier', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'SKO description (picking aid)', 'Unit label', 'Units per SKO', 'SKOs per carton', 'Unit cost (Sup Cur)', 'Unit Est True Extra costs %', 'Unit recommended price (£)', 'Unit recommended price (€)', 'SKO Barcode', 'Carton barcode', 'Unit weight (kg)', 'Unit net weight (kg)', 'SKO weight (kg)', 'SKO dimensions (l x w x h) in cm', 'Expected Duty rate'],
-        ['NEW', 'UCS', 'V7-BAG', 'V7B-01', 'V7B-01', 'Forest Bag', 'Pack of 2 Forest Bags', 'bag', 2, 40, 520, 0.4, 8.5, 10.2, 'V7B-01-SKO', 'V7B-01-CTN', 0.25, 0.21, 0.5, '28x17x8', 0.03],
-        ['NEW', 'UCS', 'V7-BAG', 'V7B-02', 'V7B-02', 'Mini Backpack', null, 'bag', 1, 40, 560, 0.4, 11, 13.2, 'auto', null, 0.285, null, null, null, null],
+        ['AW new supplier parts - upload template'],
+        [],
+        [],
+        array_map(fn (string $heading) => App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum::fromHeading($heading)?->isRequired() ? 'Required' : 'Opt', $headings),
+        $headings,
+        ...array_map(fn (array $row) => array_map(fn (string $heading) => $row[$heading] ?? null, $headings), $rows),
     ]);
-    $path = sys_get_temp_dir().'/supplier_products_v7_'.uniqid().'.xlsx';
+    $path = sys_get_temp_dir().'/supplier_products_'.uniqid().'.xlsx';
     (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
 
+    return $path;
+}
+
+function supplierProductUploadRow(array $overrides = []): array
+{
+    return array_merge([
+        'Family'                                 => 'UPL-BAG',
+        'Part reference'                         => 'UPLB-01',
+        'Unit recommended description (website)' => 'Hemp Forest Bag',
+        "Supplier's product code"                => 'UPLB-01',
+        'Unit label'                             => 'bag',
+        'Units per SKO'                          => 2,
+        'Recommended SKOs per selling outer'     => 1,
+        'SKOs per carton'                        => 40,
+        'Minimum order (cartons)'                => 2,
+        'Unit cost (Sup Cur)'                    => 1.5,
+        'Unit expense (Sup Cur)'                 => 0.1,
+        'Unit Est True Extra costs %'            => 0.4,
+        'Unit recommended price (£)'             => 8.5,
+        'Unit recommended RRP (£)'               => 20,
+        'Unit recommended price (€)'             => 10.2,
+        'Unit recommended RRP (€)'               => 24,
+        'Unit barcode (EAN-13, for website)'     => '4006381333931',
+        'Average delivery time (days)'           => 30,
+        'Unit weight (kg)'                       => 0.25,
+        'Unit dimensions (l x w x h) in cm'      => '28x17x8',
+        'SKO weight (kg)'                        => 0.55,
+        'Carton Weight'                          => 23,
+        'SKO dimensions (l x w x h) in cm'       => '30x20x10',
+        'Carton CBM'                             => 0.3,
+        'Materials'                              => 'Hemp, cotton',
+        'Tariff code'                            => '4202.12.9990',
+    ], $overrides);
+}
+
+function uploadSupplierProductSheet(Supplier $supplier, string $path): Upload
+{
     $upload = Upload::create([
-        'group_id'          => $this->group->id,
-        'organisation_id'   => $this->organisation->id,
+        'group_id'          => $supplier->group_id,
         'model'             => 'SupplierProduct',
         'parent_type'       => $supplier->getMorphClass(),
         'parent_id'         => $supplier->id,
-        'original_filename' => 'nepal.xlsx',
-        'filename'          => 'nepal.xlsx',
-        'filesize'          => 0,
+        'original_filename' => basename($path),
+        'filename'          => basename($path),
+        'path'              => 'excel-uploads/tests',
+        'filesize'          => filesize($path),
     ]);
-    Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
-    $upload->refresh();
+    Illuminate\Support\Facades\Storage::disk('excel-uploads')->put('excel-uploads/tests/'.basename($path), file_get_contents($path));
 
-    expect($upload->number_success)->toBe(2)
+    return App\Actions\SupplyChain\SupplierProduct\Upload\PrepareSupplierProductUpload::run($supplier, $upload)->refresh();
+}
+
+function acceptSupplierProductUploadFindings(Upload $upload): void
+{
+    foreach ($upload->records as $record) {
+        $decisions = collect($record->data['findings'])
+            ->whereIn('level', ['block', 'link'])
+            ->mapWithKeys(fn (array $finding) => [$finding['code'] => ['accepted' => true]])
+            ->all();
+        $values = $record->values;
+        $values['sko_name'] ??= 'Pack of '.$values['units_per_sko'].' '.$values['unit_name'];
+        $record->update(['values' => $values, 'data' => array_merge($record->data, ['decisions' => $decisions])]);
+    }
+}
+
+test('supplier product upload refuses a sheet missing a required column', function () {
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->fromArray([['Family', 'Part reference', 'Unit cost (Sup Cur)'], ['UPL-BAG', 'UPLB-01', 1]]);
+    $path = sys_get_temp_dir().'/supplier_products_'.uniqid().'.xlsx';
+    (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+    $upload = uploadSupplierProductSheet($supplier, $path);
+
+    expect($upload->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::REFUSED)
+        ->and($upload->data['errors'])->toContain('Missing column: Unit recommended RRP (£)')
+        ->and($upload->records()->count())->toBe(0);
+});
+
+test('supplier product upload previews rows with their findings and creates nothing until imported', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow(),
+        supplierProductUploadRow([
+            'Part reference'                         => 'UPLB-02',
+            "Supplier's product code"                => null,
+            'Unit recommended description (website)' => 'Pack of 50 Craft Roses',
+            'Unit label'                             => '20x',
+            'Units per SKO'                          => 1.5,
+            'Unit cost (Sup Cur)'                    => 'Rs',
+            'Unit recommended price (€)'             => '£10.20',
+            'Unit barcode (EAN-13, for website)'     => null,
+            'SKOs per carton'                        => 30,
+            'Recommended SKOs per selling outer'     => 4,
+        ]),
+    ]));
+
+    $findings = $upload->records()->orderBy('row_number')->get()->mapWithKeys(fn ($record) => [$record->row_number => collect($record->data['findings'])->pluck('level', 'code')->all()]);
+
+    expect($upload->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::WAITING_CONFIRMATION)
+        ->and($upload->number_rows)->toBe(2)
+        ->and($findings->keys()->all())->toBe([6, 7])
+        ->and($findings[6])->toMatchArray(['family_new' => 'warning'])
+        ->and($findings[6])->not->toHaveKey('unit_name_pack')
+        ->and($findings[7])->toMatchArray([
+            'supplier_code_from_part_reference' => 'warning',
+            'unit_name_pack'                    => 'block',
+            'unit_label_odd'                    => 'block',
+            'invalid_units_per_sko'             => 'error',
+            'invalid_unit_cost'                 => 'error',
+            'currency_recommended_price_eur'    => 'error',
+            'no_barcode'                        => 'block',
+            'carton_not_split_into_outers'      => 'block',
+        ])
+        ->and($upload->records()->where('row_number', 7)->first()->values['supplier_code'])->toBe('UPLB-02')
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'like', 'UPLB-%')->exists())->toBeFalse()
+        ->and(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
+});
+
+test('confirmed supplier product upload creates families, trade unit, SKO, supplier product and the draft purchase order', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orderColumn = 'Order Cartons '.$this->organisation->code;
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow([$orderColumn => 3]),
+    ], [$orderColumn]));
+
+    expect(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
+
+    acceptSupplierProductUploadFindings($upload);
+    $upload = App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh())->refresh();
+
+    $tradeUnit       = TradeUnit::where('group_id', $this->group->id)->where('code', 'UPLB-01')->firstOrFail();
+    $stock           = $tradeUnit->stocks()->firstOrFail();
+    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'UPLB-01')->firstOrFail();
+    $purchaseOrder   = PurchaseOrder::where('organisation_id', $this->organisation->id)
+        ->where('parent_type', 'OrgSupplier')
+        ->where('parent_id', $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->value('id'))
+        ->firstOrFail();
+
+    expect($upload->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::IMPORTED)
+        ->and($upload->number_success)->toBe(1)
         ->and($upload->number_fails)->toBe(0)
-        ->and($upload->records()->orderBy('row_number')->pluck('row_number')->all())->toBe([4, 5]);
+        ->and($tradeUnit->name)->toBe('Hemp Forest Bag')
+        ->and($tradeUnit->type)->toBe('bag')
+        ->and($tradeUnit->gross_weight)->toBe(250)
+        ->and($tradeUnit->tariff_code)->toBe('4202129990')
+        ->and($tradeUnit->marketing_ingredients)->toBe('Hemp, cotton')
+        ->and($tradeUnit->barcode)->toBe('4006381333931')
+        ->and($tradeUnit->tradeUnitFamily?->code)->toBe('UPL-BAG')
+        ->and($stock->name)->toBe('Pack of 2 Hemp Forest Bag')
+        ->and($stock->stockFamily?->code)->toBe('UPL-BAG')
+        ->and((int)$stock->packed_in)->toBe(2)
+        ->and($stock->gross_weight)->toBe(550)
+        ->and($stock->dimensions)->toEqual(['l' => 30, 'w' => 20, 'h' => 10])
+        ->and((float)$supplierProduct->cost)->toBe(1.5)
+        ->and($supplierProduct->units_per_carton)->toBe(80)
+        ->and($supplierProduct->carton_weight)->toBe(23000)
+        ->and($supplierProduct->data['seed'])->toEqual([
+            'recommended_price'          => 8.5,
+            'recommended_rrp'            => 20,
+            'recommended_price_eur'      => 10.2,
+            'recommended_rrp_eur'        => 24,
+            'recommended_skos_per_outer' => 1,
+        ])
+        ->and($supplierProduct->data['unit_expense'])->toEqual(0.1)
+        ->and((float)$purchaseOrder->purchaseOrderTransactions()->where('supplier_product_id', $supplierProduct->id)->value('quantity_ordered'))->toBe(240.0)
+        ->and($upload->data['purchase_orders'][strtoupper($this->organisation->code)]['lines'])->toBe(1);
 
-    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'V7B-01')->first();
-    expect((float)$supplierProduct->cost)->toBe(520.0)
-        ->and((float)$supplierProduct->extra_costs)->toBe(0.4)
-        ->and($supplierProduct->units_per_carton)->toBe(80);
+    $again = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit cost (Sup Cur)' => 3])]));
+    $againFindings = collect($again->records()->first()->data['findings'])->pluck('level', 'code');
 
-    $tradeUnit = TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-01')->first();
-    expect($tradeUnit->gross_weight)->toBe(250)
-        ->and($tradeUnit->net_weight)->toBe(210);
+    expect($againFindings->all())->toMatchArray(['link_trade_unit' => 'link', 'update_supplier_product' => 'block', 'cost_change' => 'block']);
+});
 
-    $stock = $tradeUnit->stocks()->first();
-    expect($stock->name)->toBe('Pack of 2 Forest Bags')
-        ->and($stock->barcode)->toBe('V7B-01-SKO')
-        ->and($stock->carton_barcode)->toBe('V7B-01-CTN')
-        ->and($stock->gross_weight)->toBe(500)
-        ->and($stock->data['dimensions'])->toEqual(['l' => 28, 'w' => 17, 'h' => 8]);
-
-    $secondStock = TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-02')->first()->stocks()->first();
-    expect($secondStock->name)->toBe('bag')
-        ->and($secondStock->barcode)->toBeNull()
-        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-02')->value('net_weight'))->toBe(285);
-})->depends('create supplier in agent');
 
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();
@@ -1444,85 +1445,6 @@ test('organisations buying from a supplier follow it onto an agent they did not 
 
     expect($agent->orgAgents()->pluck('organisation_id')->sort()->values()->all())->toBe($organisationIds->sort()->values()->all())
         ->and($supplier->orgSuppliers()->whereIn('organisation_id', $organisationIds)->where('status', true)->whereNotNull('org_agent_id')->count())->toBe($organisationIds->count());
-});
-
-test('supplier product sheet with an ORDER tab creates the products and a draft purchase order, or nothing when the order has mistakes', function () {
-    $supplier     = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
-    $organisation = $this->organisation->code;
-
-    $sheetFile = function (array $products, array $order) {
-        $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $spreadsheet->getActiveSheet()->fromArray([['Id: Supplier Part Key', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'Unit cost', 'Unit label', 'Units per SKO', 'SKOs per carton'], ...$products]);
-        $spreadsheet->createSheet()->setTitle('ORDER')->fromArray($order);
-        $path = sys_get_temp_dir().'/opening_order_'.uniqid().'.xlsx';
-        (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
-
-        return $path;
-    };
-    $import = function (string $path) use ($supplier) {
-        $upload = Upload::create([
-            'group_id'          => $this->group->id,
-            'organisation_id'   => $this->organisation->id,
-            'model'             => 'SupplierProduct',
-            'parent_type'       => $supplier->getMorphClass(),
-            'parent_id'         => $supplier->id,
-            'original_filename' => 'opening_order.xlsx',
-            'filename'          => 'opening_order.xlsx',
-            'filesize'          => 0,
-        ]);
-        Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
-
-        return $upload->refresh();
-    };
-
-    $upload = $import($sheetFile(
-        [
-            ['new', 'OPN-FAM', 'OPN-01', 'OPN-01', 'Trousers S/M', 825, 'Trousers', 1, 30],
-            ['new', 'OPN-FAM', 'OPN-02', 'OPN-02', 'Trousers L/XL', 825, 'Trousers', 1, 30],
-        ],
-        [
-            ['Product Code', 'Description', 'Unit Cost', 'Carton', $organisation, 'ZZ', 'Total value', $organisation],
-            ['=Worksheet!D2', 'Trousers S/M', 825, 30, 5, 1, '=C2*D2*E2', 999999],
-            ['=Worksheet!D3', 'Trousers L/XL', 825, 30, 2, null, '=C3*D3*E3', 999999],
-            [],
-            [null, 'Total', null, null, '=SUM(E2:E3)'],
-        ]
-    ));
-
-    $purchaseOrder = PurchaseOrder::where('organisation_id', $this->organisation->id)
-        ->where('parent_type', 'OrgSupplier')
-        ->where('parent_id', $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->value('id'))
-        ->firstOrFail();
-    $quantities = $purchaseOrder->purchaseOrderTransactions()->with('supplierProduct')->get()->mapWithKeys(fn ($transaction) => [$transaction->supplierProduct->code => (float)$transaction->quantity_ordered]);
-
-    expect($upload->number_fails)->toBe(0)
-        ->and($upload->number_success)->toBe(3)
-        ->and($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
-        ->and($purchaseOrder->currency_id)->toBe($supplier->currency_id)
-        ->and($quantities->all())->toBe(['OPN-01' => 150.0, 'OPN-02' => 60.0])
-        ->and($upload->records()->whereNull('row_number')->first()->values)->toMatchArray(['purchase_order' => $purchaseOrder->reference, 'lines' => 2]);
-
-    $upload = $import($sheetFile(
-        [
-            ['new', 'OPN-FAM', 'OPN-03', 'OPN-03', 'Trousers XXL', 825, 'Trousers', 1, 30],
-        ],
-        [
-            ['Product Code', 'Unit Cost', 'Carton', $organisation],
-            ['OPN-03', 900, 24, 4],
-            ['OPN-99', 825, 30, 'five'],
-            [null, 'Total', null, 30],
-        ]
-    ));
-
-    expect($upload->number_success)->toBe(0)
-        ->and($upload->records()->whereNull('row_number')->pluck('errors')->flatten()->all())->toBe([
-            'ORDER tab row 2: unit cost is 900, but products tab row 2 says 825.',
-            'ORDER tab row 2: 24 pieces per carton, but products tab row 2 says 30.',
-            'ORDER tab row 3: OPN-99 is not in the products tab and is not a product of this supplier.',
-            'ORDER tab row 4: the '.$organisation.' total is 30 cartons, but the lines add up to 4.',
-        ])
-        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'OPN-03')->exists())->toBeFalse()
-        ->and($purchaseOrder->purchaseOrderTransactions()->count())->toBe(2);
 });
 
 test('only supply chain editors attach and detach agent and supplier documents', function () {
