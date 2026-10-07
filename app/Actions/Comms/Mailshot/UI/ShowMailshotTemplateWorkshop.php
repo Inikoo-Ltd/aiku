@@ -79,7 +79,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                             'label' => __('Edit'),
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
-                                'name'       => "grp.org.shops.show.marketing.templates.edit",
+                                'name'       => $isCommonOutbox ? 'grp.org.shops.show.dashboard.comms.templates.edit' : 'grp.org.shops.show.marketing.templates.edit',
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,

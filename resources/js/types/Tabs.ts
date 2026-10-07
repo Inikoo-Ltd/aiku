@@ -2,6 +2,7 @@ export interface Navigation {
     [key: string]: {
         title?: string
         icon?: string | string[]
+        icon_badge?: string  // A small second icon pinned to the bottom right of the icon, e.g. a clock on an upload icon for upload history
         type?: string
         align?: string
         number?: number
