@@ -10,18 +10,21 @@ import Table from '@/Components/Table/Table.vue'
 import Icon from '@/Components/Icon.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faSeedling, faPaperPlane, faSpellCheck, faBoxCheck, faTruck, faClipboardCheck, faExclamationCircle } from '@fal'
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faSeedling, faPaperPlane, faSpellCheck, faBoxCheck, faTruck, faClipboardCheck, faExclamationCircle)
-import { useFormatTime } from '@/Composables/useFormatTime'
 
 const props = defineProps<{
     data: object,
     tab?: string
 }>()
 
+const isOrganisationRoute = !!route().current()?.startsWith('grp.org.')
+const organisationSlug = route().params.organisation
+
 function aspoRoute(aspo: { slug: string }) {
-    if (route().current()?.startsWith('grp.org.')) {
-        return route('grp.org.procurement.agent_supplier_purchase_orders.show', [route().params.organisation, aspo.slug])
+    if (isOrganisationRoute) {
+        return route('grp.org.procurement.agent_supplier_purchase_orders.show', [organisationSlug, aspo.slug])
     }
     return route('grp.supply-chain.agent_supplier_purchase_orders.show', [aspo.slug])
 }
@@ -35,7 +38,7 @@ function aspoRoute(aspo: { slug: string }) {
             </Link>
         </template>
         <template #cell(supplier_code)="{ item: aspo }">
-            <Link v-if="aspo.supplier_slug && !route().current()?.startsWith('grp.org.')" :href="route('grp.supply-chain.suppliers.show', [aspo.supplier_slug])" class="secondaryLink">
+            <Link v-if="aspo.supplier_slug && !isOrganisationRoute" :href="route('grp.supply-chain.suppliers.show', [aspo.supplier_slug])" class="secondaryLink">
                 {{ aspo.supplier_code }}
             </Link>
             <span v-else>{{ aspo.supplier_code }}</span>
