@@ -17,8 +17,10 @@ trait WithPartnerShoppingSubNavigation
 {
     protected function getPartnerShoppingNavigation(OrgPartner $parent): array
     {
-        $linesByState = PartnerShoppingListItem::where('org_partner_id', $parent->id)
-            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+        $linesByState = PartnerShoppingListItem::whereNotSplitPiece(
+            PartnerShoppingListItem::where('org_partner_id', $parent->id)->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList()),
+            [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value]
+        )
             ->selectRaw('state, count(*) as total')
             ->groupBy('state')
             ->pluck('total', 'state');

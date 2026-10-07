@@ -150,6 +150,22 @@ class PartnerShoppingListItem extends Model
         return "greatest(0, least($items.quantity, ".self::queuedThroughSql($items).' - '.self::freeStockSql($items).'))';
     }
 
+    /**
+     * Picking part from stock and making the rest splits a sent line; the buyer still counts it as one.
+     *
+     * @param array<int, string> $states
+     */
+    public static function whereNotSplitPiece(Builder|EloquentBuilder $query, array $states, string $items = 'partner_shopping_list_items'): Builder|EloquentBuilder
+    {
+        return $query->whereNotExists(function ($query) use ($states, $items) {
+            $query->from('partner_shopping_list_items as split_from')
+                ->whereColumn('split_from.id', "$items.parent_id")
+                ->whereColumn('split_from.org_partner_id', "$items.org_partner_id")
+                ->whereIn('split_from.state', $states)
+                ->whereNull('split_from.deleted_at');
+        });
+    }
+
     public static function whereRoutedToProduction(Builder $query, string $items = 'partner_shopping_list_items', string $orgStocks = 'org_stocks'): Builder
     {
         return $query->whereNull("$items.pre_picked_at")

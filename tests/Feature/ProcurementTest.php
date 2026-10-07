@@ -6128,7 +6128,15 @@ describe('partner shopping list', function () {
             return collect($rows)->firstWhere('id', $item->id)['progress']['label'] ?? null;
         };
 
-        expect($progressOf())->toBe('Requested');
+        expect($progressOf())->toBe('Waiting for the partner');
+
+        $item->update(['preparing_at' => now()]);
+        expect($progressOf())->toBe('Queued to be made');
+
+        $item->update(['preparing_at' => null, 'pre_picked_at' => now()]);
+        expect($progressOf())->toBe('Picked from stock');
+
+        $item->update(['pre_picked_at' => null]);
 
         CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
 
@@ -6139,6 +6147,35 @@ describe('partner shopping list', function () {
             ->delete();
 
         expect($progressOf())->toBe('Pre-picked');
+    });
+
+    test('a line split into picked and to-make parts shows to the buyer as the one line they sent', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]   = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$product->orgStocks()->first()->stock])[0];
+        $item          = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 15]);
+        $item->update(['pre_picked_at' => now()]);
+        $rest = $item->replicate();
+        $rest->fill(['quantity' => 75, 'parent_id' => $item->id, 'pre_picked_at' => null, 'preparing_at' => now()])->save();
+
+        actingAs($this->adminGuest->getUser());
+        $rows = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()->viewData('page')['props']['data']['data'])
+            ->where('org_stock_id', $buyerOrgStock->id);
+
+        expect($rows)->toHaveCount(1)
+            ->and((float) $rows->first()['quantity'])->toBe(90.0)
+            ->and(collect($rows->first()['progress_parts'])->map(fn ($part) => [$part['quantity'], $part['label']])->all())
+            ->toBe([[15.0, 'Picked from stock'], [75.0, 'Queued to be made']]);
+        expect(collect($rows->first()['progress_parts'][1]['details'])->pluck('label')->all())->toBe(['Requested', 'Sent to production']);
+
+        $sentCount = fn () => collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->viewData('page')['props']['pageHead']['subNavigation'])->firstWhere('label', 'Sent')['number'];
+        $withPiece = $sentCount();
+        $rest->forceDelete();
+
+        expect($sentCount())->toBe($withPiece);
     });
 
     test('SKOs picked from a partner bay become one order through the partner list, and can not be ordered twice (HELP-3500)', function () {

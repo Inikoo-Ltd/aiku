@@ -443,6 +443,22 @@ function deleteItem(item: { id: number }) {
 							· {{ ctrans("1 SKO = :units units", { units: Number(item.units_per_pack) }) }}
 						</span>
 					</div>
+					<div class="flex flex-wrap gap-x-3 text-xs text-gray-500">
+						<span v-if="item.their_available !== null && item.their_available !== undefined">
+							{{ ctrans("Partner stock") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.their_available)) }}</span>
+						</span>
+						<span v-if="Number(item.order_quantum) > 1">
+							{{ ctrans("Batch") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.order_quantum)) }}</span>
+							{{ ctrans("SKOs") }}
+						</span>
+						<span v-if="Number(item.skos_per_carton) > 0">
+							{{ ctrans("Carton") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.skos_per_carton)) }}</span>
+							{{ ctrans("SKOs") }}
+						</span>
+					</div>
 					<RenderWhenVisible minHeight="9rem">
 						<PurchaseOrderItemStockInfo
 							:item="withSavedQuantity(item)"
@@ -515,36 +531,30 @@ function deleteItem(item: { id: number }) {
 			<span v-else>{{ ctrans(item.priority) }}</span>
 		</template>
 		<template #cell(progress)="{ item }">
-			<div class="flex items-center gap-1.5">
-				<span
-					class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
-					:class="{
-						'border-gray-200 bg-gray-50 text-gray-500': item.progress?.tone === 'gray',
-						'border-amber-200 bg-amber-50 text-amber-700':
-							item.progress?.tone === 'amber',
-						'border-indigo-200 bg-indigo-50 text-indigo-700':
-							item.progress?.tone === 'indigo',
-						'border-emerald-200 bg-emerald-50 text-emerald-700':
-							item.progress?.tone === 'emerald',
-					}">
-					{{ item.progress?.label }}
-				</span>
-				<span v-if="item.progress?.reference" class="font-mono text-xs text-gray-400">{{
-					item.progress.reference
-				}}</span>
+			<div class="flex flex-col gap-2">
+				<div v-for="(part, index) in item.progress_parts ?? [item.progress]" :key="index" class="space-y-0.5">
+					<div class="flex items-center gap-1.5">
+						<span v-if="item.progress_parts" class="text-xs tabular-nums text-gray-500">{{
+							useLocaleStore().number(part.quantity)
+						}}</span>
+						<span
+							class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
+							:class="{
+								'border-gray-200 bg-gray-50 text-gray-500': part?.tone === 'gray',
+								'border-amber-200 bg-amber-50 text-amber-700': part?.tone === 'amber',
+								'border-indigo-200 bg-indigo-50 text-indigo-700': part?.tone === 'indigo',
+								'border-emerald-200 bg-emerald-50 text-emerald-700': part?.tone === 'emerald',
+							}">
+							{{ part?.label }}
+						</span>
+						<span v-if="part?.reference" class="font-mono text-xs text-gray-400">{{ part.reference }}</span>
+					</div>
+					<div v-for="(detail, detailIndex) in part?.details ?? []" :key="detailIndex" class="flex gap-1.5 text-xxs text-gray-500">
+						<span>{{ detail.label }}</span>
+						<span v-if="detail.at" class="text-gray-400">{{ useFormatTime(detail.at, { formatTime: "dd MMM HH:mm" }) }}</span>
+					</div>
+				</div>
 			</div>
-		</template>
-		<template #cell(state)="{ item }">
-			<span
-				v-if="item.state === 'draft'"
-				v-tooltip="ctrans('Not sent yet: the partner sees it after you press Submit')"
-				class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-				{{ ctrans("Draft") }}
-			</span>
-			<span v-else-if="item.state === 'open'" class="text-xs text-gray-600">{{
-				ctrans("Sent")
-			}}</span>
-			<span v-else class="text-xs text-gray-500">{{ ctrans(item.state) }}</span>
 		</template>
 		<template #cell(created_at)="{ item }">
 			{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}

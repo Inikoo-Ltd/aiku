@@ -30,6 +30,8 @@ const { pack, cover, dailyUsage, leadDays, overstockDays, stock, comingDeliverie
 		() => props.isPartner
 	)
 
+const showPastDeliveries = ref(false)
+
 const recentDeliveries = computed<any[]>(() => props.item.stock_deliveries?.recent_received ?? [])
 
 const thisOrder = computed(() => {
@@ -365,30 +367,31 @@ function purchaseOrderRoute(slug: string) {
 			<span v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>
 
-		<div v-if="comingDeliveries.length || otherOrders.length" class="flex flex-wrap gap-x-2 text-gray-500">
-			<span v-for="delivery in comingDeliveries" :key="delivery.slug">
-				<Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink">{{ delivery.reference }}</Link>
-				({{ formatNumber(Number(delivery.quantity) / pack) }})
-			</span>
-			<span v-for="order in otherOrders" :key="order.slug ?? order.reference" class="text-amber-700">
-				{{ ctrans("also on") }}
-				<Link v-if="order.slug" :href="purchaseOrderRoute(order.slug)" class="primaryLink">{{ order.reference }}</Link>
-				<span v-else>{{ order.reference }}</span>
-				({{ formatNumber(Number(order.quantity_ordered) / pack) }})
-			</span>
+		<div v-if="comingDeliveries.length || otherOrders.length" class="space-y-0.5">
+			<div v-for="delivery in comingDeliveries" :key="delivery.slug" class="flex items-baseline gap-1.5 text-gray-600">
+				<span class="text-[10px] uppercase tracking-wide text-emerald-700">{{ delivery.state_label }}</span>
+				<Link :href="stockDeliveryRoute(delivery.slug)" class="font-mono text-gray-700 hover:underline">{{ delivery.reference }}</Link>
+				<span class="tabular-nums">{{ formatNumber(Number(delivery.quantity) / pack) }}</span>
+			</div>
+			<div v-for="order in otherOrders" :key="order.slug ?? order.reference" class="flex items-baseline gap-1.5 text-gray-600">
+				<span class="text-[10px] uppercase tracking-wide text-amber-700">{{ order.state === "sent" ? ctrans("Requested") : ctrans("Ordered") }}</span>
+				<Link v-if="order.slug" :href="purchaseOrderRoute(order.slug)" class="font-mono text-gray-700 hover:underline">{{ order.reference }}</Link>
+				<span v-else class="text-gray-700">{{ order.reference }}</span>
+				<span class="tabular-nums">{{ formatNumber(Number(order.quantity_ordered) / pack) }}</span>
+			</div>
 		</div>
 
-		<div v-if="recentDeliveries.length" class="!mt-2 flex flex-col flex-wrap gap-x-2 text-gray-500 w-fit text-xxs">
-			<span>{{ ctrans("Last deliveries") }}:</span><br />
-			<div class="flex flex-col gap-y-1">
-				<span
-					v-for="(delivery, index) in recentDeliveries"
-					:key="delivery.slug"
-					v-tooltip="ctrans(':reference arrived on :date with :quantity SKOs', { reference: delivery.reference, date: useFormatTime(delivery.received_at), quantity: formatNumber(Number(delivery.quantity) / pack) })">
-					• <Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink">{{ delivery.reference }}</Link>
-					<span class="text-gray-700"> {{ useFormatTime(delivery.received_at) }}</span>
-					({{ formatNumber(Number(delivery.quantity) / pack) }})
-				</span>
+		<div v-if="recentDeliveries.length" class="text-gray-400">
+			<button type="button" class="hover:text-gray-600" @click="showPastDeliveries = !showPastDeliveries">
+				{{ ctrans("Last arrived :date", { date: useFormatTime(recentDeliveries[0].received_at) }) }}
+				<span class="text-[10px]">{{ showPastDeliveries ? "▴" : "▾" }}</span>
+			</button>
+			<div v-if="showPastDeliveries" class="mt-0.5 space-y-0.5">
+				<div v-for="delivery in recentDeliveries" :key="delivery.slug" class="flex items-baseline gap-1.5">
+					<span class="w-24 shrink-0">{{ useFormatTime(delivery.received_at) }}</span>
+					<Link :href="stockDeliveryRoute(delivery.slug)" class="font-mono hover:text-gray-600 hover:underline">{{ delivery.reference }}</Link>
+					<span class="tabular-nums">{{ formatNumber(Number(delivery.quantity) / pack) }}</span>
+				</div>
 			</div>
 		</div>
 	</div>
