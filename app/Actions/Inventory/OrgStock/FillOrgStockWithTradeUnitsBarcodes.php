@@ -85,14 +85,22 @@ class FillOrgStockWithTradeUnitsBarcodes
         $apply  = $command->option('apply');
         $filled = 0;
 
-        OrgStock::where('is_single_trade_unit', true)
-            ->whereNull('unit_barcode')
-            ->with('tradeUnits')
-            ->chunkById(1000, function ($orgStocks) use ($apply, &$filled) {
+        $query = OrgStock::where('is_single_trade_unit', true)->whereNull('unit_barcode');
+
+        $bar = $command->getOutput()->createProgressBar((clone $query)->count());
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $bar->start();
+
+        $query->with('tradeUnits')
+            ->chunkById(1000, function ($orgStocks) use ($apply, &$filled, $bar) {
                 foreach ($orgStocks as $orgStock) {
                     $filled += ($apply ? $this->handle($orgStock) : $this->guess($orgStock)) ? 1 : 0;
+                    $bar->advance();
                 }
             });
+
+        $bar->finish();
+        $command->newLine();
 
         $command->info($apply ? "$filled org stocks filled" : "$filled org stocks would be filled, run with --apply");
 

@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 /**
  * One-off repair for the era when SKO barcodes were edited per org stock, in two phases. First it
@@ -175,79 +176,94 @@ class RepairStocksSkoBarcodes
         $apply    = $command->option('apply');
         $repaired = 0;
         $filled   = 0;
+        $messages = [];
 
-        Stock::where(
+        $withBarcodeQuery = Stock::where(
             fn ($query) => $query
                 ->whereNotNull('barcode')
                 ->orWhereHas('orgStocks', fn ($subQuery) => $subQuery->whereNotNull('barcode'))
-        )
-            ->chunkById(500, function ($stocks) use ($command, $apply, &$repaired) {
-                foreach ($stocks as $stock) {
-                    $barcode = $this->canonicalBarcode($stock);
+        );
 
-                    if (!$barcode) {
-                        continue;
-                    }
+        $command->info('Aligning SKO barcodes');
+        $bar = $this->startProgressBar($command, (clone $withBarcodeQuery)->count());
 
-                    if ($conflict = $this->conflictingHolder($stock, $barcode)) {
-                        $command->warn("$stock->code: $barcode also on $conflict, skipped");
-                        continue;
-                    }
+        $withBarcodeQuery->chunkById(500, function ($stocks) use ($apply, &$repaired, &$messages, $bar) {
+            foreach ($stocks as $stock) {
+                $bar->advance();
+                $barcode = $this->canonicalBarcode($stock);
 
-                    /*
-                     * Counted over the org stocks that will actually receive the barcode, not every
-                     * org stock of the stock: a duplicate inside an organisation is never going to
-                     * get one, so counting it here would leave the stock reported as needing repair
-                     * on every future run, however many times it has already been repaired.
-                     */
-                    $siblings = static::orgStocksToCarryBarcode($stock, $barcode)
-                        ->filter(fn (OrgStock $orgStock) => $orgStock->barcode !== $barcode)
-                        ->count();
-
-                    if ($stock->barcode === $barcode && $siblings === 0) {
-                        continue;
-                    }
-
-                    if ($apply) {
-                        $this->handle($stock, $barcode, true);
-                    } else {
-                        $command->line("$stock->code -> $barcode ($siblings org stocks to align)");
-                    }
-
-                    foreach (static::organisationsWithDuplicates($stock) as $organisationId) {
-                        $command->warn("$stock->code: organisation $organisationId holds it twice, left without a barcode");
-                    }
-
-                    $repaired++;
+                if (!$barcode) {
+                    continue;
                 }
-            });
 
-        Stock::whereNull('barcode')
+                if ($conflict = $this->conflictingHolder($stock, $barcode)) {
+                    $messages[] = ['warn', "$stock->code: $barcode also on $conflict, skipped"];
+                    continue;
+                }
+
+                /*
+                 * Counted over the org stocks that will actually receive the barcode, not every
+                 * org stock of the stock: a duplicate inside an organisation is never going to
+                 * get one, so counting it here would leave the stock reported as needing repair
+                 * on every future run, however many times it has already been repaired.
+                 */
+                $siblings = static::orgStocksToCarryBarcode($stock, $barcode)
+                    ->filter(fn (OrgStock $orgStock) => $orgStock->barcode !== $barcode)
+                    ->count();
+
+                if ($stock->barcode === $barcode && $siblings === 0) {
+                    continue;
+                }
+
+                if ($apply) {
+                    $this->handle($stock, $barcode, true);
+                } else {
+                    $messages[] = ['line', "$stock->code -> $barcode ($siblings org stocks to align)"];
+                }
+
+                foreach (static::organisationsWithDuplicates($stock) as $organisationId) {
+                    $messages[] = ['warn', "$stock->code: organisation $organisationId holds it twice, left without a barcode"];
+                }
+
+                $repaired++;
+            }
+        });
+
+        $this->finishProgressBar($command, $bar, $messages);
+
+        $withoutBarcodeQuery = Stock::whereNull('barcode')
             ->where('state', '!=', StockStateEnum::DISCONTINUED)
             ->whereDoesntHave('orgStocks', fn ($query) => $query->whereNotNull('barcode'))
-            ->whereHas('orgStocks', fn ($query) => $query->whereNotNull('unit_barcode'))
-            ->chunkById(500, function ($stocks) use ($command, $apply, &$filled) {
-                foreach ($stocks as $stock) {
-                    $barcode = $this->unitBarcodeToCopy($stock);
+            ->whereHas('orgStocks', fn ($query) => $query->whereNotNull('unit_barcode'));
 
-                    if (!$barcode) {
-                        continue;
-                    }
+        $command->info('Filling SKO barcodes from unit EANs');
+        $bar = $this->startProgressBar($command, (clone $withoutBarcodeQuery)->count());
 
-                    if ($conflict = $this->conflictingHolder($stock, $barcode)) {
-                        $command->warn("$stock->code: unit EAN $barcode also on $conflict, skipped");
-                        continue;
-                    }
+        $withoutBarcodeQuery->chunkById(500, function ($stocks) use ($apply, &$filled, &$messages, $bar) {
+            foreach ($stocks as $stock) {
+                $bar->advance();
+                $barcode = $this->unitBarcodeToCopy($stock);
 
-                    if ($apply) {
-                        $this->handle($stock, $barcode, false);
-                    } else {
-                        $command->line("$stock->code -> $barcode (from unit EAN)");
-                    }
-
-                    $filled++;
+                if (!$barcode) {
+                    continue;
                 }
-            });
+
+                if ($conflict = $this->conflictingHolder($stock, $barcode)) {
+                    $messages[] = ['warn', "$stock->code: unit EAN $barcode also on $conflict, skipped"];
+                    continue;
+                }
+
+                if ($apply) {
+                    $this->handle($stock, $barcode, false);
+                } else {
+                    $messages[] = ['line', "$stock->code -> $barcode (from unit EAN)"];
+                }
+
+                $filled++;
+            }
+        });
+
+        $this->finishProgressBar($command, $bar, $messages);
 
         $command->info(
             $apply
@@ -256,5 +272,31 @@ class RepairStocksSkoBarcodes
         );
 
         return 0;
+    }
+
+    private function startProgressBar(Command $command, int $total): ProgressBar
+    {
+        $bar = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $bar->start();
+
+        return $bar;
+    }
+
+    /**
+     * Messages are held back while the bar runs, printing them mid-way would tear the bar apart.
+     *
+     * @param  array<int, array{0: string, 1: string}>  $messages
+     */
+    private function finishProgressBar(Command $command, ProgressBar $bar, array &$messages): void
+    {
+        $bar->finish();
+        $command->newLine();
+
+        foreach ($messages as [$type, $message]) {
+            $command->{$type}($message);
+        }
+
+        $messages = [];
     }
 }
