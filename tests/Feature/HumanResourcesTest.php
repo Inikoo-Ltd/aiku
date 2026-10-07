@@ -3680,3 +3680,40 @@ test('warehouse supervisors see their warehouse team and add clockings from the 
     expect(Clocking::withTrashed()->whereKey($clocking->id)->exists())->toBeFalse()
         ->and(\App\Models\HumanResources\Timesheet::find($clocking->timesheet_id)->number_open_time_trackers)->toBe(0);
 });
+
+test('only human resources editors can change a clocking time or notes from the clockings table', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Clocking Notes Authorisation Workplace '.rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at'   => now()->toDateTimeString(),
+    ], 0, true);
+    $originalClockedAt = $clocking->clocked_at;
+
+    $route = route('grp.models.clocking-machine.clocking.notes.update', ['clocking' => $clocking->id]);
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAs($outsider)->patchJson($route, ['notes' => 'Tampered', 'clocked_at' => now()->subHours(3)->toIso8601String()])->assertForbidden();
+
+    $clocking->refresh();
+    expect($clocking->notes)->not->toBe('Tampered')
+        ->and($clocking->clocked_at->equalTo($originalClockedAt))->toBeTrue();
+
+    $editor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $editor->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $editor->forgetWildcardPermissionIndex();
+
+    actingAs($editor)->patchJson($route, ['notes' => 'Forgot badge'])->assertOk();
+
+    expect($clocking->refresh()->notes)->toBe('Forgot badge');
+});
