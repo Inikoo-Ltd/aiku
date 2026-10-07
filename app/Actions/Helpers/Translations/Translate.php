@@ -51,15 +51,19 @@ class Translate extends OrgAction
             }
             $translated = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver, $brief);
 
+            $isConfirmed  = true;
             $qualityCheck = config("auto-translations.drivers.$translationDriver.quality_check");
             if ($qualityCheck && $this->isBelowQuality($text, $translated, $languageFrom, $languageTo, $qualityCheck['min_score'])) {
-                $retried    = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver'], $brief), $text);
-                $translated = $retried !== $text ? $retried : $translated;
+                $retried     = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver'], $brief));
+                $isConfirmed = $retried !== null;
+                $translated  = $retried !== null && $retried !== $text ? $retried : $translated;
             }
 
             if ($translated !== $text) {
                 $cacheTtlHours = mb_strlen($translated) < 32 ? 1440 : (mb_strlen($translated) < 256 ? 480 : 72);
                 Cache::put($cacheKey, $translated, now()->addHours($cacheTtlHours));
+            } elseif ($isConfirmed) {
+                Cache::put($cacheKey, $translated, now()->addHours(24));
             }
 
             return $translated;
