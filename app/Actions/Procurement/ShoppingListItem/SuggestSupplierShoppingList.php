@@ -62,6 +62,7 @@ class SuggestSupplierShoppingList extends OrgAction
                     and sli.state = '".ShoppingListItemStateEnum::OPEN->value."'
                     and sli.deleted_at is null)")
             ->where('sp.cost', '>', 0)
+            ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
             ->select([
                 'p.id',
                 'sp.code',

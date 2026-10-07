@@ -83,7 +83,7 @@ class GetAgentStockCoverBuckets
             ->where('link.status', true)
             ->orderBy('link.local_priority')
             ->orderByRaw("(org_stocks.state = '".OrgStockStateEnum::ACTIVE->value."') desc, org_stocks.quantity_available desc nulls last")
-            ->select(['org_stocks.id', 'org_stocks.stock_id', 'org_stocks.state', 'org_stocks.quantity_available', 'org_stocks.health_rank'])
+            ->select(['org_stocks.id', 'org_stocks.stock_id', 'org_stocks.state', 'org_stocks.quantity_available', 'org_stocks.health_rank', 'org_stocks.is_excluded_from_auto_ordering'])
             ->limit(1);
     }
 

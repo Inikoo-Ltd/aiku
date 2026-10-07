@@ -15,6 +15,7 @@ use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
@@ -158,6 +159,9 @@ class ShowTicketsDashboard extends OrgAction
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'kinds'       => TicketKindEnum::raisableBy(request()->user()),
+                'types'       => Ticket::canChooseType(request()->user())
+                    ? collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
+                    : [],
                 ...$dashboard,
             ]
         );

@@ -4079,3 +4079,149 @@ test('a deployment closes a pending deploy ticket whose fix commit was rewritten
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
 });
+
+test('ticket page suggests similar tickets the viewer can see', function () {
+    setPermissionsTeamId($this->group->id);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+
+    $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $similar = StoreTicket::make()->action($this->group, ['subject' => 'Shopify order processing delayed', 'description' => 'Shopify sales channel orders stay in processing']);
+    $other   = StoreTicket::make()->action($this->group, ['subject' => 'Printer out of toner']);
+    $hidden  = StoreTicket::make()->action($this->group, ['subject' => 'Shopify processing confidential', 'is_confidential' => true]);
+
+    $response = get(route('grp.json.ticket.similar', $ticket->id))->assertOk();
+    $found    = collect($response->json())->pluck('reference');
+
+    expect($found->all())->toContain($similar->reference)
+        ->and($found->all())->not->toContain($ticket->reference)
+        ->and($found->all())->not->toContain($other->reference)
+        ->and($response->json('0'))->toHaveKeys(['id', 'reference', 'subject', 'status_label', 'status_icon', 'type_icon']);
+
+    actingAs($outsider);
+    expect(collect(get(route('grp.json.ticket.similar', $ticket->id))->assertOk()->json())->pluck('reference')->all())
+        ->not->toContain($hidden->reference);
+    get(route('grp.json.ticket.similar', $hidden->id))->assertForbidden();
+});
+
+test('jev decides which shortlisted tickets are really similar', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $wordy    = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders processing stuck again', 'description' => 'Shopify sales channel orders processing']);
+    $sameIdea = StoreTicket::make()->action($this->group, ['subject' => 'Shopify sync delayed', 'description' => 'Orders do not come through from the store']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::response(['answers' => [
+            'ticket_'.$wordy->id    => ['noul' => 0.2],
+            'ticket_'.$sameIdea->id => ['noul' => 0.9],
+        ]]),
+    ]);
+
+    $found = collect(get(route('grp.json.ticket.similar', $ticket->id))->assertOk()->json())->pluck('reference')->all();
+
+    expect($found)->toBe([$sameIdea->reference]);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    get(route('grp.json.ticket.similar', $ticket->id))->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    get(route('grp.json.ticket.similar', ['ticket' => $ticket->id, 'refresh' => 1]))->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(2);
+});
+
+test('a ticket being written is shown related tickets judged by jev', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+
+    $related = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $other   = StoreTicket::make()->action($this->group, ['subject' => 'Shopify invoice logo missing', 'description' => 'Logo missing on the Shopify invoice']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::response(['answers' => [
+            'ticket_'.$related->id => ['noul' => 0.8],
+            'ticket_'.$other->id   => ['noul' => 0.1],
+        ]]),
+    ]);
+
+    $draft = ['subject' => 'Shopify orders not leaving processing', 'description' => 'Since this morning Shopify orders stay in processing'];
+
+    expect(collect(\Pest\Laravel\post(route('grp.json.ticket.similar_draft'), $draft)->assertOk()->json())->pluck('reference')->all())->toBe([$related->reference]);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    \Pest\Laravel\post(route('grp.json.ticket.similar_draft'), $draft)->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    \Pest\Laravel\post(route('grp.json.ticket.similar_draft'), [...$draft, 'refresh' => true])->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(2);
+
+    expect(\Pest\Laravel\post(route('grp.json.ticket.similar_draft'), ['subject' => 'hi'])->assertOk()->json())->toBe([]);
+});
+
+test('tickets are linked jira style and read from both sides', function () {
+    $blocker = StoreTicket::make()->action($this->group, ['subject' => 'Stock sync fails']);
+    $blocked = StoreTicket::make()->action($this->group, ['subject' => 'Shop shows wrong stock']);
+    $customer = StoreTicket::make()->action($this->group, ['subject' => 'Customer cannot see stock', 'type' => 'customer']);
+
+    post(route('grp.models.ticket.link.store', $blocked->id), ['linked_ticket_id' => $blocker->id, 'type' => 'blocked_by'])->assertRedirect()->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.link.store', $blocked->id), ['linked_ticket_id' => $customer->id, 'type' => 'relates'])->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.link.store', $blocker->id), ['linked_ticket_id' => $blocked->id, 'type' => 'relates'])->assertSessionHasErrors('linked_ticket_id');
+    post(route('grp.models.ticket.link.store', $blocked->id), ['linked_ticket_id' => $blocked->id, 'type' => 'relates'])->assertSessionHasErrors('linked_ticket_id');
+
+    $link = \App\Models\Helpers\TicketLink::where('ticket_id', $blocker->id)->firstOrFail();
+    expect($link->linked_ticket_id)->toBe($blocked->id)
+        ->and($link->type)->toBe(\App\Enums\Helpers\Ticket\TicketLinkTypeEnum::BLOCKS);
+
+    $linksOf = fn ($ticket) => collect(\App\Actions\Helpers\Ticket\UI\ShowTicket::make()->linksFor($ticket->fresh(), $this->user))->map(fn ($row) => $row['label'].' '.$row['reference'])->all();
+    expect($linksOf($blocker))->toBe(['Blocks '.$blocked->reference])
+        ->and($linksOf($blocked))->toContain('Is blocked by '.$blocker->reference, 'Relates to '.$customer->reference);
+
+    $props = get(route('grp.tickets.show', $blocked->reference))->inertiaProps();
+    expect($props['can_link'])->toBeTrue()
+        ->and($props['links'])->toHaveCount(2)
+        ->and(collect($props['timeline'])->pluck('text')->all())->toContain('Linked: Is blocked by '.$blocker->reference);
+
+    $plain = User::factory()->create(['group_id' => $this->group->id]);
+    actingAs($plain);
+    delete(route('grp.models.ticket.link.delete', $link->id))->assertForbidden();
+
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    actingAs($qa);
+    delete(route('grp.models.ticket.link.delete', $link->id))->assertRedirect();
+    expect(\App\Models\Helpers\TicketLink::find($link->id))->toBeNull()
+        ->and(collect(\App\Actions\Helpers\Ticket\UI\ShowTicket::make()->linksFor($blocker->fresh(), $this->user))->all())->toBe([]);
+});
+
+test('a linked ticket is created as INI by default, HELP allowed, never a customer ticket', function () {
+    $source = StoreTicket::make()->action($this->group, ['subject' => 'Packing list totals wrong']);
+
+    get(route('grp.tickets.create', ['link_ticket' => $source->id]))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('linkFrom.reference', $source->reference)
+        ->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['engineer', 'help']));
+
+    post(route('grp.models.ticket.store'), ['subject' => 'Fix packing totals', 'link_ticket_id' => $source->id, 'link_type' => 'blocks'])->assertRedirect();
+    $created = \App\Models\Helpers\Ticket::where('subject', 'Fix packing totals')->firstOrFail();
+    expect($created->type)->toBe(TicketTypeEnum::ENGINEER)
+        ->and(\App\Models\Helpers\TicketLink::where('ticket_id', $source->id)->where('linked_ticket_id', $created->id)->value('type'))->toBe(\App\Enums\Helpers\Ticket\TicketLinkTypeEnum::BLOCKS);
+
+    post(route('grp.models.ticket.store'), ['subject' => 'Ask the customer', 'type' => 'customer', 'link_ticket_id' => $source->id])->assertSessionHasErrors('type');
+    post(route('grp.models.ticket.store'), ['subject' => 'Help side', 'type' => 'help', 'link_ticket_id' => $source->id])->assertSessionHasNoErrors();
+
+    $plain = User::factory()->create(['group_id' => $this->group->id]);
+    actingAs($plain);
+    get(route('grp.tickets.create', ['link_ticket' => $source->id]))->assertForbidden();
+});
+
+test('the ticket page only reads cached similar tickets until asked', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing']);
+    StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders processing delayed']);
+    \Illuminate\Support\Facades\Http::fake(['openrouter.ai/*' => \Illuminate\Support\Facades\Http::response(['answers' => []])]);
+
+    expect(\Pest\Laravel\getJson(route('grp.json.ticket.similar', ['ticket' => $ticket->id, 'cached_only' => 1]))->assertOk()->json('cached'))->toBeFalse();
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    \Pest\Laravel\getJson(route('grp.json.ticket.similar', $ticket->id))->assertOk();
+    expect(\Pest\Laravel\getJson(route('grp.json.ticket.similar', ['ticket' => $ticket->id, 'cached_only' => 1]))->assertOk()->json())->toBe([]);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+});

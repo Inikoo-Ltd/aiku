@@ -17,11 +17,14 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketLinkTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketLink;
 use App\Models\Helpers\TicketProject;
 use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Models\SysAdmin\User;
@@ -116,7 +119,7 @@ class ShowTicket extends OrgAction
                     'pull_request_url' => $value ? __('Pull request linked') : __('Pull request unlinked'),
                     'ticket_project_id' => $value ? __('Added to project :name', ['name' => $projects[$value] ?? '?']) : __('Removed from its project'),
                     'comment'         => __('Removed a comment by :name', ['name' => $old]),
-                    default           => null,
+                    default           => str_starts_with($field, 'link_') ? ($value ? __('Linked: :link', ['link' => $value]) : __('Link removed: :link', ['link' => $old])) : null,
                 };
                 if ($text) {
                     $events[] = [
@@ -129,7 +132,7 @@ class ShowTicket extends OrgAction
                             'ticket_project_id' => 'fal fa-project-diagram',
                             'attachments' => 'fal fa-paperclip',
                             'comment'   => 'fal fa-trash-alt',
-                            default     => 'fal fa-pencil',
+                            default     => str_starts_with($field, 'link_') ? 'fal fa-link' : 'fal fa-pencil',
                         },
                         'text'   => $text,
                         'by'     => $by,
@@ -296,7 +299,15 @@ class ShowTicket extends OrgAction
             'can_comment_internally' => $ticket->canWriteEngineeringNotesBy($user),
             'can_edit_content'       => $ticket->canEditContentBy($user),
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
+            'can_link'               => $ticket->canLinkBy($user),
+            'links'                  => $this->linksFor($ticket, $user),
+            'link_types'             => TicketLinkTypeEnum::choices(),
+            'linked_ticket_types'    => collect([TicketTypeEnum::ENGINEER, TicketTypeEnum::HELP])
+                ->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])
+                ->values(),
             'routes'                 => [
+                'link_store'  => ['name' => 'grp.models.ticket.link.store', 'parameters' => ['ticket' => $ticket->id]],
+                'link_search' => ['name' => 'grp.json.ticket.link_search', 'parameters' => ['ticket' => $ticket->id]],
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
                 'content'  => ['name' => 'grp.models.ticket.content.update', 'parameters' => ['ticket' => $ticket->id]],
                 'project'  => ['name' => 'grp.models.ticket.project.update', 'parameters' => ['ticket' => $ticket->id]],
@@ -309,6 +320,36 @@ class ShowTicket extends OrgAction
                 'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],
             ],
         ];
+    }
+
+    /**
+     * Links read from this ticket's side, grouped by how they read, hiding tickets the viewer can not see.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function linksFor(Ticket $ticket, User $viewer): array
+    {
+        $outgoing = $ticket->outgoingLinks()->with('linkedTicket')->get()
+            ->map(fn (TicketLink $link) => [$link, $link->linkedTicket, $link->type->outwardLabel()]);
+        $incoming = $ticket->incomingLinks()->with('ticket')->get()
+            ->map(fn (TicketLink $link) => [$link, $link->ticket, $link->type->inwardLabel()]);
+
+        return $outgoing->concat($incoming)
+            ->filter(fn (array $row) => $row[1] && $row[1]->isVisibleTo($viewer))
+            ->map(fn (array $row) => [
+                'id'           => $row[0]->id,
+                'label'        => $row[2],
+                'ticket_id'    => $row[1]->id,
+                'reference'    => $row[1]->reference,
+                'subject'      => $row[1]->subject,
+                'status_label' => TicketStatusEnum::labels()[$row[1]->status->value],
+                'status_icon'  => TicketStatusEnum::stateIcon()[$row[1]->status->value],
+                'type_icon'    => $row[1]->type?->icon(),
+                'delete_route' => ['name' => 'grp.models.ticket.link.delete', 'parameters' => ['ticketLink' => $row[0]->id]],
+            ])
+            ->sortBy([['label', 'asc'], ['reference', 'asc']])
+            ->values()
+            ->all();
     }
 
     public function getBreadcrumbs(Ticket $ticket): array

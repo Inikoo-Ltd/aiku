@@ -25,8 +25,8 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCut, faUpload, faPaperPlane, faIndustryAlt } from "@fal"
-library.add(faCut, faUpload, faPaperPlane, faIndustryAlt)
+import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan } from "@fal"
+library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -294,6 +294,22 @@ function confirmDeleteItem(event: MouseEvent, item: { id: number }) {
 	})
 }
 
+function confirmStopSuggesting(event: MouseEvent, item: { id: number; org_stock_code: string }) {
+	confirm.require({
+		target: event.currentTarget as HTMLElement,
+		message: ctrans(
+			"Remove :code and never suggest it again? You can unblock it later from the Blocked tab.",
+			{ code: item.org_stock_code }
+		),
+		icon: "pi pi-exclamation-triangle",
+		acceptLabel: ctrans("Don't suggest again"),
+		rejectLabel: ctrans("Cancel"),
+		acceptClass: "p-button-danger",
+		rejectClass: "p-button-text",
+		accept: () => deleteItem(item, true),
+	})
+}
+
 const isSubmitting = ref(false)
 
 const isSubmitConfirmOpen = ref(false)
@@ -365,14 +381,14 @@ function submitItem(item: { id: number }) {
 	)
 }
 
-function deleteItem(item: { id: number }) {
+function deleteItem(item: { id: number }, stopSuggesting = false) {
 	router.delete(
 		route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
 			routeParams["organisation"],
 			props.orgPartner.id,
 			item.id,
 		]),
-		{ preserveScroll: true, ...tableLoadingEvents }
+		{ preserveScroll: true, data: stopSuggesting ? { stop_suggesting: true } : {}, ...tableLoadingEvents }
 	)
 }
 </script>
@@ -643,6 +659,14 @@ function deleteItem(item: { id: number }) {
 				size="xs"
 				class="mr-1"
 				@click="openBreakBatch(item)" />
+			<Button
+				v-if="isEditable(item)"
+				icon="fal fa-ban"
+				:tooltip="ctrans('Remove and never suggest this product again')"
+				type="tertiary"
+				size="xs"
+				class="mr-1"
+				@click="confirmStopSuggesting($event, item)" />
 			<Button
 				v-if="isEditable(item)"
 				:label="ctrans('Remove')"

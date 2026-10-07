@@ -6618,6 +6618,38 @@ describe('partner shopping list', function () {
         $this->get(route('grp.org.procurement.org_partners.show.shopping_list.legacy', [$this->organisation->slug, $this->orgPartner->id]))
             ->assertRedirect(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]));
     });
+
+    test('removing a line with do not suggest again keeps the SKO out of prepared orders until unblocked', function () {
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+        $this->sellerProduct->orgStocks()->first()->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $this->buyerOrgStock->update(['quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
+        $this->buyerOrgStock->stats()->updateOrCreate([], ['predicted_daily_usage' => 2, 'days_of_cover' => 0]);
+        $orgPartner = $this->orgPartner->refresh();
+        $rescued    = fn () => GetPartnerStockCoverBuckets::make()->rescueItems($orgPartner)->pluck('org_stock_id')->map(fn ($id) => (int) $id)->all();
+
+        expect($rescued())->toContain($this->buyerOrgStock->id);
+
+        $draft = StorePartnerShoppingListItem::make()->action($orgPartner, $this->buyerOrgStock, ['quantity' => 1]);
+        actingAs($this->adminGuest->getUser());
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $orgPartner->id, $draft->id]), ['stop_suggesting' => true])
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::find($draft->id))->toBeNull()
+            ->and($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeTrue()
+            ->and($rescued())->not->toContain($this->buyerOrgStock->id);
+
+        $this->withoutVite()->get(route('grp.org.procurement.org_partners.show.shopping_list.blocked', [$this->organisation->slug, $orgPartner->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Procurement/PartnerBlockedOrgStocks')
+                ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($this->buyerOrgStock->id)));
+
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.unblock', [$this->organisation->slug, $orgPartner->id, $this->buyerOrgStock->id]))
+            ->assertRedirect();
+
+        expect($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeFalse()
+            ->and($rescued())->toContain($this->buyerOrgStock->id);
+    });
 });
 
 describe('partner browse', function () {

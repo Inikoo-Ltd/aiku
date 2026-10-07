@@ -356,6 +356,20 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->canBeUpdatedBy($user) || $this->hasCollaborator($user);
     }
 
+    /**
+     * Assignee, lead engineers, contributors and QA link tickets and create linked ones.
+     */
+    public function canLinkBy(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->assignee_id === $user->id
+            || $this->canContributeBy($user)
+            || self::canGiveQaVerdict($user);
+    }
+
     public function canWriteEngineeringNotesBy(?User $user): bool
     {
         return self::canBeManagedBy($user) || $this->canContributeBy($user);
@@ -482,5 +496,15 @@ class Ticket extends Model implements Auditable, HasMedia
     public function escalations(): HasMany
     {
         return $this->hasMany(Ticket::class, 'model_id')->where('model_type', 'Ticket');
+    }
+
+    public function outgoingLinks(): HasMany
+    {
+        return $this->hasMany(TicketLink::class, 'ticket_id');
+    }
+
+    public function incomingLinks(): HasMany
+    {
+        return $this->hasMany(TicketLink::class, 'linked_ticket_id');
     }
 }
