@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Goods\Barcode\AssignNextBarcodeToTradeUnit;
 use App\Actions\Goods\Barcode\StoreBarcode;
 use App\Actions\Goods\Barcode\SyncBarcodeToTradeUnit;
 use App\Actions\OrgAction;
@@ -38,6 +39,13 @@ class UpdateOrgStockUnitBarcode extends OrgAction
         }
 
         $tradeUnit = $orgStock->tradeUnits->first();
+
+        if ($modelData['from_pool'] ?? false) {
+            AssignNextBarcodeToTradeUnit::make()->action($tradeUnit);
+
+            return $orgStock->refresh();
+        }
+
         $number    = trim((string)($modelData['unit_barcode'] ?? ''));
 
         if ($number === '') {
@@ -80,6 +88,7 @@ class UpdateOrgStockUnitBarcode extends OrgAction
     {
         return [
             'unit_barcode' => ['sometimes', 'nullable', 'string', 'regex:/^\d{8,14}$/'],
+            'from_pool'    => ['sometimes', 'boolean'],
         ];
     }
 
