@@ -15,6 +15,7 @@ use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductTradeUnits;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
@@ -30,6 +31,7 @@ use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\UploadRecord;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
@@ -314,7 +316,8 @@ class ImportSupplierProductUpload
 
     /**
      * Each organisation's lines go on its open draft (the org supplier's, or the org agent's when it buys
-     * through an agent), or on a new draft when the preview asked for one. The sheet sets the quantity.
+     * through an agent, which also gets its agent supplier purchase order), or on a new draft when the
+     * preview asked for one. The sheet sets the quantity.
      *
      * @param Collection<int, UploadRecord> $records
      */
@@ -363,6 +366,14 @@ class ImportSupplierProductUpload
                     $added++;
                 } catch (Throwable $e) {
                     $errors[] = __('Row :row: :error', ['row' => $line['record']->row_number, 'error' => $this->errorText($e)]);
+                }
+            }
+
+            if ($added && $parent instanceof OrgAgent) {
+                try {
+                    StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
+                } catch (Throwable $e) {
+                    $errors[] = $this->errorText($e);
                 }
             }
 

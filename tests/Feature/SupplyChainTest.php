@@ -506,6 +506,48 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
 });
 
 
+test('supplier product upload for a supplier in an agent puts the lines on the org agent draft with its agent supplier purchase order', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    $supplier = StoreSupplier::make()->action(parent: $agent, modelData: Supplier::factory()->definition());
+    $orderColumn = 'Order Cartons '.$this->organisation->code;
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow([
+            $orderColumn                         => 2,
+            'Family'                             => 'UPL-AGT',
+            'Part reference'                     => 'UPLA-01',
+            "Supplier's product code"            => 'UPLA-01',
+            'Unit barcode (EAN-13, for website)' => '5901234123457',
+        ]),
+    ], [$orderColumn]));
+
+    acceptSupplierProductUploadFindings($upload);
+    App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh());
+
+    $purchaseOrder              = PurchaseOrder::where('parent_type', 'OrgAgent')->where('parent_id', $orgAgent->id)->firstOrFail();
+    $agentSupplierPurchaseOrder = App\Models\SupplyChain\AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)->where('supplier_id', $supplier->id)->firstOrFail();
+
+    expect($purchaseOrder->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($agentSupplierPurchaseOrder->state)->toBe(App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->purchaseOrderTransactions()->where('agent_supplier_purchase_order_id', $agentSupplierPurchaseOrder->id)->count())->toBe(1);
+
+    $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.name', 'grp.models.purchase-order.submit')
+            ->where('pageHead.actions.0.route.parameters.purchaseOrder', $purchaseOrder->id)
+            ->etc());
+
+    $this->patch(route('grp.models.purchase-order.submit', ['purchaseOrder' => $purchaseOrder->id]))->assertRedirect();
+
+    expect($agentSupplierPurchaseOrder->refresh()->state)->toBe(App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::SUBMITTED)
+        ->and($purchaseOrder->refresh()->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED);
+
+    $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.style', 'edit')->etc());
+});
+
 test('supplier product upload AI checks add Jev findings and the final review, and stop when the monthly budget is spent', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     config(['services.openrouter.api_key' => 'test-key']);
