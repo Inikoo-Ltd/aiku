@@ -62,7 +62,7 @@ class IndexPartnerShoppingListItems extends OrgAction
     private function statesInView(): array
     {
         return $this->isSentView
-            ? [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value]
+            ? [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value, ShoppingListItemStateEnum::DISMISSED->value]
             : [ShoppingListItemStateEnum::DRAFT->value];
     }
 
@@ -99,7 +99,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                         where piece.deleted_at is null
                     ) select 1 from pieces where pieces.state in ($placeholders))", $values);
         });
-        $stateCounts = collect([ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+        $stateCounts = collect([ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value, ShoppingListItemStateEnum::DISMISSED->value])
             ->mapWithKeys(fn ($state) => [$state => $this->isSentView ? $stateOfLineOrPiece($items(), [$state])->count() : 0]);
         $rankCounts  = $items()
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
@@ -125,6 +125,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'options' => $withCounts(collect([
                     $option(ShoppingListItemStateEnum::OPEN->value, __('Waiting for the partner'), $stateCounts[ShoppingListItemStateEnum::OPEN->value] ?? 0),
                     $option(ShoppingListItemStateEnum::ORDERED->value, __('Ordered'), $stateCounts[ShoppingListItemStateEnum::ORDERED->value] ?? 0),
+                    $option(ShoppingListItemStateEnum::DISMISSED->value, __('Cannot be made'), $stateCounts[ShoppingListItemStateEnum::DISMISSED->value] ?? 0),
                 ])),
                 'engine'  => $stateOfLineOrPiece,
             ]] : []),
@@ -279,6 +280,8 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'partner_shopping_list_items.pre_picked_at',
                 'partner_shopping_list_items.preparing_at',
                 'partner_shopping_list_items.suggested_by_hub',
+                'partner_shopping_list_items.dismiss_reason',
+                'partner_shopping_list_items.dismissed_at',
                 'partner_shopping_list_items.org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -415,6 +418,10 @@ class IndexPartnerShoppingListItems extends OrgAction
             return ['label' => __('Not sent'), 'tone' => 'gray', 'reference' => null];
         }
 
+        if ($row->state === ShoppingListItemStateEnum::DISMISSED) {
+            return ['label' => __('Cannot be made'), 'tone' => 'red', 'reference' => null];
+        }
+
         if ($row->delivery_note_reference) {
             return $row->delivery_note_state === 'dispatched'
                 ? ['label' => __('On its way'), 'tone' => 'emerald', 'reference' => $row->delivery_note_reference]
@@ -463,6 +470,10 @@ class IndexPartnerShoppingListItems extends OrgAction
 
         if ($row->preparing_at) {
             $details[] = ['label' => __('Sent to production'), 'at' => $this->isoDate($row->preparing_at)];
+        }
+
+        if ($row->dismissed_at) {
+            $details[] = ['label' => __('Cannot be made: :reason', ['reason' => $row->dismiss_reason]), 'at' => $this->isoDate($row->dismissed_at)];
         }
 
         foreach ($this->productionSteps->get($row->id, collect()) as $step) {
@@ -677,6 +688,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         $value = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', $this->statesInView())
+            ->where('state', '!=', ShoppingListItemStateEnum::DISMISSED->value)
             ->whereNull('deleted_at')
             ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
             ->value('value');

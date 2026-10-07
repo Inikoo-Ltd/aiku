@@ -4758,6 +4758,35 @@ describe('partner shopping list', function () {
             ->and(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBe(0);
     });
 
+    test('production takes a line it cannot make off the board with a reason and the buyer sees why', function () {
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $user = $this->adminGuest->getUser();
+
+        $item     = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $inJob    = $item->replicate();
+        $inJob->fill(['quantity' => 3, 'pre_picked_at' => now()])->save();
+
+        actingAs($user);
+        $this->post(route('grp.org.productions.show.to_produce.items.cant_be_done', [$seller->slug, $production->slug]), ['ids' => [$item->id]])
+            ->assertSessionHasErrors('reason');
+
+        $dismissed = \App\Actions\Production\PartnerShippingList\DismissToProduceItems::make()->action($production, [$item->id, $inJob->id], 'No honey in stock until November', $user);
+
+        expect($dismissed->pluck('id')->all())->toBe([$item->id])
+            ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::DISMISSED)
+            ->and($item->dismiss_reason)->toBe('No honey in stock until November')
+            ->and($item->dismissed_by_user_id)->toBe($user->id)
+            ->and($inJob->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
+
+        $row = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]).'?'.http_build_query(['filter' => ['state' => 'dismissed']]))
+            ->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('id', $item->id);
+
+        expect($row['progress']['label'])->toBe('Cannot be made')
+            ->and(collect($row['progress']['details'])->pluck('label')->all())->toContain('Cannot be made: No honey in stock until November');
+    });
+
     test('store partner shopping list item denormalises', function () {
         $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 40,
