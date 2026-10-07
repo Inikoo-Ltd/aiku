@@ -2097,6 +2097,40 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($offer);
     });
 
+    test('SubmitOrder: buy X from a family gets its discontinued stock free and the offer ends when it is gone', function () {
+        $order       = Order::latest('id')->first();
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+        $giftProduct->update(['state' => ProductStateEnum::DISCONTINUING, 'available_quantity' => 1]);
+
+        $offer = StoreProductCategoryDiscount::make()->action(
+            $this->product->family,
+            [
+                'type'                       => 'quantity',
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 2,
+                'duration'                   => 'permanent',
+                'start_at'                   => now(),
+            ]
+        );
+
+        expect($offer->type)->toBe('Gift')
+            ->and($offer->trigger_type)->toBe('ProductCategory')
+            ->and($offer->status)->toBeTrue();
+
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $giftTransactions = Transaction::where('order_id', $order->id)->where('is_gift', true)->get();
+
+        expect($giftTransactions)->toHaveCount(1)
+            ->and($giftTransactions->first()->model_id)->toBe($giftProduct->id)
+            ->and((float)$giftTransactions->first()->quantity_bonus)->toBe(1.0)
+            ->and($offer->refresh()->status)->toBeFalse();
+
+        DB::table('transaction_has_offer_allowances')->whereIn('transaction_id', $giftTransactions->pluck('id'))->delete();
+        $giftTransactions->each->forceDelete();
+        $giftProduct->update(['state' => ProductStateEnum::ACTIVE]);
+    });
+
     test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
         $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
