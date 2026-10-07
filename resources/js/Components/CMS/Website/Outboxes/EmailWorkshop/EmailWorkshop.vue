@@ -28,6 +28,7 @@ import {
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
     rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
+import { WebsiteTheme, applyThemeToModule } from './emailWorkshopTheme'
 import { columnWidth, createRenderContext, messageWidth, renderEmailHtml, renderModuleHtml, styleToString, withDerivedHtml } from './renderEmailHtml'
 
 library.add(
@@ -41,6 +42,7 @@ const props = withDefaults(defineProps<{
     updateRoute?: routeType
     imagesUploadRoute?: routeType
     videoThumbnailRoute?: routeType
+    websiteTheme?: WebsiteTheme | null
     snapshot: any
     unpublished_layout?: any
     mergeTags: Array<any>
@@ -312,7 +314,17 @@ const deleteSelection = () => {
 }
 
 const cloneRowLayout = (gridColumns: number[]) => createRow(gridColumns, `${contentWidth.value}px`)
-const clonePaletteModule = (item: { type: string }) => createModule(item.type)
+
+const createThemedModule = (type: string): EmailModule => {
+    const module = createModule(type)
+    if (email.value.page.aikuTheme) {
+        applyThemeToModule(module, email.value.page.aikuTheme)
+    }
+
+    return module
+}
+
+const clonePaletteModule = (item: { type: string }) => createThemedModule(item.type)
 
 const dynamicProductsRef = ref<InstanceType<typeof BeefreeDynamicProducts> | null>(null)
 const dynamicBlocksRef = ref<InstanceType<typeof BeefreeDynamicBlocks> | null>(null)
@@ -975,7 +987,7 @@ defineExpose({
                                     <template #item="{ element }">
                                         <button type="button"
                                             class="flex h-[84px] cursor-grab flex-col items-center justify-center gap-y-2 rounded border border-gray-200 bg-white text-[12px] text-gray-700 transition hover:border-[var(--theme-color-4)] hover:shadow-md active:cursor-grabbing"
-                                            @click="insertModule(createModule(element.type))">
+                                            @click="insertModule(createThemedModule(element.type))">
                                             <FontAwesomeIcon :icon="element.icon" class="text-2xl text-gray-500" fixed-width aria-hidden="true" />
                                             {{ ctrans(element.label) }}
                                         </button>
@@ -1009,7 +1021,7 @@ defineExpose({
                             </div>
 
                             <EmailWorkshopSettings v-else :email="email" :mailshot="mailshot" :updateMailshotRoute="updateMailshotRoute"
-                                :imagesUploadRoute="imagesUploadRoute" @mailshotSaved="emits('mailshotSaved', $event)" />
+                                :imagesUploadRoute="imagesUploadRoute" :websiteTheme="websiteTheme" @mailshotSaved="emits('mailshotSaved', $event)" />
                         </div>
                     </template>
                 </aside>

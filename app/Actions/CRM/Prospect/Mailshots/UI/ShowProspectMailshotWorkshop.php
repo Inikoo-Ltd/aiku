@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
+use App\Actions\Comms\Email\GetEmailWebsiteTheme;
 use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
@@ -210,6 +211,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     'parameters' => ['email' => $email->id]
                 ],
                 'emailEditor'         => $email->shop?->emailEditor()->value,
+                'websiteTheme'        => GetEmailWebsiteTheme::run($email->shop),
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.mailshot.workshop.update',
                     'parameters' => [

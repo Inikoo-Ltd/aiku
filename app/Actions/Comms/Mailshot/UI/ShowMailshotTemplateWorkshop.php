@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Email\GetEmailWebsiteTheme;
 use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
@@ -104,6 +105,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     'parameters' => ['emailTemplate' => $emailTemplate->id]
                 ],
                 'emailEditor'         => $emailTemplate->shop?->emailEditor()->value,
+                'websiteTheme'        => GetEmailWebsiteTheme::run($emailTemplate->shop),
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.email-template.update',
                     'parameters' => array_filter([

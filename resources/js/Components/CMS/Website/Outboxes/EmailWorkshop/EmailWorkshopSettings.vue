@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { isEqual } from 'lodash-es'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faChevronDown, faCheck, faGlobe } from '@fal'
+import { useColorTheme } from '@/Composables/useStockList'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import TiptapImageDialog from '@/Components/Forms/Fields/BubleTextEditor/TiptapImageDialog.vue'
@@ -9,12 +14,16 @@ import EmailWorkshopProperties from './EmailWorkshopProperties.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import { EmailJson, MailshotMetadata } from './emailWorkshopBlocks'
+import { EmailTheme, WebsiteTheme, applyEmailTheme, primaryFontName, websiteThemeAsEmailTheme } from './emailWorkshopTheme'
+
+library.add(faChevronDown, faCheck, faGlobe)
 
 const props = defineProps<{
     email: EmailJson
     mailshot?: MailshotMetadata | null
     updateMailshotRoute?: routeType
     imagesUploadRoute?: routeType
+    websiteTheme?: WebsiteTheme | null
 }>()
 
 const emits = defineEmits<{
@@ -42,6 +51,40 @@ const saveMetadata = async () => {
     }
 }
 
+const colorThemes = [...useColorTheme]
+const isThemeListOpen = ref(false)
+const websiteEmailTheme = computed(() => websiteThemeAsEmailTheme(props.websiteTheme))
+const currentTheme = computed<EmailTheme | null>(() => props.email.page.aikuTheme ?? null)
+
+const currentThemeLabel = computed(() => {
+    if (!currentTheme.value) {
+        return ctrans('No theme')
+    }
+    if (currentTheme.value.source === 'website') {
+        return ctrans('Website theme')
+    }
+    const index = colorThemes.findIndex((colors) => isEqual(colors, currentTheme.value?.color))
+
+    return index === -1 ? ctrans('Custom theme') : `${ctrans('Theme')} ${index + 1}`
+})
+
+const isCurrentTheme = (theme: EmailTheme): boolean =>
+    !!currentTheme.value && currentTheme.value.source === theme.source && isEqual(currentTheme.value.color, theme.color)
+
+const chooseTheme = (theme: EmailTheme) => {
+    applyEmailTheme(props.email, { ...theme, fontFamily: currentTheme.value?.fontFamily ?? theme.fontFamily })
+    isThemeListOpen.value = false
+}
+
+const chooseWebsiteTheme = () => {
+    if (websiteEmailTheme.value) {
+        applyEmailTheme(props.email, websiteEmailTheme.value)
+    }
+    isThemeListOpen.value = false
+}
+
+const paletteTheme = (colors: string[]): EmailTheme => ({ color: [...colors], fontFamily: null, source: 'palette' })
+
 const isFaviconPickerOpen = ref(false)
 
 const onFaviconPicked = (url: string) => {
@@ -65,6 +108,57 @@ const removeFavicon = () => {
                 :disabled="!metadataForm.subject || isSavingMetadata" @click="saveMetadata">
                 {{ isSavingMetadata ? ctrans('Saving') + '…' : ctrans('Save metadata') }}
             </button>
+        </EmailWorkshopSection>
+
+        <EmailWorkshopSection :title="ctrans('Theme')">
+            <p class="pt-2 text-[12px] text-gray-500">
+                {{ ctrans('Colours headings, text, links, buttons and dividers, and sets the font. New blocks follow the theme. Undo with Ctrl+Z.') }}
+            </p>
+            <div class="relative py-3">
+                <button type="button" class="flex w-full items-center justify-between gap-x-2 rounded border border-gray-300 bg-white p-2.5 hover:bg-gray-50"
+                    :aria-expanded="isThemeListOpen" @click="isThemeListOpen = !isThemeListOpen">
+                    <span class="flex items-center gap-x-2">
+                        <span v-if="currentTheme" class="flex overflow-hidden rounded ring-1 ring-gray-300">
+                            <span v-for="(color, index) in currentTheme.color" :key="index" class="h-4 w-4" :style="{ backgroundColor: color }" />
+                        </span>
+                        <span class="text-[13px] text-gray-700">{{ currentThemeLabel }}</span>
+                    </span>
+                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-400 transition" :class="{ 'rotate-180': isThemeListOpen }" fixed-width aria-hidden="true" />
+                </button>
+
+                <div v-if="isThemeListOpen" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-y-auto rounded border border-gray-300 bg-white p-1.5 shadow-lg">
+                    <button v-if="websiteEmailTheme" type="button"
+                        class="flex w-full items-center justify-between gap-x-2 rounded border-2 border-transparent p-2 hover:bg-gray-50"
+                        :class="{ 'border-[var(--theme-color-4)] bg-[color-mix(in_srgb,var(--theme-color-4)_8%,white)]': isCurrentTheme(websiteEmailTheme) }"
+                        @click="chooseWebsiteTheme">
+                        <span class="flex items-center gap-x-2">
+                            <span class="flex overflow-hidden rounded ring-1 ring-gray-300">
+                                <span v-for="(color, index) in websiteEmailTheme.color" :key="index" class="h-4 w-4" :style="{ backgroundColor: color }" />
+                            </span>
+                            <span class="text-left">
+                                <span class="block text-[13px] font-medium text-gray-800">
+                                    <FontAwesomeIcon icon="fal fa-globe" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ ctrans('Website theme') }}
+                                </span>
+                                <span v-if="websiteEmailTheme.fontFamily" class="block text-[11px] text-gray-500">{{ primaryFontName(websiteEmailTheme.fontFamily) }}</span>
+                            </span>
+                        </span>
+                        <FontAwesomeIcon v-if="isCurrentTheme(websiteEmailTheme)" icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                    </button>
+                    <div v-if="websiteEmailTheme" class="my-1 h-px bg-gray-100" />
+                    <button v-for="(colors, index) in colorThemes" :key="index" type="button"
+                        class="flex w-full items-center justify-between gap-x-2 rounded border-2 border-transparent p-2 hover:bg-gray-50"
+                        :class="{ 'border-[var(--theme-color-4)] bg-[color-mix(in_srgb,var(--theme-color-4)_8%,white)]': isCurrentTheme(paletteTheme(colors)) }"
+                        @click="chooseTheme(paletteTheme(colors))">
+                        <span class="flex items-center gap-x-2">
+                            <span class="flex overflow-hidden rounded ring-1 ring-gray-300">
+                                <span v-for="(color, colorIndex) in colors" :key="colorIndex" class="h-4 w-4" :style="{ backgroundColor: color }" />
+                            </span>
+                            <span class="text-[13px] font-medium text-gray-700">{{ ctrans('Theme') }} {{ index + 1 }}</span>
+                        </span>
+                        <FontAwesomeIcon v-if="isCurrentTheme(paletteTheme(colors))" icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
         </EmailWorkshopSection>
 
         <EmailWorkshopSection :title="ctrans('Favicon')">

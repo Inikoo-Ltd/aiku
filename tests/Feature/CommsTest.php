@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Comms\Email\GetEmailWebsiteTheme;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
@@ -2420,6 +2421,33 @@ test('shop email editor defaults to beefree and can be switched to aiku', functi
     UpdateShop::make()->action($shop, ['email_editor' => 'beefree']);
 
     expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
+})->depends('update mailshot template');
+
+test('email workshop offers the shop website theme', function (EmailTemplate $emailTemplate) {
+    $shop    = $emailTemplate->shop;
+    $website = $shop->website;
+
+    expect(GetEmailWebsiteTheme::run(null))->toBeNull();
+
+    if (!$website) {
+        $this->markTestSkipped('The shop has no website in the test database');
+    }
+
+    $website->update(['published_layout' => [
+        ...($website->published_layout ?? []),
+        'theme' => [
+            'color'     => ['#A57FBC', '#FFFFFF', '#4B5058', '#FFFFFF', '#A57FBC', '#FFFFFF', '#cccccc', '#957A65'],
+            'container' => ['properties' => ['text' => ['fontFamily' => "'Raleway', sans-serif"]]],
+        ],
+    ]]);
+
+    expect(GetEmailWebsiteTheme::run($shop->refresh()))->toBe([
+        'color'      => ['#A57FBC', '#FFFFFF', '#4B5058', '#FFFFFF', '#A57FBC', '#FFFFFF', '#cccccc', '#957A65'],
+        'fontFamily' => "'Raleway', sans-serif",
+    ]);
+
+    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('websiteTheme.color.0', '#A57FBC')->etc());
 })->depends('update mailshot template');
 
 test('upload images to email template from workshop', function (EmailTemplate $emailTemplate) {

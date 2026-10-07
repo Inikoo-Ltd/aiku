@@ -40,7 +40,7 @@ const fontWeightOptions = [
 
 const headingLevelOptions = ['h1', 'h2', 'h3'].map((level) => ({ label: level.toUpperCase(), value: level }))
 
-const fontFamilyOptions = [
+const standardFontFamilyOptions = [
     { label: 'Arial', value: 'Arial, Helvetica Neue, Helvetica, sans-serif' },
     { label: 'Georgia', value: 'Georgia, Times, Times New Roman, serif' },
     { label: 'Helvetica', value: 'Helvetica Neue, Helvetica, Arial, sans-serif' },
@@ -50,7 +50,13 @@ const fontFamilyOptions = [
     { label: 'Trebuchet MS', value: "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif" },
     { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
 ]
-const inheritableFontOptions = [{ label: ctrans('Default'), value: 'inherit' }, ...fontFamilyOptions]
+const fontFamilyOptions = computed(() => [
+    ...standardFontFamilyOptions,
+    ...(props.body.webFonts ?? [])
+        .filter((font) => !standardFontFamilyOptions.some((option) => option.value === font.fontFamily))
+        .map((font) => ({ label: font.name, value: font.fontFamily })),
+])
+const inheritableFontOptions = computed(() => [{ label: ctrans('Default'), value: 'inherit' }, ...fontFamilyOptions.value])
 
 const verticalAlignOptions = [
     { label: ctrans('Top'), value: 'top' },
