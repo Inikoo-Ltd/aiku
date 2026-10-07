@@ -110,9 +110,10 @@ class EditShop extends OrgAction
 
         $isWixConnected = $shop->engine === ShopEngineEnum::WIX && $shop->wixUser()->exists();
 
-        $externalShopifyUser = $shop->engine === ShopEngineEnum::SHOPIFY ? $shop->externalShopifyUser : null;
-        $isShopifyConnected  = $externalShopifyUser && str_starts_with((string) $externalShopifyUser->password, ConnectShopifyExternalShop::SHOPIFY_ACCESS_TOKEN_PREFIX);
-        $shopifyAuthUrl      = $externalShopifyUser ? ConnectShopifyExternalShop::make()->getAuthUrl($externalShopifyUser) : null;
+        $externalShopifyUser   = $shop->engine === ShopEngineEnum::SHOPIFY ? $shop->externalShopifyUser : null;
+        $isShopifyDropshipping = (bool) $externalShopifyUser?->customer_id;
+        $isShopifyConnected    = $externalShopifyUser && !$isShopifyDropshipping && str_starts_with((string) $externalShopifyUser->password, ConnectShopifyExternalShop::SHOPIFY_ACCESS_TOKEN_PREFIX);
+        $shopifyAuthUrl        = $externalShopifyUser && !$isShopifyDropshipping ? ConnectShopifyExternalShop::make()->getAuthUrl($externalShopifyUser) : null;
         $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
@@ -140,7 +141,7 @@ class EditShop extends OrgAction
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
-            __('Shopify Keys'),
+            __('Shopify Settings'),
             __('Wix Settings'),
             __('Chat widget'),
         ];
@@ -844,14 +845,27 @@ class EditShop extends OrgAction
                             'label'  => __('Shopify Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'shop_url'                => [
-                                    'type'         => 'input_with_warning',
-                                    'readonly'     => true,
-                                    'label'        => __('Shopify Shop Url'),
-                                    'value'        => Arr::get($shop->settings, 'shopify.shop_url', ''),
-                                    'showWarning'  => !is_null($shop->external_shop_connection_failed_at),
-                                    'warningTitle' => __('We are having troubles connecting to the platform'),
-                                    'warningBody'  => __('Error Message').": ".$shop->external_shop_connection_error
+                                'shopify_store'           => [
+                                    'type'               => 'input_with_warning',
+                                    'label'              => __('Shopify store'),
+                                    'placeholder'        => 'your-store.myshopify.com',
+                                    'value'              => Arr::get($shop->settings, 'shopify.shop_url') ?: ($externalShopifyUser?->name ?? ''),
+                                    'information'        => __('The store\'s .myshopify.com address or its admin link. Saving links the store and opens the Shopify app install in a new tab; finish it logged in as the store owner.'),
+                                    'updateRoute'        => [
+                                        'name'       => 'grp.models.org.shop.shopify.connect',
+                                        'parameters' => [
+                                            'organisation' => $shop->organisation_id,
+                                            'shop'         => $shop->id,
+                                        ],
+                                    ],
+                                    'revisit_after_save' => true,
+                                    'showWarning'        => $isShopifyDropshipping || !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle'       => $isShopifyDropshipping
+                                        ? __('This store is still a dropshipping channel')
+                                        : __('We are having troubles connecting to the platform'),
+                                    'warningBody'        => $isShopifyDropshipping
+                                        ? __('Orders, stock and shipping are not synced while the store is an open dropshipping channel. Close that channel, then save the store here to connect it to this shop.')
+                                        : __('Error Message').": ".$shop->external_shop_connection_error
                                 ],
                                 ...($shopifyAuthUrl ? [
                                     'shopify__connect' => [

@@ -10,11 +10,15 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
 class ConnectShopifyExternalShop extends OrgAction
@@ -32,13 +36,13 @@ class ConnectShopifyExternalShop extends OrgAction
     public function handle(Shop $shop, string $store): ShopifyUser
     {
         if ($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::SHOPIFY) {
-            throw ValidationException::withMessages(['shop' => __('Shop is not a Shopify external shop')]);
+            throw ValidationException::withMessages(['shopify_store' => __('Shop is not a Shopify external shop')]);
         }
 
         $domain = $this->resolveShopifyStoreDomain($store);
 
         if (!$domain) {
-            throw ValidationException::withMessages(['store' => __('Shopify store :store not found', ['store' => $store])]);
+            throw ValidationException::withMessages(['shopify_store' => __('Shopify store :store not found', ['store' => $store])]);
         }
 
         return DB::transaction(function () use ($shop, $domain) {
@@ -46,12 +50,12 @@ class ConnectShopifyExternalShop extends OrgAction
 
             if ($shopifyUser?->customer_id) {
                 throw ValidationException::withMessages([
-                    'store' => __('This Shopify store is a dropshipping channel, close that channel before connecting it to this shop')
+                    'shopify_store' => __('This Shopify store is a dropshipping channel, close that channel before connecting it to this shop')
                 ]);
             }
 
             if ($shopifyUser?->external_shop_id && $shopifyUser->external_shop_id !== $shop->id) {
-                throw ValidationException::withMessages(['store' => __('This Shopify store is already connected to another shop')]);
+                throw ValidationException::withMessages(['shopify_store' => __('This Shopify store is already connected to another shop')]);
             }
 
             ShopifyUser::where('external_shop_id', $shop->id)
@@ -128,6 +132,40 @@ class ConnectShopifyExternalShop extends OrgAction
         $handle = Str::lower(trim(preg_replace('/\.myshopify\.com$/i', '', $handle)));
 
         return preg_match('/^[a-z0-9-]+$/', $handle) ? $handle : null;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'shopify_store' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): ShopifyUser
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $this->validatedData['shopify_store']);
+    }
+
+    public function htmlResponse(ShopifyUser $shopifyUser): RedirectResponse
+    {
+        return Redirect::back()->with('redirect', [
+            'url'    => $this->getAuthUrl($shopifyUser),
+            'target' => '_blank',
+        ]);
     }
 
     public function asCommand(Command $command): int
