@@ -6109,3 +6109,38 @@ test('group orders hydrator counts orders in a single scan', function () {
         ->and($stats->number_orders_status_creating)->toBe((clone $liveOrders)->where('status', OrderStatusEnum::CREATING)->count())
         ->and($stats->number_orders_handing_type_shipping)->toBe((clone $liveOrders)->where('handing_type', OrderHandingTypeEnum::SHIPPING)->count());
 });
+
+test('production managers mark orders as production reviewed, one by one or in bulk, and filter the backlog by it', function () {
+    $this->organisation->productions()->first()
+        ?? \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'PRV', 'name' => 'PRV']);
+    $this->organisation->unsetRelation('productions');
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $first    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $second   = StoreOrder::make()->action($customer, Order::factory()->definition());
+
+    actingAs($this->user);
+    $this->patch(route('grp.models.order.production_review', ['order' => $first->id]), ['reviewed' => true])->assertRedirect();
+    $first->refresh();
+    expect($first->production_reviewed_at)->not->toBeNull()
+        ->and($first->production_reviewed_by)->toBe($this->user->id);
+
+    $counts   = \App\Actions\Ordering\Order\UI\IndexOrders::make()->backlogFilterCounts($this->shop->fresh(), 'in_basket')['production_review'];
+    $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    expect($counts)->toBe([
+        'reviewed'   => (clone $creating)->whereNotNull('production_reviewed_at')->count(),
+        'unreviewed' => (clone $creating)->whereNull('production_reviewed_at')->count(),
+    ])->and($counts['reviewed'])->toBeGreaterThan(0);
+
+    $this->patch(route('grp.models.organisation.orders.production_review', ['organisation' => $this->organisation->id]), [
+        'reviewed'  => true,
+        'order_ids' => [$first->id, $second->id],
+    ])->assertRedirect();
+    expect($second->refresh()->production_reviewed_at)->not->toBeNull();
+
+    $this->patch(route('grp.models.order.production_review', ['order' => $first->id]), ['reviewed' => false])->assertRedirect();
+    $first->refresh();
+    expect($first->production_reviewed_at)->toBeNull()
+        ->and($first->production_reviewed_by)->toBeNull();
+});

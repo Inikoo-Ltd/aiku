@@ -84,11 +84,18 @@ Otvorte ktorúkoľvek objednávku, aby ste videli jej úplný záznam. Stránka 
 - **Dispatched emails** — emaily, ktoré aiku o tejto objednávke odoslalo.
 - **History** — záznam všetkého, čo sa s objednávkou stalo.
 
+## Kontrola výroby (organizácie, ktoré vyrábajú vlastné produkty)
+
+V organizácii s výrobou má každá objednávka pod názvom lištu **Production review**. Keď objednávku skontrolujete a vytlačíte jej výrobné etikety, kliknite na **Mark production reviewed**: aiku zaznamená, kto to urobil a kedy. **Reset review** to zruší, ak ju treba skontrolovať znova.
+
+Zoznamy **Backlog** a **Orders** ukazujú ten istý stav v stĺpci **Production review** (zelené **Reviewed**, sivé **Pending review**; po prejdení myšou uvidíte kto a kedy) a v riadku filtrov backlogu si zobrazíte len objednávky **Production reviewed** alebo **Unreviewed**. Ak chcete označiť viac naraz, zaškrtnite ich v backlogu a kliknite na **Mark selected as production reviewed**.
+
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Zobraziť všetky objednávky:</b> váš obchod → <b>Orders</b> (horné menu) → záložka <b>Orders</b>. Filtrujte podľa stavu alebo vyhľadávajte podľa referencie.</li>
 <li><b>Skontrolovať priebeh jednej objednávky:</b> kliknite na ňu v zozname — stav sa zobrazí vedľa jej referencie, a záložky <b>Delivery notes</b> a <b>Invoices</b> ukazujú, čo sa udialo ďalej.</li>
 <li><b>Zobraziť, čo čaká na spracovanie:</b> váš obchod → <b>Orders</b> (horné menu) → záložka <b>Backlog</b>.</li>
+<li><b>Označiť objednávku ako skontrolovanú výrobou:</b> otvorte objednávku → <b>Mark production reviewed</b> v lište pod názvom, alebo zaškrtnite objednávky v <b>Backlogu</b> → <b>Mark selected as production reviewed</b>.</li>
 <li><b>Zmeniť adresu na odoslanej objednávke:</b> otvorte objednávku → <b>Edit</b> alebo <b>Edit billing address</b> pod blokom adresy, kým nie je expedovaná.</li>
 <li><b>Opraviť adresu na vystavenej faktúre:</b> otvorte objednávku → záložka <b>Invoices</b> → otvorte faktúru → ceruzka vedľa adresy.</li>
 <li><b>Zmeniť, čo sa tlačí na kuriérskom štítku pre jednu objednávku:</b> otvorte objednávku → dvojklik na <b>Shipping Label (From Customer)</b> v riadku poznámok → uložte. Tlačí sa prvých 34 znakov.</li>

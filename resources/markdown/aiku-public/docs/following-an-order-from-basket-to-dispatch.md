@@ -84,11 +84,18 @@ Click any order to open its full record. The title is the order's reference, wit
 - **Dispatched emails** — the emails aiku has sent the customer about this order.
 - **History** — everything that has ever happened to the order.
 
+## Production review (organisations that make their own products)
+
+In an organisation with a production, each order shows a **Production review** bar under its title. When you have checked the order and printed its manufacturing labels, click **Mark production reviewed**: aiku records who did it and when ("Reviewed by … on …"). **Reset review** clears it if you need to look again.
+
+The **Backlog** and **Orders** lists show the same status in a **Production review** column (green **Reviewed**, grey **Pending review**; hover to see who and when), and the filter row above the backlog lets you show only **Production reviewed** or **Unreviewed** orders. To mark several at once, tick them in the backlog and click **Mark selected as production reviewed**.
+
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>See every order:</b> your shop → <b>Orders</b> (top menu) → <b>Orders</b> tab. Filter by state or search by reference.</li>
 <li><b>Check how one order is doing:</b> click into it from the list — the state sits next to its reference, and the <b>Delivery notes</b> and <b>Invoices</b> tabs show what has happened since.</li>
 <li><b>See what is still waiting to be worked on:</b> your shop → <b>Orders</b> (top menu) → <b>Backlog</b> tab.</li>
+<li><b>Mark an order as production reviewed:</b> open the order → <b>Mark production reviewed</b> in the bar under its title, or tick orders in the <b>Backlog</b> → <b>Mark selected as production reviewed</b>.</li>
 <li><b>Change an address on a submitted order:</b> open the order → <b>Edit</b> or <b>Edit billing address</b> under the address block, any time before it is dispatched.</li>
 <li><b>Correct the address on an invoice already issued:</b> open the order → <b>Invoices</b> tab → open the invoice → pencil next to the address.</li>
 <li><b>Change what prints on the courier label for one order:</b> open the order → double-click <b>Shipping Label (From Customer)</b> in the notes row → save. First 34 characters print.</li>

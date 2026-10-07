@@ -25,6 +25,7 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
+use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Traits\WithMarginData;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
@@ -427,6 +428,16 @@ class ShowOrder extends OrgAction
                     'next'     => $this->getNext($order, $request),
                 ],
                 'basket_customer_balance' => $order->state == OrderStateEnum::CREATING ? $order->customer->balance : null,
+                'production_review' => UpdateOrderProductionReview::isUsedBy($order->organisation) ? [
+                    'reviewed_at' => $order->production_reviewed_at,
+                    'reviewed_by' => $order->productionReviewer?->contact_name ?? $order->productionReviewer?->username,
+                    'can_review'  => UpdateOrderProductionReview::canReview($request->user(), $order->shop),
+                    'route'       => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.order.production_review',
+                        'parameters' => ['order' => $order->id],
+                    ],
+                ] : null,
                 'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
                 'staff_chat'  => [

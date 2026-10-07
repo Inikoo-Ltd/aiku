@@ -84,11 +84,18 @@ Abre cualquier pedido para ver su ficha completa. La página muestra la referenc
 - **Correos enviados** — los correos que aiku ha mandado sobre este pedido.
 - **Historial** — registro de todo lo que ha pasado con el pedido.
 
+## Revisión de producción (organizaciones que fabrican sus propios productos)
+
+En una organización con producción, cada pedido muestra una barra **Production review** bajo su título. Cuando hayas revisado el pedido e impreso sus etiquetas de fabricación, pulsa **Mark production reviewed**: aiku guarda quién lo hizo y cuándo. **Reset review** lo borra si necesitas revisarlo de nuevo.
+
+Las listas **Backlog** y **Pedidos** muestran el mismo estado en una columna **Production review** (verde **Reviewed**, gris **Pending review**; pasa el ratón para ver quién y cuándo), y la fila de filtros del backlog permite mostrar solo pedidos **Production reviewed** o **Unreviewed**. Para marcar varios a la vez, selecciónalos en el backlog y pulsa **Mark selected as production reviewed**.
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Ver todos los pedidos:</b> tu tienda → <b>Pedidos</b> (menú superior) → pestaña <b>Pedidos</b>. Filtra por estado o busca por referencia.</li>
 <li><b>Comprobar el progreso de un pedido:</b> ábrelo desde la lista; el estado aparece junto a la referencia, y las pestañas <b>Albaranes</b> y <b>Facturas</b> muestran lo que ha pasado después.</li>
 <li><b>Ver qué está pendiente de trabajar:</b> tu tienda → <b>Pedidos</b> (menú superior) → pestaña <b>Backlog</b>.</li>
+<li><b>Marcar un pedido como revisado por producción:</b> abre el pedido → <b>Mark production reviewed</b> en la barra bajo el título, o selecciona pedidos en el <b>Backlog</b> → <b>Mark selected as production reviewed</b>.</li>
 <li><b>Cambiar una dirección en un pedido confirmado:</b> abre el pedido → <b>Editar</b> o <b>Editar dirección de facturación</b> bajo el bloque de direcciones, hasta que se envíe.</li>
 <li><b>Corregir la dirección en una factura ya emitida:</b> abre el pedido → pestaña <b>Facturas</b> → abre la factura → lápiz junto a la dirección.</li>
 <li><b>Cambiar lo que se imprime en la etiqueta del transportista de un pedido:</b> abre el pedido → doble clic en <b>Shipping Label (From Customer)</b> en la fila de notas → guardar. Solo se imprimen los primeros 34 caracteres.</li>
