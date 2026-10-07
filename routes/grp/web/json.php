@@ -175,6 +175,9 @@ use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\Announcement\UI\GetIrisAnnouncements;
+use App\Actions\Web\WebsiteDialog\UI\GetClashingWebsiteDialogs;
+use App\Actions\Web\WebsiteDialog\UI\GetWebsiteDialogTemplates;
+use App\Actions\Web\WebsiteDialog\UI\GetWebsiteDialogsForLinkSelect;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Helpers\Country\UI\GetAddressData;
@@ -194,6 +197,9 @@ Route::get('countries-address-data', GetAddressData::class)->name('countries_add
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
 Route::get('{website}/active-announcements', GetActiveAnnouncement::class)->name('announcement_active.index');
 Route::get('{website}/iris-announcements', GetIrisAnnouncements::class)->name('announcement_simulation.index');
+Route::get('{website}/website-dialogs-for-link-select', GetWebsiteDialogsForLinkSelect::class)->name('website_dialogs.link_select');
+Route::get('website-dialog-templates', GetWebsiteDialogTemplates::class)->name('website_dialog_templates.index');
+Route::get('website/{website:id}/dialogs/{websiteDialog:id}/clashing', GetClashingWebsiteDialogs::class)->name('website_dialogs.clashing')->withoutScopedBindings();
 
 Route::get('comms/outboxes/{outbox}/users', GetOutboxUsers::class)->name('outbox.users.index');
 

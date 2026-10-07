@@ -77,6 +77,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_announcements
  * @property int $number_active_announcements
  * @property int $number_inactive_announcements
+ * @property int $number_website_dialogs
+ * @property int $number_active_website_dialogs
+ * @property int $number_inactive_website_dialogs
  * @property int $number_webpages_sub_type_mailshot
  * @property int $number_webpages_sub_type_newsletters
  * @property int $number_webpages_sub_type_tips

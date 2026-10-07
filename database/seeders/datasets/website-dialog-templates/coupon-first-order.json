@@ -1,0 +1,178 @@
+{
+    "code": "coupon-first-order",
+    "name": "First order coupon",
+    "component": "dialog-coupon",
+    "position": 3,
+    "fields": {
+        "accent": "rgba(147, 51, 234, 1)",
+        "eyebrow": {
+            "text": "Welcome gift"
+        },
+        "title": {
+            "text": "<h2 style=\"text-align: center\"><strong>Here is 10% off</strong></h2>"
+        },
+        "description": {
+            "text": "<p style=\"text-align: center\">Use this code at checkout on your first order.</p>"
+        },
+        "coupon": {
+            "label": "Your code",
+            "code": "WELCOME10"
+        },
+        "button": {
+            "text": "Start shopping",
+            "link": {
+                "type": "external",
+                "href": "#",
+                "target": "_self"
+            },
+            "container": {
+                "properties": {
+                    "text": {
+                        "color": "rgba(255, 255, 255, 1)",
+                        "fontFamily": "Arial, sans-serif"
+                    },
+                    "background": {
+                        "type": "color",
+                        "color": "rgba(147, 51, 234, 1)",
+                        "image": {
+                            "original": null
+                        }
+                    },
+                    "padding": {
+                        "unit": "px",
+                        "top": {
+                            "value": 12
+                        },
+                        "left": {
+                            "value": 28
+                        },
+                        "right": {
+                            "value": 28
+                        },
+                        "bottom": {
+                            "value": 12
+                        }
+                    },
+                    "margin": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        }
+                    },
+                    "border": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        },
+                        "color": "rgba(147, 51, 234, 1)",
+                        "rounded": {
+                            "unit": "px",
+                            "topleft": {
+                                "value": 999
+                            },
+                            "topright": {
+                                "value": 999
+                            },
+                            "bottomleft": {
+                                "value": 999
+                            },
+                            "bottomright": {
+                                "value": 999
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "note": {
+            "text": "<p style=\"text-align: center\">Valid for 30 days, one use per customer.</p>"
+        }
+    },
+    "container_properties": {
+        "background": {
+            "type": "color",
+            "color": "rgba(255, 255, 255, 1)",
+            "image": {
+                "original": null
+            }
+        },
+        "text": {
+            "color": "rgba(17, 24, 39, 1)",
+            "fontFamily": "Arial, sans-serif"
+        },
+        "padding": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            }
+        },
+        "border": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            },
+            "color": "rgba(243, 243, 243, 1)",
+            "rounded": {
+                "unit": "px",
+                "topleft": {
+                    "value": 20
+                },
+                "topright": {
+                    "value": 20
+                },
+                "bottomleft": {
+                    "value": 20
+                },
+                "bottomright": {
+                    "value": 20
+                }
+            }
+        },
+        "dimension": {
+            "width": {
+                "unit": "px",
+                "value": 420
+            },
+            "height": {
+                "unit": "px",
+                "value": null
+            }
+        }
+    }
+}

@@ -19,6 +19,11 @@ use App\Actions\Web\Announcement\UI\EditAnnouncement;
 use App\Actions\Web\Announcement\UI\IndexAnnouncements;
 use App\Actions\Web\Announcement\UI\ShowAnnouncement;
 use App\Actions\Web\Announcement\UI\ShowAnnouncementWorkshop;
+use App\Actions\Web\WebsiteDialog\UI\CreateWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UI\EditWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UI\IndexWebsiteDialogs;
+use App\Actions\Web\WebsiteDialog\UI\ShowWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UI\ShowWebsiteDialogWorkshop;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -191,6 +196,14 @@ Route::prefix('{website}/announcements')->name('announcements.')->group(function
     Route::get('{announcement:ulid}/edit', EditAnnouncement::class)->name('edit')->withoutScopedBindings();
     Route::get('/{announcement:ulid}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
     Route::get('/{announcement:ulid}', ShowAnnouncement::class)->name('show')->withoutScopedBindings();
+});
+
+Route::prefix('{website}/dialogs')->name('website_dialogs.')->group(function () {
+    Route::get('', IndexWebsiteDialogs::class)->name('index');
+    Route::get('create', CreateWebsiteDialog::class)->name('create');
+    Route::get('{websiteDialog:ulid}/edit', EditWebsiteDialog::class)->name('edit')->withoutScopedBindings();
+    Route::get('{websiteDialog:ulid}/workshop', ShowWebsiteDialogWorkshop::class)->name('workshop')->withoutScopedBindings();
+    Route::get('{websiteDialog:ulid}', ShowWebsiteDialog::class)->name('show')->withoutScopedBindings();
 });
 
 Route::prefix('{website}/crawls')->name('crawls.')->group(function () {

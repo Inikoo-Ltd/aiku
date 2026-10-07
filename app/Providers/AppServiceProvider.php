@@ -437,6 +437,7 @@ class AppServiceProvider extends ServiceProvider
                 'WebBlockType'                     => 'App\Models\Web\WebBlockType',
                 'Banner'                           => 'App\Models\Web\Banner',
                 'Announcement'                     => 'App\Models\Web\Announcement',
+                'WebsiteDialog'                    => 'App\Models\Web\WebsiteDialog',
 
                 'StaffTask'                        => 'App\Models\Tasks\StaffTask',
 

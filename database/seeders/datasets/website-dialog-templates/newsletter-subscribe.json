@@ -1,0 +1,178 @@
+{
+    "code": "newsletter-subscribe",
+    "name": "Newsletter sign-up",
+    "component": "dialog-subscribe",
+    "position": 4,
+    "fields": {
+        "accent": "rgba(250, 204, 21, 1)",
+        "eyebrow": {
+            "text": "Stay in the loop"
+        },
+        "title": {
+            "text": "<h2 style=\"text-align: center\"><strong>Join our newsletter</strong></h2>"
+        },
+        "description": {
+            "text": "<p style=\"text-align: center\">New arrivals, restocks and members-only deals, straight to your inbox.</p>"
+        },
+        "subscribe": {
+            "placeholder": "Your email address",
+            "success_text": "Thank you! You are on the list."
+        },
+        "button": {
+            "text": "Subscribe",
+            "link": {
+                "type": "external",
+                "href": "#",
+                "target": "_self"
+            },
+            "container": {
+                "properties": {
+                    "text": {
+                        "color": "rgba(17, 24, 39, 1)",
+                        "fontFamily": "Arial, sans-serif"
+                    },
+                    "background": {
+                        "type": "color",
+                        "color": "rgba(250, 204, 21, 1)",
+                        "image": {
+                            "original": null
+                        }
+                    },
+                    "padding": {
+                        "unit": "px",
+                        "top": {
+                            "value": 12
+                        },
+                        "left": {
+                            "value": 28
+                        },
+                        "right": {
+                            "value": 28
+                        },
+                        "bottom": {
+                            "value": 12
+                        }
+                    },
+                    "margin": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        }
+                    },
+                    "border": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        },
+                        "color": "rgba(250, 204, 21, 1)",
+                        "rounded": {
+                            "unit": "px",
+                            "topleft": {
+                                "value": 999
+                            },
+                            "topright": {
+                                "value": 999
+                            },
+                            "bottomleft": {
+                                "value": 999
+                            },
+                            "bottomright": {
+                                "value": 999
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "note": {
+            "text": "<p style=\"text-align: center\">One email a week at most. Unsubscribe anytime.</p>"
+        }
+    },
+    "container_properties": {
+        "background": {
+            "type": "color",
+            "color": "rgba(17, 24, 39, 1)",
+            "image": {
+                "original": null
+            }
+        },
+        "text": {
+            "color": "rgba(255, 255, 255, 1)",
+            "fontFamily": "Arial, sans-serif"
+        },
+        "padding": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            }
+        },
+        "border": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            },
+            "color": "rgba(243, 243, 243, 1)",
+            "rounded": {
+                "unit": "px",
+                "topleft": {
+                    "value": 20
+                },
+                "topright": {
+                    "value": 20
+                },
+                "bottomleft": {
+                    "value": 20
+                },
+                "bottomright": {
+                    "value": 20
+                }
+            }
+        },
+        "dimension": {
+            "width": {
+                "unit": "px",
+                "value": 500
+            },
+            "height": {
+                "unit": "px",
+                "value": null
+            }
+        }
+    }
+}

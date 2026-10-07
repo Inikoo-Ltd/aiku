@@ -52,11 +52,11 @@ class ShowAnnouncementWorkshop extends OrgAction
                     'previous' => $this->getPrevious($announcement, $request),
                     'next'     => $this->getNext($announcement, $request),
                 ],
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'                  => [
-                    'breadcrumbs'               => $this->getBreadcrumbs(
-                        $request->route()->getName(),
-                        $request->route()->originalParameters()
-                    ),
                     'title'     => __('Workshop'),
                     'container' => [
                         'icon'    => ['fal', 'fa-megaphone'],

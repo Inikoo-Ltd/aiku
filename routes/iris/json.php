@@ -60,6 +60,8 @@ use App\Actions\Search\GetIrisSearchFeaturedItems;
 use App\Actions\Search\RecordWebsiteSearchClick;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
+use App\Actions\Iris\WebsiteDialog\GetIrisWebsiteDialogDismissals;
+use App\Actions\Iris\WebsiteDialog\StoreIrisWebsiteDialogDismissal;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -70,6 +72,9 @@ Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('product/{product:id}/transaction-data', GetIrisBasketTransactionsInProduct::class)->name('product.transaction_data')->withoutScopedBindings()->whereNumber('product');
 
     Route::get('collection/{collection:id}/transaction-data', GetIrisBasketTransactionsInCollection::class)->name('collection.transaction_data')->whereNumber('collection');
+
+    Route::get('website-dialog-dismissals', GetIrisWebsiteDialogDismissals::class)->name('website_dialog_dismissals.index');
+    Route::post('website-dialog-dismissals/{websiteDialog:ulid}', StoreIrisWebsiteDialogDismissal::class)->name('website_dialog_dismissals.store')->withoutScopedBindings();
 });
 
 

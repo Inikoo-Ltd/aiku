@@ -53,11 +53,11 @@ class EditAnnouncement extends OrgAction
             'EditModel',
             [
                 'title'       => __('Announcement'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
-                    'breadcrumbs' => $this->getBreadcrumbs(
-                        $request->route()->getName(),
-                        $request->route()->originalParameters()
-                    ),
                     'title'   => $announcement->name,
                     'model' => __('Edit'),
                     'icon'    => [
@@ -94,19 +94,10 @@ class EditAnnouncement extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            IndexAnnouncements::make()->getBreadcrumbs(
-                'grp.org.shops.show.web.announcements.index',
-                $routeParameters
-            ),
-            [
-                [
-                    'type'          => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __("creating banner"),
-                    ]
-                ]
-            ]
+        return ShowAnnouncement::make()->getBreadcrumbs(
+            'grp.org.shops.show.web.announcements.show',
+            $routeParameters,
+            '('.__('Editing').')'
         );
     }
 

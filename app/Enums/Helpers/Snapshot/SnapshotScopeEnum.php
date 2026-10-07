@@ -21,6 +21,7 @@ enum SnapshotScopeEnum: string
     case SIDEBAR = 'sidebar';
     case THEME = 'theme';
     case BANNER = 'banner';
+    case WEBSITE_DIALOG = 'website_dialog';
     case EMAIL = 'email';
     case PRODUCT_TEMPLATE = 'product_template'; // for website web block
     case DEPARTMENT = 'department';
@@ -43,6 +44,7 @@ enum SnapshotScopeEnum: string
             'sidebar'                   => __('Sidebar'),
             'theme'                     => __('Theme'),
             'banner'                    => __('Banner'),
+            'website_dialog'            => __('Website dialog'),
             'email'                     => __('Email'),
             'product_template'          => __('Product template'),
             'department'                => __('Department'),

@@ -1,0 +1,178 @@
+{
+    "code": "welcome-centered",
+    "name": "Welcome",
+    "component": "dialog-centered",
+    "position": 1,
+    "fields": {
+        "accent": "rgba(79, 70, 229, 1)",
+        "image": {
+            "source": null,
+            "alt": ""
+        },
+        "eyebrow": {
+            "text": "Welcome"
+        },
+        "title": {
+            "text": "<h2 style=\"text-align: center\"><strong>Nice to meet you!</strong></h2>"
+        },
+        "description": {
+            "text": "<p style=\"text-align: center\">Create an account today and get <strong>10% off</strong> your first order.</p>"
+        },
+        "button": {
+            "text": "Create my account",
+            "link": {
+                "type": "external",
+                "href": "#",
+                "target": "_self"
+            },
+            "container": {
+                "properties": {
+                    "text": {
+                        "color": "rgba(255, 255, 255, 1)",
+                        "fontFamily": "Arial, sans-serif"
+                    },
+                    "background": {
+                        "type": "color",
+                        "color": "rgba(79, 70, 229, 1)",
+                        "image": {
+                            "original": null
+                        }
+                    },
+                    "padding": {
+                        "unit": "px",
+                        "top": {
+                            "value": 12
+                        },
+                        "left": {
+                            "value": 28
+                        },
+                        "right": {
+                            "value": 28
+                        },
+                        "bottom": {
+                            "value": 12
+                        }
+                    },
+                    "margin": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        }
+                    },
+                    "border": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        },
+                        "color": "rgba(79, 70, 229, 1)",
+                        "rounded": {
+                            "unit": "px",
+                            "topleft": {
+                                "value": 999
+                            },
+                            "topright": {
+                                "value": 999
+                            },
+                            "bottomleft": {
+                                "value": 999
+                            },
+                            "bottomright": {
+                                "value": 999
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "note": {
+            "text": "<p style=\"text-align: center\">No spam, unsubscribe anytime.</p>"
+        }
+    },
+    "container_properties": {
+        "background": {
+            "type": "color",
+            "color": "rgba(255, 255, 255, 1)",
+            "image": {
+                "original": null
+            }
+        },
+        "text": {
+            "color": "rgba(17, 24, 39, 1)",
+            "fontFamily": "Arial, sans-serif"
+        },
+        "padding": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            }
+        },
+        "border": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            },
+            "color": "rgba(243, 243, 243, 1)",
+            "rounded": {
+                "unit": "px",
+                "topleft": {
+                    "value": 20
+                },
+                "topright": {
+                    "value": 20
+                },
+                "bottomleft": {
+                    "value": 20
+                },
+                "bottomright": {
+                    "value": 20
+                }
+            }
+        },
+        "dimension": {
+            "width": {
+                "unit": "px",
+                "value": 460
+            },
+            "height": {
+                "unit": "px",
+                "value": null
+            }
+        }
+    }
+}

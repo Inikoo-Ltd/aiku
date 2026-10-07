@@ -15,7 +15,7 @@ const props = withDefaults(
     style?: Record<string, any>
     label?: string
     target?: string
-    type?: "internal" | "external" | "reveal"
+    type?: "internal" | "external" | "reveal" | "dialog"
     canonical_url?: string
     id?: number | string
   }>(),
