@@ -388,6 +388,10 @@ test('supplier product upload previews rows with their findings and creates noth
     $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
         supplierProductUploadRow(),
         supplierProductUploadRow([
+            'Part reference'                         => 'UPLB-01',
+            "Supplier's product code"                => 'UPLB-01B',
+        ]),
+        supplierProductUploadRow([
             'Part reference'                         => 'UPLB-02',
             "Supplier's product code"                => null,
             'Unit recommended description (website)' => 'Pack of 50 Craft Roses',
@@ -404,11 +408,13 @@ test('supplier product upload previews rows with their findings and creates noth
     $findings = $upload->records()->orderBy('row_number')->get()->mapWithKeys(fn ($record) => [$record->row_number => collect($record->data['findings'])->pluck('level', 'code')->all()]);
 
     expect($upload->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::WAITING_CONFIRMATION)
-        ->and($upload->number_rows)->toBe(2)
-        ->and($findings->keys()->all())->toBe([6, 7])
+        ->and($upload->number_rows)->toBe(3)
+        ->and($findings->keys()->all())->toBe([6, 7, 8])
         ->and($findings[6])->toMatchArray(['family_new' => 'warning'])
         ->and($findings[6])->not->toHaveKey('unit_name_pack')
-        ->and($findings[7])->toMatchArray([
+        ->and($findings[6])->not->toHaveKey('duplicate_part_reference')
+        ->and($findings[7])->toMatchArray(['duplicate_part_reference' => 'error'])
+        ->and($findings[8])->toMatchArray([
             'supplier_code_from_part_reference' => 'warning',
             'unit_name_pack'                    => 'block',
             'unit_label_odd'                    => 'block',
@@ -418,7 +424,7 @@ test('supplier product upload previews rows with their findings and creates noth
             'no_barcode'                        => 'block',
             'carton_not_split_into_outers'      => 'block',
         ])
-        ->and($upload->records()->where('row_number', 7)->first()->values['supplier_code'])->toBe('UPLB-02')
+        ->and($upload->records()->where('row_number', 8)->first()->values['supplier_code'])->toBe('UPLB-02')
         ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'like', 'UPLB-%')->exists())->toBeFalse()
         ->and(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
 });
@@ -512,6 +518,29 @@ test('supplier product upload AI checks add Jev findings and the final review, a
     $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Part reference' => 'UPLB-09', "Supplier's product code" => 'UPLB-09'])]));
 
     expect($upload->data['review']['status'])->toBe('off');
+});
+
+test('supplier product upload is not left waiting when the AI checks crash', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    App\Actions\Helpers\AI\AskJev::shouldRun()->andThrow(new RuntimeException('AI gateway down'));
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow()]));
+
+    expect($upload->data['ai'])->toBe('failed')
+        ->and(collect($upload->records()->first()->data['findings'])->pluck('level', 'code')->all())->toMatchArray(['ai_checks_not_run' => 'block'])
+        ->and(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make()->problems($upload))->not->toContain('The AI checks are still running.');
+});
+
+test('supplier product upload import errors shown to staff never carry urls or keys', function () {
+    $errorText = fn (Throwable $e) => (fn () => $this->errorText($e))->call(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make());
+
+    expect($errorText(new RuntimeException('cURL error 28: timed out for https://rates.example.com/v1/historical?api_key=SECRET123&date=2026-10-07')))
+        ->toBe('An outside service did not answer in time, please try again.')
+        ->and($errorText(new RuntimeException('Bad answer from https://rates.example.com/x?api_key=SECRET123')))
+        ->not->toContain('SECRET123')
+        ->and($errorText(Illuminate\Validation\ValidationException::withMessages(['code' => 'Code taken.'])))
+        ->toBe('Code taken.');
 });
 
 test('UI supplier product upload preview shows the rows and saves decisions', function () {

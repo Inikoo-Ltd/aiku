@@ -173,12 +173,12 @@ class CheckSupplierProductSheet
 
             foreach ($groups as $group) {
                 $sheetRows = $group->pluck('row')->implode(', ');
-                foreach ($group->keys() as $index) {
+                foreach ($group->keys()->slice(1) as $index) {
                     $rows[$index]['findings'][] = [
                         'level'   => $rule['level'],
                         'code'    => 'duplicate_'.$key,
                         'column'  => $rule['column']->value,
-                        'message' => __(':column :value appears in rows :rows.', ['column' => $rule['column']->heading(), 'value' => $rows[$index]['values'][$key], 'rows' => $sheetRows]),
+                        'message' => __(':column :value is already on an earlier row (rows :rows), skip or fix this one.', ['column' => $rule['column']->heading(), 'value' => $rows[$index]['values'][$key], 'rows' => $sheetRows]),
                     ];
                 }
             }
