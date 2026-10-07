@@ -120,6 +120,12 @@ class CloseManufactureTaskSession extends OrgAction
             throw ValidationException::withMessages(['manager_code' => $e->getMessage()]);
         }
 
+        if ($employee->id == $session->employee_id || $employee->user_id == $session->user_id || $employee->users()->whereKey($session->user_id)->exists()) {
+            throw ValidationException::withMessages([
+                'manager_code' => __('Someone else must authorise your overproduction'),
+            ]);
+        }
+
         $managerUser = $employee->state == EmployeeStateEnum::WORKING ? ($employee->user ?? $employee->users()->first()) : null;
         if (!$managerUser?->authTo([
             'org-supervisor.'.$session->organisation_id,

@@ -63,7 +63,7 @@ Zadajte skutočné číslo a stlačte **DONE**. Obrazovka upozorní na kusy nad 
 - **Naskenovať kartu** - vedúci alebo supervízor ukáže kamere svoj osobný QR kód (ten istý, ktorým sa pípa do práce). Prijme sa hneď po načítaní. **Prepnúť kameru** prepína prednú a zadnú kameru.
 - **Použiť PIN vedúceho** - ak kamera kód neprečíta, vedúci zadá svoj dochádzkový PIN.
 
-Schváliť môže len ten, kto riadi túto výrobu. Po piatich nesprávnych kartách alebo PIN-och sa okno na 15 minút zablokuje.
+Schváliť môže len ten, kto riadi túto výrobu, a nikdy nie vlastnú prácu. Po piatich nesprávnych kartách alebo PIN-och sa okno na 15 minút zablokuje.
 
 Po schválení sa úloha zväčší na to, čo sa naozaj vyrobilo: sklad zaskladní všetko, čo si žiadna objednávka nepýtala ide na sklad, a suroviny sa odpíšu za celú dávku. Nasledujúce kroky tej istej úlohy sa zväčšia tiež. Stránka výrobnej zákazky ukazuje, kto vyrobil navyše, kto to schválil, ako a kedy.
 

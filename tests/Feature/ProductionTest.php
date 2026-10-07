@@ -1159,6 +1159,11 @@ test('making more than the job asked for needs a manager badge or pin and grows 
         ->and(fn () => CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 25, 'manager_code' => $operativePin]))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 
+    $session->update(['employee_id' => $manager->id]);
+    expect(fn () => CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 25, 'manager_code' => $managerPin]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Someone else must authorise your overproduction');
+    $session->update(['employee_id' => null]);
+
     CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 25, 'manager_code' => $managerPin, 'manager_method' => 'qr']);
 
     $tasks = $item->tasks()->orderBy('position')->get();

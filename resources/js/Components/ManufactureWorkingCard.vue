@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
 import Dialog from 'primevue/dialog'
 import Password from 'primevue/password'
@@ -102,6 +102,8 @@ const surplus = computed(() => quantityMade.value === null ? 0 : Math.max(0, qua
 
 const askManager = ref(false)
 const usePin = ref(false)
+const pinField = ref<HTMLElement | null>(null)
+watch(usePin, (showPin) => showPin && nextTick(() => pinField.value?.querySelector('input')?.focus()))
 const managerPin = ref('')
 const facingMode = ref<'environment' | 'user'>('environment')
 const cameraError = ref<string | null>(null)
@@ -279,20 +281,19 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 </div>
             </div>
 
-            <div v-else class="mt-4">
+            <form v-else ref="pinField" class="mt-4" @submit.prevent="managerPin && closeSession(null, { manager_code: managerPin, manager_method: 'pin' })">
                 <div v-if="cameraError" class="mb-2 text-sm text-gray-500">{{ ctrans('Camera not available') }}</div>
-                <Password v-model="managerPin" :feedback="false" toggleMask autofocus fluid
+                <Password v-model="managerPin" :feedback="false" toggleMask fluid
                     :inputProps="{ autocapitalize: 'characters', autocomplete: 'off' }"
-                    inputClass="text-center text-3xl tracking-widest"
-                    @keyup.enter="managerPin && closeSession(null, { manager_code: managerPin, manager_method: 'pin' })" />
-                <button type="button" class="mt-3 w-full rounded-lg bg-[--app-accent] py-4 text-xl font-semibold text-[--app-accent-text] disabled:opacity-40"
-                    :disabled="processing || !managerPin" @click="closeSession(null, { manager_code: managerPin, manager_method: 'pin' })">
+                    inputClass="text-center text-3xl tracking-widest" />
+                <button type="submit" class="mt-3 w-full rounded-lg bg-[--app-accent] py-4 text-xl font-semibold text-[--app-accent-text] disabled:opacity-40"
+                    :disabled="processing || !managerPin">
                     {{ ctrans('Verify PIN') }}
                 </button>
                 <button type="button" class="mt-2 w-full rounded-lg border border-gray-300 bg-white py-3 text-lg text-gray-700" @click="usePin = false; cameraError = null">
                     {{ ctrans('Back to QR scan') }}
                 </button>
-            </div>
+            </form>
         </Dialog>
 
         <div v-if="askOutcome" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">

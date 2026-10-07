@@ -63,7 +63,7 @@ Escribe el número real y pulsa **DONE**. La pantalla avisa de las unidades por 
 - **Escanear la tarjeta** - un responsable o supervisor enseña a la cámara su QR personal (el mismo con el que ficha). Se acepta en cuanto se lee. **Cambiar cámara** alterna entre la cámara delantera y la trasera.
 - **Usar PIN del responsable** - si la cámara no lo lee, el responsable escribe su PIN de fichaje.
 
-Solo puede autorizar quien dirige esta planta. Tras cinco tarjetas o PIN erróneos la ventana se bloquea 15 minutos.
+Solo puede autorizar quien dirige esta planta, y nunca su propio trabajo. Tras cinco tarjetas o PIN erróneos la ventana se bloquea 15 minutos.
 
 Una vez autorizado, el trabajo crece a lo realmente hecho: el almacén guarda todo, lo que ningún pedido pidió va a stock y las materias primas se descuentan por el lote entero. Los pasos siguientes del mismo trabajo crecen también. La página de la orden de trabajo muestra quién hizo el extra, quién lo autorizó, cómo y cuándo.
 

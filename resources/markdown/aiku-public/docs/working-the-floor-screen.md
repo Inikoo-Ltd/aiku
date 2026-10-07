@@ -63,7 +63,7 @@ Type the real number and press **DONE**. The screen warns *18 above target, a ma
 - **Scan the badge** - a manager or supervisor holds their personal QR (the same one they clock in with) to the camera. It is accepted as soon as it is read. **Switch camera** flips between front and back camera.
 - **Use manager PIN** - if the camera will not read it, the manager types their clocking PIN instead.
 
-Only someone who runs this factory floor can authorise. After five wrong badges or PINs the window refuses for 15 minutes.
+Only someone who runs this factory floor can authorise, and never for their own work. After five wrong badges or PINs the window refuses for 15 minutes.
 
 Once authorised the job grows to what was really made: the warehouse puts away all of it, what no order asked for goes to stock, and the raw materials are deducted for the whole batch. Later steps of the same job grow too, so the next person can finish all of it. The job order page shows who made the extra, who authorised it, how and when.
 
