@@ -108,11 +108,10 @@ class IndexPlatforms extends OrgAction
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
         $pageHead = [
-            'title'         => $this->parent->name,
-            'model'         => __('Platform'),
-            'icon'          => [
+            'title' => __('Platforms'),
+            'icon'  => [
                 'title' => __('Platforms'),
-                'icon'  => ['fal', 'fa-route'],
+                'icon'  => ['fal', 'fa-code-branch'],
             ],
         ];
 
@@ -183,12 +182,12 @@ class IndexPlatforms extends OrgAction
                         ]
                     )
                 ),
-            'grp.platforms.index' =>
+            'grp.dashboard.platforms.index' =>
                 array_merge(
                     ShowGroupDashboard::make()->getBreadcrumbs(),
                     $headCrumb(
                         [
-                            'name'       => 'grp.platforms.index',
+                            'name'       => 'grp.dashboard.platforms.index',
                             'parameters' => $routeParameters
                         ]
                     )

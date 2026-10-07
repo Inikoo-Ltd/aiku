@@ -185,18 +185,18 @@ class ShowPlatform extends OrgAction
                         $suffix
                     )
                 ),
-            'grp.platforms.show' =>
+            'grp.dashboard.platforms.show' =>
                 array_merge(
                     ShowGroupDashboard::make()->getBreadcrumbs(),
                     $headCrumb(
                         $platform,
                         [
                             'index' => [
-                                'name'       => 'grp.platforms.index',
+                                'name'       => 'grp.dashboard.platforms.index',
                                 'parameters' => $routeParameters
                             ],
                             'model' => [
-                                'name'       => 'grp.platforms.show',
+                                'name'       => 'grp.dashboard.platforms.show',
                                 'parameters' => $routeParameters
                             ]
                         ],

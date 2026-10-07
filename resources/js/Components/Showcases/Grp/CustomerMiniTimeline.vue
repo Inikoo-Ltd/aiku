@@ -274,7 +274,7 @@ const formatMetadataValue = (value: unknown): string => {
         <div v-if="onViewAll && (events?.length ?? 0) > 0" class="pt-2 border-t border-gray-200 text-center">
             <button
                 @click="onViewAll"
-                class="text-xs text-indigo-600 hover:underline"
+                class="text-xs font-medium text-[--app-accent-strong] hover:underline"
             >
                 {{ trans('View all activity') }}
             </button>

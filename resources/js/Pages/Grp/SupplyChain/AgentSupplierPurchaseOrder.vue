@@ -9,6 +9,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { useLocaleStore } from '@/Stores/locale'
 import { ctrans } from '@/Composables/useTrans'
 import AspoDepositsChecklist from '@/Components/Procurement/AspoDepositsChecklist.vue'
 
@@ -36,6 +37,8 @@ const props = defineProps<{
         number_transactions: number
     }
 }>()
+
+const locale = useLocaleStore()
 </script>
 
 <template>
@@ -78,10 +81,10 @@ const props = defineProps<{
             </template>
 
             <dt class="text-gray-500">{{ ctrans('Amount') }}</dt>
-            <dd>{{ showcase.cost_total }} {{ showcase.currency_code }}</dd>
+            <dd>{{ locale.currencyFormat(showcase.currency_code, showcase.cost_total) }}</dd>
 
             <dt class="text-gray-500">{{ ctrans('Deposit') }}</dt>
-            <dd>{{ showcase.deposit_amount != null ? `${showcase.deposit_amount} ${showcase.currency_code}` : '-' }}</dd>
+            <dd>{{ showcase.deposit_amount != null ? locale.currencyFormat(showcase.currency_code, showcase.deposit_amount) : '-' }}</dd>
 
             <dt class="text-gray-500">{{ ctrans('Balance paid') }}</dt>
             <dd>{{ showcase.balance_paid_at ? useFormatTime(showcase.balance_paid_at) : '-' }}</dd>

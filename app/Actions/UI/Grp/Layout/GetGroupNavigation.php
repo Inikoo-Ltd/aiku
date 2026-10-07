@@ -25,7 +25,7 @@ class GetGroupNavigation
         $groupNavigation['group'] = [
             'label'   => __('Group'),
             'icon'    => ['fal', 'fa-city'],
-            'root'    => 'grp.dashboard.show',
+            'root'    => 'grp.dashboard.',
             'route'   => [
                 'name' => 'grp.dashboard.show'
             ],
@@ -35,9 +35,9 @@ class GetGroupNavigation
                         'label'   => __("Catalogue"),
                         "tooltip" => __("Catalogue"),
                         "icon"    => ["fal", "fa-books"],
-                        'root'    => 'grp.catalogue.show',
+                        'root'    => 'grp.dashboard.catalogue.show',
                         "route"   => [
-                            "name"       => 'grp.catalogue.show',
+                            "name"       => 'grp.dashboard.catalogue.show',
                             "parameters" => [],
                         ],
                     ],
@@ -45,9 +45,9 @@ class GetGroupNavigation
                         'label'   => __("Platform"),
                         "tooltip" => __("Platform"),
                         'icon'    => ['fal', 'fa-code-branch'],
-                        'root'    => 'grp.platforms.index',
+                        'root'    => 'grp.dashboard.platforms.',
                         "route"   => [
-                            "name"       => 'grp.platforms.index',
+                            "name"       => 'grp.dashboard.platforms.index',
                             "parameters" => [],
                         ],
                     ]

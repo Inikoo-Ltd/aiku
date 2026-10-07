@@ -2,22 +2,30 @@
 import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
-import ShowcaseStats from "@/Components/ShowcaseStats.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faShoppingCart } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faShoppingCart, faInfoCircle, faUndo, faPercentage, faCoins } from "@fal"
 
-library.add(faShoppingCart)
+library.add(faShoppingCart, faInfoCircle, faUndo, faPercentage, faCoins)
 
 defineProps<{
     data: object
     title: string
     pageHead: object
-    stats: { label: string; value: number | string; information?: string }[]
+    stats: { label: string; value: number | string; information?: string; tone?: "lost" | "recovered" | "rate"; icon?: string }[]
 }>()
+
+const tones = {
+    lost: { border: "border-red-200", icon: "text-red-400", value: "text-red-600" },
+    recovered: { border: "border-green-200", icon: "text-green-500", value: "text-green-600" },
+    rate: { border: "border-gray-200", icon: "text-gray-400", value: "text-gray-800" },
+}
+
+const toneClasses = (tone?: keyof typeof tones) => tones[tone ?? "rate"]
 
 function orderRoute(row: any) {
     return route("grp.org.shops.show.ordering.orders.show", [
@@ -47,7 +55,16 @@ function sendReminder(row: any) {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <ShowcaseStats v-if="stats?.length" :data="stats" class="mt-5" />
+    <div v-if="stats?.length" class="mx-4 mb-4 mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" :class="stats.length > 3 ? 'lg:grid-cols-5' : 'lg:grid-cols-3'">
+        <div v-for="stat in stats" :key="stat.label" class="rounded-lg border bg-white px-4 py-3" :class="toneClasses(stat.tone).border">
+            <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                <FontAwesomeIcon v-if="stat.icon" :icon="stat.icon" :class="toneClasses(stat.tone).icon" fixed-width />
+                {{ stat.label }}
+                <FontAwesomeIcon v-if="stat.information" v-tooltip="stat.information" icon="fal fa-info-circle" class="text-gray-400" fixed-width />
+            </div>
+            <div class="mt-1 text-xl font-semibold tabular-nums" :class="toneClasses(stat.tone).value">{{ stat.value }}</div>
+        </div>
+    </div>
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: row }">
             <Link :href="orderRoute(row)" class="primaryLink">
@@ -76,9 +93,9 @@ function sendReminder(row: any) {
                 type="tertiary"
                 size="xs"
                 icon="fal fa-paper-plane"
-                :label="trans('Send reminder')"
+                :label="ctrans('Send reminder')"
                 :disabled="!row['outbox_state_active']"
-                :tooltip="!row['outbox_state_active'] ? trans('Email not configure yet') : undefined"
+                :tooltip="!row['outbox_state_active'] ? ctrans('Email not configure yet') : undefined"
                 @click="sendReminder(row)"
             />
             <span v-else class="text-gray-400">—</span>
