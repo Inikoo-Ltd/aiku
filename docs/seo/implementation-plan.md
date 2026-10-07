@@ -200,32 +200,25 @@ pages. That covers what Semrush shows for Core Web Vitals.
 
 ## Phase 2: keywords
 
-### 2.1 Keyword research
+### 2.1 Keyword research (taken out)
 
-Built on 7 October 2026, **blocked on Google Ads Basic access**.
+Built and then taken out on 7 October 2026, until the data source is decided.
 
-- The developer token has Explorer access. `customers/{id}:generateKeywordIdeas` answers "This method
-  is not allowed for use with explorer access". Apply for Basic access in the Google Ads API Center;
-  nothing in Aiku changes when it is granted.
-- `GetKeywordIdeas` (`app/Actions/Web/Seo/`) calls Keyword Planner through
-  `GoogleAdsClient::generateKeywordIdeas()` for up to 20 seed keywords, a URL, or both, with a country
-  and a language (geo target and language constants are looked up once and cached). A shop without
-  its own Google Ads connection uses the first connected shop of the group, and the screen says
-  which.
-- Results (top 300 by volume) are cached for 24 hours per search and upserted into `seo_keywords`
-  (shop, keyword, country, language, average and 12 monthly volumes, competition, top of page bids,
-  source, fetched_at). Every call is logged in `seo_api_requests`.
-- Volumes are labelled as Keyword Planner figures. Ad competition is shown as Google reports it and
-  labelled as advertiser competition, not ranking difficulty.
-- Keyword difficulty is not built: it needs the top 10 results of each keyword, so it waits for the
-  SERP provider of 2.2.
-- Not built yet: the monthly refresh of saved keywords. It only makes sense once Basic access works.
+- Keyword Planner (`customers/{id}:generateKeywordIdeas`) refuses Aiku's developer token: it has
+  Explorer access, and this method needs Basic access, which Google grants after an application in
+  the Google Ads API Center.
+- The paid alternative is the Google Ads search volume endpoint of a keyword data provider (for
+  DataForSEO about $0.05 per task of up to 1,000 keywords). That choice is part of the provider
+  decision for 2.2.
+- What was built and removed: `GetKeywordIdeas`, `GoogleAdsClient::generateKeywordIdeas()`, the
+  `seo_keywords` table and the Research tab on SEO > Keywords (Keyword Planner ideas plus the
+  website's Search Console queries containing the same words). The code is in commit `f370bbc652`
+  on the `seo` branch if it is needed again.
+- Keyword difficulty was never built: it needs the top 10 results of each keyword from a SERP
+  provider.
 
-**Screen.** SEO > Keywords, tab Research: keywords or a URL, country and language (defaulting to the
-shop's), the Keyword Planner results with volume, a 12 month trend, ad competition and bid range,
-and below them the Search Console queries of the website that contain the same words (last 90 days).
-The Search Console part works today and is labelled "impressions are not search volume". Every
-result has a Track action.
+**To bring it back:** get Basic access (free) or choose a keyword data provider, then restore the
+files from `f370bbc652`.
 
 ### Tracked keywords and competitors (set from the UI)
 
@@ -237,8 +230,8 @@ domains" can be made by the team in Aiku.
   country, language and device.
 - `seo_competitors`: shop, domain (stored without scheme, `www.` and path), optional name.
 - SEO > Keywords, tabs Tracked keywords and Competitors: add, change device and frequency inline,
-  pause, remove. Editing needs the same web edit permission as the other SEO actions
-  (`WithSeoEditAuthorisation`).
+  pause, remove. Country and language default to the shop's. Editing needs the same web edit
+  permission as the other SEO actions (`WithSeoEditAuthorisation`).
 - Nothing is fetched for them yet. The cost of 2.2 is keywords x devices x checks per month, so the
   list should be agreed before a SERP provider is switched on.
 
@@ -392,7 +385,7 @@ Similarweb API (licensed, priced) for competitor traffic before building it.
 | --- | --- |
 | Who adds the service account to the properties that are still missing | Phase 1 |
 | SERP provider and monthly budget | Phase 2 |
-| Apply for Google Ads Basic access for the developer token | Phase 2.1 |
+| Apply for Google Ads Basic access, or pick a keyword data provider | Phase 2.1 |
 | Tracked keyword list, locations and devices per shop, and check frequency (set in SEO > Keywords) | Phase 2 |
 | Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |
 | Competitor domains per shop (set in SEO > Keywords) | Phase 2 (positions) and Phase 3 (backlinks) |
