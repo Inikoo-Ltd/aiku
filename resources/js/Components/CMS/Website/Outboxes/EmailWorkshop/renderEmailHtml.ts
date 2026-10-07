@@ -568,7 +568,7 @@ ${email.page.favicon ? `<link rel="icon" href="${escapeAttribute(email.page.favi
 ${webFontLinks(email)}
 <style>
 *{box-sizing:border-box}body{margin:0;padding:0}a[x-apple-data-detectors]{color:inherit!important;text-decoration:inherit!important}#MessageViewBody a{color:inherit;text-decoration:none}p{line-height:inherit}.button p{margin:0}.desktop_hide,.desktop_hide table{mso-hide:all;display:none;max-height:0;overflow:hidden}
-@media (max-width:${width + 20}px){.product-cell{display:block!important;width:100%!important}.icons-stack .icons-row,.icons-stack .icons-row tbody,.icons-stack .icons-row tr{display:block!important;width:100%!important}.icons-stack .icon-item{display:block!important;width:100%!important}.row-content{width:100%!important}.stack .column{width:100%;display:block}.mobile_hide{min-height:0;max-height:0;max-width:0;overflow:hidden;font-size:0;display:none}.desktop_hide,.desktop_hide table{display:table!important;max-height:none!important}${context.mobileRules.join('')}}
+@media (max-width:${width + 20}px){.product-cell{display:block!important;width:100%!important}.icons-stack .icons-row,.icons-stack .icons-row tbody,.icons-stack .icons-row tr{display:block!important;width:100%!important}.icons-stack .icon-item{display:block!important;width:100%!important}.row-content{width:100%!important}.stack .column{width:100%!important;display:block!important}.mobile_hide{min-height:0;max-height:0;max-width:0;overflow:hidden;font-size:0;display:none}.desktop_hide,.desktop_hide table{display:table!important;max-height:none!important}${context.mobileRules.join('')}}
 </style>
 </head>
 <body class="body" style="background-color:${bodyBackground};margin:0;padding:0;-webkit-text-size-adjust:none;text-size-adjust:none">
