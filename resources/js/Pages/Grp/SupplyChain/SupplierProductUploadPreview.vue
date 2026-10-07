@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
-import { computed, ref } from "vue"
+import { Head, Link, router, usePoll } from "@inertiajs/vue3"
+import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -53,7 +53,8 @@ const props = defineProps<{
         errors: string[]
         can_edit: boolean
         problems: string[]
-        review: { summary?: string; rows?: Record<string, string> } | null
+        review: { status?: string; note?: string; partial?: boolean; summary?: string; rows?: Record<string, string> } | null
+        ai: string | null
         purchase_orders: Record<string, { purchase_order?: string; lines?: number; errors?: string[]; error?: string }> | null
     }
     supplier: { code: string; name: string; currency: string | null; products_route: RouteDef }
@@ -63,6 +64,10 @@ const props = defineProps<{
 }>()
 
 const isImporting = ref(false)
+
+const isAiRunning = computed(() => ["queued", "running"].includes(props.upload.ai ?? ""))
+const { start: startPolling, stop: stopPolling } = usePoll(4000, { only: ["upload", "rows"] }, { autoStart: isAiRunning.value })
+watch(isAiRunning, (running) => (running ? startPolling() : stopPolling()))
 const skoNames = ref<Record<number, string>>(Object.fromEntries(props.rows.map((row) => [row.id, row.values.sko_name ?? ""])))
 
 const levelOrder = { error: 0, block: 1, link: 2, warning: 3 }
@@ -169,9 +174,15 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
             </ul>
         </div>
 
-        <div v-if="upload.review?.summary" class="rounded border border-gray-200 bg-gray-50 p-3">
-            <div class="font-semibold">{{ ctrans("AI review") }}</div>
+        <div v-if="isAiRunning" class="rounded border border-gray-200 bg-gray-50 p-3 text-gray-600">
+            {{ ctrans("AI checks are running, this page updates by itself. Import waits for them.") }}
+        </div>
+        <div v-else-if="upload.review?.summary" class="rounded border border-gray-200 bg-gray-50 p-3">
+            <div class="font-semibold">{{ ctrans("AI review") }}<span v-if="upload.review.partial" class="font-normal text-gray-500"> · {{ ctrans("flagged rows only") }}</span></div>
             <p class="mt-1 whitespace-pre-line">{{ upload.review.summary }}</p>
+        </div>
+        <div v-else-if="upload.review?.note" class="rounded border border-gray-200 bg-gray-50 p-3 text-gray-600">
+            {{ upload.review.note }}
         </div>
 
         <div v-if="draft_orders.length" class="rounded border border-gray-200 p-3">

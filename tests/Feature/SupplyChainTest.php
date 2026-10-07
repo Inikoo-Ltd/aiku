@@ -479,6 +479,39 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
 });
 
 
+test('supplier product upload AI checks add Jev findings and the final review, and stop when the monthly budget is spent', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    config(['services.openrouter.api_key' => 'test-key']);
+    App\Actions\Helpers\AI\AskJev::shouldRun()->andReturn([
+        'unit_name_is_pack' => ['noul' => 0.95],
+        'spelling'          => ['noul' => 0.75],
+        'materials_misfit'  => ['noul' => 0.1],
+        'numbers_odd'       => ['noul' => 0.2],
+        'family_misfit'     => ['noul' => 0.1],
+        'rows_shifted'      => ['noul' => 0.1],
+        'tariff_misfit'     => ['noul' => 0.1],
+    ]);
+    Illuminate\Support\Facades\Http::fake(['openrouter.ai/api/v1/chat/completions' => Illuminate\Support\Facades\Http::response([
+        'model'   => 'anthropic/claude-fable-5.1',
+        'choices' => [['message' => ['content' => '{"summary": ["Row 6 names a pack."], "rows": {"6": "Name it Hemp Coaster."}}']]],
+        'usage'   => ['prompt_tokens' => 1000, 'completion_tokens' => 200, 'cost' => 0.02],
+    ])]);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit recommended description (website)' => 'Hemp Coasters'])]));
+
+    $findings = collect($upload->records()->first()->data['findings'])->where('source', 'jev')->pluck('level', 'code');
+    expect($upload->data['ai'])->toBe('done')
+        ->and($findings->all())->toBe(['jev_unit_name_pack' => 'block', 'jev_spelling' => 'warning'])
+        ->and($upload->data['review'])->toMatchArray(['status' => 'done', 'summary' => 'Row 6 names a pack.', 'rows' => ['6' => 'Name it Hemp Coaster.']])
+        ->and((float)DB::table('ai_usages')->where('feature', 'ReviewSupplierProductUpload')->sum('cost'))->toBe(0.02);
+
+    DB::table('ai_usages')->insert(['created_at' => now(), 'feature' => 'ReviewSupplierProductUpload', 'provider' => 'openrouter', 'model' => 'anthropic/claude-fable-5.1', 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 40]);
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Part reference' => 'UPLB-09', "Supplier's product code" => 'UPLB-09'])]));
+
+    expect($upload->data['review']['status'])->toBe('off');
+});
+
 test('UI supplier product upload preview shows the rows and saves decisions', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());

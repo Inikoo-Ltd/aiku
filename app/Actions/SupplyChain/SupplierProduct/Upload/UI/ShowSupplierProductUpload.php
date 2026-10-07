@@ -63,6 +63,7 @@ class ShowSupplierProductUpload extends InertiaAction
                 'can_edit'    => $this->canEdit && $upload->state === UploadStateEnum::WAITING_CONFIRMATION,
                 'problems'    => $upload->state === UploadStateEnum::WAITING_CONFIRMATION ? ImportSupplierProductUpload::make()->problems($upload) : [],
                 'review'      => Arr::get($upload->data, 'review'),
+                'ai'          => Arr::get($upload->data, 'ai'),
                 'purchase_orders' => Arr::get($upload->data, 'purchase_orders'),
             ],
             'supplier'    => [

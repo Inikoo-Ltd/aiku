@@ -93,6 +93,10 @@ class ImportSupplierProductUpload
         }
 
         $problems = [];
+        if (in_array(Arr::get($upload->data, 'ai'), ['queued', 'running'], true)) {
+            $problems[] = __('The AI checks are still running.');
+        }
+
         foreach ($upload->records()->where('status', UploadRecordStatusEnum::PREVIEW)->orderBy('row_number')->get() as $record) {
             if (Arr::get($record->data, 'skip')) {
                 continue;
