@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Dialog from "primevue/dialog"
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { nextTick, onUnmounted, ref, watch } from "vue"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import IconField from "primevue/iconfield"
@@ -185,10 +185,6 @@ watch(searchQuery, (newValue) => {
     debouncedFetch(newValue)
 })
 
-onMounted(() => {
-    fetchRows()
-})
-
 onUnmounted(() => {
     detachScrollListener()
 })
@@ -212,7 +208,7 @@ watch(() => model.value, async (newValue) => {
         await nextTick()
         attachScrollListener()
     }
-})
+}, { immediate: true })
 </script>
 
 <template>

@@ -675,3 +675,15 @@ function actingAsUserWithRoles(\App\Models\SysAdmin\User $user, array $roles): v
     app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
     \Pest\Laravel\actingAs($user->refresh());
 }
+
+/**
+ * A line on a partner shopping list as the seller gets it: added by the buyer and submitted.
+ */
+function submittedPartnerShoppingListItem(\App\Models\Procurement\OrgPartner $orgPartner, \App\Models\Inventory\OrgStock $orgStock, array $modelData): \App\Models\Procurement\PartnerShoppingListItem
+{
+    $draft = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, $modelData);
+    \App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList::make()->action($orgPartner);
+
+    return \App\Models\Procurement\PartnerShoppingListItem::find($draft->id)
+        ?? \App\Models\Procurement\PartnerShoppingListItem::openPartnerLineFor($orgPartner->id, $draft->org_stock_id)->firstOrFail();
+}

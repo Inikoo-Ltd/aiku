@@ -171,7 +171,7 @@ class StorePurchaseOrderTransaction extends OrgAction
             return null;
         }
 
-        $sellerOrgStock = OrgStock::where('organisation_id', $orgPartner->partner_id)->where('stock_id', $orgStock->stock_id)->first();
+        $sellerOrgStock = OrgStock::where('organisation_id', $orgPartner->partner_id)->where('stock_id', $orgStock->stock_id)->orderByRaw("state = 'discontinued'")->orderBy('id')->first();
         if (!$sellerOrgStock || (float) $sellerOrgStock->packed_in <= 0) {
             return null;
         }

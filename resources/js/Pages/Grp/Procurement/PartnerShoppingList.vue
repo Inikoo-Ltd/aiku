@@ -7,6 +7,13 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { ref, watch } from "vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
+import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
+import PurchaseOrderSuggestButton from "@/Components/Procurement/PurchaseOrderSuggestButton.vue"
+import Toggle from "@/Components/Pure/Toggle.vue"
+import RenderWhenVisible from "@/Components/Utils/RenderWhenVisible.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -17,14 +24,15 @@ import Modal from "@/Components/Utils/Modal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCut, faUpload } from "@fal"
-library.add(faCut, faUpload)
+import { faCut, faUpload, faPaperPlane } from "@fal"
+library.add(faCut, faUpload, faPaperPlane)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ConfirmDialog from "primevue/confirmdialog"
+import ConfirmPopup from "primevue/confirmpopup"
 import ProgressBar from "primevue/progressbar"
 import { useConfirm } from "primevue/useconfirm"
 
@@ -33,6 +41,9 @@ const props = defineProps<{
 	title: string
 	data: object
 	orgPartner: { id: number; slug: string; currency: string }
+	draftsCount: number
+	isSentView: boolean
+	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
 	upload_excel: {
 		title: { label: string; information: string }
@@ -59,7 +70,7 @@ function confirmDeleteAll() {
 		group: "partner-shopping-list",
 		header: ctrans("Delete all open items"),
 		message: ctrans(
-			"Remove every open item from this shopping list? Items already taken by the partner are kept."
+			"Remove every draft and sent line not yet taken by the partner? Lines the partner already took are kept."
 		),
 		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
 		acceptProps: { label: ctrans("Delete all"), severity: "danger" },
@@ -137,6 +148,161 @@ function breakBatch() {
 	)
 }
 
+const isEditable = (item: { state: string }) => !props.isSentView && item.state === "draft"
+
+const typedSkos = ref<Record<number, number>>({})
+const savingId = ref<number | null>(null)
+const linesTotal = ref(props.linesValue)
+const savedQuantities = ref<Record<number, number>>({})
+watch(
+	() => props.data,
+	() => {
+		savedQuantities.value = {}
+		linesTotal.value = props.linesValue
+	}
+)
+
+const withSavedQuantity = <T extends QuantityItem>(item: T): T => {
+	const quantity = savedQuantities.value[item.id]
+
+	return quantity === undefined
+		? item
+		: { ...item, quantity, quantity_ordered: quantity * (Number(item.units_per_pack) || 1) }
+}
+
+interface QuantityItem {
+	id: number
+	quantity: number | string
+	quantity_ordered: number
+	units_per_pack: number
+	price_per_sko: number | null
+}
+
+async function saveQuantity(item: QuantityItem, quantity: number): Promise<boolean> {
+	savingId.value = item.id
+	try {
+		const response = await axios.patch(
+			route("grp.org.procurement.org_partners.show.shopping_list.update", [
+				routeParams["organisation"],
+				props.orgPartner.id,
+				item.id,
+			]),
+			{ quantity }
+		)
+		const savedQuantity = Number(response.data?.quantity ?? quantity)
+		const previousQuantity = Number(withSavedQuantity(item).quantity)
+		linesTotal.value += (savedQuantity - previousQuantity) * Number(item.price_per_sko ?? 0)
+		savedQuantities.value[item.id] = savedQuantity
+		delete typedSkos.value[item.id]
+
+		return true
+	} catch (error: any) {
+		notify({
+			title: ctrans("Something went wrong"),
+			text: error?.response?.data?.message || ctrans("Failed to update quantity"),
+			type: "error",
+		})
+
+		return false
+	} finally {
+		savingId.value = null
+	}
+}
+
+async function onSaveQuantity(item: QuantityItem, form: { quantity: number; defaults: () => void }) {
+	if (await saveQuantity(item, Number(form.quantity))) {
+		form.defaults()
+	}
+}
+
+const BRAVE_MODE_STORAGE_KEY = "purchase-order-brave-mode"
+
+function readBraveMode(): boolean {
+	try {
+		return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === "1"
+	} catch {
+		return false
+	}
+}
+
+const isBraveMode = ref(readBraveMode())
+
+watch(isBraveMode, (value) => {
+	try {
+		localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? "1" : "0")
+	} catch {
+		return
+	}
+})
+
+function confirmDeleteItem(event: MouseEvent, item: { id: number }) {
+	if (isBraveMode.value) {
+		deleteItem(item)
+		return
+	}
+
+	confirm.require({
+		target: event.currentTarget as HTMLElement,
+		message: ctrans("Remove this product from the ongoing PO?"),
+		icon: "pi pi-exclamation-triangle",
+		acceptLabel: ctrans("Remove"),
+		rejectLabel: ctrans("Cancel"),
+		acceptClass: "p-button-danger",
+		rejectClass: "p-button-text",
+		accept: () => deleteItem(item),
+	})
+}
+
+const isSubmitting = ref(false)
+
+const isSubmitConfirmOpen = ref(false)
+
+function confirmSubmit() {
+	if (isSubmitConfirmOpen.value) {
+		return
+	}
+	isSubmitConfirmOpen.value = true
+	confirm.require({
+		group: "partner-shopping-list",
+		header: ctrans("Submit the ongoing PO"),
+		message: ctrans(
+			"Send the :count draft lines to the partner? They see them and start working on them straight away.",
+			{ count: String(props.draftsCount) }
+		),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Submit") },
+		reject: () => (isSubmitConfirmOpen.value = false),
+		onHide: () => (isSubmitConfirmOpen.value = false),
+		accept: () => {
+			isSubmitConfirmOpen.value = false
+			router.post(
+				route("grp.org.procurement.org_partners.show.shopping_list.submit", [
+					routeParams["organisation"],
+					props.orgPartner.id,
+				]),
+				{},
+				{
+					preserveScroll: true,
+					onStart: () => (isSubmitting.value = true),
+					onFinish: () => (isSubmitting.value = false),
+					onSuccess: () =>
+						notify({
+							title: ctrans("Submitted"),
+							text: ctrans("The partner can now see the lines"),
+							type: "success",
+						}),
+					onError: (errors) =>
+						notify({
+							title: ctrans("Nothing submitted"),
+							text: errors.submit ?? ctrans("Something went wrong, please try again"),
+							type: "error",
+						}),
+				}
+			)
+		},
+	})
+}
+
 function deleteItem(item: { id: number }) {
 	router.delete(
 		route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
@@ -152,7 +318,7 @@ function deleteItem(item: { id: number }) {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		<template #otherBefore>
+		<template v-if="!isSentView" #otherBefore>
 			<Button
 				type="negative"
 				icon="fal fa-trash-alt"
@@ -169,10 +335,19 @@ function deleteItem(item: { id: number }) {
 				:label="ctrans('Upload')"
 				@click="isUploadOpen = true" />
 			<Button type="create" :label="ctrans('Add stocks')" @click="isModalOpen = true" />
+			<Button
+				type="primary"
+				icon="fal fa-paper-plane"
+				:label="ctrans('Submit (:count)', { count: String(draftsCount) })"
+				:tooltip="ctrans('Send the draft lines to the partner, they do not see them until then')"
+				:disabled="!draftsCount"
+				:loading="isSubmitting"
+				@click="confirmSubmit" />
 		</template>
 	</PageHeading>
 
 	<ConfirmDialog group="partner-shopping-list" />
+	<ConfirmPopup />
 	<UploadExcel
 		v-model="isUploadOpen"
 		:title="upload_excel.title"
@@ -186,89 +361,100 @@ function deleteItem(item: { id: number }) {
 		:orgPartnerId="orgPartner.id"
 		:currency="orgPartner.currency" />
 
-	<div class="mt-5 h-[3px]">
+	<div class="mt-5 flex items-center justify-between gap-4 px-4">
+		<span class="text-sm text-gray-600">
+			{{
+				isSentView
+					? ctrans("What the partner is working on. Change the order on the Ongoing PO.")
+					: ctrans("Not sent yet: the partner sees these lines after you press Submit.")
+			}}
+			<span class="ml-2 font-semibold tabular-nums text-gray-900">{{
+				useLocaleStore().currencyFormat(orgPartner.currency, linesTotal)
+			}}</span>
+		</span>
+		<label
+			v-if="!isSentView"
+			v-tooltip="
+				ctrans('When on, Remove deletes the product straight away without asking to confirm')
+			"
+			class="flex cursor-pointer items-center gap-2 text-sm"
+			:class="isBraveMode ? 'font-medium text-red-600' : 'text-gray-500'">
+			<Toggle v-model="isBraveMode" />
+			{{ ctrans("Brave mode") }}
+		</label>
+	</div>
+	<div class="mt-2 h-[3px]">
 		<ProgressBar v-if="isTableLoading" mode="indeterminate" style="height: 3px" />
 	</div>
 	<Table :resource="data">
 		<template #cell(info)="{ item }">
 			<div class="flex items-start gap-3">
-				<div class="h-12 w-12 shrink-0 rounded">
+				<div class="h-20 w-20 shrink-0 rounded">
 					<Image :src="item.image_sources" />
 				</div>
-				<div class="min-w-0 text-xs leading-5">
-					<div class="truncate text-sm font-medium text-gray-800">
+				<div class="min-w-0 space-y-0.5">
+					<div class="text-sm font-medium text-gray-800">
 						{{ item.org_stock_name }}
 					</div>
-					<div class="text-gray-500">
-						<span
-							v-tooltip="
-								ctrans('Stock the partner has available to sell us right now')
-							"
-							class="cursor-help underline decoration-dotted"
-							>{{ ctrans("Their stock") }}</span
-						>
-						<b class="font-medium text-gray-700 tabular-nums">{{
-							item.their_available !== null
-								? useLocaleStore().number(Math.floor(Number(item.their_available)))
-								: "-"
-						}}</b>
-						·
-						<span
-							v-tooltip="ctrans('Stock available in our own warehouse')"
-							class="cursor-help underline decoration-dotted"
-							>{{ ctrans("our stock") }}</span
-						>
-						<b class="font-medium text-gray-700 tabular-nums">{{
-							useLocaleStore().number(Math.floor(Number(item.buyer_available ?? 0)))
-						}}</b>
-						<template v-if="item.days_of_cover !== null">
-							·
-							<span
-								:class="{
-									'text-red-600 font-medium': Number(item.days_of_cover) <= 14,
-									'text-amber-600':
-										Number(item.days_of_cover) > 14 &&
-										Number(item.days_of_cover) <= 30,
-								}">
-								{{
-									Number(item.days_of_cover) === 0
-										? ctrans("we run out now")
-										: `${ctrans("Estimated: Would run out in")} ~${Math.round(Number(item.days_of_cover))} ${ctrans("days")}`
-								}}
-							</span>
-						</template>
+					<div v-if="item.price_per_sko" class="text-xs text-gray-500">
+						{{ ctrans("SKO cost") }}:
+						{{ useLocaleStore().currencyFormat(orgPartner.currency, item.price_per_sko) }}
 					</div>
+					<RenderWhenVisible minHeight="9rem">
+						<PurchaseOrderItemStockInfo
+							:item="withSavedQuantity(item)"
+							isPartner
+							:typedSkosById="typedSkos"
+							:isOrderLocked="!isEditable(item)" />
+					</RenderWhenVisible>
 				</div>
 			</div>
 		</template>
 		<template #cell(quantity)="{ item }">
-			<span class="block text-right font-medium tabular-nums">{{
+			<RenderWhenVisible v-if="isEditable(item)" minHeight="4.5rem">
+				<div class="flex flex-col items-end">
+					<NumberWithButtonSave
+						:key="`${item.id}-${withSavedQuantity(item).quantity}`"
+						isWithRefreshModel
+						:modelValue="Number(withSavedQuantity(item).quantity)"
+						:min="0"
+						:isLoading="savingId === item.id"
+						@update:modelValue="(value) => (typedSkos[item.id] = Number(value))"
+						@onSave="(form) => onSaveQuantity(item, form)" />
+					<PurchaseOrderSuggestButton
+						:item="withSavedQuantity(item)"
+						isPartner
+						:typedSkosById="typedSkos"
+						@suggest="(skos) => saveQuantity(item, skos)" />
+					<span
+						v-if="Number(item.order_quantum) > 1"
+						v-tooltip="
+							ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
+								quantum: item.order_quantum,
+							})
+						"
+						class="mt-0.5 cursor-help text-xs"
+						:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
+						{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
+					</span>
+				</div>
+			</RenderWhenVisible>
+			<span v-else class="block text-right font-medium tabular-nums">{{
 				useLocaleStore().number(Number(item.quantity))
 			}}</span>
-			<span
-				v-if="Number(item.order_quantum) > 1"
-				v-tooltip="
-					ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
-						quantum: item.order_quantum,
-					})
-				"
-				class="block cursor-help text-right text-xs"
-				:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
-				{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
-			</span>
 		</template>
 		<template #cell(amount)="{ item }">
 			<span class="block text-right tabular-nums">
 				{{
 					item.price_per_sko
-						? useLocaleStore().currencyFormat(orgPartner.currency, amountOf(item))
+						? useLocaleStore().currencyFormat(orgPartner.currency, amountOf(withSavedQuantity(item)))
 						: "-"
 				}}
 			</span>
 		</template>
 		<template #cell(priority)="{ item }">
 			<select
-				v-if="item.state === 'open' && !item.pre_picked_at"
+				v-if="isEditable(item)"
 				:value="item.priority"
 				class="rounded border-gray-300 py-0.5 pl-2 pr-7 text-xs"
 				:class="{
@@ -305,6 +491,18 @@ function deleteItem(item: { id: number }) {
 				}}</span>
 			</div>
 		</template>
+		<template #cell(state)="{ item }">
+			<span
+				v-if="item.state === 'draft'"
+				v-tooltip="ctrans('Not sent yet: the partner sees it after you press Submit')"
+				class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+				{{ ctrans("Draft") }}
+			</span>
+			<span v-else-if="item.state === 'open'" class="text-xs text-gray-600">{{
+				ctrans("Sent")
+			}}</span>
+			<span v-else class="text-xs text-gray-500">{{ ctrans(item.state) }}</span>
+		</template>
 		<template #cell(created_at)="{ item }">
 			{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}
 			<span v-if="item.added_by_name" class="text-gray-400">· {{ item.added_by_name }}</span>
@@ -312,7 +510,7 @@ function deleteItem(item: { id: number }) {
 		<template #cell(actions)="{ item }">
 			<Button
 				v-if="
-					item.state === 'open' && !item.pre_picked_at && Number(item.order_quantum) > 1
+					isEditable(item) && Number(item.order_quantum) > 1
 				"
 				icon="fal fa-cut"
 				:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
@@ -321,12 +519,13 @@ function deleteItem(item: { id: number }) {
 				class="mr-1"
 				@click="openBreakBatch(item)" />
 			<Button
-				v-if="item.state === 'open' && !item.pre_picked_at"
+				v-if="isEditable(item)"
+				:label="ctrans('Remove')"
 				icon="fal fa-trash-alt"
-				:tooltip="ctrans('Remove from the shopping list')"
-				type="negative"
+				:tooltip="ctrans('Remove from the ongoing PO')"
+				type="delete"
 				size="xs"
-				@click="deleteItem(item)" />
+				@click="confirmDeleteItem($event, item)" />
 		</template>
 	</Table>
 

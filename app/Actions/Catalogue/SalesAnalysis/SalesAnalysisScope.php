@@ -50,6 +50,7 @@ final class SalesAnalysisScope
      * @param array<string, array<int, int>> $offerTriggers offer trigger type => trigger ids
      * @param array<int, int> $webpageShops webpage id => shop id of the pages of the scope itself
      * @param array<int, string> $shopNodeStates shop id => state of the scope's own record in that shop
+     * @param array<int, string> $shopNodeSlugs shop id => slug of the scope's own record in that shop, opened with $shopNodeRoute
      */
     public function __construct(
         public string $currency,
@@ -62,6 +63,8 @@ final class SalesAnalysisScope
         public array $offerTriggers = [],
         public array $webpageShops = [],
         public array $shopNodeStates = [],
+        public array $shopNodeSlugs = [],
+        public ?string $shopNodeRoute = null,
         public ?string $cacheKey = null,
     ) {
     }
@@ -143,7 +146,7 @@ final class SalesAnalysisScope
 
         $shopCategories = DB::table('product_categories')
             ->where('master_product_category_id', $category->id)
-            ->select(['id', 'shop_id', 'state', 'webpage_id'])
+            ->select(['id', 'shop_id', 'state', 'slug', 'webpage_id'])
             ->get();
         $masterAssetIds = DB::table('master_assets')->where($masterColumn, $category->id)->pluck('id');
 
@@ -174,6 +177,12 @@ final class SalesAnalysisScope
             offerTriggers: ['ProductCategory' => $shopCategories->pluck('id')->all(), 'Product' => $productIds],
             webpageShops: $shopCategories->filter(fn ($row) => $row->webpage_id)->pluck('shop_id', 'webpage_id')->all(),
             shopNodeStates: $shopCategories->pluck('state', 'shop_id')->all(),
+            shopNodeSlugs: $shopCategories->pluck('slug', 'shop_id')->all(),
+            shopNodeRoute: match ($category->type) {
+                MasterProductCategoryTypeEnum::DEPARTMENT => 'grp.org.shops.show.catalogue.departments.show',
+                MasterProductCategoryTypeEnum::SUB_DEPARTMENT => 'grp.org.shops.show.catalogue.sub_departments.show',
+                default => 'grp.org.shops.show.catalogue.families.show',
+            },
         );
     }
 
@@ -189,6 +198,8 @@ final class SalesAnalysisScope
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
             shopNodeStates: DB::table('products')->whereIn('id', $productIds)->pluck('state', 'shop_id')->all(),
+            shopNodeSlugs: DB::table('products')->whereIn('id', $productIds)->pluck('slug', 'shop_id')->all(),
+            shopNodeRoute: 'grp.org.shops.show.catalogue.products.all_products.show',
         );
     }
 

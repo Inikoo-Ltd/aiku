@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Comms\Mailbox\ProcessInboundEmail;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
@@ -109,7 +110,8 @@ class StartCustomerEmailChat extends OrgAction
         ]);
 
         $session->update([
-            'status'   => ChatSessionStatusEnum::ACTIVE->value,
+            'status'     => ChatSessionStatusEnum::ACTIVE->value,
+            'is_carrier' => !$session->web_user_id && ProcessInboundEmail::isCarrierAddress($recipient, $shop->group),
             'metadata' => array_merge($session->metadata ?? [], [
                 'email_subject'   => $modelData['subject'],
                 'email_from'      => $recipient,

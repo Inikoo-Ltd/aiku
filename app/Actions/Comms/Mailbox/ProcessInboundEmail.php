@@ -358,7 +358,7 @@ class ProcessInboundEmail
         foreach ($named as $person) {
             $key = strtolower($person['address']);
 
-            if ($mailboxAddress && $key === strtolower($mailboxAddress)) {
+            if (SendChatMessageByGmail::deliversToMailbox($key, $mailboxAddress)) {
                 continue;
             }
 
@@ -658,7 +658,8 @@ class ProcessInboundEmail
             || str_contains($localPart, 'noreply')
             || str_contains($localPart, 'donotreply')
             || str_contains($subject, 'report domain:')
-            || str_starts_with($subject, 'delivery status notification');
+            || str_starts_with($subject, 'delivery status notification')
+            || str_starts_with($subject, 'transaction receipt');
     }
 
     /**

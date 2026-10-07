@@ -23,6 +23,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
 use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
+use App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Models\Masters\MasterAsset;
@@ -78,6 +79,8 @@ class UpdateProduct extends OrgAction
     {
         // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
         $oldState = $product->state;
+        $tradeUnitsChanged = false;
+        $oldUnits = (float) $product->units;
 
         $webpageData = [];
         $newData     = [];
@@ -142,7 +145,9 @@ class UpdateProduct extends OrgAction
             }
         } elseif (Arr::has($modelData, 'trade_units')) {
             $tradeUnits = Arr::pull($modelData, 'trade_units');
+            $tradeUnitsBefore = $this->getTradeUnitQuantities($product);
             $product    = SyncProductTradeUnits::run($product, $tradeUnits);
+            $tradeUnitsChanged = $tradeUnitsBefore != $this->getTradeUnitQuantities($product);
 
             $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $product->has_independent_units);
             if (!empty($tradeUnits) && !$hasIndependentUnits && !Arr::has($modelData, 'units')) {
@@ -353,6 +358,10 @@ class UpdateProduct extends OrgAction
                 || $isInStock != $oldIsInStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
+        if (($oldUnits != (float) $product->units || $tradeUnitsChanged) && $product->shop->type !== ShopTypeEnum::EXTERNAL) {
+            FlagFaireCaseSizeMismatch::make()->flagCopiesOfSeederProduct($product);
         }
 
         if (Arr::hasAny($changed, ['is_back_order', 'is_made_to_order'])) {
@@ -682,4 +691,16 @@ class UpdateProduct extends OrgAction
     {
         return new ProductResource($product);
     }
+
+    /**
+     * @return array<int, float>
+     */
+    public function getTradeUnitQuantities(Product $product): array
+    {
+        return $product->tradeUnits()->get()
+            ->mapWithKeys(fn ($tradeUnit) => [$tradeUnit->id => round((float) $tradeUnit->pivot->quantity, 6)])
+            ->sortKeys()
+            ->all();
+    }
+
 }

@@ -52,6 +52,7 @@ interface FloorTask {
 
 const props = defineProps<{
     title: string
+    server_time: string
     production_id: number
     pageHead: PageHeadingTypes
     break_options: number[]
@@ -100,9 +101,10 @@ const page = usePage()
 const startError = computed(() => (page.props.errors as Record<string, string> | undefined)?.job_order_item_task_id)
 const breakError = computed(() => (page.props.errors as Record<string, string> | undefined)?.break)
 
-const now = ref(Date.now())
+const deviceClockOffset = computed(() => Date.parse(props.server_time) - Date.now())
+const now = ref(Date.now() + deviceClockOffset.value)
 let clock: ReturnType<typeof setInterval>
-onMounted(() => clock = setInterval(() => now.value = Date.now(), 1000))
+onMounted(() => clock = setInterval(() => now.value = Date.now() + deviceClockOffset.value, 1000))
 onUnmounted(() => clearInterval(clock))
 
 const breakSecondsLeft = computed(() => {
@@ -318,7 +320,7 @@ function startTask(task: FloorTask) {
 
             <div v-if="open_break" class="flex-1 flex items-center text-gray-400 text-lg">{{ ctrans('Finish your break to continue working') }}</div>
 
-            <ManufactureWorkingCard v-else-if="open_session" :session="open_session" class="w-full max-w-5xl" />
+            <ManufactureWorkingCard v-else-if="open_session" :session="open_session" :server-time="server_time" class="w-full max-w-5xl" />
 
             <div v-else-if="selectedTask" class="flex-1 flex flex-col justify-center w-full max-w-2xl text-center">
                 <div v-if="startError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{{ startError }}</div>

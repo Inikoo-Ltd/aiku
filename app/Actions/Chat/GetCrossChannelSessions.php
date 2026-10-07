@@ -16,6 +16,7 @@ use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -104,7 +105,7 @@ class GetCrossChannelSessions
             ? $rows->sort(function (array $a, array $b) {
                 $priority = (int) GetChatReplyPromise::isWaiting($b['session']) - (int) GetChatReplyPromise::isWaiting($a['session']);
 
-                return $priority !== 0 ? $priority : $this->lastActivityAt($a['session']) <=> $this->lastActivityAt($b['session']);
+                return $priority !== 0 ? $priority : Carbon::parse($a['session']->waiting_since) <=> Carbon::parse($b['session']->waiting_since);
             })
             : $rows->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']));
 

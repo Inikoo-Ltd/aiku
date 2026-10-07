@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
@@ -19,6 +20,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
+use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
@@ -78,6 +80,13 @@ class UpdateSupplierProduct extends OrgAction
         if ($supplierProduct->wasChanged('state')) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
                 UpdateOrgSupplierProduct::run($orgSupplierProduct, ['state' => $supplierProduct->state]);
+            }
+        }
+
+        if ($supplierProduct->wasChanged(['cost', 'extra_costs', 'currency_id'])) {
+            $orgStocks = OrgStock::whereHas('orgSupplierProducts', fn ($query) => $query->where('supplier_product_id', $supplierProduct->id))->get();
+            foreach ($orgStocks as $orgStock) {
+                OrgStockHydrateCurrentSupplierSkuCost::dispatch($orgStock);
             }
         }
 

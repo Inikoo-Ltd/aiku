@@ -100,7 +100,7 @@ class CreateRawMaterial extends OrgAction
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.org_stocks.index',
                                         'parameters' => [
-                                            'organisation' => $this->organisation->slug,
+                                            'organisation' => $this->organisation->id,
                                         ]
                                     ],
                                     'valueProp' => 'id',

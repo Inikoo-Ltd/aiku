@@ -256,8 +256,13 @@ function prePick(lines: { id: number; quantity: number }[]) {
 		<template #cell(action)="{ item }: { item: PrePickItem }">
 			<button
 				type="button"
-				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
-				:title="trans('Reserve it for this partner and send it to their bay')"
+				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+				:disabled="Number(item.can_pick) <= 0"
+				:title="
+					Number(item.can_pick) > 0
+						? trans('Reserve it for this partner and send it to their bay')
+						: trans('All the stock on the shelf is already promised to earlier pre-picks')
+				"
 				@click="prePick([{ id: item.id, quantity: quantityFor(item) }])">
 				{{ trans("Pre-pick") }}
 			</button>

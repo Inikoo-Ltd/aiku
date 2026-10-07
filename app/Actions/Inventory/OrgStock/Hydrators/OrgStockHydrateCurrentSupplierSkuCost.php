@@ -11,8 +11,10 @@ namespace App\Actions\Inventory\OrgStock\Hydrators;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
+use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Production\RawMaterial;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -40,42 +42,48 @@ class OrgStockHydrateCurrentSupplierSkuCost implements ShouldBeUnique
         if ($orgStock->wasChanged('current_supplier_sku_cost')) {
             MasterAssetHydrateEffectiveCost::dispatchForOrgStock($orgStock);
         }
+
+        foreach (RawMaterial::where('org_stock_id', $orgStock->id)->get() as $rawMaterial) {
+            RawMaterialHydrateFromOrgStock::dispatch($rawMaterial);
+        }
+    }
+
+    public function getSupplierUnitCost(OrgStock $orgStock): float|int|null
+    {
+        $orgSupplierProduct = $orgStock->orgSupplierProducts->first(fn ($orgSupplierProduct) => $orgSupplierProduct->pivot->status);
+        if (!$orgSupplierProduct) {
+            return null;
+        }
+
+        $supplierProduct = $orgSupplierProduct->supplierProduct;
+
+        return $supplierProduct->cost
+            * GetCurrencyExchange::run($supplierProduct->currency, $orgStock->organisation->currency)
+            * (1 + $supplierProduct->extra_costs);
     }
 
     public function getSKUCost(OrgStock $orgStock): float|int|null
     {
-        foreach ($orgStock->orgSupplierProducts as $orgSupplierProduct) {
-            if (!$orgSupplierProduct->pivot->status) {
-                continue;
-            }
-
-            $unitCostSupplierCurrency = $orgSupplierProduct->supplierProduct->cost;
-
-            $unitCost = $unitCostSupplierCurrency * GetCurrencyExchange::run(
-                $orgSupplierProduct->supplierProduct->currency,
-                $orgStock->organisation->currency
-            );
-
-            $unitCost = $unitCost * (1 + $orgSupplierProduct->supplierProduct->extra_costs);
-
-            //Todo, this is probably wrong, wer need to find the relation units/SKUs form (org_)supplier_product to org_stock
-            // e.g. return $unitCost*$orgSupplierProduct->pivot->quantity;
-
-            $skuCost = $unitCost * $orgStock->packed_in;
-
-            // ponytail: some Aurora supplier parts store a per-carton cost while packed_in
-            // stays 1, inflating the SKU cost ~50-200x (HELP-2965). Until the supplier
-            // product -> org stock unit relation is resolved (Todo above), distrust any
-            // supplier cost more than 10x away from the last-in sku_value.
-            $skuValue = (float) ($orgStock->sku_value ?? 0);
-            if ($skuValue > 0 && ($skuCost > $skuValue * 10 || $skuCost < $skuValue / 10)) {
-                return $skuValue;
-            }
-
-            return $skuCost;
+        $unitCost = $this->getSupplierUnitCost($orgStock);
+        if ($unitCost === null) {
+            return null;
         }
 
-        return null;
+        //Todo, this is probably wrong, wer need to find the relation units/SKUs form (org_)supplier_product to org_stock
+        // e.g. return $unitCost*$orgSupplierProduct->pivot->quantity;
+
+        $skuCost = $unitCost * $orgStock->packed_in;
+
+        // ponytail: some Aurora supplier parts store a per-carton cost while packed_in
+        // stays 1, inflating the SKU cost ~50-200x (HELP-2965). Until the supplier
+        // product -> org stock unit relation is resolved (Todo above), distrust any
+        // supplier cost more than 10x away from the last-in sku_value.
+        $skuValue = (float) ($orgStock->sku_value ?? 0);
+        if ($skuValue > 0 && ($skuCost > $skuValue * 10 || $skuCost < $skuValue / 10)) {
+            return $skuValue;
+        }
+
+        return $skuCost;
     }
 
     public function asCommand(Command $command): int

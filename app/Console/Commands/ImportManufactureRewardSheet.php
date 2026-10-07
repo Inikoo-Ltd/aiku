@@ -22,19 +22,19 @@ class ImportManufactureRewardSheet extends Command
 {
     protected $signature = 'manufacture:import-reward-sheet
                            {production : Production slug}
-                           {file : Path to the reward xlsx}
+                           {file? : Path to the reward xlsx; without it only the pay bands are seeded}
                            {--dry-run : Report without writing anything}
                            {--create-missing : Create manufacture tasks for sheet families with no matching task}';
 
     protected $description = 'Seed pay bands and standard rates for a production from management\'s reward spreadsheet';
 
     private const BANDS = [
-        ['code' => '0', 'name' => 'Band 0', 'hourly_rate' => 12.71, 'has_multiplier' => true],
-        ['code' => '1', 'name' => 'Band 1', 'hourly_rate' => 13.00, 'has_multiplier' => true],
-        ['code' => '2', 'name' => 'Band 2', 'hourly_rate' => 14.00, 'has_multiplier' => true],
-        ['code' => '3', 'name' => 'Band 3', 'hourly_rate' => 15.00, 'has_multiplier' => true],
-        ['code' => 'D', 'name' => 'Development', 'hourly_rate' => 13.30, 'has_multiplier' => false],
-        ['code' => 'DG', 'name' => 'Development Group', 'hourly_rate' => 15.00, 'has_multiplier' => false],
+        ['code' => '0', 'name' => 'Band 0', 'hourly_rate' => 12.71, 'target_multiplier' => 1.000],
+        ['code' => '1', 'name' => 'Band 1', 'hourly_rate' => 13.00, 'target_multiplier' => 1.025],
+        ['code' => '2', 'name' => 'Band 2', 'hourly_rate' => 14.00, 'target_multiplier' => 1.105],
+        ['code' => '3', 'name' => 'Band 3', 'hourly_rate' => 15.00, 'target_multiplier' => 1.185],
+        ['code' => 'D', 'name' => 'Development', 'hourly_rate' => 13.30, 'target_multiplier' => null],
+        ['code' => 'DG', 'name' => 'Development Group', 'hourly_rate' => 15.00, 'target_multiplier' => null],
     ];
 
     public function handle(): int
@@ -47,17 +47,22 @@ class ImportManufactureRewardSheet extends Command
             return Command::FAILURE;
         }
 
-        $path = $this->argument('file');
+        $path   = $this->argument('file');
+        $dryRun = (bool) $this->option('dry-run');
 
-        if (!is_readable($path)) {
+        if ($path !== null && !is_readable($path)) {
             $this->error("Cannot read '{$path}'.");
 
             return Command::FAILURE;
         }
 
-        $dryRun = (bool) $this->option('dry-run');
-
         $bandsSeeded = $this->seedBands($production, $dryRun);
+
+        if ($path === null) {
+            $this->info(($dryRun ? 'Would seed' : 'Seeded')." {$bandsSeeded} pay bands.");
+
+            return Command::SUCCESS;
+        }
 
         try {
             $sheetName = $this->findFamiliesSheetName($path);
@@ -109,8 +114,6 @@ class ImportManufactureRewardSheet extends Command
         $seeded        = 0;
 
         foreach (self::BANDS as $band) {
-            $multiplier = $band['has_multiplier'] ? round($band['hourly_rate'] / 12.71, 6) : null;
-
             if ($dryRun) {
                 $seeded++;
 
@@ -128,7 +131,7 @@ class ImportManufactureRewardSheet extends Command
                     'organisation_id'   => $production->organisation_id,
                     'name'              => $band['name'],
                     'hourly_rate'       => $band['hourly_rate'],
-                    'target_multiplier' => $multiplier,
+                    'target_multiplier' => $band['target_multiplier'],
                     'requires_approval' => false,
                 ]
             );

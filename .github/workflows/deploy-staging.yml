@@ -54,7 +54,7 @@ jobs:
       - name: Launch 🚀
         uses: deployphp/action@v1
         with:
-          dep: deploy neon
+          dep: deploy helio
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
           known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}

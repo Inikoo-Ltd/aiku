@@ -85,16 +85,25 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->keyBy('stock_id');
 
         $openItems = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->where('state', ShoppingListItemStateEnum::DRAFT)
             ->whereIn('stock_id', $stockIds)
             ->get()
             ->keyBy('stock_id');
+
+        $sentQuantities = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $this->orgPartner->id)
+            ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+            ->whereNull('deleted_at')
+            ->whereIn('stock_id', $stockIds)
+            ->groupBy('stock_id')
+            ->selectRaw('stock_id, sum(quantity) as total')
+            ->pluck('total', 'stock_id');
 
         $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
         $landedCosts = GetPartnerLandedCost::appliesTo($this->orgPartner) ? GetPartnerLandedCost::run($sellerOrgStockIds->all()) : [];
         $quanta      = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStockIds->all());
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor, $landedCosts, $quanta) {
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $sentQuantities, $priceFactor, $landedCosts, $quanta) {
             $quantum       = $quanta[$orgStock->id] ?? 1;
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
@@ -124,6 +133,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     : null),
                 'shopping_list_item_id' => $openItem?->id,
                 'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
+                'sent_quantity'         => (float) ($sentQuantities[$orgStock->stock_id] ?? 0),
             ];
         });
 

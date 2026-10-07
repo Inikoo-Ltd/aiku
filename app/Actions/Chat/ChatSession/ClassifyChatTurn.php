@@ -554,22 +554,25 @@ class ClassifyChatTurn
     }
 
     /**
-     * Cancel or change of address, flagged on even odds: a missed one ships, a wrong one costs
-     * an agent a glance. Cancelling it all, taking items off and holding it are one request to
-     * stop the order as it is. Agreeing to leave out what we said is out of stock is not: the
-     * order ships as we proposed.
+     * Cancel, change of address or a delivery instruction, flagged on even odds: a missed one
+     * ships, a wrong one costs an agent a glance. Cancelling wins over the address, and the
+     * address over an instruction for the same address. Cancelling it all, taking items off and
+     * holding it are one request to stop the order as it is. Agreeing to leave out what we said
+     * is out of stock is not: the order ships as we proposed.
      *
      * @param  array<string, mixed>  $answers
      */
     public static function urgent(array $answers): ?string
     {
-        $cancel  = array_sum(array_map(fn (string $option) => (float) Arr::get($answers, "request.probabilities.$option", 0), ['cancel_all', 'remove_items', 'hold']));
-        $address = (float) Arr::get($answers, 'request.probabilities.change_address', 0);
+        $cancel      = array_sum(array_map(fn (string $option) => (float) Arr::get($answers, "request.probabilities.$option", 0), ['cancel_all', 'remove_items', 'hold']));
+        $address     = (float) Arr::get($answers, 'request.probabilities.change_address', 0);
+        $instruction = (float) Arr::get($answers, 'request.probabilities.delivery_instruction', 0);
 
         return match (true) {
-            max($cancel, $address) < self::URGENT => null,
-            $cancel >= $address                   => 'cancel_order',
-            default                               => 'change_address',
+            max($cancel, $address, $instruction) < self::URGENT => null,
+            $cancel >= max($address, $instruction)              => 'cancel_order',
+            $address >= $instruction                            => 'change_address',
+            default                                             => 'delivery_instruction',
         };
     }
 
@@ -638,12 +641,13 @@ class ClassifyChatTurn
                 'other'       => 'None of these: thanks, sourcing offers, notifications, anything else',
             ]),
             'request'              => self::choice('Do they ask us to cancel, change or hold an order they placed?', [
-                'cancel_all'     => 'Cancel an order they placed, or not send it at all',
-                'remove_items'   => 'Take items they chose off an order they placed, before it ships: added by mistake, too many, changed their mind',
-                'hold'           => 'Stop, hold or delay an order they placed before it ships',
-                'change_address' => 'Change or correct the delivery address of an order they placed, or send it somewhere else',
-                'accept_ours'    => 'Agree to what we proposed, such as sending it without the items we said are out of stock and refunding those',
-                'none'           => 'None of these: where an order is, adding or swapping items, a return or refund after delivery, the address on their account, anything else',
+                'cancel_all'           => 'Cancel an order they placed, or not send it at all',
+                'remove_items'         => 'Take items they chose off an order they placed, before it ships: added by mistake, too many, changed their mind',
+                'hold'                 => 'Stop, hold or delay an order they placed before it ships',
+                'change_address'       => 'Change or correct the delivery address of an order they placed, or send it somewhere else',
+                'delivery_instruction' => 'Tell us how to deliver an order they placed that has not arrived, at the same address: a safe place, not to leave it unattended, a neighbour, opening hours, call before delivery',
+                'accept_ours'          => 'Agree to what we proposed, such as sending it without the items we said are out of stock and refunding those',
+                'none'                 => 'None of these: where an order is, adding or swapping items, a return or refund after delivery, the address on their account, anything else',
             ]),
             'needs_engineer'       => self::noul('Is this something only our programmers can fix?', 'Our system is failing them: an error, a store connection or sync that does not work, products, stock, prices, orders or bundles not updating or shown wrong, a website or checkout feature broken', 'Customer service can answer or sort it: a question, an order, a delivery, stock, a return, a request, or something the customer can do themselves'),
             'act'                  => self::choice("What is the customer's latest message doing?", [

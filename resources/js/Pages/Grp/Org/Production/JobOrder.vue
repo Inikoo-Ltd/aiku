@@ -79,6 +79,7 @@ const props = defineProps<{
     artefact_options: { id: number, code: string, name: string, has_recipe: boolean, recommended_batch_size: number | null }[]
     add_item_route: null | { name: string, parameters: object }
     confirm_route: null | { name: string, parameters: object }
+    pdf_route: { name: string, parameters: object }
     receive_route: null | { name: string, parameters: object }
     locations_fetch_route: null | { name: string, parameters: object }
 }>()
@@ -289,10 +290,17 @@ function receiveIntoStock() {
                 <span v-else class="font-medium">{{ job_order.artisan ?? ctrans('Anyone') }}</span>
             </label>
             <span v-if="job_order.public_notes" class="truncate">{{ job_order.public_notes }}</span>
+            <a
+                :href="route(pdf_route.name, pdf_route.parameters)"
+                target="_blank"
+                class="ml-auto rounded border border-gray-300 bg-white text-gray-700 text-sm font-semibold px-4 py-2 hover:bg-gray-50"
+            >
+                {{ ctrans('Print job list') }}
+            </a>
             <button
                 v-if="confirm_route"
                 type="button"
-                class="ml-auto rounded bg-green-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
+                class="rounded bg-green-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
                 :disabled="processing || !items.length"
                 @click="confirmJobOrder"
             >

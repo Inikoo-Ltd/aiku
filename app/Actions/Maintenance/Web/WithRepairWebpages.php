@@ -55,23 +55,10 @@ trait WithRepairWebpages
             return;
         }
 
-        $liveWebBlockSnapshot = $website->{"live{$scope}Snapshot"};
-        $unpublishedWebBlockSnapshot = $website->{"unpublished{$scope}Snapshot"};
-
-        if (in_array($webBlockTemplateType, [WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, WebBlockTemplateEnum::FAMILY_DESCRIPTION])) {
-            $usedWebBlockTemplateCodes = array_key_first($liveWebBlockSnapshot?->layout ?? []); // Get published WebBlock layout code
-            if (!in_array($usedWebBlockTemplateCodes, $webBlockTemplateType->templateCodes())) {
-                $usedWebBlockTemplateCodes = array_first($webBlockTemplateType->templateCodes());
-            }
-        } else {
-            $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($webBlockTemplateType->templateCodes())); // Get published WebBlock layout code
-        }
+        $usedWebBlockTemplateCodes = $this->fetchUsedTemplateCodes($webpage, $webBlockTemplateType);
 
         if ($usedWebBlockTemplateCodes) {
-            $unusedWebBlockTemplateCodes = array_filter(
-                $webBlockTemplateCodes,
-                fn ($webBlockTemplateCode) => $webBlockTemplateCode != $usedWebBlockTemplateCodes
-            );
+            $unusedWebBlockTemplateCodes = array_diff($webBlockTemplateCodes, $usedWebBlockTemplateCodes);
 
             // Remove multiple WebBlock if it exists (besides the used one)
             foreach ($unusedWebBlockTemplateCodes as $unusedWebBlockCode) {
@@ -89,25 +76,44 @@ trait WithRepairWebpages
                 }
             }
 
-            $usedWebBlocks = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes);
-            if (count($usedWebBlocks) == 0) {
-                $this->createWebBlockFromSavedTemplate($webpage, $webBlockTemplateType, $usedWebBlockTemplateCodes);
-            } elseif (count($usedWebBlocks) > 1) {
-                $usedWebBlocks->pop();
+            foreach ($usedWebBlockTemplateCodes as $usedWebBlockTemplateCode) {
+                $usedWebBlocks = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCode);
+                if (count($usedWebBlocks) == 0) {
+                    $this->createWebBlockFromSavedTemplate($webpage, $webBlockTemplateType, $usedWebBlockTemplateCode);
+                } elseif (count($usedWebBlocks) > 1) {
+                    $usedWebBlocks->pop();
 
-                foreach ($usedWebBlocks as $webBlock) {
-                    $webpage
-                        ->modelHasWebBlocks()
-                        ->where('id', data_get($webBlock, 'model_has_web_blocks_id'))
-                        ->delete();
+                    foreach ($usedWebBlocks as $webBlock) {
+                        $webpage
+                            ->modelHasWebBlocks()
+                            ->where('id', data_get($webBlock, 'model_has_web_blocks_id'))
+                            ->delete();
 
-                    $webpage
-                        ->webBlocks()
-                        ->where('web_blocks.id', data_get($webBlock, 'id'))
-                        ->delete();
+                        $webpage
+                            ->webBlocks()
+                            ->where('web_blocks.id', data_get($webBlock, 'id'))
+                            ->delete();
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function fetchUsedTemplateCodes(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplateType): array
+    {
+        $liveWebBlockSnapshot = $webpage->website->{"live{$webBlockTemplateType->value}Snapshot"};
+        $defaultTemplateCode  = array_first($webBlockTemplateType->templateCodes());
+
+        if (in_array($webBlockTemplateType, [WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION, WebBlockTemplateEnum::FAMILY_DESCRIPTION])) {
+            $usedTemplateCodes = array_values(array_intersect(array_keys($liveWebBlockSnapshot?->layout ?? []), $webBlockTemplateType->templateCodes()));
+
+            return $usedTemplateCodes ?: [$defaultTemplateCode];
+        }
+
+        return [data_get($liveWebBlockSnapshot?->layout, 'code', $defaultTemplateCode)];
     }
 
     protected function deleteWebBlocksByType(Webpage $webpage, WebBlockTemplateEnum $scope)

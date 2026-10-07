@@ -71,7 +71,8 @@ class UpdateTransactionProductQuantityOrdered extends OrgAction
                 ->lockForUpdate()
                 ->get();
 
-            if ($deliveryNotes->isEmpty() && $order->deliveryNotes()->exists()) {
+            $orderIsInWarehouse = !in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED]);
+            if ($deliveryNotes->isEmpty() && ($orderIsInWarehouse || $order->deliveryNotes()->whereNot('state', DeliveryNoteStateEnum::CANCELLED)->exists())) {
                 abort(409, __('No editable delivery note available'));
             }
 

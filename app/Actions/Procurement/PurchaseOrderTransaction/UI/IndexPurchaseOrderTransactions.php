@@ -182,7 +182,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 ->setAttribute('buying_signals', GetOrgStockBuyingSignals::run($transaction->orgStock, $transaction->supplierProduct, $partnerLeadTimeDays))
                 ->setAttribute('partner_stock', $partnerStocks->get($transaction->org_stock_id))
         );
-        IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent);
+        IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent->organisation_id, $parent->id);
 
         return $paginator;
     }

@@ -62,6 +62,7 @@ class IndexProductsInCatalogue extends OrgAction
                     [
                         'price_not_match_master' => [__('Price/RRP ≠ Master'), null],
                         'needs_content_review'   => [__('Master text changed'), null],
+                        'units_review'           => [__('Case size to review'), null],
                     ]
                 ),
 
@@ -74,7 +75,11 @@ class IndexProductsInCatalogue extends OrgAction
                         GetProductsNeedReviewBadgeData::make()->applyReviewConstraints($query);
                     }
 
-                    $states = array_diff($elements, ['price_not_match_master', 'needs_content_review']);
+                    if (in_array('units_review', $elements)) {
+                        $query->whereNotNull('products.units_review');
+                    }
+
+                    $states = array_diff($elements, ['price_not_match_master', 'needs_content_review', 'units_review']);
                     if ($states) {
                         $query->whereIn('products.state', $states);
                     }

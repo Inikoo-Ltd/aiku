@@ -276,7 +276,7 @@ class SubmitOrder extends OrgAction
                 $upComingTransactionProduct = $upComingTransaction->product;
                 $historicAsset              = $upComingTransactionProduct?->currentHistoricProduct;
 
-                if (!$historicAsset || in_array($upComingTransactionProduct->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE])) {
+                if (!$historicAsset || !$this->isUpcomingProductAvailable($upComingTransactionProduct)) {
                     continue;
                 }
 
@@ -304,6 +304,19 @@ class SubmitOrder extends OrgAction
                 Sentry::captureException($e);
             }
         }
+    }
+
+    /**
+     * An exclusive product is stored as not-for-sale to keep it off the public site, yet the
+     * customer it belongs to still gets it while there is stock.
+     */
+    private function isUpcomingProductAvailable(Product $product): bool
+    {
+        if ($product->status == ProductStatusEnum::NOT_FOR_SALE && $product->isSellableThroughSalesChannels()) {
+            return $product->is_on_demand || $product->available_quantity > 0;
+        }
+
+        return !in_array($product->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE]);
     }
 
     /**

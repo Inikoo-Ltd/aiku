@@ -71,7 +71,7 @@ class GetMcpChangeSnapshot
         return [
             'lines' => PartnerShoppingListItem::where('org_partner_id', $target['org_partner_id'])
                 ->whereIn('stock_id', $target['stock_ids'])
-                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->where('state', ShoppingListItemStateEnum::DRAFT)
                 ->whereNull('job_order_id')
                 ->whereNull('pre_picked_at')
                 ->orderBy('stock_id')

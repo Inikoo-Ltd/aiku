@@ -147,7 +147,7 @@ class GetPartnerOrderCapacity
     {
         $row = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
             ->selectRaw('count(*) as lines, coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery($orgPartner).', 0)), 0) as value')
             ->first();
@@ -210,7 +210,7 @@ class GetPartnerOrderCapacity
         return (int) DB::table('partner_shopping_list_items')
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereIn('partner_shopping_list_items.state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('partner_shopping_list_items.deleted_at')
             ->whereNotExists(function ($query) {
                 $query->selectRaw('1')

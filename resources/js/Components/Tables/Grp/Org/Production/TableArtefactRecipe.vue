@@ -318,9 +318,9 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         </div>
                         <InputNumber
                             v-model="quantityDraft[materialKey(row.step_id, material.raw_material_id)]"
-                            :min="0.0001"
+                            :min="0.00000001"
                             :minFractionDigits="0"
-                            :maxFractionDigits="4"
+                            :maxFractionDigits="8"
                             :useGrouping="false"
                             size="small"
                             inputClass="w-24 text-xs"
@@ -367,9 +367,9 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <span class="mb-1 block text-xs text-gray-500">{{ ctrans('Quantity') }}</span>
                         <InputNumber
                             v-model="newRawMaterialQuantity[row.step_id]"
-                            :min="0.0001"
+                            :min="0.00000001"
                             :minFractionDigits="0"
-                            :maxFractionDigits="4"
+                            :maxFractionDigits="8"
                             :useGrouping="false"
                             size="small"
                             inputClass="w-24 text-xs" />

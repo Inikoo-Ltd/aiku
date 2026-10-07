@@ -101,7 +101,7 @@ class IndexPrePickList extends OrgAction
                     where to_partner.organisation_id = partner_shopping_list_items.partner_organisation_id
                         and to_partner.partner_id = partner_shopping_list_items.organisation_id) as to_location"),
                 DB::raw(self::CATEGORY.' as category'),
-                DB::raw('least(partner_shopping_list_items.quantity, org_stocks.quantity_available) as can_pick'),
+                DB::raw('least(partner_shopping_list_items.quantity, '.PartnerShoppingListItem::freeStockSql().') as can_pick'),
                 DB::raw(PartnerShoppingListItem::queuedThroughSql().' as queued_through'),
                 DB::raw(PartnerShoppingListItem::freeStockSql().' as free_stock'),
                 DB::raw(PartnerShoppingListItem::shortfallSql().' as shortfall'),
@@ -140,7 +140,9 @@ class IndexPrePickList extends OrgAction
     public function eligibleLines(Organisation $seller): array
     {
         return collect($this->handle($seller, 10000)->items())
+            ->filter(fn ($row) => (float) $row->can_pick > 0)
             ->map(fn ($row) => ['id' => (int) $row->id, 'quantity' => (float) $row->can_pick])
+            ->values()
             ->all();
     }
 

@@ -41,7 +41,7 @@ class FlagUrgentChatRequest
 
     public const string AT_KEY = 'urgent_request_at';
 
-    public const array REQUESTS = ['cancel_order', 'change_address'];
+    public const array REQUESTS = ['cancel_order', 'change_address', 'delivery_instruction'];
 
     public const string KIND_KEY = 'ds_kind';
 
@@ -245,7 +245,10 @@ class FlagUrgentChatRequest
           the order still ships.
         - "change_address" if the customer asks us to change, correct or confirm the delivery
           address of an order already placed, to send it somewhere else, or to send it with a
-          different courier or delivery method.
+          different courier.
+        - "delivery_instruction" if, for an order already placed that has not arrived, the
+          customer tells us how it should be delivered at the same address: a safe place, not to
+          leave it unattended, a neighbour, opening hours, or to call before delivery.
         - "none" for anything else: asking where an order is, returns and refunds, cancelling an
           account or a subscription, unsubscribing, changing products or quantities only, or
           changing the address on the account for future orders.
@@ -287,7 +290,7 @@ class FlagUrgentChatRequest
         $text
         $kind
         Output JSON only, no code fence:
-        {"request": "cancel_order/change_address/none", "only_thanks": true or false$kindField}
+        {"request": "cancel_order/change_address/delivery_instruction/none", "only_thanks": true or false$kindField}
         EOT;
     }
 }

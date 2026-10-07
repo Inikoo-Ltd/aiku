@@ -1177,11 +1177,11 @@ test('recipe steps consume raw materials', function () {
 
     AttachRawMaterialToRecipeStep::make()->action($step, [
         'raw_material_id'   => $this->rawMaterial->id,
-        'quantity_per_unit' => 0.5,
+        'quantity_per_unit' => 0.0000738,
     ]);
 
     expect($step->rawMaterials()->count())->toBe(1)
-        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.5);
+        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.0000738);
 
     DetachRawMaterialFromRecipeStep::make()->action($step, $this->rawMaterial);
 
@@ -1199,6 +1199,7 @@ test('UI show manufacture floor', function () {
             ->has('breadcrumbs', 3)
             ->where('breadcrumbs.2.simple.label', 'Manufacture floor')
             ->has('tasks')
+            ->where('server_time', fn (string $serverTime) => abs(now()->diffInSeconds($serverTime)) < 60)
             ->has('today', fn (AssertableInertia $page) => $page
                 ->has('sessions')
                 ->has('quantity_made')
@@ -1564,6 +1565,15 @@ test('UI show job order', function () {
             ->has('items')
             ->has('artefact_options');
     });
+});
+
+test('job order prints a job list pdf', function () {
+    $jobOrder = JobOrder::first();
+    get(route('grp.org.productions.show.operations.job-orders.pdf', [
+        $this->organisation->slug,
+        $this->production->slug,
+        $jobOrder->slug,
+    ]))->assertOk()->assertHeader('Content-Type', 'application/pdf');
 });
 
 test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
@@ -2572,6 +2582,23 @@ describe('reward sheet import', function () {
             ->and(\App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->count())->toBe(6);
     });
 
+    test('without a file only the pay bands are seeded, with the sheet target multipliers', function () {
+        \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->delete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production' => $this->production->slug,
+        ])->assertSuccessful();
+
+        $multipliers = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)
+            ->where('effective_from', now()->startOfYear())
+            ->pluck('target_multiplier', 'code')
+            ->map(fn ($multiplier) => $multiplier === null ? null : (float) $multiplier)
+            ->all();
+
+        expect($this->rewardTask->refresh()->standard_rate)->toBeNull()
+            ->and($multipliers)->toEqual(['0' => 1.0, '1' => 1.025, '2' => 1.105, '3' => 1.185, 'D' => null, 'DG' => null]);
+    });
+
     test('create-missing with dry-run creates nothing', function () {
         \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
 
@@ -3040,6 +3067,7 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
 test('to produce board lists each artisan and their share of a split job order', function () {
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
     $artefact = StoreArtefact::make()->action($this->production, ['code' => 'SPLIT-01', 'name' => 'Shared between artisans']);
     $artefact->update(['org_stock_id' => $orgStock->id]);
 
@@ -3063,7 +3091,7 @@ test('to produce board lists each artisan and their share of a split job order',
         ['employee_id' => $artisanB->id, 'quantity' => 400],
     ]])->assertSessionHasNoErrors();
 
-    \App\Models\Procurement\PartnerShoppingListItem::create([
+    $boardLine = \App\Models\Procurement\PartnerShoppingListItem::create([
         'group_id'        => $this->group->id,
         'organisation_id' => $this->organisation->id,
         'stock_id'        => $orgStock->stock_id,
@@ -3081,6 +3109,9 @@ test('to produce board lists each artisan and their share of a split job order',
         [$jobOrder->reference.'-A', $artisanA->contact_name, 600.0],
         [$jobOrder->reference.'-B', $artisanB->contact_name, 400.0],
     ]);
+
+    $boardLine->forceDelete();
+    $artefact->update(['org_stock_id' => null]);
 });
 
 test('to produce queue only shows lines with an artefact in this factory', function () {
@@ -3266,6 +3297,17 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
         'quantity'                => $quantity,
         'created_at'              => $createdAt,
     ]);
+    $otherStock = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $otherOrgStock = createOrgStocks($this->organisation, [$otherStock])[0];
+    \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $otherStock->id,
+        'org_stock_id'            => $otherOrgStock->id,
+        'quantity'                => 1000,
+        'pre_picked_at'           => now(),
+    ]);
     $covered  = $line(6, '2026-10-01 08:00:00');
     $boundary = $line(50, '2026-10-01 09:00:00');
     $behind   = $line(10, '2026-10-01 10:00:00');
@@ -3294,12 +3336,13 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
 
     actingAs($this->guest->getUser());
     $routeParameters = [$this->organisation->slug, $this->production->slug];
-    $backlog = collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+    $backlogCards = collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
-        ->firstWhere('label', 'Backlog')['items'])->pluck('id')->all();
-    expect($backlog)->toContain($restock->first()->id)
+        ->firstWhere('label', 'Backlog')['items'])->keyBy('id');
+    expect($backlogCards->keys()->all())->toContain($restock->first()->id)
         ->toContain($behind->id)
-        ->not->toContain($boundary->id);
+        ->not->toContain($boundary->id)
+        ->and((float) $backlogCards[$behind->id]['stock_promised'])->toEqual(6.0);
 
     $prePick = collect(get(route('grp.org.productions.show.pre_pick.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
@@ -3311,7 +3354,7 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
         ->and(\App\Actions\Production\PartnerShippingList\UI\IndexPrePickList::automationStatus(40, 40, 40, 0))->toBe('held_buffer');
 
     $this->organisation->update(['is_manufacturing_hub' => $wasHub]);
-    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $stocks[0]->id)->delete();
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', [$stocks[0]->id, $otherStock->id])->delete();
     \App\Models\Production\Artefact::where('org_stock_id', $orgStocks[0]->id)->delete();
 });
 
@@ -3356,7 +3399,7 @@ test('a labelled run is prepared only with its batch code, and keeping the expir
     $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $this->organisation->id)->first()
         ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($buyer, $this->organisation);
 
-    $line = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $makerOrgStock, ['quantity' => 4]);
+    $line = submittedPartnerShoppingListItem($orgPartner, $makerOrgStock, ['quantity' => 4]);
     expect($line->org_stock_id)->not->toBe($makerOrgStock->id)
         ->and($line->stock_id)->toBe($stocks[0]->id);
 
@@ -4862,6 +4905,7 @@ test('a batch size change flags open jobs raised with the old one and their quan
         'recommended_batch_size' => 360,
     ]);
     $artefact->update(['org_stock_id' => $orgStock->id]);
+    $artefact->refresh();
 
     $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan::run($this->production, [
         ['artefact' => $artefact, 'quantity' => 40, 'batch_code' => null, 'expiry_date' => null],

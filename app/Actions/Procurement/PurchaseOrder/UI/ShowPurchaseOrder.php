@@ -211,13 +211,16 @@ class ShowPurchaseOrder extends OrgAction
                 'delivery_items'            => $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
                     ? $purchaseOrder->purchaseOrderTransactions()
                         ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
-                        ->with('supplierProduct:id,code,name')
-                        ->get(['id', 'supplier_product_id', 'quantity_ordered'])
+                        ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
+                        ->get(['id', 'supplier_product_id', 'org_stock_id', 'quantity_ordered'])
                         ->map(fn (PurchaseOrderTransaction $transaction) => [
                             'id'               => $transaction->id,
-                            'code'             => $transaction->supplierProduct?->code,
-                            'name'             => $transaction->supplierProduct?->name,
+                            'code'             => $transaction->supplierProduct?->code ?? $transaction->orgStock?->code,
+                            'name'             => $transaction->supplierProduct?->name ?? $transaction->orgStock?->name,
                             'quantity_ordered' => $transaction->quantity_ordered,
+                            'image_thumbnail'  => $transaction->orgStock?->tradeUnits
+                                ->first(fn ($tradeUnit) => $tradeUnit->image_id !== null)
+                                ?->imageSources(80, 80),
                         ])->values()
                     : [],
                 'tabs'        => [
@@ -576,6 +579,7 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'create',
                     'icon'    => 'fal fa-plus',
                     'key'     => 'new_stock_delivery',
+                    'disabled_reason' => StoreStockDeliveryFromPurchaseOrder::partnerDeliveryBlockedReason($purchaseOrder),
                     'route'   => [
                         'method'     => 'post',
                         'name'       => 'grp.models.purchase-order.stock-delivery.store',

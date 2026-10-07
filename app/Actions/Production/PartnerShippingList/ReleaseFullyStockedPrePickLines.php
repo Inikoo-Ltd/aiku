@@ -136,7 +136,7 @@ class ReleaseFullyStockedPrePickLines
     private function dryRun(Organisation $seller, Command $command): void
     {
         $lastId    = (int) PartnerShoppingListItem::withTrashed()->max('id');
-        $startedAt = now()->subSecond();
+        $waitingIds = $this->waitingLines($seller)->pluck('id')->all();
 
         DB::beginTransaction();
         try {
@@ -146,7 +146,8 @@ class ReleaseFullyStockedPrePickLines
                 ->join('stocks', 'stocks.id', 'partner_shopping_list_items.stock_id')
                 ->join('organisations', 'organisations.id', 'partner_shopping_list_items.organisation_id')
                 ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
-                ->where('partner_shopping_list_items.pre_picked_at', '>=', $startedAt)
+                ->whereIn('partner_shopping_list_items.id', $waitingIds)
+                ->whereNotNull('partner_shopping_list_items.pre_picked_at')
                 ->orderBy('stocks.code')
                 ->get(['stocks.code as stock', 'organisations.code as for', 'partner_shopping_list_items.quantity'])
                 ->map(fn ($row) => [$row->stock, $row->for, (float) $row->quantity])

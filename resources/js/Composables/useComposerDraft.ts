@@ -1,4 +1,4 @@
-import { Ref, watch } from "vue"
+import { onBeforeUnmount, Ref, watch } from "vue"
 
 const storageKey = (key: string) => `composer-draft:${key}`
 
@@ -40,4 +40,28 @@ export const useComposerDraft = (key: () => string | null | undefined, text: Ref
             writeDraft(currentKey, "")
         }
     }
+}
+
+const stashedAttachmentDrafts = new Map<string, unknown>()
+
+export const useComposerAttachmentDraft = <T>(name: string, key: () => string | null | undefined, state: Ref<T>, empty: () => T) => {
+    const stashKey = (sessionKey: string) => `${name}:${sessionKey}`
+
+    const stash = (sessionKey: string | null | undefined) => {
+        if (sessionKey) {
+            stashedAttachmentDrafts.set(stashKey(sessionKey), state.value)
+        }
+    }
+
+    watch(key, (currentKey, previousKey) => {
+        stash(previousKey)
+
+        const restored = currentKey ? stashedAttachmentDrafts.get(stashKey(currentKey)) as T | undefined : undefined
+        if (currentKey) {
+            stashedAttachmentDrafts.delete(stashKey(currentKey))
+        }
+        state.value = restored === undefined ? empty() : restored
+    }, { immediate: true })
+
+    onBeforeUnmount(() => stash(key()))
 }

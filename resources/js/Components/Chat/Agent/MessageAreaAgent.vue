@@ -4,7 +4,7 @@ import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { useComposerDraft } from "@/Composables/useComposerDraft"
+import { useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -676,7 +676,9 @@ interface SelectedAttachment {
 }
 
 const selectedFiles = ref<SelectedAttachment[]>([])
+useComposerAttachmentDraft("chat-selectedFiles", () => props.session?.ulid, selectedFiles, () => [])
 const isEmailNotif = ref(false)
+useComposerAttachmentDraft("chat-isEmailNotif", () => props.session?.ulid, isEmailNotif, () => false)
 
 const isEmailChat = computed(() => (props.session as any)?.channel === "email")
 

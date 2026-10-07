@@ -227,11 +227,14 @@ async function onSaveQuantity(item: any, form: any): Promise<boolean> {
 
 const deletingId = ref<number | null>(null)
 
-const BRAVE_MODE_STORAGE_KEY = 'purchase-order-brave-mode'
+const BRAVE_MODE_STORAGE_KEY = 'purchase-order-brave-mode-expires-at'
+const BRAVE_MODE_LIFETIME_MS = 8 * 60 * 60 * 1000
 
 function readBraveMode(): boolean {
     try {
-        return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === '1'
+        const expiresAt = Number(localStorage.getItem(BRAVE_MODE_STORAGE_KEY))
+
+        return expiresAt > Date.now()
     } catch {
         return false
     }
@@ -241,18 +244,30 @@ const isBraveMode = ref(readBraveMode())
 
 watch(isBraveMode, (value) => {
     try {
-        localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? '1' : '0')
+        if (value) {
+            localStorage.setItem(BRAVE_MODE_STORAGE_KEY, String(Date.now() + BRAVE_MODE_LIFETIME_MS))
+        } else {
+            localStorage.removeItem(BRAVE_MODE_STORAGE_KEY)
+        }
     } catch {
         return
     }
 })
+
+function isBraveModeActive(): boolean {
+    if (isBraveMode.value && !readBraveMode()) {
+        isBraveMode.value = false
+    }
+
+    return isBraveMode.value
+}
 
 function confirmDeleteItem(event: MouseEvent, item: any) {
     if (!item.deleteRoute) {
         return
     }
 
-    if (isBraveMode.value) {
+    if (isBraveModeActive()) {
         onDeleteItem(item)
         return
     }
@@ -293,7 +308,7 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         return
     }
 
-    if (isBraveMode.value) {
+    if (isBraveModeActive()) {
         onCancelItem(item)
         return
     }

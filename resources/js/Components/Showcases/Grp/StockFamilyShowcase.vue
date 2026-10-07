@@ -10,6 +10,7 @@ import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.
 
 defineProps<{
 	salesAnalysisTeaser?: object
+	breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
 	compact?: boolean
 	onOpenAnalysis?: () => void
 }>()
@@ -18,6 +19,6 @@ defineProps<{
 <template>
 	<div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" :compact="compact" :onOpenAnalysis="onOpenAnalysis" />
-		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" />
+		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" :breakdownRoute="breakdownRoute" />
 	</div>
 </template>

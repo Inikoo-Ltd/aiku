@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, nextTick, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
 import Popover from "primevue/popover"
 import { ctrans } from "@/Composables/useTrans"
@@ -220,7 +220,13 @@ const quarterBarHeight = (record: QuarterUsage) => Math.max(4, (Number(record.sa
 
 const quarterChartPopover = ref()
 
-const showQuarterChart = (event: MouseEvent) => quarterChartPopover.value?.show(event, event.currentTarget)
+const isQuarterChartMounted = ref(false)
+const showQuarterChart = async (event: MouseEvent) => {
+	const target = event.currentTarget
+	isQuarterChartMounted.value = true
+	await nextTick()
+	quarterChartPopover.value?.show(event, target)
+}
 const hideQuarterChart = () => quarterChartPopover.value?.hide()
 
 const stockTooltip = computed(() => {
@@ -316,7 +322,7 @@ function purchaseOrderRoute(slug: string) {
 					</div>
 				</div>
 			</div>
-			<Popover ref="quarterChartPopover" class="pointer-events-none">
+			<Popover v-if="isQuarterChartMounted" ref="quarterChartPopover" class="pointer-events-none">
 				<div class="w-80 text-xs">
 					<div class="mb-2 font-semibold text-gray-800">{{ ctrans("Sales per quarter") }}</div>
 					<div class="flex h-36 items-end gap-2 border-b border-gray-200 pb-1">
@@ -364,9 +370,10 @@ function purchaseOrderRoute(slug: string) {
 				<Link :href="stockDeliveryRoute(delivery.slug)" class="primaryLink">{{ delivery.reference }}</Link>
 				({{ formatNumber(Number(delivery.quantity) / pack) }})
 			</span>
-			<span v-for="order in otherOrders" :key="order.slug" class="text-amber-700">
+			<span v-for="order in otherOrders" :key="order.slug ?? order.reference" class="text-amber-700">
 				{{ ctrans("also on") }}
-				<Link :href="purchaseOrderRoute(order.slug)" class="primaryLink">{{ order.reference }}</Link>
+				<Link v-if="order.slug" :href="purchaseOrderRoute(order.slug)" class="primaryLink">{{ order.reference }}</Link>
+				<span v-else>{{ order.reference }}</span>
 				({{ formatNumber(Number(order.quantity_ordered) / pack) }})
 			</span>
 		</div>

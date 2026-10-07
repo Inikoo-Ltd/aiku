@@ -28,7 +28,7 @@ use Laravel\Mcp\Server\Tool;
  * the procurement edit permission the same change needs in the UI. Lines go through the same
  * action as the shopping list page, so warehouse space and packed-in guards still apply.
  */
-#[Description('Shows or fills the shopping list an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines it only shows the open list. With lines it sets the quantity (in SKOs) of each SKO code on the list: a SKO already on the list gets the new quantity, not an extra one. The hub makes whole production batches only, so each quantity is raised to the next multiple of whole batches (open_lines shows what was saved); breaking a batch is only possible by a person on the shopping list page. Lines the hub cannot take are reported as skipped with the reason. Only write after the user confirmed the codes and quantities in their own words, passing their request text. Only for users enrolled to fill the hub shopping list through their assistant.')]
+#[Description('Shows or fills the shopping list an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines it only shows the list (draft and open lines). With lines it sets the quantity (in SKOs) of each SKO code on the list: a SKO already on the list gets the new quantity, not an extra one. Lines you add are drafts: the hub does not see them until staff press Submit on the Ongoing PO page, so tell the user to submit them. The hub makes whole production batches only, so each quantity is raised to the next multiple of whole batches (open_lines shows what was saved); breaking a batch is only possible by a person on the shopping list page. Lines the hub cannot take are reported as skipped with the reason. Only write after the user confirmed the codes and quantities in their own words, passing their request text. Only for users enrolled to fill the hub shopping list through their assistant.')]
 class HubShoppingListTool extends Tool
 {
     use WithMcpPermissions;
@@ -120,8 +120,11 @@ class HubShoppingListTool extends Tool
     {
         return [
             'hub'        => $orgPartner->partner->code.' ('.$orgPartner->partner->name.')',
+            'drafts_to_submit' => PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::DRAFT)
+                ->count(),
             'open_lines' => PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
-                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
                 ->with('orgStock:id,code,name')
                 ->orderByDesc('id')
                 ->limit(300)
@@ -129,6 +132,7 @@ class HubShoppingListTool extends Tool
                 ->map(fn (PartnerShoppingListItem $item) => [
                     'sko'           => $item->orgStock->code,
                     'name'          => $item->orgStock->name,
+                    'state'         => $item->state->value,
                     'quantity'      => (float) $item->quantity,
                     'priority'      => $item->priority?->value,
                     'notes'         => $item->notes,
@@ -149,7 +153,7 @@ class HubShoppingListTool extends Tool
                 'sko'      => $schema->string()->description('SKO code')->required(),
                 'quantity' => $schema->number()->description('SKOs wanted on the list for this code')->required(),
                 'notes'    => $schema->string()->description('Optional note for the hub'),
-            ]))->description('SKOs to put on the list, up to 200. Omit to only show the open list'),
+            ]))->description('SKOs to put on the list, up to 200. Omit to only show the list. Lines are saved as drafts that staff must Submit on the Ongoing PO page'),
             'request_text' => $schema->string()->description('The user\'s request, verbatim; required when writing'),
         ];
     }

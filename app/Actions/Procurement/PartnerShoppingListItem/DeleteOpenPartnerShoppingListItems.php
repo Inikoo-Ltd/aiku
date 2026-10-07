@@ -30,14 +30,13 @@ class DeleteOpenPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * Only open items go; anything the partner already picked up stays.
+     * Clears the ongoing PO; lines already sent to the partner stay.
      */
     public function handle(OrgPartner $orgPartner): int
     {
         $deleted = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN)
-            ->whereNull('pre_picked_at')
+            ->where('state', ShoppingListItemStateEnum::DRAFT)
             ->delete();
 
         OrgPartnerHydrateShoppingListItems::dispatch($orgPartner);

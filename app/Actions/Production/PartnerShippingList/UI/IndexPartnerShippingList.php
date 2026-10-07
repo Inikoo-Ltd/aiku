@@ -177,6 +177,7 @@ class IndexPartnerShippingList extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
+                DB::raw(PartnerShoppingListItem::promisedNotStagedSql((string) $seller->id, 'stocks.id').' as stock_promised'),
                 DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
                 DB::raw('coalesce(customer_demand.lines, 0) as customer_demand_lines'),
                 'stocks.code as stock_code',

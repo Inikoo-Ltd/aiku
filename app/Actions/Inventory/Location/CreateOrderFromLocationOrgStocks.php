@@ -168,7 +168,7 @@ class CreateOrderFromLocationOrgStocks extends OrgAction
             if ($plainLine) {
                 $plainLine->increment('quantity', $shortfall);
             } else {
-                StorePartnerShoppingListItem::make()->action($buyerPartner, $sellerOrgStock, ['quantity' => $shortfall, 'break_batch' => true]);
+                StorePartnerShoppingListItem::make()->action($buyerPartner, $sellerOrgStock, ['quantity' => $shortfall, 'break_batch' => true], asDraft: false);
             }
             $lines = $openLines();
         }

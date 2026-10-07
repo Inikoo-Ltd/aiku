@@ -413,9 +413,9 @@ const save = () => {
                                         </div>
                                         <InputNumber
                                             v-model="material.quantity_per_unit"
-                                            :min="0.0001"
+                                            :min="0.00000001"
                                             :minFractionDigits="0"
-                                            :maxFractionDigits="4"
+                                            :maxFractionDigits="8"
                                             :useGrouping="false"
                                             size="small"
                                             inputClass="w-24 text-xs" />
@@ -443,9 +443,9 @@ const save = () => {
                                         <span class="mb-1 block text-xs text-gray-500">{{ ctrans('Quantity') }}</span>
                                         <InputNumber
                                             v-model="step.newRawMaterialQuantity"
-                                            :min="0.0001"
+                                            :min="0.00000001"
                                             :minFractionDigits="0"
-                                            :maxFractionDigits="4"
+                                            :maxFractionDigits="8"
                                             :useGrouping="false"
                                             size="small"
                                             inputClass="w-24 text-xs" />

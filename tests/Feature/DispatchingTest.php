@@ -196,7 +196,7 @@ beforeEach(function () {
         $this->product
     ) = createProduct($this->shop);
 
-    $product2 = $this->shop->products()->skip(1)->first();
+    $product2 = $this->shop->products()->whereKeyNot($this->product->id)->orderBy('id')->first();
 
     if (!$product2) {
         $productData = array_merge(
@@ -3121,6 +3121,10 @@ test('a claim is refunded to the customer balance in one call, the claimed share
 
     post(route('grp.models.order.claim_refund_to_balance', [$order->id]), [
         'delivery_note_items' => [['id' => $item->id, 'quantity' => (float) $item->quantity_required]],
+    ], ['Accept' => 'application/json'])->assertUnprocessable();
+
+    post(route('grp.models.order.claim_refund_to_balance', [$order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => (float) $item->quantity_required - $claimed]],
     ], ['Accept' => 'application/json'])->assertOk();
 
     expect(round((float) $invoice->refresh()->refunds()->sum('net_amount'), 2))->toBe(-60.0);
@@ -3199,6 +3203,63 @@ test('store replacement delivery note action', function () {
     get(route('grp.org.shops.show.ordering.delivery-notes.show', [
         $this->organisation->slug, $this->shop->slug, $replacementItem->deliveryNote->slug,
     ]))->assertOk()->assertInertia(fn ($page) => $page->where('items.data.0.replacement_reason_label', 'Damaged by courier'));
+});
+
+test('store replacement delivery note ignores items of another order', function () {
+    [$deliveryNote]     = handlingDeliveryNoteWithPicking($this);
+    [, $otherOrderItem] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders()->first();
+
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [
+            ['id' => $otherOrderItem->id, 'quantity' => 2, 'reason' => 'damaged_in_transit'],
+        ],
+    ])->assertRedirect();
+
+    expect($order->deliveryNotes()->latest('id')->first()->deliveryNoteItems()->count())->toBe(0);
+});
+
+test('a claimed line is made good once, and a replacement that left the warehouse can be claimed again', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $order    = $deliveryNote->orders()->first();
+    $quantity = (float) $item->quantity_required;
+    $replace  = fn () => post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => $quantity, 'reason' => 'damaged_in_transit']],
+    ]);
+    $addToNextOrder = fn () => \App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns::make()->handle($order->refresh(), [['id' => $item->id, 'quantity' => $quantity]]);
+
+    $replace()->assertRedirect();
+    $replacement = $order->deliveryNotes()->where('type', \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::REPLACEMENT)->sole();
+
+    $replace()->assertSessionHasErrors('delivery_note_items');
+    expect($addToNextOrder)->toThrow(\Illuminate\Validation\ValidationException::class, 'left to claim')
+        ->and(\App\Actions\Ordering\Order\CheckClaimCompensation::run($order)[$item->transaction_id])->toEqual(0.0);
+
+    $replacement->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $replacement->deliveryNoteItems()->update(['quantity_dispatched' => $quantity]);
+
+    $followOn = $addToNextOrder()->sole();
+    expect($followOn->source_transaction_id)->toBe($item->transaction_id)
+        ->and($addToNextOrder)->toThrow(\Illuminate\Validation\ValidationException::class, 'left to claim');
+});
+
+test('claims are not taken for orders dispatched over 60 days ago', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders()->first();
+    $order->update(['dispatched_at' => now()->subDays(61)]);
+
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 1, 'reason' => 'damaged_in_transit']],
+    ])->assertSessionHasErrors('delivery_note_items');
+
+    expect(fn () => \App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns::make()->handle($order->refresh(), [['id' => $item->id, 'quantity' => 1]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, '60 days');
 });
 
 test('store replacement delivery note requires a reason per item', function () {
@@ -4172,7 +4233,7 @@ test('replacing a waiting item on a replacement note keeps it free', function ()
         'products' => [['id' => $this->product2->id, 'quantity' => 1]],
     ]);
 
-    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
+    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->where('is_gift', true)->first();
 
     expect($replacement)->not->toBeNull()
         ->and((float)$replacement->net_amount)->toBe(0.0)
