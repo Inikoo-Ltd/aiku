@@ -1836,7 +1836,7 @@ test('two products built on the same stock get their own sku, and each is found 
         ->and(StorePortfolio::make()->findProductBySKU($second->sku, $this->shop)?->id)->toBe($secondProduct->id);
 
     $secondProduct->update(['is_bundle' => true]);
-    expect(StorePortfolio::make()->getSKU($secondProduct->refresh()))->toBe($sharedOrgStock->stock->slug);
+    expect(StorePortfolio::make()->getSKU($secondProduct->refresh()))->toBe($sharedOrgStock->stock->slug.'-x5');
 });
 
 test('the borrowed sku repair gives an unlinked portfolio its own sku back and leaves alone one linked to a listing', function () {
