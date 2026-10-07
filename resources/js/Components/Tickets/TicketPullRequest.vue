@@ -43,7 +43,11 @@ type Commit = {
 }
 
 const props = defineProps<{
-    ticket: { id: number; pull_request_url: string | null }
+    ticket: {
+        id: number
+        pull_request_url: string | null
+        commits?: { hash: string; subject: string; url?: string | null; version?: string | null; deployed_at?: string | null }[]
+    }
     routes: { pull_request?: RouteData; pull_request_update?: RouteData }
     canEdit?: boolean
     compact?: boolean
@@ -161,7 +165,21 @@ const storeFlag = (key: string, value: string) => {
     } catch {}
 }
 
-const isCommitsOpen = ref(readStoredFlag("ticket_pull_request_commits_open", "closed"))
+const isStoredOpen = (key: string) => {
+    try {
+        return localStorage.getItem(key) === "open"
+    } catch {
+        return false
+    }
+}
+
+const isCommitsOpen = ref(isStoredOpen("ticket_pull_request_commits_open"))
+const isDeployedCommitsOpen = ref(isStoredOpen("ticket_deployed_commits_open"))
+
+const toggleDeployedCommits = () => {
+    isDeployedCommitsOpen.value = !isDeployedCommitsOpen.value
+    storeFlag("ticket_deployed_commits_open", isDeployedCommitsOpen.value ? "open" : "closed")
+}
 
 const toggleCommits = () => {
     isCommitsOpen.value = !isCommitsOpen.value
@@ -176,10 +194,18 @@ const toggleCommitsOrder = () => {
 }
 
 const sortedCommits = computed(() => (isCommitsNewestFirst.value ? [...(commits.value ?? [])].reverse() : commits.value ?? []))
+
+const expandedCommits = ref<string[]>([])
+
+const toggleDeployedCommit = (hash: string) => {
+    expandedCommits.value = expandedCommits.value.includes(hash)
+        ? expandedCommits.value.filter((expanded) => expanded !== hash)
+        : [...expandedCommits.value, hash]
+}
 </script>
 
 <template>
-    <div :class="compact ? 'text-sm' : 'rounded-lg border border-gray-300 bg-white p-4 text-sm'">
+    <div :class="compact ? 'text-sm' : 'overflow-hidden rounded-lg border border-gray-300 bg-white p-4 text-sm'">
         <div class="flex items-center justify-between gap-2" :class="compact ? 'mb-1' : 'mb-2'">
             <p class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Pull request") }}</p>
             <button v-if="!compact && canEdit && !isEditing && ticket.pull_request_url" v-tooltip="ctrans('Change link')" type="button" class="rounded p-1 text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-700" @click="startEdit">
@@ -316,6 +342,32 @@ const sortedCommits = computed(() => (isCommitsNewestFirst.value ? [...(commits.
                     <li v-if="!commits.length" class="text-xs italic text-gray-400">{{ ctrans("No commits") }}</li>
                 </ol>
             </div>
+        </div>
+
+        <div v-if="!compact && ticket.commits?.length" class="mt-3 border-t border-gray-100 pt-3">
+            <button type="button" class="flex w-full items-center justify-between gap-2 rounded py-1 text-left text-xs text-gray-500 transition duration-200 hover:text-gray-800" :aria-expanded="isDeployedCommitsOpen" @click="toggleDeployedCommits">
+                <span class="flex items-center gap-1.5 font-medium">
+                    <FontAwesomeIcon icon="fal fa-code-commit" fixed-width aria-hidden="true" />
+                    {{ ctrans("Deployed commits") }}
+                    <span class="rounded bg-gray-100 px-1.5 text-[11px] tabular-nums text-gray-600">{{ ticket.commits.length }}</span>
+                </span>
+                <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isDeployedCommitsOpen && '-rotate-90'" aria-hidden="true" />
+            </button>
+            <ol v-show="isDeployedCommitsOpen" class="mt-1 space-y-2">
+                <li v-for="commit in ticket.commits" :key="commit.hash" class="text-xs">
+                    <p
+                        class="cursor-pointer break-words text-gray-800"
+                        :class="!expandedCommits.includes(commit.hash) && 'line-clamp-2'"
+                        :title="commit.subject"
+                        @click="toggleDeployedCommit(commit.hash)">{{ commit.subject }}</p>
+                    <p class="text-gray-400">
+                        <a v-if="commit.url" :href="commit.url" target="_blank" rel="noopener noreferrer" class="font-mono text-[--app-accent-strong] hover:underline">{{ commit.hash.slice(0, 8) }}</a>
+                        <span v-else class="font-mono">{{ commit.hash.slice(0, 8) }}</span>
+                        <template v-if="commit.version || commit.deployed_at"> · {{ commit.version || ctrans("deployed") }}</template>
+                        <template v-if="commit.deployed_at"> {{ formatDate(commit.deployed_at) }}</template>
+                    </p>
+                </li>
+            </ol>
         </div>
     </div>
 </template>

@@ -34,6 +34,7 @@ const props = defineProps<{
     priorities: { label: string; value: string }[]
     kinds: { label: string; value: string }[]
     modules: { label: string; value: string }[]
+    types?: { label: string; value: string }[]
     mine: any[]
     recently_closed: any[]
     stats: { open: number; created_week: number; done_week: number; median_hours: number | null }
@@ -201,7 +202,7 @@ const ticketTiles = computed(() => [
             <div class="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
                 <h3 class="bg-[--app-accent] text-[--app-accent-text] font-semibold px-4 py-2.5">{{ ctrans("New ticket") }}</h3>
                 <div class="p-4">
-                    <TicketForm :store-route="storeRoute" />
+                    <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :types="types" :modules="modules" />
                 </div>
             </div>
             <div class="lg:col-span-2 space-y-4">
