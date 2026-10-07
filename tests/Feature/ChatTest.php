@@ -222,6 +222,7 @@ test('can create chat session for authenticated web user', function () {
         'shop_id'          => $this->shop->id,
     ];
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
     $chatSession = $this->action->handle($modelData);
 
     expect($chatSession->web_user_id)->toBe($webUser->id)
@@ -282,6 +283,7 @@ test('creates chat event for authenticated user session', function () {
         'shop_id'     => $this->shop->id,
     ];
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
     $chatSession = $this->action->handle($modelData);
 
     $chatEvent = ChatEvent::where('chat_session_id', $chatSession->id)->first();
@@ -10523,6 +10525,8 @@ test('a logged in customer is never asked for the name and email we already hold
     data_set($settings, 'gmail.email', 'help@example.com');
     data_set($settings, 'chat.email_offline_replies', true);
     $this->shop->updateQuietly(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
 
     $session = StoreOfflineMessage::make()->handle($this->shop->refresh(), [
         'message'     => 'Nobody was on, please write back',

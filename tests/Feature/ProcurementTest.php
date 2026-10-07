@@ -580,6 +580,7 @@ test('agent manager only sees their own agent organisation', function () {
             'grp.org.procurement.agent_supplier_purchase_orders.',
             'grp.org.procurement.stock_deliveries.',
             'grp.org.procurement.org_suppliers.',
+            'grp.org.procurement.org_supplier_products.',
             'grp.org.procurement.supplier_messages.',
             'grp.org.procurement.settings.',
         ]);
