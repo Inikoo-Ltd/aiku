@@ -344,6 +344,27 @@ function confirmSubmit() {
 	})
 }
 
+const submittingId = ref<number | null>(null)
+
+const hasUnsavedQuantity = (item: { id: number; quantity: number | string }) =>
+	typedSkos.value[item.id] !== undefined && typedSkos.value[item.id] !== Number(withSavedQuantity(item).quantity)
+
+function submitItem(item: { id: number }) {
+	router.post(
+		route("grp.org.procurement.org_partners.show.shopping_list.submit_item", [
+			routeParams["organisation"],
+			props.orgPartner.id,
+			item.id,
+		]),
+		{},
+		{
+			preserveScroll: true,
+			onStart: () => (submittingId.value = item.id),
+			onFinish: () => (submittingId.value = null),
+		}
+	)
+}
+
 function deleteItem(item: { id: number }) {
 	router.delete(
 		route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
@@ -511,6 +532,12 @@ function deleteItem(item: { id: number }) {
 		<template #cell(quantity)="{ item }">
 			<RenderWhenVisible v-if="isEditable(item)" minHeight="4.5rem">
 				<div class="flex flex-col items-end">
+					<PurchaseOrderSuggestButton
+						class="mb-1"
+						:item="withSavedQuantity(item)"
+						isPartner
+						:typedSkosById="typedSkos"
+						@suggest="(skos) => saveQuantity(item, skos)" />
 					<NumberWithButtonSave
 						:key="`${item.id}-${withSavedQuantity(item).quantity}`"
 						isWithRefreshModel
@@ -519,11 +546,6 @@ function deleteItem(item: { id: number }) {
 						:isLoading="savingId === item.id"
 						@update:modelValue="(value) => (typedSkos[item.id] = Number(value))"
 						@onSave="(form) => onSaveQuantity(item, form)" />
-					<PurchaseOrderSuggestButton
-						:item="withSavedQuantity(item)"
-						isPartner
-						:typedSkosById="typedSkos"
-						@suggest="(skos) => saveQuantity(item, skos)" />
 					<span
 						v-if="Number(item.order_quantum) > 1"
 						v-tooltip="
@@ -535,6 +557,16 @@ function deleteItem(item: { id: number }) {
 						:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
 						{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
 					</span>
+					<Button
+						class="mt-1"
+						type="secondary"
+						size="xs"
+						icon="fal fa-paper-plane"
+						:label="ctrans('Submit')"
+						:loading="submittingId === item.id"
+						:disabled="hasUnsavedQuantity(item)"
+						:tooltip="hasUnsavedQuantity(item) ? ctrans('Save the quantity first') : ctrans('Send only this line to the partner now')"
+						@click="submitItem(item)" />
 				</div>
 			</RenderWhenVisible>
 			<span v-else class="block text-right font-medium tabular-nums">{{

@@ -253,6 +253,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -6366,6 +6367,20 @@ describe('partner shopping list', function () {
         expect($submitted)->toBe(1)
             ->and($draft->state)->toBe(ShoppingListItemStateEnum::OPEN)
             ->and($draft->created_at->toDateTimeString())->toBe(now()->addHours(2)->toDateTimeString());
+    });
+
+    test('one draft line can be submitted on its own, the rest stay on the ongoing PO', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->delete();
+        $otherOrgStock = createOrgStocks($this->orgPartner->organisation, [StoreStock::make()->action($this->orgPartner->organisation->group, Stock::factory()->definition())])[0];
+        $sent          = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $kept          = StorePartnerShoppingListItem::make()->action($this->orgPartner, $otherOrgStock, ['quantity' => 2]);
+
+        actingAs($this->adminGuest->getUser());
+        post(route('grp.org.procurement.org_partners.show.shopping_list.submit_item', [$this->organisation->slug, $this->orgPartner->id, $sent->id]))
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::whereKey($sent->id)->where('state', ShoppingListItemStateEnum::DRAFT)->exists())->toBeFalse()
+            ->and($kept->refresh()->state)->toBe(ShoppingListItemStateEnum::DRAFT);
     });
 
     test('submitting adds a draft to the untouched open line of the same SKO', function () {
