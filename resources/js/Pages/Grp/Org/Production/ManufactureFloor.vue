@@ -61,6 +61,7 @@ const props = defineProps<{
         id: number
         planned_minutes: number
         started_at: string
+        is_clocked_out: boolean
         end_route: { name: string, parameters: object }
     }
     open_session: null | {
@@ -287,11 +288,12 @@ function startTask(task: FloorTask) {
                 <div>
                     <div class="text-xs uppercase tracking-wide text-amber-700">{{ ctrans('On break') }} · {{ open_break.planned_minutes }} {{ ctrans('min') }}</div>
                     <div class="text-7xl font-mono tabular-nums text-amber-700">{{ breakCountdown }}</div>
+                    <div v-if="open_break.is_clocked_out" class="mt-2 text-amber-700">{{ ctrans('Clocked out. You are clocked back in when the break ends.') }}</div>
                 </div>
                 <button type="button"
                     class="rounded-xl bg-amber-600 text-white text-2xl font-semibold px-10 py-5 disabled:opacity-40"
                     :disabled="breakProcessing" @click="endBreak">
-                    {{ ctrans('Finish break now') }}
+                    {{ ctrans('End break') }}
                 </button>
             </div>
 

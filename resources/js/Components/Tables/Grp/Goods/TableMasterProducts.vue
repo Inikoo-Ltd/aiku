@@ -17,7 +17,7 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import { faCheck, faMinus, faTimes } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@common/Components/Image.vue"
 import { faShapes, faStar, faTriangle, faEquals } from "@fas"
@@ -269,8 +269,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
         <template #cell(status)="{ item: masterProduct }">
-            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" fixed-width />
-            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" fixed-width />
+            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="ctrans('Active')" fixed-width />
+            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="ctrans('Inactive')" fixed-width />
         </template>
 
         <template #cell(master_shop_code)="{ item: masterProduct }">
@@ -308,7 +308,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     class="secondaryLink whitespace-nowrap w-max inline-block">
                     {{ masterProduct.code }}
                 </Link>
-                <FontAwesomeIcon v-if="masterProduct.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch found in products under this master. Please update the master product trade units.')" fixed-width/>
+                <FontAwesomeIcon v-if="masterProduct.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="ctrans('Some products under this master differ from it in composition, picking, price or RRP. Open the master to see which.')" fixed-width/>
             </div>
         </template>
 
@@ -326,8 +326,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(variant_slug)="{ item: masterProduct }">
             <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
                 class="inline-block" v-tooltip="masterProduct.is_variant_leader
-                    ? trans('Leader product of ') + masterProduct.variant_code
-                    : trans('Follower product of ') + masterProduct.variant_code">
+                    ? ctrans('Leader product of ') + masterProduct.variant_code
+                    : ctrans('Follower product of ') + masterProduct.variant_code">
                 <span class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
                border transition-colors duration-150" :class="masterProduct.is_variant_leader
@@ -345,7 +345,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
 <!--             <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
-               border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
+               border transition-colors duration-150 cursor-normal" v-tooltip="ctrans('Not in a Variant')">
                 -
             </span> -->
         </template>

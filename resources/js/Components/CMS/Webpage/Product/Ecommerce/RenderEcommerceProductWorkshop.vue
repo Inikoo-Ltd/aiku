@@ -8,6 +8,7 @@ import { ref, inject, onMounted, computed, watch, onUnmounted } from "vue"
 import { set } from "lodash-es"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import axios from "axios"
+import { hasSavedVariantOrder, sortVariantOptions } from "@/Composables/useVariantOrder"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -93,31 +94,30 @@ const getVariantLabel = (index: number) => {
 }
 
 const listProducts = computed(() => {
-  return variantProducts.value
-    .map((v, index) => {
-      const baseProduct = productsList.value.find(
-        p => p.id === v.product.id
-      )
+  return sortVariantOptions(
+    variantProducts.value
+      .map((v, index) => {
+        const baseProduct = productsList.value.find(
+          p => p.id === v.product.id
+        )
 
-      if (!baseProduct) return null
+        if (!baseProduct) return null
 
-      return {
-        ...baseProduct,
-        is_leader: v.is_leader,
-        variant_label: getVariantLabel(index),
-      }
-    })
-    .filter(Boolean)
-    .sort((a, b) => {
-      if (!a.variant_label) return 1
-      if (!b.variant_label) return -1
-
-      return a.variant_label.localeCompare(b.variant_label, undefined, {
-        numeric: true,
-        sensitivity: "base",
+        return {
+          ...baseProduct,
+          is_leader: v.is_leader,
+          variant_label: getVariantLabel(index),
+        }
       })
-    })
+      .filter(Boolean)
+  )
 })
+
+watch(listProducts, (products) => {
+  if (hasSavedVariantOrder(products) && products[0].code !== product.value?.code) {
+    product.value = { ...products[0] }
+  }
+}, { once: true })
 
 const changeSelectedProduct = (item: ProductResource) => {
   product.value = { ...item }

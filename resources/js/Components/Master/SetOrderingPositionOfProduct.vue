@@ -27,6 +27,7 @@ const props = withDefaults(
         data: any
         useDelete?: boolean
         disabled?: boolean
+        allowPaste?: boolean
         pasteLookupRoute?: { name: string; parameters?: Record<string, unknown> } | null
         sortOptions?: SortOption[]
         listMaxHeight?: string | null
@@ -34,6 +35,7 @@ const props = withDefaults(
     }>(),
     {
         disabled : false,
+        allowPaste: true,
         useDelete: false,
         listMaxHeight: null,
         dense: false,
@@ -247,7 +249,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 
             <div class="flex items-center gap-2">
                 <button
-                    v-if="!disabled"
+                    v-if="!disabled && allowPaste"
                     type="button"
                     class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-600 transition duration-200 hover:bg-gray-50 hover:text-gray-800"
                     @click="isPasteOpen = true">
@@ -255,7 +257,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     {{ ctrans("Paste order") }}
                 </button>
                 <span
-                    v-if="!disabled"
+                    v-if="!disabled && allowPaste"
                     v-tooltip="ctrans('Paste one code per line, in the order you want. Numbering like 1. 2) or - is ignored, and nothing is saved until you press Save order.')"
                     class="text-gray-400 hover:text-gray-600">
                     <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />

@@ -4863,7 +4863,7 @@ test('breaks belong to the artisan, are capped at their planned length and only 
     expect(fn () => \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 7]))
         ->toThrow(ValidationException::class);
 
-    $breakBetweenJobs = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 15]);
+    $breakBetweenJobs = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 20]);
     expect($breakBetweenJobs->ended_at)->toBeNull();
     expect(fn () => \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 5]))
         ->toThrow(ValidationException::class);
@@ -4887,6 +4887,58 @@ test('breaks belong to the artisan, are capped at their planned length and only 
         ->and(\App\Models\Production\ManufactureBreak::where('user_id', $user->id)->latest('id')->first()->minutes)->toBe(5)
         ->and($session->break_minutes)->toBe(8)
         ->and((float) $session->hours)->toBe(round(52 / 60, 4));
+    $this->travelBack();
+});
+
+test('a break clocks a clocked in artisan out and back in, and leaves one who is not clocked in alone', function () {
+    $employee = StoreEmployee::make()->action($this->organisation, array_merge(Employee::factory()->definition(), [
+        'worker_number'   => 'BRK-'.uniqid(),
+        'alias'           => 'brk'.uniqid(),
+        'username'        => 'brk'.uniqid(),
+        'password'        => 'secret-password',
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'type'            => \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+    ]));
+    $user      = $employee->getUser();
+    $workplace = \App\Actions\HumanResources\Workplace\StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Floor '.uniqid(),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+    $openTrackers = fn () => $employee->timeTrackers()->where('status', \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN)->count();
+
+    $notClockedIn = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 20]);
+    $notClockedIn = \App\Actions\Production\ManufactureBreak\EndManufactureBreak::make()->action($notClockedIn);
+    expect($notClockedIn->clock_out_clocking_id)->toBeNull()
+        ->and($notClockedIn->clock_in_clocking_id)->toBeNull()
+        ->and($employee->clockings()->count())->toBe(0);
+
+    \App\Actions\HumanResources\Clocking\StoreClocking::make()->action($user, $workplace, $employee, []);
+    $this->travel(1)->hours();
+
+    $break = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 20]);
+    expect($break->clock_out_clocking_id)->not->toBeNull()
+        ->and($openTrackers())->toBe(0);
+
+    $this->travel(20)->minutes();
+    $break = \App\Actions\Production\ManufactureBreak\EndManufactureBreak::make()->action($break);
+    $clockIn = \App\Models\HumanResources\Clocking::find($break->clock_in_clocking_id);
+    expect($clockIn->workplace_id)->toBe($workplace->id)
+        ->and($clockIn->clocked_at->equalTo($break->ended_at))->toBeTrue()
+        ->and($openTrackers())->toBe(1)
+        ->and($clockIn->timesheet->refresh()->breaks_duration)->toBe(20 * 60);
+
+    $this->travel(1)->hours();
+    $leftDuringBreak = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 30]);
+    $this->travel(5)->minutes();
+    \App\Actions\HumanResources\Clocking\StoreClocking::make()->action($user, $workplace, $employee, []);
+    $this->travel(1)->minutes();
+    \App\Actions\HumanResources\Clocking\StoreClocking::make()->action($user, $workplace, $employee, []);
+    $this->travel(1)->hours();
+    $leftDuringBreak = \App\Actions\Production\ManufactureBreak\EndManufactureBreak::make()->action($leftDuringBreak);
+    expect($leftDuringBreak->clock_out_clocking_id)->not->toBeNull()
+        ->and($leftDuringBreak->clock_in_clocking_id)->toBeNull()
+        ->and($openTrackers())->toBe(0);
     $this->travelBack();
 });
 

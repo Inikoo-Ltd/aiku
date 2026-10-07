@@ -2,10 +2,11 @@
 import { faCube, faLink } from "@fal"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, computed, onMounted } from "vue"
+import { ref, computed, onMounted, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { hasSavedVariantOrder, sortVariantOptions } from "@/Composables/useVariantOrder"
 import { isArray } from "lodash-es"
 import { getProductRenderDropshippingComponentWorkshop } from "@/Composables/getWorkshopComponents"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
@@ -92,7 +93,7 @@ const saveDescriptions = (key: string, val: string) => {
             onSuccess: () => { },
             onError: (error) => {
                 notify({
-                    title: trans('Something went wrong'),
+                    title: ctrans('Something went wrong'),
                     text: error.message,
                     type: 'error',
                 })
@@ -136,22 +137,30 @@ const getVariantLabel = (index: number) => {
 }
 
 const listProducts = computed(() =>
-  variantProducts.value
-    .map((v, index) => {
-      const baseProduct = productsList.value.find(
-        p => p.id === v.product.id
-      )
-      if (!baseProduct) return null
+  sortVariantOptions(
+    variantProducts.value
+      .map((v, index) => {
+        const baseProduct = productsList.value.find(
+          p => p.id === v.product.id
+        )
+        if (!baseProduct) return null
 
-      return {
-        ...baseProduct,
-        is_leader: v.is_leader,
-        variant_label: getVariantLabel(index),
-        validImages: resolveProductImages(baseProduct),
-      }
-    })
-    .filter(Boolean)
+        return {
+          ...baseProduct,
+          is_leader: v.is_leader,
+          variant_label: getVariantLabel(index),
+          validImages: resolveProductImages(baseProduct),
+        }
+      })
+      .filter(Boolean)
+  )
 )
+
+watch(listProducts, (products) => {
+  if (hasSavedVariantOrder(products) && products[0].code !== product.value?.code) {
+    product.value = { ...products[0] }
+  }
+}, { once: true })
 
 const changeSelectedProduct = (item: ProductResource) => {
   product.value = { ...item }

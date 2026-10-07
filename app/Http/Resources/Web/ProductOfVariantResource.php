@@ -138,6 +138,7 @@ class ProductOfVariantResource extends JsonResource
             'step_discount'              => $this->getStepDiscount(),
             'variant_axis_label'         => $product->variant_axis_label,
             'variant_title'              => $product->variant_title,
+            'variant_position'           => $product->index_under_variant,
 
 
         ];

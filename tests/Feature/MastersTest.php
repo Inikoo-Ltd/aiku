@@ -1916,6 +1916,59 @@ test('UI Show Master Variant has pricing tab listing all variant products', func
     );
 });
 
+test('master variant products tab is an ordering list that saves its order', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'VORD-DEP-'.uniqid(),
+        'name' => 'Variant Order Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'VORD-FAM-'.uniqid(),
+        'name' => 'Variant Order Family',
+    ]);
+    [$leader, $minion] = collect(['LEAD', 'MIN'])->map(fn (string $suffix) => StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VORD-'.$suffix.'-'.uniqid(),
+        'name'    => 'Variant '.$suffix,
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]))->all();
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id'         => $masterShop->group_id,
+        'master_shop_id'   => $masterShop->id,
+        'master_family_id' => $masterFamily->id,
+        'code'             => $leader->code,
+        'leader_id'        => $leader->id,
+        'data'             => ['products' => []],
+    ]);
+    $masterVariant->stats()->create();
+    $leader->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_variant_leader' => true]);
+    $minion->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_main' => false, 'is_minion_variant' => true]);
+
+    $productsTab = fn () => get(route('grp.masters.master_shops.show.master_families.master_variants.show', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        $masterVariant->slug,
+        'tab' => 'products',
+    ]))->assertOk()->viewData('page')['props'];
+
+    $props = $productsTab();
+    expect(collect($props['products'])->pluck('code')->all())->toBe([$leader->code, $minion->code])
+        ->and($props['products'][0])->toHaveKeys(['url', 'status_icon', 'is_variant_leader'])
+        ->and($props['reorderRoute']['name'])->toBe('grp.models.master_variant.reorder_products');
+
+    \Pest\Laravel\patch(route('grp.models.master_variant.reorder_products', ['masterVariant' => $masterVariant->id]), ['products' => [
+        ['id' => $minion->id, 'index' => 0],
+        ['id' => $leader->id, 'index' => 1],
+    ]])->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(collect($productsTab()['products'])->pluck('code')->all())->toBe([$minion->code, $leader->code]);
+});
+
 test('bulk update master assets prices applies per-unit rrp and skips independents', function () {
     $masterShop = createFreshMasterShop();
 

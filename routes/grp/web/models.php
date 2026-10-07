@@ -85,6 +85,7 @@ use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaignElement;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsNegativeKeywords;
 use App\Actions\Catalogue\Variant\UpdateVariant;
+use App\Actions\Catalogue\Variant\UpdateVariantProductOrder;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -425,6 +426,7 @@ use App\Actions\Masters\MasterShop\UpdateMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange;
 use App\Actions\Masters\MasterVariant\StoreMasterVariant;
 use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
+use App\Actions\Masters\MasterVariant\UpdateMasterVariantProductOrder;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Ordering\Purge\StorePurge;
@@ -1741,8 +1743,10 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
+Route::patch('master-variant/{masterVariant:id}/reorder-products', UpdateMasterVariantProductOrder::class)->name('master_variant.reorder_products');
 
 Route::patch('variant/{variant:id}', UpdateVariant::class)->name('variant.update');
+Route::patch('variant/{variant:id}/reorder-products', UpdateVariantProductOrder::class)->name('variant.reorder_products');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update')->middleware(EnsureNotHandledInAurora::class);
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/apply-new-composition', ApplyNewCompositionToDeliveryNoteItem::class)->name('delivery_note_item.apply_new_composition')->middleware(EnsureNotHandledInAurora::class);
