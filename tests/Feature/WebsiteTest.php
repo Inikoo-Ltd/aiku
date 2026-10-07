@@ -718,7 +718,7 @@ test('UI show website exposes showcase props the component actually reads', func
         )
         ->etc());
 
-    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed_history');
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('real_user_speed_history');
 })->depends('launch website');
 
 test('UI show website showcase offers the ads testing card', function (Website $website) {
@@ -1145,7 +1145,7 @@ test('UI show webpage in shop website', function (Website $website, Webpage $web
             ->has('seo');
     });
 
-    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed');
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('real_user_speed');
 
     $webpage->update(['state' => $originalState]);
 })->depends('create b2b website', 'create webpage');
@@ -1194,9 +1194,9 @@ test('a webpage that is not live offers no page speed report', function (Website
         ])
     );
 
-    $response->assertInertia(fn (AssertableInertia $page) => $page->where('pagespeed', null)->etc());
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('real_user_speed', null)->etc());
 
-    expect($response->original->getData()['page']['deferredProps'] ?? [])->not->toHaveKey('pagespeed');
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->not->toHaveKey('real_user_speed');
 
     $webpage->update(['state' => $originalState]);
 })->depends('create b2b website', 'create webpage');
@@ -2293,11 +2293,11 @@ test('UI show ads testing webpage does not offer page speed', function (Website 
 
     // The showcase moves the detail up beside the preview when there is no page speed to show, and
     // shows how the visitors the advert is bought for behaved instead.
-    expect($adsTestingPage['props']['pagespeed'])->toBeNull()
-        ->and($adsTestingPage['deferredProps'] ?? [])->not->toHaveKey('pagespeed')
+    expect($adsTestingPage['props']['real_user_speed'])->toBeNull()
+        ->and($adsTestingPage['deferredProps'] ?? [])->not->toHaveKey('real_user_speed')
         ->and($adsTestingPage['deferredProps'] ?? [])->toHaveKey('engagement')
         ->and($adsTestingPage['props']['showcase']['is_hidden_from_search_engines'])->toBeTrue()
-        ->and($contentPage['deferredProps'] ?? [])->toHaveKey('pagespeed')
+        ->and($contentPage['deferredProps'] ?? [])->toHaveKey('real_user_speed')
         ->and($contentPage['deferredProps'] ?? [])->not->toHaveKey('engagement')
         ->and($contentPage['props']['engagement'])->toBeNull()
         ->and($contentPage['props']['showcase']['is_hidden_from_search_engines'])->toBeFalse();
