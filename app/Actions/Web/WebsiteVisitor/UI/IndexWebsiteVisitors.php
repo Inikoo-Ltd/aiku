@@ -14,6 +14,7 @@ use App\Actions\Web\Website\UI\ShowSeoDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Enums\UI\Web\WebpageTabsEnum;
+use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
 use App\Http\Resources\Web\WebsiteVisitorResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -42,22 +43,51 @@ class IndexWebsiteVisitors extends OrgAction
 
     private ?Webpage $webpage = null;
 
+    private ?array $elementGroups = null;
+
     private function elementGroups(Website $website, ?Webpage $webpage = null): array
     {
-        $counts = $this->scopeToWebpage(WebsiteVisitor::where('website_id', $website->id), $webpage)
+        if ($this->elementGroups !== null) {
+            return $this->elementGroups;
+        }
+
+        $visitorsOfWebsite = fn () => $this->scopeToWebpage(WebsiteVisitor::where('website_id', $website->id), $webpage)->toBase();
+
+        $bounceCounts = $visitorsOfWebsite()
             ->selectRaw('count(*) filter (where is_bounce) as bounced, count(*) filter (where not is_bounce) as engaged')
-            ->toBase()
             ->first();
 
-        return [
-            'bounce' => [
+        $channelCounts = $visitorsOfWebsite()
+            ->whereNotNull('traffic_source_type')
+            ->groupBy('traffic_source_type')
+            ->selectRaw('traffic_source_type, count(*) as visitors')
+            ->pluck('visitors', 'traffic_source_type')
+            ->groupBy(fn ($visitors, $type) => WebsiteVisitorChannelEnum::fromType($type)?->value, preserveKeys: true)
+            ->map(fn ($visitorsPerType) => $visitorsPerType->sum());
+
+        return $this->elementGroups = [
+            'bounce'  => [
                 'label'    => __('Bounce'),
                 'elements' => [
-                    'bounced' => [__('Bounced'), (int) $counts->bounced],
-                    'engaged' => [__('Engaged'), (int) $counts->engaged],
+                    'bounced' => [__('Bounced'), (int) $bounceCounts->bounced],
+                    'engaged' => [__('Engaged'), (int) $bounceCounts->engaged],
                 ],
                 'engine'   => function ($query, array $elements) {
                     $query->where('website_visitors.is_bounce', in_array('bounced', $elements));
+                },
+            ],
+            'channel' => [
+                'label'    => __('Channel'),
+                'elements' => collect(WebsiteVisitorChannelEnum::cases())
+                    ->mapWithKeys(fn (WebsiteVisitorChannelEnum $channel) => [
+                        $channel->value => [WebsiteVisitorChannelEnum::labels()[$channel->value], (int) $channelCounts->get($channel->value, 0)],
+                    ])
+                    ->all(),
+                'engine'   => function ($query, array $elements) {
+                    $query->whereIn(
+                        'website_visitors.traffic_source_type',
+                        collect($elements)->flatMap(fn (string $channel) => WebsiteVisitorChannelEnum::from($channel)->types())->all()
+                    );
                 },
             ],
         ];
@@ -111,7 +141,7 @@ class IndexWebsiteVisitors extends OrgAction
             ->select([
                 'website_visitors.*'
             ])
-            ->allowedSorts(['first_seen_at', 'last_seen_at', 'page_views', 'duration_seconds', 'device_type', 'country_code'])
+            ->allowedSorts(['first_seen_at', 'last_seen_at', 'page_views', 'duration_seconds', 'device_type', 'country_code', 'traffic_source_type'])
             ->allowedFilters([$globalSearch, 'device_type', 'browser', 'os', 'country_code', 'is_bounce', 'is_new_visitor'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -141,6 +171,7 @@ class IndexWebsiteVisitors extends OrgAction
                 ->column(key: 'browser', label: __('Browser'), canBeHidden: false)
                 ->column(key: 'os', label: __('OS'), canBeHidden: false)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'traffic_source_type', label: __('Source'), tooltip: __('Where the visitor came from when the visit started, read from the landing page link and the referring website'), canBeHidden: false, sortable: true, tooltipIcon: true)
                 ->column(key: 'page_views', label: __('Page Views'), canBeHidden: false, sortable: true)
                 ->column(key: 'duration_seconds', label: __('Duration'), canBeHidden: false, sortable: true)
                 ->column(key: 'bounce', label: __('Bounce'), tooltip: __('Left after viewing one page'), canBeHidden: false, tooltipIcon: true)

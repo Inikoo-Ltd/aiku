@@ -8,6 +8,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\SysAdmin\WithLogRequest;
+use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -27,6 +28,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $referrer_url
  * @property bool $is_bounce
  * @property bool $is_new_visitor
+ * @property string|null $traffic_source_type
+ * @property string|null $traffic_source_reference
  */
 class WebsiteVisitorResource extends JsonResource
 {
@@ -58,6 +61,11 @@ class WebsiteVisitorResource extends JsonResource
                 'icon'    => $this->getPlatformIcon($this->os)
             ],
             'location'    => $location,
+            'traffic_source_type' => $this->traffic_source_type ? [
+                'label'     => WebsiteVisitorChannelEnum::typeLabel($this->traffic_source_type),
+                'channel'   => WebsiteVisitorChannelEnum::fromType($this->traffic_source_type)?->value,
+                'reference' => $this->traffic_source_reference,
+            ] : null,
             'page_views'  => $this->page_views,
             'duration'    => $this->formatDuration($this->duration_seconds),
             'bounce'      => $this->is_bounce ? __('Yes') : __('No'),

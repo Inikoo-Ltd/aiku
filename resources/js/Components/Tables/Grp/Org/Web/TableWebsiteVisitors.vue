@@ -75,6 +75,16 @@ const pageViewsOfVisitorHref = (visitorId: number) => routeParams.shop
             <AddressLocation :data="visitor.location" />
         </template>
 
+        <template #cell(traffic_source_type)="{ item: visitor }">
+            <div v-if="visitor.traffic_source_type" class="max-w-48">
+                <div>{{ visitor.traffic_source_type.label }}</div>
+                <div v-if="visitor.traffic_source_type.reference" class="truncate text-xs text-gray-500" :title="visitor.traffic_source_type.reference">
+                    {{ visitor.traffic_source_type.reference }}
+                </div>
+            </div>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
         <!-- Column: Page Views -->
         <template #cell(page_views)="{ item: visitor }">
             <span class="font-medium">{{ visitor.page_views }}</span>

@@ -8,7 +8,7 @@ All work is on the `seo` branch and has not been deployed yet.
 | Part | What it does | Where in Aiku |
 | --- | --- | --- |
 | SEO dashboard | Website and webpage performance from Aiku's own tracking, filtered by the dashboard interval | SEO |
-| Visitors, Page views | The last 30 days of visits and page views, per webpage and per visitor | SEO > Visitors, SEO > Page views |
+| Visitors, Page views | The last 30 days of visits and page views, per webpage and per visitor; each visitor carries its source and can be filtered by channel and by bounced or engaged | SEO > Visitors, SEO > Page views |
 | Webpage traffic sources | Where the arrivals on one webpage came from, last 90 days | Webpage > Traffic sources tab |
 | Phase 0: data fixes | Smartphones and phablets count as mobile; session duration caps idle time at 30 minutes; `pagespeed` props renamed to `real_user_speed` | SEO dashboard figures |
 | 1.1 Search Console history | 16 months of clicks, impressions, CTR and position, fetched daily, per website, page and query | SEO dashboard: Google Search card, Search queries and Low CTR queries tabs, search columns on Webpages; Webpage > Performance tab |
@@ -54,8 +54,10 @@ All work is on the `seo` branch and has not been deployed yet.
 2. Once, to correct the last 30 days of the dashboard figures:
    `php artisan maintenance:recalculate_website_visitor_durations`, then
    `php artisan websites:redo_time_series --from=<30 days ago> --to=<today>`.
-3. Once, to load 16 months of Search Console history: `php artisan search_console:fetch --async`.
-4. Add the service account named on the Google Search card as a user on every Search Console
+3. Once, to give the visitors already recorded a source:
+   `php artisan maintenance:classify_website_visitor_traffic_sources`.
+4. Once, to load 16 months of Search Console history: `php artisan search_console:fetch --async`.
+5. Add the service account named on the Google Search card as a user on every Search Console
    property that is still missing.
 
 Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
