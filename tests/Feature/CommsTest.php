@@ -2279,6 +2279,7 @@ test('UI edit mailshot template', function (EmailTemplate $emailTemplate) {
         $page->component('EditModel')
             ->has('title')
             ->has('formData')
+            ->where('formData.blueprint.0.fields.dynamic_block.type', 'toggle')
             ->has('breadcrumbs');
     });
 })->depends('update mailshot template');

@@ -67,6 +67,12 @@ class EditMailshotTemplate extends OrgAction
                                         'required'    => true,
                                         'value'       => $emailTemplate->name,
                                     ],
+                                    'dynamic_block' => [
+                                        'type'        => 'toggle',
+                                        'label'       => __('For dynamic content block'),
+                                        'information' => __('Dynamic blocks can be inserted into emails from the Dynamic content block'),
+                                        'value'       => (bool) data_get($emailTemplate->data, 'dynamic_block', false),
+                                    ],
                                 ]
                             ]
                         ],
