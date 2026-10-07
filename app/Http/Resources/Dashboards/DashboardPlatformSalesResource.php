@@ -35,7 +35,7 @@ class DashboardPlatformSalesResource extends JsonResource
                     ],
                     'key_date_filter' => 'between[date]'
                 ] : [
-                    'name'  => 'grp.platforms.show',
+                    'name'  => 'grp.dashboard.platforms.show',
                     'parameters' => [
                         'platform' => $data['slug'],
                     ],
@@ -55,7 +55,7 @@ class DashboardPlatformSalesResource extends JsonResource
                     ],
                     'key_date_filter' => 'between[date]'
                 ] : [
-                    'name'  => 'grp.platforms.show',
+                    'name'  => 'grp.dashboard.platforms.show',
                     'parameters' => [
                         'platform' => $data['slug'],
                     ],
@@ -252,7 +252,7 @@ class DashboardPlatformSalesResource extends JsonResource
         return [
             'invoices' => [
                 'route_target' => [
-                    'name'       => 'grp.platforms.show',
+                    'name'       => 'grp.dashboard.platforms.show',
                     'parameters' => [
                         'platform' => $data['slug'],
                         'tab'      => PlatformTabsEnum::SHOWCASE->value
@@ -262,7 +262,7 @@ class DashboardPlatformSalesResource extends JsonResource
             ],
             'channels' => [
                 'route_target' => [
-                    'name'       => 'grp.platforms.show',
+                    'name'       => 'grp.dashboard.platforms.show',
                     'parameters' => [
                         'platform' => $data['slug'],
                         'tab'      => PlatformTabsEnum::CHANNELS->value
@@ -272,7 +272,7 @@ class DashboardPlatformSalesResource extends JsonResource
             ],
             'customers' => [
                 'route_target' => [
-                    'name'       => 'grp.platforms.show',
+                    'name'       => 'grp.dashboard.platforms.show',
                     'parameters' => [
                         'platform' => $data['slug'],
                         'tab'      => PlatformTabsEnum::CUSTOMERS->value
@@ -282,7 +282,7 @@ class DashboardPlatformSalesResource extends JsonResource
             ],
             'portfolios' => [
                 'route_target' => [
-                    'name'       => 'grp.platforms.show',
+                    'name'       => 'grp.dashboard.platforms.show',
                     'parameters' => [
                         'platform' => $data['slug'],
                         'tab'      => PlatformTabsEnum::PRODUCTS->value

@@ -614,7 +614,7 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get(route('grp.org.accounting.invoices.index', $this->organisation->slug))->assertForbidden();
     $this->get(route('grp.org.procurement.purchase_orders.index', $this->organisation->slug))->assertForbidden();
     $this->get(route('grp.overview.crm.customers.index'))->assertForbidden();
-    $this->get(route('grp.catalogue.show'))->assertForbidden();
+    $this->get(route('grp.dashboard.catalogue.show'))->assertForbidden();
     $this->get(route('grp.supply-chain.dashboard'))->assertForbidden();
     $this->get(route('grp.tickets.index'))->assertOk();
     $this->get(route('grp.projects.index'))->assertForbidden();
