@@ -99,6 +99,8 @@ const recordForm = useForm({
 	start_date: "",
 	end_date: "",
 	reason: "",
+	cover_employee_id: "" as string | number,
+	cover_has_permissions: false,
 })
 
 const submitRecord = () => {
@@ -403,6 +405,23 @@ const closeRejectModal = () => {
 						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
 					<p v-if="recordForm.errors.end_date" class="mt-1 text-sm text-red-600">{{ recordForm.errors.end_date }}</p>
 				</div>
+			</div>
+
+			<div>
+				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Covered by") }}</label>
+				<select
+					v-model="recordForm.cover_employee_id"
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+					<option value="">{{ ctrans("Nobody") }}</option>
+					<template v-for="(label, value) in parsedEmployeeOptions" :key="value">
+						<option v-if="String(value) !== String(recordForm.employee_id)" :value="value">{{ label }}</option>
+					</template>
+				</select>
+				<p v-if="recordForm.errors.cover_employee_id" class="mt-1 text-sm text-red-600">{{ recordForm.errors.cover_employee_id }}</p>
+				<label v-if="recordForm.cover_employee_id" class="mt-2 flex items-center gap-2 text-sm text-gray-700">
+					<input v-model="recordForm.cover_has_permissions" type="checkbox" class="rounded border-gray-300" />
+					{{ ctrans("Give the cover this employee's permissions until the leave ends") }}
+				</label>
 			</div>
 
 			<div>

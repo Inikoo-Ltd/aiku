@@ -11,6 +11,7 @@ use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\Organisation;
 use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreEmployeeLeave extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
+
+    private Employee $employee;
 
     public function handle(Employee $employee, array $modelData): Leave
     {
@@ -46,6 +49,10 @@ class StoreEmployeeLeave extends OrgAction
 
         ApproveLeave::make()->applyBalanceDeduction($leave);
 
+        if (!empty($modelData['cover_employee_id'])) {
+            UpdateLeaveCover::make()->handle($leave, Arr::only($modelData, ['cover_employee_id', 'cover_has_permissions']));
+        }
+
         return $leave;
     }
 
@@ -62,14 +69,15 @@ class StoreEmployeeLeave extends OrgAction
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string', 'max:1000'],
+            ...UpdateLeaveCover::coverRules($this->organisation, $this->employee->id),
         ];
     }
 
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): Leave
     {
-        $this->initialisation($organisation, $request);
-
         abort_unless($employee->organisation_id === $organisation->id, 404);
+        $this->employee = $employee;
+        $this->initialisation($organisation, $request);
 
         return $this->handle($employee, $this->validatedData);
     }
