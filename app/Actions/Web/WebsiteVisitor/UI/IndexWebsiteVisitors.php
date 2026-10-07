@@ -25,6 +25,7 @@ use App\Models\Web\WebsiteVisitor;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -40,6 +41,41 @@ class IndexWebsiteVisitors extends OrgAction
     private Website $website;
 
     private ?Webpage $webpage = null;
+
+    private function elementGroups(Website $website, ?Webpage $webpage = null): array
+    {
+        $counts = $this->scopeToWebpage(WebsiteVisitor::where('website_id', $website->id), $webpage)
+            ->selectRaw('count(*) filter (where is_bounce) as bounced, count(*) filter (where not is_bounce) as engaged')
+            ->toBase()
+            ->first();
+
+        return [
+            'bounce' => [
+                'label'    => __('Bounce'),
+                'elements' => [
+                    'bounced' => [__('Bounced'), (int) $counts->bounced],
+                    'engaged' => [__('Engaged'), (int) $counts->engaged],
+                ],
+                'engine'   => function ($query, array $elements) {
+                    $query->where('website_visitors.is_bounce', in_array('bounced', $elements));
+                },
+            ],
+        ];
+    }
+
+    private function scopeToWebpage(Builder|QueryBuilder $query, ?Webpage $webpage): Builder|QueryBuilder
+    {
+        if (!$webpage) {
+            return $query;
+        }
+
+        return $query->whereExists(function ($query) use ($webpage) {
+            $query->select(DB::raw(1))
+                ->from('website_page_views')
+                ->whereColumn('website_page_views.website_visitor_id', 'website_visitors.id')
+                ->where('website_page_views.webpage_id', $webpage->id);
+        });
+    }
 
     public function handle(Website $parent, $prefix = null, ?Webpage $webpage = null): LengthAwarePaginator
     {
@@ -59,13 +95,15 @@ class IndexWebsiteVisitors extends OrgAction
         $queryBuilder = QueryBuilder::for(WebsiteVisitor::class);
         $queryBuilder->where('website_visitors.website_id', $parent->id);
 
-        if ($webpage) {
-            $queryBuilder->whereExists(function ($query) use ($webpage) {
-                $query->select(DB::raw(1))
-                    ->from('website_page_views')
-                    ->whereColumn('website_page_views.website_visitor_id', 'website_visitors.id')
-                    ->where('website_page_views.webpage_id', $webpage->id);
-            });
+        $this->scopeToWebpage($queryBuilder, $webpage);
+
+        foreach ($this->elementGroups($parent, $webpage) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
         }
 
         return $queryBuilder
@@ -79,14 +117,23 @@ class IndexWebsiteVisitors extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(Website $website, ?Webpage $webpage = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($website, $webpage, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
+            foreach ($this->elementGroups($website, $webpage) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
+            }
+
             $table
                 ->withGlobalSearch()
                 ->column(key: 'session_id', label: __('Session ID'), canBeHidden: false, searchable: true)
@@ -96,7 +143,7 @@ class IndexWebsiteVisitors extends OrgAction
                 ->column(key: 'location', label: __('Location'), canBeHidden: false)
                 ->column(key: 'page_views', label: __('Page Views'), canBeHidden: false, sortable: true)
                 ->column(key: 'duration_seconds', label: __('Duration'), canBeHidden: false, sortable: true)
-                ->column(key: 'bounce', label: __('Bounce'), canBeHidden: false)
+                ->column(key: 'bounce', label: __('Bounce'), tooltip: __('Left after viewing one page'), canBeHidden: false, tooltipIcon: true)
                 ->column(key: 'first_seen_at', label: __('First Seen'), canBeHidden: false, sortable: true)
                 ->column(key: 'last_seen_at', label: __('Last Seen'), canBeHidden: false, sortable: true)
                 ->defaultSort('-first_seen_at');
@@ -192,7 +239,7 @@ class IndexWebsiteVisitors extends OrgAction
                 'retentionDays' => PruneWebsiteVisitors::RETENTION_DAYS,
                 'data'          => WebsiteVisitorResource::collection($visitors),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->website, $this->webpage));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
