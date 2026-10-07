@@ -11,6 +11,7 @@ import Icon from '@/Components/Icon.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faSeedling, faPaperPlane, faSpellCheck, faBoxCheck, faTruck, faClipboardCheck, faExclamationCircle } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { useLocaleStore } from '@/Stores/locale'
 
 library.add(faSeedling, faPaperPlane, faSpellCheck, faBoxCheck, faTruck, faClipboardCheck, faExclamationCircle)
 
@@ -19,6 +20,7 @@ const props = defineProps<{
     tab?: string
 }>()
 
+const locale = useLocaleStore()
 const isOrganisationRoute = !!route().current()?.startsWith('grp.org.')
 const organisationSlug = route().params.organisation
 
@@ -53,10 +55,10 @@ function aspoRoute(aspo: { slug: string }) {
             {{ useFormatTime(aspo.date) }}
         </template>
         <template #cell(cost_total)="{ item: aspo }">
-            {{ aspo.cost_total }} {{ aspo.currency_code }}
+            {{ locale.currencyFormat(aspo.currency_code, aspo.cost_total) }}
         </template>
         <template #cell(deposit_amount)="{ item: aspo }">
-            {{ aspo.deposit_amount != null ? `${aspo.deposit_amount} ${aspo.currency_code}` : '-' }}
+            {{ aspo.deposit_amount != null ? locale.currencyFormat(aspo.currency_code, aspo.deposit_amount) : '-' }}
         </template>
         <template #cell(estimated_received_at)="{ item: aspo }">
             <span :class="aspo.is_overdue ? 'text-red-600 font-medium' : ''">
