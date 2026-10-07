@@ -28,8 +28,9 @@ class UpdateClockingNotes
         ];
 
         if ($clockedAt) {
-            $tz = config('app.timezone');
-            $data['clocked_at'] = Carbon::parse($clockedAt, $tz)->utc();
+            $data['clocked_at'] = $clocking->timesheet
+                ? $clocking->timesheet->clockedAtOnTimesheetDate($clockedAt)
+                : Carbon::parse($clockedAt, config('app.timezone'))->utc();
         }
 
         $clocking->update($data);

@@ -38,6 +38,7 @@ use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
+use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
@@ -883,6 +884,36 @@ test('can update clocking notes', function () {
     $updated = UpdateClockingNotes::make()->handle($clocking, 'Forgot badge', null);
 
     expect($updated->notes)->toBe('Forgot badge');
+});
+
+test('manual and edited clockings stay on the timesheet date', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Timesheet Date Clocking Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->subDays(12)->setTime(8, 0)->toDateTimeString(),
+    ], 0, true);
+
+    $timesheet = $clocking->timesheet;
+    $timezone  = $timesheet->organisation->timezone->name ?? 'UTC';
+    $laterDay  = now($timezone)->setTime(16, 30)->toIso8601String();
+
+    $manual = StoreManualClocking::make()->action($timesheet, ['clocked_at' => $laterDay]);
+    $edited = UpdateClockingNotes::make()->handle($clocking, null, $laterDay);
+
+    foreach ([$manual, $edited] as $anchored) {
+        $local = $anchored->clocked_at->copy()->setTimezone($timezone);
+        expect($local->toDateString())->toBe($timesheet->date->toDateString())
+            ->and($local->format('H:i'))->toBe('16:30');
+    }
 });
 
 test('can delete clocking', function () {
