@@ -119,14 +119,14 @@ class IndexWebpagesPerformance extends OrgAction
                 ->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'title', label: __('Title'), sortable: true, searchable: true)
-                ->column(key: 'visitors', label: __('Visitors'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'page_views', label: __('Page views'), sortable: true, align: 'right')
-                ->column(key: 'avg_time_on_page', label: __('Avg. time on page'), sortable: true, align: 'right')
-                ->column(key: 'add_to_baskets', label: __('Add to baskets'), sortable: true, align: 'right')
-                ->column(key: 'conversion_rate', label: __('Conversion'), tooltip: __('Add to baskets per 100 visitors'), sortable: true, align: 'right')
-                ->column(key: 'search_clicks', label: __('Search clicks'), tooltip: __('Clicks from Google Search, from Search Console'), sortable: true, align: 'right')
-                ->column(key: 'search_impressions', label: __('Impressions'), tooltip: __('Times the page was shown in Google Search, from Search Console'), sortable: true, align: 'right')
-                ->column(key: 'search_position', label: __('Position'), tooltip: __('Average position in Google Search, weighted by impressions'), sortable: true, align: 'right')
+                ->column(key: 'visitors', label: __('Visitors'), tooltip: __('Unique visitors per day, added up, from Aiku tracking'), canBeHidden: false, sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'page_views', label: __('Page views'), tooltip: __('Times the page was opened, from Aiku tracking'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'avg_time_on_page', label: __('Avg. time on page'), tooltip: __('Measured until the visitor opens the next page, so the last page of a visit counts as 0 seconds'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'add_to_baskets', label: __('Add to baskets'), tooltip: __('Times a product was added to the basket on this page'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'conversion_rate', label: __('Conversion'), tooltip: __('Add to baskets per 100 visitors'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'search_clicks', label: __('Search clicks'), tooltip: __('Clicks from Google Search, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'search_impressions', label: __('Impressions'), tooltip: __('Times the page was shown in Google Search, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'search_position', label: __('Position'), tooltip: __('Average position in Google Search, weighted by impressions. 1 is the top result'), sortable: true, align: 'right', tooltipIcon: true)
                 ->defaultSort('-visitors');
         };
     }

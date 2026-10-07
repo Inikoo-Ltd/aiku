@@ -89,11 +89,11 @@ class IndexSearchConsoleQueries extends OrgAction
                 ->withLabelRecord([__('query'), __('queries')])
                 ->withEmptyState($emptyState)
                 ->column(key: 'query', label: __('Query'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'clicks', label: __('Clicks'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'impressions', label: __('Impressions'), sortable: true, align: 'right')
-                ->column(key: 'ctr', label: __('CTR'), tooltip: __('Clicks per 100 impressions'), sortable: true, align: 'right')
-                ->column(key: 'position', label: __('Position'), tooltip: __('Average position in Google results, weighted by impressions'), sortable: true, align: 'right')
-                ->column(key: 'pages', label: __('Pages'), tooltip: __('Pages of this website that Google showed for the query'), sortable: true, align: 'right')
+                ->column(key: 'clicks', label: __('Clicks'), tooltip: __('Clicks from Google Search to this website'), canBeHidden: false, sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'impressions', label: __('Impressions'), tooltip: __('Times this website was shown in Google results for the query'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'ctr', label: __('CTR'), tooltip: __('Clicks per 100 impressions'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'position', label: __('Position'), tooltip: __('Average position in Google results, weighted by impressions. 1 is the top result'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'pages', label: __('Pages'), tooltip: __('Pages of this website that Google showed for the query'), sortable: true, align: 'right', tooltipIcon: true)
                 ->defaultSort($lowCtrOnly ? '-impressions' : '-clicks');
         };
     }
