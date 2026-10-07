@@ -8,13 +8,15 @@
 
 namespace App\Http\Resources\SupplyChain;
 
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $slug
  * @property string $reference
- * @property string $state
- * @property string $delivery_state
+ * @property AgentSupplierPurchaseOrderStateEnum $state
+ * @property AgentSupplierPurchaseOrderDeliveryStateEnum $delivery_state
  * @property mixed $date
  * @property numeric $cost_total
  * @property numeric|null $deposit_amount
@@ -31,13 +33,15 @@ class AgentSupplierPurchaseOrdersResource extends JsonResource
     {
         $isOverdue = $this->estimated_received_at
             && now()->greaterThan($this->estimated_received_at)
-            && !in_array($this->delivery_state, ['received', 'checked', 'placed', 'cancelled'], true);
+            && !in_array($this->delivery_state->value, ['received', 'checked', 'placed', 'cancelled'], true);
 
         return [
             'slug'                     => $this->slug,
             'reference'                => $this->reference,
             'state'                    => $this->state,
+            'state_icon'               => $this->state->stateIcon()[$this->state->value],
             'delivery_state'           => $this->delivery_state,
+            'delivery_state_icon'      => $this->delivery_state->stateIcon()[$this->delivery_state->value],
             'date'                     => $this->date,
             'cost_total'               => $this->cost_total,
             'deposit_amount'           => $this->deposit_amount,
