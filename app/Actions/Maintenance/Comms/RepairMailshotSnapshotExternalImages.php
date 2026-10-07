@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Comms;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Comms\Mailshot;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairMailshotSnapshotExternalImages
@@ -30,13 +31,30 @@ class RepairMailshotSnapshotExternalImages
         return $this->repairEmailSnapshots($mailshot->email, $mailshot);
     }
 
-    public string $commandSignature = 'repair:mailshot-snapshot-external-images {mailshots?* : mailshot slugs, re-runs even if already repaired} {--shop= : only mailshots of this shop slug}';
+    public string $commandSignature = 'repair:mailshot-snapshot-external-images {mailshots?* : mailshot slugs, re-runs even if already repaired} {--shop= : only mailshots of this shop slug} {--all-item : every sent mailshot, not only the latest '.self::LATEST_PER_SHOP_AND_TYPE.' per shop and type}';
+
+    private const int LATEST_PER_SHOP_AND_TYPE = 10;
 
     public function asCommand(Command $command): int
     {
+        $query = Mailshot::whereIn('state', [MailshotStateEnum::SENT, MailshotStateEnum::SENDING]);
+
+        if (!$command->option('all-item') && !$command->argument('mailshots')) {
+            $query->whereIn(
+                'id',
+                DB::query()
+                    ->fromSub(
+                        $query->clone()->selectRaw('id, row_number() over (partition by shop_id, type order by date desc, id desc) as position'),
+                        'ranked_mailshots'
+                    )
+                    ->where('position', '<=', self::LATEST_PER_SHOP_AND_TYPE)
+                    ->select('id')
+            );
+        }
+
         return $this->repairExternalImagesFromCommand(
             $command,
-            Mailshot::whereIn('state', [MailshotStateEnum::SENT, MailshotStateEnum::SENDING]),
+            $query,
             $command->argument('mailshots'),
             $command->option('shop')
         );
