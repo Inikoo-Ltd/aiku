@@ -19,6 +19,9 @@ use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyProductsAllShops;
+use App\Actions\Catalogue\Shop\External\Shopify\RetryShippingShopifyOrders;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -850,6 +853,42 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'GetWixProductsAllShops',
                 ),
                 name: 'GetWixProductsAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetShopifyOrdersAllShops::makeJob())->everyTenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetShopifyOrdersAllShops',
+                ),
+                name: 'GetShopifyOrdersAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetShopifyProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetShopifyProductsAllShops',
+                ),
+                name: 'GetShopifyProductsAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('external_shop:shopify_inventory')->hourlyAt(25)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'UpdateShopifyExternalShopInventory',
+                ),
+                name: 'UpdateShopifyExternalShopInventory',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RetryShippingShopifyOrders::makeJob())->hourlyAt(40)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RetryShippingShopifyOrders',
+                ),
+                name: 'RetryShippingShopifyOrders',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

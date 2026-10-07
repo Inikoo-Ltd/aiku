@@ -511,7 +511,15 @@ class IndexProductsInCatalogue extends OrgAction
                                 'name'       => 'grp.org.shops.show.catalogue.products.all_products.wix_products.index',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
-                        ] : [])
+                        ] : ($shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::SHOPIFY ? [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'label' => __('Fetch Shopify Products'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.all_products.shopify_products.index',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ] : []))
                     ]
                 ],
                 'data'                         => ProductsResource::collection($products),

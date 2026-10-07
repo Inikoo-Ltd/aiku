@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Shop\External\Shopify\ConnectShopifyExternalShop;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersInShop;
 use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
@@ -107,6 +109,10 @@ class EditShop extends OrgAction
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
         $isWixConnected = $shop->engine === ShopEngineEnum::WIX && $shop->wixUser()->exists();
+
+        $externalShopifyUser = $shop->engine === ShopEngineEnum::SHOPIFY ? $shop->externalShopifyUser : null;
+        $isShopifyConnected  = $externalShopifyUser && str_starts_with((string) $externalShopifyUser->password, ConnectShopifyExternalShop::SHOPIFY_ACCESS_TOKEN_PREFIX);
+        $shopifyAuthUrl      = $externalShopifyUser ? ConnectShopifyExternalShop::make()->getAuthUrl($externalShopifyUser) : null;
         $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
@@ -835,14 +841,46 @@ class EditShop extends OrgAction
                             ],
                         ],
                         ShopEngineEnum::SHOPIFY => [
-                            'label'  => __('Shopify Keys'),
+                            'label'  => __('Shopify Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'shop_url' => [
-                                    'type'     => 'input',
-                                    'disabled' => true,
-                                    'label'    => __('Shopify Shop Url'),
-                                    'value'    => Arr::get($shop->settings, 'shopify.shop_url', ''),
+                                'shop_url'                => [
+                                    'type'         => 'input_with_warning',
+                                    'readonly'     => true,
+                                    'label'        => __('Shopify Shop Url'),
+                                    'value'        => Arr::get($shop->settings, 'shopify.shop_url', ''),
+                                    'showWarning'  => !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle' => __('We are having troubles connecting to the platform'),
+                                    'warningBody'  => __('Error Message').": ".$shop->external_shop_connection_error
+                                ],
+                                ...($shopifyAuthUrl ? [
+                                    'shopify__connect' => [
+                                        'type'        => 'action',
+                                        'label'       => __('Shopify store'),
+                                        'information' => $isShopifyConnected
+                                            ? __('Connected to :store.', ['store' => Arr::get($shop->settings, 'shopify.shop_url', '')])
+                                            : __('Not connected yet. Open the link logged in as the store owner to install the app.'),
+                                        'action'      => [
+                                            'type'  => 'button',
+                                            'style' => $isShopifyConnected ? 'tertiary' : 'save',
+                                            'label' => $isShopifyConnected ? __('Reconnect Shopify store') : __('Connect Shopify store'),
+                                            'route' => [
+                                                'url'       => $shopifyAuthUrl,
+                                                'openBlank' => true,
+                                            ],
+                                        ],
+                                    ],
+                                ] : []),
+                                'shopify_order_from_days' => [
+                                    'type'  => 'input',
+                                    'label' => __('Shopify Order From Days'),
+                                    'value' => (string) Arr::get($shop->settings, 'shopify.order_from_days', GetShopifyOrdersInShop::DEFAULT_ORDER_FROM_DAYS)
+                                ],
+                                'shopify_location_id'     => [
+                                    'type'        => 'input',
+                                    'label'       => __('Shopify stock location'),
+                                    'value'       => Arr::get($shop->settings, 'shopify.location_id', ''),
+                                    'information' => __('The Shopify location (gid://shopify/Location/…) whose stock Aiku keeps up to date. Left empty, the store\'s primary location is used.'),
                                 ],
                             ],
                         ],

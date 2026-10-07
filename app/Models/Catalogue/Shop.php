@@ -52,6 +52,7 @@ use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WixUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Portfolio;
@@ -505,6 +506,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function wixUser(): HasOne
     {
         return $this->hasOne(WixUser::class, 'external_shop_id');
+    }
+
+    public function externalShopifyUser(): HasOne
+    {
+        return $this->hasOne(ShopifyUser::class, 'external_shop_id');
     }
 
     public function currency(): BelongsTo
