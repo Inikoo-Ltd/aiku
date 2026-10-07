@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner;
 
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerBlockedOrgStocks;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -74,6 +75,18 @@ trait WithPartnerShoppingSubNavigation
                     "tooltip" => __('Sent to :partner', ['partner' => $parent->partner->name]),
                 ],
                 "number"   => (int) ($linesByState[ShoppingListItemStateEnum::OPEN->value] ?? 0),
+            ],
+            [
+                "label"    => __("Blocked"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_partners.show.shopping_list.blocked",
+                    "parameters" => [$parent->organisation->slug, $parent->id],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-ban"],
+                    "tooltip" => __("Products never suggested automatically"),
+                ],
+                "number"   => IndexPartnerBlockedOrgStocks::blockedQuery($parent)->count(),
             ],
         ];
     }

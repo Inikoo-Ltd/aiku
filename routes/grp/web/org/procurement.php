@@ -31,6 +31,8 @@ use App\Actions\Procurement\OrgPartner\UI\IndexPartnerCoverBucketItems;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
 use App\Actions\Procurement\OrgPartner\RemoveMisplacedShoppingListItems;
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerBlockedOrgStocks;
+use App\Actions\Procurement\OrgPartner\UnblockPartnerOrgStock;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeleteOpenPartnerShoppingListItems;
@@ -213,6 +215,8 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
                 Route::get('', ShowPartnerBrowse::class)->name('index');
             });
             Route::get('sent', [IndexPartnerShoppingListItems::class, 'inSent'])->name('.shopping_list.sent');
+            Route::get('blocked', IndexPartnerBlockedOrgStocks::class)->name('.shopping_list.blocked');
+            Route::delete('blocked/{orgStock:id}', UnblockPartnerOrgStock::class)->name('.shopping_list.unblock')->withoutScopedBindings();
             Route::prefix('ongoing-po')->as('.shopping_list.')->group(function () {
                 Route::get('', IndexPartnerShoppingListItems::class)->name('index');
                 Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');

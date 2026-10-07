@@ -170,9 +170,10 @@ class IndexOrgSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Suppliers'),
+                'title'       => '(' . $this->parent->code . ') ' . __('Suppliers'),
                 'pageHead'    => [
                     'title' => $title,
+                    'model' => $this->parent->code,
                     'icon'  => [
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'title' => $title,

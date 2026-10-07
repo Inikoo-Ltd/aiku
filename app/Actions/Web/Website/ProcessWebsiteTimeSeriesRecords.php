@@ -117,7 +117,7 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('AVG(page_views) as pages_per_session'),
                 DB::raw('SUM(CASE WHEN is_new_visitor = true THEN 1 ELSE 0 END) as new_visitors'),
                 DB::raw("SUM(CASE WHEN LOWER(device_type) = 'desktop' THEN 1 ELSE 0 END) as visitors_desktop"),
-                DB::raw("SUM(CASE WHEN LOWER(device_type) = 'mobile' THEN 1 ELSE 0 END) as visitors_mobile"),
+                DB::raw("SUM(CASE WHEN LOWER(device_type) IN ('mobile', 'smartphone', 'phablet') THEN 1 ELSE 0 END) as visitors_mobile"),
                 DB::raw("SUM(CASE WHEN LOWER(device_type) = 'tablet' THEN 1 ELSE 0 END) as visitors_tablet")
             )
             ->groupBy(DB::raw('CAST(first_seen_at AS DATE)'))

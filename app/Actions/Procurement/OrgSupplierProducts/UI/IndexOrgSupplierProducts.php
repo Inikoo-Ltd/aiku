@@ -144,6 +144,13 @@ class IndexOrgSupplierProducts extends OrgAction
             'currencies.code as currency_code',
         ]);
 
+        if (!$parent instanceof OrgSupplier) {
+            $queryBuilder
+                ->leftJoin('suppliers', 'supplier_products.supplier_id', 'suppliers.id')
+                ->leftJoin('org_suppliers', 'org_supplier_products.org_supplier_id', 'org_suppliers.id')
+                ->addSelect(['suppliers.name as supplier_name', 'org_suppliers.slug as org_supplier_slug']);
+        }
+
         if ($organisationAgent) {
             $queryBuilder
                 ->leftJoin('organisations', 'org_supplier_products.organisation_id', 'organisations.id')
@@ -152,7 +159,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts(['code', 'name', 'cost'])
+            ->allowedSorts(['code', 'name', 'supplier_name', 'cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -181,6 +188,10 @@ class IndexOrgSupplierProducts extends OrgAction
                 ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if (!$parent instanceof OrgSupplier) {
+                $table->column(key: 'supplier_name', label: __('Supplier'), canBeHidden: false, sortable: true);
+            }
 
             if ($this->getParentOrganisationAgent($parent)) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);

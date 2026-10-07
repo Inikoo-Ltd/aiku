@@ -70,7 +70,7 @@ class ShowOrgSupplierProduct extends OrgAction
         return Inertia::render(
             'Procurement/OrgSupplierProduct',
             [
-                'title'       => __('Supplier Product'),
+                'title'       => '(' . $orgSupplierProduct->supplierProduct->code . ') ' . __('Supplier Product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgSupplierProduct,
                     $request->route()->getName(),

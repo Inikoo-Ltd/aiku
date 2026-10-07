@@ -10,6 +10,7 @@ export interface Navigation {
         iconClass?: string
         colorScheme?: string  // Paints the whole tab in one colour, active or not. See Tabs.vue
         indicator?: boolean  // A blue dot indicator in Tabs
+        tooltip?: string
     }
 }
 
