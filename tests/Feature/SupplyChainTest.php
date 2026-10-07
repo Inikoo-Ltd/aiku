@@ -532,6 +532,17 @@ test('supplier product upload is not left waiting when the AI checks crash', fun
         ->and(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make()->problems($upload))->not->toContain('The AI checks are still running.');
 });
 
+test('supplier product upload import errors shown to staff never carry urls or keys', function () {
+    $errorText = fn (Throwable $e) => (fn () => $this->errorText($e))->call(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make());
+
+    expect($errorText(new RuntimeException('cURL error 28: timed out for https://rates.example.com/v1/historical?api_key=SECRET123&date=2026-10-07')))
+        ->toBe('An outside service did not answer in time, please try again.')
+        ->and($errorText(new RuntimeException('Bad answer from https://rates.example.com/x?api_key=SECRET123')))
+        ->not->toContain('SECRET123')
+        ->and($errorText(Illuminate\Validation\ValidationException::withMessages(['code' => 'Code taken.'])))
+        ->toBe('Code taken.');
+});
+
 test('UI supplier product upload preview shows the rows and saves decisions', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
