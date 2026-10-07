@@ -10,7 +10,7 @@ import type { Ref } from "vue"
 
 /**
  * A tab change is a partial visit, and Laravel leaves deferredProps out of a partial response, so
- * Inertia never goes and gets them: a prop the tab needs but does not own, such as the pagespeed
+ * Inertia never goes and gets them: a prop the tab needs but does not own, such as the real user speed
  * report of the webpage performance tab, has to be asked for once the tab itself has arrived.
  * A tab whose own prop is deferred, such as a slow Sales analysis, opens at once with only the
  * tabs and shows its placeholder while the prop is fetched.

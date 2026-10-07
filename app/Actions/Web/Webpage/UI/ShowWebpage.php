@@ -320,9 +320,9 @@ class ShowWebpage extends OrgAction
          * judged on instead is how the visitors it is bought for behave. A page that is not live
          * has nothing published to measure, so it gets no report either.
          */
-        $pagespeed = match (true) {
+        $realUserSpeed = match (true) {
             $isHiddenFromSearchEngines, $webpage->state != WebpageStateEnum::LIVE => null,
-            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'pagespeed'),
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'real_user_speed'),
             default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
         };
 
@@ -392,7 +392,7 @@ class ShowWebpage extends OrgAction
                     fn () => $this->trafficSources($webpage)
                     : Inertia::optional(fn () => $this->trafficSources($webpage)),
 
-                'pagespeed' => $pagespeed,
+                'real_user_speed' => $realUserSpeed,
 
                 'engagement' => $isHiddenFromSearchEngines && $this->tab == WebpageTabsEnum::SHOWCASE->value
                     ? Inertia::defer(fn () => GetWebpageEngagementMetrics::run($webpage), 'engagement')

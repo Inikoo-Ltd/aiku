@@ -22,16 +22,19 @@ are suggestions; rename them freely, but keep the boundaries.
 
 ## Phase 0: fix the data we already show
 
-Two defects in `app/Actions/Web/Website/ProcessWebsiteTimeSeriesRecords.php` make the current
-performance card wrong. Fix them first, because Phase 1 compares against these figures.
+Done on 7 October 2026.
 
-| Defect | Today | Fix |
-| --- | --- | --- |
-| Mobile sessions are always 0 | The query counts `LOWER(device_type) = 'mobile'`. `GetBrowserInfo` stores `Smartphone` and `Phablet`, so nothing matches. | Count `smartphone` and `phablet` as mobile. Redo the last 30 days with `websites:redo_time_series`; older days cannot be corrected because their visitor rows are gone. |
-| Average session duration is inflated | It is a mean of `duration_seconds`. A session id can live for weeks, so a handful of sessions measured in days pull the mean far above the median. | Cap a session at 30 minutes of inactivity when computing duration, or store the median beside the mean. Decide before Phase 1 so both cards use the same definition. |
-
-Also rename the `pagespeed` and `pagespeed_history` props on the website and webpage pages. They
-carry CrUX and Web Vitals data, and Phase 1 adds real PageSpeed data under the same word.
+- Mobile sessions: `ProcessWebsiteTimeSeriesRecords` counts `Smartphone` and `Phablet` (and
+  `mobile`) as mobile. Before, it only matched `mobile`, which `GetBrowserInfo` never stores.
+- Session duration: `UpdateWebsiteVisitor` adds the time since the previous hit, capped at
+  30 minutes (`UpdateWebsiteVisitor::MAX_IDLE_SECONDS`), instead of `last_seen_at - first_seen_at`.
+  This matches the 30 minute cap `StoreWebsitePageView` already applies per page view.
+- `maintenance:recalculate_website_visitor_durations {website?}` rewrites the duration of the
+  visitors still stored from the sum of their page view durations. Run it once after deploying,
+  then `websites:redo_time_series --from=<30 days ago> --to=<today>`. Older days cannot be
+  corrected because their visitor rows are gone.
+- The `pagespeed` and `pagespeed_history` props on the webpage and website pages are now
+  `real_user_speed` and `real_user_speed_history`, because they carry CrUX and Web Vitals data.
 
 ## Phase 1: our own sites
 
@@ -317,7 +320,6 @@ Similarweb API (licensed, priced) for competitor traffic before building it.
 
 | Decision | Needed before |
 | --- | --- |
-| Session duration definition (cap or median) | Phase 1 |
 | Which websites have a Search Console property, and who adds the service account | Phase 1 |
 | SERP provider and monthly budget | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency | Phase 2 |

@@ -352,11 +352,11 @@ class ShowWebsite extends OrgAction
                 'route_register'     => $route_register_page,
                 'route_forgot_pass'  => $route_forgot_pass_page,
 
-                'pagespeed_history' => $this->tab == WebsiteTabsEnum::SHOWCASE->value
+                'real_user_speed_history' => $this->tab == WebsiteTabsEnum::SHOWCASE->value
                     ? Inertia::defer(fn () => [
                         'crux'     => GetCruxReport::run($website),
                         'visitors' => GetWebVitalsReport::run($website),
-                    ], 'pagespeed_history')
+                    ], 'real_user_speed_history')
                     : null,
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
