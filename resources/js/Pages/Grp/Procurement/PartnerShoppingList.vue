@@ -24,8 +24,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCut, faUpload, faPaperPlane } from "@fal"
-library.add(faCut, faUpload, faPaperPlane)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCut, faUpload, faPaperPlane, faIndustryAlt } from "@fal"
+library.add(faCut, faUpload, faPaperPlane, faIndustryAlt)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -42,9 +43,12 @@ const props = defineProps<{
 	data: object
 	orgPartner: { id: number; slug: string; currency: string }
 	draftsCount: number
+	hubSuggestionsCount: number
+	partnerCode: string
 	isSentView: boolean
 	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
+	filterGroups: { key: string; label: string; options: { value: string; label: string; count: number }[] }[]
 	upload_excel: {
 		title: { label: string; information: string }
 		progressDescription: string
@@ -63,6 +67,21 @@ const tableLoadingEvents = {
 	onFinish: () => (isTableLoading.value = false),
 }
 const confirm = useConfirm()
+
+const selectedFilters = (key: string) =>
+	(new URLSearchParams(location.search).get(`filter[${key}]`) ?? "").split(",").filter(Boolean)
+
+const toggleFilter = (key: string, value: string) => {
+	const url = new URL(location.href)
+	const selected = selectedFilters(key).includes(value)
+		? selectedFilters(key).filter((item) => item !== value)
+		: [...selectedFilters(key), value]
+	selected.length
+		? url.searchParams.set(`filter[${key}]`, selected.join(","))
+		: url.searchParams.delete(`filter[${key}]`)
+	url.searchParams.delete("page")
+	router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true, ...tableLoadingEvents })
+}
 const routeParams = route().params
 
 function confirmDeleteAll() {
@@ -77,6 +96,28 @@ function confirmDeleteAll() {
 		accept: () => {
 			router.delete(
 				route("grp.org.procurement.org_partners.show.shopping_list.destroy_open", [
+					routeParams["organisation"],
+					props.orgPartner.id,
+				]),
+				{ preserveScroll: true, ...tableLoadingEvents }
+			)
+		},
+	})
+}
+
+function confirmDropHubSuggestions() {
+	confirm.require({
+		group: "partner-shopping-list",
+		header: ctrans("Drop :partner suggestions", { partner: props.partnerCode }),
+		message: ctrans(
+			"Remove the :count draft lines :partner suggested? Lines you added stay.",
+			{ count: String(props.hubSuggestionsCount), partner: props.partnerCode }
+		),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Drop them"), severity: "danger" },
+		accept: () => {
+			router.delete(
+				route("grp.org.procurement.org_partners.show.shopping_list.destroy_hub_suggestions", [
 					routeParams["organisation"],
 					props.orgPartner.id,
 				]),
@@ -303,6 +344,27 @@ function confirmSubmit() {
 	})
 }
 
+const submittingId = ref<number | null>(null)
+
+const hasUnsavedQuantity = (item: { id: number; quantity: number | string }) =>
+	typedSkos.value[item.id] !== undefined && typedSkos.value[item.id] !== Number(withSavedQuantity(item).quantity)
+
+function submitItem(item: { id: number }) {
+	router.post(
+		route("grp.org.procurement.org_partners.show.shopping_list.submit_item", [
+			routeParams["organisation"],
+			props.orgPartner.id,
+			item.id,
+		]),
+		{},
+		{
+			preserveScroll: true,
+			onStart: () => (submittingId.value = item.id),
+			onFinish: () => (submittingId.value = null),
+		}
+	)
+}
+
 function deleteItem(item: { id: number }) {
 	router.delete(
 		route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
@@ -324,6 +386,13 @@ function deleteItem(item: { id: number }) {
 				icon="fal fa-trash-alt"
 				:label="ctrans('Delete all')"
 				@click="confirmDeleteAll" />
+			<Button
+				v-if="hubSuggestionsCount"
+				type="secondary"
+				icon="fal fa-industry-alt"
+				:label="ctrans('Drop :partner suggestions (:count)', { partner: partnerCode, count: String(hubSuggestionsCount) })"
+				:tooltip="ctrans(':partner production added these for you. Keep them by submitting, or drop them all here', { partner: partnerCode })"
+				@click="confirmDropHubSuggestions" />
 			<Button
 				type="secondary"
 				icon="fal fa-magic"
@@ -383,6 +452,30 @@ function deleteItem(item: { id: number }) {
 			{{ ctrans("Brave mode") }}
 		</label>
 	</div>
+	<div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm">
+		<div
+			v-for="group in filterGroups.filter((group) => group.options.length)"
+			:key="group.key"
+			class="flex flex-wrap items-center gap-1.5">
+			<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ group.label }}</span>
+			<button
+				v-for="option in group.options"
+				:key="option.value"
+				type="button"
+				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+				:class="selectedFilters(group.key).includes(option.value)
+					? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+					: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+				@click="toggleFilter(group.key, option.value)">
+				<span>{{ option.label }}</span>
+				<span
+					class="rounded-full px-1.5 text-xs tabular-nums"
+					:class="selectedFilters(group.key).includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">
+					{{ option.count }}
+				</span>
+			</button>
+		</div>
+	</div>
 	<div class="mt-2 h-[3px]">
 		<ProgressBar v-if="isTableLoading" mode="indeterminate" style="height: 3px" />
 	</div>
@@ -395,10 +488,36 @@ function deleteItem(item: { id: number }) {
 				<div class="min-w-0 space-y-0.5">
 					<div class="text-sm font-medium text-gray-800">
 						{{ item.org_stock_name }}
+						<span
+							v-if="item.suggested_by_hub"
+							v-tooltip="ctrans(':partner production suggested this line', { partner: partnerCode })"
+							class="ml-1 whitespace-nowrap rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-normal text-indigo-700">
+							<FontAwesomeIcon icon="fal fa-industry-alt" fixed-width aria-hidden="true" />
+							{{ ctrans(":partner suggested", { partner: partnerCode }) }}
+						</span>
 					</div>
 					<div v-if="item.price_per_sko" class="text-xs text-gray-500">
 						{{ ctrans("SKO cost") }}:
 						{{ useLocaleStore().currencyFormat(orgPartner.currency, item.price_per_sko) }}
+						<span v-if="Number(item.units_per_pack) > 1">
+							· {{ ctrans("1 SKO = :units units", { units: Number(item.units_per_pack) }) }}
+						</span>
+					</div>
+					<div class="flex flex-wrap gap-x-3 text-xs text-gray-500">
+						<span v-if="item.their_available !== null && item.their_available !== undefined">
+							{{ ctrans("Partner stock") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.their_available)) }}</span>
+						</span>
+						<span v-if="Number(item.order_quantum) > 1">
+							{{ ctrans("Batch") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.order_quantum)) }}</span>
+							{{ ctrans("SKOs") }}
+						</span>
+						<span v-if="Number(item.skos_per_carton) > 0">
+							{{ ctrans("Carton") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.skos_per_carton)) }}</span>
+							{{ ctrans("SKOs") }}
+						</span>
 					</div>
 					<RenderWhenVisible minHeight="9rem">
 						<PurchaseOrderItemStockInfo
@@ -413,6 +532,12 @@ function deleteItem(item: { id: number }) {
 		<template #cell(quantity)="{ item }">
 			<RenderWhenVisible v-if="isEditable(item)" minHeight="4.5rem">
 				<div class="flex flex-col items-end">
+					<PurchaseOrderSuggestButton
+						class="mb-1"
+						:item="withSavedQuantity(item)"
+						isPartner
+						:typedSkosById="typedSkos"
+						@suggest="(skos) => saveQuantity(item, skos)" />
 					<NumberWithButtonSave
 						:key="`${item.id}-${withSavedQuantity(item).quantity}`"
 						isWithRefreshModel
@@ -421,11 +546,6 @@ function deleteItem(item: { id: number }) {
 						:isLoading="savingId === item.id"
 						@update:modelValue="(value) => (typedSkos[item.id] = Number(value))"
 						@onSave="(form) => onSaveQuantity(item, form)" />
-					<PurchaseOrderSuggestButton
-						:item="withSavedQuantity(item)"
-						isPartner
-						:typedSkosById="typedSkos"
-						@suggest="(skos) => saveQuantity(item, skos)" />
 					<span
 						v-if="Number(item.order_quantum) > 1"
 						v-tooltip="
@@ -437,6 +557,16 @@ function deleteItem(item: { id: number }) {
 						:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
 						{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
 					</span>
+					<Button
+						class="mt-1"
+						type="secondary"
+						size="xs"
+						icon="fal fa-paper-plane"
+						:label="ctrans('Submit')"
+						:loading="submittingId === item.id"
+						:disabled="hasUnsavedQuantity(item)"
+						:tooltip="hasUnsavedQuantity(item) ? ctrans('Save the quantity first') : ctrans('Send only this line to the partner now')"
+						@click="submitItem(item)" />
 				</div>
 			</RenderWhenVisible>
 			<span v-else class="block text-right font-medium tabular-nums">{{
@@ -472,36 +602,30 @@ function deleteItem(item: { id: number }) {
 			<span v-else>{{ ctrans(item.priority) }}</span>
 		</template>
 		<template #cell(progress)="{ item }">
-			<div class="flex items-center gap-1.5">
-				<span
-					class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
-					:class="{
-						'border-gray-200 bg-gray-50 text-gray-500': item.progress?.tone === 'gray',
-						'border-amber-200 bg-amber-50 text-amber-700':
-							item.progress?.tone === 'amber',
-						'border-indigo-200 bg-indigo-50 text-indigo-700':
-							item.progress?.tone === 'indigo',
-						'border-emerald-200 bg-emerald-50 text-emerald-700':
-							item.progress?.tone === 'emerald',
-					}">
-					{{ item.progress?.label }}
-				</span>
-				<span v-if="item.progress?.reference" class="font-mono text-xs text-gray-400">{{
-					item.progress.reference
-				}}</span>
+			<div class="flex flex-col gap-2">
+				<div v-for="(part, index) in item.progress_parts ?? [item.progress]" :key="index" class="space-y-0.5">
+					<div class="flex items-center gap-1.5">
+						<span v-if="item.progress_parts" class="text-xs tabular-nums text-gray-500">{{
+							useLocaleStore().number(part.quantity)
+						}}</span>
+						<span
+							class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
+							:class="{
+								'border-gray-200 bg-gray-50 text-gray-500': part?.tone === 'gray',
+								'border-amber-200 bg-amber-50 text-amber-700': part?.tone === 'amber',
+								'border-indigo-200 bg-indigo-50 text-indigo-700': part?.tone === 'indigo',
+								'border-emerald-200 bg-emerald-50 text-emerald-700': part?.tone === 'emerald',
+							}">
+							{{ part?.label }}
+						</span>
+						<span v-if="part?.reference" class="font-mono text-xs text-gray-400">{{ part.reference }}</span>
+					</div>
+					<div v-for="(detail, detailIndex) in part?.details ?? []" :key="detailIndex" class="flex gap-1.5 text-xxs text-gray-500">
+						<span>{{ detail.label }}</span>
+						<span v-if="detail.at" class="text-gray-400">{{ useFormatTime(detail.at, { formatTime: "dd MMM HH:mm" }) }}</span>
+					</div>
+				</div>
 			</div>
-		</template>
-		<template #cell(state)="{ item }">
-			<span
-				v-if="item.state === 'draft'"
-				v-tooltip="ctrans('Not sent yet: the partner sees it after you press Submit')"
-				class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-				{{ ctrans("Draft") }}
-			</span>
-			<span v-else-if="item.state === 'open'" class="text-xs text-gray-600">{{
-				ctrans("Sent")
-			}}</span>
-			<span v-else class="text-xs text-gray-500">{{ ctrans(item.state) }}</span>
 		</template>
 		<template #cell(created_at)="{ item }">
 			{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}

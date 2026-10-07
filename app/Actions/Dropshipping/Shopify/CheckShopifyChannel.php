@@ -10,12 +10,14 @@ namespace App\Actions\Dropshipping\Shopify;
 
 use App\Actions\Dropshipping\Shopify\FulfilmentService\GetFulfilmentServiceName;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -79,7 +81,7 @@ class CheckShopifyChannel
         }
 
         $this->update($customerSalesChannel, [
-            'name'                    => Arr::get($storeData, 'name', $customerSalesChannel->name),
+            'name'                    => $customerSalesChannel->name ?: Arr::get($storeData, 'name'),
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
@@ -100,6 +102,8 @@ class CheckShopifyChannel
 
     public function asCommand(Command $command): void
     {
+        Nightwatch::dontSample();
+
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
 
         if ($customerSalesChannelSlug) {
@@ -113,7 +117,11 @@ class CheckShopifyChannel
 
             $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->firstOrFail();
 
-            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $shopifyPlatform->id)->get();
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $shopifyPlatform->id)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+                ->where('platform_user_type', class_basename(ShopifyUser::class))
+                ->whereIn('platform_user_id', ShopifyUser::where('password', 'like', 'shpat_%')->select('id'))
+                ->get();
 
             if ($customerSalesChannels->isEmpty()) {
                 $command->info('No customer sales channels found with platform_id=1.');
@@ -270,7 +278,7 @@ class CheckShopifyChannel
         $client = $shopifyUser->getShopifyClient();
 
         if (!$client) {
-            return ['fail', ['error' => 'No shopify client']];
+            return null;
         }
 
         try {
@@ -329,7 +337,7 @@ class CheckShopifyChannel
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                return ['fail', []];
+                return $this->storeRefusesUs((int) Arr::get($response, 'status')) ? ['fail', []] : null;
             }
 
 
@@ -347,12 +355,22 @@ class CheckShopifyChannel
                 return ['ok', $shopifyShopData];
             }
 
-            return ['fail', []];
+            return null;
         } catch (\Exception $e) {
             Sentry::captureException($e);
 
             return null;
         }
+    }
+
+    /**
+     * 401 token revoked (uninstalled or reinstalled under another row), 402 frozen for an unpaid plan,
+     * 403 no access, 404 store closed, 423 locked. Anything else, including a throttled 200 with no shop,
+     * a 5xx or a missing client, is retried on the next check instead of switching a live store off.
+     */
+    private function storeRefusesUs(int $status): bool
+    {
+        return in_array($status, [401, 402, 403, 404, 423], true);
     }
 
 }

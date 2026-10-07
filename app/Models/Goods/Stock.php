@@ -61,6 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
+ * @property array<array-key, mixed>|null $dimensions l, w, h in cm
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
  * @property Carbon|null $activated_at
@@ -113,6 +114,7 @@ class Stock extends Model implements HasMedia, Auditable
 
     protected $casts = [
         'data'                   => 'array',
+        'dimensions'             => 'array',
         'settings'               => 'array',
         'sources'                => 'array',
         'activated_at'           => 'datetime',

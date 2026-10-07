@@ -30,13 +30,14 @@ class DeleteOpenPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * Clears the ongoing PO; lines already sent to the partner stay.
+     * Clears the ongoing PO, or only the lines the hub suggested; lines already sent to the partner stay.
      */
-    public function handle(OrgPartner $orgPartner): int
+    public function handle(OrgPartner $orgPartner, bool $onlyHubSuggestions = false): int
     {
         $deleted = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
             ->where('state', ShoppingListItemStateEnum::DRAFT)
+            ->when($onlyHubSuggestions, fn ($query) => $query->where('suggested_by_hub', true))
             ->delete();
 
         OrgPartnerHydrateShoppingListItems::dispatch($orgPartner);
@@ -46,9 +47,18 @@ class DeleteOpenPartnerShoppingListItems extends OrgAction
 
     public function asController(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): int
     {
+        abort_unless($orgPartner->organisation_id === $organisation->id, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($orgPartner);
+    }
+
+    public function hubSuggestions(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): int
+    {
+        abort_unless($orgPartner->organisation_id === $organisation->id, 404);
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($orgPartner, onlyHubSuggestions: true);
     }
 
     public function htmlResponse(): RedirectResponse

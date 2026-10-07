@@ -2413,3 +2413,34 @@ test('the stock push and order lines never move a portfolio onto a variant anoth
         ->and($unlinked->refresh()->platform_product_id)->toBe('gid://shopify/Product/9701')
         ->and($unlinked->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9801');
 });
+
+test('a shopify store that refuses us is shown as disconnected, a passing shopify error leaves it alone', function () {
+    $customer    = createCustomer($this->shop);
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'refusing-store-'.Str::lower(Str::random(6))]);
+    $channel     = $shopifyUser->customerSalesChannel;
+    $channel->update(['name' => 'Name the customer chose', 'can_connect_to_platform' => true, 'platform_status' => true]);
+
+    $answerWith = function (?array $response) use ($channel, $shopifyUser) {
+        $client = null;
+        if ($response) {
+            $client = Mockery::mock(\Gnikyt\BasicShopifyAPI\Contracts\RestRequester::class);
+            $client->shouldReceive('request')->andReturn($response);
+        }
+        $user = Mockery::mock($shopifyUser)->makePartial();
+        $user->shouldReceive('getShopifyClient')->andReturn($client);
+        $channel->setRelation('user', $user);
+
+        return CheckShopifyChannel::make()->handle($channel)->refresh();
+    };
+
+    $throttled = ['errors' => false, 'status' => 200, 'body' => new \Gnikyt\BasicShopifyAPI\ResponseAccess(['errors' => [['message' => 'Throttled']]])];
+    $live      = ['errors' => false, 'status' => 200, 'body' => new \Gnikyt\BasicShopifyAPI\ResponseAccess(['data' => ['shop' => ['id' => 'gid://shopify/Shop/1', 'name' => 'Shopify name', 'fulfillmentServices' => []]]])];
+
+    expect($answerWith(['errors' => true, 'status' => 429, 'body' => null])->can_connect_to_platform)->toBeTrue()
+        ->and($answerWith(['errors' => true, 'status' => 503, 'body' => null])->platform_status)->toBeTrue()
+        ->and($answerWith($throttled)->platform_status)->toBeTrue()
+        ->and($answerWith(null)->platform_status)->toBeTrue()
+        ->and($answerWith($live)->name)->toBe('Name the customer chose')
+        ->and($answerWith(['errors' => true, 'status' => 401, 'body' => null])->can_connect_to_platform)->toBeFalse()
+        ->and($channel->platform_status)->toBeFalse();
+});

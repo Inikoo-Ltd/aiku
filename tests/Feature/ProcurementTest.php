@@ -245,6 +245,7 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -252,6 +253,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -6128,7 +6130,15 @@ describe('partner shopping list', function () {
             return collect($rows)->firstWhere('id', $item->id)['progress']['label'] ?? null;
         };
 
-        expect($progressOf())->toBe('Requested');
+        expect($progressOf())->toBe('Waiting for the partner');
+
+        $item->update(['preparing_at' => now()]);
+        expect($progressOf())->toBe('Queued to be made');
+
+        $item->update(['preparing_at' => null, 'pre_picked_at' => now()]);
+        expect($progressOf())->toBe('Picked from stock');
+
+        $item->update(['pre_picked_at' => null]);
 
         CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
 
@@ -6139,6 +6149,40 @@ describe('partner shopping list', function () {
             ->delete();
 
         expect($progressOf())->toBe('Pre-picked');
+    });
+
+    test('a line split into picked and to-make parts shows to the buyer as the one line they sent', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]   = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$product->orgStocks()->first()->stock])[0];
+        $item          = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 15]);
+        $item->update(['pre_picked_at' => now()]);
+        $rest = $item->replicate();
+        $rest->fill(['quantity' => 75, 'parent_id' => $item->id, 'pre_picked_at' => null, 'preparing_at' => now()])->save();
+
+        actingAs($this->adminGuest->getUser());
+        $rows = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()->viewData('page')['props']['data']['data'])
+            ->where('org_stock_id', $buyerOrgStock->id);
+
+        expect($rows)->toHaveCount(1)
+            ->and((float) $rows->first()['quantity'])->toBe(90.0)
+            ->and(collect($rows->first()['progress_parts'])->map(fn ($part) => [$part['quantity'], $part['label']])->all())
+            ->toBe([[15.0, 'Picked from stock'], [75.0, 'Queued to be made']]);
+        expect(collect($rows->first()['progress_parts'][1]['details'])->pluck('label')->all())->toBe(['Requested', 'Sent to production']);
+
+        $rest->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $orderedIds = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]).'?'.http_build_query(['filter' => ['state' => 'ordered']]))
+            ->assertOk()->viewData('page')['props']['data']['data'])->pluck('id');
+        expect($orderedIds)->toContain($item->id);
+
+        $sentCount = fn () => collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->viewData('page')['props']['pageHead']['subNavigation'])->firstWhere('label', 'Sent')['number'];
+        $withPiece = $sentCount();
+        $rest->forceDelete();
+
+        expect($sentCount())->toBe($withPiece);
     });
 
     test('SKOs picked from a partner bay become one order through the partner list, and can not be ordered twice (HELP-3500)', function () {
@@ -6325,6 +6369,20 @@ describe('partner shopping list', function () {
             ->and($draft->created_at->toDateTimeString())->toBe(now()->addHours(2)->toDateTimeString());
     });
 
+    test('one draft line can be submitted on its own, the rest stay on the ongoing PO', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->delete();
+        $otherOrgStock = createOrgStocks($this->orgPartner->organisation, [StoreStock::make()->action($this->orgPartner->organisation->group, Stock::factory()->definition())])[0];
+        $sent          = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $kept          = StorePartnerShoppingListItem::make()->action($this->orgPartner, $otherOrgStock, ['quantity' => 2]);
+
+        actingAs($this->adminGuest->getUser());
+        post(route('grp.org.procurement.org_partners.show.shopping_list.submit_item', [$this->organisation->slug, $this->orgPartner->id, $sent->id]))
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::whereKey($sent->id)->where('state', ShoppingListItemStateEnum::DRAFT)->exists())->toBeFalse()
+            ->and($kept->refresh()->state)->toBe(ShoppingListItemStateEnum::DRAFT);
+    });
+
     test('submitting adds a draft to the untouched open line of the same SKO', function () {
         PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->delete();
         $open  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
@@ -6418,6 +6476,74 @@ describe('partner shopping list', function () {
         expect($added)->toBe(1)
             ->and((float) $drafts->get($this->buyerOrgStock->id)?->quantity)->toBe(45.0)
             ->and($drafts->has($cheapOrgStock->id))->toBeFalse();
+    });
+
+    test('the hub production manager orders on behalf of a partner from Intervention', function () {
+        Notification::fake();
+        $seller = $this->orgPartner->partner;
+        $seller->update(['is_manufacturing_hub' => true]);
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $buyer        = $this->agent->organisation;
+        $buyerPartner = OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $seller->id)->first()
+            ?? StoreOrgPartner::make()->action($buyer, $seller);
+        $buyerOrgStock = createOrgStocks($buyer, [$this->buyerOrgStock->stock])[0];
+
+        $this->partialMock(GetPartnerStockCoverBuckets::class, fn ($mock) => $mock->shouldReceive('rescueLines')->andReturn([
+            ['org_stock_id' => $buyerOrgStock->id, 'skos' => 10, 'quantity' => 10, 'cost' => 10.0],
+        ]));
+
+        $user          = $this->adminGuest->getUser();
+        $originalRoles = $user->roles->pluck('name')->toArray();
+        actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('production-admin', $production)]);
+        $order = fn (OrgPartner $orgPartner) => $this->post(route('grp.org.productions.show.intervention.order', [$seller->slug, $production->slug, $orgPartner->id]));
+
+        try {
+            $this->withoutVite()->get(route('grp.org.productions.show.intervention.index', [$seller->slug, $production->slug]))
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->component('Org/Production/Interventions')
+                    ->where('can_order', true)
+                    ->has('buyers', 1)
+                    ->has('buyers.0', fn (AssertableInertia $card) => $card->where('id', $buyerPartner->id)->has('rescuable.buckets')->etc()));
+
+            $order($buyerPartner)->assertSessionHasNoErrors()->assertRedirect();
+
+            $draft = PartnerShoppingListItem::where('org_partner_id', $buyerPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->first();
+            expect($draft->added_by_user_id)->toBe($user->id)
+                ->and($draft->suggested_by_hub)->toBeTrue()
+                ->and($production->audits()->where('event', 'order_on_behalf')->exists())->toBeTrue()
+                ->and($buyer->audits()->where('event', 'order_on_behalf')->exists())->toBeTrue();
+
+            $draft->update(['quantity' => 3]);
+            $order($buyerPartner)->assertSessionHasErrors('rescue');
+            expect((float) $draft->refresh()->quantity)->toBe(3.0);
+
+            $order($this->orgPartner)->assertNotFound();
+
+            actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('production-orchestrator', $production)]);
+            $order($buyerPartner)->assertSessionHasErrors('rescue');
+
+            actingAsUserWithRoles($user, []);
+            $order($buyerPartner)->assertForbidden();
+        } finally {
+            actingAsUserWithRoles($user, $originalRoles);
+        }
+
+        $ours = StorePartnerShoppingListItem::make()->action($buyerPartner, createOrgStocks($buyer, [collect($this->stocks)->first(fn ($stock) => $stock->id !== $buyerOrgStock->stock_id)])[0], ['quantity' => 2]);
+        $user->givePermissionTo("procurement.$buyer->id.edit");
+        $listUrl = route('grp.org.procurement.org_partners.show.shopping_list.index', [$buyer->slug, $buyerPartner->id]);
+        $this->get($listUrl.'?'.http_build_query(['filter' => ['origin' => 'hub']]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('hubSuggestionsCount', 1)
+                ->has('data.data', 1)
+                ->where('data.data.0.id', $draft->id)
+                ->where('data.data.0.suggested_by_hub', true)
+                ->etc());
+
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_hub_suggestions', [$this->organisation->slug, $buyerPartner->id]))->assertNotFound();
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_hub_suggestions', [$buyer->slug, $buyerPartner->id]))->assertRedirect();
+        expect(PartnerShoppingListItem::find($draft->id))->toBeNull()
+            ->and(PartnerShoppingListItem::find($ours->id))->not->toBeNull();
     });
 
     test('over http only drafts can be changed or removed, sent lines are the partner\'s', function () {
@@ -6694,8 +6820,15 @@ test('UI partner shopping list index', function () {
             ->component('Procurement/PartnerShoppingList')
             ->has('title')
             ->has('data')
-            ->has('orgStockFetchRoute');
+            ->has('orgStockFetchRoute')
+            ->where('filterGroups', fn ($groups) => collect($groups)->pluck('key')->all() === ['category', 'origin', 'rank']
+                && collect(collect($groups)->firstWhere('key', 'origin')['options'])->pluck('value')->all() === ['us', 'hub'])
+            ->where('queryBuilderProps.default.elementGroups', []);
     });
+
+    $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [
+        $this->organisation->slug, $this->orgPartner->id, 'filter[category]' => 'none,999999', 'filter[origin]' => 'us', 'filter[rank]' => 'A',
+    ]))->assertOk();
 });
 
 test('UI partner shipping list index', function () {
@@ -8177,6 +8310,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and(collect($row['quarterly_usage'])->last()['period'])->toBe($currentQuarter)
         ->and((float) collect($row['quarterly_usage'])->last()['sales'])->toBe(6.0)
         ->and(collect($row['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
+        ->and(collect($row['quarterly_usage'])->last()['top_customer'])->toMatchArray(['id' => $deliveryNote->customer_id, 'sales' => 6.0])
         ->and(collect($row['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)
         ->and((float) collect($row['stock_deliveries']['coming'])->firstWhere('reference', $comingStockDelivery->reference)['quantity'])->toBe(30.0)
         ->and(Arr::only($row['stock_cover'], array_keys($stockCover)))->toEqual($stockCover)
