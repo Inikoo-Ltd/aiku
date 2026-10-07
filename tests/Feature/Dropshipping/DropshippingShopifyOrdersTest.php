@@ -1382,7 +1382,7 @@ test('closing the channel from aiku tears down the store side and a reconnect br
         ->and($portfolio->refresh()->status)->toBeTrue();
 });
 
-test('shopify webhooks record unverified callers while enforcement is off and refuse them when on', function () {
+test('shopify webhooks refuse unsigned callers and other stores but let the unsigned stock lookup through', function () {
     Queue::fake();
     $shopifyUser = shopifyOrderChannel($this, 'webhook-verify');
 
@@ -1400,15 +1400,10 @@ test('shopify webhooks record unverified callers while enforcement is off and re
     };
 
     // 422 means the request reached the action; 401 means the middleware stopped it.
-    config()->set('app.enforce_webhook_signatures', false);
-    Log::spy();
-    expect($this->postJson($url, [])->status())->not->toBe(401);
-    Log::shouldHaveReceived('warning')->withArgs(fn ($message) => $message === 'Unverified Shopify webhook allowed');
-
-    config()->set('app.enforce_webhook_signatures', true);
     $this->postJson($url, [])->assertStatus(401);
     $signed('someone-else.myshopify.com')->assertStatus(401);
-    expect($signed($shopifyUser->name)->status())->not->toBe(401);
+    expect($signed($shopifyUser->name)->status())->not->toBe(401)
+        ->and($this->getJson('https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/fetch_stock.json')->status())->not->toBe(401);
 });
 
 test('the hourly sweep re-fetches only accepted fulfilment requests from every connected open shopify store, page by page', function () {
@@ -1501,7 +1496,6 @@ function signedShopifyProductDelete($test, ShopifyUser $shopifyUser, array $payl
 
 test('a product deleted in shopify is unlinked in that store only, from a queued job', function () {
     Queue::fake();
-    config(['app.enforce_webhook_signatures' => false]);
     $shopifyUser  = shopifyOrderChannel($this, 'product-delete-hook');
     $otherUser    = shopifyOrderChannel($this, 'product-delete-other');
     $deleted      = shopifyPortfolioFor($this, $shopifyUser, 'gid://shopify/Product/7001');
@@ -1520,9 +1514,8 @@ test('a product deleted in shopify is unlinked in that store only, from a queued
         ->and($kept->refresh()->platform_product_id)->toBe('gid://shopify/Product/7001');
 });
 
-test('a product deleted webhook without a valid signature is refused even while signatures are not enforced', function () {
+test('a product deleted webhook without a valid signature is refused', function () {
     Queue::fake();
-    config(['app.enforce_webhook_signatures' => false]);
     $shopifyUser = shopifyOrderChannel($this, 'product-delete-forged');
     shopifyPortfolioFor($this, $shopifyUser, 'gid://shopify/Product/7001');
 

@@ -124,7 +124,7 @@ class LogRetinaApiRequest
             'route_parameters'         => $this->truncate($this->redact(array_merge($request->route()?->originalParameters() ?? [], $request->query()))),
             'payload'                  => $this->payload($request),
             'status'                   => $status,
-            'message'                  => $this->violations($request, $status >= 400 ? $this->message($decoded) : null),
+            'message'                  => $status >= 400 ? $this->message($decoded) : null,
             'response_id'              => $status < 400 && is_array($decoded) ? $this->responseId($decoded) : null,
             'duration_ms'              => (int) ((microtime(true) - $request->attributes->get('retina_api_request_start', microtime(true))) * 1000),
             'ip'                       => $request->ip(),
@@ -226,21 +226,6 @@ class LogRetinaApiRequest
         }
 
         return ['_truncated' => mb_substr($encoded, 0, self::MAX_PAYLOAD_CHARS)];
-    }
-
-    /**
-     * Ownership violations recorded while enforcement is off travel alongside the response
-     * message rather than replacing it, so a call that also failed for its own reason keeps it.
-     */
-    protected function violations(Request $request, ?string $message): ?string
-    {
-        $violations = $request->attributes->get('retina_api_ownership_violations', []);
-
-        if (!$violations) {
-            return $message;
-        }
-
-        return mb_substr(trim(implode('; ', $violations).($message ? ' | '.$message : '')), 0, 2000);
     }
 
     protected function message(mixed $decoded): ?string

@@ -116,15 +116,32 @@ class SendChatMessageByGmail
      */
     public static function copyRecipients(ChatSession $session, array $excluded = []): array
     {
-        $metadata  = $session->metadata ?? [];
-        $recipient = strtolower((string) (Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from')));
-        $excluded  = array_map('strtolower', $excluded);
+        $metadata       = $session->metadata ?? [];
+        $recipient      = strtolower((string) (Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from')));
+        $excluded       = array_map('strtolower', $excluded);
+        $mailboxAddress = Arr::get($session->shop->settings, 'gmail.email');
 
         return array_values(array_filter(
             Arr::get($metadata, 'email_participants', []),
-            fn (array $person, string $key) => $key !== $recipient && ! in_array($key, $excluded, true),
+            fn (array $person, string $key) => $key !== $recipient
+                && ! in_array($key, $excluded, true)
+                && ! self::deliversToMailbox($key, $mailboxAddress),
             ARRAY_FILTER_USE_BOTH
         ));
+    }
+
+    /**
+     * Every address on the mailbox's own domain is delivered into the mailbox itself: the shop's
+     * older addresses (ahoj@awgifts.sk, szia@awgifts.hu) and the staff ones alike. Copying one in
+     * sends the answer straight back to the shop's own Gmail (HELP-3695).
+     */
+    public static function deliversToMailbox(?string $address, ?string $mailboxAddress): bool
+    {
+        if (! $address || ! $mailboxAddress) {
+            return false;
+        }
+
+        return strcasecmp(Str::after($address, '@'), Str::after($mailboxAddress, '@')) === 0;
     }
 
     private function newHeaderMessageId($session): string

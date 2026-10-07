@@ -32,6 +32,7 @@ use App\Actions\Procurement\OrgPartner\RemoveMisplacedShoppingListItems;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeleteOpenPartnerShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
@@ -196,6 +197,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
             Route::get('{stockDelivery}', [ShowStockDelivery::class, 'inOrgPartner'])->name('show');
         });
         Route::get('rescue', IndexPartnerRescueItems::class)->name('.rescue.index');
+        Route::redirect('shopping-list', '/org/{organisation}/procurement/partners/{orgPartner}/ongoing-po')->name('.shopping_list.legacy');
         Route::middleware(EnsurePartnerIsManufacturingHub::class)->group(function () {
             Route::prefix('shopping')->as('.shopping.')->group(function () {
                 Route::get('', ShowPartnerShoppingDashboard::class)->name('dashboard');
@@ -206,11 +208,13 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
             Route::prefix('browse')->as('.browse.')->group(function () {
                 Route::get('', ShowPartnerBrowse::class)->name('index');
             });
-            Route::prefix('shopping-list')->as('.shopping_list.')->group(function () {
+            Route::get('sent', [IndexPartnerShoppingListItems::class, 'inSent'])->name('.shopping_list.sent');
+            Route::prefix('ongoing-po')->as('.shopping_list.')->group(function () {
                 Route::get('', IndexPartnerShoppingListItems::class)->name('index');
                 Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
                 Route::post('bulk', StorePartnerShoppingListItems::class)->name('bulk_store');
                 Route::delete('open', DeleteOpenPartnerShoppingListItems::class)->name('destroy_open');
+                Route::post('submit', SubmitPartnerShoppingList::class)->name('submit');
                 Route::post('upload', ImportPartnerShoppingListItems::class)->name('upload');
                 Route::post('{orgStock:id}', StorePartnerShoppingListItem::class)->name('store')->withoutScopedBindings();
                 Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update')->withoutScopedBindings();

@@ -1177,11 +1177,11 @@ test('recipe steps consume raw materials', function () {
 
     AttachRawMaterialToRecipeStep::make()->action($step, [
         'raw_material_id'   => $this->rawMaterial->id,
-        'quantity_per_unit' => 0.5,
+        'quantity_per_unit' => 0.0000738,
     ]);
 
     expect($step->rawMaterials()->count())->toBe(1)
-        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.5);
+        ->and((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(0.0000738);
 
     DetachRawMaterialFromRecipeStep::make()->action($step, $this->rawMaterial);
 
@@ -1199,6 +1199,7 @@ test('UI show manufacture floor', function () {
             ->has('breadcrumbs', 3)
             ->where('breadcrumbs.2.simple.label', 'Manufacture floor')
             ->has('tasks')
+            ->where('server_time', fn (string $serverTime) => abs(now()->diffInSeconds($serverTime)) < 60)
             ->has('today', fn (AssertableInertia $page) => $page
                 ->has('sessions')
                 ->has('quantity_made')
@@ -1564,6 +1565,15 @@ test('UI show job order', function () {
             ->has('items')
             ->has('artefact_options');
     });
+});
+
+test('job order prints a job list pdf', function () {
+    $jobOrder = JobOrder::first();
+    get(route('grp.org.productions.show.operations.job-orders.pdf', [
+        $this->organisation->slug,
+        $this->production->slug,
+        $jobOrder->slug,
+    ]))->assertOk()->assertHeader('Content-Type', 'application/pdf');
 });
 
 test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
@@ -2572,6 +2582,23 @@ describe('reward sheet import', function () {
             ->and(\App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->count())->toBe(6);
     });
 
+    test('without a file only the pay bands are seeded, with the sheet target multipliers', function () {
+        \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('effective_from', now()->startOfYear())->delete();
+
+        $this->artisan('manufacture:import-reward-sheet', [
+            'production' => $this->production->slug,
+        ])->assertSuccessful();
+
+        $multipliers = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)
+            ->where('effective_from', now()->startOfYear())
+            ->pluck('target_multiplier', 'code')
+            ->map(fn ($multiplier) => $multiplier === null ? null : (float) $multiplier)
+            ->all();
+
+        expect($this->rewardTask->refresh()->standard_rate)->toBeNull()
+            ->and($multipliers)->toEqual(['0' => 1.0, '1' => 1.025, '2' => 1.105, '3' => 1.185, 'D' => null, 'DG' => null]);
+    });
+
     test('create-missing with dry-run creates nothing', function () {
         \App\Models\Production\ManufactureTask::where('production_id', $this->production->id)->where('code', 'ORPHAN1')->forceDelete();
 
@@ -3037,6 +3064,56 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 });
 
+test('to produce board lists each artisan and their share of a split job order', function () {
+    $stocks   = createStocks($this->group);
+    $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'SPLIT-01', 'name' => 'Shared between artisans']);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    [$artisanA, $artisanB] = collect(range(1, 2))->map(function () {
+        $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(1000, 9999);
+        $modelData['alias']           = 'Alias '.rand(1000, 9999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+
+        return StoreEmployee::make()->action($this->organisation, $modelData);
+    })->all();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $line     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 1000]);
+
+    actingAs($this->guest->getUser());
+    patch(route('grp.models.job-order-item.split', ['jobOrderItem' => $line->id]), ['assignments' => [
+        ['id' => $line->id, 'employee_id' => $artisanA->id, 'quantity' => 600],
+        ['employee_id' => $artisanB->id, 'quantity' => 400],
+    ]])->assertSessionHasNoErrors();
+
+    $boardLine = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $orgStock->stock_id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 5,
+        'job_order_id'    => $jobOrder->id,
+    ]);
+
+    $card = collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn ($lane) => $lane['items'])
+        ->first(fn ($item) => data_get($item, 'job_order_id') === $jobOrder->id);
+
+    expect(collect(data_get($card, 'job_order_sub_jobs'))->map(fn ($subJob) => [$subJob['reference'], $subJob['artisan'], $subJob['quantity']])->all())->toBe([
+        [$jobOrder->reference.'-A', $artisanA->contact_name, 600.0],
+        [$jobOrder->reference.'-B', $artisanB->contact_name, 400.0],
+    ]);
+
+    $boardLine->forceDelete();
+    $artefact->update(['org_stock_id' => null]);
+});
+
 test('to produce queue only shows lines with an artefact in this factory', function () {
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
@@ -3199,6 +3276,88 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
 });
 
+test('pre-pick releases only whole lines the shelf more than covers, and sends the shortfall of the next one to to produce once', function () {
+    $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
+    $orgStocks = createOrgStocks($this->organisation, $stocks);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    StoreArtefact::make()->action($this->production, ['code' => 'AUTO-01', 'name' => 'Auto released'])->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 40, 'quantity_available' => 40]);
+
+    $buyer = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+            'code' => 'AUT',
+            'name' => 'Auto buyer',
+            'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+        ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $line = fn (float $quantity, string $createdAt) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $stocks[0]->id,
+        'org_stock_id'            => $orgStocks[0]->id,
+        'quantity'                => $quantity,
+        'created_at'              => $createdAt,
+    ]);
+    $otherStock = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $otherOrgStock = createOrgStocks($this->organisation, [$otherStock])[0];
+    \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $otherStock->id,
+        'org_stock_id'            => $otherOrgStock->id,
+        'quantity'                => 1000,
+        'pre_picked_at'           => now(),
+    ]);
+    $covered  = $line(6, '2026-10-01 08:00:00');
+    $boundary = $line(50, '2026-10-01 09:00:00');
+    $behind   = $line(10, '2026-10-01 10:00:00');
+
+    $wasHub = $this->organisation->is_manufacturing_hub;
+    $this->organisation->update(['is_manufacturing_hub' => true]);
+    $this->artisan('production:release_pre_pick --dry-run')
+        ->expectsOutputToContain('1 lines would be released (6 SKOs), 1 restock lines would be queued (17 SKOs)')
+        ->assertSuccessful();
+    expect($covered->refresh()->pre_picked_at)->toBeNull()
+        ->and(\App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $stocks[0]->id)->count())->toBe(3);
+
+    $result = \App\Actions\Production\PartnerShippingList\ReleaseFullyStockedPrePickLines::run($this->organisation);
+
+    $restock = \App\Models\Procurement\PartnerShoppingListItem::where('organisation_id', $this->organisation->id)
+        ->whereNull('partner_organisation_id')
+        ->where('stock_id', $stocks[0]->id)
+        ->get();
+    expect($result)->toBe(['released' => 1, 'queued' => 1])
+        ->and($covered->refresh()->pre_picked_at)->not->toBeNull()
+        ->and((float) $covered->quantity)->toEqual(6.0)
+        ->and($boundary->refresh()->pre_picked_at)->toBeNull()
+        ->and((float) $boundary->quantity)->toEqual(50.0)
+        ->and($restock)->toHaveCount(1)
+        ->and((float) $restock->first()->quantity)->toEqual(17.0);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlogCards = collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'])->keyBy('id');
+    expect($backlogCards->keys()->all())->toContain($restock->first()->id)
+        ->toContain($behind->id)
+        ->not->toContain($boundary->id)
+        ->and((float) $backlogCards[$behind->id]['stock_promised'])->toEqual(6.0);
+
+    $prePick = collect(get(route('grp.org.productions.show.pre_pick.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+    expect($prePick[$boundary->id]['automation_status'])->toBe('awaiting_full_stock')
+        ->and((float) $prePick[$boundary->id]['shortfall'])->toEqual(16.0)
+        ->and($prePick[$behind->id]['automation_status'])->toBe('to_produce');
+
+    expect(\App\Actions\Production\PartnerShippingList\ReleaseFullyStockedPrePickLines::run($this->organisation))->toBe(['released' => 0, 'queued' => 0])
+        ->and(\App\Actions\Production\PartnerShippingList\UI\IndexPrePickList::automationStatus(40, 40, 40, 0))->toBe('held_buffer');
+
+    $this->organisation->update(['is_manufacturing_hub' => $wasHub]);
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', [$stocks[0]->id, $otherStock->id])->delete();
+    \App\Models\Production\Artefact::where('org_stock_id', $orgStocks[0]->id)->delete();
+});
+
 test('the to produce board shows every open line, not only the newest page of the table', function () {
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
@@ -3240,7 +3399,7 @@ test('a labelled run is prepared only with its batch code, and keeping the expir
     $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $this->organisation->id)->first()
         ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($buyer, $this->organisation);
 
-    $line = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $makerOrgStock, ['quantity' => 4]);
+    $line = submittedPartnerShoppingListItem($orgPartner, $makerOrgStock, ['quantity' => 4]);
     expect($line->org_stock_id)->not->toBe($makerOrgStock->id)
         ->and($line->stock_id)->toBe($stocks[0]->id);
 
@@ -4746,6 +4905,7 @@ test('a batch size change flags open jobs raised with the old one and their quan
         'recommended_batch_size' => 360,
     ]);
     $artefact->update(['org_stock_id' => $orgStock->id]);
+    $artefact->refresh();
 
     $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan::run($this->production, [
         ['artefact' => $artefact, 'quantity' => 40, 'batch_code' => null, 'expiry_date' => null],
@@ -5009,4 +5169,85 @@ test('a job order planned by hand is one job with its lines on the board, even f
         'reason' => 'stock',
         'lines'  => [],
     ]))->toThrow(ValidationException::class);
+});
+
+test('SKO made in-house without an artefact can get one from the trade unit composition', function () {
+    $organisation = $this->production->organisation;
+    $stock        = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock  = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($organisation, $stock);
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $orgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+
+    $compositionRow = fn () => collect(\App\Actions\Goods\TradeUnit\UI\GetTradeUnitComposition::run($tradeUnit)['org_stocks'])->firstWhere('id', $orgStock->id);
+
+    expect($orgStock->refresh()->is_made_in_house)->toBeFalse()
+        ->and($compositionRow()['missing_artefact'])->toBeNull();
+
+    \App\Actions\Inventory\OrgStock\UpdateOrgStock::make()->action($orgStock, ['is_made_in_house' => true]);
+
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'INHDEP', 'name' => 'In-house department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'INHFAM', 'name' => 'In-house family']);
+    $stockFamily    = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action($this->group, array_merge(\App\Models\Goods\StockFamily::factory()->definition(), ['code' => 'INHSF']));
+    $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($organisation, $stockFamily, []);
+    $orgStock->update(['org_stock_family_id' => $orgStockFamily->id]);
+    $family->update(['org_stock_family_id' => $orgStockFamily->id]);
+    StoreArtefact::make()->action($this->production, ['code' => 'INHSIB', 'name' => 'Sibling', 'artefact_family_id' => $family->id, 'recommended_batch_size' => 48, 'shelf_life_days' => 730]);
+
+    $missing = $compositionRow()['missing_artefact'];
+    expect($missing)->not->toBeNull()
+        ->and($missing['create_route']['parameters']['org_stock'])->toBe($orgStock->id)
+        ->and($missing['link_data'])->toBe(['org_stock_id' => $orgStock->id, 'trade_unit_id' => $tradeUnit->id]);
+
+    get(route($missing['create_route']['name'], $missing['create_route']['parameters']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('CreateModel')
+            ->where('formData.blueprint.0.fields.code.value', $orgStock->code)
+            ->where('formData.blueprint.0.fields.org_stock_id.value', $orgStock->id)
+            ->where('formData.blueprint.0.fields.trade_unit_id.value', $tradeUnit->id)
+            ->where('formData.blueprint.0.fields.artefact_family_id.value', $family->id)
+            ->where('formData.blueprint.0.fields.recommended_batch_size.value', 48)
+            ->where('formData.blueprint.0.fields.shelf_life_days.value', 730));
+
+    expect(StoreArtefact::make()->action($this->production, ['code' => 'INHFAMART', 'name' => 'Family only', 'artefact_family_id' => $family->id])->artefact_department_id)
+        ->toBe($department->id);
+
+    $missingArtefactCodes = function () use ($organisation) {
+        request()->merge(['elements' => ['artefact' => 'missing_artefact'], 'perPage' => 500]);
+
+        return \App\Actions\Inventory\OrgStock\UI\IndexOrgStocks::make()
+            ->initialisation($organisation, [])
+            ->handle($organisation, bucket: 'current')
+            ->pluck('code');
+    };
+
+    expect($missingArtefactCodes())->toContain($orgStock->code);
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-LINK', 'name' => 'Link me']);
+
+    $this->getJson(route($missing['artefacts_route']['name'], $missing['artefacts_route']['parameters']).'?filter[global]=INHOUSE-LINK')
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $artefact->id);
+
+    $this->patchJson(route($missing['link_route']['name'], [...$missing['link_route']['parameters'], 'artefact' => $artefact->id]), $missing['link_data'])
+        ->assertOk();
+
+    expect($missingArtefactCodes())->not->toContain($orgStock->code);
+
+    $row = $compositionRow();
+    expect($row['missing_artefact'])->toBeNull()
+        ->and($row['artefacts'][0]['code'])->toBe('INHOUSE-LINK')
+        ->and($artefact->refresh()->trade_unit_id)->toBe($tradeUnit->id);
+
+    $otherStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    ));
+    StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-NEW', 'name' => 'New', 'org_stock_id' => $otherStock->id]);
+
+    expect($otherStock->refresh()->is_made_in_house)->toBeTrue();
 });

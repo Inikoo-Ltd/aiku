@@ -927,6 +927,69 @@ test('UI show Charges', function () {
     });
 });
 
+test('UI show packaging and leaflet, with stats loaded after the page', function () {
+    $packaging = \App\Actions\Billables\Packaging\StorePackaging::make()->action($this->shop, [
+        'code'        => 'UI-PACK-'.uniqid(),
+        'family_code' => 'UIFAM',
+        'name'        => 'UI test envelope',
+        'type'        => \App\Enums\Catalogue\Packaging\PackagingTypeEnum::cases()[0]->value,
+        'price'       => 0.5,
+    ]);
+    $leaflet = \App\Actions\Billables\Leaflet\StoreLeaflet::make()->action($this->shop, [
+        'name'         => 'UI test leaflet',
+        'type'         => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::cases()[0]->value,
+        'price'        => 0,
+        'family_codes' => ['UIFAM'],
+    ]);
+
+    get(route('grp.org.shops.show.billables.packagings.show', [$this->organisation->slug, $this->shop->slug, $packaging->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Billables/Packaging')
+            ->where('packaging.code', $packaging->code)
+            ->where('tabs.current', 'showcase')
+            ->has('navigation.previous')
+            ->has('navigation.next')
+            ->has('leaflets', 1)
+            ->missing('stats'));
+
+    get(route('grp.org.shops.show.billables.packagings.show', [$this->organisation->slug, $this->shop->slug, $packaging->slug, 'tab' => 'history']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'history')->has('history'));
+
+    get(route('grp.org.shops.show.billables.packagings.show', [$this->organisation->slug, $this->shop->slug, $packaging->slug, 'tab' => 'orders']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'orders')->has('orders'));
+
+    get(route('grp.org.shops.show.billables.leaflets.show', [$this->organisation->slug, $this->shop->slug, $leaflet->id, 'tab' => 'orders']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'orders')->has('orders'));
+
+    get(route('grp.org.shops.show.billables.charges.show', [$this->organisation->slug, $this->shop->slug, $this->charge->slug, 'tab' => 'history']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('history'));
+
+    get(route('grp.org.shops.show.billables.leaflets.show', [$this->organisation->slug, $this->shop->slug, $leaflet->id]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Billables/Leaflet')
+            ->where('leaflet.name', 'UI test leaflet')
+            ->where('tabs.current', 'showcase')
+            ->has('navigation')
+            ->has('packagings', 1)
+            ->missing('stats'));
+
+    expect(\App\Actions\Billables\Packaging\UI\ShowPackaging::make()->stats($packaging))
+        ->toMatchArray(['orders' => 0, 'customers' => 0, 'revenue' => 0.0])
+        ->not->toHaveKey('delivery_notes')
+        ->and(\App\Actions\Billables\Leaflet\UI\ShowLeaflet::make()->stats($leaflet))
+        ->toMatchArray(['orders' => 0, 'customers' => 0, 'last_used_at' => null, 'attached' => 0, 'copies_printed' => 0])
+        ->not->toHaveKey('delivery_notes');
+
+    get(route('grp.org.shops.show.billables.leaflets.index', [$this->organisation->slug, $this->shop->slug]))
+        ->assertRedirect(route('grp.org.shops.show.billables.packagings.index', [$this->organisation->slug, $this->shop->slug, 'tab' => 'leaflets']));
+});
+
 test('UI edit Charges', function () {
     $response = get(route('grp.org.shops.show.billables.charges.edit', [$this->organisation->slug, $this->shop->slug, $this->charge->slug]));
 
@@ -1939,7 +2002,11 @@ test('accounts can edit billables, staff without product or accounting edit cann
         return $user->refresh();
     };
 
-    actingAs($newUser(["accounting.{$this->organisation->id}.view"]));
+    $accountsViewer = $newUser(["accounting.{$this->organisation->id}.view"]);
+    expect(GetShopNavigation::run($this->shop, $accountsViewer))->toHaveKey('billables')
+        ->and(GetShopNavigation::run($this->shop, $newUser([])))->not->toHaveKey('billables');
+
+    actingAs($accountsViewer);
     get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0', false));
     patch(route('grp.models.shop.services.update', $this->service->id), ['name' => 'Viewer rename'])->assertForbidden();

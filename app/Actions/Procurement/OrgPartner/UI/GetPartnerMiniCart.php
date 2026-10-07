@@ -23,7 +23,7 @@ class GetPartnerMiniCart
         $items = PartnerShoppingListItem::query()
             ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereIn('partner_shopping_list_items.state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->select([
                 'partner_shopping_list_items.id',
                 'partner_shopping_list_items.quantity',

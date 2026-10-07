@@ -9,35 +9,31 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Models\Procurement\OrgPartner;
-use Illuminate\Support\Facades\Cache;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPartnerBuyingPriceFactor
 {
     use AsObject;
 
-    /**
-     * Cached for ten minutes: finding the intercompany customer scans the seller's customers by name
-     * when the buyer has no account in a shop (about 0.7 s), and pages call this several times.
-     */
+    public const HUB_PARTNER_DISCOUNT = 0.45;
+
     public function handle(OrgPartner $orgPartner): float
     {
         if (GetPartnerLandedCost::appliesTo($orgPartner)) {
             return 1.0;
         }
 
-        return Cache::remember("partner-buying-price-factor:$orgPartner->id", now()->addMinutes(10), fn () => $this->factor($orgPartner));
+        return round(1 - self::hubPartnerDiscount($orgPartner->partner), 4);
     }
 
-    private function factor(OrgPartner $orgPartner): float
+    /**
+     * A fixed share off the hub's list price, kept in the hub's settings rather than in shop offers
+     * so a changed or missing offer can not reprice the partners.
+     */
+    public static function hubPartnerDiscount(Organisation $hub): float
     {
-        foreach (GetPartnerSellingShopIds::run($orgPartner->partner) as $shopId) {
-            $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shopId);
-            if ($customer) {
-                return GetPartnerCustomerDiscount::run($customer);
-            }
-        }
-
-        return 1.0;
+        return max(0.0, min(1.0, (float) Arr::get($hub->settings, 'procurement.partner_discount', self::HUB_PARTNER_DISCOUNT)));
     }
 }

@@ -43,6 +43,7 @@ const props = defineProps<{
     }
     salesData?: object
     salesAnalysisTeaser?: object
+    breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
     actions?: any
 }>();
 
@@ -126,8 +127,8 @@ const saveGROffer = () => {
             </Message>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
-            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-1">
                 <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
                     <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
                         class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
@@ -137,43 +138,33 @@ const saveGROffer = () => {
                 <ProductCategoryCard subtle :data="data.family?.data"  />
             </div>
 
-            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-1">
                 <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
 
-                <div class="flex flex-col gap-4 lg:flex-row">
-                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:max-w-[23rem]" />
-                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="min-w-0 flex-1" />
+                <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap">
+                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:grow lg:basis-[23rem]" />
+                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" :breakdownRoute="breakdownRoute" class="min-w-[22rem] lg:grow-[2] lg:basis-[22rem]" />
                 </div>
 
                 <MasterFamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
-            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 2xl:col-span-1 space-y-4">
                 <div v-if="master_vol_gr_reward?.show_gr_vol" class="offer">
                     <template v-if="master_vol_gr_reward?.show_gr_vol">
-                        <div class="mb-1 font-bold">
+                        <div class="mb-1 flex items-center gap-2 font-bold">
                             {{ ctrans("Active Gold Reward offer") }}:
+                            <FontAwesomeIcon v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage" v-tooltip="ctrans('Edit')" :icon="faEdit" class="ml-auto cursor-pointer text-amber-500" fixed-width @click="openModalMasterGROffer" />
                         </div>
                         <div
                             v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage"
                             @click="openModalMasterGROffer"
-                            class="mb-1 w-full py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer"
+                            class="mb-1 grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-2 rounded-md border border-amber-400 px-3 py-2 font-semibold"
                         >
-                            <div class="grid w-72">
-                                <div class="flex">
-                                    {{ ctrans('Trigger Quantity') }}
-                                    <span class="ml-auto w-24">
-                                        : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty
-                                    </span>
-                                </div>
-                                <div class="flex">
-                                    {{ ctrans('Discount Percentage') }}
-                                    <span class="ml-auto w-24">
-                                        : {{ parseFloat(props.master_vol_gr_reward?.gr_vol_discount_percentage as any) }} %
-                                    </span>
-                                </div>
-                            </div>
-                            <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500" fixed-width/>
+                            <span>{{ ctrans('Trigger Quantity') }}</span>
+                            <span class="whitespace-nowrap">: {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty</span>
+                            <span>{{ ctrans('Discount Percentage') }}</span>
+                            <span class="whitespace-nowrap">: {{ parseFloat(props.master_vol_gr_reward?.gr_vol_discount_percentage as any) }} %</span>
                         </div>
                         <div
                             v-else

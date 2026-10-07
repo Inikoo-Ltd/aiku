@@ -11,6 +11,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\StoreFollowUpOrder;
@@ -117,6 +118,30 @@ test('quantity change of an in-warehouse order updates delivery note items and f
             ->and($item->is_dirty)->toBeTrue()
             ->and((float)$item->original_quantity_required)->toBe((float)$before->quantity_required);
     }
+});
+
+test('quantity can be changed when the only delivery note was cancelled', function () {
+    [$order, $transaction] = submittedOrderWithTransaction($this->customer, $this->product);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    CancelDeliveryNote::make()->action($deliveryNote, $this->user);
+    $order->updateQuietly(['state' => OrderStateEnum::SUBMITTED]);
+
+    UpdateTransactionProductQuantityOrdered::make()->action($transaction, [
+        'quantity_ordered' => 9
+    ], $this->user);
+
+    expect((float)$transaction->refresh()->quantity_ordered)->toBe(9.0);
+});
+
+test('quantity change is refused when the order is still in the warehouse but its only delivery note was cancelled', function () {
+    [$order, $transaction] = submittedOrderWithTransaction($this->customer, $this->product);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    CancelDeliveryNote::make()->action($deliveryNote, $this->user, false);
+
+    expect($order->refresh()->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and(fn () => UpdateTransactionProductQuantityOrdered::make()->action($transaction, [
+            'quantity_ordered' => 9
+        ], $this->user))->toThrow(fn (HttpException $exception) => expect($exception->getStatusCode())->toBe(409));
 });
 
 test('an unchanged quantity does not flag delivery note items dirty', function () {

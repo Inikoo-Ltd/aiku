@@ -697,7 +697,7 @@ const onChangeInsurance = async (val: boolean) => {
 </script>
 
 <template>
-    <Head :title="ctrans('Basket')" />
+    <Head :title="ctrans('Basket') + ' #' + order?.reference" />
     <PageHeading :data="pageHead">
         <template #other>
             <div v-if="screenType !== 'mobile'" class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">

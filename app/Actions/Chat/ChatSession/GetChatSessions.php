@@ -98,6 +98,22 @@ class GetChatSessions
     }
 
     /**
+     * When the customer started waiting: their first message after our last reply. A customer
+     * chasing with "any update?" keeps their place in the queue instead of going to the back.
+     * When we spoke last, the conversation's latest message stands in.
+     */
+    public static function waitingSinceSql(string $sessionTable, string $messageTable, string $sessionKey): string
+    {
+        $visitorTypes = "'".ChatSenderTypeEnum::GUEST->value."','".ChatSenderTypeEnum::USER->value."'";
+        $agentType    = "'".ChatSenderTypeEnum::AGENT->value."'";
+
+        return "coalesce((select min(wm.created_at) from $messageTable wm where wm.$sessionKey = $sessionTable.id
+            and wm.sender_type in ($visitorTypes)
+            and wm.created_at > coalesce((select max(am.created_at) from $messageTable am where am.$sessionKey = $sessionTable.id and am.sender_type = $agentType), '-infinity')),
+            (select max(lm.created_at) from $messageTable lm where lm.$sessionKey = $sessionTable.id), $sessionTable.created_at)";
+    }
+
+    /**
      * A queue is worked from the top, so the conversation that has been waiting longest belongs
      * there: newest first is how a chat from Monday goes untouched for four days while one that
      * arrived after it is answered in two minutes.
@@ -177,10 +193,12 @@ class GetChatSessions
             ->withLastMessageTime();
 
         if (self::oldestFirst($filters)) {
-            $query->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'));
+            $query->selectRaw(self::waitingSinceSql('chat_sessions', 'chat_messages', 'chat_session_id').' as waiting_since')
+                ->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'))
+                ->orderBy('waiting_since');
+        } else {
+            $query->orderBy('last_message_at', 'desc');
         }
-
-        $query->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
 
 
         if (array_key_exists('allowed_shop_ids', $filters)) {

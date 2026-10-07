@@ -33,17 +33,21 @@ class GetPartnerSellingProduct
             return null;
         }
 
-        $sellerOrgStock = OrgStock::where('organisation_id', $orgPartner->partner_id)
+        $sellerOrgStocks = OrgStock::where('organisation_id', $orgPartner->partner_id)
             ->where('stock_id', $stockId)
-            ->first();
-        if (!$sellerOrgStock) {
-            return null;
+            ->orderByRaw("state = 'discontinued'")
+            ->orderBy('id')
+            ->get();
+
+        foreach ($sellerOrgStocks as $sellerOrgStock) {
+            $products = $sellerOrgStock->products();
+            PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery(), $shopIds);
+            if ($product = $products->first()) {
+                return $product;
+            }
         }
 
-        $products = $sellerOrgStock->products();
-        PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery(), $shopIds);
-
-        return $products->first();
+        return null;
     }
 
     public function unitPrice(Product $product): ?float

@@ -11,7 +11,7 @@ import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -86,8 +86,8 @@ async function generate() {
         proposal.value = (response.data.lines ?? []).map((line: ProposalLine) => ({ ...line, selected: true }))
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Could not generate a proposal"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Could not generate a proposal"),
             type: "error",
         })
     } finally {
@@ -114,16 +114,21 @@ async function commit() {
             }
         )
         notify({
-            title: trans("Success"),
-            text: `${selectedLines.value.length} ${trans("items added to the shopping list")}`,
+            title: ctrans("Success"),
+            text: `${selectedLines.value.length} ${ctrans("lines added to the ongoing PO")}`,
             type: "success",
         })
         closeModal()
-        router.reload()
+        router.visit(
+            route("grp.org.procurement.org_partners.show.shopping_list.index", [
+                route().params["organisation"],
+                props.orgPartnerId,
+            ])
+        )
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Could not add the items"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Could not add the items"),
             type: "error",
         })
     } finally {
@@ -136,30 +141,30 @@ async function commit() {
     <Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-4xl">
         <div class="flex flex-col h-[600px] px-4">
             <div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
-                <h2>{{ trans("Auto-fill shopping list") }}</h2>
+                <h2>{{ ctrans("Auto-fill the ongoing PO") }}</h2>
             </div>
             <div v-if="scopeLabel" class="mb-2 text-center text-sm text-gray-500">
-                {{ trans("Limited to") }}: <span class="font-medium text-gray-700">{{ scopeLabel }}</span>
+                {{ ctrans("Limited to") }}: <span class="font-medium text-gray-700">{{ scopeLabel }}</span>
             </div>
 
             <div class="flex items-end gap-3">
                 <div>
-                    <label class="text-sm text-gray-500">{{ trans("Budget") }} ({{ currency }})</label>
+                    <label class="text-sm text-gray-500">{{ ctrans("Budget") }} ({{ currency }})</label>
                     <input v-model.number="budget" type="number" min="1" step="1" class="block w-32 rounded border-gray-300" />
                 </div>
                 <div class="flex-1">
-                    <label class="text-sm text-gray-500">{{ trans("Instructions (optional)") }}</label>
+                    <label class="text-sm text-gray-500">{{ ctrans("Instructions (optional)") }}</label>
                     <input
                         v-model="instruction"
                         type="text"
-                        :placeholder="trans('e.g. prioritise atomisers, skip anything we hold over 8 weeks of')"
+                        :placeholder="ctrans('e.g. prioritise atomisers, skip anything we hold over 8 weeks of')"
                         class="block w-full rounded border-gray-300"
                         @keyup.enter="generate"
                     />
                 </div>
                 <Button
                     type="create"
-                    :label="isGenerating ? trans('Generating…') : proposal ? trans('Regenerate') : trans('Generate proposal')"
+                    :label="isGenerating ? ctrans('Generating…') : proposal ? ctrans('Regenerate') : ctrans('Generate proposal')"
                     :loading="isGenerating"
                     :disabled="!budget"
                     @click="generate"
@@ -167,12 +172,12 @@ async function commit() {
             </div>
 
             <div v-if="isGenerating" class="mt-8 text-center text-gray-500">
-                {{ trans("Analysing your usage and partner stock…") }}
+                {{ ctrans("Analysing your usage and partner stock…") }}
             </div>
 
             <template v-else-if="proposal">
                 <div v-if="!proposal.length" class="mt-8 text-center text-gray-500">
-                    {{ trans("Nothing to suggest: no usage history for stocks this partner can supply") }}
+                    {{ ctrans("Nothing to suggest: no usage history for stocks this partner can supply") }}
                 </div>
 
                 <template v-else>
@@ -181,10 +186,10 @@ async function commit() {
                             <thead class="sticky top-0 bg-white">
                                 <tr class="border-b border-gray-200 text-left text-gray-500">
                                     <th class="py-1"></th>
-                                    <th class="py-1">{{ trans("Stock") }}</th>
-                                    <th class="py-1">{{ trans("Reason") }}</th>
-                                    <th class="py-1 text-right">{{ trans("SKOs") }}</th>
-                                    <th class="py-1 text-right">{{ trans("Amount") }} ({{ currency }})</th>
+                                    <th class="py-1">{{ ctrans("Stock") }}</th>
+                                    <th class="py-1">{{ ctrans("Reason") }}</th>
+                                    <th class="py-1 text-right">{{ ctrans("SKOs") }}</th>
+                                    <th class="py-1 text-right">{{ ctrans("Amount") }} ({{ currency }})</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -205,18 +210,18 @@ async function commit() {
 
                     <div class="flex items-center justify-between border-t border-gray-200 bg-white py-3">
                         <div :class="overBudget ? 'text-red-600 font-medium' : 'text-gray-600'">
-                            {{ trans("Total") }}: {{ locale.currencyFormat(currency, selectedTotal) }}
+                            {{ ctrans("Total") }}: {{ locale.currencyFormat(currency, selectedTotal) }}
                             <span class="text-gray-400">/ {{ locale.currencyFormat(currency, budget ?? 0) }}</span>
-                            <span v-if="overBudget"> — {{ trans("over budget") }}</span>
+                            <span v-if="overBudget"> — {{ ctrans("over budget") }}</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span v-if="exceedsOrderBudget" class="flex items-center gap-1.5 text-sm font-medium text-red-600">
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
-                                {{ trans("Warning: budget exceeded") }}
+                                {{ ctrans("Warning: budget exceeded") }}
                             </span>
                             <Button
                                 type="save"
-                                :label="`${trans('Add')} ${selectedLines.length} ${trans('items to shopping list')}`"
+                                :label="`${ctrans('Add')} ${selectedLines.length} ${ctrans('lines to the ongoing PO')}`"
                                 :loading="isCommitting"
                                 :disabled="!selectedLines.length"
                                 @click="commit"

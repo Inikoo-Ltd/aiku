@@ -106,7 +106,7 @@ class GetPartnerStockCoverBuckets
         return "exists (select 1 from partner_shopping_list_items sli
             where sli.stock_id = p.stock_id
                 and sli.org_partner_id = ".(int) $orgPartner->id."
-                and sli.state = '".ShoppingListItemStateEnum::OPEN->value."'
+                and sli.state in ('".implode("', '", ShoppingListItemStateEnum::onPartnerBuyerList())."')
                 and sli.deleted_at is null)";
     }
 
@@ -166,7 +166,7 @@ class GetPartnerStockCoverBuckets
      * needs over its critical threshold (same edge that would flag it critical), so a rescue never
      * puts the partner itself at risk.
      *
-     * @return array{order: array{lines: int, cost: float}, buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float, cost: float, order_lines: int, order_cost: float}>, top: array<int, array<string, mixed>>}
+     * @return array{order: array{lines: int, cost: float}, buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float, cost: float, order_lines: int, order_cost: float, cheapest: float, order_cheapest: float}>, top: array<int, array<string, mixed>>}
      */
     public function rescuable(OrgPartner $orgPartner, int $topLimit = 20): array
     {
@@ -177,7 +177,7 @@ class GetPartnerStockCoverBuckets
         $inOrder = $this->inRescueOrder();
 
         $counts = $query
-            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost, coalesce(sum($cost), 0) as cost, coalesce(sum($cost) filter (where $inOrder), 0) as order_cost, count(*) filter (where $inOrder) as order_lines")
+            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost, coalesce(sum($cost), 0) as cost, coalesce(sum($cost) filter (where $inOrder), 0) as order_cost, count(*) filter (where $inOrder) as order_lines, min($cost) filter (where $cost > 0) as cheapest, min($cost) filter (where $inOrder and $cost > 0) as order_cheapest")
             ->groupByRaw($expression)
             ->get()
             ->keyBy('bucket');
@@ -202,6 +202,8 @@ class GetPartnerStockCoverBuckets
                 'cost'        => round((float) ($counts->get($bucket)->cost ?? 0) * $exchange, 2),
                 'order_lines' => (int) ($counts->get($bucket)->order_lines ?? 0),
                 'order_cost'  => round((float) ($counts->get($bucket)->order_cost ?? 0) * $exchange, 2),
+                'cheapest'       => round((float) ($counts->get($bucket)->cheapest ?? 0) * $exchange, 2),
+                'order_cheapest' => round((float) ($counts->get($bucket)->order_cheapest ?? 0) * $exchange, 2),
                 'left_out'    => (object) ($leftOut[$bucket] ?? []),
             ])->all(),
             'top'     => $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all(),
@@ -221,7 +223,7 @@ class GetPartnerStockCoverBuckets
         $onDraft    = $orgPartner->partner->is_manufacturing_hub
             ? "exists (select 1 from partner_shopping_list_items sli
                 where sli.org_stock_id = os.id and sli.org_partner_id = ".(int) $orgPartner->id."
-                    and sli.state = '".ShoppingListItemStateEnum::OPEN->value."' and sli.deleted_at is null)"
+                    and sli.state in ('".implode("', '", ShoppingListItemStateEnum::onPartnerBuyerList())."') and sli.deleted_at is null)"
             : "exists (select 1 from purchase_order_transactions pot
                 join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
                 where pot.org_stock_id = os.id and pot.deleted_at is null and po.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."'
@@ -461,7 +463,7 @@ class GetPartnerStockCoverBuckets
         ])."'))
             or exists (select 1 from partner_shopping_list_items sli
                 where sli.org_stock_id = os.id and sli.deleted_at is null
-                    and sli.state in ('".ShoppingListItemStateEnum::OPEN->value."', '".ShoppingListItemStateEnum::ORDERED->value."')))";
+                    and sli.state in ('".implode("', '", [...ShoppingListItemStateEnum::onPartnerBuyerList(), ShoppingListItemStateEnum::ORDERED->value])."')))";
     }
 
     /**

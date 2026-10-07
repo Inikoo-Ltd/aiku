@@ -54,6 +54,7 @@ export interface ProductShowcase {
   picking_factor: Array<{
     org_stock_id: number
     org_stock_code: string
+    barcode?: string | null
     note: string | null
     picking_factor: unknown
   }>

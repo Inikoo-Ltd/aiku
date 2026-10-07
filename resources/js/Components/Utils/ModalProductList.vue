@@ -22,6 +22,7 @@ import NumberWithButtonSave from "../NumberWithButtonSave.vue"
 import LoadingIcon from "./LoadingIcon.vue"
 import ProductUnitLabel from "./Product/ProductUnitLabel.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
+import PurchaseOrderSuggestButton from "@/Components/Procurement/PurchaseOrderSuggestButton.vue"
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 
 library.add(
@@ -550,8 +551,7 @@ watch(() => model.value, async (newValue) => {
 											<PurchaseOrderItemStockInfo
 												v-if="typeModel === 'purchase_order'"
 												:item="slotProps.data"
-												:isPartner="isPartner"
-												@suggest="(skos) => onLevelQuantityChange(slotProps, (skos * (Number(slotProps.data.units_per_pack) || 1)) / unitsPerLevel(slotProps.data))" />
+												:isPartner="isPartner" />
 										</div>
 									</template>
 								</Column>
@@ -591,6 +591,11 @@ watch(() => model.value, async (newValue) => {
 												}"
 												xreadonly="!slotProps.data?.available_quantity"
 											/>
+											<PurchaseOrderSuggestButton
+												v-if="typeModel === 'purchase_order' && isOrderingByLevel"
+												:item="slotProps.data"
+												:isPartner="isPartner"
+												@suggest="(skos) => onLevelQuantityChange(slotProps, (skos * (Number(slotProps.data.units_per_pack) || 1)) / unitsPerLevel(slotProps.data))" />
 									</template>
 								</Column>
 

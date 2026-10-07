@@ -358,7 +358,7 @@ class ProcessInboundEmail
         foreach ($named as $person) {
             $key = strtolower($person['address']);
 
-            if ($mailboxAddress && $key === strtolower($mailboxAddress)) {
+            if (SendChatMessageByGmail::deliversToMailbox($key, $mailboxAddress)) {
                 continue;
             }
 
@@ -382,11 +382,14 @@ class ProcessInboundEmail
 
     /**
      * Gmail's spam folder holds the odd customer or prospect among hundreds of junk mails.
-     * Customers who have bought from us and replies to our own conversations always come in;
+     * Customers who have bought from us and replies to our own conversations always come in,
+     * except replies to a conversation staff put aside as spam or rubbish, which stay out;
      * anybody can register, so a customer who never bought is asked about like a stranger.
      * Newsletters and machines never do. A stranger's email is shown to Jev once, which says what
-     * kind of email it is and whether it takes a common scam form, and it comes in when a customer
-     * request or a prospect is likely enough and neither answer takes it for a scam. Whatever comes
+     * kind of email it is and whether it takes a common scam form, and it comes in when Jev takes
+     * it for a customer request or a prospect, that is likely enough and neither answer takes it
+     * for a scam: of 11 vague buying requests let in on a likely enough prospect, staff put 10
+     * aside and the other was a freelancer after a commission. Whatever comes
      * in, customers included, is tagged when a scam form is probable. The rest stays in Gmail's
      * spam, where Gmail deletes it, labelled so it is never read again. Null means there was no
      * answer, and the question is asked again an hour later rather than on every sweep.
@@ -399,10 +402,16 @@ class ProcessInboundEmail
         $state   = "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(strip_tags((string) $body)), 0, 4000);
         $scamForm = ['type' => 'choice', 'instructions' => 'Is this email one of these common scam forms?', 'criteria' => ChatSpamRescueKindEnum::scamForms()];
 
-        if ($this->matchWebUser($shop, $from['address'])?->customer?->stats?->number_invoices_type_invoice || $this->findSessionByThread($shop, $threadId)) {
+        $threadSession = $this->findSessionByThread($shop, $threadId);
+
+        if ($this->matchWebUser($shop, $from['address'])?->customer?->stats?->number_invoices_type_invoice || ($threadSession && ! $threadSession->is_spam && ! $threadSession->is_rubbish)) {
             $answers = AskJev::run($state, ['scam_form' => $scamForm]);
 
             return ['kind' => null, 'is_possible_scam' => $this->isProbablyScam($answers)];
+        }
+
+        if ($threadSession) {
+            return false;
         }
 
         if (GmailMessageParser::header($raw, 'List-Unsubscribe') || self::isAutomatedMail($from['address'], $subject)) {
@@ -430,7 +439,7 @@ class ProcessInboundEmail
 
         $looksLikeScam = $kind === ChatSpamRescueKindEnum::SCAM || Arr::get($answers, 'scam_form.choice', 'none') !== 'none';
 
-        if ($wanted < config('chat.spam_rescue_min_probability') || $looksLikeScam) {
+        if (! $kind->isWanted() || $wanted < config('chat.spam_rescue_min_probability') || $looksLikeScam) {
             return false;
         }
 
@@ -649,7 +658,8 @@ class ProcessInboundEmail
             || str_contains($localPart, 'noreply')
             || str_contains($localPart, 'donotreply')
             || str_contains($subject, 'report domain:')
-            || str_starts_with($subject, 'delivery status notification');
+            || str_starts_with($subject, 'delivery status notification')
+            || str_starts_with($subject, 'transaction receipt');
     }
 
     /**

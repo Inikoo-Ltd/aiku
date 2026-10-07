@@ -14,6 +14,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -29,7 +30,11 @@ class StorePartnerShoppingListItem extends OrgAction
 {
     use WithProcurementEditAuthorisation;
 
-    public function handle(OrgPartner $orgPartner, OrgStock $orgStock, array $modelData): PartnerShoppingListItem
+    /**
+     * Staff build the list as drafts and submit it in one go; only then the seller sees it. The seller's
+     * own flows (a location order short of lines) add straight to the open list.
+     */
+    public function handle(OrgPartner $orgPartner, OrgStock $orgStock, array $modelData, bool $asDraft = true): PartnerShoppingListItem
     {
         abort_unless(
             in_array($orgStock->organisation_id, [$orgPartner->organisation_id, $orgPartner->partner_id]),
@@ -64,13 +69,17 @@ class StorePartnerShoppingListItem extends OrgAction
             data_set($modelData, 'added_by_user_id', request()->user()->id);
         }
 
-        $item = Cache::lock("partner-shopping-list:{$orgPartner->id}:{$buyerOrgStock->id}", 10)->block(5, function () use ($orgPartner, $buyerOrgStock, $modelData) {
-            $openItem = PartnerShoppingListItem::openPartnerLineFor($orgPartner->id, $buyerOrgStock->id)->first();
+        data_set($modelData, 'state', $asDraft ? ShoppingListItemStateEnum::DRAFT : ShoppingListItemStateEnum::OPEN);
 
-            if ($openItem) {
-                $openItem->update(Arr::except($modelData, ['added_by_user_id']));
+        $item = Cache::lock("partner-shopping-list:{$orgPartner->id}:{$buyerOrgStock->id}", 10)->block(5, function () use ($orgPartner, $buyerOrgStock, $modelData, $asDraft) {
+            $existingItem = $asDraft
+                ? PartnerShoppingListItem::draftPartnerLineFor($orgPartner->id, $buyerOrgStock->id)->first()
+                : PartnerShoppingListItem::openPartnerLineFor($orgPartner->id, $buyerOrgStock->id)->first();
 
-                return $openItem->refresh();
+            if ($existingItem) {
+                $existingItem->update(Arr::except($modelData, ['added_by_user_id']));
+
+                return $existingItem->refresh();
             }
 
             return PartnerShoppingListItem::create($modelData)->refresh();
@@ -99,12 +108,12 @@ class StorePartnerShoppingListItem extends OrgAction
         return $this->handle($orgPartner, $orgStock, $this->validatedData);
     }
 
-    public function action(OrgPartner $orgPartner, OrgStock $orgStock, array $modelData): PartnerShoppingListItem
+    public function action(OrgPartner $orgPartner, OrgStock $orgStock, array $modelData, bool $asDraft = true): PartnerShoppingListItem
     {
         $this->asAction = true;
         $this->initialisation($orgPartner->organisation, $modelData);
 
-        return $this->handle($orgPartner, $orgStock, $this->validatedData);
+        return $this->handle($orgPartner, $orgStock, $this->validatedData, $asDraft);
     }
 
     public function htmlResponse(): RedirectResponse

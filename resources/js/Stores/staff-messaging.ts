@@ -60,6 +60,7 @@ export interface StaffConversation {
     context_url?: string | null
     task?: StaffConversationTask | null
     my_left_at?: string | null
+    is_watching?: boolean
 }
 
 export interface StaffConversationTask {
@@ -72,6 +73,9 @@ export interface StaffConversationTask {
     assignee_id: number | null
     collaborator_ids: number[]
     subtasks: { title: string; status: "todo" | "in_progress" | "done" }[]
+    description?: string | null
+    model_label?: string | null
+    model_url?: string | null
 }
 
 export interface StaffCoworker {
@@ -125,6 +129,18 @@ export const isWorkThread = (conversation: StaffConversation) => !!conversation.
 
 export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open
 
+export const isHiddenChat = (conversation: StaffConversation) => isWorkThread(conversation) && !conversation.is_watching
+
+const SHOW_HIDDEN_CHATS_KEY = "staff-messaging-show-hidden-chats"
+
+const readShowHiddenChats = () => {
+    try {
+        return localStorage.getItem(SHOW_HIDDEN_CHATS_KEY) === "1"
+    } catch {
+        return false
+    }
+}
+
 export const isAlerting = (conversation: StaffConversation) => conversation.has_mention || (conversation.type === "dm" && !isWorkThread(conversation))
 
 export const useStaffMessaging = defineStore("staff-messaging", {
@@ -140,6 +156,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         fetched: false,
         maxVisible: 1,
         instantlyMinimised: [] as string[],
+        showHiddenChats: readShowHiddenChats(),
     }),
 
     getters: {
@@ -272,6 +289,26 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const index = this.conversations.findIndex((c) => c.ulid === e.conversation_ulid)
             if (index !== -1) {
                 this.conversations.splice(index, 1)
+            }
+        },
+
+        toggleShowHiddenChats() {
+            this.showHiddenChats = !this.showHiddenChats
+            try {
+                localStorage.setItem(SHOW_HIDDEN_CHATS_KEY, this.showHiddenChats ? "1" : "0")
+            } catch { }
+        },
+
+        async toggleWatch(ulid: string) {
+            const conversation = this.conversationByUlid(ulid)
+            if (!conversation) return
+
+            const isWatching = !conversation.is_watching
+            conversation.is_watching = isWatching
+            try {
+                await axios.post(route("grp.chat.staff.conversations.watch", ulid), { is_watching: isWatching })
+            } catch {
+                conversation.is_watching = !isWatching
             }
         },
 
@@ -467,8 +504,45 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             if (participant) participant.last_read_at = e.last_read_at
         },
 
-        async toggleReaction(messageId: number, emoji: string) {
-            await axios.post(route("grp.chat.staff.messages.reactions.toggle", messageId), { emoji })
+        async toggleReaction(message: StaffMessage, emoji: string, userId: number) {
+            const isAdding = !(message.reactions?.[emoji] ?? []).includes(userId)
+            this.setOwnReaction(message.conversation_ulid, message.id, emoji, userId, isAdding)
+
+            try {
+                await axios.post(route("grp.chat.staff.messages.reactions.toggle", message.id), { emoji })
+            } catch {
+                this.setOwnReaction(message.conversation_ulid, message.id, emoji, userId, !isAdding)
+                notify({ title: isAdding ? ctrans("Could not add reaction") : ctrans("Could not remove reaction"), type: "error" })
+            }
+        },
+
+        setOwnReaction(ulid: string, messageId: number, emoji: string, userId: number, isPresent: boolean) {
+            const message = this.messageListOf(ulid).find((m) => m.id === messageId)
+            if (!message) return
+
+            const reactors = (message.reactions?.[emoji] ?? []).filter((id) => id !== userId)
+            const reactions = { ...(message.reactions ?? {}), [emoji]: isPresent ? [...reactors, userId] : reactors }
+            if (!reactions[emoji].length) delete reactions[emoji]
+            message.reactions = reactions
+        },
+
+        applyReactionBroadcast(incoming: StaffMessage) {
+            const userId = currentUserId()
+            const local = this.messagesByUlid[incoming.conversation_ulid]?.find((m) => m.id === incoming.id)
+            if (!local || !userId) {
+                this.replaceMessage(incoming)
+                return
+            }
+
+            const emojis = new Set([...Object.keys(local.reactions ?? {}), ...Object.keys(incoming.reactions ?? {})])
+            const reactions: StaffMessageReactions = {}
+            emojis.forEach((emoji) => {
+                const others = (incoming.reactions?.[emoji] ?? []).filter((id) => id !== userId)
+                const reactors = (local.reactions?.[emoji] ?? []).includes(userId) ? [...others, userId] : others
+                if (reactors.length) reactions[emoji] = reactors
+            })
+
+            this.replaceMessage({ ...incoming, reactions })
         },
 
         async markRead(ulid: string) {
@@ -529,6 +603,10 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                     }
                 })
                 return
+            }
+
+            if (isHiddenChat(conversation) && message.user_id !== myId) {
+                this.fetchConversations().catch(() => { })
             }
 
             const list = this.messagesByUlid[ulid]

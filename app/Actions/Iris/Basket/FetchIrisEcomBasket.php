@@ -303,7 +303,7 @@ class FetchIrisEcomBasket extends IrisAction
             ];
         }
 
-        $orderArr['voucher'] = GetVoucherData::run($order->offer_voucher_id);
+        $orderArr['voucher'] = GetVoucherData::run($order->offer_voucher_id, $order->customer_id);
 
         return $orderArr;
     }

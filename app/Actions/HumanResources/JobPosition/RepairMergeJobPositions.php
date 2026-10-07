@@ -23,7 +23,7 @@ class RepairMergeJobPositions
 {
     use AsAction;
 
-    public string $commandSignature = 'repair:merge_job_positions {from : code of the position going away} {into : code of the position taking its holders} {--N|dry_run}';
+    public string $commandSignature = 'repair:merge_job_positions {from : code of the position going away} {into : code of the position taking its holders, several separated by commas} {--N|dry_run}';
     public string $commandDescription = 'Holders of a position that is going away get the position taking over on the same shops';
 
     public function handle(string $fromCode, string $intoCode, bool $dryRun = false): array
@@ -70,21 +70,23 @@ class RepairMergeJobPositions
     {
         $scopes = $jobPositions->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->id => $jobPosition->pivot->scopes ?? []])->all();
 
-        $from = $jobPositions->firstWhere('code', $fromCode);
-        $into = $organisation->jobPositions()->where('code', $intoCode)->firstOrFail();
-
+        $from       = $jobPositions->firstWhere('code', $fromCode);
         $fromScopes = $scopes[$from->id];
-        $intoScopes = $scopes[$into->id] ?? null;
         unset($scopes[$from->id]);
 
-        if ($intoScopes === null) {
-            $scopes[$into->id] = $fromScopes;
-        } elseif (empty($fromScopes) || empty($intoScopes)) {
-            $scopes[$into->id] = [];
-        } else {
-            $scopes[$into->id] = [
-                'Shop' => array_values(array_unique(array_merge($intoScopes['Shop'] ?? [], $fromScopes['Shop'] ?? [])))
-            ];
+        foreach (explode(',', $intoCode) as $code) {
+            $into       = $organisation->jobPositions()->where('code', trim($code))->firstOrFail();
+            $intoScopes = $scopes[$into->id] ?? null;
+
+            if ($intoScopes === null) {
+                $scopes[$into->id] = $fromScopes;
+            } elseif (empty($fromScopes) || empty($intoScopes)) {
+                $scopes[$into->id] = [];
+            } else {
+                $scopes[$into->id] = [
+                    'Shop' => array_values(array_unique(array_merge($intoScopes['Shop'] ?? [], $fromScopes['Shop'] ?? [])))
+                ];
+            }
         }
 
         return $scopes;

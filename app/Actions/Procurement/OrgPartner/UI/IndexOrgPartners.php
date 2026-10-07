@@ -10,15 +10,19 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -67,6 +71,7 @@ class IndexOrgPartners extends OrgAction
                     'open_shopping_list_items'       => (int) $stats?->number_open_shopping_list_items,
                     'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
                     'rescuable'                      => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
+                    'current'                        => $this->shoppingListRows($orgPartner)->concat($this->stockDeliveryRows($orgPartner))->values()->all(),
                 ]
                 : $this->sisterStats($orgPartner),
         ];
@@ -94,17 +99,7 @@ class IndexOrgPartners extends OrgAction
                 'url'         => route('grp.org.procurement.org_partners.show.purchase-orders.show', [$organisationSlug, $orgPartner->id, $purchaseOrder->slug]),
             ]);
 
-        $stockDeliveryStateLabels = StockDeliveryStateEnum::labels();
-        $stockDeliveries          = collect(ShowPartnerShoppingDashboard::make()->openStockDeliveries($orgPartner))
-            ->map(fn (array $stockDelivery) => [
-                'type'        => 'stock_delivery',
-                'reference'   => $stockDelivery['reference'],
-                'state'       => $stockDelivery['state'],
-                'state_label' => $stockDeliveryStateLabels[$stockDelivery['state']] ?? $stockDelivery['state'],
-                'lines'       => $stockDelivery['items'],
-                'date'        => $stockDelivery['date'],
-                'url'         => route('grp.org.procurement.org_partners.show.stock-deliveries.show', [$organisationSlug, $orgPartner->id, $stockDelivery['slug']]),
-            ]);
+        $stockDeliveries = $this->stockDeliveryRows($orgPartner);
 
         return [
             'purchase_orders'   => (int) $orgPartner->stats?->number_purchase_orders,
@@ -112,6 +107,60 @@ class IndexOrgPartners extends OrgAction
             'current'           => $stockDeliveries->concat($purchaseOrders)->values()->all(),
             'rescuable'         => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
         ];
+    }
+
+    private function stockDeliveryRows(OrgPartner $orgPartner): Collection
+    {
+        $stockDeliveryStateLabels = StockDeliveryStateEnum::labels();
+
+        return collect(ShowPartnerShoppingDashboard::make()->openStockDeliveries($orgPartner))
+            ->map(fn (array $stockDelivery) => [
+                'type'        => 'stock_delivery',
+                'reference'   => $stockDelivery['reference'],
+                'state'       => $stockDelivery['state'],
+                'state_label' => $stockDeliveryStateLabels[$stockDelivery['state']] ?? $stockDelivery['state'],
+                'lines'       => $stockDelivery['items'],
+                'date'        => $stockDelivery['date'],
+                'url'         => route('grp.org.procurement.org_partners.show.stock-deliveries.show', [$orgPartner->organisation->slug, $orgPartner->id, $stockDelivery['slug']]),
+            ]);
+    }
+
+    /**
+     * The hub's shopping list as two rows: the drafts staff are still preparing and the lines
+     * submitted to the hub, each linking to the list filtered to them.
+     */
+    public function shoppingListRows(OrgPartner $orgPartner): Collection
+    {
+        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $byState  = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $orgPartner->id)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+            ->whereNull('deleted_at')
+            ->groupBy('state')
+            ->selectRaw('state, count(*) as lines, min(created_at) as since, coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
+            ->get()
+            ->keyBy('state');
+
+        $routeParameters = [$orgPartner->organisation->slug, $orgPartner->id];
+
+        return collect([
+            ShoppingListItemStateEnum::DRAFT->value => [__('Ongoing PO'), __('Draft')],
+            ShoppingListItemStateEnum::OPEN->value  => [__('Producing in :partner', ['partner' => $orgPartner->partner->name]), __('Submitted')],
+        ])
+            ->filter(fn ($labels, $state) => $byState->has($state))
+            ->map(fn ($labels, $state) => [
+                'type'        => 'shopping_list',
+                'reference'   => $labels[0],
+                'state'       => $state,
+                'state_label' => $labels[1],
+                'lines'       => (int) $byState[$state]->lines,
+                'value'       => round((float) $byState[$state]->value * $exchange, 2),
+                'date'        => $byState[$state]->since,
+                'url'         => $state === ShoppingListItemStateEnum::DRAFT->value
+                    ? route('grp.org.procurement.org_partners.show.shopping_list.index', $routeParameters)
+                    : route('grp.org.procurement.org_partners.show.shopping_list.sent', $routeParameters),
+            ])
+            ->values();
     }
 
     public function htmlResponse(Collection $orgPartners, ActionRequest $request): Response

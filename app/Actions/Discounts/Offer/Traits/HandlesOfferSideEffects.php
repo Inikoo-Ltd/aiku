@@ -31,7 +31,7 @@ trait HandlesOfferSideEffects
         ShopHydrateOffersData::run($offer->shop_id);
 
 
-        if ($offer->voucher) {
+        if ($offer->voucher || $offer->hasCustomerList()) {
             CleanFinishedVouchers::run($offer->id);
         }
 
@@ -54,11 +54,10 @@ trait HandlesOfferSideEffects
     public function cleanWebpagesCache(Offer $offer): void
     {
         if ($offer->trigger_type == 'ProductCategory') {
-            /** @var ProductCategory $productCategory */
-            $productCategory = $offer->trigger;
-
-            if ($productCategory && $productCategory->webpage) {
-                BreakWebpageCache::run($productCategory->webpage, true);
+            foreach (ProductCategory::whereIn('id', $offer->triggerCategoryIds())->get() as $productCategory) {
+                if ($productCategory->webpage) {
+                    BreakWebpageCache::run($productCategory->webpage, true);
+                }
             }
         } elseif ($offer->trigger_type == 'Product') {
             /** @var Product $product */

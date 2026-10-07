@@ -197,7 +197,7 @@ onMounted(async () => {
 
 
 <template>
-    <Head :title="ctrans('Profile')" />
+    <Head :title="layout.user?.username ? `${ctrans('Profile')} @${layout.user.username}` : ctrans('Profile')" />
     <ProfileHeader :isLoadingLogout="isLoadingLogout" @logout="onLogoutAuth" @loaded="headerLayoutVersion++" />
 
     <template v-if="dataProfile?.tabs?.navigation">

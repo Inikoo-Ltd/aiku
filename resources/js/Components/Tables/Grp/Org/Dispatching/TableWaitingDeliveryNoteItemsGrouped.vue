@@ -133,6 +133,7 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                             <span class="text-xs font-bold tabular-nums mr-1">{{ deliveryItem.org_stock_code }}</span>
                             <span>{{ deliveryItem.org_stock_name }}</span>
                             <span v-if="deliveryItem.packed_in_message" class="text-xs italic opacity-70 ml-1">{{ deliveryItem.packed_in_message }}</span>
+                            <NotesDisplay reference-field="org_stock_code" :item="deliveryItem" class="inline-flex ml-1" />
                         </div>
 
                         <!-- List: pickings -->

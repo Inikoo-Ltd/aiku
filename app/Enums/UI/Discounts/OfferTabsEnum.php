@@ -17,6 +17,7 @@ enum OfferTabsEnum: string
     use HasTabs;
 
 
+    case SHOWCASE            = 'showcase';
     case VOUCHERS            = 'vouchers';
     case ORDERS              = 'orders';
     case CUSTOMERS           = 'customers';
@@ -28,6 +29,10 @@ enum OfferTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
+            OfferTabsEnum::SHOWCASE => [
+                'title' => __('Overview'),
+                'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
             OfferTabsEnum::VOUCHERS => [
                 'title' => __('Vouchers'),
                 'icon'  => 'fal fa-money-bill-wave',

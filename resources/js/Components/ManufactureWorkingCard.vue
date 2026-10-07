@@ -31,6 +31,7 @@ const props = defineProps<{
             session: { started_at: string, break_minutes: number, quantity_made: number }
         }
     }
+    serverTime?: string
 }>()
 
 const page = usePage()
@@ -44,9 +45,10 @@ const quantityMade = ref<number | null>(null)
 const remaining = computed(() => Math.max(0, props.session.task.quantity_required - props.session.task.quantity_made))
 const quantityRejected = ref(0)
 
-const now = ref(Date.now())
+const deviceClockOffset = computed(() => props.serverTime ? Date.parse(props.serverTime) - Date.now() : 0)
+const now = ref(Date.now() + deviceClockOffset.value)
 let timer: ReturnType<typeof setInterval>
-onMounted(() => timer = setInterval(() => now.value = Date.now(), 1000))
+onMounted(() => timer = setInterval(() => now.value = Date.now() + deviceClockOffset.value, 1000))
 onUnmounted(() => clearInterval(timer))
 
 const elapsed = computed(() => {

@@ -20,6 +20,8 @@ type PrePickItem = {
 	quantity: number
 	stock_available: number
 	can_pick: number
+	shortfall: number
+	automation_status: "releasing" | "held_buffer" | "awaiting_full_stock" | "to_produce"
 	stock_code: string
 	stock_name: string
 	is_cosmetic: boolean
@@ -42,6 +44,15 @@ const selected = reactive<Record<number, number>>({})
 const quantities = reactive<Record<number, number>>({})
 
 const quantityFor = (item: PrePickItem) => quantities[item.id] ?? Number(item.can_pick)
+
+const isPartial = (item: PrePickItem) => quantityFor(item) < Number(item.quantity)
+
+const automationStatuses = {
+	releasing: { label: trans("Going to the warehouse"), class: "text-emerald-600" },
+	held_buffer: { label: trans("Held, one more needed on the shelf"), class: "text-amber-600" },
+	awaiting_full_stock: { label: trans("Awaiting full stock"), class: "text-amber-600" },
+	to_produce: { label: trans("In To produce"), class: "text-gray-500" },
+}
 
 function setQuantity(item: PrePickItem, value: string) {
 	const quantity = Math.min(Math.max(Number(value) || 0, 0), Number(item.can_pick))
@@ -171,7 +182,15 @@ function prePick(lines: { id: number; quantity: number }[]) {
 		</button>
 	</div>
 
-	<div class="mx-4 mt-4 text-sm">
+	<div class="mx-4 mt-3 text-xs text-gray-500">
+		{{
+			trans(
+				"Lines go to the warehouse on their own, whole, when the shelf holds more than they ask. What is missing goes to To produce."
+			)
+		}}
+	</div>
+
+	<div class="mx-4 mt-3 text-sm">
 		<div
 			class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
 			<div
@@ -237,8 +256,13 @@ function prePick(lines: { id: number; quantity: number }[]) {
 		<template #cell(action)="{ item }: { item: PrePickItem }">
 			<button
 				type="button"
-				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
-				:title="trans('Reserve it for this partner and send it to their bay')"
+				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+				:disabled="Number(item.can_pick) <= 0"
+				:title="
+					Number(item.can_pick) > 0
+						? trans('Reserve it for this partner and send it to their bay')
+						: trans('All the stock on the shelf is already promised to earlier pre-picks')
+				"
 				@click="prePick([{ id: item.id, quantity: quantityFor(item) }])">
 				{{ trans("Pre-pick") }}
 			</button>
@@ -281,6 +305,33 @@ function prePick(lines: { id: number; quantity: number }[]) {
 				"
 				:value="quantityFor(item)"
 				@change="setQuantity(item, ($event.target as HTMLInputElement).value)" />
+			<div
+				v-if="isPartial(item)"
+				class="mt-0.5 text-[11px] text-amber-600"
+				:title="trans('The warehouse will pick this line in two goes')">
+				{{ trans("partial pick") }}
+			</div>
+		</template>
+		<template #cell(shortfall)="{ item }: { item: PrePickItem }">
+			<span
+				class="tabular-nums"
+				:class="Number(item.shortfall) > 0 ? 'font-semibold text-amber-600' : 'text-gray-400'"
+				>{{ useLocaleStore().number(Number(item.shortfall)) }}</span
+			>
+		</template>
+		<template #cell(automation_status)="{ item }: { item: PrePickItem }">
+			<span :class="automationStatuses[item.automation_status].class">{{
+				automationStatuses[item.automation_status].label
+			}}</span>
+			<div
+				v-if="item.automation_status === 'awaiting_full_stock'"
+				class="text-xs text-gray-500">
+				{{
+					trans("Shortfall sent to To produce: :quantity", {
+						quantity: useLocaleStore().number(Number(item.shortfall)),
+					})
+				}}
+			</div>
 		</template>
 		<template #cell(priority)="{ item }: { item: PrePickItem }">
 			<span

@@ -120,6 +120,12 @@ class EditOrgStock extends OrgAction
                         'value'       => $orgStock->is_fresh,
                         'information' => __('Made only for orders already placed, never kept on the shelf. It is not counted as out of stock and does not add to the lost revenue in the stock reports.'),
                     ],
+                    'is_made_in_house'    => [
+                        'type'        => 'toggle',
+                        'label'       => __('Made in-house'),
+                        'value'       => $orgStock->is_made_in_house,
+                        'information' => __('Our production makes it, so it needs an artefact (recipe) before job orders can be raised for it. SKOs made in-house without an artefact are flagged in the SKO list and on the trade unit composition.'),
+                    ],
                     'is_excluded_from_auto_ordering' => [
                         'type'        => 'toggle',
                         'label'       => __('Do not auto order'),

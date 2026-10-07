@@ -1028,6 +1028,28 @@ test("UI Index warehouse areas", function () {
     });
 });
 
+test("UI Index warehouse areas only lets location editors change the picking order", function () {
+    $warehouse = Warehouse::first();
+    $route     = route("grp.org.warehouses.show.infrastructure.warehouse_areas.index", [
+        $this->organisation->slug,
+        $warehouse->slug
+    ]);
+
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $user->givePermissionTo("locations.{$warehouse->id}.view");
+    actingAs($user->fresh());
+
+    get($route)->assertInertia(fn (AssertableInertia $page) => $page->where("canEditPickingPosition", false));
+
+    $user->givePermissionTo("locations.{$warehouse->id}.edit");
+    actingAs($user->fresh());
+
+    get($route)->assertInertia(fn (AssertableInertia $page) => $page->where("canEditPickingPosition", true));
+});
+
 test("UI Show warehouse area", function () {
     $warehouse     = Warehouse::first();
     $warehouseArea = $warehouse->warehouseAreas->first();
@@ -1581,6 +1603,32 @@ test('stock location integrity monitor reports a location that no longer matches
     expect($label())->toBeNull();
 
     $this->organisation->update(['is_aiku_stock_control' => $wasAikuStockControl]);
+});
+
+test('an aurora receipt brings the location to its movements without losing a pick or its own open transaction', function () {
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+
+    AuditLocationOrgStock::run($slot, ['quantity' => 11]);
+    StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => -1, 'type' => OrgStockMovementTypeEnum::PICKED]);
+
+    DB::transaction(function () use ($orgStock, $location) {
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => 80, 'type' => OrgStockMovementTypeEnum::PURCHASE], strict: false);
+    });
+    expect((float)$slot->refresh()->quantity)->toBe(90.0);
+
+    StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'quantity' => 160,
+        'type'     => OrgStockMovementTypeEnum::PURCHASE,
+        'date'     => now()->subDays(3),
+    ], strict: false);
+    expect((float)$slot->refresh()->quantity)->toBe(90.0);
+
+    DB::table('location_org_stocks')->where('id', $slot->id)->update(['quantity' => 85]);
+    expect(\App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements::run($slot))->toBe(90.0)
+        ->and((float)$slot->refresh()->quantity)->toBe(90.0);
 });
 
 test('an emptied slot stays listed on a shelf but not in a goods out bay', function () {
@@ -3206,6 +3254,7 @@ describe('aurora provisional cost fix', function () {
 });
 
 test('merging a duplicate stock moves its links to the stocked twin and retires the orphans', function () {
+    ensureFirstWarehouseHasCountry($this->organisation);
     $group  = $this->organisation->group;
     $stocks = createStocks($group);
     $empty  = $stocks[0];

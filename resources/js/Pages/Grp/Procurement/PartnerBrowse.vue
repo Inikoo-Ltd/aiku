@@ -16,7 +16,7 @@ import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, order_quantum: number }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, sent_quantity: number, order_quantum: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
@@ -293,6 +293,11 @@ function commitQuantity(product: ProductCard) {
                                 noSaveButton
                                 @update:modelValue="(value: number) => setQuantity(product, value)"
                             />
+<span
+                                v-if="product.sent_quantity > 0"
+                                v-tooltip="ctrans('Already sent to the partner')"
+                                class="cursor-help whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500"
+                            >{{ ctrans(':count sent', { count: useLocaleStore().number(product.sent_quantity) }) }}</span>
                             <span
                                 v-if="product.order_quantum > 1"
                                 v-tooltip="ctrans('Made in batches: ordered in multiples of :quantum SKOs', { quantum: product.order_quantum })"

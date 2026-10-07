@@ -139,7 +139,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->withQueryString();
 
         $this->attachOrgStockData($paginator, $purchaseOrder);
-        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
+        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder->organisation_id, $purchaseOrder->id);
 
         return $paginator;
     }
@@ -246,7 +246,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->withQueryString();
 
         $this->attachOrgStockData($paginator, $purchaseOrder);
-        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
+        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder->organisation_id, $purchaseOrder->id);
 
         return $paginator;
     }
@@ -285,7 +285,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
     }
 
-    public function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
+    public function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, int $organisationId, ?int $exceptPurchaseOrderId = null): void
     {
         $rows               = $paginator->getCollection();
         $supplierProductIds = $rows->pluck('supplier_product_id')->filter()->unique()->values();
@@ -301,10 +301,9 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 $query->whereIn('purchase_order_transactions.supplier_product_id', $supplierProductIds)
                     ->orWhereIn('purchase_order_transactions.org_stock_id', $orgStockIds);
             })
-            ->where('purchase_orders.organisation_id', $purchaseOrder->organisation_id)
-            ->where('purchase_orders.id', '!=', $purchaseOrder->id)
+            ->where('purchase_orders.organisation_id', $organisationId)
+            ->when($exceptPurchaseOrderId, fn ($query) => $query->where('purchase_orders.id', '!=', $exceptPurchaseOrderId))
             ->whereIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::IN_PROCESS->value,
                 PurchaseOrderStateEnum::SUBMITTED->value,
                 PurchaseOrderStateEnum::CONFIRMED->value,
             ])

@@ -61,11 +61,30 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
 
     protected ?Collection $productRows = null;
 
+    protected int $headingRow = 1;
+
+    /**
+     * v7 of the template renamed some v6 columns; both spellings are read.
+     *
+     * @var array<string, string>
+     */
+    protected const HEADING_ALIASES = [
+        'unit_cost_sup_cur'          => 'unit_cost',
+        'unit_est_true_extra_costs'  => 'unit_extra_costs',
+        'unit_recommended_price_ps'  => 'unit_recommended_price',
+        'expected_duty_rate'         => 'duty_rate',
+    ];
+
     /** @var array<int, array<int, mixed>>|null */
     protected ?array $orderSheetRows = null;
 
     /** @var Collection<int, Organisation>|null */
     protected ?Collection $supplierOrganisations = null;
+
+    public function headingRow(): int
+    {
+        return $this->headingRow;
+    }
 
     public function sheets(): array
     {
@@ -75,9 +94,34 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
     public function registerEvents(): array
     {
         return [
-            BeforeImport::class => fn (BeforeImport $event) => $this->orderSheetRows = $this->orderSheetRows($event->getReader()->getDelegate()),
+            BeforeImport::class => function (BeforeImport $event) {
+                $spreadsheet          = $event->getReader()->getDelegate();
+                $this->headingRow     = $this->findHeadingRow($spreadsheet);
+                $this->orderSheetRows = $this->orderSheetRows($spreadsheet);
+            },
             AfterImport::class  => fn () => $this->processSheets(),
         ];
+    }
+
+    protected function findHeadingRow(Spreadsheet $spreadsheet): int
+    {
+        $worksheet = $spreadsheet->getSheet(0);
+        $lastRow   = min(20, $worksheet->getHighestDataRow());
+
+        for ($row = 1; $row <= $lastRow; $row++) {
+            foreach ($worksheet->getRowIterator($row, $row)->current()->getCellIterator() as $cell) {
+                if ($this->heading($cell->getValue()) === 'part reference') {
+                    return $row;
+                }
+            }
+        }
+
+        return 1;
+    }
+
+    protected function sheetRowNumber(int $index): int
+    {
+        return $index + $this->headingRow + 1;
     }
 
     /**
@@ -101,8 +145,19 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
     public function collection(Collection $collection): void
     {
         $this->productRows = $collection
-            ->map(fn (Collection $row) => $this->cleanRow($row))
+            ->map(fn (Collection $row) => $this->withCanonicalHeadings($this->cleanRow($row)))
             ->filter(fn (Collection $row) => $row->contains(fn ($value) => $this->cleanString($value) !== null));
+    }
+
+    protected function withCanonicalHeadings(Collection $row): Collection
+    {
+        foreach (self::HEADING_ALIASES as $alias => $canonical) {
+            if ($row->has($alias) && $this->cleanString($row->get($canonical)) === null) {
+                $row->put($canonical, $row->pull($alias));
+            }
+        }
+
+        return $row;
     }
 
     public function processSheets(): void
@@ -117,7 +172,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
 
         if ($mistakes === [] && $orderMistakes === []) {
             foreach ($rows as $index => $row) {
-                $this->storeModel($row, $this->createUploadRecord($row, $index + 2));
+                $this->storeModel($row, $this->createUploadRecord($row, $this->sheetRowNumber($index)));
             }
 
             if ($order !== null) {
@@ -129,7 +184,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
 
         foreach ($rows as $index => $row) {
             $this->setRecordAsFailed(
-                $this->createUploadRecord($row, $index + 2),
+                $this->createUploadRecord($row, $this->sheetRowNumber($index)),
                 $mistakes[$index] ?? [__('Not created: other rows in this sheet have mistakes. Fix them and upload the whole sheet again.')]
             );
         }
@@ -211,7 +266,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             ->filter(fn (Collection $row) => $this->cleanString($row->get('suppliers_product_code')) !== null)
             ->mapWithKeys(fn (Collection $row, int $index) => [
                 strtolower($this->cleanString($row->get('suppliers_product_code'))) => [
-                    'source'           => __('products tab row :row', ['row' => $index + 2]),
+                    'source'           => __('products tab row :row', ['row' => $this->sheetRowNumber($index)]),
                     'cost'             => $this->cleanString($row->get('unit_cost')),
                     'units_per_carton' => (((int)$row->get('units_per_sko')) ?: 1) * (((int)$row->get('skos_per_carton')) ?: 1),
                 ],
@@ -428,6 +483,13 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             }
         }
 
+        foreach ($newRows as $index => $row) {
+            $skoBarcode = $this->skoBarcodeOrNull($row->get('sko_barcode'));
+            if ($skoBarcode !== null && Stock::where('group_id', $this->scope->group_id)->where('barcode', $skoBarcode)->exists()) {
+                $mistakes[$index][] = __('SKO barcode :barcode is already on another SKO.', ['barcode' => $skoBarcode]);
+            }
+        }
+
         foreach ($rows as $index => $row) {
             $barcode = $this->cleanString($row->get('unit_barcode_ean_13_for_website'));
             if ($barcode !== null && strtolower($barcode) !== 'auto' && $this->gtinOrNull($barcode) === null) {
@@ -435,9 +497,9 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             }
         }
 
-        foreach (['suppliers_product_code' => __("Supplier's product code"), 'part_reference' => __('Part reference')] as $column => $label) {
+        foreach (['suppliers_product_code' => __("Supplier's product code"), 'part_reference' => __('Part reference'), 'sko_barcode' => __('SKO barcode')] as $column => $label) {
             $newRows->groupBy(fn (Collection $row) => strtolower((string)$this->cleanString($row->get($column))), true)
-                ->filter(fn (Collection $group, string $value) => $value !== '' && $group->count() > 1)
+                ->filter(fn (Collection $group, string $value) => !in_array($value, ['', 'auto'], true) && $group->count() > 1)
                 ->each(function (Collection $group) use (&$mistakes, $column, $label) {
                     foreach ($group->keys() as $index) {
                         $mistakes[$index][] = __(':label :value appears in rows :rows.', ['label' => $label, 'value' => $group->first()->get($column), 'rows' => $this->rowList($group->keys())]);
@@ -492,7 +554,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
     protected function rowList(Collection $indexes): string
     {
         $ranges = [];
-        foreach ($indexes->map(fn (int $index) => $index + 2)->sort()->values() as $row) {
+        foreach ($indexes->map(fn (int $index) => $this->sheetRowNumber($index))->sort()->values() as $row) {
             $last = array_key_last($ranges);
             if ($last !== null && $ranges[$last][1] === $row - 1) {
                 $ranges[$last][1] = $row;
@@ -664,11 +726,13 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             'tariff_code' => Arr::get($data, 'tariff_code'),
         ]);
 
-        $weight = Arr::get($data, 'unit_weight_kg');
-        if ($weight !== null && $weight !== '') {
-            $grams                     = (int)round(((float)$weight) * 1000);
-            $modelData['net_weight']   = $grams;
-            $modelData['gross_weight'] = $grams;
+        $grossWeight = $this->gramsOrNull(Arr::get($data, 'unit_weight_kg'));
+        $netWeight   = $this->gramsOrNull(Arr::get($data, 'unit_net_weight_kg')) ?? $grossWeight;
+        if ($grossWeight !== null) {
+            $modelData['gross_weight'] = $grossWeight;
+        }
+        if ($netWeight !== null) {
+            $modelData['net_weight'] = $netWeight;
         }
 
         $dimensions = $this->parseDimensions(Arr::get($data, 'unit_dimensions_l_x_w_x_h_in_cm'));
@@ -698,10 +762,7 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             'hazard_identification_number' => Arr::get($data, 'hazard_identification_number'),
             'cpnp_number'                  => Arr::get($data, 'cpnp_number'),
             'ufi_number'                   => Arr::get($data, 'ufi'),
-            'sko_weight_kg'                => Arr::get($data, 'sko_weight_kg'),
-            'sko_dimensions'               => Arr::get($data, 'sko_dimensions_l_x_w_x_h_in_cm'),
             'carton_weight'                => Arr::get($data, 'carton_weight'),
-            'carton_barcode'               => Arr::get($data, 'carton_barcode'),
         ]);
         if ($sourceImport !== []) {
             $modelData['data']['source_import'] = $sourceImport;
@@ -756,8 +817,21 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
 
         $stock = StoreStock::make()->action($stockFamily ?? $this->scope->group, [
             'code' => $tradeUnit->code,
-            'name' => $tradeUnit->name,
+            'name' => $this->cleanString(Arr::get($data, 'sko_description_picking_aid')) ?? $tradeUnit->name,
         ], strict: false);
+
+        $skoData = $this->onlyFilled([
+            'barcode'        => $this->skoBarcodeOrNull(Arr::get($data, 'sko_barcode')),
+            'carton_barcode' => $this->skoBarcodeOrNull(Arr::get($data, 'carton_barcode')),
+            'gross_weight'   => $this->gramsOrNull(Arr::get($data, 'sko_weight_kg')),
+        ]);
+        $skoDimensions = $this->parseDimensions(Arr::get($data, 'sko_dimensions_l_x_w_x_h_in_cm'));
+        if ($skoDimensions !== null) {
+            $skoData['data'] = array_merge($stock->data ?? [], ['dimensions' => $skoDimensions]);
+        }
+        if ($skoData !== []) {
+            $stock->update($skoData);
+        }
 
         SyncStockTradeUnits::run($stock, [
             $tradeUnit->id => ['quantity' => $unitsPerSko],
@@ -793,6 +867,20 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
     protected function onlyFilled(array $modelData): array
     {
         return array_filter($modelData, fn ($value) => $value !== null && $value !== '');
+    }
+
+    protected function skoBarcodeOrNull(mixed $value): ?string
+    {
+        $value = $this->cleanString($value);
+
+        return $value !== null && strtolower($value) !== 'auto' ? $value : null;
+    }
+
+    protected function gramsOrNull(mixed $kilograms): ?int
+    {
+        $kilograms = $this->cleanString($kilograms);
+
+        return is_numeric($kilograms) ? (int)round(((float)$kilograms) * 1000) : null;
     }
 
     protected function gtinOrNull(mixed $value): ?string

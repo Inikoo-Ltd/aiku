@@ -480,31 +480,31 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     'sub_trigger' => 'so',
                 ];
             } elseif ($offerData->type == 'Department Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'department')) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,
                         'offer_label' => $offerData->name
                     ];
                 }
             } elseif ($offerData->type == 'Subdepartment Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'sub_departments_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'sub_department')) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,
                         'offer_label' => $offerData->name
                     ];
                 }
             } elseif ($offerData->type == 'Category Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'family')) {
                     $enabledOffers[$offerData->allowance_signature] = [
                         'offer_id'    => $offerData->id,
                         'offer_label' => $offerData->name
                     ];
                 }
             } elseif ($offerData->type == 'Department Quantity Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'department')) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "department.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                    if ($this->triggerCategoriesTotal($offerData, 'department', 'quantity_ordered') >= Arr::get($triggerData, 'item_quantity')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -512,10 +512,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     }
                 }
             } elseif ($offerData->type == 'Subdepartment Quantity Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'sub_departments_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'sub_department')) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "sub_department.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                    if ($this->triggerCategoriesTotal($offerData, 'sub_department', 'quantity_ordered') >= Arr::get($triggerData, 'item_quantity')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -523,10 +523,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     }
                 }
             } elseif ($offerData->type == 'Category Quantity Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'family')) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0) >= Arr::get($triggerData, 'item_quantity')) {
+                    if ($this->triggerCategoriesTotal($offerData, 'family', 'quantity_ordered') >= Arr::get($triggerData, 'item_quantity')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -543,10 +543,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     ];
                 }
             } elseif ($offerData->type == 'Department Amount Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'departments_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'department')) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "department.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
+                    if ($this->triggerCategoriesTotal($offerData, 'department', 'gross_amount') >= Arr::get($triggerData, 'item_amount')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -554,10 +554,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     }
                 }
             } elseif ($offerData->type == 'Subdepartment Amount Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'sub_departments_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'sub_department')) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "sub_department.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
+                    if ($this->triggerCategoriesTotal($offerData, 'sub_department', 'gross_amount') >= Arr::get($triggerData, 'item_amount')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -565,10 +565,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     }
                 }
             } elseif ($offerData->type == 'Category Amount Ordered') {
-                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                if ($this->isAnyTriggerCategoryOrdered($offerData, 'family')) {
                     $triggerData = json_decode($offerData->trigger_data, true);
 
-                    if (Arr::get($order->categories_data, "family.$offerData->trigger_id.net_amount", 0) >= Arr::get($triggerData, 'item_amount')) {
+                    if ($this->triggerCategoriesTotal($offerData, 'family', 'gross_amount') >= Arr::get($triggerData, 'item_amount')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -660,6 +660,30 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      * cannot strip discounts the customer already paid for. Suspended offers stay excluded:
      * suspension is a deliberate kill switch, unlike an offer reaching its end date.
      */
+    /**
+     * @return array<int, int>
+     */
+    private function triggerCategoryIds(object $offerData): array
+    {
+        return Arr::get(json_decode($offerData->trigger_data, true) ?? [], 'category_ids') ?: [$offerData->trigger_id];
+    }
+
+    private function isAnyTriggerCategoryOrdered(object $offerData, string $categoryLevel): bool
+    {
+        $categoryIds = $this->triggerCategoryIds($offerData);
+
+        return $this->transactions->contains(fn ($transaction) => in_array($transaction->{$categoryLevel.'_id'}, $categoryIds));
+    }
+
+    private function triggerCategoriesTotal(object $offerData, string $categoryLevel, string $field): float
+    {
+        $categoryIds = $this->triggerCategoryIds($offerData);
+
+        return (float)$this->transactions
+            ->filter(fn ($transaction) => in_array($transaction->{$categoryLevel.'_id'}, $categoryIds))
+            ->sum($field);
+    }
+
     private function scopeOffersValidity(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
     {
         $query->whereNull('deleted_at');
@@ -991,11 +1015,13 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             }
         }
 
+        $categoryIds = Arr::get($allowanceOpsData, 'category_ids') ?: [Arr::get($allowanceOpsData, 'category_id')];
+
         return $this->transactions->filter(
             fn ($transaction) => match ($filterBy) {
-                'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
-                'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
-                'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
+                'family' => in_array($transaction->family_id, $categoryIds),
+                'department' => in_array($transaction->department_id, $categoryIds),
+                'sub_department' => in_array($transaction->sub_department_id, $categoryIds),
                 'collection' => isset($collectionProductIds[$transaction->model_id]),
                 'product' => Arr::get($allowanceOpsData, 'product_id') == $transaction->model_id,
                 default => true,

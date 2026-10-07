@@ -153,6 +153,10 @@ class ShowJobOrder extends OrgAction
                     'parameters' => ['jobOrder' => $jobOrder->id],
                 ] : null,
                 'items'            => $items,
+                'pdf_route'        => [
+                    'name'       => 'grp.org.productions.show.operations.job-orders.pdf',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 'artefact_options' => $this->canEdit ? $artefactOptions : [],
                 'add_item_route'   => $this->canEdit ? [
                     'name'       => 'grp.models.job-order.item.store',

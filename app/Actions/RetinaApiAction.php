@@ -104,9 +104,7 @@ class RetinaApiAction
      * URL belongs to the token's customer, so every route-bound model is checked here instead:
      * one place, rather than a check each new endpoint has to remember. A record belonging to
      * someone else is reported as missing, so the response cannot be used to discover which
-     * ids exist. While app.enforce_api_ownership is off the refusal is recorded on the request
-     * log rather than applied, so a client that depends on the old behaviour surfaces before it
-     * breaks.
+     * ids exist.
      */
     /**
      * Media carries no owner of its own, so it is reached through what it is attached to: the
@@ -147,20 +145,9 @@ class RetinaApiAction
                 default                              => true,
             };
 
-            if ($isOwned) {
-                continue;
+            if (!$isOwned) {
+                abort(404);
             }
-
-            if (!config('app.enforce_api_ownership')) {
-                // The logging middleware terminates on the original request, not this ActionRequest.
-                $violations   = request()->attributes->get('retina_api_ownership_violations', []);
-                $violations[] = class_basename($parameter).' '.$parameter->getKey().' is not owned by customer '.$this->customer->id;
-                request()->attributes->set('retina_api_ownership_violations', $violations);
-
-                continue;
-            }
-
-            abort(404);
         }
     }
 

@@ -233,8 +233,9 @@ trait WithChatAgentAuthorisation
     }
 
     /**
-     * The shops where the user is a customer service agent. A WhatsApp call rings only for them: other roles
-     * that may read or work chat, a shop admin among them, are not the ones expected to pick up the phone.
+     * The shops where the user takes customer calls. A WhatsApp call rings only for them: a call cannot be
+     * translated like a chat, so chat agents and shop admins are not the ones expected to pick up the phone.
+     * Customer service supervisors still ring until repair:merge_job_positions moves them to the calls position.
      *
      * @return array<int, int>
      */
@@ -249,8 +250,7 @@ trait WithChatAgentAuthorisation
             ->where('model_has_roles.model_type', 'User')
             ->where('model_has_roles.model_id', $user->id)
             ->where(function ($query) {
-                $query->where('roles.name', 'like', RolesEnum::CUSTOMER_SERVICE_CLERK->value.'-%')
-                    ->orWhere('roles.name', 'like', RolesEnum::CUSTOMER_SERVICE_CALLER->value.'-%')
+                $query->where('roles.name', 'like', RolesEnum::CUSTOMER_SERVICE_CALLER->value.'-%')
                     ->orWhere('roles.name', 'like', RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value.'-%');
             })
             ->pluck('roles.name')

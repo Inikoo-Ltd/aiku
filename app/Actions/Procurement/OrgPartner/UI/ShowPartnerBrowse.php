@@ -10,7 +10,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
@@ -32,6 +32,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -293,15 +294,24 @@ class ShowPartnerBrowse extends OrgAction
             $usage = SuggestPartnerShoppingList::make()->buyerQuarterlyUsage($buyerOrgStocks->pluck('id')->all());
 
             $openItems = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
-                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->where('state', ShoppingListItemStateEnum::DRAFT)
                 ->whereIn('stock_id', $buyerOrgStocks->keys())
                 ->get()
                 ->keyBy('stock_id');
 
+            $sentQuantities = DB::table('partner_shopping_list_items')
+                ->where('org_partner_id', $this->orgPartner->id)
+                ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+                ->whereNull('deleted_at')
+                ->whereIn('stock_id', $buyerOrgStocks->keys())
+                ->groupBy('stock_id')
+                ->selectRaw('stock_id, sum(quantity) as total')
+                ->pluck('total', 'stock_id');
+
             $exchange = $this->orgPartner->exchangeToOrgCurrency();
             $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $exchange, $quanta) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $sentQuantities, $exchange, $quanta) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
@@ -331,6 +341,7 @@ class ShowPartnerBrowse extends OrgAction
                         : null,
                     'shopping_list_item_id' => $openItem?->id,
                     'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
+                    'sent_quantity'         => (float) ($sentQuantities[$sellerOrgStock?->stock_id] ?? 0),
                     'order_quantum'         => $quantum,
                 ];
             });
@@ -400,9 +411,7 @@ class ShowPartnerBrowse extends OrgAction
         abort_unless($this->shopId, 404);
 
         $this->intercompanyCustomer = GetPartnerIntercompanyCustomer::run($orgPartner, $this->shopId);
-        if ($this->intercompanyCustomer) {
-            $this->priceFactor = GetPartnerCustomerDiscount::run($this->intercompanyCustomer);
-        }
+        $this->priceFactor          = GetPartnerBuyingPriceFactor::run($orgPartner);
 
         $this->initialisation($organisation, $request);
 

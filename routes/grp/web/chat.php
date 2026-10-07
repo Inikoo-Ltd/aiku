@@ -58,6 +58,7 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::post('/conversations/{staffConversation}/messages', \App\Actions\Chat\Staff\SendStaffMessage::class)->name('conversations.messages.store');
     Route::post('/conversations/{staffConversation}/archive', \App\Actions\Chat\Staff\ArchiveStaffConversation::class)->name('conversations.archive');
     Route::post('/conversations/{staffConversation}/read', \App\Actions\Chat\Staff\MarkStaffConversationRead::class)->name('conversations.read');
+    Route::post('/conversations/{staffConversation}/watch', \App\Actions\Chat\Staff\ToggleStaffConversationWatch::class)->name('conversations.watch');
     Route::post('/messages/{staffMessage}/reactions', \App\Actions\Chat\Staff\ToggleStaffMessageReaction::class)->name('messages.reactions.toggle');
     Route::post('/context', \App\Actions\Chat\Staff\OpenStaffContextConversation::class)->name('context.open');
     Route::post('/team/toggle', \App\Actions\Chat\Staff\ToggleStaffTeamMember::class)->name('team.toggle');

@@ -40,6 +40,7 @@ class GetSalesAnalysis
     private Collection $shops;
     private Collection $products;
     private array $shopIds = [];
+    private array $organisationSlugs = [];
     private bool $includePartners = false;
     private array $periodSales = [];
     private string $unit = 'week';
@@ -56,7 +57,7 @@ class GetSalesAnalysis
         }
 
         return Cache::remember(
-            'sales-analysis:v2:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
+            'sales-analysis:v5:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),
             fn () => $this->analyse($scope, $modelData)
         );
@@ -94,7 +95,7 @@ class GetSalesAnalysis
 
         $this->shops = DB::table('shops')
             ->whereIn('id', $allProducts->pluck('shop_id')->merge(array_keys($scope->shopNodeStates))->unique())
-            ->select(['id', 'code', 'name', 'slug', 'organisation_id', 'state'])
+            ->select(['id', 'code', 'name', 'short_name', 'slug', 'organisation_id', 'state'])
             ->orderBy('code')
             ->get()
             ->keyBy('id');
@@ -103,6 +104,7 @@ class GetSalesAnalysis
             ->select(['id', 'slug', 'code', 'name'])
             ->orderBy('id')
             ->get();
+        $this->organisationSlugs = $organisations->pluck('slug', 'id')->all();
 
         $selectedOrganisations = $organisations->whereIn('slug', $this->slugs(Arr::get($modelData, 'organisations')))->values();
         $selectedShops         = $this->shops
@@ -418,6 +420,8 @@ class GetSalesAnalysis
                     'shop_id'         => $shopId,
                     'shop_code'       => $shop->code,
                     'shop_name'       => $shop->name,
+                    'shop_short_name' => $shop->short_name,
+                    'shop_url'        => $this->shopUrl($shop),
                     'shop_state'      => $shop->state,
                     'organisation_id' => $shop->organisation_id,
                     'node_state'      => $this->scope->shopNodeStates[$shopId] ?? null,
@@ -429,6 +433,18 @@ class GetSalesAnalysis
             ->sortBy(fn ($row) => $row['sales'] - $row['previous_sales'])
             ->values()
             ->all();
+    }
+
+    private function shopUrl(object $shop): string
+    {
+        $organisationSlug = $this->organisationSlugs[$shop->organisation_id];
+        $nodeSlug         = $this->scope->shopNodeSlugs[$shop->id] ?? null;
+
+        if ($nodeSlug && $this->scope->shopNodeRoute) {
+            return route($this->scope->shopNodeRoute, [$organisationSlug, $shop->slug, $nodeSlug, 'tab' => 'sales_analysis']);
+        }
+
+        return route('grp.org.shops.show.dashboard.show', [$organisationSlug, $shop->slug, 'section' => 'sales_analysis']);
     }
 
     private function byBreakdown(Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo, array $stockOuts): array

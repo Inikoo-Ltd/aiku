@@ -58,6 +58,7 @@ interface PartnerOrder {
 
 const props = defineProps<{
     title: string
+    server_time: string
     pageHead: PageHeadingTypes
     stats: {
         name: string
@@ -171,9 +172,10 @@ function startTask(task: QueueTask) {
     )
 }
 
-const now = ref(Date.now())
+const deviceClockOffset = computed(() => Date.parse(props.server_time) - Date.now())
+const now = ref(Date.now() + deviceClockOffset.value)
 let timer: ReturnType<typeof setInterval>
-onMounted(() => timer = setInterval(() => now.value = Date.now(), 1000))
+onMounted(() => timer = setInterval(() => now.value = Date.now() + deviceClockOffset.value, 1000))
 onUnmounted(() => clearInterval(timer))
 
 function elapsedSince(startedAt: string) {
@@ -303,6 +305,7 @@ function elapsedSince(startedAt: string) {
             <ManufactureWorkingCard
                 v-if="command_control.open_session"
                 :session="command_control.open_session"
+                :server-time="server_time"
                 class="mb-4"
             />
 

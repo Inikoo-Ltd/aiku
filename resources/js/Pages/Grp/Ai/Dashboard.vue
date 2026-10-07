@@ -18,9 +18,15 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { faRobot, faExclamationTriangle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed } from "vue"
+import { computed, inject } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faRobot, faExclamationTriangle)
+
+const layout = inject("layout", layoutStructure)
+const primaryColor = computed(() => layout.app.theme[4])
+
+const leftPct = (left: number, total: number) => total > 0 ? Math.min(100, Math.max(0, (left / total) * 100)) : 0
 
 const props = defineProps<{
     title: string
@@ -80,42 +86,51 @@ const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "b
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <div class="rounded-lg border border-gray-200 p-4">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <div class="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="absolute inset-y-0 left-0 w-1" :style="{ backgroundColor: primaryColor }" />
                 <div class="text-xs text-gray-500">{{ ctrans("Spent today") }}</div>
-                <div class="mt-1 font-medium tabular-nums">{{ usd(totals.today) }}</div>
+                <div class="mt-1 text-xl font-semibold tabular-nums text-gray-900">{{ usd(totals.today) }}</div>
             </div>
-            <div class="rounded-lg border border-gray-200 p-4">
+            <div class="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="absolute inset-y-0 left-0 w-1" :style="{ backgroundColor: primaryColor }" />
                 <div class="text-xs text-gray-500">{{ ctrans("Spent this month") }}</div>
-                <div class="mt-1 text-sm font-semibold tabular-nums text-gray-900">{{ usd(totals.month) }}</div>
+                <div class="mt-1 text-xl font-semibold tabular-nums text-gray-900">{{ usd(totals.month) }}</div>
             </div>
             <template v-if="balance">
-                <div class="rounded-lg border p-4" :class="balance.is_low ? 'border-red-300' : 'border-gray-200'">
+                <div class="rounded-xl border bg-white p-4 shadow-sm" :class="balance.is_low ? 'border-red-300' : 'border-gray-200'">
                     <div class="text-xs text-gray-500">{{ ctrans("OpenRouter left to spend") }}</div>
-                    <div class="mt-1 font-medium tabular-nums" :class="balance.is_low ? 'text-red-700' : ''">{{ usd(balance.left) }}</div>
+                    <div class="mt-1 text-xl font-semibold tabular-nums" :class="balance.is_low ? 'text-red-700' : 'text-gray-900'">{{ usd(balance.left) }}</div>
                 </div>
-                <div class="rounded-lg border border-gray-200 p-4">
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                     <div class="text-xs text-gray-500">{{ ctrans("OpenRouter credit") }}</div>
-                    <div class="mt-1 font-medium tabular-nums">{{ usd(balance.credits_left) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.credits_total) }}</span></div>
+                    <div class="mt-1 text-xl font-semibold tabular-nums text-gray-900">{{ usd(balance.credits_left) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.credits_total) }}</span></div>
+                    <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full" :style="{ width: leftPct(balance.credits_left, balance.credits_total) + '%', backgroundColor: primaryColor }" />
+                    </div>
                 </div>
-                <div v-if="balance.key_limit !== null" class="rounded-lg border border-gray-200 p-4">
+                <div v-if="balance.key_limit !== null" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                     <div class="text-xs text-gray-500">{{ ctrans("Key limit") }} <span v-if="balance.key_limit_reset">({{ balance.key_limit_reset }})</span></div>
-                    <div class="mt-1 font-medium tabular-nums">{{ usd(balance.key_limit_remaining ?? 0) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.key_limit) }}</span></div>
+                    <div class="mt-1 text-xl font-semibold tabular-nums text-gray-900">{{ usd(balance.key_limit_remaining ?? 0) }} <span class="text-xs font-normal text-gray-500">/ {{ usd(balance.key_limit) }}</span></div>
+                    <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full" :style="{ width: leftPct(balance.key_limit_remaining ?? 0, balance.key_limit) + '%', backgroundColor: primaryColor }" />
+                    </div>
                 </div>
             </template>
-            <div v-else class="col-span-2 rounded-lg border border-gray-200 p-4 text-xs text-gray-500 sm:col-span-3">
+            <div v-else class="col-span-2 rounded-xl border border-gray-200 bg-white p-4 text-xs text-gray-500 shadow-sm sm:col-span-3">
                 {{ ctrans("OpenRouter balance not available: the key is not set or OpenRouter did not answer.") }}
             </div>
         </div>
-        <p class="-mt-4 text-xs text-gray-500">{{ ctrans("Spend includes what OpenAI charges on our own OpenAI key (BYOK); the OpenRouter boxes only show OpenRouter credit.") }}</p>
+        <p class="-mt-3 text-xs text-gray-500">{{ ctrans("Spend includes what OpenAI charges on our own OpenAI key (BYOK); the OpenRouter boxes only show OpenRouter credit.") }}</p>
 
-        <AiDailySpend v-if="daily.length" :daily="daily" />
+        <div class="grid gap-6 xl:grid-cols-2">
+            <AiDailySpend v-if="daily.length" :daily="daily" />
+            <AiModelSpend v-if="models.length" :models="models" />
+        </div>
 
-        <AiModelSpend v-if="models.length" :models="models" />
-
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
             <table class="min-w-full text-xs">
-                <thead class="bg-gray-50 text-gray-600">
+                <thead class="text-gray-600" :style="{ backgroundColor: `color-mix(in srgb, ${primaryColor} 8%, white)` }">
                     <tr>
                         <th class="px-3 py-2 text-left font-medium">{{ ctrans("Used for") }}</th>
                         <th class="px-3 py-2 text-right font-medium">{{ ctrans("Today") }}</th>
@@ -129,7 +144,7 @@ const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "b
                 <tbody class="divide-y divide-gray-100">
                     <tr v-for="feature in features" :key="feature.feature" class="hover:bg-gray-50">
                         <td class="px-3 py-2">
-                            <Link :href="route('grp.ai.features.show', { feature: feature.feature })" class="text-indigo-600 hover:underline">{{ feature.label }}</Link>
+                            <Link :href="route('grp.ai.features.show', { feature: feature.feature })" class="font-medium hover:underline" :style="{ color: primaryColor }">{{ feature.label }}</Link>
                         </td>
                         <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.today) }}</td>
                         <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.week) }}</td>
@@ -142,7 +157,7 @@ const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "b
                         <td colspan="7" class="px-3 py-4 text-center text-gray-500">{{ ctrans("No AI calls recorded yet") }}</td>
                     </tr>
                 </tbody>
-                <tfoot v-if="features.length" class="bg-gray-50 font-medium">
+                <tfoot v-if="features.length" class="border-t-2 border-gray-200 bg-gray-50 font-semibold text-gray-900">
                     <tr>
                         <td class="px-3 py-2">{{ ctrans("Total") }}</td>
                         <td class="px-3 py-2 text-right tabular-nums">{{ usd(totals.today) }}</td>

@@ -46,9 +46,9 @@ class PrePickPartnerShoppingListItems extends OrgAction
      *
      * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
      */
-    public function handle(Organisation $seller, array $lines): array
+    public function handle(Organisation $seller, array $lines, bool $wholeLinesOnly = false): array
     {
-        return DB::transaction(fn () => $this->prePick($seller, $lines));
+        return DB::transaction(fn () => $this->prePick($seller, $lines, $wholeLinesOnly));
     }
 
     /**
@@ -56,7 +56,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
      *
      * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
      */
-    private function prePick(Organisation $seller, array $lines): array
+    private function prePick(Organisation $seller, array $lines, bool $wholeLinesOnly): array
     {
         $items = PartnerShoppingListItem::query()
             ->whereIn('id', collect($lines)->pluck('id'))
@@ -80,16 +80,23 @@ class PrePickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $promised[$item->stock_id] ??= $this->promisedButNotStaged($seller, $item->stock_id);
-
-            $available = (float) OrgStock::where('organisation_id', $seller->id)
+            $onShelf = (float) OrgStock::where('organisation_id', $seller->id)
                 ->where('stock_id', $item->stock_id)
                 ->lockForUpdate()
-                ->value('quantity_available') - $promised[$item->stock_id];
+                ->value('quantity_available');
+
+            $promised[$item->stock_id] ??= $this->promisedButNotStaged($seller, $item->stock_id);
+
+            $available = $onShelf - $promised[$item->stock_id];
 
             $wanted = round(min((float) ($line['quantity'] ?? $item->quantity), (float) $item->quantity, $available), 3);
             if ($wanted <= 0) {
-                $skipped[] = ['id' => $item->id, 'reason' => 'no stock available to pre-pick'];
+                $skipped[] = ['id' => $item->id, 'reason' => 'no free stock: the shelf is already promised to earlier pre-picks'];
+                continue;
+            }
+
+            if ($wholeLinesOnly && ($wanted < (float) $item->quantity || $available <= (float) $item->quantity)) {
+                $skipped[] = ['id' => $item->id, 'reason' => 'not enough stock for the whole line'];
                 continue;
             }
 
@@ -144,17 +151,12 @@ class PrePickPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * Stock already promised to earlier pre-picks is not on the shelf for anyone else, even though
-     * availability only drops once the warehouse has walked it into the bay.
+     * Stock already promised to earlier pre-picks is not on the shelf for anyone else until the
+     * warehouse walks it into the bay, where it leaves availability on its own.
      */
     private function promisedButNotStaged(Organisation $seller, int $stockId): float
     {
-        return (float) PartnerShoppingListItem::query()
-            ->where('partner_organisation_id', $seller->id)
-            ->where('stock_id', $stockId)
-            ->where('state', ShoppingListItemStateEnum::OPEN)
-            ->whereNotNull('pre_picked_at')
-            ->sum('quantity');
+        return (float) DB::scalar('select '.PartnerShoppingListItem::promisedNotStagedSql((string) $seller->id, (string) $stockId));
     }
 
     public function rules(): array
@@ -190,16 +192,25 @@ class PrePickPartnerShoppingListItems extends OrgAction
      *
      * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
      */
-    public function action(Organisation $seller, array $lines): array
+    public function action(Organisation $seller, array $lines, bool $wholeLinesOnly = false): array
     {
         $this->asAction = true;
         $this->initialisation($seller, ['lines' => $lines]);
 
-        return $this->handle($seller, $this->validatedData['lines']);
+        return $this->handle($seller, $this->validatedData['lines'], $wholeLinesOnly);
     }
 
-    public function htmlResponse(): RedirectResponse
+    /** @param array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>} $result */
+    public function htmlResponse(array $result): RedirectResponse
     {
-        return Redirect::back();
+        if ($result['skipped'] === []) {
+            return Redirect::back();
+        }
+
+        return Redirect::back()->with('notification', [
+            'status'      => $result['pre_picked'] ? 'warning' : 'error',
+            'title'       => __(':count lines not pre-picked', ['count' => count($result['skipped'])]),
+            'description' => collect($result['skipped'])->pluck('reason')->unique()->map(fn (string $reason) => __($reason))->implode('; '),
+        ]);
     }
 }

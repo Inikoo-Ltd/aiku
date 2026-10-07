@@ -45,9 +45,12 @@ class BroadcastMetaChatReaction implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        $windowSecondsLeft = $this->message->metaChatSession->whatsapp_window_seconds_left;
+
         return [
             'message'                       => new MetaChatMessageResource($this->message),
-            'can_send_non_template_message' => $this->message->metaChatSession->can_send_non_template_message,
+            'can_send_non_template_message' => $windowSecondsLeft > 0,
+            'whatsapp_window_seconds_left'  => $windowSecondsLeft,
         ];
     }
 }

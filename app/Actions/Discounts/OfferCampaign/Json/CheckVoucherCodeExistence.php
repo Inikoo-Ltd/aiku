@@ -5,6 +5,7 @@ namespace App\Actions\Discounts\OfferCampaign\Json;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferHasCustomer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -22,7 +23,10 @@ class CheckVoucherCodeExistence extends OrgAction
 
         return Offer::where('shop_id', $offerCampaign->shop_id)
             ->whereRaw('LOWER(voucher) = ?', [strtolower($code)])
-            ->exists();
+            ->exists()
+            || OfferHasCustomer::where('shop_id', $offerCampaign->shop_id)
+                ->where('voucher', strtolower($code))
+                ->exists();
     }
 
     public function rules(): array

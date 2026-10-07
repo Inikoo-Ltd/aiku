@@ -144,10 +144,12 @@ class GetMetaChatSessions
             ]);
 
         if (GetChatSessions::oldestFirst($filters)) {
-            $query->orderByRaw(FlagUrgentChatRequest::waitingSql('meta_chat_sessions'));
+            $query->selectRaw(GetChatSessions::waitingSinceSql('meta_chat_sessions', 'meta_chat_messages', 'meta_chat_session_id').' as waiting_since')
+                ->orderByRaw(FlagUrgentChatRequest::waitingSql('meta_chat_sessions'))
+                ->orderBy('waiting_since');
+        } else {
+            $query->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) DESC');
         }
-
-        $query->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::oldestFirst($filters) ? 'ASC' : 'DESC'));
 
         $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 

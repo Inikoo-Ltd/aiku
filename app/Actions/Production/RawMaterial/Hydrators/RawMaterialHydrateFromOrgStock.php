@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\RawMaterial\Hydrators;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Models\Production\RawMaterial;
@@ -44,7 +45,7 @@ class RawMaterialHydrateFromOrgStock implements ShouldBeUnique
         $rawMaterial->update([
             'quantity_on_location' => $orgStock->quantity_in_locations ?? 0,
             'stock_status'         => $stockStatus,
-            'unit_cost'            => $orgStock->current_supplier_sku_cost ?? $rawMaterial->unit_cost,
+            'unit_cost'            => OrgStockHydrateCurrentSupplierSkuCost::make()->getSupplierUnitCost($orgStock) ?? $rawMaterial->unit_cost,
         ]);
 
         return $rawMaterial;

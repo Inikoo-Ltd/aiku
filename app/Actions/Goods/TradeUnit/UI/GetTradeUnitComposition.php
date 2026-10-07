@@ -13,7 +13,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 /**
  * The triangle seen from its centre: which SKUs pack this trade unit (and how each
  * organisation's warehouse actually packs it), and which products and masters sell it.
- * Read only; each row links to the composition page where that leg is edited.
+ * Each row links to the composition page where that leg is edited; SKOs made in-house
+ * without an artefact (recipe) carry the routes to create or link one.
  */
 class GetTradeUnitComposition
 {
@@ -44,14 +45,77 @@ class GetTradeUnitComposition
             ->where('model_has_trade_units.model_type', 'OrgStock')
             ->where('model_has_trade_units.trade_unit_id', $tradeUnit->id)
             ->whereNull('org_stocks.deleted_at')
-            ->select(['organisations.code as org_code', 'org_stocks.code', 'model_has_trade_units.quantity'])
+            ->select([
+                'org_stocks.id',
+                'organisations.code as org_code',
+                'organisations.slug as organisation_slug',
+                'org_stocks.organisation_id',
+                'org_stocks.code',
+                'org_stocks.is_made_in_house',
+                'model_has_trade_units.quantity',
+            ])
             ->orderBy('organisations.code')
-            ->get()
-            ->map(fn ($orgStock) => [
-                'org_code' => $orgStock->org_code,
-                'code'     => $orgStock->code,
-                'quantity' => (float) $orgStock->quantity,
-            ])->values()->all();
+            ->get();
+
+        $artefactsByOrgStock = DB::table('artefacts')
+            ->join('productions', 'productions.id', '=', 'artefacts.production_id')
+            ->whereIn('artefacts.org_stock_id', $orgStocks->pluck('id'))
+            ->whereNull('artefacts.deleted_at')
+            ->orderBy('artefacts.code')
+            ->get(['artefacts.org_stock_id', 'artefacts.code', 'artefacts.slug', 'productions.slug as production_slug'])
+            ->groupBy('org_stock_id');
+
+        $productionByOrganisation = DB::table('productions')
+            ->whereIn('organisation_id', $orgStocks->pluck('organisation_id')->unique())
+            ->orderBy('id')
+            ->get(['id', 'slug', 'organisation_id'])
+            ->unique('organisation_id')
+            ->keyBy('organisation_id');
+
+        $orgStocks = $orgStocks->map(function ($orgStock) use ($artefactsByOrgStock, $productionByOrganisation, $tradeUnit) {
+            $production = $productionByOrganisation->get($orgStock->organisation_id);
+            $artefacts  = $artefactsByOrgStock->get($orgStock->id, collect());
+
+            return [
+                'id'               => $orgStock->id,
+                'org_code'         => $orgStock->org_code,
+                'code'             => $orgStock->code,
+                'quantity'         => (float) $orgStock->quantity,
+                'is_made_in_house' => (bool) $orgStock->is_made_in_house,
+                'artefacts'        => $artefacts->map(fn ($artefact) => [
+                    'code'  => $artefact->code,
+                    'route' => [
+                        'name'       => 'grp.org.productions.show.crafts.artefacts.show',
+                        'parameters' => [$orgStock->organisation_slug, $artefact->production_slug, $artefact->slug],
+                    ],
+                ])->values()->all(),
+                'missing_artefact' => $orgStock->is_made_in_house && $artefacts->isEmpty() && $production
+                    ? [
+                        'create_route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.create',
+                            'parameters' => [
+                                'organisation' => $orgStock->organisation_slug,
+                                'production'   => $production->slug,
+                                'org_stock'    => $orgStock->id,
+                                'trade_unit'   => $tradeUnit->id,
+                            ],
+                        ],
+                        'artefacts_route' => [
+                            'name'       => 'grp.json.production.artefacts.index',
+                            'parameters' => ['production' => $production->id],
+                        ],
+                        'link_route' => [
+                            'name'       => 'grp.models.production.artefacts.update',
+                            'parameters' => ['production' => $production->id],
+                        ],
+                        'link_data' => [
+                            'org_stock_id'  => $orgStock->id,
+                            'trade_unit_id' => $tradeUnit->id,
+                        ],
+                    ]
+                    : null,
+            ];
+        })->values()->all();
 
         $masterProducts = DB::table('model_has_trade_units')
             ->join('master_assets', 'master_assets.id', '=', 'model_has_trade_units.model_id')

@@ -20,6 +20,7 @@ const props = defineProps<{
 	data: {
 		employee: any
 		pin: any
+		can_edit?: boolean
 		regenerate_pin_route?: string
 		attendance?: {
 			days_present: number
@@ -315,7 +316,7 @@ const attendanceStats = computed(() => {
 					</div>
 				</div>
 				<div v-else class="mt-2 text-sm text-gray-400">{{ trans("No working hours set") }}</div>
-				<Link :href="route('grp.org.hr.employees.edit', { ...route().params, section: 'working_hours' })" @start="() => (isVisitWorkingHours = true)" @finish="() => (isVisitWorkingHours = false)" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
+				<Link v-if="data.can_edit !== false" :href="route('grp.org.hr.employees.edit', { ...route().params, section: 'working_hours' })" @start="() => (isVisitWorkingHours = true)" @finish="() => (isVisitWorkingHours = false)" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
 					<FontAwesomeIcon :icon="faPen" fixed-width /> {{ trans("Edit working hours") }}
 				</Link>
 			</div>
@@ -330,7 +331,7 @@ const attendanceStats = computed(() => {
 						<div class="min-w-0">
 							<div class="font-mono text-2xl font-semibold tracking-[0.3em] text-gray-800">{{ data.pin }}</div>
 							<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-								<button type="button" class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline disabled:opacity-50" :disabled="isRegeneratingPin" @click="regeneratePin">
+								<button v-if="data.can_edit !== false" type="button" class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline disabled:opacity-50" :disabled="isRegeneratingPin" @click="regeneratePin">
 									<FontAwesomeIcon :icon="faSyncAlt" fixed-width :spin="isRegeneratingPin" /> {{ trans("Regenerate") }}
 								</button>
 								<button type="button" class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline" @click="downloadQr">

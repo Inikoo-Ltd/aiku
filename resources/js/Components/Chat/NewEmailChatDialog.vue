@@ -16,11 +16,13 @@ const visible = defineModel<boolean>("visible", { required: true })
 
 const props = defineProps<{
     shopId: number | null
+    toAddress?: boolean
 }>()
 
 const customerId = ref<number | null>(null)
 const selectedCustomer = ref<any | null>(null)
 const isNotACustomer = ref(false)
+const customerSearch = ref("")
 const existingProspect = ref<{ name: string | null, company_name: string | null, owner: string | null } | null>(null)
 let prospectLookupTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -77,7 +79,7 @@ watch(() => form.email, (addresses) => {
 watch(isNotACustomer, () => {
     customerId.value = null
     selectedCustomer.value = null
-    form.email = ""
+    form.email = /^\S+@\S+\.\S+$/.test(customerSearch.value.trim()) ? customerSearch.value.trim() : ""
     form.save_as_prospect = false
 })
 
@@ -101,8 +103,11 @@ const send = () => {
 }
 
 watch(visible, (isVisible) => {
-    if (!isVisible) {
+    if (isVisible) {
+        isNotACustomer.value = !!props.toAddress
+    } else {
         isNotACustomer.value = false
+        customerSearch.value = ""
         customerId.value = null
         selectedCustomer.value = null
         form.reset("email", "save_as_prospect", "contact_name", "company_name")
@@ -125,7 +130,8 @@ watch(visible, (isVisible) => {
                     valueProp="id" labelProp="name" labelAdditionalProp="reference"
                     :placeholder="ctrans('Search customer by name, reference or email')"
                     :noOptionsText="ctrans('No customer found. Search by their name or business, or write to an email address below')"
-                    @selectedObject="(customer: any) => selectedCustomer = customer ?? null">
+                    @selectedObject="(customer: any) => { selectedCustomer = customer ?? null; if (customer) customerSearch = '' }"
+                    @searchChange="(search: string) => customerSearch = search || customerSearch">
                     <template #singlelabel="{ value }">
                         <div class="w-full text-left pl-4 leading-4 truncate mr-2">
                             {{ value.name }}

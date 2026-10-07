@@ -211,6 +211,7 @@ trait WithSendBulkEmails
             'blade-discount-details' => Arr::get($additionalData, 'blade_discount_details'),
             'trigger-type' => Arr::get($additionalData, 'trigger_type'),
             'voucher' => Arr::get($additionalData, 'voucher'),
+            'voucher-end-date' => Arr::get($additionalData, 'voucher_end_date'),
             'customer-id' => Arr::get($additionalData, 'customer_id'),
 
 

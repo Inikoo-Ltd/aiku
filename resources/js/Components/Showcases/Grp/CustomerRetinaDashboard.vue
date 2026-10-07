@@ -3,12 +3,22 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEye } from "@fal"
 import B2BDashboardInsights from "@/Components/Retina/Dashboard/B2BDashboardInsights.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { setColorStyleRootByEl } from "@/Composables/useApp"
+import { onMounted, ref } from "vue"
 
 defineOptions({ inheritAttrs: false })
 
-defineProps<{
+const props = defineProps<{
     data?: Record<string, any> | null
 }>()
+
+const websiteTheme = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+    if (websiteTheme.value && props.data?.theme_colors?.length) {
+        setColorStyleRootByEl(websiteTheme.value, props.data.theme_colors)
+    }
+})
 </script>
 
 <template>
@@ -17,6 +27,8 @@ defineProps<{
             <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
             {{ ctrans("This is exactly what the customer sees on their dashboard. Their buttons are shown but disabled here.") }}
         </div>
-        <B2BDashboardInsights v-if="data" :insights="data" read-only />
+        <div ref="websiteTheme">
+            <B2BDashboardInsights v-if="data" :insights="data" read-only />
+        </div>
     </div>
 </template>

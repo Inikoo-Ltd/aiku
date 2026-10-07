@@ -915,7 +915,7 @@ const newEmailBlockedReason = computed<string | null>(() => {
     if (selectedInbox.value?.can_start_email !== true) {
         return ctrans("This shop has no mailbox connected")
     }
-    if (selectedChannel.value !== "email") {
+    if (!carrierView.value && selectedChannel.value !== "email") {
         return ctrans("Select only the Email squares to write a new email")
     }
 
@@ -2226,7 +2226,7 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
-    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" />
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" :to-address="carrierView" />
 
     <ChatPreviewModal :contact="previewContact" @close="closePreview" @open="openFromPreview" />
 
@@ -2882,7 +2882,11 @@ onUnmounted(() => {
                                         class="shrink-0 truncate rounded bg-violet-50 px-1 font-medium text-violet-700">
                                         {{ ctrans("Documents") }}
                                     </span>
-                                    <span v-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
+                                    <span v-if="c.urgent === 'delivery_instruction'" v-tooltip="ctrans('Tells us how to deliver an order that has not arrived yet, such as a safe place. First in the queue until answered.')"
+                                        class="shrink-0 truncate rounded bg-orange-500 px-1 font-semibold text-white">
+                                        {{ ctrans("Delivery instruction") }}
+                                    </span>
+                                    <span v-else-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
                                         class="shrink-0 truncate rounded bg-red-600 px-1 font-semibold text-white">
                                         {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
                                     </span>

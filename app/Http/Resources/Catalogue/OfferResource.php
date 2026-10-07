@@ -83,6 +83,13 @@ class OfferResource extends JsonResource
                     'type' => $productCategory->type->value,
                 ] : null
             ],
+            'trigger_categories'       => count($offer->triggerCategoryIds()) > 1
+                ? ProductCategory::whereIn('id', $offer->triggerCategoryIds())->get()->map(fn (ProductCategory $category) => [
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'type' => $category->type->value,
+                ])->all()
+                : [],
         ];
 
         $trigger = $offer->trigger;

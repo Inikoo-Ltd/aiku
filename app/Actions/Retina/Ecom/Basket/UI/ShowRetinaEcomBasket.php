@@ -112,7 +112,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'title'      => __('Basket'),
                     'icon'       => 'fal fa-shopping-cart',
                     'afterTitle' => [
-                        'label' => $order ? '#'.$order->slug : ''
+                        'label' => $order ? '#'.$order->reference : ''
                     ]
                 ],
 
@@ -191,7 +191,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'is_basket_created'     => (bool) $order,
 
-                'voucher' => $order ? GetVoucherData::run($order->offer_voucher_id) : null,
+                'voucher' => $order ? GetVoucherData::run($order->offer_voucher_id, $order->customer_id) : null,
                 'order'   => $order ? OrderResource::make($order)->resolve() : null,
                 'summary' => $order
                     ? $this->getOrderBoxStats($order)

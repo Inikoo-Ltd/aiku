@@ -196,7 +196,7 @@ beforeEach(function () {
         $this->product
     ) = createProduct($this->shop);
 
-    $product2 = $this->shop->products()->skip(1)->first();
+    $product2 = $this->shop->products()->whereKeyNot($this->product->id)->orderBy('id')->first();
 
     if (!$product2) {
         $productData = array_merge(
@@ -3417,6 +3417,24 @@ test('org stock notes and consumables reach the picking screen', function () {
         ->toBe([]);
 });
 
+test('picking rows sharing a location keep a stable order by code then id', function () {
+    /** @var DeliveryNote $deliveryNote */
+    $deliveryNote = DeliveryNote::has('deliveryNoteItems')->firstOrFail();
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    request()->query->set('sort', 'picking_position');
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true);
+    $itemsQuery = collect(DB::getQueryLog())->pluck('query')->last(fn ($sql) => str_contains($sql, 'order by'));
+    DB::disableQueryLog();
+
+    request()->query->remove('sort');
+
+    expect($itemsQuery)->toContain('order by "picking_position" asc, "org_stocks"."code" asc, "delivery_note_items"."id" asc');
+});
+
 test('repair ial01 org stock consumables dry run writes nothing', function () {
     $result = RepairIal01OrgStockConsumables::run(apply: false);
 
@@ -4154,7 +4172,7 @@ test('replacing a waiting item on a replacement note keeps it free', function ()
         'products' => [['id' => $this->product2->id, 'quantity' => 1]],
     ]);
 
-    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->first();
+    $replacement = $order->refresh()->transactions()->where('model_id', $this->product2->id)->where('is_gift', true)->first();
 
     expect($replacement)->not->toBeNull()
         ->and((float)$replacement->net_amount)->toBe(0.0)

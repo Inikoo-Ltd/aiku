@@ -15,6 +15,7 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\RetinaAction;
+use App\Actions\Retina\UI\Dashboard\StoreRetinaDashboardBasketAdd;
 use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
@@ -23,6 +24,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -137,6 +139,29 @@ class RepeatRetinaEcomOrder extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer, $order);
+        $result = $this->handle($this->customer, $order);
+
+        $basket = $this->getOrderInBasket($this->customer);
+        if ($basket && $section = $this->validatedData['dashboard_section'] ?? null) {
+            StoreRetinaDashboardBasketAdd::run(
+                $this->customer,
+                $section,
+                $basket->id,
+                $basket->transactions()
+                    ->where('model_type', 'Product')
+                    ->whereIn('model_id', $order->transactions()->where('model_type', 'Product')->select('model_id'))
+                    ->pluck('quantity_ordered', 'model_id')
+                    ->all()
+            );
+        }
+
+        return $result;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'dashboard_section' => ['sometimes', 'nullable', Rule::in(StoreRetinaDashboardBasketAdd::SECTIONS)],
+        ];
     }
 }

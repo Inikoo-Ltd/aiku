@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { computed, onBeforeUnmount, ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -15,8 +15,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLifeRing, faCheckSquare, faSquare, faQuestionCircle, faClipboardList } from "@fal"
-library.add(faLifeRing, faCheckSquare, faSquare, faQuestionCircle, faClipboardList)
+import { faLifeRing, faCheckSquare, faSquare, faQuestionCircle, faClipboardList, faChartBar } from "@fal"
+library.add(faLifeRing, faCheckSquare, faSquare, faQuestionCircle, faClipboardList, faChartBar)
 
 interface RescueBucket {
 	bucket: "out" | "w1" | "w2" | "w3"
@@ -25,6 +25,8 @@ interface RescueBucket {
 	cost: number
 	order_lines: number
 	order_cost: number
+	cheapest: number
+	order_cheapest: number
 	left_out: Record<string, number>
 }
 
@@ -37,8 +39,11 @@ const props = withDefaults(
 		buckets: RescueBucket[]
 		size?: string
 		isHub?: boolean
+		onList?: { lines: number; cost: number } | null
+		analyseUrl?: string | null
+		inline?: boolean
 	}>(),
-	{ size: "s", isHub: false }
+	{ size: "s", isHub: false, onList: null, inline: false }
 )
 
 const locale = useLocaleStore()
@@ -51,7 +56,7 @@ const steps = [
 ]
 if (props.isHub) {
 	steps[1] = "Checking what :partner sells"
-	steps[3] = "Adding the lines to the shopping list"
+	steps[3] = "Adding the lines to the ongoing PO"
 }
 
 const buttonLabel = computed(() => {
@@ -100,6 +105,20 @@ const estimate = computed(() =>
 		)
 )
 const isCappedByBudget = computed(() => !!budget.value && budget.value < estimate.value.cost)
+const cheapestLine = computed(() =>
+	Math.min(
+		...availableBuckets.value
+			.filter((bucket) => selectedBuckets.value.includes(bucket.bucket))
+			.map((bucket) => (worstOnly.value ? bucket.order_cheapest : bucket.cheapest))
+			.filter((cost) => cost > 0)
+	)
+)
+const isBudgetUsedUp = computed(() => isCappedByBudget.value && Number.isFinite(cheapestLine.value) && budget.value! < cheapestLine.value)
+const estimatedLines = computed(() =>
+	isCappedByBudget.value
+		? Math.max(1, Math.round((estimate.value.lines * budget.value!) / estimate.value.cost))
+		: estimate.value.lines
+)
 
 const skippedLines = computed(() =>
 	availableBuckets.value
@@ -113,11 +132,11 @@ const leftOutLabels = computed<Record<string, string>>(() => ({
 	not_selling: ctrans("Not selling any more"),
 	not_stocked: ctrans(":partner does not stock them", { partner: props.partnerName }),
 	on_draft: props.isHub
-		? ctrans("Already on the shopping list")
+		? ctrans("Already on the ongoing PO")
 		: props.draftReference
 			? ctrans("Already on :reference", { reference: props.draftReference })
 			: ctrans("Already on the order being prepared"),
-	coming: ctrans("Already ordered from someone, on the way or on the shopping list"),
+	coming: ctrans("Already ordered from someone, on the way or on the ongoing PO"),
 	partner_no_forecast: ctrans(
 		"Too little sales history at :partner to know what they can spare",
 		{ partner: props.partnerName }
@@ -222,16 +241,30 @@ onBeforeUnmount(stopTimer)
 </script>
 
 <template>
-	<span class="inline-flex">
+	<div :class="inline ? 'block' : 'inline-flex'">
 		<Button
+			v-if="!inline"
 			:label="buttonLabel"
 			:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
 			:size="size"
 			:loading="isWorking"
 			@click="isAsking = true" />
 
-		<Modal :isOpen="isAsking" width="w-full max-w-md md:max-w-2xl" @onClose="isAsking = false">
-			<form class="space-y-4 px-2 py-2 text-sm text-gray-700" @submit.prevent="prepare">
+		<component
+			:is="inline ? 'section' : Modal"
+			v-bind="
+				inline
+					? { class: 'rounded-lg border border-gray-200 bg-white p-4 shadow-sm' }
+					: {
+							isOpen: isAsking,
+							width: 'w-full max-w-md md:max-w-2xl',
+							onOnClose: () => (isAsking = false),
+						}
+			">
+			<form
+				class="space-y-4 text-sm text-gray-700"
+				:class="inline ? '' : 'px-2 py-2'"
+				@submit.prevent="prepare">
 				<div>
 					<div class="font-semibold text-gray-900">
 						{{ buttonLabel }}
@@ -251,7 +284,7 @@ onBeforeUnmount(stopTimer)
 					</p>
 				</div>
 
-				<fieldset class="space-y-1.5">
+				<fieldset :class="inline ? 'grid gap-2 sm:grid-cols-2 xl:grid-cols-4' : 'space-y-1.5'">
 					<legend
 						class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500">
 						{{ ctrans("What to add") }}
@@ -340,16 +373,37 @@ onBeforeUnmount(stopTimer)
 								aria-hidden="true" />
 						</button>
 					</span>
-					<span class="flex items-baseline gap-2 tabular-nums">
+					<span v-if="isBudgetUsedUp" class="text-xs text-red-600">{{
+						ctrans("Too small, the cheapest line is :cost", {
+							cost: wholeMoney(cheapestLine),
+						})
+					}}</span>
+					<span v-else class="flex items-baseline gap-2 tabular-nums">
 						<span class="text-xs text-gray-500">{{
-							ctrans(isCappedByBudget ? "up to :lines lines" : ":lines lines", {
-								lines: locale.number(estimate.lines),
+							ctrans(isCappedByBudget ? "about :lines lines" : ":lines lines", {
+								lines: locale.number(estimatedLines),
 							})
 						}}</span>
 						<span class="text-base font-semibold text-gray-900"
 							>≈ {{ wholeMoney(isCappedByBudget ? budget : estimate.cost) }}</span
 						>
 					</span>
+				</div>
+
+				<div
+					v-if="onList"
+					class="flex items-center justify-between px-3 text-xs tabular-nums text-gray-500">
+					<span>{{
+						ctrans("On the ongoing PO now: :lines lines ≈ :cost", {
+							lines: locale.number(onList.lines),
+							cost: wholeMoney(onList.cost),
+						})
+					}}</span>
+					<span v-if="!isBudgetUsedUp">{{
+						ctrans("After this ≈ :cost", {
+							cost: wholeMoney(onList.cost + (isCappedByBudget ? budget! : estimate.cost)),
+						})
+					}}</span>
 				</div>
 
 				<div v-if="showWhy" class="rounded-lg border border-gray-200 px-3 py-2.5 text-xs">
@@ -403,30 +457,40 @@ onBeforeUnmount(stopTimer)
 						{{
 							isHub
 								? ctrans(
-										"For the whole shopping list. A line that would go over it is skipped, cheaper ones after it still get in."
+										"For the lines added this time, run it again to add more. A line that would go over it is skipped, cheaper ones after it still get in."
 									)
 								: ctrans(
-										"For the whole order. A line that would go over it is skipped, cheaper ones after it still get in."
+										"For the lines added this time, run it again to add more. A line that would go over it is skipped, cheaper ones after it still get in."
 									)
 						}}
 					</span>
 				</label>
 
-				<div class="flex justify-end gap-2">
+				<div class="flex items-center justify-end gap-2">
+					<Link
+						v-if="analyseUrl"
+						:href="analyseUrl"
+						class="mr-auto inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:underline"
+						@click="isAsking = false">
+						<FontAwesomeIcon icon="fal fa-chart-bar" fixed-width aria-hidden="true" />
+						{{ ctrans("More details") }}
+						<span aria-hidden="true">→</span>
+					</Link>
 					<Button
+						v-if="!inline"
 						:label="ctrans('Cancel')"
 						type="tertiary"
 						size="s"
 						@click="isAsking = false" />
 					<Button
 						:label="ctrans('Prepare')"
-						:disabled="!estimate.lines"
+						:disabled="!estimate.lines || isBudgetUsedUp"
 						:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
 						size="s"
 						nativeType="submit" />
 				</div>
 			</form>
-		</Modal>
+		</component>
 
 		<Modal
 			:isOpen="isWorking"
@@ -444,7 +508,7 @@ onBeforeUnmount(stopTimer)
 					{{
 						isHub
 							? ctrans(
-									"This can take a few seconds, the shopping list opens when it is ready"
+									"This can take a few seconds, the ongoing PO opens when it is ready"
 								)
 							: ctrans(
 									"This can take a few seconds, the purchase order opens when it is ready"
@@ -453,5 +517,5 @@ onBeforeUnmount(stopTimer)
 				</div>
 			</div>
 		</Modal>
-	</span>
+	</div>
 </template>

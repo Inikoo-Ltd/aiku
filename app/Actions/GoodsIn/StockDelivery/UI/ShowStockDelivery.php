@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryInvoiceCosting;
 use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
@@ -346,6 +347,22 @@ class ShowStockDelivery extends OrgAction
             ],
         ];
 
+        $cancelButton = [
+            'label'   => __('Cancel'),
+            'tooltip' => __('Cancel Stock Delivery'),
+            'type'    => 'button',
+            'style'   => 'delete',
+            'icon'    => 'fal fa-times-circle',
+            'key'     => 'cancel_stock_delivery',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.stock-delivery.cancel',
+                'parameters' => [
+                    'stockDelivery' => $stockDelivery->id,
+                ],
+            ],
+        ];
+
         $actions = match ($stockDelivery->state) {
             StockDeliveryStateEnum::IN_PROCESS,
             StockDeliveryStateEnum::CONFIRMED,
@@ -444,38 +461,10 @@ class ShowStockDelivery extends OrgAction
                         ],
                     ],
                 ],
-                [
-                    'label'   => __('Cancel'),
-                    'tooltip' => __('Cancel Stock Delivery'),
-                    'type'    => 'button',
-                    'style'   => 'delete',
-                    'icon'    => 'fal fa-times-circle',
-                    'key'     => 'cancel_stock_delivery',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.stock-delivery.cancel',
-                        'parameters' => [
-                            'stockDelivery' => $stockDelivery->id,
-                        ],
-                    ],
-                ],
+                $cancelButton,
             ],
             StockDeliveryStateEnum::CHECKED => $hasPlacements ? [] : [
-                [
-                    'label'   => __('Cancel'),
-                    'tooltip' => __('Cancel Stock Delivery'),
-                    'type'    => 'button',
-                    'style'   => 'delete',
-                    'icon'    => 'fal fa-times-circle',
-                    'key'     => 'cancel_stock_delivery',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.stock-delivery.cancel',
-                        'parameters' => [
-                            'stockDelivery' => $stockDelivery->id,
-                        ],
-                    ],
-                ],
+                $cancelButton,
             ],
             StockDeliveryStateEnum::BOOKED_IN => [
                 [
@@ -496,6 +485,11 @@ class ShowStockDelivery extends OrgAction
             ],
             default => [],
         };
+
+        if (CancelStockDelivery::canBeCancelled($stockDelivery) && $stockDelivery->hasNoProducts()) {
+            $actions = array_values(array_filter($actions, fn (array $action) => !in_array($action['key'], ['dispatch_stock_delivery', 'receive_stock_delivery', 'cancel_stock_delivery'])));
+            array_unshift($actions, $cancelButton);
+        }
 
         if ($stockDelivery->isManagedByPartner()) {
             $actions = $stockDelivery->state === StockDeliveryStateEnum::DISPATCHED

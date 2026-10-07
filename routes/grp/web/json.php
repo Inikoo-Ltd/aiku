@@ -39,6 +39,7 @@ use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
+use App\Actions\Discounts\Offer\Json\GetVoucherCustomerListPreview;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInShop;
@@ -127,6 +128,7 @@ use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Production\ArtefactDepartment\UI\IndexArtefactDepartments;
+use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ManufactureTask\Json\GetManufactureTasks;
 use App\Actions\Production\RawMaterial\Json\GetRawMaterials;
@@ -223,6 +225,7 @@ Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNo
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop}/dynamic-block-email-templates', GetDynamicBlockEmailTemplates::class)->name('shop.dynamic_block_email_templates');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
+Route::get('shop/{shop:id}/voucher-customer-list-preview', GetVoucherCustomerListPreview::class)->name('shop.voucher_customer_list_preview');
 
 
 Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepartments::class)->name('shop.department_and_sub_departments');
@@ -292,6 +295,7 @@ Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->n
 Route::get('artefacts/{artefact:id}/tags', [IndexTags::class, 'inArtefact'])->name('artefacts.tags.index');
 Route::get('production/{production:id}/artefact-departments', [IndexArtefactDepartments::class, 'inJson'])->name('production.artefact_departments.index');
 Route::get('production/{production:id}/artefact-families', [IndexArtefactFamilies::class, 'inJson'])->name('production.artefact_families.index');
+Route::get('production/{production:id}/artefacts', [IndexArtefacts::class, 'inJson'])->name('production.artefacts.index');
 Route::get('production/{production:id}/manufacture-tasks', GetManufactureTasks::class)->name('production.manufacture_tasks.index');
 Route::get('production/{production:id}/raw-materials', GetRawMaterials::class)->name('production.raw_materials.index');
 Route::get('brands', GetBrands::class)->name('brands.index');

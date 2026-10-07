@@ -177,6 +177,7 @@ class IndexPartnerShippingList extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
+                DB::raw(PartnerShoppingListItem::promisedNotStagedSql((string) $seller->id, 'stocks.id').' as stock_promised'),
                 DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
                 DB::raw('coalesce(customer_demand.lines, 0) as customer_demand_lines'),
                 'stocks.code as stock_code',
@@ -191,6 +192,7 @@ class IndexPartnerShippingList extends OrgAction
                 'job_orders.slug as job_order_slug',
                 'job_orders.state as job_order_state',
                 'job_order_artisans.contact_name as job_order_artisan',
+                DB::raw("(select json_agg(json_build_object('artisan', sub_job_artisans.contact_name, 'quantity', job_order_items.quantity) order by job_order_items.id) from job_order_items left join employees as sub_job_artisans on sub_job_artisans.id = job_order_items.employee_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_sub_jobs"),
                 DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
                 DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_item_tasks.state = 'in_progress') as is_in_progress"),
                 DB::raw("(select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as is_finished"),
@@ -211,6 +213,14 @@ class IndexPartnerShippingList extends OrgAction
                     $item->packed_in,
                     $item->batch_size
                 );
+                $subJobs              = collect(json_decode($item->job_order_sub_jobs ?? '[]', true));
+                $item->job_order_sub_jobs = $subJobs->count() > 1
+                    ? $subJobs->values()->map(fn (array $subJob, int $index) => [
+                        'reference' => $item->job_order_reference.'-'.chr(65 + $index),
+                        'artisan'   => $subJob['artisan'],
+                        'quantity'  => (float) $subJob['quantity'],
+                    ])->all()
+                    : [];
                 $item->order_quantum  = BatchedUnitsForDemand::make()->quantumInSkos($item->packed_in, $item->batch_size);
                 $item->is_hitchhiker  = !$item->job_order_id
                     && $item->order_quantum > 1

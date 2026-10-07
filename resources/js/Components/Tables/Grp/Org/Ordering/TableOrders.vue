@@ -34,6 +34,7 @@ const props = defineProps<{
     },
     showMarkerFeature?: boolean
     tab?: string
+    useTopPagination?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -73,6 +74,8 @@ function orderRoute(order: Order) {
         case "grp.org.shops.show.discounts.campaigns.offer.show":
         case "grp.org.shops.show.discounts.campaigns.gift.show":
         case "grp.org.shops.show.discounts.campaigns.amnesty.show":
+        case "grp.org.shops.show.billables.packagings.show":
+        case "grp.org.shops.show.billables.leaflets.show":
             return route(
                 "grp.org.shops.show.ordering.orders.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
@@ -216,7 +219,7 @@ const setNewMarkerDate = (newVal: Date) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" :useTopPagination="useTopPagination" class="mt-5">
         <template #add-on-button-in-before>
             <DatePicker
                 v-tooltip="isValidMark ? ctrans('Order before :_selectedDate will be marked', {_selectedDate: getDateLocaleString(markerDate)}) : ctrans('Nothing is marked')"

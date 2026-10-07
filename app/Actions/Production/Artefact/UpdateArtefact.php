@@ -47,6 +47,11 @@ class UpdateArtefact extends OrgAction
 
         $artefact = $this->update($artefact, $modelData, ['data', 'settings']);
 
+        if ($artefact->wasChanged('org_stock_id')) {
+            $artefact->unsetRelation('orgStock');
+            $artefact->orgStock?->update(['is_made_in_house' => true]);
+        }
+
         if ($artefact->wasChanged('artefact_department_id')) {
             $artefact->unsetRelation('artefactDepartment');
             foreach (array_filter([$previousDepartment, $artefact->artefactDepartment]) as $department) {

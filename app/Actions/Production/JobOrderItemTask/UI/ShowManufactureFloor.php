@@ -168,6 +168,7 @@ class ShowManufactureFloor extends OrgAction
             'Org/Production/ManufactureFloor',
             [
                 'title'       => __('Manufacture floor'),
+                'server_time' => now()->toIso8601ZuluString('millisecond'),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'pageHead'    => [
                     'icon'  => [

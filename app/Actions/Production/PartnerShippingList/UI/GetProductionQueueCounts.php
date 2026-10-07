@@ -60,6 +60,8 @@ class GetProductionQueueCounts extends OrgAction
             'pre_pick' => (clone $openItems)
                 ->whereNull('partner_shopping_list_items.pre_picked_at')
                 ->whereNotNull('partner_shopping_list_items.partner_organisation_id')
+                ->whereNull('partner_shopping_list_items.job_order_id')
+                ->whereNull('partner_shopping_list_items.preparing_at')
                 ->where('org_stocks.quantity_available', '>', 0)
                 ->count(),
         ];

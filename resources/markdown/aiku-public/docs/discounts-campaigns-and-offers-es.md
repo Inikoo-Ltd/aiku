@@ -1,8 +1,8 @@
 ---
 title: Descuentos: campañas y ofertas
 summary: Cómo se organizan en campañas los descuentos de una tienda, cómo se construye y programa cada oferta individual, y cómo acaba mostrándose el descuento en un pedido.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-10-06
+source_date: 2026-10-06
 tags: discounts, offers, campaigns
 category: shop
 ---
@@ -49,6 +49,8 @@ La oferta completa, una vez construida, también incluye:
 - Una o varias **allowances** — la recompensa en sí. Cada allowance tiene un tipo: **Percentage Off**, **Amount Off**, **Free Items**, **Gift**, **Shipping**, o una combinación **Mixed**.
 
 El disparador de una oferta — lo que un cliente tiene que hacer para ganarla — depende del tipo de campaña en la que vive. Una campaña de product offers se dispara al pedir un producto dado o una cantidad de él; una campaña de category offers se dispara por un departamento, subdepartamento, familia o categoría; una campaña de shop offers se dispara por el importe total del pedido en toda la tienda; una campaña de first order se dispara por ser el primer pedido de un cliente; una campaña de vouchers se dispara al introducir un código de vale; y una campaña de shipping otorga una allowance de envío gratuito en lugar de una reducción de precio.
+
+Cuando eliges más de una categoría en **Create Category Offer**, decides cómo funcionan. **One offer: the selected categories count together** crea una sola oferta: lo que el cliente pide en todas las categorías elegidas se suma para alcanzar el disparador, y el descuento se aplica a todo lo de esas categorías. Por ejemplo, elige cuatro familias con **By minimum amount** de £250 y un 25 %, y £100 de una familia más £150 de otra dan un 25 % de descuento en ambas. **One offer per category** crea una oferta aparte por cada categoría, y cada una tiene que alcanzar el disparador por sí sola. El importe mínimo se mide antes de descuentos, así que la oferta se mantiene una vez aplicada.
 
 ## Dónde se crea realmente cada oferta
 

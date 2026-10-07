@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import type { Component } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -25,6 +25,10 @@ import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatch
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Checkbox from "primevue/checkbox"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
+import Image from "@common/Components/Image.vue"
 import RadioButton from "primevue/radiobutton"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
@@ -36,6 +40,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
 import type { OrderingLevel } from "@/Composables/useOrderingLevel"
 import { capitalize } from "@/Composables/capitalize"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
@@ -44,7 +49,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -80,6 +85,7 @@ const props = defineProps < {
     pageHead: PageHeadingTypes
     data: {
         data: {
+            id: number
             state: string
             state_label: string
             is_partner?: boolean
@@ -102,6 +108,7 @@ const props = defineProps < {
         code: string | null
         name: string | null
         quantity_ordered: number | string
+        image_thumbnail: object | null
     }[]
     tabs: {
         current: string
@@ -176,9 +183,21 @@ const props = defineProps < {
         preview_template: { header: string[], rows: Record<string, string>[] }
         upload_spreadsheet: any
     } | null
+	last_edit: { user: string | null, at: string } | null
 }>()
 
 const locale = useLocaleStore()
+
+const lastEdit = ref(props.last_edit)
+const lastEditChannel = `grp.purchase_order.${props.data.data.id}`
+onMounted(() => {
+	window.Echo?.private(lastEditChannel).listen(".last-edited", (edit: { user: string | null, at: string }) => {
+		if (!lastEdit.value || edit.at >= lastEdit.value.at) {
+			lastEdit.value = edit
+		}
+	})
+})
+onUnmounted(() => window.Echo?.leave(lastEditChannel))
 
 const metrics = computed(() => {
 	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
@@ -339,7 +358,47 @@ const deliveryScopeModalOpen = ref(false)
 const deliveryItemsModalOpen = ref(false)
 const estimatedDeliveryDateAction = ref<any>(null)
 const newStockDeliveryAction = ref<any>(null)
+let partnerOrderPoll: ReturnType<typeof setInterval> | null = null
+const stopPartnerOrderPoll = () => {
+	if (partnerOrderPoll) {
+		clearInterval(partnerOrderPoll)
+		partnerOrderPoll = null
+	}
+}
+watch(
+	() => props.data.data.is_partner && props.data.data.state === "submitted",
+	(isWaitingForPartnerOrder) => {
+		stopPartnerOrderPoll()
+		if (!isWaitingForPartnerOrder) {
+			return
+		}
+		let attempts = 0
+		partnerOrderPoll = setInterval(() => {
+			if (++attempts > 30) {
+				stopPartnerOrderPoll()
+				return
+			}
+			router.reload()
+		}, 4000)
+	},
+	{ immediate: true }
+)
+onUnmounted(stopPartnerOrderPoll)
+
 const selectedDeliveryItemIds = ref<number[]>([])
+const deliveryItemsSearch = ref("")
+
+const filteredDeliveryItems = computed(() => {
+	const search = deliveryItemsSearch.value.trim().toLowerCase()
+
+	if (!search) {
+		return props.delivery_items
+	}
+
+	return props.delivery_items.filter((item) =>
+		(item.code ?? "").toLowerCase().includes(search) || (item.name ?? "").toLowerCase().includes(search)
+	)
+})
 
 const formatDate = (date: Date | null): string | null => {
 	if (!date) {
@@ -354,7 +413,8 @@ const formatDate = (date: Date | null): string | null => {
 }
 
 const submitDialogAction = ref<any>(null)
-const sendVia = ref<string | null>(null)
+const doNotSend = "none"
+const sendVia = ref<string>(doNotSend)
 
 const submitPurchaseOrder = (action: any) => {
 	if (action.send_channels?.length && !submitDialogAction.value) {
@@ -363,12 +423,12 @@ const submitPurchaseOrder = (action: any) => {
 		return
 	}
 
-	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value }, {
+	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value === doNotSend ? null : sendVia.value }, {
 		onStart: () => { submitLoading.value = true },
 		onFinish: () => {
 			submitLoading.value = false
 			submitDialogAction.value = null
-			sendVia.value = null
+			sendVia.value = doNotSend
 		},
 		onError: () => {
 			notify({
@@ -461,7 +521,7 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 		message: ctrans("Are you sure the supplier confirmed they will fulfil this purchase order?"),
 		header: ctrans("Confirm Purchase Order"),
 		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: ctrans("Confirm") },
+		acceptProps: { label: ctrans("Yes, confirm"), class: "buttonPrimary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {
 				estimated_receiving_date: formatDate(estimatedReceivingDate.value),
@@ -540,6 +600,7 @@ const confirmUndoConfirmPurchaseOrder = (action: any) => {
 const openDeliveryScopeModal = (action: any) => {
 	newStockDeliveryAction.value = action
 	selectedDeliveryItemIds.value = []
+	deliveryItemsSearch.value = ""
 	deliveryScopeModalOpen.value = true
 }
 
@@ -564,10 +625,10 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 			deliveryItemsModalOpen.value = false
 		},
 		onFinish: () => { newStockDeliveryLoading.value = false },
-		onError: () => {
+		onError: (errors) => {
 			notify({
-				title: ctrans("Something went wrong"),
-				text: ctrans("Failed to create delivery"),
+				title: ctrans("Failed to create delivery"),
+				text: Object.values(errors)[0] || ctrans("Something went wrong"),
 				type: "error",
 			})
 		},
@@ -630,6 +691,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #afterTitle2>
+			<span v-if="lastEdit" class="text-xs font-normal text-gray-500">
+				{{ ctrans("Last edited by :user on :date", { user: lastEdit.user ?? "?", date: useFormatTime(lastEdit.at, { formatTime: "short-datetime" }) }) }}
+			</span>
+		</template>
 		<template #other>
 			<Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
 		</template>
@@ -710,7 +776,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 
 		<template #button-new-stock-delivery="{ action }">
+			<span v-if="action.disabled_reason" v-tooltip="action.disabled_reason" class="inline-flex cursor-not-allowed items-center gap-2">
+				<Button
+					:style="action.style"
+					:label="action.label"
+					:icon="action.icon"
+					disabled
+					class="pointer-events-none"
+				/>
+			</span>
 			<Button
+				v-else
 				:style="action.style"
 				:label="action.label"
 				:icon="action.icon"
@@ -1075,7 +1151,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				</span>
 			</label>
 			<label class="flex cursor-pointer items-start gap-3">
-				<RadioButton v-model="sendVia" :value="null" inputId="purchase-order-send-none" />
+				<RadioButton v-model="sendVia" :value="doNotSend" inputId="purchase-order-send-none" />
 				<span class="text-sm text-gray-700">{{ ctrans("Don't send, I will send it myself") }}</span>
 			</label>
 			<p class="text-xs text-gray-500">{{ ctrans("Replies arrive in the procurement inbox.") }}</p>
@@ -1084,7 +1160,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<template #footer>
 			<Button :label="ctrans('Cancel')" type="secondary" @click="submitDialogAction = null" />
 			<Button
-				:label="sendVia ? ctrans('Submit and send') : ctrans('Submit')"
+				:label="sendVia !== doNotSend ? ctrans('Submit and send email') : ctrans('Submit')"
 				type="save"
 				:icon="faPaperPlane"
 				:loading="submitLoading"
@@ -1175,13 +1251,23 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
+		<IconField class="mb-3">
+			<InputIcon>
+				<FontAwesomeIcon :icon="faSearch" fixed-width aria-hidden="true" />
+			</InputIcon>
+			<InputText v-model="deliveryItemsSearch" class="w-full" :placeholder="ctrans('Search code or name')" />
+		</IconField>
+
 		<div class="flex max-h-[60vh] flex-col divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200">
 			<label
-				v-for="item in delivery_items"
+				v-for="item in filteredDeliveryItems"
 				:key="item.id"
 				class="flex cursor-pointer items-center gap-3 p-3 hover:bg-gray-50"
 			>
 				<Checkbox v-model="selectedDeliveryItemIds" :value="item.id" />
+				<div class="h-12 w-12 flex-none overflow-hidden rounded border border-gray-100">
+					<Image :src="item.image_thumbnail" imageCover class="h-12 w-12" />
+				</div>
 				<span class="min-w-0 flex-1">
 					<span class="block font-medium text-gray-800">{{ item.code || ctrans("No code") }}</span>
 					<span class="block truncate text-sm text-gray-500">{{ item.name }}</span>
@@ -1190,6 +1276,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					{{ ctrans("Quantity") }}: {{ locale.number(Number(item.quantity_ordered)) }}
 				</span>
 			</label>
+			<p v-if="filteredDeliveryItems.length === 0" class="p-4 text-center text-sm text-gray-500">
+				{{ ctrans("No items match your search") }}
+			</p>
 		</div>
 
 		<template #footer>
@@ -1199,7 +1288,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				@click="deliveryItemsModalOpen = false; deliveryScopeModalOpen = true"
 			/>
 			<Button
-				:label="ctrans('Create delivery')"
+				:label="selectedDeliveryItemIds.length === 1
+					? ctrans('Create delivery (1 SKO)')
+					: ctrans('Create delivery (:count SKOs)', { count: selectedDeliveryItemIds.length })"
 				type="create"
 				:loading="newStockDeliveryLoading"
 				:disabled="selectedDeliveryItemIds.length === 0"

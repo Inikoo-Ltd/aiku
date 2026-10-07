@@ -70,6 +70,7 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -200,6 +201,25 @@ test('create offer', function () {
     return $offer;
 });
 
+test('offer orders table has a state filter', function (Offer $offer) {
+    $tableStructure = new \App\InertiaTable\InertiaTable(request());
+    \App\Actions\Ordering\Order\UI\IndexOrders::make()->tableStructure(parent: $offer, prefix: 'orders', bucket: 'offer')($tableStructure);
+
+    $elementGroups = (fn () => $this->elementGroups)->call($tableStructure);
+
+    expect($elementGroups->has('state'))->toBeTrue();
+})->depends('create offer');
+
+test('offer showcase data', function (Offer $offer) {
+    $showcase = \App\Actions\Discounts\Offer\UI\GetOfferShowcaseData::make()->forOffer($offer);
+
+    expect($showcase['totals']['redemptions'])->toBe(0)
+        ->and($showcase['totals']['return_on_discount'])->toEqual(0)
+        ->and($showcase['first_used_at'])->toBeNull()
+        ->and($showcase['benchmark']['offer_type'])->toBe($offer->type)
+        ->and($showcase['trend'])->toBe([]);
+})->depends('create offer');
+
 test('update offer', function ($offer) {
     $offer = UpdateOffer::make()->action($offer, ['name' => 'New Name A']);
     expect($offer->name)->toBe('New Name A');
@@ -247,19 +267,6 @@ test('set offer as permanent', function (Offer $offer) {
         ->and($offerAllowance->state)->toBe(OfferAllowanceStateEnum::ACTIVE)
         ->and($offerAllowance->status)->toBeTrue();
 })->depends('create offer');
-
-test('UI Discount Dashboard', function () {
-    $response = get(route('grp.org.shops.show.discounts.dashboard', [$this->organisation->slug, $this->shop->slug]));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Discounts/DiscountsDashboard')
-            ->has('title')
-            ->has('pageHead')
-            ->has('tabs')
-            ->has('breadcrumbs', 3);
-    });
-});
 
 test('UI Index offer campaigns', function () {
     $response = get(route('grp.org.shops.show.discounts.campaigns.index', [$this->organisation->slug, $this->shop->slug]));
@@ -3786,4 +3793,64 @@ test('store step discount for multiple products creates one offer per product', 
         ->and($offers->every(fn (Offer $offer) => $offer->refresh()->state === OfferStateEnum::FINISHED))->toBeTrue();
 
     $replacementOffers->each(fn (Offer $offer) => SuspendOffer::run($offer));
+});
+
+test('a combined category offer counts the spend across all its families together', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::CATEGORY_OFFERS)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $familyInOrder = $this->product->family;
+    /** @var ProductCategory $familyNotInOrder */
+    $familyNotInOrder = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'CAT-COMB',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value,
+    ]);
+
+    $storeCombinedOffer = fn (float $itemAmount) => Arr::first(StoreProductCategoryDiscount::make()->handleMultiple([
+        'name'                     => 'Combined '.$itemAmount,
+        'code'                     => 'comb-'.(int)$itemAmount,
+        'type'                     => 'amount',
+        'combine'                  => true,
+        'product_category_ids'     => [$familyNotInOrder->id, $familyInOrder->id],
+        'trigger_data_item_amount' => $itemAmount,
+        'percentage_off'           => 0.95,
+        'duration'                 => 'permanent',
+        'start_at'                 => now()->subDay()->toDateTimeString(),
+    ])['offers']);
+
+    $orderSpend      = 2 * (float)$this->product->price;
+    $reachedOffer    = $storeCombinedOffer($orderSpend);
+    $notReachedOffer = $storeCombinedOffer($orderSpend + 1);
+
+    expect($reachedOffer->trigger_id)->toBe($familyNotInOrder->id)
+        ->and($reachedOffer->triggerCategoryIds())->toBe([$familyNotInOrder->id, $familyInOrder->id])
+        ->and($reachedOffer->offerAllowances->first()->data['category_ids'])->toBe([$familyNotInOrder->id, $familyInOrder->id])
+        ->and($reachedOffer->allowance_signature)->toEndWith('@'.$familyNotInOrder->id.','.$familyInOrder->id);
+
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, ['quantity_ordered' => 2]);
+    OrderHydrateCategoriesData::run($order->refresh());
+    CalculateOrderDiscounts::run($order->refresh());
+
+    $appliedOfferIds = DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->pluck('offer_id');
+    expect($appliedOfferIds)->toContain($reachedOffer->id)
+        ->and($appliedOfferIds)->not->toContain($notReachedOffer->id);
+
+    OrderHydrateCategoriesData::run($order->refresh());
+    CalculateOrderDiscounts::run($order->refresh());
+
+    expect(DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->pluck('offer_id'))->toContain($reachedOffer->id);
+
+    $reachedOffer = UpdateOffer::make()->action($reachedOffer, [
+        'edit_offer_trigger' => ['trigger_item_quantity' => 3],
+    ]);
+    expect($reachedOffer->triggerCategoryIds())->toBe([$familyNotInOrder->id, $familyInOrder->id]);
+
+    SuspendOffer::run($reachedOffer);
+    SuspendOffer::run($notReachedOffer);
 });

@@ -107,7 +107,7 @@ class ShowRetinaEcomOrder extends RetinaAction
         return Inertia::render(
             'Ecom/RetinaEcomOrder',
             [
-                'title'       => __('order'),
+                'title'       => __('order') . ' #' . $order->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($order),
                 'pageHead'    => [
                     'title'   => $order->reference,

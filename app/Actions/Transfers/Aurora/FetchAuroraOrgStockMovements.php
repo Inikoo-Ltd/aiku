@@ -8,8 +8,7 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
@@ -69,16 +68,8 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
 
                     $this->processPrePurchaseAssociate($purchase, $orgStock);
 
-                    foreach ($orgStock->locations as $location) {
-                        $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
-                        $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);
-
-                        UpdateLocationOrgStock::run(
-                            $locationOrgStock,
-                            [
-                                'quantity' => $stockQuantity
-                            ]
-                        );
+                    foreach ($orgStock->locationOrgStocks as $locationOrgStock) {
+                        SyncLocationOrgStockQuantityFromMovements::run($locationOrgStock);
                     }
 
                     $orgStock->refresh();
