@@ -16,6 +16,7 @@ use App\Actions\Web\Website\Hydrators\WebsiteHydrateRedirects;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebUserRequests;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
+use App\Actions\Web\WebsiteHydrateWebsiteDialogs;
 use App\Models\Web\Website;
 
 class HydrateWebsite extends HydrateModel
@@ -37,6 +38,7 @@ class HydrateWebsite extends HydrateModel
         WebsiteHydrateRedirects::run($website);
         WebsiteHydrateWebUserRequests::run($website->id);
         WebsiteHydrateAnnouncements::run($website->id);
+        WebsiteHydrateWebsiteDialogs::run($website->id);
     }
 
 

@@ -19,6 +19,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Announcement;
 use App\Models\Web\Website;
+use App\Actions\Web\Website\UI\ShowWebsite;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -66,11 +68,11 @@ class ShowAnnouncement extends OrgAction
                     'previous' => $this->getPreviousModel($announcement, $request),
                     'next'     => $this->getNextModel($announcement, $request),
                 ],
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
-                    'breadcrumbs' => $this->getBreadcrumbs(
-                        $request->route()->getName(),
-                        $request->route()->originalParameters()
-                    ),
                     'title'     => $announcement->name,
                     'icon'      => [
                         'tooltip' => __('announcement'),
@@ -133,37 +135,41 @@ class ShowAnnouncement extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, ?string $suffix = null) {
-            return [
+        /** @var Website $website */
+        $website      = request()->route()->parameter('website');
+        $announcement = Announcement::firstWhere('ulid', $routeParameters['announcement']);
+        $parameters   = Arr::only($routeParameters, ['organisation', 'shop', 'website']);
+
+        return array_merge(
+            ShowWebsite::make()->getBreadcrumbs(
+                $website,
+                'grp.org.shops.show.web.websites.show',
+                $routeParameters
+            ),
+            [
                 [
-                    'type'           => $type,
-                    'simple'         => [
-                        'route' => $routeParameters['model'],
-                        'label' => $announcement->name
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.web.announcements.index',
+                                'parameters' => $parameters
+                            ],
+                            'label' => __('Announcements'),
+                            'icon'  => 'fal fa-bars'
+                        ],
+                        'model' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.web.announcements.show',
+                                'parameters' => [...$parameters, 'announcement' => $routeParameters['announcement']]
+                            ],
+                            'label' => $announcement?->name,
+                            'icon'  => 'fal fa-megaphone'
+                        ],
                     ],
                     'suffix'         => $suffix
                 ],
-            ];
-        };
-
-        return match ($routeName) {
-            'grp.org.shops.show.web.announcements.show',
-            =>
-            array_merge(
-                IndexAnnouncements::make()->getBreadcrumbs($routeName, $routeParameters),
-                $headCrumb(
-                    'simple',
-                    Announcement::firstWhere('ulid', $routeParameters['announcement']),
-                    [
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.web.announcements.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-            default => []
-        };
+            ]
+        );
     }
 }

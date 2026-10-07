@@ -21,6 +21,7 @@ use App\Actions\SysAdmin\Group\Seeders\SeedPostRooms;
 use App\Actions\SysAdmin\Group\Seeders\SeedSalesChannels;
 use App\Actions\SysAdmin\Group\Seeders\SeedStockImages;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
+use App\Actions\SysAdmin\Group\Seeders\SeedWebsiteDialogTemplates;
 use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Helpers\Country;
@@ -76,6 +77,7 @@ class StoreGroup
         SeedJobPositionsScopeGroup::run($group);
         SeedStockImages::run($group);
         SeedWebBlockTypes::run($group);
+        SeedWebsiteDialogTemplates::run($group);
         SeedPlatforms::run($group);
         SeedEmailTemplates::run($group);
         SeedSalesChannels::run($group);

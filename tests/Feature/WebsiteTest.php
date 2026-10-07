@@ -116,6 +116,22 @@ use App\Models\Web\Announcement;
 use App\Actions\Web\Announcement\ResumeSupersededAnnouncement;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Middleware\HandleIrisInertiaRequests;
+use App\Actions\Web\WebsiteDialog\DeleteWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\PublishWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\ResetWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\ResumeSupersededWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\StoreWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\ToggleWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UpdateWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UI\GetIrisWebsiteDialogs;
+use App\Enums\Web\WebsiteDialog\WebsiteDialogStateEnum;
+use App\Enums\Web\WebsiteDialog\WebsiteDialogStatusEnum;
+use App\Models\Web\WebsiteDialog;
+use App\Models\Web\WebsiteDialogTemplate;
+use App\Actions\Iris\WebsiteDialog\GetIrisWebsiteDialogDismissals;
+use App\Actions\Iris\WebsiteDialog\StoreIrisWebsiteDialogDismissal;
+use App\Actions\SysAdmin\Group\Seeders\SeedWebsiteDialogTemplates;
+use App\Models\Catalogue\Shop;
 use Illuminate\Validation\ValidationException;
 use App\Models\Web\Banner;
 use App\Models\Web\Crawl;
@@ -130,6 +146,7 @@ use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -2508,6 +2525,283 @@ test('storefront cache expires at the next scheduled change', function (Website 
     $ttl = (new HandleIrisInertiaRequests())->getAnnouncementsCacheTtl($website->refresh());
 
     expect($ttl)->toBeLessThanOrEqual(600)->toBeGreaterThan(0);
+})->depends('create b2b website');
+
+function turnOffWebsiteDialogs(Website $website): void
+{
+    $website->websiteDialogs()->update([
+        'status'                      => WebsiteDialogStatusEnum::INACTIVE,
+        'paused_by_website_dialog_id' => null,
+        'paused_until'                => null,
+    ]);
+    Cache::forget("irisData:website:$website->id:dialogs");
+}
+
+function draftWebsiteDialog(Website $website, string $name, string $title = 'hello'): WebsiteDialog
+{
+    $websiteDialog = StoreWebsiteDialog::make()->action($website, ['name' => $name]);
+
+    return UpdateWebsiteDialog::make()->action($websiteDialog, [
+        'template_code'        => 'welcome-centered',
+        'component'            => 'dialog-centered',
+        'fields'               => ['title' => ['text' => $title]],
+        'container_properties' => [],
+        'settings'             => [
+            'target_pages'      => ['type' => 'all', 'specific' => []],
+            'target_users'      => ['auth_state' => 'all'],
+            'display_frequency' => 'once',
+            'delay_seconds'     => 3,
+        ],
+    ])->refresh();
+}
+
+function publishWebsiteDialog(WebsiteDialog $websiteDialog, $user, array $modelData = []): WebsiteDialog
+{
+    request()->setUserResolver(fn () => $user);
+
+    return PublishWebsiteDialog::make()->action($websiteDialog, [
+        'published_message' => 'first publish',
+        ...$modelData
+    ])->refresh();
+}
+
+function irisWebsiteDialogs(Website $website): array
+{
+    Cache::forget("irisData:website:$website->id:dialogs");
+
+    return GetIrisWebsiteDialogs::run($website->refresh());
+}
+
+test('store website dialog', function (Website $website) {
+    $websiteDialog = StoreWebsiteDialog::make()->action($website, ['name' => 'welcome dialog']);
+    $website->refresh();
+
+    expect($websiteDialog)->toBeInstanceOf(WebsiteDialog::class)
+        ->and($websiteDialog->state)->toBe(WebsiteDialogStateEnum::IN_PROCESS)
+        ->and($websiteDialog->status)->toBe(WebsiteDialogStatusEnum::INACTIVE)
+        ->and($websiteDialog->unpublished_snapshot_id)->not->toBeNull()
+        ->and($websiteDialog->getDisplayFrequency())->toBe('once_per_session')
+        ->and($website->webStats->number_website_dialogs)->toBe($website->websiteDialogs()->count());
+
+    return $websiteDialog;
+})->depends('create b2b website');
+
+test('editing a website dialog only changes the draft', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $websiteDialog = publishWebsiteDialog(draftWebsiteDialog($website, 'draft only', 'published title'), $this->user);
+
+    UpdateWebsiteDialog::make()->action($websiteDialog, ['fields' => ['title' => ['text' => 'draft title']]]);
+    $websiteDialog->refresh();
+
+    $shown = collect(irisWebsiteDialogs($website))->firstWhere('ulid', $websiteDialog->ulid);
+
+    expect($websiteDialog->is_dirty)->toBeTrue()
+        ->and($websiteDialog->unpublishedSnapshot->layout['fields']['title']['text'])->toBe('draft title')
+        ->and($shown['fields']['title']['text'])->toBe('published title');
+})->depends('create b2b website');
+
+test('publish website dialog shows it on the storefront', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $websiteDialog = publishWebsiteDialog(draftWebsiteDialog($website, 'to publish'), $this->user);
+
+    $shown = collect(irisWebsiteDialogs($website))->firstWhere('ulid', $websiteDialog->ulid);
+
+    expect($websiteDialog->state)->toBe(WebsiteDialogStateEnum::READY)
+        ->and($websiteDialog->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($websiteDialog->is_dirty)->toBeFalse()
+        ->and($websiteDialog->live_snapshot_id)->not->toBeNull()
+        ->and($shown)->not->toBeNull()
+        ->and($shown['component'])->toBe('dialog-centered')
+        ->and($shown['version'])->toBe($websiteDialog->published_checksum)
+        ->and($shown['settings']['display_frequency'])->toBe('once')
+        ->and($shown['settings']['delay_seconds'])->toBe(3)
+        ->and($shown['show_pages'])->toBe(['all']);
+})->depends('create b2b website');
+
+test('a website dialog without template cannot be published', function (Website $website) {
+    $websiteDialog = StoreWebsiteDialog::make()->action($website, ['name' => 'empty']);
+    request()->setUserResolver(fn () => $this->user);
+
+    expect(fn () => PublishWebsiteDialog::make()->action($websiteDialog, ['published_message' => 'try']))
+        ->toThrow(ValidationException::class);
+})->depends('create b2b website');
+
+test('a scheduled website dialog stays off the storefront until it starts', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    Queue::fake();
+
+    $websiteDialog = publishWebsiteDialog(draftWebsiteDialog($website, 'scheduled'), $this->user, [
+        'schedule_at' => now()->addDay(),
+    ]);
+
+    expect($websiteDialog->status)->toBe(WebsiteDialogStatusEnum::INACTIVE)
+        ->and(collect(irisWebsiteDialogs($website))->firstWhere('ulid', $websiteDialog->ulid))->toBeNull();
+})->depends('create b2b website');
+
+test('publishing on top of a live website dialog is refused', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $running = publishWebsiteDialog(draftWebsiteDialog($website, 'running'), $this->user);
+    $challenger = draftWebsiteDialog($website, 'challenger');
+
+    expect(fn () => publishWebsiteDialog($challenger, $this->user))->toThrow(ValidationException::class);
+
+    expect($running->refresh()->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($challenger->refresh()->live_snapshot_id)->toBeNull();
+})->depends('create b2b website');
+
+test('superseding pauses the other website dialog and it comes back by itself', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $running = publishWebsiteDialog(draftWebsiteDialog($website, 'running'), $this->user);
+
+    Queue::fake();
+    $finishAt = now()->addHours(2);
+
+    $challenger = publishWebsiteDialog(draftWebsiteDialog($website, 'challenger'), $this->user, [
+        'schedule_finish_at' => $finishAt,
+        'supersede'          => true,
+    ]);
+    $running->refresh();
+
+    expect($challenger->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($running->status)->toBe(WebsiteDialogStatusEnum::INACTIVE)
+        ->and($running->paused_by_website_dialog_id)->toBe($challenger->id)
+        ->and($running->paused_until->timestamp)->toBe($finishAt->timestamp);
+
+    $this->travelTo($finishAt->copy()->addSecond());
+    ResumeSupersededWebsiteDialog::run($running, $challenger->id);
+    $this->travelBack();
+    $running->refresh();
+
+    expect($running->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($running->paused_by_website_dialog_id)->toBeNull();
+})->depends('create b2b website');
+
+test('deleting a website dialog gives the website back to the one it paused', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $running = publishWebsiteDialog(draftWebsiteDialog($website, 'running'), $this->user);
+    $challenger = publishWebsiteDialog(draftWebsiteDialog($website, 'challenger'), $this->user, ['supersede' => true]);
+
+    expect($running->refresh()->paused_by_website_dialog_id)->toBe($challenger->id);
+
+    DeleteWebsiteDialog::make()->handle($challenger);
+    $running->refresh();
+
+    expect(WebsiteDialog::find($challenger->id))->toBeNull()
+        ->and($running->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($running->paused_by_website_dialog_id)->toBeNull();
+})->depends('create b2b website');
+
+test('reset website dialog goes back to the published version', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $websiteDialog = publishWebsiteDialog(draftWebsiteDialog($website, 'to reset', 'published title'), $this->user);
+    UpdateWebsiteDialog::make()->action($websiteDialog, ['fields' => ['title' => ['text' => 'draft title']]]);
+
+    ResetWebsiteDialog::make()->handle($websiteDialog);
+    $websiteDialog->refresh();
+
+    expect($websiteDialog->is_dirty)->toBeFalse()
+        ->and($websiteDialog->fields['title']['text'])->toBe('published title')
+        ->and($websiteDialog->unpublishedSnapshot->layout['fields']['title']['text'])->toBe('published title');
+})->depends('create b2b website');
+
+test('a website dialog not published yet cannot be turned on', function (Website $website) {
+    $websiteDialog = StoreWebsiteDialog::make()->action($website, ['name' => 'not ready']);
+
+    expect(fn () => ToggleWebsiteDialog::make()->handle($websiteDialog, WebsiteDialogStatusEnum::ACTIVE))
+        ->toThrow(ValidationException::class);
+})->depends('create b2b website');
+
+test('seed website dialog templates', function (Website $website) {
+    $group = $website->group;
+    SeedWebsiteDialogTemplates::run($group);
+    WebsiteDialogTemplate::create(['group_id' => $group->id, 'code' => 'removed-template', 'name' => 'gone', 'component' => 'dialog-centered']);
+
+    $this->artisan('group:seed_website_dialog_templates')->assertSuccessful();
+
+    $templates = WebsiteDialogTemplate::where('group_id', $group->id)->get();
+
+    expect($templates->pluck('code')->all())->toContain('welcome-centered', 'promo-image-side')
+        ->and($templates->pluck('code')->all())->not->toContain('removed-template')
+        ->and($templates->firstWhere('code', 'promo-image-side')->component)->toBe('dialog-image-side')
+        ->and($templates->firstWhere('code', 'welcome-centered')->data['fields']['title']['text'])->not->toBeEmpty();
+
+    getJson(route('grp.json.website_dialog_templates.index'))
+        ->assertOk()
+        ->assertJsonFragment(['code' => 'welcome-centered', 'component' => 'dialog-centered']);
+})->depends('create b2b website');
+
+test('a website dialog opened by a button never clashes', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $automatic = publishWebsiteDialog(draftWebsiteDialog($website, 'automatic'), $this->user);
+
+    $onClick = draftWebsiteDialog($website, 'on click');
+    UpdateWebsiteDialog::make()->action($onClick, ['settings' => [...$onClick->settings, 'trigger' => 'on_click']]);
+    $onClick = publishWebsiteDialog($onClick->refresh(), $this->user);
+
+    $shown = collect(irisWebsiteDialogs($website))->firstWhere('ulid', $onClick->ulid);
+
+    expect($onClick->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($automatic->refresh()->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
+        ->and($automatic->paused_by_website_dialog_id)->toBeNull()
+        ->and($shown['settings']['trigger'])->toBe('on_click');
+
+    getJson(route('grp.json.website_dialogs.link_select', [$website->slug]))
+        ->assertOk()
+        ->assertJsonFragment(['href' => '#website-dialog-'.$onClick->ulid, 'opens' => 'on_click']);
+})->depends('create b2b website');
+
+test('a customer closing a once per customer dialog keeps it closed until it is published again', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    $websiteDialog = draftWebsiteDialog($website, 'per customer');
+    UpdateWebsiteDialog::make()->action($websiteDialog, ['settings' => [...$websiteDialog->settings, 'display_frequency' => 'once_per_customer']]);
+    $websiteDialog = publishWebsiteDialog($websiteDialog->refresh(), $this->user);
+    $customer = createCustomer($website->shop);
+
+    StoreIrisWebsiteDialogDismissal::make()->handle($websiteDialog, $customer);
+    StoreIrisWebsiteDialogDismissal::make()->handle($websiteDialog, $customer);
+
+    expect(GetIrisWebsiteDialogDismissals::make()->handle($website, $customer))
+        ->toBe([$websiteDialog->ulid => $websiteDialog->published_checksum])
+        ->and($websiteDialog->dismissals()->count())->toBe(1);
+
+    UpdateWebsiteDialog::make()->action($websiteDialog, ['fields' => ['title' => ['text' => 'new offer']]]);
+    $republished = publishWebsiteDialog($websiteDialog->refresh(), $this->user);
+
+    expect($republished->published_checksum)->not->toBe(GetIrisWebsiteDialogDismissals::make()->handle($website, $customer)[$websiteDialog->ulid]);
+})->depends('create b2b website');
+
+test('UI smoke website dialog GET routes', function (Website $website, WebsiteDialog $websiteDialog) {
+    $website->refresh();
+    $parameters = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    get(route('grp.org.shops.show.web.website_dialogs.index', $parameters))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Websites/WebsiteDialogs'));
+    get(route('grp.org.shops.show.web.website_dialogs.create', $parameters))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel'));
+    get(route('grp.org.shops.show.web.website_dialogs.show', [...$parameters, $websiteDialog->ulid]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Websites/WebsiteDialog'));
+    get(route('grp.org.shops.show.web.website_dialogs.edit', [...$parameters, $websiteDialog->ulid]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel'));
+    get(route('grp.org.shops.show.web.website_dialogs.workshop', [...$parameters, $websiteDialog->ulid]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Websites/WebsiteDialogWorkshop'));
+})->depends('create b2b website', 'store website dialog');
+
+test('website dialog model routes refuse a dialog through another shop', function (Website $website) {
+    $otherShop = Shop::where('id', '!=', $website->shop_id)->first();
+    $websiteDialog = StoreWebsiteDialog::make()->action($website, ['name' => 'not yours']);
+
+    $this->patchJson(route('grp.models.shop.website.website_dialog.update', [
+        'shop'          => $otherShop->id,
+        'website'       => $website->id,
+        'websiteDialog' => $websiteDialog->id,
+    ]), ['name' => 'hijacked'])->assertNotFound();
+
+    expect($websiteDialog->refresh()->name)->toBe('not yours');
 })->depends('create b2b website');
 // Cloudflare: mutate website slugs, so keep last to avoid stale slugs in UI tests above
 

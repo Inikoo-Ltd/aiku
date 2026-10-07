@@ -13,6 +13,7 @@ use App\Models\Comms\Email;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Helpers\Deployment;
 use App\Models\Web\Announcement;
+use App\Models\Web\WebsiteDialog;
 use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -22,7 +23,7 @@ class StoreDeployment
 {
     use AsAction;
 
-    public function handle(Website|Webpage|EmailTemplate|Banner|Email|Announcement $model, array $modelData): Deployment
+    public function handle(Website|Webpage|EmailTemplate|Banner|Email|Announcement|WebsiteDialog $model, array $modelData): Deployment
     {
 
         /** @var Deployment $deployment */

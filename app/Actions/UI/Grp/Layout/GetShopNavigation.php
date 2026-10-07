@@ -515,6 +515,16 @@ class GetShopNavigation
                                 ],
                             ],
                             [
+                                "label"   => __("Dialogs"),
+                                "tooltip" => __("Dialogs"),
+                                "icon"    => ["fal", "fa-window-restore"],
+                                'root'    => 'grp.org.shops.show.web.website_dialogs.',
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.web.website_dialogs.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+                            [
                                 "label"   => __("Analytics"),
                                 "tooltip" => __("Analytics"),
                                 "icon"    => ["fal", "fa-analytics"],

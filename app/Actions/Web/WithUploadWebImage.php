@@ -15,13 +15,14 @@ use App\Models\SysAdmin\Group;
 use App\Models\Web\Announcement;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteDialog;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 
 trait WithUploadWebImage
 {
     use WithAttachMediaToModel;
-    public function handle(WebBlock|Website|Group|Announcement $model, string $scope, array $modelData): Collection
+    public function handle(WebBlock|Website|Group|Announcement|WebsiteDialog $model, string $scope, array $modelData): Collection
     {
         $medias = [];
 

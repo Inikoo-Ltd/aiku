@@ -23,6 +23,7 @@ use App\Models\Comms\EmailTemplate;
 use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Announcement;
+use App\Models\Web\WebsiteDialog;
 use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -41,7 +42,7 @@ class IndexSnapshots extends OrgAction
     use WithMenuSubNavigation;
     private Website $website;
     private string $scope;
-    private Website|Webpage|EmailTemplate|Banner|Announcement $parent;
+    private Website|Webpage|EmailTemplate|Banner|Announcement|WebsiteDialog $parent;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -67,7 +68,7 @@ class IndexSnapshots extends OrgAction
             ->withQueryString();
     }
 
-    public function handle(Website|Webpage|EmailTemplate|Banner|Announcement $parent, $prefix = null, $scope = null, $withLabel = false)
+    public function handle(Website|Webpage|EmailTemplate|Banner|Announcement|WebsiteDialog $parent, $prefix = null, $scope = null, $withLabel = false)
     {
         $this->parent = $parent;
         $queryBuilder = QueryBuilder::for(Snapshot::class);
@@ -87,6 +88,10 @@ class IndexSnapshots extends OrgAction
 
         if (class_basename($parent) == 'Announcement') {
             $queryBuilder->where('parent_id', $parent->id)->where('parent_type', 'Announcement');
+        }
+
+        if (class_basename($parent) == 'WebsiteDialog') {
+            $queryBuilder->where('parent_id', $parent->id)->where('parent_type', 'WebsiteDialog');
         }
 
         if (class_basename($parent) === 'Website') {
@@ -168,7 +173,7 @@ class IndexSnapshots extends OrgAction
         )->table($this->tableStructure($this->website));
     }
 
-    public function tableStructure(Website|Webpage|EmailTemplate|Banner|Announcement $parent, $withLabel = false, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
+    public function tableStructure(Website|Webpage|EmailTemplate|Banner|Announcement|WebsiteDialog $parent, $withLabel = false, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $withLabel, $prefix, $exportLinks, $parent) {
             if ($prefix) {

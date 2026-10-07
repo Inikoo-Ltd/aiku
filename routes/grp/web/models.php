@@ -548,6 +548,13 @@ use App\Actions\Web\Announcement\StoreAnnouncement;
 use App\Actions\Web\Announcement\ToggleAnnouncement;
 use App\Actions\Web\Announcement\UpdateAnnouncement;
 use App\Actions\Web\Announcement\UploadImagesToAnnouncement;
+use App\Actions\Web\WebsiteDialog\DeleteWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\PublishWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\ResetWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\StoreWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\ToggleWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UpdateWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UploadImagesToWebsiteDialog;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\PublishBanner;
 use App\Actions\Web\Banner\SetSnapshotToBanner;
@@ -1202,6 +1209,16 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
             Route::delete('{announcement}/reset', ResetAnnouncement::class)->name('reset')->withoutScopedBindings();
             Route::patch('{announcement}/toggle', ToggleAnnouncement::class)->name('toggle')->withoutScopedBindings();
             Route::delete('{announcement}', DeleteAnnouncement::class)->name('delete')->withoutScopedBindings();
+        });
+
+        Route::prefix('dialogs')->name('website_dialog.')->group(function () {
+            Route::post('/', StoreWebsiteDialog::class)->name('store')->withoutScopedBindings();
+            Route::post('{websiteDialog:id}/upload-images', UploadImagesToWebsiteDialog::class)->name('upload-images.store')->withoutScopedBindings();
+            Route::patch('{websiteDialog:id}/publish', PublishWebsiteDialog::class)->name('publish')->withoutScopedBindings();
+            Route::patch('{websiteDialog:id}/reset', ResetWebsiteDialog::class)->name('reset')->withoutScopedBindings();
+            Route::patch('{websiteDialog:id}/toggle', ToggleWebsiteDialog::class)->name('toggle')->withoutScopedBindings();
+            Route::patch('{websiteDialog:id}', UpdateWebsiteDialog::class)->name('update')->withoutScopedBindings();
+            Route::delete('{websiteDialog:id}', DeleteWebsiteDialog::class)->name('delete')->withoutScopedBindings();
         });
     });
 

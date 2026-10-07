@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Web\Announcement\UI\GetIrisAnnouncements;
+use App\Actions\Web\WebsiteDialog\UI\GetIrisWebsiteDialogs;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Web\Website;
 use Illuminate\Http\Request;
@@ -94,6 +95,7 @@ class HandleIrisInertiaRequests extends Middleware
                 'modal'        => fn () => $request->session()->get('modal')
             ],
             'announcements' => $website ? $this->getAnnouncements($website) : [],
+            'website_dialogs' => $website ? GetIrisWebsiteDialogs::run($website) : [],
             'show_contact_options_panel' => Arr::get($website?->settings ?? [], 'view_contact_options_panel', false),
             'contact_options_panel'      => Arr::get($website?->settings ?? [], 'data_contact_options_panel', []),
             'phpComponent'  => app()->environment('local') ? str_replace('\\', '/', $request->route()->getActionName()) : null,

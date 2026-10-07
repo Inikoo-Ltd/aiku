@@ -1,0 +1,171 @@
+{
+    "code": "notice-centered",
+    "name": "Important notice",
+    "component": "dialog-centered",
+    "position": 4,
+    "fields": {
+        "image": {
+            "source": null,
+            "alt": ""
+        },
+        "title": {
+            "text": "<h2 style=\"text-align: center\"><strong>Holiday shipping times</strong></h2>"
+        },
+        "description": {
+            "text": "<p style=\"text-align: center\">Orders placed after 20 December will ship from 2 January. Thank you for your patience!</p>"
+        },
+        "button": {
+            "text": "Got it",
+            "link": {
+                "type": "external",
+                "href": "#",
+                "target": "_self"
+            },
+            "container": {
+                "properties": {
+                    "text": {
+                        "color": "rgba(255, 255, 255, 1)",
+                        "fontFamily": "Arial, sans-serif"
+                    },
+                    "background": {
+                        "type": "color",
+                        "color": "rgba(17, 24, 39, 1)",
+                        "image": {
+                            "original": null
+                        }
+                    },
+                    "padding": {
+                        "unit": "px",
+                        "top": {
+                            "value": 10
+                        },
+                        "left": {
+                            "value": 24
+                        },
+                        "right": {
+                            "value": 24
+                        },
+                        "bottom": {
+                            "value": 10
+                        }
+                    },
+                    "margin": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        }
+                    },
+                    "border": {
+                        "unit": "px",
+                        "top": {
+                            "value": 0
+                        },
+                        "left": {
+                            "value": 0
+                        },
+                        "right": {
+                            "value": 0
+                        },
+                        "bottom": {
+                            "value": 0
+                        },
+                        "color": "#000000",
+                        "rounded": {
+                            "unit": "px",
+                            "topleft": {
+                                "value": 6
+                            },
+                            "topright": {
+                                "value": 6
+                            },
+                            "bottomleft": {
+                                "value": 6
+                            },
+                            "bottomright": {
+                                "value": 6
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "container_properties": {
+        "background": {
+            "type": "color",
+            "color": "rgba(255, 255, 255, 1)",
+            "image": {
+                "original": null
+            }
+        },
+        "text": {
+            "color": "rgba(17, 24, 39, 1)",
+            "fontFamily": "Arial, sans-serif"
+        },
+        "padding": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            }
+        },
+        "border": {
+            "unit": "px",
+            "top": {
+                "value": 0
+            },
+            "left": {
+                "value": 0
+            },
+            "right": {
+                "value": 0
+            },
+            "bottom": {
+                "value": 0
+            },
+            "color": "rgba(243, 243, 243, 1)",
+            "rounded": {
+                "unit": "px",
+                "topleft": {
+                    "value": 16
+                },
+                "topright": {
+                    "value": 16
+                },
+                "bottomleft": {
+                    "value": 16
+                },
+                "bottomright": {
+                    "value": 16
+                }
+            }
+        },
+        "dimension": {
+            "width": {
+                "unit": "px",
+                "value": 440
+            },
+            "height": {
+                "unit": "px",
+                "value": null
+            }
+        }
+    }
+}

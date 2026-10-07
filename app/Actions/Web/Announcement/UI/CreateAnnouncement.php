@@ -67,11 +67,11 @@ class CreateAnnouncement extends OrgAction
             'CreateModel',
             [
                 'title'       => __('new announcement'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
-                    'breadcrumbs' => $this->getBreadcrumbs(
-                        $request->route()->getName(),
-                        $request->route()->originalParameters()
-                    ),
                     'model'   => __('Announcement'),
                     'icon'    => ['fal', 'fa-megaphone'],
                     'title'   => __('Create'),

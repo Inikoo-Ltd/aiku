@@ -122,6 +122,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $cloudflare_token
  * @property array<array-key, mixed> $blocked_country_regions
  * @property-read Collection<int, \App\Models\Web\Announcement> $announcements
+ * @property-read Collection<int, \App\Models\Web\WebsiteDialog> $websiteDialogs
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Web\Crawl> $crawls
  * @property-read Collection<int, Deployment> $deployments
@@ -575,6 +576,11 @@ class Website extends Model implements Auditable, HasMedia
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
+    }
+
+    public function websiteDialogs(): HasMany
+    {
+        return $this->hasMany(WebsiteDialog::class);
     }
 
     public function crawls(): HasMany
