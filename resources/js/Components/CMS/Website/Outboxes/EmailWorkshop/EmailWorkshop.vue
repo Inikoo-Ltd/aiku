@@ -679,6 +679,10 @@ defineExpose({
                     <button type="button" class="h-8 rounded border border-gray-300 px-3 text-[13px] text-gray-700 hover:bg-gray-50" @click="saveAsTemplate">
                         {{ ctrans('Save as template') }}
                     </button>
+                    <button type="button" class="h-8 rounded bg-[var(--theme-color-4)] px-3 text-[13px] text-white hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]"
+                        v-tooltip="`${ctrans('Save and publish')} (${publishShortcutLabel})`" @click="save">
+                        {{ ctrans('Save') }}
+                    </button>
                  
                     <!-- <span class="hidden items-center gap-x-1.5 text-xs text-gray-500 lg:flex" v-tooltip="ctrans('Saves and publishes the email. Drafts are saved automatically.')">
                         {{ ctrans('Publish') }}
