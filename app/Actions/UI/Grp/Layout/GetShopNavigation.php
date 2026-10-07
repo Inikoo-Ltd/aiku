@@ -543,6 +543,62 @@ class GetShopNavigation
                     ];
                 }
             }
+
+            if ($shop->website && app()->isLocal()) {
+                $navigation["seo"] = [
+                    "root"    => "grp.org.shops.show.seo.",
+                    "icon"    => ["fal", "fa-search"],
+                    "label"   => __("SEO"),
+                    "route"   => [
+                        "name"       => "grp.org.shops.show.seo.dashboard",
+                        "parameters" => [$shop->organisation->slug, $shop->slug],
+                    ],
+                    "topMenu" => [
+                        "subSections" => [
+                            [
+                                "label"   => __("Visitors"),
+                                "tooltip" => __("Visitors"),
+                                "icon"    => ["fal", "fa-users"],
+                                "root"    => "grp.org.shops.show.seo.visitors.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.visitors.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Page views"),
+                                "tooltip" => __("Page views"),
+                                "icon"    => ["fal", "fa-eye"],
+                                "root"    => "grp.org.shops.show.seo.page_views.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.page_views.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Site audit"),
+                                "tooltip" => __("Site audit"),
+                                "icon"    => ["fal", "fa-clipboard-check"],
+                                "root"    => "grp.org.shops.show.seo.site_audit.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.site_audit.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Missing pages"),
+                                "tooltip" => __("Missing pages (404)"),
+                                "icon"    => ["fal", "fa-unlink"],
+                                "root"    => "grp.org.shops.show.seo.not_found.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.not_found.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                        ],
+                    ],
+                ];
+            }
         }
 
         if ($user->hasPermissionTo("marketing.view")) {

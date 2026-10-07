@@ -514,6 +514,10 @@ use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
+use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
+use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
+use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
+use App\Actions\SupplyChain\SupplierProduct\Upload\UpdateSupplierProductUploadRecord;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
@@ -537,6 +541,8 @@ use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\Web\Crawl\StartSiteAudit;
+use App\Actions\Web\WebsiteNotFoundPath\UpdateWebsiteNotFoundPathIgnored;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\ResetAnnouncement;
@@ -614,6 +620,8 @@ use App\Actions\Helpers\Ticket\TranslateTicketText;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
+use App\Actions\Helpers\Ticket\StoreTicketLink;
+use App\Actions\Helpers\Ticket\DeleteTicketLink;
 use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
 use Illuminate\Support\Facades\Route;
 
@@ -642,6 +650,8 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('{ticket:id}/translate', [TranslateTicketText::class, 'inTicket'])->name('translate')->whereNumber('ticket');
     Route::delete('comment/{ticketComment:id}', DeleteTicketComment::class)->name('comment.delete')->whereNumber('ticketComment');
     Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
+    Route::post('{ticket:id}/link', StoreTicketLink::class)->name('link.store')->whereNumber('ticket');
+    Route::delete('link/{ticketLink:id}', DeleteTicketLink::class)->name('link.delete')->whereNumber('ticketLink');
     Route::delete('{ticket:id}', DeleteTicket::class)->name('delete')->whereNumber('ticket');
 });
 
@@ -1275,7 +1285,10 @@ Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilme
 
 Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('organisation.store');
 
+Route::patch('website-not-found-path/{websiteNotFoundPath:id}/ignored', UpdateWebsiteNotFoundPathIgnored::class)->name('website_not_found_path.ignored.update');
+
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
+    Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 
@@ -1506,6 +1519,16 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product', StoreSupplierProduct::class)->name('supplier-product.store');
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
+});
+
+Route::name('supplier_product_upload.')->prefix('supplier-product-upload/{upload:id}')->group(function () {
+    Route::patch('record/{record:id}', UpdateSupplierProductUploadRecord::class)->name('record.update')->withoutScopedBindings();
+    Route::patch('new-draft', SetSupplierProductUploadNewDraft::class)->name('new_draft');
+    Route::post('import', ConfirmSupplierProductUpload::class)->name('import');
+    Route::post('cancel', CancelSupplierProductUpload::class)->name('cancel');
+});
+
+Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inSupplier'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inSupplier'])->name('attachment.detach')->withoutScopedBindings();
 });

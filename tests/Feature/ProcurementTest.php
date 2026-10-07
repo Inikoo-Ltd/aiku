@@ -4758,6 +4758,35 @@ describe('partner shopping list', function () {
             ->and(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBe(0);
     });
 
+    test('production takes a line it cannot make off the board with a reason and the buyer sees why', function () {
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $user = $this->adminGuest->getUser();
+
+        $item     = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $inJob    = $item->replicate();
+        $inJob->fill(['quantity' => 3, 'pre_picked_at' => now()])->save();
+
+        actingAs($user);
+        $this->post(route('grp.org.productions.show.to_produce.items.cant_be_done', [$seller->slug, $production->slug]), ['ids' => [$item->id]])
+            ->assertSessionHasErrors('reason');
+
+        $dismissed = \App\Actions\Production\PartnerShippingList\DismissToProduceItems::make()->action($production, [$item->id, $inJob->id], 'No honey in stock until November', $user);
+
+        expect($dismissed->pluck('id')->all())->toBe([$item->id])
+            ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::DISMISSED)
+            ->and($item->dismiss_reason)->toBe('No honey in stock until November')
+            ->and($item->dismissed_by_user_id)->toBe($user->id)
+            ->and($inJob->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
+
+        $row = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]).'?'.http_build_query(['filter' => ['state' => 'dismissed']]))
+            ->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('id', $item->id);
+
+        expect($row['progress']['label'])->toBe('Cannot be made')
+            ->and(collect($row['progress']['details'])->pluck('label')->all())->toContain('Cannot be made: No honey in stock until November');
+    });
+
     test('store partner shopping list item denormalises', function () {
         $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 40,
@@ -6588,6 +6617,38 @@ describe('partner shopping list', function () {
 
         $this->get(route('grp.org.procurement.org_partners.show.shopping_list.legacy', [$this->organisation->slug, $this->orgPartner->id]))
             ->assertRedirect(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]));
+    });
+
+    test('removing a line with do not suggest again keeps the SKO out of prepared orders until unblocked', function () {
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+        $this->sellerProduct->orgStocks()->first()->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $this->buyerOrgStock->update(['quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
+        $this->buyerOrgStock->stats()->updateOrCreate([], ['predicted_daily_usage' => 2, 'days_of_cover' => 0]);
+        $orgPartner = $this->orgPartner->refresh();
+        $rescued    = fn () => GetPartnerStockCoverBuckets::make()->rescueItems($orgPartner)->pluck('org_stock_id')->map(fn ($id) => (int) $id)->all();
+
+        expect($rescued())->toContain($this->buyerOrgStock->id);
+
+        $draft = StorePartnerShoppingListItem::make()->action($orgPartner, $this->buyerOrgStock, ['quantity' => 1]);
+        actingAs($this->adminGuest->getUser());
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $orgPartner->id, $draft->id]), ['stop_suggesting' => true])
+            ->assertRedirect();
+
+        expect(PartnerShoppingListItem::find($draft->id))->toBeNull()
+            ->and($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeTrue()
+            ->and($rescued())->not->toContain($this->buyerOrgStock->id);
+
+        $this->withoutVite()->get(route('grp.org.procurement.org_partners.show.shopping_list.blocked', [$this->organisation->slug, $orgPartner->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Procurement/PartnerBlockedOrgStocks')
+                ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($this->buyerOrgStock->id)));
+
+        $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.unblock', [$this->organisation->slug, $orgPartner->id, $this->buyerOrgStock->id]))
+            ->assertRedirect();
+
+        expect($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeFalse()
+            ->and($rescued())->toContain($this->buyerOrgStock->id);
     });
 });
 

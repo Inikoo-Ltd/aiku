@@ -166,6 +166,7 @@ const props = defineProps < {
             tax: number | string | null
             total: number | string
             org_items: number | string
+            estimated_expenses?: number
         }
 	}
 	items?: {}
@@ -305,6 +306,13 @@ const summaryGroups = computed(() => {
 			{ label: ctrans("Tax"), price_total: Number(tax) || 0 },
 		],
 		[{ label: ctrans("Total"), price_total: Number(total) || 0, information: inOrgCurrency ? `${orgMoney(Number(total) * rate)} · ${moneyTable.value.rateLabel}` : undefined }],
+		...(Number(props.box_stats.third_block.estimated_expenses) > 0
+			? [[{
+				label: ctrans("Estimated total incl. supplier expenses"),
+				price_total: (Number(total) || 0) + Number(props.box_stats.third_block.estimated_expenses),
+				information: ctrans("estimate, for budgeting"),
+			}]]
+			: []),
 	]
 })
 

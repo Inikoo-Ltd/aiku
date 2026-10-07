@@ -388,6 +388,10 @@ test('supplier product upload previews rows with their findings and creates noth
     $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
         supplierProductUploadRow(),
         supplierProductUploadRow([
+            'Part reference'                         => 'UPLB-01',
+            "Supplier's product code"                => 'UPLB-01B',
+        ]),
+        supplierProductUploadRow([
             'Part reference'                         => 'UPLB-02',
             "Supplier's product code"                => null,
             'Unit recommended description (website)' => 'Pack of 50 Craft Roses',
@@ -404,11 +408,13 @@ test('supplier product upload previews rows with their findings and creates noth
     $findings = $upload->records()->orderBy('row_number')->get()->mapWithKeys(fn ($record) => [$record->row_number => collect($record->data['findings'])->pluck('level', 'code')->all()]);
 
     expect($upload->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::WAITING_CONFIRMATION)
-        ->and($upload->number_rows)->toBe(2)
-        ->and($findings->keys()->all())->toBe([6, 7])
+        ->and($upload->number_rows)->toBe(3)
+        ->and($findings->keys()->all())->toBe([6, 7, 8])
         ->and($findings[6])->toMatchArray(['family_new' => 'warning'])
         ->and($findings[6])->not->toHaveKey('unit_name_pack')
-        ->and($findings[7])->toMatchArray([
+        ->and($findings[6])->not->toHaveKey('duplicate_part_reference')
+        ->and($findings[7])->toMatchArray(['duplicate_part_reference' => 'error'])
+        ->and($findings[8])->toMatchArray([
             'supplier_code_from_part_reference' => 'warning',
             'unit_name_pack'                    => 'block',
             'unit_label_odd'                    => 'block',
@@ -418,7 +424,7 @@ test('supplier product upload previews rows with their findings and creates noth
             'no_barcode'                        => 'block',
             'carton_not_split_into_outers'      => 'block',
         ])
-        ->and($upload->records()->where('row_number', 7)->first()->values['supplier_code'])->toBe('UPLB-02')
+        ->and($upload->records()->where('row_number', 8)->first()->values['supplier_code'])->toBe('UPLB-02')
         ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'like', 'UPLB-%')->exists())->toBeFalse()
         ->and(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
 });
@@ -431,8 +437,6 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
     $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
         supplierProductUploadRow([$orderColumn => 3]),
     ], [$orderColumn]));
-
-    expect(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
 
     acceptSupplierProductUploadFindings($upload);
     $upload = App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh())->refresh();
@@ -474,12 +478,98 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
         ->and((float)$purchaseOrder->purchaseOrderTransactions()->where('supplier_product_id', $supplierProduct->id)->value('quantity_ordered'))->toBe(240.0)
         ->and($upload->data['purchase_orders'][strtoupper($this->organisation->code)]['lines'])->toBe(1);
 
+    expect(App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder::make()->estimatedExpenses($purchaseOrder))->toEqual(24.0);
+
     $again = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit cost (Sup Cur)' => 3])]));
     $againFindings = collect($again->records()->first()->data['findings'])->pluck('level', 'code');
 
     expect($againFindings->all())->toMatchArray(['link_trade_unit' => 'link', 'update_supplier_product' => 'block', 'cost_change' => 'block']);
 });
 
+
+test('supplier product upload AI checks add Jev findings and the final review, and stop when the monthly budget is spent', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    config(['services.openrouter.api_key' => 'test-key']);
+    App\Actions\Helpers\AI\AskJev::shouldRun()->andReturn([
+        'unit_name_is_pack' => ['noul' => 0.95],
+        'spelling'          => ['noul' => 0.75],
+        'materials_misfit'  => ['noul' => 0.1],
+        'numbers_odd'       => ['noul' => 0.2],
+        'family_misfit'     => ['noul' => 0.1],
+        'rows_shifted'      => ['noul' => 0.1],
+        'tariff_misfit'     => ['noul' => 0.1],
+    ]);
+    Illuminate\Support\Facades\Http::fake(['openrouter.ai/api/v1/chat/completions' => Illuminate\Support\Facades\Http::response([
+        'model'   => 'anthropic/claude-fable-5.1',
+        'choices' => [['message' => ['content' => '{"summary": ["Row 6 names a pack."], "rows": {"6": "Name it Hemp Coaster."}}']]],
+        'usage'   => ['prompt_tokens' => 1000, 'completion_tokens' => 200, 'cost' => 0.02],
+    ])]);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit recommended description (website)' => 'Hemp Coasters'])]));
+
+    $findings = collect($upload->records()->first()->data['findings'])->where('source', 'jev')->pluck('level', 'code');
+    expect($upload->data['ai'])->toBe('done')
+        ->and($findings->all())->toBe(['jev_unit_name_pack' => 'block', 'jev_spelling' => 'warning'])
+        ->and($upload->data['review'])->toMatchArray(['status' => 'done', 'summary' => 'Row 6 names a pack.', 'rows' => ['6' => 'Name it Hemp Coaster.']])
+        ->and((float)DB::table('ai_usages')->where('feature', 'ReviewSupplierProductUpload')->sum('cost'))->toBe(0.02);
+
+    DB::table('ai_usages')->insert(['created_at' => now(), 'feature' => 'ReviewSupplierProductUpload', 'provider' => 'openrouter', 'model' => 'anthropic/claude-fable-5.1', 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 40]);
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Part reference' => 'UPLB-09', "Supplier's product code" => 'UPLB-09'])]));
+
+    expect($upload->data['review']['status'])->toBe('off');
+});
+
+test('supplier product upload is not left waiting when the AI checks crash', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    App\Actions\Helpers\AI\AskJev::shouldRun()->andThrow(new RuntimeException('AI gateway down'));
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow()]));
+
+    expect($upload->data['ai'])->toBe('failed')
+        ->and(collect($upload->records()->first()->data['findings'])->pluck('level', 'code')->all())->toMatchArray(['ai_checks_not_run' => 'block'])
+        ->and(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make()->problems($upload))->not->toContain('The AI checks are still running.');
+});
+
+test('supplier product upload import errors shown to staff never carry urls or keys', function () {
+    $errorText = fn (Throwable $e) => (fn () => $this->errorText($e))->call(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make());
+
+    expect($errorText(new RuntimeException('cURL error 28: timed out for https://rates.example.com/v1/historical?api_key=SECRET123&date=2026-10-07')))
+        ->toBe('An outside service did not answer in time, please try again.')
+        ->and($errorText(new RuntimeException('Bad answer from https://rates.example.com/x?api_key=SECRET123')))
+        ->not->toContain('SECRET123')
+        ->and($errorText(Illuminate\Validation\ValidationException::withMessages(['code' => 'Code taken.'])))
+        ->toBe('Code taken.');
+});
+
+test('UI supplier product upload preview shows the rows and saves decisions', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $upload   = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit barcode (EAN-13, for website)' => null])]));
+    $record   = $upload->records()->first();
+
+    $this->withoutVite()
+        ->get(route('grp.supply-chain.suppliers.supplier_products.uploads.show', ['supplier' => $supplier->slug, 'upload' => $upload->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('SupplyChain/SupplierProductUploadPreview')
+            ->where('upload.state', 'waiting_confirmation')
+            ->has('rows', 1)
+            ->where('rows.0.values.part_reference', 'UPLB-01'));
+
+    $this->patch(route('grp.models.supplier_product_upload.record.update', ['upload' => $upload->id, 'record' => $record->id]), [
+        'decisions' => ['no_barcode' => true],
+        'sko_name'  => 'Pair of Hemp Forest Bags',
+    ])->assertRedirect();
+
+    $record->refresh();
+    expect($record->data['decisions']['no_barcode']['accepted'])->toBeTrue()
+        ->and($record->data['decisions']['no_barcode']['user_id'])->toBe($this->adminGuest->getUser()->id)
+        ->and($record->values['sko_name'])->toBe('Pair of Hemp Forest Bags');
+
+    $this->post(route('grp.models.supplier_product_upload.cancel', ['upload' => $upload->id]))->assertRedirect();
+    expect($upload->refresh()->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::CANCELLED);
+});
 
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();

@@ -35,14 +35,7 @@ class ImportSupplierProducts extends OrgAction
             ]
         );
 
-        if ($this->isSync) {
-            PrepareSupplierProductUpload::run($supplier, $upload);
-            $upload->refresh();
-        } else {
-            PrepareSupplierProductUpload::dispatch($supplier, $upload);
-        }
-
-        return $upload;
+        return PrepareSupplierProductUpload::run($supplier, $upload)->refresh();
     }
 
     public function rules(): array
@@ -58,6 +51,17 @@ class ImportSupplierProducts extends OrgAction
         $this->initialisationFromGroup($supplier->group, $request);
 
         return $this->handle($supplier, $request->file('file'), $this->validatedData);
+    }
+
+    /**
+     * @return array{id: int, preview_url: string}
+     */
+    public function jsonResponse(Upload $upload): array
+    {
+        return [
+            'id'          => $upload->id,
+            'preview_url' => route('grp.supply-chain.suppliers.supplier_products.uploads.show', ['supplier' => $upload->parent->slug, 'upload' => $upload->id]),
+        ];
     }
 
     public function runImportForCommand($file, $command): Upload

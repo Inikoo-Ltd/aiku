@@ -497,21 +497,20 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
         <div class="flex flex-wrap gap-3">
-            <ProcurementOverviewPill :card="{ label: ctrans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" />
-            <Link v-if="stats.oldest_open" v-tooltip="ctrans('Oldest open')" :href="ticketRoute(stats.oldest_open.reference)" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <ProcurementOverviewPill :card="{ label: ctrans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" compact />
+            <Link v-if="stats.oldest_open" v-tooltip="ctrans('Oldest open')" :href="ticketRoute(stats.oldest_open.reference)" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-red-500" fixed-width aria-hidden="true" />{{ stats.oldest_open.age_days }} {{ ctrans("days") }}
                 <span class="border-l border-gray-200 pl-2 font-normal text-gray-500">{{ stats.oldest_open.reference }}</span>
             </Link>
         </div>
 
-        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-        <div class="flex flex-wrap items-center gap-3">
-            <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" class="min-w-0 flex-1" />
-            <label class="ml-auto flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-                {{ ctrans("Filter by") }}
+        <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" compact class="min-w-0" />
+            <label class="ml-auto flex items-center">
                 <select
                     :value="stats.assignee ?? ''"
-                    class="cursor-pointer rounded-md border-gray-300 py-1.5 pl-2 pr-8 text-sm normal-case tracking-normal text-gray-700 transition duration-200 focus:border-[--app-accent] focus:ring-[--app-accent]"
+                    class="cursor-pointer rounded-md border-gray-300 py-1 pl-2 pr-8 text-xs normal-case tracking-normal text-gray-700 transition duration-200 focus:border-[--app-accent] focus:ring-[--app-accent]"
                     :class="stats.assignee && '!border-[--app-accent] !bg-[--app-accent-soft] !text-[--app-accent-strong]'"
                     :aria-label="ctrans('Filter by assignee')"
                     @change="filterByAssignee(($event.target as HTMLSelectElement).value)">
@@ -521,7 +520,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </label>
         </div>
 
-        <div class="flex gap-1 border-b border-gray-200" role="tablist">
+        <div class="flex flex-wrap items-center gap-1 border-b border-gray-200" role="tablist">
             <button
                 v-for="tab in reportTabs"
                 :key="tab.key"
@@ -533,17 +532,16 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 @click="selectReportTab(tab.key)">
                 {{ tab.label }}
             </button>
-        </div>
-
-        <div v-if="reportTab === 'overview'" class="flex flex-wrap gap-3">
-            <ProcurementOverviewPill :card="{ label: ctrans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
-            <ProcurementOverviewPill :card="{ label: ctrans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
-            <Link v-tooltip="ctrans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <div v-if="reportTab === 'overview'" class="mb-1 ml-auto flex flex-wrap gap-2">
+            <ProcurementOverviewPill :card="{ label: ctrans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" compact />
+            <ProcurementOverviewPill :card="{ label: ctrans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" compact />
+            <Link v-tooltip="ctrans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-stopwatch" class="text-[--app-accent-strong]" fixed-width aria-hidden="true" />{{ hours(stats.median_hours) }}
             </Link>
-            <Link v-tooltip="ctrans('Customer satisfaction')" :href="listUrl({ filter: { rated_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <Link v-tooltip="ctrans('Customer satisfaction')" :href="listUrl({ filter: { rated_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />{{ pillValue(stats.csat) }}<span class="font-normal text-gray-400">/5</span>
             </Link>
+            </div>
         </div>
 
         <DashboardWidgetBox v-if="reportTab === 'overview'" storageKey="tickets_reports_created_vs_done_collapsed">

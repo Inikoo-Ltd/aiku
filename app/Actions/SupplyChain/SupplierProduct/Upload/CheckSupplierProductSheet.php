@@ -35,7 +35,7 @@ class CheckSupplierProductSheet
     public const float COST_CHANGE_LIMIT        = 0.20;
     public const float EURO_PRICE_DEVIATION     = 0.25;
     public const float HIGH_EXTRA_COSTS         = 0.60;
-    public const float MINIMUM_DENSITY          = 0.05;
+    public const float MINIMUM_DENSITY          = 0.01;
     public const float MAXIMUM_DENSITY          = 12.0;
 
     protected const string PACK_PATTERN = '/(^|\s|\()(\d+\s*x\b|x\s*\d+\b|\d+\s*(pcs|pieces|units|pack)\b|(pack|set|box|bundle|case)\s+of\b|bundle\b)/i';
@@ -144,7 +144,12 @@ class CheckSupplierProductSheet
         $this->checkAgainstSupplier($values, $add);
         $this->checkOrder($values, $add);
 
-        $values['sko_name'] = $values['units_per_sko'] === 1 ? $values['unit_name'] : null;
+        $values['sko_name'] = $values['units_per_sko'] > 1 && $values['unit_name'] !== null
+            ? __('Pack of :units :name', ['units' => $values['units_per_sko'], 'name' => $values['unit_name']])
+            : $values['unit_name'];
+        if ($values['units_per_sko'] > 1) {
+            $add('warning', 'sko_name_suggested', Column::UNITS_PER_SKO, __('SKO name suggested as ":name", check the wording.', ['name' => $values['sko_name']]));
+        }
 
         return ['row' => $sheetRow['row'], 'values' => $values, 'findings' => $findings];
     }
@@ -168,12 +173,12 @@ class CheckSupplierProductSheet
 
             foreach ($groups as $group) {
                 $sheetRows = $group->pluck('row')->implode(', ');
-                foreach ($group->keys() as $index) {
+                foreach ($group->keys()->slice(1) as $index) {
                     $rows[$index]['findings'][] = [
                         'level'   => $rule['level'],
                         'code'    => 'duplicate_'.$key,
                         'column'  => $rule['column']->value,
-                        'message' => __(':column :value appears in rows :rows.', ['column' => $rule['column']->heading(), 'value' => $rows[$index]['values'][$key], 'rows' => $sheetRows]),
+                        'message' => __(':column :value is already on an earlier row (rows :rows), skip or fix this one.', ['column' => $rule['column']->heading(), 'value' => $rows[$index]['values'][$key], 'rows' => $sheetRows]),
                     ];
                 }
             }
@@ -627,7 +632,7 @@ class CheckSupplierProductSheet
         if ($landed >= $price) {
             $add('block', 'below_cost_'.$column->value, $column, __('Selling below cost: landed :symbol:landed vs price :symbol:price.', ['symbol' => $symbol, 'landed' => round($landed, 2), 'price' => $price]));
         } elseif ($margin < self::TARGET_MARGIN) {
-            $add('block', 'low_margin_'.$column->value, $column, __('Margin :margin%: landed :symbol:landed vs price :symbol:price, target :target%.', [
+            $add('block', 'low_margin_'.$column->value, $column, __(':symbol margin :margin%: landed :symbol:landed vs price :symbol:price, target :target%.', [
                 'margin' => round($margin * 100),
                 'symbol' => $symbol,
                 'landed' => round($landed, 2),
@@ -651,9 +656,9 @@ class CheckSupplierProductSheet
 
         $margin = ($rrp - $price) / $rrp;
         if ($margin < self::MINIMUM_RETAILER_MARGIN) {
-            $add('block', 'low_retailer_margin_'.$column->value, $column, __('Retailer margin :margin%, our usual is about 58%.', ['margin' => round($margin * 100)]));
+            $add('block', 'low_retailer_margin_'.$column->value, $column, __(':symbol retailer margin :margin% (RRP :symbol:rrp, price :symbol:price), our usual is about 58%.', ['symbol' => $symbol, 'margin' => round($margin * 100), 'rrp' => $rrp, 'price' => $price]));
         } elseif ($margin < self::LOW_RETAILER_MARGIN) {
-            $add('warning', 'retailer_margin_'.$column->value, $column, __('Retailer margin :margin% is on the low side (usual about 58%).', ['margin' => round($margin * 100)]));
+            $add('warning', 'retailer_margin_'.$column->value, $column, __(':symbol retailer margin :margin% is on the low side (usual about 58%).', ['symbol' => $symbol, 'margin' => round($margin * 100)]));
         }
     }
 

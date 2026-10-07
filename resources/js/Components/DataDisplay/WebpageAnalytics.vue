@@ -15,7 +15,7 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 type EventType = "publish" | "price"
 
 const props = defineProps<{
-	pagespeed?: any
+	real_user_speed?: any
 	data: {
 		start_date: string
 		end_date: string
@@ -268,7 +268,7 @@ const formatTotal = (key: keyof typeof series) =>
 			</div>
 		</div>
 
-		<RealUserSpeed v-if="pagespeed !== null" :report="pagespeed" />
+		<RealUserSpeed v-if="real_user_speed !== null" :report="real_user_speed" />
 
 		<div class="rounded-lg bg-white shadow">
 			<div class="border-b px-6 py-3 text-sm font-semibold">{{ ctrans("Changes in this period") }}</div>

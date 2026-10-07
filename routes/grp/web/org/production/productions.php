@@ -9,6 +9,7 @@
 use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
+use App\Actions\Production\PartnerShippingList\DismissToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
@@ -105,6 +106,7 @@ Route::prefix('{production}')
                         Route::post('manual-job-order', StoreManualJobOrder::class)->name('manual_job_order.store');
                         Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
                         Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
+                        Route::post('items/cant-be-done', DismissToProduceItems::class)->name('items.cant_be_done');
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
                     });

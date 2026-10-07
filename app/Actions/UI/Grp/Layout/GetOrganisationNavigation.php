@@ -184,6 +184,15 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
+                            'label' => __('Supplier Products'),
+                            'icon'  => ['fal', 'fa-box-usd'],
+                            'root'  => 'grp.org.procurement.org_supplier_products.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_supplier_products.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Partners'),
                             'icon'  => ['fal', 'fa-users-class'],
                             'root'  => 'grp.org.procurement.org_partners.',

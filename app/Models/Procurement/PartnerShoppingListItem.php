@@ -42,6 +42,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $notes
  * @property int|null $added_by_user_id
  * @property bool $suggested_by_hub
+ * @property string|null $dismiss_reason
+ * @property \Illuminate\Support\Carbon|null $dismissed_at
+ * @property int|null $dismissed_by_user_id
  * @property int|null $transaction_id
  * @property int|null $parent_id
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -89,6 +92,7 @@ class PartnerShoppingListItem extends Model
             'needed_by'      => 'date',
             'expiry_date'    => 'date',
             'suggested_by_hub' => 'boolean',
+            'dismissed_at'     => 'datetime',
         ];
     }
 

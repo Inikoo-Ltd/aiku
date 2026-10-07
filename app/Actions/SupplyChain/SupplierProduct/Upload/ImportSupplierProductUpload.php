@@ -36,7 +36,9 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -93,6 +95,10 @@ class ImportSupplierProductUpload
         }
 
         $problems = [];
+        if (in_array(Arr::get($upload->data, 'ai'), ['queued', 'running'], true)) {
+            $problems[] = __('The AI checks are still running.');
+        }
+
         foreach ($upload->records()->where('status', UploadRecordStatusEnum::PREVIEW)->orderBy('row_number')->get() as $record) {
             if (Arr::get($record->data, 'skip')) {
                 continue;
@@ -149,7 +155,7 @@ class ImportSupplierProductUpload
         $supplierProduct = $this->supplierProduct($supplier, $values);
         SyncSupplierProductTradeUnits::run($supplierProduct, [$tradeUnit->id => ['quantity' => $values['units_per_sko']]]);
 
-        $record->update(['data' => array_merge($record->data, ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
+        $record->update(['data' => array_merge($record->data ?? [], ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
     }
 
     protected function stockFamily(Supplier $supplier, string $code): StockFamily
@@ -350,7 +356,7 @@ class ImportSupplierProductUpload
             $summary[$key] = ['purchase_order' => $purchaseOrder->reference, 'lines' => $added, 'errors' => $errors];
         }
 
-        $upload->update(['data' => array_merge($upload->data, ['purchase_orders' => $summary])]);
+        $upload->update(['data' => array_merge($upload->data ?? [], ['purchase_orders' => $summary])]);
     }
 
     protected function draftPurchaseOrder(mixed $parent, Upload $upload, string $key): PurchaseOrder
@@ -365,8 +371,22 @@ class ImportSupplierProductUpload
         return StorePurchaseOrder::make()->action($parent, array_filter(['buyer_id' => $upload->user_id]));
     }
 
+    /**
+     * What staff see on the preview page: validation messages as they are, anything else without URLs,
+     * which can carry service keys (a currency lookup that timed out showed its api_key).
+     */
     protected function errorText(Throwable $e): string
     {
-        return $e instanceof ValidationException ? collect($e->errors())->flatten()->implode(' ') : $e->getMessage();
+        if ($e instanceof ValidationException) {
+            return collect($e->errors())->flatten()->implode(' ');
+        }
+
+        Log::warning('Supplier product upload import: '.$e->getMessage());
+
+        if ($e instanceof ConnectionException || str_contains($e->getMessage(), 'cURL error')) {
+            return __('An outside service did not answer in time, please try again.');
+        }
+
+        return trim(preg_replace('#\bhttps?://\S+#i', '[link removed]', $e->getMessage()));
     }
 }

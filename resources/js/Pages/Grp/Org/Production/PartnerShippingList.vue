@@ -235,6 +235,18 @@ function setPreparing(lines: PreparingLine[], preparing: boolean) {
     )
 }
 
+const isDismissing = ref(false)
+const dismissReason = ref("")
+
+function dismissPending() {
+    router.post(
+        route("grp.org.productions.show.to_produce.items.cant_be_done", [route().params["organisation"], route().params["production"]]),
+        { ids: pendingItems.value.map(item => item.id), reason: dismissReason.value.trim() },
+        { preserveScroll: true, onSuccess: () => { selectedCards.value = [] } }
+    )
+    pendingItems.value = []
+}
+
 function pipelineWarning(items: BoardItem[]) {
     const covered = items.filter(item => item.pipeline)
     if (!covered.length) return null
@@ -314,6 +326,8 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
     if (!dragging.value.length) return
     pickerMode.value = mode
     pendingItems.value = dragging.value
+    isDismissing.value = false
+    dismissReason.value = ""
     for (const key in pendingQuantities) delete pendingQuantities[key]
     for (const key in pendingBatchCodes) delete pendingBatchCodes[key]
     for (const key in pendingExpiryDates) delete pendingExpiryDates[key]
@@ -642,6 +656,16 @@ function jobOrderHref(item: { job_order_slug: string }) {
 
                     <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? ctrans("Prepare :count", { count: pendingItems.length }) : ctrans("Prepare") }}</button>
                 </form>
+                <div class="mt-2 border-t border-gray-100 pt-2">
+                    <button v-if="!isDismissing" type="button" class="w-full rounded border border-red-200 px-3 py-1 text-red-700 hover:bg-red-50" @click="isDismissing = true">{{ ctrans("Can't be done") }}</button>
+                    <form v-else @submit.prevent="dismissPending">
+                        <label class="flex flex-col gap-0.5">
+                            <span class="text-gray-500">{{ ctrans("Why can't it be done? The buyer is told.") }}</span>
+                            <textarea v-model="dismissReason" required maxlength="1000" rows="2" autofocus class="w-full rounded border-gray-300 py-0.5 text-xs" />
+                        </label>
+                        <button type="submit" :disabled="!dismissReason.trim()" class="mt-1.5 w-full rounded bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-500 disabled:opacity-50">{{ pendingItems.length > 1 ? ctrans("Can't be done :count", { count: pendingItems.length }) : ctrans("Can't be done") }}</button>
+                    </form>
+                </div>
             </template>
 
             <template v-else>
