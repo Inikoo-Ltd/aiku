@@ -27,6 +27,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $minutes
  * @property Carbon $started_at
  * @property Carbon|null $ended_at
+ * @property int|null $clock_out_clocking_id
+ * @property int|null $clock_in_clocking_id
  * @property-read Production $production
  * @property-read User $user
  * @property-read Employee|null $employee
