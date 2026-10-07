@@ -23,6 +23,37 @@ const wrap = (text: string, marker: string, tag: string) => {
     return text.replace(pattern, `$1<${tag}>$2</${tag}>`)
 }
 
+const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi
+const TRAILING_PUNCTUATION = /[.,;:!?'")\]*_~]+$/
+
+/**
+ * Pulls the links out before escaping and markup, so an underscore or asterisk inside a URL
+ * never opens a tag, and puts them back as anchors at the end. Trailing punctuation stays
+ * outside the link, except a closing bracket the URL itself opened, as Wikipedia's do.
+ */
+const extractLinks = (value: string): [string, string[]] => {
+    const links: string[] = []
+    value = value.replace(/\u0000/g, "")
+
+    const text = value.replace(URL_PATTERN, (match) => {
+        let url = match.replace(TRAILING_PUNCTUATION, "")
+        while (match.length > url.length && match[url.length] === ")" && url.split("(").length > url.split(")").length) {
+            url += ")"
+        }
+        links.push(url)
+        return `\u0000${links.length - 1}\u0000${match.slice(url.length)}`
+    })
+
+    return [text, links]
+}
+
+const restoreLinks = (html: string, links: string[]) =>
+    html.replace(/\u0000(\d+)\u0000/g, (_, index) => {
+        const url = links[Number(index)]
+        const href = /^www\./i.test(url) ? `https://${url}` : url
+        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" class="underline break-all">${escapeHtml(url)}</a>`
+    })
+
 /**
  * Renders the markup WhatsApp itself understands, so a message written on a phone reads
  * the same in the inbox instead of showing its raw markers. __underline__ is ours, WhatsApp
@@ -34,7 +65,8 @@ export const formatWhatsappMarkup = (value?: string | null): string => {
         return ""
     }
 
-    let text = escapeHtml(value)
+    const [withoutLinks, links] = extractLinks(value)
+    let text = escapeHtml(withoutLinks)
 
     text = text.replace(
         /```([\s\S]+?)```/g,
@@ -46,7 +78,7 @@ export const formatWhatsappMarkup = (value?: string | null): string => {
     text = wrap(text, "_", "em")
     text = wrap(text, "~", "s")
 
-    return text
+    return restoreLinks(text, links)
 }
 
 const LIST_LINE = /^(• |\d+\. )/
