@@ -12,7 +12,6 @@ import { notify } from "@kyvg/vue3-notification"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import PurchaseOrderSuggestButton from "@/Components/Procurement/PurchaseOrderSuggestButton.vue"
-import Toggle from "@/Components/Pure/Toggle.vue"
 import RenderWhenVisible from "@/Components/Utils/RenderWhenVisible.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -25,8 +24,8 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan } from "@fal"
-library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan)
+import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells } from "@fal"
+library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -162,16 +161,14 @@ const isPartBatch = (item: BatchedItem) =>
 
 const breakingBatchOf = ref<BatchedItem | null>(null)
 const breakBatchQuantity = ref<number | null>(null)
-const breakBatchUnderstood = ref(false)
 
 function openBreakBatch(item: BatchedItem) {
 	breakingBatchOf.value = item
 	breakBatchQuantity.value = Number(item.quantity)
-	breakBatchUnderstood.value = false
 }
 
 function breakBatch() {
-	if (!breakingBatchOf.value || !breakBatchQuantity.value || !breakBatchUnderstood.value) {
+	if (!breakingBatchOf.value || !breakBatchQuantity.value) {
 		return
 	}
 	router.patch(
@@ -190,6 +187,41 @@ function breakBatch() {
 }
 
 const isEditable = (item: { is_editable?: boolean }) => !!item.is_editable
+
+const pokingId = ref<number | null>(null)
+const pokedIds = ref<Record<number, boolean>>({})
+
+async function pokePartner(item: { id: number; org_stock_code: string }) {
+	pokingId.value = item.id
+	try {
+		const response = await axios.post(
+			route("grp.org.procurement.org_partners.show.shopping_list.poke", [
+				routeParams["organisation"],
+				props.orgPartner.id,
+				item.id,
+			])
+		)
+		pokedIds.value[item.id] = true
+		notify({
+			title: ctrans(":partner poked about :code", { partner: props.partnerCode, code: item.org_stock_code }),
+			text: Number(response.data)
+				? ctrans(":count people in production were notified", { count: String(response.data) })
+				: ctrans("Nobody in the partner production could be notified"),
+			type: Number(response.data) ? "success" : "warning",
+		})
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			pokedIds.value[item.id] = true
+		}
+		notify({
+			title: ctrans("Could not poke the partner"),
+			text: error?.response?.data?.message || ctrans("Something went wrong"),
+			type: "error",
+		})
+	} finally {
+		pokingId.value = null
+	}
+}
 
 const typedSkos = ref<Record<number, number>>({})
 const savingId = ref<number | null>(null)
@@ -254,46 +286,6 @@ async function onSaveQuantity(item: QuantityItem, form: { quantity: number; defa
 	if (await saveQuantity(item, Number(form.quantity))) {
 		form.defaults()
 	}
-}
-
-const BRAVE_MODE_STORAGE_KEY = "purchase-order-brave-mode"
-
-function readBraveMode(): boolean {
-	try {
-		return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === "1"
-	} catch {
-		return false
-	}
-}
-
-const isBraveMode = ref(readBraveMode())
-
-watch(isBraveMode, (value) => {
-	try {
-		localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? "1" : "0")
-	} catch {
-		return
-	}
-})
-
-function confirmDeleteItem(event: MouseEvent, item: { id: number }) {
-	if (isBraveMode.value) {
-		deleteItem(item)
-		return
-	}
-
-	confirm.require({
-		target: event.currentTarget as HTMLElement,
-		message: props.isSentView
-			? ctrans("Withdraw this line from the partner? They have not started it yet.")
-			: ctrans("Remove this product from the ongoing PO?"),
-		icon: "pi pi-exclamation-triangle",
-		acceptLabel: ctrans("Remove"),
-		rejectLabel: ctrans("Cancel"),
-		acceptClass: "p-button-danger",
-		rejectClass: "p-button-text",
-		accept: () => deleteItem(item),
-	})
 }
 
 function confirmStopSuggesting(event: MouseEvent, item: { id: number; org_stock_code: string }) {
@@ -459,16 +451,6 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				useLocaleStore().currencyFormat(orgPartner.currency, linesTotal)
 			}}</span>
 		</span>
-		<label
-			v-if="!isSentView"
-			v-tooltip="
-				ctrans('When on, Remove deletes the product straight away without asking to confirm')
-			"
-			class="flex cursor-pointer items-center gap-2 text-sm"
-			:class="isBraveMode ? 'font-medium text-red-600' : 'text-gray-500'">
-			<Toggle v-model="isBraveMode" />
-			{{ ctrans("Brave mode") }}
-		</label>
 	</div>
 	<div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm">
 		<div
@@ -653,31 +635,45 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 		</template>
 		<template #cell(actions)="{ item }">
 			<Button
-				v-if="
-					isEditable(item) && Number(item.order_quantum) > 1
+				v-if="item.can_be_poked"
+				icon="fal fa-bells"
+				:tooltip="
+					pokedIds[item.id] || item.is_recently_poked
+						? ctrans('Poked :at, you can poke again an hour later', { at: useFormatTime(item.poked_at ?? new Date(), { formatTime: 'dd MMM HH:mm' }) })
+						: ctrans('Poke the partner: tell their production you urgently need this')
 				"
-				icon="fal fa-cut"
-				:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
 				type="tertiary"
 				size="xs"
 				class="mr-1"
-				@click="openBreakBatch(item)" />
-			<Button
-				v-if="isEditable(item)"
-				icon="fal fa-ban"
-				:tooltip="ctrans('Remove and never suggest this product again')"
-				type="tertiary"
-				size="xs"
-				class="mr-1"
-				@click="confirmStopSuggesting($event, item)" />
-			<Button
-				v-if="isEditable(item)"
-				:label="ctrans('Remove')"
-				icon="fal fa-trash-alt"
-				:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
-				type="delete"
-				size="xs"
-				@click="confirmDeleteItem($event, item)" />
+				:loading="pokingId === item.id"
+				:disabled="pokedIds[item.id] || item.is_recently_poked"
+				@click="pokePartner(item)" />
+			<div class="flex flex-wrap justify-end gap-1">
+				<Button
+					v-if="
+						isEditable(item) && Number(item.order_quantum) > 1
+					"
+					icon="fal fa-cut"
+					:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
+					type="tertiary"
+					size="xs"
+					@click="openBreakBatch(item)" />
+				<Button
+					v-if="isEditable(item)"
+					icon="fal fa-ban"
+					:tooltip="ctrans('Remove and never suggest this product again')"
+					type="tertiary"
+					size="xs"
+					@click="confirmStopSuggesting($event, item)" />
+				<Button
+					v-if="isEditable(item)"
+					:label="ctrans('Remove')"
+					icon="fal fa-trash-alt"
+					:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
+					type="delete"
+					size="xs"
+					@click="deleteItem(item)" />
+			</div>
 		</template>
 	</Table>
 
@@ -714,17 +710,6 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 					inputmode="numeric"
 					class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
 			</label>
-			<label class="flex cursor-pointer items-start gap-2">
-				<input
-					v-model="breakBatchUnderstood"
-					type="checkbox"
-					class="mt-0.5 rounded border-gray-300" />
-				<span>{{
-					ctrans(
-						"I understand this breaks a production batch and I really need this quantity"
-					)
-				}}</span>
-			</label>
 			<div class="flex justify-end gap-2">
 				<Button
 					:label="ctrans('Cancel')"
@@ -738,7 +723,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 					size="s"
 					nativeType="submit"
 					:disabled="
-						!breakBatchQuantity || breakBatchQuantity < 1 || !breakBatchUnderstood
+						!breakBatchQuantity || breakBatchQuantity < 1
 					" />
 			</div>
 		</form>

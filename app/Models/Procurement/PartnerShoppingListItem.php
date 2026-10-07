@@ -47,6 +47,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $dismissed_by_user_id
  * @property int|null $transaction_id
  * @property int|null $parent_id
+ * @property \Illuminate\Support\Carbon|null $poked_at
+ * @property int|null $poked_by_user_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -93,6 +95,7 @@ class PartnerShoppingListItem extends Model
             'expiry_date'    => 'date',
             'suggested_by_hub' => 'boolean',
             'dismissed_at'     => 'datetime',
+            'poked_at'         => 'datetime',
         ];
     }
 
@@ -229,6 +232,12 @@ class PartnerShoppingListItem extends Model
             && !$this->transaction_id
             && !$this->pre_picked_at
             && !$this->preparing_at;
+    }
+
+    /** Sent and not yet delivered: the buyer can still hurry the partner along. */
+    public function canBePoked(): bool
+    {
+        return $this->state === ShoppingListItemStateEnum::OPEN && !$this->transaction_id;
     }
 
     public function jobOrder(): BelongsTo

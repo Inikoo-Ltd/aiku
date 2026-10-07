@@ -6611,6 +6611,46 @@ describe('partner shopping list', function () {
         expect(PartnerShoppingListItem::find($waiting->id))->toBeNull();
     });
 
+    test('the buyer can poke the partner production about a sent line, once an hour, until it is delivered', function () {
+        Notification::fake();
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $poker     = $this->adminGuest->getUser();
+        $recipient = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+        setPermissionsTeamId($this->organisation->group_id);
+        $recipient->givePermissionTo("productions_operations.$production->id.orchestrate");
+
+        $delivered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $delivered->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $waiting = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $poke = fn (PartnerShoppingListItem $item, ?OrgPartner $orgPartner = null) => $this->postJson(route('grp.org.procurement.org_partners.show.shopping_list.poke', [$this->organisation->slug, ($orgPartner ?? $this->orgPartner)->id, $item->id]));
+
+        try {
+            actingAs($poker);
+            $sentRows = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+            expect($sentRows[$waiting->id]['can_be_poked'])->toBeTrue();
+
+            $poke($delivered)->assertStatus(422);
+            expect((int) $poke($waiting)->assertOk()->getContent())->toBeGreaterThanOrEqual(1);
+            $poke($waiting)->assertStatus(429);
+            expect($waiting->refresh()->poked_at)->not->toBeNull()
+                ->and($waiting->poked_by_user_id)->toBe($poker->id);
+
+            $board = collect(get(route('grp.org.productions.show.to_produce.list', [$seller->slug, $production->slug]))->viewData('page')['props']['data']['data'])->keyBy('id');
+            expect($board[$waiting->id]['poked_at'])->not->toBeNull();
+
+            $waiting->update(['poked_at' => now()->subHours(2)]);
+            $poke($waiting)->assertOk();
+
+            Notification::assertSentToTimes($recipient, \App\Notifications\PartnerLinePokedNotification::class, 2);
+            Notification::assertNotSentTo($poker, \App\Notifications\PartnerLinePokedNotification::class);
+        } finally {
+            $recipient->revokePermissionTo("productions_operations.$production->id.orchestrate");
+        }
+    });
+
     test('the ongoing PO lists the drafts and sent lists what was submitted', function () {
         $ordered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $ordered->update(['state' => ShoppingListItemStateEnum::ORDERED]);

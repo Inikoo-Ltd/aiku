@@ -38,6 +38,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListIte
 use App\Actions\Procurement\PartnerShoppingListItem\DeleteOpenPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\PokePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
@@ -229,6 +230,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
                 Route::post('{orgStock:id}', StorePartnerShoppingListItem::class)->name('store')->withoutScopedBindings();
                 Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update')->withoutScopedBindings();
                 Route::delete('{partnerShoppingListItem}', DeletePartnerShoppingListItem::class)->name('destroy')->withoutScopedBindings();
+                Route::post('{partnerShoppingListItem}/poke', PokePartnerShoppingListItem::class)->name('poke')->withoutScopedBindings();
             });
         });
     });

@@ -281,6 +281,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'partner_shopping_list_items.preparing_at',
                 'partner_shopping_list_items.job_order_id',
                 'partner_shopping_list_items.transaction_id',
+                'partner_shopping_list_items.poked_at',
                 'partner_shopping_list_items.suggested_by_hub',
                 'partner_shopping_list_items.dismiss_reason',
                 'partner_shopping_list_items.dismissed_at',
@@ -344,6 +345,8 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->price_per_sko            = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
             $row->progress                 = $this->progressOf($row);
             $row->is_editable              = $row->state === ShoppingListItemStateEnum::DRAFT || (empty($row->folded_ids) && $row->isWaitingForPartner());
+            $row->can_be_poked             = $this->isSentView && $row->canBePoked();
+            $row->is_recently_poked        = $row->poked_at?->gt(now()->subHour()) ?? false;
             $row->stock_in_locations       = $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations);
             $row->stock_cover              = $orgStock ? GetOrgStockBuyingSignals::run($orgStock, null, $leadTimeDays) : null;
             $row->quarterly_usage          = $quarterlyUsage->get($row->org_stock_id) ?? collect();
