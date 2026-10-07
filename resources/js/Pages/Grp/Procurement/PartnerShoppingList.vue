@@ -189,7 +189,7 @@ function breakBatch() {
 	)
 }
 
-const isEditable = (item: { state: string }) => !props.isSentView && item.state === "draft"
+const isEditable = (item: { is_editable?: boolean }) => !!item.is_editable
 
 const typedSkos = ref<Record<number, number>>({})
 const savingId = ref<number | null>(null)
@@ -284,7 +284,9 @@ function confirmDeleteItem(event: MouseEvent, item: { id: number }) {
 
 	confirm.require({
 		target: event.currentTarget as HTMLElement,
-		message: ctrans("Remove this product from the ongoing PO?"),
+		message: props.isSentView
+			? ctrans("Withdraw this line from the partner? They have not started it yet.")
+			: ctrans("Remove this product from the ongoing PO?"),
 		icon: "pi pi-exclamation-triangle",
 		acceptLabel: ctrans("Remove"),
 		rejectLabel: ctrans("Cancel"),
@@ -574,6 +576,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 						{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
 					</span>
 					<Button
+						v-if="item.state === 'draft'"
 						class="mt-1"
 						type="secondary"
 						size="xs"
@@ -671,7 +674,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				v-if="isEditable(item)"
 				:label="ctrans('Remove')"
 				icon="fal fa-trash-alt"
-				:tooltip="ctrans('Remove from the ongoing PO')"
+				:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
 				type="delete"
 				size="xs"
 				@click="confirmDeleteItem($event, item)" />

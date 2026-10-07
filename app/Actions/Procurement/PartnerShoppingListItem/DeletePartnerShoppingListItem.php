@@ -17,6 +17,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -33,10 +34,19 @@ class DeletePartnerShoppingListItem extends OrgAction
 
     public function handle(PartnerShoppingListItem $partnerShoppingListItem, bool $stopSuggesting = false): bool
     {
-        abort_unless(in_array($partnerShoppingListItem->state->value, $this->asAction ? ShoppingListItemStateEnum::onPartnerBuyerList() : [ShoppingListItemStateEnum::DRAFT->value], true), 422, 'Only lines on the ongoing PO can be removed, sent lines are the partner\'s to work on');
-        abort_if($partnerShoppingListItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be removed');
+        $deleted = DB::transaction(function () use ($partnerShoppingListItem) {
+            $lockedItem = PartnerShoppingListItem::whereKey($partnerShoppingListItem->id)->lockForUpdate()->firstOrFail();
 
-        $deleted = $partnerShoppingListItem->delete();
+            abort_if($lockedItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be removed');
+
+            $canRemove = $this->asAction
+                ? in_array($lockedItem->state->value, ShoppingListItemStateEnum::onPartnerBuyerList(), true)
+                : $lockedItem->state === ShoppingListItemStateEnum::DRAFT || $lockedItem->isWaitingForPartner();
+
+            abort_unless($canRemove, 422, 'The partner has already started this line, it can no longer be removed');
+
+            return $lockedItem->delete();
+        });
 
         if ($stopSuggesting) {
             $ourOrgStock = OrgStock::where('organisation_id', $partnerShoppingListItem->organisation_id)
@@ -61,6 +71,7 @@ class DeletePartnerShoppingListItem extends OrgAction
 
     public function asController(Organisation $organisation, OrgPartner $orgPartner, PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): bool
     {
+        abort_unless($orgPartner->organisation_id === $organisation->id && $partnerShoppingListItem->org_partner_id === $orgPartner->id, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($partnerShoppingListItem, (bool) ($this->validatedData['stop_suggesting'] ?? false));

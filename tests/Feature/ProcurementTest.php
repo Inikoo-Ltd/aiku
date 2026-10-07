@@ -6575,22 +6575,43 @@ describe('partner shopping list', function () {
             ->and(PartnerShoppingListItem::find($ours->id))->not->toBeNull();
     });
 
-    test('over http only drafts can be changed or removed, sent lines are the partner\'s', function () {
-        $open  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+    test('over http drafts and sent lines the partner has not started can be changed or removed, started lines are the partner\'s', function () {
+        $started = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $started->update(['preparing_at' => now()]);
+        $waiting = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
         $draft = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
         $route = fn (string $name, PartnerShoppingListItem $item) => route("grp.org.procurement.org_partners.show.shopping_list.$name", [$this->organisation->slug, $this->orgPartner->id, $item->id]);
 
         actingAs($this->adminGuest->getUser());
-        $this->patch($route('update', $open), ['priority' => 'high'])->assertStatus(422);
-        $this->delete($route('destroy', $open))->assertStatus(422);
+
+        $sentRows = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+        expect($sentRows[$waiting->id]['is_editable'])->toBeTrue()
+            ->and($sentRows[$started->id]['is_editable'])->toBeFalse();
+
+        $otherPartnerOrganisation = Organisation::where('id', '!=', $this->organisation->id)->where('group_id', $this->organisation->group_id)->firstOrFail();
+        $otherOrgPartner          = OrgPartner::where('organisation_id', $this->organisation->id)->where('partner_id', $otherPartnerOrganisation->id)->first()
+            ?? StoreOrgPartner::make()->action($this->organisation, $otherPartnerOrganisation);
+        $foreignUrl = fn (string $name) => route("grp.org.procurement.org_partners.show.shopping_list.$name", [$this->organisation->slug, $otherOrgPartner->id, $waiting->id]);
+        $this->patch($foreignUrl('update'), ['quantity' => 1, 'break_batch' => true])->assertNotFound();
+        $this->delete($foreignUrl('destroy'))->assertNotFound();
+
+        $this->patch($route('update', $started), ['priority' => 'high'])->assertStatus(422);
+        $this->delete($route('destroy', $started))->assertStatus(422);
+        $this->patch($route('update', $waiting), ['priority' => 'high', 'quantity' => 2, 'break_batch' => true])->assertRedirect();
         $this->patch($route('update', $draft), ['priority' => 'high'])->assertRedirect();
         $this->delete($route('destroy', $draft))->assertRedirect();
 
-        expect($open->refresh()->priority)->not->toBe(ShoppingListItemPriorityEnum::HIGH)
+        expect($started->refresh()->priority)->not->toBe(ShoppingListItemPriorityEnum::HIGH)
+            ->and($waiting->refresh()->priority)->toBe(ShoppingListItemPriorityEnum::HIGH)
+            ->and((float) $waiting->quantity)->toBe(2.0)
             ->and(PartnerShoppingListItem::find($draft->id))->toBeNull();
+
+        $this->delete($route('destroy', $waiting))->assertRedirect();
+        expect(PartnerShoppingListItem::find($waiting->id))->toBeNull();
     });
 
-    test('the ongoing PO lists the drafts and sent lists what was submitted, read only', function () {
+    test('the ongoing PO lists the drafts and sent lists what was submitted', function () {
         $ordered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $ordered->update(['state' => ShoppingListItemStateEnum::ORDERED]);
         $open  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);

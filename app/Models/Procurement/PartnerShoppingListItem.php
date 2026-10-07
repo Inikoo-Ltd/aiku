@@ -218,6 +218,19 @@ class PartnerShoppingListItem extends Model
             ->whereNull('pre_picked_at');
     }
 
+    /**
+     * Sent to the partner but not started: not picked from stock, not queued to be made, not on a job order or a partner order.
+     * The buyer can still change or withdraw it.
+     */
+    public function isWaitingForPartner(): bool
+    {
+        return $this->state === ShoppingListItemStateEnum::OPEN
+            && !$this->job_order_id
+            && !$this->transaction_id
+            && !$this->pre_picked_at
+            && !$this->preparing_at;
+    }
+
     public function jobOrder(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Production\JobOrder::class);
