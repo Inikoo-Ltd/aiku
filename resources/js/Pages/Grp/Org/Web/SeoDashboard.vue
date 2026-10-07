@@ -553,14 +553,14 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
         v-if="website"
         :aria-label="ctrans('Webpages and search queries')"
         :aria-busy="isLoadingOnTable"
-        class="relative mx-4 mb-4 rounded-xl bg-white pb-5 ring-1 ring-gray-200">
+        class="relative mx-4 mb-4 rounded-xl bg-white pb-3 pt-2 ring-1 ring-gray-200">
         <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
             <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
         </div>
 
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-        <div class="px-5">
+        <div class="pt-3">
             <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" />
         </div>
     </section>
