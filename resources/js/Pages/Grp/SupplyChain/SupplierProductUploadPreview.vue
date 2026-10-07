@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, router, usePoll } from "@inertiajs/vue3"
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, nextTick, reactive, ref, watch } from "vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -109,16 +111,21 @@ const findingGroups = (row: Row) =>
         .map((level) => ({ level, findings: row.findings.filter((finding) => finding.level === level) }))
         .filter((group) => group.findings.length)
 
-type RowState = "ready" | "decision" | "error" | "skipped"
+const localDecisions = reactive<Record<number, Record<string, boolean>>>({})
+const localSkips = reactive<Record<number, boolean>>({})
+const isAccepted = (row: Row, finding: Finding) => localDecisions[row.id]?.[finding.code] ?? !!row.decisions[finding.code]?.accepted
+const isSkipped = (row: Row) => localSkips[row.id] ?? row.skip
+
+type RowState ="ready" | "decision" | "error" | "skipped"
 
 const rowState = (row: Row): RowState => {
-    if (row.skip) {
+    if (isSkipped(row)) {
         return "skipped"
     }
     if (hasErrors(row)) {
         return "error"
     }
-    if (row.findings.some((finding) => ["block", "link"].includes(finding.level) && !row.decisions[finding.code]?.accepted)) {
+    if (row.findings.some((finding) => ["block", "link"].includes(finding.level) && !isAccepted(row, finding))) {
         return "decision"
     }
     return "ready"
@@ -159,28 +166,46 @@ const scrollToRow = async (row: Row) => {
 }
 
 const counts = computed(() => {
-    const active = props.rows.filter((row) => !row.skip)
+    const active = props.rows.filter((row) => !isSkipped(row))
     const has = (row: Row, level: string) => row.findings.some((finding) => finding.level === level)
     return {
         rows: props.rows.length,
         skipped: props.rows.length - active.length,
         errors: active.filter((row) => has(row, "error")).length,
-        blocks: active.filter((row) => row.findings.some((finding) => ["block", "link"].includes(finding.level) && !row.decisions[finding.code]?.accepted)).length,
+        blocks: active.filter((row) => row.findings.some((finding) => ["block", "link"].includes(finding.level) && !isAccepted(row, finding))).length,
         warnings: active.filter((row) => has(row, "warning")).length,
     }
 })
 
 const needsSkoName = (row: Row) => (row.values.units_per_sko ?? 1) > 1
 
+const pendingSaves = ref(0)
+let saveChain: Promise<unknown> = Promise.resolve()
 const updateRecord = (row: Row, payload: Record<string, any>) => {
-    router.patch(route(props.routes.record.name, { ...props.routes.record.parameters, record: row.id }), payload, {
-        preserveScroll: true,
-        preserveState: true,
-    })
+    pendingSaves.value++
+    saveChain = saveChain
+        .then(() => axios.patch(route(props.routes.record.name, { ...props.routes.record.parameters, record: row.id }), payload, { headers: { Accept: "application/json" } }))
+        .catch(() => notify({ title: ctrans("Not saved"), text: ctrans("A change could not be saved, the page will reload."), type: "error" }))
+        .finally(() => {
+            pendingSaves.value--
+            if (pendingSaves.value === 0) {
+                router.reload({ only: ["upload", "rows", "draft_orders"], onSuccess: () => {
+                    Object.keys(localDecisions).forEach((key) => delete localDecisions[Number(key)])
+                    Object.keys(localSkips).forEach((key) => delete localSkips[Number(key)])
+                } })
+            }
+        })
 }
 
-const toggleDecision = (row: Row, finding: Finding, accepted: boolean) => updateRecord(row, { decisions: { [finding.code]: accepted } })
-const toggleSkip = (row: Row) => updateRecord(row, { skip: !row.skip })
+const toggleDecision = (row: Row, finding: Finding, accepted: boolean) => {
+    localDecisions[row.id] = { ...(localDecisions[row.id] ?? {}), [finding.code]: accepted }
+    updateRecord(row, { decisions: { [finding.code]: accepted } })
+}
+const toggleSkip = (row: Row) => {
+    const skip = !isSkipped(row)
+    localSkips[row.id] = skip
+    updateRecord(row, { skip })
+}
 const saveSkoName = (row: Row) => {
     if ((row.values.sko_name ?? "") !== skoNames.value[row.id]) {
         updateRecord(row, { sko_name: skoNames.value[row.id] })
@@ -218,7 +243,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     type="save"
                     :label="ctrans('Import')"
                     :loading="isImporting"
-                    :disabled="upload.problems.length > 0"
+                    :disabled="upload.problems.length > 0 || pendingSaves > 0"
                     @click="importUpload"
                 />
             </div>
@@ -406,14 +431,14 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                         v-if="upload.can_edit"
                         type="button"
                         class="ml-auto rounded border px-2.5 py-1 text-xs font-medium transition duration-200"
-                        :class="row.skip
+                        :class="isSkipped(row)
                             ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong]'
                             : hasErrors(row)
                                 ? 'border-red-300 bg-white text-red-700 hover:bg-red-50'
                                 : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
                         @click="toggleSkip(row)"
                     >
-                        {{ row.skip ? ctrans("Include row") : ctrans("Skip row") }}
+                        {{ isSkipped(row) ? ctrans("Include row") : ctrans("Skip row") }}
                     </button>
                 </div>
 
@@ -428,7 +453,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     <span v-for="(cartons, key) in row.values.order" :key="key">{{ key }} {{ cartons }} {{ ctrans("cartons") }}</span>
                 </div>
 
-                <div v-if="!row.skip && needsSkoName(row)" class="mt-2 flex items-center gap-2 text-xs">
+                <div v-if="!isSkipped(row) && needsSkoName(row)" class="mt-2 flex items-center gap-2 text-xs">
                     <label class="text-gray-500" :for="`sko-name-${row.id}`">{{ ctrans("SKO name") }}</label>
                     <input
                         :id="`sko-name-${row.id}`"
@@ -442,7 +467,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     />
                 </div>
 
-                <div v-if="!row.skip && hasErrors(row)" class="mt-2 flex items-start gap-2 rounded border border-red-200 bg-white px-3 py-2 text-xs text-red-800">
+                <div v-if="!isSkipped(row) && hasErrors(row)" class="mt-2 flex items-start gap-2 rounded border border-red-200 bg-white px-3 py-2 text-xs text-red-800">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width class="mt-0.5 text-red-600" />
                     <span>
                         <span class="font-semibold">{{ ctrans("This row can't be imported.") }}</span>
@@ -468,13 +493,13 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                                     <span v-if="finding.source === 'jev'" class="text-gray-500">({{ ctrans("AI") }})</span>
                                 </span>
                                 <label
-                                    v-if="upload.can_edit && !row.skip && ['block', 'link'].includes(finding.level)"
+                                    v-if="upload.can_edit && !isSkipped(row) && ['block', 'link'].includes(finding.level)"
                                     :for="`decision-${row.id}-${finding.code}`"
                                     class="inline-flex cursor-pointer items-center gap-2 text-gray-600"
                                 >
                                     <Checkbox
                                         :inputId="`decision-${row.id}-${finding.code}`"
-                                        :modelValue="!!row.decisions[finding.code]?.accepted"
+                                        :modelValue="isAccepted(row, finding)"
                                         binary
                                         class="upload-accept-checkbox"
                                         @update:modelValue="(checked: boolean) => toggleDecision(row, finding, checked)"

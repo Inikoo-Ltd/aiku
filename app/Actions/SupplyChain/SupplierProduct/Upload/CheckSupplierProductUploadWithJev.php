@@ -32,7 +32,7 @@ class CheckSupplierProductUploadWithJev
     public function handle(Upload $upload): Upload
     {
         $this->groupId = $upload->group_id;
-        $upload->update(['data' => array_merge($upload->data, ['jev' => 'running'])]);
+        $upload->update(['data' => array_merge($upload->data ?? [], ['jev' => 'running'])]);
 
         $records = $upload->records()->where('status', UploadRecordStatusEnum::PREVIEW)->orderBy('row_number')->get();
         $failed  = 0;
@@ -48,10 +48,10 @@ class CheckSupplierProductUploadWithJev
                 $findings = [...$findings, ...$this->findings($record, $answers)];
             }
 
-            $record->update(['data' => array_merge($record->data, ['findings' => $findings])]);
+            $record->update(['data' => array_merge($record->data ?? [], ['findings' => $findings])]);
         }
 
-        $upload->update(['data' => array_merge($upload->data, ['jev' => $failed ? 'failed' : 'done'])]);
+        $upload->update(['data' => array_merge($upload->data ?? [], ['jev' => $failed ? 'failed' : 'done'])]);
 
         return $upload;
     }

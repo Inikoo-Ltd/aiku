@@ -153,7 +153,7 @@ class ImportSupplierProductUpload
         $supplierProduct = $this->supplierProduct($supplier, $values);
         SyncSupplierProductTradeUnits::run($supplierProduct, [$tradeUnit->id => ['quantity' => $values['units_per_sko']]]);
 
-        $record->update(['data' => array_merge($record->data, ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
+        $record->update(['data' => array_merge($record->data ?? [], ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
     }
 
     protected function stockFamily(Supplier $supplier, string $code): StockFamily
@@ -354,7 +354,7 @@ class ImportSupplierProductUpload
             $summary[$key] = ['purchase_order' => $purchaseOrder->reference, 'lines' => $added, 'errors' => $errors];
         }
 
-        $upload->update(['data' => array_merge($upload->data, ['purchase_orders' => $summary])]);
+        $upload->update(['data' => array_merge($upload->data ?? [], ['purchase_orders' => $summary])]);
     }
 
     protected function draftPurchaseOrder(mixed $parent, Upload $upload, string $key): PurchaseOrder

@@ -17,7 +17,7 @@ class SetSupplierProductUploadNewDraft extends OrgAction
 
     public function handle(Upload $upload, string $key, bool $newDraft): Upload
     {
-        $data              = $upload->data;
+        $data              = $upload->data ?? [];
         $data['new_draft'] = array_merge($data['new_draft'] ?? [], [$key => $newDraft]);
         $upload->update(['data' => $data]);
 
