@@ -575,6 +575,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Site audit"),
+                                "tooltip" => __("Site audit"),
+                                "icon"    => ["fal", "fa-clipboard-check"],
+                                "root"    => "grp.org.shops.show.seo.site_audit.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.site_audit.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

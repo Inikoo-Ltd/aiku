@@ -13,6 +13,7 @@ use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -32,6 +33,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property bool $is_seeder
+ * @property int|null $max_pages
+ * @property string|null $health_score
+ * @property int $pages_with_errors
+ * @property int $number_errors
+ * @property int $number_warnings
+ * @property int $number_notices
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\CrawlIssue> $issues
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\CrawlPage> $pages
  * @property-read \App\Models\Web\Website|null $website
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Crawl newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Crawl newQuery()
@@ -55,5 +64,15 @@ class Crawl extends Model
     public function website(): BelongsTo
     {
         return $this->belongsTo(Website::class);
+    }
+
+    public function pages(): HasMany
+    {
+        return $this->hasMany(CrawlPage::class);
+    }
+
+    public function issues(): HasMany
+    {
+        return $this->hasMany(CrawlIssue::class);
     }
 }

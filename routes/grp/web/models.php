@@ -541,6 +541,7 @@ use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\Web\Crawl\StartSiteAudit;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\ResetAnnouncement;
@@ -1284,6 +1285,7 @@ Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilme
 Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('organisation.store');
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
+    Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 

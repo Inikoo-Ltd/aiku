@@ -91,35 +91,64 @@ Done on 7 October 2026.
 
 ### 1.2 SEO crawler (Site Audit)
 
-**Today.** `app/Actions/Web/Crawl/CrawlWebsite.php` is a cache warmer. It requests the most visited
-canonical URLs until 90% of the last 30 days of traffic is covered and throws the responses away.
-The `crawls` table records runs, not pages. Total concurrency is capped at 8 and it only runs in
-production.
+Done on 7 October 2026.
 
-**Build.**
+**Crawl.** `AuditWebsite` (`app/Actions/Web/Crawl/`), command
+`crawl:audit {website?} {--max-pages=} {--concurrency=2} {--async}`, scheduled every Sunday at
+03:00 UTC for live websites. A "Run audit now" button on the Site Audit page starts one through
+`StartSiteAudit` (`grp.models.website.site_audit.store`).
 
-- Add a crawl type `audit` to the existing `crawls` table and keep the cache warmer as it is.
-- `AuditWebsite` starts from the sitemap index and follows internal links. It respects
-  `robots.txt`, identifies itself with its own user agent, and shares the existing concurrency cap.
-- `crawl_pages`: crawl_id, url, status_code, redirect_to, redirect_hops, response_ms, bytes, depth,
-  title, meta_description, canonical, robots meta, h1_count, is_in_sitemap, is_indexable,
-  webpage_id.
-- `crawl_issues`: crawl_id, crawl_page_id, type, severity, details (json). Issue types to start with:
-  - 4xx and 5xx responses, and internal links pointing at them
-  - redirect chains and redirect loops
-  - missing, duplicate, too long or too short title and meta description
-  - missing or conflicting canonical, canonical pointing at a redirect or a 404
-  - noindex pages listed in the sitemap, indexable pages missing from it
-  - images without alt text, pages with more than one h1, slow responses
-- A site health score per crawl: share of crawled pages with no error-level issue. Store it on the
-  crawl row so the trend is one query.
-- Weekly per website, plus a button on the dashboard to run one now. Keep the last 10 audits per
-  website.
-- Schedule `CheckExternalLinkStatus` weekly for `external_links`. Today it only runs during the
-  Aurora import, so the stored status goes stale.
+- Audits are rows in `crawls` with type `audit`; the cache warmer is unchanged. An audit claims
+  concurrency from the same budget of 8 the cache warmer uses, and stopping works the same way
+  (`should_stop`).
+- It always audits the public site: the scheme and host of the storefront's canonical URL, or
+  `https://` and the domain. `Website::getUrl()` points at local hosts outside production.
+- It reads `robots.txt` (its own parser, longest match wins, `*` and `$` supported), reads every
+  sitemap listed there or `/sitemap.xml`, starts from the home page and the sitemap URLs, and follows
+  internal links that are not `nofollow`. Links with a query string and links to files (images,
+  PDFs, scripts) are not followed.
+- User agent `Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)`. It is detected as a bot, so audits do
+  not appear as visitors.
+- Redirects are not followed by the HTTP client. Each hop is its own row, so chains and loops are
+  visible.
+- HTML is parsed with PHP 8.4 `Dom\HTMLDocument`. No package was added.
+- Default limit 10,000 pages per audit. At about 1.6 s per page on the storefronts this is roughly
+  2.5 hours at concurrency 2, inside the 3 hour job timeout of `long-low-priority`.
+- The last 10 audits per website are kept; older ones are deleted with their pages and issues.
 
-**Screens.** A Site Audit tab: health score and its trend, issues grouped by type with counts, and a
-page list per issue that links to the webpage in Aiku.
+**Tables.** `crawl_pages` (one row per URL per audit, with status, redirect target and hops,
+response time, content type, title, meta description, canonical, robots meta, h1 count, images
+without alt, internal links in, in sitemap, indexable, matched `webpage_id`) and `crawl_issues`
+(crawl, page, type, severity, details). `crawls` gained `max_pages`, `health_score`,
+`pages_with_errors` and a count per severity.
+
+**Issues** (`CrawlIssueTypeEnum`, thresholds are constants on the enum):
+
+- Errors: 4xx, 5xx, fetch failed, redirect loop, missing title, canonical pointing at a URL that does
+  not answer 200.
+- Warnings: redirect chain, duplicate title, duplicate meta description, missing meta description,
+  missing or multiple h1, missing canonical, noindex page in the sitemap, response over 3 s, images
+  without alt.
+- Notices: title over 60 or under 20 characters, meta description over 160 or under 70, canonical
+  pointing at another page, indexable page missing from the sitemap, internal links pointing at a
+  redirect.
+- Content checks (title, description, h1, duplicates, sitemap) only run on indexable pages. Broken
+  pages carry up to 10 of the pages linking to them.
+
+**Health score** is the share of crawled pages with no error-level issue, stored on the crawl row.
+
+**Screens.** SEO > Site audit: health score with the change since the previous audit, counts per
+severity, the trend over the kept audits, and the issue list with pages per issue and the change
+since the previous audit. Each issue opens a page list with the URL, the matched webpage in Aiku,
+status, internal links in and the issue details. While an audit runs, the page polls its progress
+every 5 seconds.
+
+**First result.** A 150 page test audit of awgifts.bg found product pages rendering
+`<meta name="description" content>` with no text, because `webpages.description` is empty while
+the product has a description. Phase 3.4 (content help) is the natural place to fill these.
+
+**External links.** `external_links:check_status` (`RecheckExternalLinkStatuses`) rechecks every
+external link weekly, Sunday 02:00 UTC, five at a time.
 
 ### 1.3 404 log
 
@@ -157,7 +186,8 @@ survive the nightly rebuild.
 
 - Search Console history is stored for every website with a property, and the webpage tab reads it. (Done)
 - Every website has had at least one audit, and the issue list matches a Semrush Site Audit run on
-  the same site closely enough that the team trusts it.
+  the same site closely enough that the team trusts it. (Built; the comparison with Semrush is still
+  to do.)
 - 404 paths are visible and redirects can be created from them.
 - PageSpeed scores are fetched weekly.
 

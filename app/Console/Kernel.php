@@ -80,6 +80,7 @@ use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\WebVital\PruneWebVitalSamples;
+use App\Actions\Web\ExternalLink\RecheckExternalLinkStatuses;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
@@ -1308,6 +1309,28 @@ class Kernel extends ConsoleKernel
                     ),
                 name: 'FetchSearchConsoleAnalytics',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('crawl:audit --async')
+                    ->weeklyOn(0, '03:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'AuditWebsites',
+                    ),
+                name: 'AuditWebsites',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RecheckExternalLinkStatuses::makeJob())
+                    ->weeklyOn(0, '02:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'RecheckExternalLinkStatuses',
+                    ),
+                name: 'RecheckExternalLinkStatuses',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 

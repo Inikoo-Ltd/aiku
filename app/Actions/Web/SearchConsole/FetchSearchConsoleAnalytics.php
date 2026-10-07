@@ -8,11 +8,10 @@
 
 namespace App\Actions\Web\SearchConsole;
 
-use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Actions\Web\Webpage\WithWebpageIdsByPath;
 use App\Models\Web\SearchConsolePageDay;
 use App\Models\Web\SearchConsolePageQuery;
 use App\Models\Web\SearchConsoleWebsiteDay;
-use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Services\SearchConsole\SearchConsoleClient;
 use Illuminate\Console\Command;
@@ -25,6 +24,7 @@ use Throwable;
 class FetchSearchConsoleAnalytics implements ShouldBeUnique
 {
     use AsAction;
+    use WithWebpageIdsByPath;
 
     public const int HISTORY_MONTHS = 16;
 
@@ -154,40 +154,6 @@ class FetchSearchConsoleAnalytics implements ShouldBeUnique
         foreach (array_chunk($rows, self::UPSERT_CHUNK) as $chunk) {
             $model::query()->upsert($chunk, $uniqueBy, $update);
         }
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    private function webpageIdsByPath(Website $website): array
-    {
-        $webpageIdsByPath = [];
-
-        $webpages = Webpage::where('website_id', $website->id)
-            ->orderByRaw('CASE WHEN state = ? THEN 1 ELSE 0 END', [WebpageStateEnum::LIVE->value])
-            ->get(['id', 'url', 'canonical_url']);
-
-        foreach ($webpages as $webpage) {
-            $webpageIdsByPath[$this->normalisePath('/'.ltrim((string) $webpage->url, '/'))] = $webpage->id;
-
-            if ($webpage->canonical_url) {
-                $webpageIdsByPath[$this->normalisePath(parse_url($webpage->canonical_url, PHP_URL_PATH) ?: '/')] = $webpage->id;
-            }
-        }
-
-        return $webpageIdsByPath;
-    }
-
-    private function matchWebpageId(string $pageUrl, array $webpageIdsByPath): ?int
-    {
-        return $webpageIdsByPath[$this->normalisePath(parse_url($pageUrl, PHP_URL_PATH) ?: '/')] ?? null;
-    }
-
-    private function normalisePath(string $path): string
-    {
-        $path = rawurldecode($path);
-
-        return $path === '/' ? $path : rtrim($path, '/');
     }
 
     public function getCommandSignature(): string
