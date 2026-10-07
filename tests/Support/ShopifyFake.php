@@ -42,7 +42,10 @@ class ShopifyFake
     {
         self::$requests = [];
         self::$stray    = [];
-        self::$replies  = $replies;
+        self::$replies  = $replies + [
+            'metafieldDefinitionCreate' => self::graphql(['metafieldDefinitionCreate' => ['createdDefinition' => ['id' => 'gid://shopify/MetafieldDefinition/1'], 'userErrors' => []]]),
+            'updateSpecifications'      => self::graphql(['productVariantsBulkUpdate' => ['userErrors' => []], 'metafieldsSet' => ['userErrors' => []]]),
+        ];
 
         Http::preventStrayRequests();
 
