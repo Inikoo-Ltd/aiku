@@ -530,6 +530,8 @@ use App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\DeleteImageFromSupplierProduct;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\SysAdmin\Guest\DeleteGuest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
