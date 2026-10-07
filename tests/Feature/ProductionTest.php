@@ -3338,7 +3338,7 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
 });
 
-test('pre-pick releases only whole lines the shelf more than covers, and sends the shortfall of the next one to to produce once', function () {
+test('pre-pick releases only whole lines the shelf more than covers, and leaves the next one in pre-pick without raising anything to produce', function () {
     $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
     $orgStocks = createOrgStocks($this->organisation, $stocks);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
@@ -3377,7 +3377,7 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
     $wasHub = $this->organisation->is_manufacturing_hub;
     $this->organisation->update(['is_manufacturing_hub' => true]);
     $this->artisan('production:release_pre_pick --dry-run')
-        ->expectsOutputToContain('1 lines would be released (6 SKOs), 1 restock lines would be queued (17 SKOs)')
+        ->expectsOutputToContain('1 lines would be released (6 SKOs)')
         ->assertSuccessful();
     expect($covered->refresh()->pre_picked_at)->toBeNull()
         ->and(\App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $stocks[0]->id)->count())->toBe(3);
@@ -3388,21 +3388,19 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
         ->whereNull('partner_organisation_id')
         ->where('stock_id', $stocks[0]->id)
         ->get();
-    expect($result)->toBe(['released' => 1, 'queued' => 1])
+    expect($result)->toBe(1)
         ->and($covered->refresh()->pre_picked_at)->not->toBeNull()
         ->and((float) $covered->quantity)->toEqual(6.0)
         ->and($boundary->refresh()->pre_picked_at)->toBeNull()
         ->and((float) $boundary->quantity)->toEqual(50.0)
-        ->and($restock)->toHaveCount(1)
-        ->and((float) $restock->first()->quantity)->toEqual(17.0);
+        ->and($restock)->toBeEmpty();
 
     actingAs($this->guest->getUser());
     $routeParameters = [$this->organisation->slug, $this->production->slug];
     $backlogCards = collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->firstWhere('label', 'Backlog')['items'])->keyBy('id');
-    expect($backlogCards->keys()->all())->toContain($restock->first()->id)
-        ->toContain($behind->id)
+    expect($backlogCards->keys()->all())->toContain($behind->id)
         ->not->toContain($boundary->id)
         ->and((float) $backlogCards[$behind->id]['stock_promised'])->toEqual(6.0);
 
@@ -3412,7 +3410,7 @@ test('pre-pick releases only whole lines the shelf more than covers, and sends t
         ->and((float) $prePick[$boundary->id]['shortfall'])->toEqual(16.0)
         ->and($prePick[$behind->id]['automation_status'])->toBe('to_produce');
 
-    expect(\App\Actions\Production\PartnerShippingList\ReleaseFullyStockedPrePickLines::run($this->organisation))->toBe(['released' => 0, 'queued' => 0])
+    expect(\App\Actions\Production\PartnerShippingList\ReleaseFullyStockedPrePickLines::run($this->organisation))->toBe(0)
         ->and(\App\Actions\Production\PartnerShippingList\UI\IndexPrePickList::automationStatus(40, 40, 40, 0))->toBe('held_buffer');
 
     $this->organisation->update(['is_manufacturing_hub' => $wasHub]);

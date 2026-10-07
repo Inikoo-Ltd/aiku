@@ -50,7 +50,7 @@ const isPartial = (item: PrePickItem) => quantityFor(item) < Number(item.quantit
 const automationStatuses = {
 	releasing: { label: trans("Going to the warehouse"), class: "text-emerald-600" },
 	held_buffer: { label: trans("Held, one more needed on the shelf"), class: "text-amber-600" },
-	awaiting_full_stock: { label: trans("Awaiting full stock"), class: "text-amber-600" },
+	awaiting_full_stock: { label: trans("Awaiting full stock, production manager to decide"), class: "text-amber-600" },
 	to_produce: { label: trans("In To produce"), class: "text-gray-500" },
 }
 
@@ -345,15 +345,6 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 			<span :class="automationStatuses[item.automation_status].class">{{
 				automationStatuses[item.automation_status].label
 			}}</span>
-			<div
-				v-if="item.automation_status === 'awaiting_full_stock'"
-				class="text-xs text-gray-500">
-				{{
-					trans("Shortfall sent to To produce: :quantity", {
-						quantity: useLocaleStore().number(Number(item.shortfall)),
-					})
-				}}
-			</div>
 		</template>
 		<template #cell(priority)="{ item }: { item: PrePickItem }">
 			<span

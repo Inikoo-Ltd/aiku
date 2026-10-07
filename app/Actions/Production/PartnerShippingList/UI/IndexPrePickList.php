@@ -120,7 +120,7 @@ class IndexPrePickList extends OrgAction
 
     /**
      * Why a line is still here: released lines leave the list, the rest wait for a full line plus
-     * one on the shelf, and only the missing part goes to production.
+     * one on the shelf while the production manager decides what to do with them.
      */
     public static function automationStatus(float $quantity, float $queuedThrough, float $freeStock, float $shortfall): string
     {
