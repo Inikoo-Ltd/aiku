@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
+import { hasSavedVariantOrder, sortVariantOptions } from "@/Composables/useVariantOrder"
 import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { faGameConsoleHandheld } from "@far"
@@ -178,21 +179,23 @@ const getVariantLabel = (index: number) => {
 }
 
 const listProducts = computed(() =>
-  variantProducts.value
-    .map((v, index) => {
-      const baseProduct = productsList.value.find(
-        p => p.id === v.product.id
-      )
-      if (!baseProduct) return null
+  sortVariantOptions(
+    variantProducts.value
+      .map((v, index) => {
+        const baseProduct = productsList.value.find(
+          p => p.id === v.product.id
+        )
+        if (!baseProduct) return null
 
-      return {
-        ...baseProduct,
-        is_leader: v.is_leader,
-        variant_label: getVariantLabel(index),
-        validImages: resolveProductImages(baseProduct),
-      }
-    })
-    .filter(Boolean)
+        return {
+          ...baseProduct,
+          is_leader: v.is_leader,
+          variant_label: getVariantLabel(index),
+          validImages: resolveProductImages(baseProduct),
+        }
+      })
+      .filter(Boolean)
+  )
 )
 
 const changeSelectedProduct = (item: ProductResource) => {
@@ -280,19 +283,16 @@ watch(
   (products) => {
     if (!products.length || appliedVariantFromUrl.value) return
 
-    const urlParams = new URLSearchParams(window.location.search)
-    const variantCode = urlParams.get('variant')
-    if (!variantCode) return
+    const variantCode = new URLSearchParams(window.location.search).get('variant')
+    const matchedProduct = variantCode
+      ? products.find(p => p.code === variantCode)
+      : hasSavedVariantOrder(products) ? products[0] : null
 
-    const matchedProduct = listProducts.value.find(
-      p => p.code === variantCode
-    )
+    appliedVariantFromUrl.value = true
+    if (!matchedProduct || matchedProduct.code === product.value?.code) return
 
-    if (matchedProduct) {
-      product.value = { ...matchedProduct }
-      fetchProductExistInChannel(product.value.id)
-      appliedVariantFromUrl.value = true
-    }
+    product.value = { ...matchedProduct }
+    fetchProductExistInChannel(product.value.id)
   },
   { immediate: true }
 )

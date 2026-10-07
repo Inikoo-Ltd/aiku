@@ -2,6 +2,7 @@
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed, watch, defineAsyncComponent } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { hasSavedVariantOrder, sortVariantOptions } from '@/Composables/useVariantOrder'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
@@ -271,33 +272,24 @@ const getVariantLabel = (entry: number) => {
 const listProducts = computed(() => {
   if (!variant.value?.variant_data?.products) return []
 
-  return Object.values(variant.value.variant_data.products)
-    .map((v: any) => {
-      const baseProduct = variant.value.products.find(
-        p => p.id === v.product.id
-      )
+  return sortVariantOptions(
+    Object.values(variant.value.variant_data.products)
+      .map((v: any) => {
+        const baseProduct = variant.value.products.find(
+          p => p.id === v.product.id
+        )
 
-      if (!baseProduct) return null
+        if (!baseProduct) return null
 
-      return {
-        ...baseProduct,
-        is_leader: v.is_leader,
-        variant_label: getVariantLabel(v),
-      }
-    })
-    .filter(Boolean)
-    .sort((a: any, b: any) => {
-      if (a.is_leader && !b.is_leader) return -1
-      if (!a.is_leader && b.is_leader) return 1
-
-      if (!a.variant_label) return 1
-      if (!b.variant_label) return -1
-
-      return a.variant_label.localeCompare(b.variant_label, undefined, {
-        numeric: true,
-        sensitivity: "base",
+        return {
+          ...baseProduct,
+          is_leader: v.is_leader,
+          variant_label: getVariantLabel(v),
+        }
       })
-    })
+      .filter(Boolean),
+    true
+  )
 })
 
 </script>
@@ -346,7 +338,7 @@ const listProducts = computed(() => {
                 :variants="listProducts"
                 :variantAxisLabel="variantAxisLabel"
                 :hasInBasketList="hasInBasketList"
-                :selectedProductId="selectedVariantProduct?.id ?? product.id"
+                :selectedProductId="selectedVariantProduct?.id ?? (hasSavedVariantOrder(listProducts) ? listProducts[0]?.id : product.id)"
                 :isLoadingRemindBackInStock="isLoadingRemindBackInStock"
                 @setBackInStock="onAddBackInStock"
                 @unsetBackInStock="onUnselectBackInStock"

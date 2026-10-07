@@ -12,7 +12,7 @@ import VariantShowcase from "@/Components/Showcases/Grp/VariantShowcase.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
-import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
+import VariantProductOrdering from "@/Components/Master/VariantProductOrdering.vue"
 import { faExternalLink, faSkull } from "@fal"
 import Message from 'primevue/message';
 
@@ -39,7 +39,9 @@ const props = defineProps<{
         name: string
         parameters: []
     }
-    products?: any
+    products?: { id: number, code: string, name: string | null, image_thumbnail?: any }[]
+    reorderRoute?: { name: string, parameters: Record<string, unknown> } | null
+    followsMasterOrder?: boolean
     webpage_canonical_url?: string
     status?: boolean
 }>()
@@ -51,7 +53,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Record<string, any> ={
         showcase: VariantShowcase,
-        products: TableProducts,
+        products: VariantProductOrdering,
     }
     return components[currentTab.value]
 })
@@ -125,6 +127,12 @@ const showWarningMessage = ref(true);
             </div>
         </Message>
     </div>
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" />
+    <component
+        v-if="currentTab === 'products'"
+        :is="component"
+        :data="props.products ?? []"
+        :reorderRoute="reorderRoute"
+        :followsMaster="followsMasterOrder" />
+    <component v-else :is="component" :tab="currentTab" :data="props[currentTab]" />
 
 </template>

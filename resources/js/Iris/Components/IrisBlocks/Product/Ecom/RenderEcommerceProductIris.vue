@@ -16,6 +16,7 @@ import ProductIris4Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductI
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 import { useSelectedProductDetail } from "@/Iris/Composables/useSelectedProductDetail"
+import { hasSavedVariantOrder, sortVariantOptions } from "@/Composables/useVariantOrder"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -102,30 +103,23 @@ const getVariantLabel = (index: number) => {
 }
 
 const listProducts = computed(() => {
-  return variantProducts.value
-    .map((v, index) => {
-      const baseProduct = variantProductsData.value.find(
-        p => p.id === v.product.id
-      )
+  return sortVariantOptions(
+    variantProducts.value
+      .map((v, index) => {
+        const baseProduct = variantProductsData.value.find(
+          p => p.id === v.product.id
+        )
 
-      if (!baseProduct) return null
+        if (!baseProduct) return null
 
-      return {
-        ...baseProduct,
-        is_leader: v.is_leader,
-        variant_label: getVariantLabel(index),
-      }
-    })
-    .filter(Boolean)
-    .sort((a, b) => {
-      if (!a.variant_label) return 1
-      if (!b.variant_label) return -1
-
-      return a.variant_label.localeCompare(b.variant_label, undefined, {
-        numeric: true,
-        sensitivity: "base",
+        return {
+          ...baseProduct,
+          is_leader: v.is_leader,
+          variant_label: getVariantLabel(index),
+        }
       })
-    })
+      .filter(Boolean)
+  )
 })
 
 
@@ -275,13 +269,14 @@ const applyVariantFromUrl = () => {
   if (appliedVariantFromUrl.value) return
 
   const variantCode = new URLSearchParams(window.location.search).get("variant")
-  if (!variantCode) return
+  const matchedProduct = variantCode
+    ? listProducts.value.find(p => p.code === variantCode)
+    : hasSavedVariantOrder(listProducts.value) ? listProducts.value[0] : null
 
-  const matchedProduct = listProducts.value.find(p => p.code === variantCode)
-  if (!matchedProduct) return
+  appliedVariantFromUrl.value = true
+  if (!matchedProduct || matchedProduct.code === selected_product.value?.code) return
 
   selectProduct(matchedProduct)
-  appliedVariantFromUrl.value = true
 }
 
 
