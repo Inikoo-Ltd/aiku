@@ -95,6 +95,14 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                 'snapshot'            => [
                     'layout' => $emailTemplate->layout,
                 ],
+                'imagesUploadRoute'   => [
+                    'name'       => 'grp.models.email-templates.images.store',
+                    'parameters' => ['emailTemplate' => $emailTemplate->id]
+                ],
+                'videoThumbnailRoute' => [
+                    'name'       => 'grp.models.email-templates.video-thumbnail.store',
+                    'parameters' => ['emailTemplate' => $emailTemplate->id]
+                ],
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.email-template.update',
                     'parameters' => array_filter([

@@ -30,6 +30,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
@@ -229,7 +230,7 @@ const handleDelete = async () => {
     </PageHeading>
 
     <!-- email workshop -->
-    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute"
         :snapshot="snapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSave"
         :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 

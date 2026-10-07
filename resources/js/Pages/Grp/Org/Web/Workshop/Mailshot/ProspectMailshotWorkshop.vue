@@ -44,6 +44,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
@@ -441,7 +442,7 @@ onMounted(() => {
     </Modal>
 
     <!-- email workshop -->
-    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSendPublish"
         @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
         :unpublished_layout="unpublished_layout" @ready="isBeefreeReady = $event" />

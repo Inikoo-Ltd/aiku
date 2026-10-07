@@ -11,6 +11,7 @@ import {
     isTableModule,
     isUnsubscribeModule,
     tableColumnCount,
+    hasCurrentVideoEmailThumbnail,
 } from './emailWorkshopBlocks'
 
 const PADDING_KEYS = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']
@@ -354,11 +355,23 @@ const renderVideo = (module: EmailModule, context: RenderContext): string => {
     const width = Math.max(Math.round(context.columnWidth - horizontalPadding(module.descriptor?.style)), 1)
     const height = videoHeight(width, video.thumbRatio)
     const href = escapeAttribute(video.src || '#')
+    if (hasCurrentVideoEmailThumbnail(video)) {
+        return blockTable(
+            'video_block',
+            module,
+            context,
+            `<a href="${href}" target="_blank" title="${escapeAttribute(video.thumbAlt)}" style="display:block;text-decoration:none"><img src="${escapeAttribute(video.emailThumbnail.src)}" width="${width}" alt="${escapeAttribute(video.thumbAlt)}" style="display:block;width:100%;max-width:${width}px;height:auto;border:0"></a>`,
+        )
+    }
     const thumbnail = video.thumbSrc ? cssUrl(String(video.thumbSrc)) : ''
     const isPlayButtonVisible = String(video.iconType ?? 1) !== '0'
     const buttonSize = pixels(video.iconSize, 64)
+    const triangleHeight = Math.round(buttonSize * 0.38)
+    const triangleWidth = Math.round(triangleHeight * 0.88)
+    const triangleTop = Math.round((buttonSize - triangleHeight) / 2)
+    const triangleLeft = Math.round((buttonSize - triangleWidth) / 2 + buttonSize * 0.04)
     const playButton = isPlayButtonVisible
-        ? `<span style="display:inline-block;vertical-align:middle;width:${buttonSize}px;height:${buttonSize}px;line-height:${buttonSize}px;border-radius:50%;background-color:${escapeAttribute(video.iconColor2 ?? '#000000')};color:${escapeAttribute(video.iconColor1 ?? '#ffffff')};font-family:Arial,Helvetica,sans-serif;font-size:${Math.round(buttonSize * 0.42)}px;text-align:center;text-indent:${Math.round(buttonSize * 0.06)}px">&#9654;&#xFE0E;</span>`
+        ? `<span style="display:inline-block;vertical-align:middle;width:${buttonSize}px;height:${buttonSize}px;border-radius:50%;background-color:${escapeAttribute(video.iconColor2 ?? '#000000')};line-height:0;font-size:0;text-align:left"><span style="display:block;width:0;height:0;margin:${triangleTop}px 0 0 ${triangleLeft}px;border-style:solid;border-width:${Math.round(triangleHeight / 2)}px 0 ${Math.round(triangleHeight / 2)}px ${triangleWidth}px;border-color:transparent transparent transparent ${escapeAttribute(video.iconColor1 ?? '#ffffff')}"></span></span>`
         : ''
     const backgroundStyle = thumbnail ? `background-image:url(${thumbnail});background-size:cover;background-position:center;background-repeat:no-repeat;` : ''
     const outlookOpen = thumbnail

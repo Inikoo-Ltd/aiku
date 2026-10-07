@@ -157,6 +157,10 @@ class ShowMailshotWorkshop extends OrgAction
                     'name'       => 'grp.models.email.images.store',
                     'parameters' => ['email' => $email->id]
                 ],
+                'videoThumbnailRoute' => [
+                    'name'       => 'grp.models.email.video-thumbnail.store',
+                    'parameters' => ['email' => $email->id]
+                ],
                 'updateRoute'         => [
                     'name'       => 'grp.models.shop.mailshot.workshop.update',
                     'parameters' => [

@@ -39,6 +39,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
@@ -312,7 +313,7 @@ const schedulePublish = async () => {
     </Modal>
 
     <!-- email workshop -->
-    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <EmailWorkshop v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
         :shopId="shopId" @onSave="onSendPublish"
         @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"

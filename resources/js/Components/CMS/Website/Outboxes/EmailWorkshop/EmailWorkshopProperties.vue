@@ -13,7 +13,7 @@ import { routeType } from '@/types/route'
 import {
     DEFAULT_SOCIAL_ICON_SET, EmailBody, EmailModule, EmailRow, MODULE_TYPES, SOCIAL_ICON_SETS, SOCIAL_NETWORKS, addTableColumn, addTableRow, applySocialIconSet,
     createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, setModuleText,
-    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId,
+    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl,
 } from './emailWorkshopBlocks'
 
 library.add(faArrowUp, faArrowDown, faTrashAlt, faPlus, faImage, faLock)
@@ -25,6 +25,7 @@ const props = defineProps<{
     imagesUploadRoute?: routeType
     mergeTags?: Array<{ name: string, value: string }>
     textRevision?: number
+    videoThumbnailState?: 'loading' | 'error'
 }>()
 
 const emits = defineEmits<{
@@ -147,6 +148,17 @@ const videoSource = computed({
         if (thumbnail) {
             descriptor.value.video.thumbSrc = thumbnail
         }
+    },
+})
+
+const videoThumbnailSource = computed({
+    get: () => descriptor.value.video?.thumbSrc ?? '',
+    set: (url: string) => {
+        if (isVideoPageUrl(url)) {
+            videoSource.value = url
+            return
+        }
+        descriptor.value.video.thumbSrc = url
     },
 })
 
@@ -567,7 +579,7 @@ const contentSectionTitle = computed(() => ({
                         @click="pickVideoThumbnail">
                         {{ descriptor.video.thumbSrc ? ctrans('Change thumbnail') : ctrans('Upload or browse thumbnail') }}
                     </button>
-                    <EmailWorkshopField v-model="descriptor.video.thumbSrc" :label="ctrans('Thumbnail URL')" />
+                    <EmailWorkshopField v-model="videoThumbnailSource" :label="ctrans('Thumbnail URL')" />
                     <EmailWorkshopField v-model="descriptor.video.thumbAlt" :label="ctrans('Alternate text')" />
                     <EmailWorkshopField v-model="descriptor.video.thumbRatio" type="select" :options="videoRatioOptions" :label="ctrans('Aspect ratio')" />
                     <EmailWorkshopField v-model="isPlayButtonVisible" type="toggle" :label="ctrans('Play button')" />
@@ -576,6 +588,8 @@ const contentSectionTitle = computed(() => ({
                         <EmailWorkshopField v-model="descriptor.video.iconColor2" type="color" :label="ctrans('Play button color')" />
                         <EmailWorkshopField v-model="descriptor.video.iconColor1" type="color" :label="ctrans('Play icon color')" />
                     </template>
+                    <p v-if="videoThumbnailState === 'loading'" class="mt-2 text-[12px] text-gray-500">{{ ctrans('Preparing the email image…') }}</p>
+                    <p v-else-if="videoThumbnailState === 'error'" class="mt-2 text-[12px] text-red-600">{{ ctrans('The email image could not be prepared. Check the video link or upload a thumbnail.') }}</p>
                 </template>
 
                 <template v-else-if="isTableModule(module)">

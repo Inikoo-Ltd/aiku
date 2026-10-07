@@ -6,7 +6,9 @@ use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Email;
+use App\Models\Comms\EmailTemplate;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -21,9 +23,8 @@ class UploadImagesToEmail extends OrgAction
     /**
      * @param  array{images: array<int, UploadedFile>}  $modelData
      */
-    public function handle(Email $email, array $modelData): Collection
+    public function handle(Shop $shop, array $modelData): Collection
     {
-        $shop   = $email->shop;
         $medias = [];
 
         foreach ($modelData['images'] as $imageFile) {
@@ -77,7 +78,16 @@ class UploadImagesToEmail extends OrgAction
 
         $this->initialisationFromShop($email->shop, $request);
 
-        return $this->handle($email, $this->validatedData);
+        return $this->handle($email->shop, $this->validatedData);
+    }
+
+    public function inEmailTemplate(EmailTemplate $emailTemplate, ActionRequest $request): Collection
+    {
+        abort_unless($emailTemplate->shop, 404);
+
+        $this->initialisationFromShop($emailTemplate->shop, $request);
+
+        return $this->handle($emailTemplate->shop, $this->validatedData);
     }
 
     public function jsonResponse(Collection $medias): AnonymousResourceCollection

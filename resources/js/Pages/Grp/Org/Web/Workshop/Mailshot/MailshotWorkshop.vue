@@ -39,6 +39,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
     updateRoute: routeType
     snapshot: routeType
     unpublished_layout: any
@@ -409,7 +410,7 @@ onMounted(() => {
             {{ ctrans('Aiku Email Workshop (comparison)') }}
         </div> -->
 
-        <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+        <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"

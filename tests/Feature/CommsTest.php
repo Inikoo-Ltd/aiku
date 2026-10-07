@@ -131,6 +131,7 @@ use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailCopy;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Helpers\Media;
 use App\Models\Comms\ExternalSubscriberEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
@@ -151,6 +152,7 @@ use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -2384,8 +2386,62 @@ test('UI show mailshot template workshop', function (EmailTemplate $emailTemplat
             ->has('builder')
             ->has('snapshot')
             ->has('mergeTags')
+            ->where('imagesUploadRoute.name', 'grp.models.email-templates.images.store')
             ->has('breadcrumbs');
     });
+})->depends('update mailshot template');
+
+test('upload images to email template from workshop', function (EmailTemplate $emailTemplate) {
+    $uploadRoute = route('grp.models.email-templates.images.store', ['emailTemplate' => $emailTemplate->id]);
+
+    $numberEmailImages = $emailTemplate->shop->images()->wherePivot('scope', 'email')->count();
+
+    $response = postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->image('template-hero.png', 20, 20)],
+    ])->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.source.original'))->toBeString()->not->toBeEmpty()
+        ->and($emailTemplate->shop->images()->wherePivot('scope', 'email')->count())->toBe($numberEmailImages + 1);
+
+    postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->create('brochure.pdf', 10, 'application/pdf')],
+    ])->assertUnprocessable();
+})->depends('update mailshot template');
+
+test('store email video thumbnail with play button from youtube link', function (EmailTemplate $emailTemplate) {
+    $youtubeThumbnail = imagecreatetruecolor(1280, 720);
+    imagefill($youtubeThumbnail, 0, 0, imagecolorallocate($youtubeThumbnail, 200, 30, 30));
+    ob_start();
+    imagejpeg($youtubeThumbnail);
+    $youtubeThumbnailJpeg = ob_get_clean();
+
+    Http::fake([
+        'i.ytimg.com/vi/mJUeplDOmOU/maxresdefault.jpg' => Http::response($youtubeThumbnailJpeg, 200, ['Content-Type' => 'image/jpeg']),
+        '*'                                            => Http::response('', 404),
+    ]);
+
+    $route = route('grp.models.email-templates.video-thumbnail.store', ['emailTemplate' => $emailTemplate->id]);
+    $payload = [
+        'video_url'         => 'https://www.youtube.com/watch?v=mJUeplDOmOU&t=10478s',
+        'thumbnail_url'     => null,
+        'ratio'             => '16-9',
+        'show_play_button'  => true,
+        'play_button_size'  => 64,
+        'play_button_color' => '#000000',
+        'play_icon_color'   => '#ffffff',
+    ];
+
+    $response = postJson($route, $payload)->assertSuccessful();
+
+    $media = Media::find($response->json('data.id'));
+    expect($response->json('data.source.original'))->toBeString()->not->toBeEmpty()
+        ->and($media->width)->toBe(1200)
+        ->and($media->height)->toBe(675)
+        ->and($emailTemplate->shop->images()->where('media.id', $media->id)->wherePivot('scope', 'email')->exists())->toBeTrue();
+
+    postJson($route, [...$payload, 'thumbnail_url' => 'https://169.254.169.254/latest/meta-data/x.jpg'])->assertUnprocessable();
+    postJson($route, [...$payload, 'play_button_color' => 'red'])->assertUnprocessable();
 })->depends('update mailshot template');
 
 test('index mailshot from other store templates excludes own shop', function (Shop $shop, Mailshot $mailshot) {

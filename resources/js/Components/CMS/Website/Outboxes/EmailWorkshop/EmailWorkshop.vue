@@ -26,7 +26,7 @@ import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     createMergeContentModule, createModule, createRow, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
-    rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources,
+    rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
 import { columnWidth, createRenderContext, messageWidth, renderEmailHtml, renderModuleHtml, styleToString, withDerivedHtml } from './renderEmailHtml'
 
@@ -40,6 +40,7 @@ library.add(
 const props = withDefaults(defineProps<{
     updateRoute?: routeType
     imagesUploadRoute?: routeType
+    videoThumbnailRoute?: routeType
     snapshot: any
     unpublished_layout?: any
     mergeTags: Array<any>
@@ -380,6 +381,88 @@ const applyHistory = async (index: number) => {
 const undo = () => applyHistory(historyIndex.value - 1)
 const redo = () => applyHistory(historyIndex.value + 1)
 
+const VIDEO_THUMBNAIL_DEBOUNCE_MS = 800
+const videoThumbnailStates = ref<Record<string, 'loading' | 'error'>>({})
+const videoThumbnailRequests = new Map<string, Promise<void>>()
+let videoThumbnailTimer: ReturnType<typeof setTimeout> | null = null
+
+const videoModules = (): EmailModule[] =>
+    email.value.page.rows.flatMap((row) => row.columns.flatMap((column) => column.modules)).filter((module) => module.type === MODULE_TYPES.video)
+
+const needsVideoThumbnail = (module: EmailModule): boolean => {
+    const video = module.descriptor?.video
+    return !!props.videoThumbnailRoute && !!video?.src && !!video?.thumbSrc && !hasCurrentVideoEmailThumbnail(video)
+}
+
+const videoThumbnailPayload = (video: Record<string, any>) => ({
+    video_url: video.src,
+    thumbnail_url: video.thumbSrc === videoThumbnailFromUrl(video.src) ? null : video.thumbSrc,
+    ratio: video.thumbRatio ?? '16-9',
+    show_play_button: String(video.iconType ?? 1) !== '0',
+    play_button_size: Math.min(160, Math.max(24, parseInt(String(video.iconSize ?? 64), 10) || 64)),
+    play_button_color: video.iconColor2 ?? '#000000',
+    play_icon_color: video.iconColor1 ?? '#ffffff',
+})
+
+const preloadImage = (src: string | undefined): Promise<void> => new Promise((resolve, reject) => {
+    if (!src) {
+        reject(new Error('Missing image source'))
+        return
+    }
+    const image = new Image()
+    image.onload = () => resolve()
+    image.onerror = () => reject(new Error('Image could not be loaded'))
+    image.src = src
+})
+
+const requestVideoThumbnail = (module: EmailModule): Promise<void> => {
+    const video = module.descriptor.video
+    const key = videoEmailThumbnailKey(video)
+    const requestId = `${module.uuid}:${key}`
+    const pendingRequest = videoThumbnailRequests.get(requestId)
+    if (pendingRequest) {
+        return pendingRequest
+    }
+
+    videoThumbnailStates.value[module.uuid!] = 'loading'
+    const request = axios.post(route(props.videoThumbnailRoute!.name, props.videoThumbnailRoute!.parameters), videoThumbnailPayload(video))
+        .then(async ({ data }) => {
+            const src = (data?.data ?? data)?.source?.original
+            await preloadImage(src)
+            if (videoEmailThumbnailKey(module.descriptor.video) === key) {
+                module.descriptor.video.emailThumbnail = { src, key }
+            }
+            delete videoThumbnailStates.value[module.uuid!]
+        })
+        .catch(() => {
+            videoThumbnailStates.value[module.uuid!] = 'error'
+        })
+        .finally(() => videoThumbnailRequests.delete(requestId))
+
+    videoThumbnailRequests.set(requestId, request)
+
+    return request
+}
+
+const refreshVideoThumbnails = async (): Promise<void> => {
+    if (videoThumbnailTimer) {
+        clearTimeout(videoThumbnailTimer)
+        videoThumbnailTimer = null
+    }
+    await Promise.all(videoModules().filter(needsVideoThumbnail).map(requestVideoThumbnail))
+}
+
+watch(
+    () => videoModules().map((module) => `${module.uuid}:${videoEmailThumbnailKey(module.descriptor?.video)}`).join('|'),
+    () => {
+        if (videoThumbnailTimer) {
+            clearTimeout(videoThumbnailTimer)
+        }
+        videoThumbnailTimer = setTimeout(refreshVideoThumbnails, VIDEO_THUMBNAIL_DEBOUNCE_MS)
+    },
+    { immediate: true },
+)
+
 const exportFiles = () => ({
     jsonFile: JSON.stringify(withDerivedHtml(email.value)),
     htmlFile: renderEmailHtml(email.value),
@@ -537,15 +620,23 @@ const onBeforeUnload = (event: BeforeUnloadEvent) => {
     }
 }
 
-const save = () => {
+const save = async () => {
+    await refreshVideoThumbnails()
     clearAutoSaveTimer()
     isDirty.value = false
     pendingChangesSince = null
     emits('onSave', exportFiles())
 }
 
-const sendTest = () => emits('sendTest', exportFiles())
-const saveAsTemplate = () => emits('saveTemplate', exportFiles())
+const sendTest = async () => {
+    await refreshVideoThumbnails()
+    emits('sendTest', exportFiles())
+}
+
+const saveAsTemplate = async () => {
+    await refreshVideoThumbnails()
+    emits('saveTemplate', exportFiles())
+}
 
 watch(email, () => {
     if (isLoadingEmail || isApplyingHistory) {
@@ -599,6 +690,9 @@ onBeforeUnmount(() => {
     }
     if (textSyncTimer) {
         clearTimeout(textSyncTimer)
+    }
+    if (videoThumbnailTimer) {
+        clearTimeout(videoThumbnailTimer)
     }
     window.removeEventListener('beforeunload', onBeforeUnload)
 })
@@ -810,6 +904,7 @@ defineExpose({
                         <div class="min-h-0 flex-1 overflow-y-auto">
                             <EmailWorkshopProperties :module="selectedModule" :row="selectedModule ? null : selectedRow" :body="email.page.body"
                                 :imagesUploadRoute="imagesUploadRoute" :mergeTags="editorMergeTags" :textRevision="editorRevision + panelTextRevision"
+                                :videoThumbnailState="selectedModule ? videoThumbnailStates[selectedModule.uuid!] : undefined"
                                 @textEdited="scheduleTextSync('canvas')"
                                 @replaceDynamicContent="openDynamicContentChooser(true)" />
                         </div>

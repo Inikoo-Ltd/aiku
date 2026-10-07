@@ -88,8 +88,8 @@ use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
+use App\Actions\Comms\Email\StoreEmailVideoThumbnail;
 use App\Actions\Comms\Email\UploadImagesToEmail;
-use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
@@ -1486,7 +1486,8 @@ Route::patch('/{mailshot:id}/mailshot/utm-settings', UpdateMailshotUtmSettings::
 
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
-    Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
+    Route::post('{emailTemplate:id}/images', [UploadImagesToEmail::class, 'inEmailTemplate'])->name('images.store');
+    Route::post('{emailTemplate:id}/video-thumbnail', [StoreEmailVideoThumbnail::class, 'inEmailTemplate'])->name('video-thumbnail.store');
 });
 
 Route::patch('/guest/{guest:id}', UpdateGuest::class)->name('guest.update');
@@ -1587,6 +1588,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 
 Route::name('email.')->prefix('email/')->group(function () {
     Route::post('{email:id}/images', UploadImagesToEmail::class)->name('images.store');
+    Route::post('{email:id}/video-thumbnail', StoreEmailVideoThumbnail::class)->name('video-thumbnail.store');
     Route::name('snapshot.')->prefix('snapshot/{snapshot:id}')->group(function () {
         Route::patch('/update', UpdateEmailUnpublishedSnapshot::class)->name('update');
     });

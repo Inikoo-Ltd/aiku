@@ -359,6 +359,23 @@ export const videoThumbnailFromUrl = (url: string): string | null => {
     return youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : null
 }
 
+export const isVideoPageUrl = (url: string | null | undefined): boolean =>
+    !!url && (!!youtubeVideoId(url) || !!vimeoVideoId(url))
+
+export const videoEmailThumbnailKey = (video: Record<string, any> | undefined): string =>
+    JSON.stringify([video?.src ?? '', video?.thumbSrc ?? '', video?.thumbRatio ?? '16-9', String(video?.iconType ?? 1), String(video?.iconSize ?? 64), video?.iconColor1 ?? '#ffffff', video?.iconColor2 ?? '#000000'])
+
+export const hasCurrentVideoEmailThumbnail = (video: Record<string, any> | undefined): boolean =>
+    !!video?.emailThumbnail?.src && video.emailThumbnail.key === videoEmailThumbnailKey(video)
+
+export const moveVideoPageUrlOutOfThumbnail = (video: Record<string, any> | undefined): void => {
+    if (!video || !isVideoPageUrl(video.thumbSrc)) {
+        return
+    }
+    video.src ||= video.thumbSrc
+    video.thumbSrc = videoThumbnailFromUrl(video.src)
+}
+
 export const paletteModuleTypes: Array<{ type: string, label: string, icon: string }> = [
     { type: MODULE_TYPES.heading, label: 'Heading', icon: 'fal fa-heading' },
     { type: MODULE_TYPES.text, label: 'Text', icon: 'fal fa-text' },
@@ -650,6 +667,9 @@ export const normaliseEmailJson = (source: any): EmailJson => {
                 }
                 module.uuid ??= uuidv4()
                 module.descriptor ??= {}
+                if (module.type === MODULE_TYPES.video) {
+                    moveVideoPageUrlOutOfThumbnail(module.descriptor.video)
+                }
 
                 return module
             })
