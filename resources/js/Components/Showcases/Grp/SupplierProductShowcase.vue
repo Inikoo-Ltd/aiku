@@ -5,12 +5,13 @@
 
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, ref, watch } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBarcode,
     faBoxOpen,
+    faCamera,
     faChair,
     faCube,
     faCubes,
@@ -23,6 +24,7 @@ import {
     faPersonDolly,
     faRulerCombined,
     faSeedling,
+    faTrashAlt,
     faWeightHanging,
 } from "@fal"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -39,6 +41,7 @@ import { notify } from "@kyvg/vue3-notification"
 library.add(
     faBarcode,
     faBoxOpen,
+    faCamera,
     faChair,
     faCube,
     faCubes,
@@ -51,6 +54,7 @@ library.add(
     faPersonDolly,
     faRulerCombined,
     faSeedling,
+    faTrashAlt,
     faWeightHanging,
 )
 
@@ -164,6 +168,15 @@ const props = defineProps<{
             barcodes: Barcode[]
             label_options_route: routeType
         }[]
+        internal_images?: {
+            upload_route: routeType | null
+            images: {
+                id: number
+                is_main: boolean
+                image: object
+                detach_route: routeType | null
+            }[]
+        }
     }
 }>()
 
@@ -321,6 +334,43 @@ const openLabelModal = async (level: string) => {
     }
 }
 
+const isUploadingImages = ref(false)
+
+const uploadInternalImages = async (event: Event) => {
+    const input = event.target as HTMLInputElement
+    const uploadRoute = props.data.internal_images?.upload_route
+
+    if (!uploadRoute || !input.files?.length) {
+        return
+    }
+
+    const formData = new FormData()
+    Array.from(input.files).forEach((file) => formData.append("images[]", file))
+
+    isUploadingImages.value = true
+
+    try {
+        await axios.post(route(uploadRoute.name, uploadRoute.parameters), formData)
+        router.reload({ only: ["showcase"] })
+    } catch (error) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Could not upload the pictures"),
+            type: "error",
+        })
+    } finally {
+        isUploadingImages.value = false
+        input.value = ""
+    }
+}
+
+const removeInternalImage = (detachRoute: routeType) => {
+    router.delete(route(detachRoute.name, detachRoute.parameters), {
+        preserveScroll: true,
+        only: ["showcase"],
+    })
+}
+
 const availabilityBadge = (isAvailable: boolean) =>
     isAvailable
         ? { label: ctrans("Available"), class: "bg-green-50 text-green-700 ring-green-600/20" }
@@ -355,6 +405,36 @@ const availabilityBadge = (isAvailable: boolean) =>
             <p v-if="data.product.description" class="mt-4 whitespace-pre-wrap text-sm text-gray-500">
                 {{ data.product.description }}
             </p>
+
+            <div v-if="data.internal_images && (data.internal_images.images.length || data.internal_images.upload_route)"
+                class="mt-4 border-t border-gray-100 pt-3">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-gray-400"
+                        v-tooltip="ctrans('Only for internal use, these pictures never reach the websites')">
+                        {{ ctrans("Internal pictures") }}
+                    </div>
+                    <label v-if="data.internal_images.upload_route"
+                        class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900"
+                        :class="{ 'pointer-events-none opacity-50': isUploadingImages }">
+                        <Icon :data="{ icon: 'fal fa-camera' }" />
+                        {{ isUploadingImages ? ctrans("Uploading") : ctrans("Add picture") }}
+                        <input type="file" accept="image/*" multiple class="hidden" @change="uploadInternalImages" />
+                    </label>
+                </div>
+                <div v-if="data.internal_images.images.length" class="mt-2 flex flex-wrap gap-2">
+                    <div v-for="internalImage in data.internal_images.images" :key="internalImage.id"
+                        class="group relative h-16 w-16 overflow-hidden rounded border"
+                        :class="internalImage.is_main ? 'border-gray-500' : 'border-gray-200'">
+                        <Image :src="internalImage.image" class="h-full w-full" />
+                        <button v-if="internalImage.detach_route" type="button"
+                            class="absolute right-0.5 top-0.5 hidden rounded bg-white/90 px-1 text-xs text-red-500 group-hover:block"
+                            v-tooltip="ctrans('Remove picture')"
+                            @click="removeInternalImage(internalImage.detach_route)">
+                            <Icon :data="{ icon: 'fal fa-trash-alt' }" />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div v-if="data.organisation" class="mt-4 border-t border-gray-100 pt-3">
                 <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">

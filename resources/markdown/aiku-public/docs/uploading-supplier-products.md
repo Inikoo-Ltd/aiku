@@ -4,11 +4,11 @@ summary: Fill in the supplier products template, upload it on the supplier's pag
 date: 2026-10-07
 tags: procurement, supply chain, products, upload
 category: procurement
-help_routes: grp.supply-chain.suppliers.supplier_products.index, grp.supply-chain.suppliers.supplier_products.uploads.show
+help_routes: grp.supply-chain.suppliers.supplier_products.index, grp.supply-chain.suppliers.supplier_products.uploads.show, grp.supply-chain.suppliers.supplier_products.create
 ---
 
 <aside class="tldr">
-Download the template from the supplier's <b>Products</b> page, fill one row per product, and upload it with <b>Attach file</b>. Aiku reads the sheet, checks every row and opens a <b>preview</b>. Rows marked <b>Fix in the sheet</b> must be corrected in the file. Rows marked <b>Needs a decision</b> need you to tick <b>This is OK, I accept responsibility</b> (or skip the row). When nothing is left to fix or decide, press <b>Import</b>: aiku creates the families, trade units, barcodes, SKOs, supplier products and the draft purchase orders. Until then nothing is created, and <b>Cancel upload</b> throws it all away.
+Download the template from the supplier's <b>Products</b> page, fill one row per product, and upload it with <b>Attach file</b>. Aiku reads the sheet, checks every row and opens a <b>preview</b>. Rows marked <b>Fix in the sheet</b> must be corrected in the file. Rows marked <b>Needs a decision</b> need you to tick <b>This is OK, I accept responsibility</b> (or skip the row). When nothing is left to fix or decide, press <b>Import</b>: aiku creates the families, trade units, barcodes, SKOs, supplier products and the draft purchase orders. Until then nothing is created, and <b>Cancel upload</b> throws it all away. For a single product, <b>New Supplier Product</b> does the same from a form, without a sheet.
 </aside>
 
 ## What one row becomes
@@ -44,6 +44,30 @@ A few rules that save most mistakes:
 ## Uploading
 
 Open the supplier, go to **Products**, press **Attach file** and choose the file. A few seconds later the preview opens.
+
+## Adding one product without a sheet
+
+For a single product, press **New Supplier Product** on the supplier's **Products** page. The form has the same fields as the template, with the same headings, grouped into Product, Packing and ordering, Cost and prices, and Weights and sizes. The same rules apply: one unit per product, money in the column's currency, weights in kg, sizes as 20x10x5, `auto` for a pool barcode.
+
+Saving takes two steps:
+
+1. **Save.** As you type, the field checks of the upload already show under each field. Pressing **Save** runs all of them again plus the same AI checks an upload gets: the per-product questions and the AI review. This takes up to a minute. If nothing comes up, the product is created straight away.
+2. **Check before saving.** If anything comes up, a window opens with the AI's suggested fix, every finding, and the fields concerned, so you can correct them there. Tick what you accept, then press **Submit**. Submit is final: the AI is not asked again. If you change a field the AI warned about, the warning goes. A decision the AI asked for stays, marked as about the earlier value, and still needs a tick. Changing the Part reference needs a new Save.
+
+The findings use the same colours as the preview:
+
+- **red**: must be fixed;
+- **orange**: needs a decision. Tick **This is OK, I accept responsibility** if it is right. If you change the field and the message changes, tick it again;
+- **blue**: the Part reference already exists. Tick **Add this supplier to it** to add the supplier to that trade unit as another source;
+- **amber**: worth a look, nothing to tick.
+
+If the AI checks cannot run, the window asks for **I accept responsibility** instead, as an upload does.
+
+When an SKO holds more than one unit, **SKO name** appears under Packing, pre-filled as "Pack of N …". Change it if the wording is wrong.
+
+Submit creates the families, trade unit, barcode, SKO and supplier product in one go, exactly as Import does for a row, and opens the new supplier product. Every organisation that buys from the supplier gets the supplier product straight away, and its SKO the first time it orders the product.
+
+The form does not order cartons. Add the product to a purchase order afterwards, or use the sheet when you also want draft purchase orders.
 
 ## The preview
 

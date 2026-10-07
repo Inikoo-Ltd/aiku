@@ -139,8 +139,21 @@ class ImportSupplierProductUpload
      */
     protected function importRecord(Supplier $supplier, UploadRecord $record): void
     {
-        $values = $record->values;
+        ['supplier_product' => $supplierProduct, 'trade_unit' => $tradeUnit] = $this->importValues($supplier, $record->values);
 
+        $record->update(['data' => array_merge($record->data ?? [], ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
+    }
+
+    /**
+     * Creates one checked product (a sheet row or the New supplier product form). Run it inside a transaction.
+     *
+     * @param array<string, mixed> $values
+     *
+     * @return array{supplier_product: SupplierProduct, trade_unit: TradeUnit}
+     * @throws Throwable
+     */
+    public function importValues(Supplier $supplier, array $values): array
+    {
         $stockFamily     = $this->stockFamily($supplier, $values['family']);
         $tradeUnitFamily = $this->tradeUnitFamily($supplier, $values['family']);
         $tradeUnit       = $this->tradeUnit($supplier, $values);
@@ -155,7 +168,7 @@ class ImportSupplierProductUpload
         $supplierProduct = $this->supplierProduct($supplier, $values);
         SyncSupplierProductTradeUnits::run($supplierProduct, [$tradeUnit->id => ['quantity' => $values['units_per_sko']]]);
 
-        $record->update(['data' => array_merge($record->data ?? [], ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
+        return ['supplier_product' => $supplierProduct, 'trade_unit' => $tradeUnit];
     }
 
     protected function stockFamily(Supplier $supplier, string $code): StockFamily

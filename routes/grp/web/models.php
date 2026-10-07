@@ -514,6 +514,8 @@ use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
+use App\Actions\SupplyChain\SupplierProduct\CheckSupplierProductForm;
+use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProductFromForm;
 use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
@@ -1426,6 +1428,10 @@ Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
+Route::post('/supplier-product/{supplierProduct:id}/upload-images', UploadImagesToSupplierProduct::class)->name('supplier-product.upload_images');
+Route::delete('/supplier-product/{supplierProduct:id}/detach-image/{media:id}', DeleteImageFromSupplierProduct::class)->name('supplier-product.detach_image')->withoutScopedBindings();
+Route::post('/org-supplier-product/{orgSupplierProduct:id}/upload-images', [UploadImagesToSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.upload_images');
+Route::delete('/org-supplier-product/{orgSupplierProduct:id}/detach-image/{media:id}', [DeleteImageFromSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.detach_image')->withoutScopedBindings();
 Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', UpdateAgentSupplierPurchaseOrder::class)->name('agent_supplier_purchase_order.update');
 Route::post('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/deposit', StoreAspoDeposit::class)->name('agent_supplier_purchase_order.deposit.store');
 Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/journey-stage', [UpdatePurchaseOrderJourneyStage::class, 'inAgentSupplierPurchaseOrder'])->name('agent_supplier_purchase_order.journey_stage');
@@ -1519,6 +1525,8 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product', StoreSupplierProduct::class)->name('supplier-product.store');
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
+    Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
+    Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
 });
 
 Route::name('supplier_product_upload.')->prefix('supplier-product-upload/{upload:id}')->group(function () {
