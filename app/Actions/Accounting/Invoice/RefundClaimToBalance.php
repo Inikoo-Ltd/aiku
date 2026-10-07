@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\Payment\RefundPaymentToBalance;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -63,6 +64,7 @@ class RefundClaimToBalance extends OrgAction
     public function handle(Order $order, array $claimedItems, float $percentage = 100): Invoice
     {
         $shares = array_map(fn (float $share) => $share * $percentage / 100, self::sharesByTransaction($order, $claimedItems));
+        CheckClaimCompensation::ensure($order, array_map(fn (float $share) => $share * $percentage / 100, self::sharesByTransaction($order, $claimedItems, false)));
 
         $invoice = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->where(fn ($query) => $query->where('in_process', false)->orWhereNull('in_process'))->latest('id')->first();
         if (!$invoice || $shares === []) {
@@ -130,7 +132,7 @@ class RefundClaimToBalance extends OrgAction
      * @param  array<int, array{id: int, quantity: float|int}>  $claimedItems
      * @return array<int, float>
      */
-    public static function sharesByTransaction(Order $order, array $claimedItems): array
+    public static function sharesByTransaction(Order $order, array $claimedItems, bool $capped = true): array
     {
         $quantities = collect($claimedItems)->mapWithKeys(fn (array $item) => [(int) $item['id'] => (float) $item['quantity']]);
 
@@ -141,7 +143,8 @@ class RefundClaimToBalance extends OrgAction
             ->where('quantity_required', '>', 0)
             ->get()
             ->groupBy('transaction_id')
-            ->map(fn ($items) => min(1, $items->max(fn (DeliveryNoteItem $item) => $quantities[$item->id] / (float) $item->quantity_required)))
+            ->map(fn ($items) => $items->max(fn (DeliveryNoteItem $item) => $quantities[$item->id] / (float) $item->quantity_required))
+            ->map(fn (float $share) => $capped ? min(1, $share) : $share)
             ->all();
     }
 

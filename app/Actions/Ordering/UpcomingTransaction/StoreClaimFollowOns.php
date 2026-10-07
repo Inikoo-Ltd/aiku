@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\UpcomingTransaction;
 
 use App\Actions\Accounting\Invoice\RefundClaimToBalance;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Models\Ordering\Order;
@@ -59,6 +60,7 @@ class StoreClaimFollowOns extends OrgAction
         }
 
         $shares = RefundClaimToBalance::sharesByTransaction($order, $claimedItems);
+        CheckClaimCompensation::ensure($order, RefundClaimToBalance::sharesByTransaction($order, $claimedItems, false));
 
         $transactions = Transaction::query()
             ->whereIn('id', array_keys($shares))
@@ -78,6 +80,7 @@ class StoreClaimFollowOns extends OrgAction
             'product_id'    => $transaction->model_id,
             'quantity'      => max(1, ceil(((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus) * $shares[$transaction->id])),
             'type'          => UpcomingTransactionTypeEnum::FOLLOW_ON,
+            'source_transaction_id' => $transaction->id,
             'public_notes'  => $publicNotes,
             'private_notes' => $privateNotes,
         ]))->values());

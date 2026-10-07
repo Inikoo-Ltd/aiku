@@ -15,6 +15,7 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
@@ -37,22 +38,24 @@ class GetChatClaimCase
     /**
      * @return array<string, mixed>|null
      */
-    public function handle(ChatSession|MetaChatSession $chatSession, Customer $customer): ?array
+    public function handle(ChatSession|MetaChatSession $chatSession, Customer $customer, ?string $pickedOrderReference = null): ?array
     {
         $details = GetChatClaimDetails::run($chatSession);
-        $order   = $this->order($customer, $details['order_reference']);
+        $order   = ($pickedOrderReference ? $customer->orders()->where('reference', $pickedOrderReference)->first() : null)
+            ?? $this->order($customer, $details['order_reference']);
 
         if (!$order) {
             return null;
         }
 
         $text  = mb_strtolower($details['text']);
+        $left  = CheckClaimCompensation::run($order);
         $lines = DeliveryNoteItem::query()
             ->whereIn('delivery_note_id', $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->pluck('delivery_notes.id'))
             ->with(['transaction.asset', 'orgStock'])
             ->limit(80)
             ->get()
-            ->map(function (DeliveryNoteItem $item) use ($text) {
+            ->map(function (DeliveryNoteItem $item) use ($text, $left) {
                 $code = $item->transaction?->asset?->code ?? $item->orgStock?->code;
 
                 return [
@@ -62,6 +65,7 @@ class GetChatClaimCase
                     'name'       => $item->transaction?->asset?->name ?? $item->orgStock?->name,
                     'ordered'    => (float) $item->quantity_required,
                     'dispatched' => (float) ($item->quantity_dispatched ?? 0),
+                    'claimable'  => floor(($left[$item->transaction_id] ?? 1) * (float) $item->quantity_required * 1000 + 0.001) / 1000,
                     'mentioned'  => $code !== null && str_contains($text, mb_strtolower($code)),
                 ];
             })
@@ -74,8 +78,20 @@ class GetChatClaimCase
                 'id'        => $order->id,
                 'reference' => $order->reference,
                 'state'     => $order->state->value,
-                'named'     => $details['order_reference'] === $order->reference,
+                'named'     => $details['order_reference'] === $order->reference || $pickedOrderReference === $order->reference,
+                'too_old'   => CheckClaimCompensation::isTooOld($order),
             ],
+            'max_age_days'    => CheckClaimCompensation::MAX_AGE_DAYS,
+            'orders'          => $customer->orders()
+                ->whereIn('state', [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])
+                ->where('dispatched_at', '>=', now()->subDays(CheckClaimCompensation::MAX_AGE_DAYS))
+                ->latest('dispatched_at')
+                ->limit(10)
+                ->pluck('reference')
+                ->push($order->reference)
+                ->unique()
+                ->values()
+                ->all(),
             'photos'          => $details['photos'],
             'lines'           => $lines,
             'reason'          => $this->reason($text)->value,

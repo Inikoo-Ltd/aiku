@@ -245,7 +245,7 @@ const onCreateReplacement = (action: any) => {
             onError: (error) => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: error.message || ctrans("Failed to create replacement delivery note"),
+                    text: error.delivery_note_items || error.message || ctrans("Failed to create replacement delivery note"),
                     type: "error"
                 });
             }, 

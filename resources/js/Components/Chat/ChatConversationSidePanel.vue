@@ -222,9 +222,11 @@ interface CustomerProfile {
     }
     claim?: {
         is_claim: boolean
-        order: { id: number, reference: string, state: string, named: boolean }
+        order: { id: number, reference: string, state: string, named: boolean, too_old: boolean }
+        orders: string[]
+        max_age_days: number
         photos: number
-        lines: { id: number, transaction_id: number | null, code: string | null, name: string | null, ordered: number, dispatched: number, mentioned: boolean }[]
+        lines: { id: number, transaction_id: number | null, code: string | null, name: string | null, ordered: number, dispatched: number, claimable: number, mentioned: boolean }[]
         reason: string
         reasons: { value: string, label: string }[]
         replacement: { name: string, parameters: Record<string, any> }
@@ -395,22 +397,29 @@ const claimPicked = ref<Record<number, number>>({})
 const isReplacing = ref(false)
 const isAddingToNextOrder = ref(false)
 const claimRefundPercentage = ref(100)
+const claimOrderReference = ref<string | null>(null)
+
+const pickClaimOrder = async (reference: string) => {
+    claimOrderReference.value = reference
+    profileLoaded.value = false
+    await loadCustomerProfile()
+}
 
 watch(() => customerProfile.value.claim, (claim) => {
     claimOpen.value = !!claim?.is_claim
     claimReason.value = claim?.reason ?? "missing_from_parcel"
     claimRefundPercentage.value = 100
-    claimPicked.value = Object.fromEntries((claim?.lines ?? [])
-        .filter((line) => line.mentioned || line.dispatched < line.ordered)
-        .map((line) => [line.id, line.dispatched < line.ordered ? line.ordered - line.dispatched : line.ordered]))
+    claimPicked.value = claim?.order.too_old ? {} : Object.fromEntries((claim?.lines ?? [])
+        .filter((line) => line.claimable > 0 && (line.mentioned || line.dispatched < line.ordered))
+        .map((line) => [line.id, Math.min(line.claimable, line.dispatched < line.ordered ? line.ordered - line.dispatched : line.ordered)]))
 })
 
-const toggleClaimLine = (line: { id: number, ordered: number }) => {
+const toggleClaimLine = (line: { id: number, ordered: number, claimable: number }) => {
     const picked = { ...claimPicked.value }
     if (line.id in picked) {
         delete picked[line.id]
     } else {
-        picked[line.id] = line.ordered
+        picked[line.id] = Math.min(line.ordered, line.claimable)
     }
     claimPicked.value = picked
 }
@@ -585,7 +594,7 @@ const loadCustomerProfile = async () => {
     if (props.session.is_guest || profileLoaded.value || !props.session.ulid) return
     try {
         isLoadingProfile.value = true
-        const res = await axios.get(`${sessionApiBase.value}/${props.session.ulid}/customer-profile`)
+        const res = await axios.get(`${sessionApiBase.value}/${props.session.ulid}/customer-profile`, { params: { claim_order: claimOrderReference.value ?? undefined } })
         customerProfile.value = res.data
         profileLoaded.value = true
     } finally {
@@ -666,6 +675,7 @@ const resetAndLoad = () => {
     ticketsLoaded.value = false
     quickLookTicket.value = null
     customerProfile.value = emptyCustomerProfile()
+    claimOrderReference.value = null
     activeTab.value = 'profile'
     loadCustomerProfile()
 }
@@ -1041,6 +1051,16 @@ const copyChatId = async () => {
                         <span v-if="!customerProfile.claim.order.named" class="normal-case font-normal text-gray-400">{{ ctrans("(their last dispatched order)") }}</span>
                     </button>
                     <template v-if="claimOpen">
+                        <label v-if="customerProfile.claim.orders.length > 1" class="flex items-center gap-2 text-gray-500">
+                            {{ ctrans("Order") }}
+                            <select :value="customerProfile.claim.order.reference" :disabled="isLoadingProfile"
+                                class="flex-1 rounded border-gray-300 py-0.5 text-xs" @change="pickClaimOrder(($event.target as HTMLSelectElement).value)">
+                                <option v-for="reference in customerProfile.claim.orders" :key="reference" :value="reference">{{ reference }}</option>
+                            </select>
+                        </label>
+                        <p v-if="customerProfile.claim.order.too_old" class="font-medium text-red-600">
+                            {{ ctrans("Dispatched over :days days ago, claims are no longer taken for this order", { days: String(customerProfile.claim.max_age_days) }) }}
+                        </p>
                         <p class="text-gray-500">
                             <span v-if="customerProfile.claim.photos">{{ ctrans(":count photos sent", { count: String(customerProfile.claim.photos) }) }} · </span>
                             <span v-if="customerProfile.claim.replacements.length" class="text-amber-700">{{ ctrans("Already replaced") }}: {{ customerProfile.claim.replacements.join(", ") }}</span>
@@ -1052,12 +1072,13 @@ const copyChatId = async () => {
                             <label v-for="line in customerProfile.claim.lines" :key="line.id"
                                 class="flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-white"
                                 :class="line.mentioned ? 'font-medium' : ''">
-                                <input type="checkbox" :checked="line.id in claimPicked" @change="toggleClaimLine(line)" />
+                                <input type="checkbox" :checked="line.id in claimPicked" :disabled="customerProfile.claim.order.too_old || line.claimable <= 0" @change="toggleClaimLine(line)" />
                                 <span class="shrink-0 text-gray-800">{{ line.code }}</span>
                                 <span class="truncate text-gray-500" :title="line.name ?? ''">{{ line.name }}</span>
                                 <span class="ml-auto shrink-0 tabular-nums" :class="line.dispatched < line.ordered ? 'text-red-600' : 'text-gray-400'"
                                     v-tooltip="ctrans('Ordered, sent')">{{ line.ordered }}/{{ line.dispatched }}</span>
-                                <input v-if="line.id in claimPicked" v-model.number="claimPicked[line.id]" type="number" min="0" step="1"
+                                <span v-if="line.claimable < line.ordered" class="shrink-0 text-amber-700" v-tooltip="ctrans('Left to claim, the rest is already replaced, refunded or waiting in their next order')">{{ ctrans(":count left", { count: String(line.claimable) }) }}</span>
+                                <input v-if="line.id in claimPicked" v-model.number="claimPicked[line.id]" type="number" min="0" step="1" :max="line.claimable"
                                     class="w-12 shrink-0 rounded border-gray-300 px-1 py-0 text-xs" />
                             </label>
                         </div>
