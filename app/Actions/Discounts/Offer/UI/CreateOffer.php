@@ -79,7 +79,7 @@ class CreateOffer extends OrgAction
      */
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("crm.{$this->shop->id}.create");
+        return $request->user()->authTo("discounts.{$this->shop->id}.edit");
     }
 
     /**

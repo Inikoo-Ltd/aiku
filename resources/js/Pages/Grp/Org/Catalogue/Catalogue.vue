@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { type Component, computed, ref } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import CatalogueShowcase from '@/Components/Catalogue/CatalogueShowcase.vue'
+import TableCatalogueOnItsWay from "@/Components/Tables/Grp/Org/Catalogue/TableCatalogueOnItsWay.vue"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import TableTopListedProducts from '@/Components/Tables/Grp/Org/CRM/TableTopListedProducts.vue'
@@ -15,11 +16,11 @@ import { routeType } from '@/types/route'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
-import { faTrophy, faAlignLeft } from '@fal'
+import { faTrophy, faAlignLeft, faBooks, faBars, faFolder, faGem, faCube, faTruckContainer } from '@fal'
 
-library.add(faTrophy, faAlignLeft);
+library.add(faTrophy, faAlignLeft, faBooks, faBars, faFolder, faGem, faCube, faTruckContainer);
 
-type TabKey = 'showcase' | 'top_listed_families' | 'top_listed_products' | 'top_sold_products'
+type TabKey = 'showcase' | 'top_listed_families' | 'top_listed_products' | 'top_sold_products' | 'on_its_way'
 
 const props = defineProps<{
     title: string
@@ -33,6 +34,7 @@ const props = defineProps<{
     top_listed_families?: any
     top_listed_products?: any
     top_sold_products?: any
+    on_its_way?: any
 }>()
 
 const currentTab = ref<TabKey>(props.tabs.current as TabKey)
@@ -45,6 +47,7 @@ const component = computed<Component>(() => {
         top_listed_families: TableTopListedProducts,
         top_listed_products: TableTopListedProducts,
         top_sold_products: TableTopSoldProducts,
+        on_its_way: TableCatalogueOnItsWay,
     }
 
     return components[currentTab.value]
@@ -59,7 +62,7 @@ const component = computed<Component>(() => {
                 <Link
                     v-if="url_master"
                     :href="route(url_master.name, url_master.parameters)"
-                    v-tooltip="trans('Go to Master')"
+                    v-tooltip="ctrans('Go to Master')"
                     class="mr-1 opacity-70 hover:opacity-100"
                 >
                     <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />

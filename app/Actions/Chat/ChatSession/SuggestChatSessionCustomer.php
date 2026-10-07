@@ -36,8 +36,10 @@ class SuggestChatSessionCustomer
     public const string BASIS_EMAIL = 'email';
     public const string BASIS_PHONE = 'phone';
     public const string BASIS_ORDER = 'order';
+    public const string BASIS_MANUAL = 'manual';
+    public const string BASIS_PREVIOUS_LINK = 'previous_link';
 
-    private const array FREE_MAIL_DOMAINS = [
+    public const array FREE_MAIL_DOMAINS = [
         'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'live.com', 'live.co.uk', 'msn.com',
         'yahoo.com', 'yahoo.co.uk', 'yahoo.de', 'yahoo.fr', 'yahoo.es', 'icloud.com', 'me.com', 'aol.com', 'btinternet.com',
         'sky.com', 'talktalk.net', 'virginmedia.com', 'protonmail.com', 'proton.me', 'gmx.de', 'gmx.net', 'web.de',
@@ -107,6 +109,7 @@ class SuggestChatSessionCustomer
                 self::BASIS_EMAIL => __('Gave this customer\'s email'),
                 self::BASIS_PHONE => __('Writes from this customer\'s number'),
                 self::BASIS_ORDER => __('Quoted one of this customer\'s orders'),
+                self::BASIS_PREVIOUS_LINK => __('Linked to this customer by hand before'),
                 default           => '',
             },
             'basis'    => $customer ? $chatSession->suggestion_basis : null,
@@ -140,9 +143,30 @@ class SuggestChatSessionCustomer
         // ponytail: customers.phone has no index, so this scans the shop's customers. Fine for a
         // queued job at a few guests a day; index the normalised phone if that changes.
         if (strlen($phone) >= 10) {
-            $customer = $customers()->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 9) = ?", [substr($phone, -9)])->first();
+            $customer = $customers()->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 9) = ?", [substr($phone, -9)])
+                ->orderByRaw('last_invoiced_at desc nulls last')
+                ->orderByDesc('id')
+                ->first();
             if ($customer) {
                 return [$customer, self::BASIS_PHONE];
+            }
+        }
+
+        // A customer an agent picked by hand for this address earlier. Never a link on its own:
+        // somebody else may have registered the address since, in which case the checks above
+        // already found them and this is never reached.
+        if ($email !== '' && $chatSession instanceof ChatSession) {
+            $previous = ChatSession::where('shop_id', $chatSession->shop_id)
+                ->where('id', '!=', $chatSession->id)
+                ->where('suggestion_basis', self::BASIS_MANUAL)
+                ->whereNotNull('web_user_id')
+                ->whereRaw("lower(metadata->>'email') = ?", [$email])
+                ->latest('id')
+                ->with('webUser:id,customer_id')
+                ->first();
+
+            if ($previous?->webUser) {
+                return [$customers()->find($previous->webUser->customer_id), self::BASIS_PREVIOUS_LINK];
             }
         }
 

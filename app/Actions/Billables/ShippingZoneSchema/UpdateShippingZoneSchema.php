@@ -10,6 +10,7 @@ namespace App\Actions\Billables\ShippingZoneSchema;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShippingZoneSchemas;
 use App\Actions\Traits\WithActionUpdate;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShippingZoneSchema extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -57,6 +59,7 @@ class UpdateShippingZoneSchema extends OrgAction
         if (!$audit) {
             ShippingZoneSchema::disableAuditing();
         }
+        $this->asAction           = true;
         $this->strict             = $strict;
         $this->hydratorsDelay     = $hydratorsDelay;
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);

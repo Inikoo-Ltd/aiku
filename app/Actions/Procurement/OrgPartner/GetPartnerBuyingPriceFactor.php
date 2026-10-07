@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Models\Procurement\OrgPartner;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -16,15 +17,23 @@ class GetPartnerBuyingPriceFactor
 {
     use AsObject;
 
+    public const HUB_PARTNER_DISCOUNT = 0.45;
+
     public function handle(OrgPartner $orgPartner): float
     {
-        $shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
-        if (!$shopId) {
+        if (GetPartnerLandedCost::appliesTo($orgPartner)) {
             return 1.0;
         }
 
-        $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shopId);
+        return round(1 - self::hubPartnerDiscount($orgPartner->partner), 4);
+    }
 
-        return $customer ? GetPartnerCustomerDiscount::run($customer) : 1.0;
+    /**
+     * A fixed share off the hub's list price, kept in the hub's settings rather than in shop offers
+     * so a changed or missing offer can not reprice the partners.
+     */
+    public static function hubPartnerDiscount(Organisation $hub): float
+    {
+        return max(0.0, min(1.0, (float) Arr::get($hub->settings, 'procurement.partner_discount', self::HUB_PARTNER_DISCOUNT)));
     }
 }

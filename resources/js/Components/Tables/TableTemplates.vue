@@ -31,6 +31,13 @@ const locale = inject("locale", aikuLocaleStructure);
 function mailshotRoute(mailshot: Mailshot) {
     // console.log(route().current())
     switch (route().current()) {
+        case "grp.org.shops.show.dashboard.comms.templates.index":
+            return route(
+                "grp.org.shops.show.dashboard.comms.templates.workshop",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    mailshot.slug]);
         case "grp.org.shops.show.marketing.templates.index":
             return route(
                 "grp.org.shops.show.marketing.templates.workshop",
@@ -68,6 +75,11 @@ function mailshotRoute(mailshot: Mailshot) {
                 <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink">
                     {{ mailshot["name"] }}
                 </Link>
+
+                <span v-if="mailshot.is_dynamic_block"
+                    class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded">
+                    {{ ctrans("For dynamic content") }}
+                </span>
 
                 <span
                     v-tooltip="mailshot.has_compiled_layout ? null : ctrans('Please save the email template by clicking the SAVE button in the BeeFree workspace before it can be used')"

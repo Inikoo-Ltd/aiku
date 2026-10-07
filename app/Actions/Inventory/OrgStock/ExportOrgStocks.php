@@ -8,37 +8,47 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\WithExportData;
 use App\Exports\Inventory\OrgStocksExport;
+use App\Models\Inventory\OrgStockFamily;
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportOrgStocks
+class ExportOrgStocks extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithInventoryAuthorisation;
     use WithExportData;
 
     /**
      * @throws \Throwable
      */
-    public function handle(array $modelData): BinaryFileResponse
+    public function handle(Organisation|OrgStockFamily $parent, array $modelData): BinaryFileResponse
     {
-        $type = $modelData['type'];
-
-        return $this->export(new OrgStocksExport(), 'stocks', $type);
+        return $this->export(new OrgStocksExport($parent), 'skos', $modelData['type']);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($request->all());
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     * @noinspection PhpUnusedParameterInspection
+     */
+    public function inStockFamily(Organisation $organisation, Warehouse $warehouse, OrgStockFamily $orgStockFamily, ActionRequest $request): BinaryFileResponse
+    {
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($orgStockFamily, $this->validatedData);
     }
 }

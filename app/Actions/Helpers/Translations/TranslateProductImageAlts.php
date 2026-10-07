@@ -42,7 +42,7 @@ class TranslateProductImageAlts
                 continue;
             }
 
-            $translatedCaption = Translate::run($sourceCaption, $english, $shopLanguage, 'gpt-5-nano');
+            $translatedCaption = Translate::run($sourceCaption, $english, $shopLanguage, 'catalogue');
 
             if ($translatedCaption === $sourceCaption) {
                 continue;

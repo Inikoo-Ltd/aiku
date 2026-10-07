@@ -8,11 +8,13 @@ use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
+use App\Actions\Retina\UI\Dashboard\StoreRetinaDashboardBasketAdd;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaEcomBasketTransaction extends IrisAction
@@ -26,15 +28,9 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
-        $this->ensureProductIsPurchasableByCustomer($product, $customer);
-
         $order = $this->getOrderInBasket($customer);
 
-        if (!$order) {
-            $order = StoreEcomOrder::make()->action($customer);
-        }
-
-        $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->where('is_gift', false)->first();
+        $transaction = $order ? $this->findCustomerLine($order, $product) : null;
         if ($transaction) {
             return RetinaEcomUpdateTransaction::make()->action(
                 $transaction,
@@ -43,6 +39,12 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
                     'quantity_ordered' => data_get($modelData, 'quantity')
                 ]
             );
+        }
+
+        $this->ensureProductIsPurchasableByCustomer($product, $customer, data_get($modelData, 'quantity'));
+
+        if (!$order) {
+            $order = StoreEcomOrder::make()->action($customer);
         }
 
         $historicAsset = $product->currentHistoricProduct;
@@ -59,7 +61,8 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
     public function rules(): array
     {
         return [
-            'quantity' => ['required', 'numeric', 'min:0'],
+            'quantity'          => ['required', 'integer', 'min:0'],
+            'dashboard_section' => ['sometimes', 'nullable', Rule::in(StoreRetinaDashboardBasketAdd::SECTIONS)],
         ];
     }
 
@@ -75,7 +78,13 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
         $customer = $user->customer;
         $this->initialisation($request);
 
-        return $this->handle($customer, $product, $this->validatedData);
+        $transaction = $this->handle($customer, $product, $this->validatedData);
+
+        if ($section = Arr::get($this->validatedData, 'dashboard_section')) {
+            StoreRetinaDashboardBasketAdd::run($customer, $section, $transaction->order_id, [$product->id => $transaction->quantity_ordered]);
+        }
+
+        return $transaction;
     }
 
     public function htmlResponse(): RedirectResponse

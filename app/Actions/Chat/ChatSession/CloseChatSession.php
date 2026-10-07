@@ -44,17 +44,29 @@ class CloseChatSession
         ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT,
         array $additionalData = []
     ): ChatSession {
-        if ($actorType === ChatActorTypeEnum::AGENT) {
-            $blockingTickets = $this->unresolvedBlockingTickets($chatSession);
+        if ($chatSession->isClosed()) {
+            return $chatSession;
+        }
 
-            if ($blockingTickets->isNotEmpty()) {
+        if ($actorType === ChatActorTypeEnum::AGENT) {
+            $blockers = $this->unresolvedBlockers($chatSession);
+
+            if ($blockers->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'message' => $this->blockingTicketsMessage($blockingTickets),
+                    'message' => $this->blockersMessage($blockers),
                 ]);
             }
         }
 
         return DB::transaction(function () use ($chatSession, $actorId, $actorType, $additionalData) {
+            // Locked so a second close landing in the same instant finds it already closed
+            // rather than racing the first past this check: closing twice is exactly the bug
+            // being fixed here, so the re-check has to be inside the transaction, not before it.
+            $chatSession = $chatSession->newQuery()->lockForUpdate()->findOrFail($chatSession->getKey());
+
+            if ($chatSession->isClosed()) {
+                return $chatSession;
+            }
 
             $closedBy = match ($actorType) {
                 ChatActorTypeEnum::AGENT  => ChatSessionClosedByTypeEnum::AGENT,

@@ -15,6 +15,7 @@ use App\Models\Helpers\Media;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InShop;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -112,6 +113,13 @@ class EmailTemplate extends Model implements HasMedia, Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function scopeCommonOutbox(Builder $query, bool $isCommonOutbox = true): Builder
+    {
+        return $query->whereRaw(
+            "coalesce(email_templates.data->>'common_outbox', 'false') ".($isCommonOutbox ? '=' : '<>')." 'true'"
+        );
     }
 
     public function parent(): MorphTo

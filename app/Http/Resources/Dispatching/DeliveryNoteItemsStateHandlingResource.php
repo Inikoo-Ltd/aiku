@@ -46,6 +46,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $org_stocks_batch_code_id
  * @property mixed $org_stocks_batch_code
  * @property mixed $org_stocks_batch_code_count
+ * @property mixed $indivisible_set
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -181,6 +182,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_slug'                           => $this->org_stock_slug,
             'org_stock_name'                           => $this->org_stock_name,
             'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),
+            'indivisible_set'                          => $this->getOrderedAssetIndivisibleSet(),
             'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_image_thumbnail'                => null,

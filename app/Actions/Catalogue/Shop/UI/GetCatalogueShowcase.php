@@ -49,6 +49,7 @@ class GetCatalogueShowcase
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
                 $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
+                $this->buildDuplicatedBarcodeStat($shop, $orgSlug, $shopSlug),
             ];
         }
 
@@ -56,19 +57,38 @@ class GetCatalogueShowcase
             'currency_code' => $shop->currency->code,
             'top_selling' => [
                 'family'     => [
-                    'label' => __('Top Family'),
-                    'icon'  => 'fal fa-folder',
-                    'value' => $topFamily,
+                    'label'  => __('Top Family'),
+                    'icon'   => 'fal fa-folder',
+                    'value'  => $topFamily,
+                    'route'  => $topFamily ? [
+                        'name'       => 'grp.org.shops.show.catalogue.families.show',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'family' => $topFamily->slug],
+                    ] : null,
+                    'counts' => $topFamily ? [
+                        'products' => $topFamily->stats?->number_current_products ?? 0,
+                    ] : null,
                 ],
                 'department' => [
-                    'label' => __('Top Department'),
-                    'icon'  => 'fal fa-folder-tree',
-                    'value' => $topDepartment,
+                    'label'  => __('Top Department'),
+                    'icon'   => 'fal fa-folder-tree',
+                    'value'  => $topDepartment,
+                    'route'  => $topDepartment ? [
+                        'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'department' => $topDepartment->slug],
+                    ] : null,
+                    'counts' => $topDepartment ? [
+                        'families' => $topDepartment->stats?->number_current_families ?? 0,
+                        'products' => $topDepartment->stats?->number_current_products ?? 0,
+                    ] : null,
                 ],
                 'product'    => [
                     'label' => __('Top Product'),
                     'icon'  => 'fal fa-folder-tree',
                     'value' => $topProduct,
+                    'route' => $topProduct ? [
+                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.show',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'product' => $topProduct->slug],
+                    ] : null,
                 ],
             ],
             'stats' => $stats,
@@ -551,6 +571,21 @@ class GetCatalogueShowcase
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
             'value'           => $shop->stats->number_products_with_rrp_violation,
+        ];
+    }
+
+    private function buildDuplicatedBarcodeStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Listings sharing a barcode'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.duplicated_barcodes.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-barcode',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_with_duplicated_barcode,
         ];
     }
 

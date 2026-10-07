@@ -81,6 +81,7 @@ class GetMasterProductCategoryTimeSeriesOrganisations extends OrgAction
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
             ->whereNull('deleted_at')
+            ->where('in_process', false)
             ->groupBy('organisation_id')
             ->select(['organisation_id', ...$this->fullInvoiceTransactionSelects()])
             ->get()

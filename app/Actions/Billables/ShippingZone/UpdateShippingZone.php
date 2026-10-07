@@ -9,6 +9,7 @@
 namespace App\Actions\Billables\ShippingZone;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Ordering\ShippingZoneResource;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateShippingZone extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
 
 

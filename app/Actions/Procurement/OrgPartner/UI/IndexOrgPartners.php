@@ -8,122 +8,181 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
-use App\Http\Resources\Procurement\OrgPartnersResource;
-use App\InertiaTable\InertiaTable;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
-use App\Services\QueryBuilder;
-use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgPartners extends OrgAction
 {
     use WithProcurementAuthorisation;
-    private Organisation $parent;
 
-    public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
+    /**
+     * @return Collection<int, OrgPartner>
+     */
+    public function handle(Organisation $organisation): Collection
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereStartWith('organisations.code', $value)
-                    ->orWhereAnyWordStartWith('organisations.name', $value);
-            });
-        });
-
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
-        $queryBuilder = QueryBuilder::for(OrgPartner::class);
-
-        $queryBuilder->where('org_partners.organisation_id', $parent->id);
-
-        $queryBuilder->leftjoin('organisations', 'org_partners.partner_id', '=', 'organisations.id');
-
-        return $queryBuilder
-            ->defaultSort('organisations.code')
-            ->select([
-                'org_partners.id',
-                'organisations.code',
-                'organisations.slug',
-                'organisations.name',
-                'organisations.email'
-            ])
-            ->allowedSorts(['code', 'organisations.name', 'email', 'name'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return OrgPartner::where('organisation_id', $organisation->id)
+            ->with(['partner.country', 'partner.currency', 'stats'])
+            ->get()
+            ->sortBy(fn (OrgPartner $orgPartner) => [!$orgPartner->partner->is_manufacturing_hub, $orgPartner->partner->code])
+            ->values();
     }
 
-    public function tableStructure(Organisation $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function asController(Organisation $organisation, ActionRequest $request): Collection
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
-
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix . 'Page');
-            }
-
-            $table
-                ->withModelOperations($modelOperations)
-                ->withGlobalSearch()
-                ->withLabelRecord([__('Partner'), __('Partners')])
-                ->withEmptyState(
-                    [
-                        'title' => __('No Partners Found'),
-                    ]
-                )
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
-
-                ->defaultSort('code');
-        };
-    }
-
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);
     }
 
-    public function jsonResponse(LengthAwarePaginator $partners): AnonymousResourceCollection
+    /**
+     * @return array<string, mixed>
+     */
+    public function partnerCard(OrgPartner $orgPartner): array
     {
-        return OrgPartnersResource::collection($partners);
+        $partner = $orgPartner->partner;
+        $stats   = $orgPartner->stats;
+
+        return [
+            'id'            => $orgPartner->id,
+            'code'          => $partner->code,
+            'name'          => $partner->name,
+            'country_code'  => $partner->country?->code,
+            'country_name'  => $partner->country?->name,
+            'currency_code' => $partner->currency?->code,
+            'is_hub'        => $partner->is_manufacturing_hub,
+            'stats'         => $partner->is_manufacturing_hub
+                ? [
+                    'open_shopping_list_items'       => (int) $stats?->number_open_shopping_list_items,
+                    'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
+                    'rescuable'                      => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
+                    'current'                        => $this->shoppingListRows($orgPartner)->concat($this->stockDeliveryRows($orgPartner))->values()->all(),
+                ]
+                : $this->sisterStats($orgPartner),
+        ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function sisterStats(OrgPartner $orgPartner): array
+    {
+        $organisationSlug = $orgPartner->organisation->slug;
 
-    public function htmlResponse(LengthAwarePaginator $partners, ActionRequest $request): Response
+        $purchaseOrders = $orgPartner->purchaseOrders()
+            ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereDoesntHave('stockDeliveries')
+            ->orderByDesc('created_at')
+            ->get(['id', 'slug', 'reference', 'state', 'number_purchase_order_transactions', 'submitted_at', 'created_at'])
+            ->map(fn (PurchaseOrder $purchaseOrder) => [
+                'type'        => 'purchase_order',
+                'reference'   => $purchaseOrder->reference,
+                'state'       => $purchaseOrder->state->value,
+                'state_label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                'lines'       => (int) $purchaseOrder->number_purchase_order_transactions,
+                'date'        => $purchaseOrder->submitted_at ?? $purchaseOrder->created_at,
+                'url'         => route('grp.org.procurement.org_partners.show.purchase-orders.show', [$organisationSlug, $orgPartner->id, $purchaseOrder->slug]),
+            ]);
+
+        $stockDeliveries = $this->stockDeliveryRows($orgPartner);
+
+        return [
+            'purchase_orders'   => (int) $orgPartner->stats?->number_purchase_orders,
+            'last_submitted_at' => $orgPartner->purchaseOrders()->max('submitted_at'),
+            'current'           => $stockDeliveries->concat($purchaseOrders)->values()->all(),
+            'rescuable'         => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
+        ];
+    }
+
+    private function stockDeliveryRows(OrgPartner $orgPartner): Collection
+    {
+        $stockDeliveryStateLabels = StockDeliveryStateEnum::labels();
+
+        return collect(ShowPartnerShoppingDashboard::make()->openStockDeliveries($orgPartner))
+            ->map(fn (array $stockDelivery) => [
+                'type'        => 'stock_delivery',
+                'reference'   => $stockDelivery['reference'],
+                'state'       => $stockDelivery['state'],
+                'state_label' => $stockDeliveryStateLabels[$stockDelivery['state']] ?? $stockDelivery['state'],
+                'lines'       => $stockDelivery['items'],
+                'date'        => $stockDelivery['date'],
+                'url'         => route('grp.org.procurement.org_partners.show.stock-deliveries.show', [$orgPartner->organisation->slug, $orgPartner->id, $stockDelivery['slug']]),
+            ]);
+    }
+
+    /**
+     * The hub's shopping list as two rows: the drafts staff are still preparing and the lines
+     * submitted to the hub, each linking to the list filtered to them.
+     */
+    public function shoppingListRows(OrgPartner $orgPartner): Collection
+    {
+        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $byState  = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $orgPartner->id)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+            ->whereNull('deleted_at')
+            ->groupBy('state')
+            ->selectRaw('state, count(*) as lines, min(created_at) as since, coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
+            ->get()
+            ->keyBy('state');
+
+        $routeParameters = [$orgPartner->organisation->slug, $orgPartner->id];
+
+        return collect([
+            ShoppingListItemStateEnum::DRAFT->value => [__('Ongoing PO'), __('Draft')],
+            ShoppingListItemStateEnum::OPEN->value  => [__('Producing in :partner', ['partner' => $orgPartner->partner->name]), __('Submitted')],
+        ])
+            ->filter(fn ($labels, $state) => $byState->has($state))
+            ->map(fn ($labels, $state) => [
+                'type'        => 'shopping_list',
+                'reference'   => $labels[0],
+                'state'       => $state,
+                'state_label' => $labels[1],
+                'lines'       => (int) $byState[$state]->lines,
+                'value'       => round((float) $byState[$state]->value * $exchange, 2),
+                'date'        => $byState[$state]->since,
+                'url'         => $state === ShoppingListItemStateEnum::DRAFT->value
+                    ? route('grp.org.procurement.org_partners.show.shopping_list.index', $routeParameters)
+                    : route('grp.org.procurement.org_partners.show.shopping_list.sent', $routeParameters),
+            ])
+            ->values();
+    }
+
+    public function htmlResponse(Collection $orgPartners, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Procurement/Partners',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'   => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Partners'),
-                'pageHead'    => [
-                    'model'       => __('Procurement'),
-                    'icon'        => ['fal', 'fa-users-class'],
-                    'title'       => __('Partners'),
+                'title'         => __('Partners'),
+                'pageHead'      => [
+                    'model' => __('Procurement'),
+                    'icon'  => ['fal', 'fa-users-class'],
+                    'title' => __('Partners'),
                 ],
-                'data'        => OrgPartnersResource::collection($partners),
-
-
+                'currency_code' => $this->organisation->currency->code,
+                'can_create_purchase_orders' => $this->canEdit,
+                'partners'      => $orgPartners->map(fn (OrgPartner $orgPartner) => $this->partnerCard($orgPartner))->all(),
             ]
-        )->table($this->tableStructure($this->parent));
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

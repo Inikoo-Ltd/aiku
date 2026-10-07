@@ -147,7 +147,7 @@ const readNavHistory = (): VisitedPage[] => {
 const recordVisit = (url: string) => {
     setTimeout(() => {
         try {
-            const entry: VisitedPage = { url, title: document.title, at: Date.now() }
+            const entry: VisitedPage = { url, title: document.title.replace(/^\(\d+\)\s/, ""), at: Date.now() }
             const history = [entry, ...readNavHistory().filter((page) => page.url !== url)].slice(0, NAV_HISTORY_MAX)
             localStorage.setItem(NAV_HISTORY_KEY, JSON.stringify(history))
         } catch {

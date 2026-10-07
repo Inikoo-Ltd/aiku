@@ -10,9 +10,11 @@ namespace App\Actions\Chat\Staff\Json;
 
 use App\Models\Chat\ChatPhoneCall;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +24,33 @@ class GetStaffCoworkers
 
     public function rules(): array
     {
-        return ['q' => ['sometimes', 'nullable', 'string', 'max:64']];
+        return [
+            'q'          => ['sometimes', 'nullable', 'string', 'max:64'],
+            'model_type' => ['sometimes', 'nullable', Rule::in(StaffTask::PEOPLE_SCOPED_MODELS)],
+            'model_id'   => ['required_with:model_type', 'nullable', 'integer'],
+        ];
+    }
+
+    /**
+     * Checked through authTo() rather than a join on the permission tables so wildcard and masters grants count.
+     * Cached for five minutes per permission set: a picker can lag a permission change, opening a task dialog cannot check every colleague each time.
+     *
+     * @param string[] $permissions
+     * @return int[]
+     */
+    protected function userIdsAbleTo(int $groupId, array $permissions): array
+    {
+        return Cache::remember(
+            'staff-coworkers-able:'.$groupId.':'.implode('|', $permissions),
+            300,
+            fn () => User::query()
+                ->where('group_id', $groupId)
+                ->where('status', true)
+                ->get()
+                ->filter(fn (User $user) => $user->authTo($permissions))
+                ->pluck('id')
+                ->all()
+        );
     }
 
     /**
@@ -117,7 +145,13 @@ class GetStaffCoworkers
             ? Cache::remember('staff-coworkers:'.$me->group_id, 60, fn () => $this->coworkerRows($me->group_id, ''))
             : $this->coworkerRows($me->group_id, $query);
 
-        $rows     = array_values(array_filter($rows, fn (array $row) => $row['id'] !== $me->id));
+        $rows = array_values(array_filter($rows, fn (array $row) => $row['id'] !== $me->id));
+
+        if ($modelType = $request->validated('model_type')) {
+            $ableIds = $this->userIdsAbleTo($me->group_id, StaffTask::viewPermissionsOf($modelType, (int) $request->validated('model_id'), $me->group_id));
+            $rows    = array_values(array_filter($rows, fn (array $row) => in_array($row['id'], $ableIds)));
+        }
+
         $myOrgIds = $this->organisationIdsByUser([$me->id])[$me->id] ?? [];
         $teamIds  = DB::table('user_has_team_members')->where('user_id', $me->id)->pluck('member_user_id')->all();
 

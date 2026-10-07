@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Media;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachRetinaAttachmentToModel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     private PalletDelivery|PalletReturn $parent;
 
     public function handle(PalletDelivery|PalletReturn $model, array $modelData): void

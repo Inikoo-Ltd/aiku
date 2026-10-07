@@ -109,6 +109,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_delivery_notes_state_cancelled
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property array<array-key, mixed>|null $stock_out_projection
+ * @property \Illuminate\Support\Carbon|null $stock_out_projection_hydrated_at
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationProcurementStats newModelQuery()
  * @method static Builder<static>|OrganisationProcurementStats newQuery()
@@ -120,6 +122,11 @@ class OrganisationProcurementStats extends Model
     protected $table = 'organisation_procurement_stats';
 
     protected $guarded = [];
+
+    protected $casts = [
+        'stock_out_projection'             => 'array',
+        'stock_out_projection_hydrated_at' => 'datetime',
+    ];
 
     public function organisation(): BelongsTo
     {

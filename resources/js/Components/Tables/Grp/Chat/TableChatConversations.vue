@@ -79,6 +79,11 @@ const sentimentColor: Record<string, string> = {
             </div>
         </template>
 
+        <template #cell(rating)="{ item }">
+            <span v-if="item.rating" class="text-sm">{{ item.rating }}<span class="text-gray-400">/5</span></span>
+            <span v-else class="text-sm text-gray-400">—</span>
+        </template>
+
         <template #cell(assigned_agent)="{ item }">
             <span v-if="item.assigned_agent" class="text-sm">{{ item.assigned_agent }}</span>
             <span v-else class="text-sm text-gray-400">—</span>

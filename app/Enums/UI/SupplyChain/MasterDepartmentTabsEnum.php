@@ -17,9 +17,11 @@ enum MasterDepartmentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case CONTENT = 'content';
     case IMAGES = 'images';
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
+    case FAMILIES_ORDER = 'families_order';
     // case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
@@ -31,6 +33,10 @@ enum MasterDepartmentTabsEnum: string
             MasterDepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterDepartmentTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             // MasterDepartmentTabsEnum::DEPARTMENTS => [
             //     'title' => __('Departments in shop'),
@@ -58,6 +64,10 @@ enum MasterDepartmentTabsEnum: string
             MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY => [
                 'title' => __('Related product category'),
                 'icon'  => 'fal fa-folder-tree',
+            ],
+            MasterDepartmentTabsEnum::FAMILIES_ORDER => [
+                'title' => __('Families order in website'),
+                'icon'  => 'fal fa-sort-amount-down',
             ]
         };
     }

@@ -22,6 +22,8 @@ trait WithSupplierProductJsonColumns
     ];
 
     private const NULLABLE_NUMERIC_FIELDS = [
+        'units_per_pack',
+        'units_per_carton',
         'cbm',
         'extra_costs',
         'minimum_carton_order',

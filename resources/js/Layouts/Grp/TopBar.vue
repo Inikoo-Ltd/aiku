@@ -9,16 +9,18 @@ import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { Link, router } from "@inertiajs/vue3"
 import { computed, defineAsyncComponent, reactive, inject, ref } from "vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
 import TopBarSelectButton from "@/Layouts/Grp/TopBarSelectButton.vue"
 import { Menu, MenuButton, MenuItems, Disclosure, MenuItem } from "@headlessui/vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Image from "@common/Components/Image.vue"
 import { faChevronDown } from "@far"
 import {
     faTerminal,
     faUserAlien,
     faCog,
+    faInbox,
     faCity,
     faBuilding,
     faNetworkWired,
@@ -61,7 +63,7 @@ import {
     faSign,
     faClipboardListCheck,
     faClipboardList,
-    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faAppleCrate, faChevronRight, faChevronLeft, faExchange } from "@fal"
+    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faAppleCrate, faChevronRight, faChevronLeft, faExchange } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import MenuTopRight from "@/Layouts/Grp/MenuTopRight.vue"
 const TopBarDropdownScope = defineAsyncComponent(() => import("@/Layouts/Grp/TopBarDropdownScope.vue"))
@@ -71,10 +73,10 @@ import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
+library.add(faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
-    faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faAnalytics, faUserCircle, faChevronRight
+    faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faChevronRight
 )
 
 defineProps<{
@@ -118,17 +120,17 @@ const currentLocation = computed(() => {
 
 // For label
 const label = {
-    // organisationSelect: trans("Select organisation"),
-    // agentSelect: trans("Select Agent"),
-    shopSelect: trans("Go to shop"),
-    warehouseSelect: trans("Select warehouses"),
-    fulfilmentSelect: trans("Select fulfilments")
+    // organisationSelect: ctrans("Select organisation"),
+    // agentSelect: ctrans("Select Agent"),
+    shopSelect: ctrans("Go to shop"),
+    warehouseSelect: ctrans("Select warehouses"),
+    fulfilmentSelect: ctrans("Select fulfilments")
 }
 
 </script>
 
 <template>
-    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="['pr-4', layoutStore.messagingSidebar?.show ? 'md:pr-56' : (layoutStore.messagingSidebar?.micro ? 'md:pr-4' : 'md:pr-12')]" v-slot="{ open }">
+    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full md:max-w-[calc(100%_-_var(--chat-pane,0px))] bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="['pr-6', layoutStore.messagingSidebar?.show ? 'md:pr-56' : (layoutStore.messagingSidebar?.micro ? 'md:pr-6' : 'md:pr-12')]" v-slot="{ open }">
         <ScreenWarning v-if="layoutStore.hasTopBanner" class="relative top-0" />
 
         <div class="px-0">
@@ -150,9 +152,9 @@ const label = {
                     <div v-if="!layoutStore.user?.settings?.hide_logo" class="overflow-hidden relative flex flex-1 items-center justify-center md:justify-start transition-all duration-300 ease-in-out"
                          :class="[layoutStore.leftSidebar.show ? 'md:w-48 md:pr-4' : 'md:w-12']"
                          :style="{
-                            'background-color': layoutStore.app.theme[0],
-                            'color': layoutStore.app.theme[1],
-                            'border-bottom': `1px solid ${layoutStore.app.theme[2]}3F`
+                            'background-color': layoutStore.app.navigation_theme[0],
+                            'color': layoutStore.app.navigation_theme[1],
+                            'border-bottom': `1px solid ${layoutStore.app.navigation_theme[2]}3F`
                         }"
                     >
                         <Transition name="spin-to-down">
@@ -226,14 +228,14 @@ const label = {
                                 class="px-1 py-1 space-y-2.5 min-w-24 w-fit max-w-96 absolute left-0 mt-2 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none max-lg:fixed max-lg:inset-y-0 max-lg:z-[2] max-lg:mt-0 max-lg:w-72 max-lg:max-w-[85vw] max-lg:overflow-y-auto max-lg:rounded-none max-lg:px-2 max-lg:py-3">
                                 <div class="flex items-center justify-between gap-x-2 px-1 pb-1 lg:hidden">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-slate-700">{{ trans("Switch organisation") }}</p>
+                                        <p class="text-sm font-semibold text-slate-700">{{ ctrans("Switch organisation") }}</p>
                                         <p class="mt-0.5 truncate text-xs text-slate-500">
-                                            {{ trans("You're in") }}
+                                            {{ ctrans("You're in") }}
                                             <span class="font-medium text-slate-700">{{ currentLocation.organisation }}</span>
                                             <template v-if="currentLocation.place"> › <span class="font-medium text-slate-700">{{ currentLocation.place }}</span></template>
                                         </p>
                                     </div>
-                                    <button type="button" class="rounded p-2 text-gray-400 hover:text-gray-700" :aria-label="trans('Close')" @click="closeOrgMenu">
+                                    <button type="button" class="rounded p-2 text-gray-400 hover:text-gray-700" :aria-label="ctrans('Close')" @click="closeOrgMenu">
                                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                                     </button>
                                 </div>
@@ -246,7 +248,7 @@ const label = {
                                     }]"
                                     menuKey="group"
                                     :imageSkeleton="imageSkeleton"
-                                    :label="trans('Corporates')"
+                                    :label="ctrans('Corporates')"
                                     icon="fal fa-user-tie"
                                 />
 
@@ -255,7 +257,7 @@ const label = {
                                     v-if="layoutStore.organisations.data?.length"
                                     :menuItems="layoutStore.organisations.data"
                                     :imageSkeleton="imageSkeleton"
-                                    :label="trans('E-Commerce')"
+                                    :label="ctrans('E-Commerce')"
                                     icon="fal fa-cash-register"
                                     :closeMenu="closeOrgMenu"
                                 />
@@ -265,7 +267,7 @@ const label = {
                                     v-if="layoutStore.agents?.data?.length"
                                     :menuItems="layoutStore.agents?.data"
                                     :imageSkeleton="imageSkeleton"
-                                    :label="trans('Agents')"
+                                    :label="ctrans('Agents')"
                                     icon="fal fa-people-arrows"
                                     :closeMenu="closeOrgMenu"
                                 />
@@ -275,7 +277,7 @@ const label = {
                                     v-if="layoutStore.digital_agency?.data?.length"
                                     :menuItems="layoutStore.digital_agency?.data"
                                     :imageSkeleton="imageSkeleton"
-                                    :label="trans('Digital Agency')"
+                                    :label="ctrans('Digital Agency')"
                                     icon="fal fa-laptop-house"
                                     :closeMenu="closeOrgMenu"
                                 />
@@ -343,7 +345,7 @@ const label = {
                                                 :class="layoutStore.currentRoute === 'grp.org.shops.index' ? 'bg-indigo-100 font-semibold text-gray-700' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'"
                                             >
                                                 <div class="w-full text-center">
-                                                    {{ trans("Show all shops") }}
+                                                    {{ ctrans("Show all shops") }}
                                                     <FontAwesomeIcon icon="fal fa-long-arrow-right" class="group-hover:translate-x-1 transition-all" fixed-width aria-hidden="true" />
                                                 </div>
                                         </MenuItem>
@@ -402,22 +404,8 @@ const label = {
                         <div class="relative flex h-full min-w-0">
                             <div ref="subsectionScroller" class="flex h-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 md:[&>*>span]:inline" id="TopBarSubsections">
                             </div>
-                            <button
-                                v-if="canScrollSubsectionsLeft"
-                                type="button"
-                                class="absolute inset-y-0 left-0 flex w-6 items-center justify-center bg-gray-50 text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-                                :aria-label="trans('Scroll left')"
-                                @click="scrollSubsections(-1)">
-                                <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
-                            </button>
-                            <button
-                                v-if="canScrollSubsectionsRight"
-                                type="button"
-                                class="absolute inset-y-0 right-0 flex w-6 items-center justify-center bg-gray-50 text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800"
-                                :aria-label="trans('Scroll right')"
-                                @click="scrollSubsections(1)">
-                                <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
-                            </button>
+                            <ScrollFadeArrow direction="left" tone="gray" :visible="canScrollSubsectionsLeft" @click="scrollSubsections(-1)" />
+                            <ScrollFadeArrow direction="right" tone="gray" :visible="canScrollSubsectionsRight" @click="scrollSubsections(1)" />
                         </div>
 
                     </div>

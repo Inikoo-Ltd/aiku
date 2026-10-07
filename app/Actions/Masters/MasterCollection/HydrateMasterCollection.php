@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\HydrateModel;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateRebelCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
@@ -33,6 +34,7 @@ class HydrateMasterCollection extends HydrateModel
         MasterCollectionHydrateMasterProducts::run($masterCollection);
         MasterCollectionHydrateParents::run($masterCollection);
         MasterCollectionHydrateCollections::run($masterCollection);
+        MasterCollectionHydrateRebelCollections::run($masterCollection);
         UpdateMasterCollectionWebImages::run($masterCollection);
     }
 

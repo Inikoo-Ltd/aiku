@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import Popover from "primevue/popover"
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from "@/Composables/useTrans"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faClock)
@@ -9,6 +10,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { getOfferLabelVariant } from "@/Composables/useOfferLabelVariant"
 interface Offer {
     type?: string
+    label?: string
+    duration_label?: string
     max_percentage_discount?: number | string | null
 }
 
@@ -16,9 +19,10 @@ const props = withDefaults(defineProps<{
     offer?: Offer
     use_duration?: boolean
 }>(), {
-    use_duration: true   
+    use_duration: true,
 })
 
+const layout: any = inject("layout", retinaLayoutStructure)
 const _popoverInfoCircle = ref()
 
 const variantClass = computed(() => `offer-max-discount-${getOfferLabelVariant(props.offer)}`)
@@ -40,7 +44,7 @@ const maxDiscountLabel = computed(() => {
         <div class="offer-max-discount"
             :class="variantClass">
             <div class="offer-label">
-                <span v-if="maxDiscountLabel" class="discount">{{ maxDiscountLabel }}% {{ trans("OFF") }}</span>{{ props.offer?.label || trans("Special Offers") }}
+                <span v-if="maxDiscountLabel" class="discount">{{ maxDiscountLabel }}% {{ ctrans("OFF") }}</span>{{ props.offer?.label || ctrans("Special Offers") }}
 
                 <span v-if="!layout?.user?.gr_data?.customer_is_gr" @click="_popoverInfoCircle?.toggle"
                     @mouseenter="_popoverInfoCircle?.show" @mouseleave="_popoverInfoCircle?.hide" class="info-icon">
@@ -50,17 +54,17 @@ const maxDiscountLabel = computed(() => {
 
             <Popover ref="_popoverInfoCircle" class="offer-popover">
                 <div class="offer-popover-text">
-                    <p>{{ trans("Offer is valid for selected products only.") }}</p>
-                    <p>{{ trans("This offer can not be combined with other offers.") }}</p>
+                    <p>{{ ctrans("Offer is valid for selected products only.") }}</p>
+                    <p>{{ ctrans("This offer can not be combined with other offers.") }}</p>
                     <!-- <p v-if="offer.duration != 'permanent'">{{ trans("Offer is valid until 27.07.2026 (midnight).") }}</p> -->
                 </div>
 
             </Popover>
         </div>
-        <div v-if="props.offer.duration_label && use_duration" class="offer-valid-until">
+        <div v-if="props.offer?.duration_label && use_duration" class="offer-valid-until">
             <FontAwesomeIcon icon="fal fa-clock" class="text-[10px] sm:text-xs" fixed-width />
             <span class="truncate">
-                {{ props.offer.duration_label }}
+                {{ props.offer?.duration_label }}
             </span>
         </div>
     </div>

@@ -74,8 +74,6 @@ class IndexCreditTransactions extends OrgAction
                 );
 
             $this->addBaseTableColumns($table);
-
-            $table->column(key: 'actions', label: __('Actions'));
         };
     }
 

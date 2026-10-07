@@ -26,7 +26,7 @@ import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import AlertMessage from '@/Components/Utils/AlertMessage.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { toZonedTime} from 'date-fns-tz';
 import { format } from 'date-fns'
@@ -174,7 +174,6 @@ const handleSendNow = async () => {
 
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -244,7 +243,6 @@ const confirmSchedule = async () => {
             }
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -380,7 +378,6 @@ const handleDelete = async () => {
             inProgress.value = false;
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -436,7 +433,6 @@ const handleCancelSchedule = async () => {
             inProgress.value = false;
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -475,7 +471,6 @@ const handleToggleSecondWave = async (value: boolean) => {
             }
         })
         .catch((exception) => {
-            console.log(exception);
             checked.value = previous
             isSavingToggle.value = false
             notify({
@@ -537,7 +532,6 @@ const handleSaveSecond = async () => {
             }
         })
         .catch((exception) => {
-            console.log(exception);
             notify({
                 type: 'error',
                 title: 'Error',
@@ -642,46 +636,46 @@ watch(
         </template>
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">
-                <ModalConfirmation :title="trans('Are you sure you want to send this mailshot?')"
-                    :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
+                <ModalConfirmation :title="ctrans('Are you sure you want to send this mailshot?')"
+                    :description="ctrans('Please make sure your data or design is correct. This action will send an email to all customers')"
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="trans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
+                        <Button :label="ctrans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
                             icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
                     </template>
                     <template #btn-yes>
-                        <Button :label="trans('Send now')" :loading="inProgress" :disabled="inProgress"
+                        <Button :label="ctrans('Send now')" :loading="inProgress" :disabled="inProgress"
                             @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
                     </template>
                 </ModalConfirmation>
-                <Button :label="trans('Schedule')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
+                <Button :label="ctrans('Schedule')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
                     type="secondary" @click="handleSchedule($event)" :loading="scheduleInProgress" />
             </div>
         </template>
         <template #other>
             <ModalConfirmation v-if="shouldShowDeleteButton"
-                :title="trans('Are you sure you want to delete this mailshot?')"
-                :description="trans('This action cannot be undone. This will permanently delete this mailshot')"
+                :title="ctrans('Are you sure you want to delete this mailshot?')"
+                :description="ctrans('This action cannot be undone. This will permanently delete this mailshot')"
                 isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
                     <Button :disabled="inProgress" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
                 </template>
                 <template #btn-yes>
-                    <Button :label="trans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
+                    <Button :label="ctrans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
                         type="negative" icon="fal fa-trash-alt" />
                 </template>
             </ModalConfirmation>
 
             <ModalConfirmation @onYes="handleCancelSchedule" v-if="shouldShowCancelScheduleButton"
-                :title="trans('Are you sure you want to cancel this schedule?')"
-                :description="trans('This action will cancel the scheduled mailshot')" isFullLoading>
+                :title="ctrans('Are you sure you want to cancel this schedule?')"
+                :description="ctrans('This action will cancel the scheduled mailshot')" isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
-                    <Button :label="trans('Cancel Schedule')" :disabled="inProgress"
+                    <Button :label="ctrans('Cancel Schedule')" :disabled="inProgress"
                         class="!border-r-none !rounded-r-none" icon="fal fa-clock" type="negative" @click="changeModel"
-                        :tooltip="trans('This can still be canceled before it starts sending')" />
+                        :tooltip="ctrans('This can still be canceled before it starts sending')" />
                 </template>
                 <template #btn-yes>
-                    <Button :label="trans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
+                    <Button :label="ctrans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
                         @click="handleCancelSchedule" type="negative" icon="fal fa-clock" />
                 </template>
             </ModalConfirmation>
@@ -693,21 +687,21 @@ watch(
     <div v-if="props.isRecipientsCapped" class="p-2 pb-0">
         <AlertMessage :alert="{
             status: 'warning',
-            title: trans('Recipient limit applied'),
-            description: trans('Due to limited email resources. Only the first 1,000 prospects will receive this email, please focus on prospects who have never been contacted.')
+            title: ctrans('Recipient limit applied'),
+            description: ctrans('Due to limited email resources. Only the first 1,000 prospects will receive this email, please focus on prospects who have never been contacted.')
         }" />
     </div>
 
     <!-- Schedule DateTime Picker Popover -->
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
         <div class="p-2 min-w-80 bg-white flex flex-col items-center">
-            <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ trans('Timezone') }}: <span
+            <h3 class="text-lg font-semibold mb-4 text-gray-900"> {{ ctrans('Timezone') }}: <span
                     class="text-red-600">{{ selectedTimezone }}</span> </h3>
 
             <div class="min-w-0 w-full mb-3">
                 <PureMultiselect
                     v-model="selectedTimezone"
-                    :placeholder="trans('Select timezone...')"
+                    :placeholder="ctrans('Select timezone...')"
                     :options="props.timeZoneOptions || []"
                     :searchable="true"
                     :required="true"
@@ -721,9 +715,9 @@ watch(
                     class="w-full" placeholder="" :teleport="true" model-type="iso" :timezone="selectedTimezone"  />
             </div>
             <div class="flex gap-2 justify-end w-full">
-                <Button :label="trans('Cancel')" @click="cancelSchedule"
+                <Button :label="ctrans('Cancel')" @click="cancelSchedule"
                     class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md" type="secondary" />
-                <Button :label="trans('Confirm Schedule')" @click="confirmSchedule" class="px-4 py-2 rounded-md"
+                <Button :label="ctrans('Confirm Schedule')" @click="confirmSchedule" class="px-4 py-2 rounded-md"
                     type="negative" />
             </div>
         </div>

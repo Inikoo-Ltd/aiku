@@ -3,10 +3,10 @@ import { ref, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faDollarSign, faImage, faUnlink, faGlobe } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { router } from '@inertiajs/vue3'
-import Image from '../../Common/Components/Image.vue'
+import ProductCategoryCard from '@/Components/ProductCategoryCard.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -44,7 +44,6 @@ const props = defineProps<{
   }
   salesData?: object
 }>()
-console.log(props)
 
 const isModalOpenDepartment = ref(false)
 const isModalOpenSubDepartment = ref(false)
@@ -61,15 +60,15 @@ const UnassignCollectionFormWebpage = async (id: number) => {
   router.delete(url, {
     onError: (error) => {
       notify({
-        title: trans("Something went wrong."),
-        text: error?.products || trans("Failed to remove collection."),
+        title: ctrans("Something went wrong."),
+        text: error?.products || ctrans("Failed to remove collection."),
         type: "error",
       })
     },
     onSuccess: () => {
       notify({
-        title: trans("Success!"),
-        text: trans("Parent has been removed."),
+        title: ctrans("Success!"),
+        text: ctrans("Parent has been removed."),
         type: "success",
       })
     },
@@ -90,8 +89,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       preserveScroll: true,
       onSuccess: () => {
         notify({
-          title: trans('Success!'),
-          text: trans('edit Webpages  successfully.'),
+          title: ctrans('Success!'),
+          text: ctrans('edit Webpages  successfully.'),
           type: 'success',
         })
         isModalOpenDepartment.value = false
@@ -99,8 +98,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       },
       onError: (errors) => {
         notify({
-          title: trans('Error'),
-          text: errors?.ids || trans('Failed edit webpages.'),
+          title: ctrans('Error'),
+          text: errors?.ids || ctrans('Failed edit webpages.'),
           type: 'error',
         })
       },
@@ -116,18 +115,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
   <div class="p-4 space-y-6">
     <div class="grid lg:grid-cols-[30%_40%_30%] gap-4 max-w-6xl">
       <!-- Info Card -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-3 h-fit">
-        <div class="bg-white rounded-lg overflow-hidden">
-          <Image v-if="data.image" :src="data.image" imageCover class="w-full h-36 object-cover" />
-          <div v-else class="h-36 flex items-center justify-center bg-gray-100 flex-col">
-            <FontAwesomeIcon :icon="faImage" class="text-gray-400 w-6 h-6" fixed-width />
-            <span class="text-xs text-gray-500">{{ trans('No image') }}</span>
-          </div>
-        </div>
-        <div class="border-t pt-3 text-sm space-y-1 text-gray-700">
-          <div class="text-base font-semibold">{{ data.name || trans('No label') }}</div>
-          <div class="text-gray-500" v-html="data.description || trans('No description')"></div>
-        </div>
+      <div>
+        <ProductCategoryCard subtle :data="data" />
       </div>
 
       <!-- Department List -->
@@ -196,14 +185,14 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
   <!-- Modals -->
   <Modal :isOpen="isModalOpenDepartment" @onClose="isModalOpenDepartment = false" width="w-full max-w-6xl">
-    <CollectionSelector :headLabel="`${trans('Add Department to collection')}`" :routeFetch="{
+    <CollectionSelector :headLabel="`${ctrans('Add Department to collection')}`" :routeFetch="{
       name: data.routes.departments_route.name,
       parameters: data.routes.departments_route.parameters
     }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('departments',ids)" />
   </Modal>
 
   <Modal :isOpen="isModalOpenSubDepartment" @onClose="isModalOpenSubDepartment = false" width="w-full max-w-6xl">
-    <CollectionSelector :headLabel="`${trans('Add Sub-Department to collection')}`" :routeFetch="{
+    <CollectionSelector :headLabel="`${ctrans('Add Sub-Department to collection')}`" :routeFetch="{
       name: data.routes.sub_departments_route.name,
       parameters: data.routes.sub_departments_route.parameters
     }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('sub_departments',ids)" />

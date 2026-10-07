@@ -8,7 +8,6 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
@@ -18,12 +17,13 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictProcurementOrderRules;
     use WithNoStrictRules;
@@ -53,11 +53,34 @@ class UpdateStockDelivery extends OrgAction
 
         $stockDelivery = $this->update($stockDelivery, $modelData, ['data']);
 
+        if ($stockDelivery->wasChanged('org_exchange')) {
+            $this->applyOrgExchangeToItems($stockDelivery);
+        }
+
         if ($stockDelivery->wasChanged('state')) {
             $this->runStockDeliveryHydrators($stockDelivery);
         }
 
         return $stockDelivery;
+    }
+
+    private function applyOrgExchangeToItems(StockDelivery $stockDelivery): void
+    {
+        $orgExchange = (float) $stockDelivery->org_exchange;
+
+        $stockDelivery->items()->update([
+            'org_exchange'     => $orgExchange,
+            'org_net_amount'   => DB::raw("net_amount * $orgExchange"),
+            'org_gross_amount' => DB::raw("gross_amount * $orgExchange"),
+        ]);
+
+        if ($stockDelivery->costs()->exists()) {
+            EvaluateStockDeliveryCosting::run($stockDelivery);
+        }
+
+        if (!Arr::has($stockDelivery->data, 'costing_reopened')) {
+            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
+        }
     }
 
     public function rules(): array
@@ -66,7 +89,7 @@ class UpdateStockDelivery extends OrgAction
             'reference'                 => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string',
+                $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
             'delivery_type'             => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
             'invoice_number'            => ['sometimes', 'nullable', 'string'],
@@ -77,6 +100,7 @@ class UpdateStockDelivery extends OrgAction
             'port_of_export'            => ['sometimes', 'nullable', 'string'],
             'port_of_import'            => ['sometimes', 'nullable', 'string'],
             'delivery_address'          => ['sometimes', 'nullable', 'string'],
+            'org_exchange'              => ['sometimes', 'numeric', 'gt:0'],
         ];
 
         if ($this->strict) {
@@ -107,8 +131,41 @@ class UpdateStockDelivery extends OrgAction
         return $rules;
     }
 
+    /**
+     * Accounts cost stock deliveries, so they may change the invoice rate, and nothing else of the delivery.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($request->user()->authTo("procurement.{$this->organisation->id}.edit")) {
+            return true;
+        }
+
+        return array_keys($request->except(['_method', '_token'])) === ['org_exchange']
+            && $request->user()->authTo([
+                "accounting.{$this->organisation->id}.edit",
+                "org-supervisor.{$this->organisation->id}.accounting",
+            ]);
+    }
+
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
+        if ($stockDelivery->isManagedByPartner()) {
+            throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
+        if ($request->has('org_exchange')) {
+            if ($stockDelivery->is_costed) {
+                throw ValidationException::withMessages(['org_exchange' => __('This stock delivery is costed, an accounting manager can change it with Update costing')]);
+            }
+            if (Arr::has($stockDelivery->data, 'costing_reopened') && !$request->user()->authTo("org-supervisor.{$stockDelivery->organisation_id}.accounting")) {
+                throw ValidationException::withMessages(['org_exchange' => __('Only an accounting manager can change the costing while it is being updated')]);
+            }
+        }
+
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $request);
 

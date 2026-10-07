@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Ecom\Orders;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
@@ -37,6 +38,7 @@ use Illuminate\Support\Facades\DB;
 use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
 use App\Http\Resources\Ordering\RetinaOrderReviewListResource;
 use Illuminate\Support\Arr;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 
 class ShowRetinaEcomOrder extends RetinaAction
 {
@@ -105,7 +107,7 @@ class ShowRetinaEcomOrder extends RetinaAction
         return Inertia::render(
             'Ecom/RetinaEcomOrder',
             [
-                'title'       => __('order'),
+                'title'       => __('order') . ' #' . $order->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($order),
                 'pageHead'    => [
                     'title'   => $order->reference,
@@ -155,6 +157,11 @@ class ShowRetinaEcomOrder extends RetinaAction
                 'balance'            => $this->customer->balance,
                 'currency'           => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'               => OrderResource::make($order),
+                'pre_order'          => $order->preOrder ? GetPreOrderShowcase::run($order->preOrder) : null,
+                'split_pre_order'    => $order->splitPreOrder ? [
+                    'reference' => $order->splitPreOrder->order->reference,
+                    'slug'      => $order->splitPreOrder->order->slug,
+                ] : null,
                 'review_settings'    => Arr::get($order->shop->settings, 'reviews'),
                 'is_notes_editable'  => false,  // TODO: make it dynamic, only disable on 'after' state
                 'review_reactions'   => [
@@ -299,10 +306,12 @@ class ShowRetinaEcomOrder extends RetinaAction
         if ($deliveryNotes) {
             foreach ($deliveryNotes as $deliveryNote) {
                 $deliveryNotesData[] = [
-                    'id'        => $deliveryNote->id,
-                    'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    'id'               => $deliveryNote->id,
+                    'slug'             => $deliveryNote->slug,
+                    'reference'        => $deliveryNote->reference,
+                    'state'            => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'has_packing_list' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED]),
+                    'shipments'        => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }
         }

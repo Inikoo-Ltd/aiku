@@ -2,7 +2,7 @@
 title: Vyskladnenie a balenie dodacieho listu
 summary: Sledujte dodací list od chvíle, keď dorazí do skladu, cez vyskladnenie, balenie a expedíciu, a zistite, čo presne robí každé tlačidlo na dodacom liste.
 date: 2026-09-01
-source_date: 2026-09-01
+source_date: 2026-09-29
 tags: dispatch, picking, packing
 category: dispatch
 ---
@@ -36,6 +36,14 @@ Stlačenie **Start picking** na dodacom liste ho presunie do stavu **Handling** 
 
 Počas vyskladňovania sa môže ukázať, že riadok potrebuje rozhodnutie, ktoré vyskladňovač nemôže urobiť sám - napríklad náhradu alebo uvoľnenie zo skladu. Vtedy sa celý dodací list presunie do **Waiting** namiesto toho, aby vyskladňovanie pokračovalo okolo problému. Akonáhle už naozaj nič nečaká, objaví sa tlačidlo **Auto Finish Waiting**, ktoré po stlačení skontroluje dodací list a ak sú naozaj všetky riadky vyriešené, posunie ho do **Picked**.
 
+## Súpravy predávané len kompletné
+
+Niektoré produkty sú zložené z viacerých dielov, ktoré samostatne nemajú využitie, napríklad soľná lampa so žiarovkou a káblom. Na stránke **Composition** (zloženie) hlavného produktu majú tieto zapnuté **Sold only as a complete set** (predáva sa len ako celá súprava). Produkt obchodu, ktorý nenasleduje diely svojho hlavného produktu, má rovnaký prepínač na vlastnej stránke **Composition**, a hlavný produkt ho uvádza medzi obchodmi, ktoré sa líšia.
+
+Ak jeden diel takejto súpravy nie je vychystaný, ostatné diely súpravy nemôžu odísť samostatne. Dodací list sa nepresunie do **Picked**: prejde do **Waiting** a objaví sa na ňom tlačidlo **Parts put back** (diely vrátené na miesto). Jeho tooltip menuje diely, ktoré treba vybrať z prepravky. Vráťte ich na ich miesto na regáli a potom stlačte **Parts put back**. Ich vychystanie sa vráti späť, takže sa zásoba vráti na svoje miesto, diely sa označia ako nevychystané a dodací list pokračuje do **Picked**. Zákazníkovi sa vráti hodnota celého produktu.
+
+Keď je prepínač vypnutý, nájdené diely sa odošlú a zákazníkovi sa vráti len hodnota chýbajúceho dielu.
+
 ## Od vyskladneného k baleniu
 
 Akonáhle sú všetky riadky na dodacom liste vyskladnené, leží v **Picked** s tlačidlom **Start packing**. Vo väčšine shopov je toto samostatný krok: stlačením sa dodací list presunie do **Packing**, zaznamená sa, kto balí, a uvoľní sa akékoľvek pickovacie miesto, ktoré ho držalo. Pre dropshippingové shopy sa balenie preskočí - z **Picked** namiesto toho tlačidlo znie **Set as packed** a posunie dodací list rovno do **Packed** v jednom kroku.
@@ -60,6 +68,7 @@ Dodací list je možné zrušiť v ktoromkoľvek stave pred finalizáciou alebo 
 <ul>
 <li><b>Vidieť dodacie listy podľa stavu:</b> váš sklad → <b>Dispatching → Delivery notes</b>, potom vyberte kartu stavu - <b>To do</b>, <b>Queued</b>, <b>Handling</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packing</b>, <b>Packed</b>, <b>Finalised</b>, <b>Dispatched</b> alebo <b>All</b>.</li>
 <li><b>Pracovať s picking sessions:</b> váš sklad → <b>Dispatching → Picking sessions</b> → karty stavu <b>In Process</b>, <b>Picking</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packed</b>.</li>
+<li><b>Chýba diel kompletnej súpravy:</b> vráťte ostatné diely uvedené v tooltipe na ich miesto na regáli a potom stlačte <b>Parts put back</b> na dodacom liste.</li>
 <li><b>Posunúť dodací list ďalej:</b> otvorte dodací list a použite tlačidlo daného stavu - <b>Start picking</b>, <b>Auto Finish Waiting</b>, <b>Start packing</b> / <b>Set as packed</b>, <b>Finalise and Dispatch</b>, <b>Dispatch</b>. Tlačidlá na vrátenie (<b>Undo set as picked</b>, <b>Undo packing</b>, <b>Unpack</b>, <b>Undispatch</b>) ho posunú späť.</li>
 </ul>
 </aside>

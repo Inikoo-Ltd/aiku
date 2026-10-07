@@ -2,9 +2,8 @@
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import Table from "@/Components/Table/Table.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faPencil, faTrash, faTrashAlt, faUndoAlt } from "@fal"
+import { faPencil } from "@fal"
 
 withDefaults(defineProps<{
     data: any
@@ -56,68 +55,13 @@ withDefaults(defineProps<{
         </template>
 
         <template #cell(action)="{ item }">
-            <div class="flex items-center gap-2">
-                <!-- Active agent: Edit + Soft Delete -->
-                <template v-if="!item.is_deleted_in_org">
-                    <Link v-if="item.route_edit && canManage" :href="route(item.route_edit.name, item.route_edit.parameters)">
-                        <Button
-                            v-tooltip="ctrans('Edit Agent')"
-                            type="secondary"
-                            :icon="faPencil"
-                            size="s" />
-                    </Link>
-
-                    <ModalConfirmationDelete
-                        v-if="item.route_delete && canManage"
-                        :routeDelete="{ ...item.route_delete, method: 'delete' }"
-                        :title="ctrans('Delete this agent?')"
-                        :description="ctrans('The agent will be soft deleted and can be restored later.')">
-                        <template #default="{ changeModel }">
-                            <Button
-                                v-tooltip="ctrans('Delete Agent')"
-                                @click="changeModel"
-                                type="negative"
-                                :icon="faTrash"
-                                size="s" />
-                        </template>
-                    </ModalConfirmationDelete>
-                </template>
-
-                <!-- Deleted agent: Restore + Force Delete -->
-                <template v-if="item.is_deleted_in_org">
-                    <ModalConfirmationDelete
-                        v-if="item.route_restore && canManage"
-                        :routeDelete="{ ...item.route_restore, method: 'patch' }"
-                        :title="ctrans('Restore this agent?')"
-                        :description="ctrans('The agent will be restored and become active again.')"
-                        :noLabel="ctrans('Restore')"
-                        :cancelLabel="ctrans('Cancel')">
-                        <template #default="{ changeModel }">
-                            <Button
-                                v-tooltip="ctrans('Restore Agent')"
-                                @click="changeModel"
-                                type="positive"
-                                :icon="faUndoAlt"
-                                size="s" />
-                        </template>
-                    </ModalConfirmationDelete>
-
-                    <ModalConfirmationDelete
-                        v-if="item.route_force_delete && canManage"
-                        :routeDelete="{ ...item.route_force_delete, method: 'delete' }"
-                        :title="ctrans('Permanently delete this agent?')"
-                        :description="ctrans('This action cannot be undone. The agent will be permanently removed.')">
-                        <template #default="{ changeModel }">
-                            <Button
-                                v-tooltip="ctrans('Permanently Delete')"
-                                @click="changeModel"
-                                type="negative"
-                                :icon="faTrashAlt"
-                                size="s" />
-                        </template>
-                    </ModalConfirmationDelete>
-                </template>
-            </div>
+            <Link v-if="item.route_edit && canManage" :href="route(item.route_edit.name, item.route_edit.parameters)">
+                <Button
+                    v-tooltip="ctrans('Edit Agent')"
+                    type="secondary"
+                    :icon="faPencil"
+                    size="s" />
+            </Link>
         </template>
     </Table>
 </template>

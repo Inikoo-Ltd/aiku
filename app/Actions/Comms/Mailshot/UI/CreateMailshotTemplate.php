@@ -51,11 +51,19 @@ class CreateMailshotTemplate extends OrgAction
                                     'required'    => true,
                                     'value'       => '',
                                 ],
+                                ...($this->isInComms($request) ? [
+                                    'dynamic_block' => [
+                                        'type'        => 'toggle',
+                                        'label'       => __('For dynamic content block'),
+                                        'information' => __('Dynamic blocks can be inserted into emails from the Dynamic content block'),
+                                        'value'       => false,
+                                    ],
+                                ] : []),
                             ]
                         ]
                     ],
                     'route' => [
-                        'name'       => 'grp.models.shop.email-template.store',
+                        'name'       => $this->isInComms($request) ? 'grp.models.shop.email-template.store.common-outbox' : 'grp.models.shop.email-template.store',
                         'parameters' => [
                             'shop' => $parent->id
                         ]
@@ -76,15 +84,28 @@ class CreateMailshotTemplate extends OrgAction
         return $this->handle($shop, $request);
     }
 
+    private function isInComms(ActionRequest $request): bool
+    {
+        return $request->route()->getName() === 'grp.org.shops.show.dashboard.comms.templates.create';
+    }
+
     // NOTE: update this path
     public function getBreadcrumbs(Organisation $parent, string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            IndexMailshots::make()->getBreadcrumbs(
+        $indexBreadcrumbs = $routeName === 'grp.org.shops.show.dashboard.comms.templates.create'
+            ? IndexMailshotTemplates::make()->getBreadcrumbs(
+                'grp.org.shops.show.dashboard.comms.templates.index',
+                $routeParameters,
+                $this->shop
+            )
+            : IndexMailshots::make()->getBreadcrumbs(
                 routeName: $routeName,
                 routeParameters: $routeParameters,
                 parent: $parent
-            ),
+            );
+
+        return array_merge(
+            $indexBreadcrumbs,
             [
                 [
                     'type'          => 'creatingModel',

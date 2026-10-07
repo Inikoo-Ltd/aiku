@@ -34,8 +34,11 @@ class UpdateProductCategoryOffersData
             $offerData = $this->getBasicOfferData($offer);
         }
 
-        $model = $this->getTriggerModel($offer);
-        if ($model) {
+        $models = $offer->triggerCategoryIds()
+            ? ProductCategory::whereIn('id', $offer->triggerCategoryIds())->get()
+            : array_filter([$this->getTriggerModel($offer)]);
+
+        foreach ($models as $model) {
             $this->updateModelOfferData($model, $offerData, $offer);
 
             if ($model instanceof ProductCategory) {

@@ -32,8 +32,10 @@ use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\Label\UI\IndexArtefactLabels;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
+use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Actions\Production\JobOrder\UI\IndexJobOrders;
 use App\Actions\Production\JobOrder\UI\ShowJobOrder;
+use App\Actions\Production\JobOrder\PdfJobOrder;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
 use App\Actions\Production\ManufactureTaskSession\UI\IndexArtisans;
@@ -72,6 +74,7 @@ Route::prefix('{production}')
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
+                        Route::get('job-orders/{jobOrder}/pdf', PdfJobOrder::class)->name('job-orders.pdf');
                         Route::post('partner-orders/{orgPartner:id}', StorePartnerOrderFromBay::class)->name('partner_orders.store')->withoutScopedBindings();
                         Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
                         Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
@@ -97,6 +100,7 @@ Route::prefix('{production}')
                         Route::get('mixes', [IndexPartnerShippingList::class, 'mixes'])->name('mixes');
                         Route::post('mixes/job-orders', StoreJobOrdersForMixes::class)->name('mixes.job_orders.store');
                         Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
+                        Route::post('manual-job-order', StoreManualJobOrder::class)->name('manual_job_order.store');
                         Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
                         Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();

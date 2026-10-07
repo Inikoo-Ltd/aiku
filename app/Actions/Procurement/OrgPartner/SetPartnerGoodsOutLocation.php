@@ -26,12 +26,20 @@ class SetPartnerGoodsOutLocation
      */
     public function handle(OrgPartner $orgPartner, ?Location $location): OrgPartner
     {
+        if ($location && !$orgPartner->organisation->is_manufacturing_hub) {
+            throw ValidationException::withMessages(['location' => __('Only a manufacturing hub gathers stock for its partners')]);
+        }
+
         if ($location) {
             if ($location->organisation_id !== $orgPartner->organisation_id) {
                 throw ValidationException::withMessages(['location' => __('Location belongs to another organisation')]);
             }
             if (!$location->is_goods_out) {
                 throw ValidationException::withMessages(['location' => __('Location is not a goods out gathering location')]);
+            }
+            if ($location->id === $orgPartner->cosmetic_goods_out_location_id
+                || OrgPartner::where('organisation_id', $orgPartner->organisation_id)->where('id', '!=', $orgPartner->id)->withBay($location->id)->exists()) {
+                throw ValidationException::withMessages(['location' => __('Location is already the goods out bay of a partner')]);
             }
         }
 

@@ -127,7 +127,6 @@ const printLabelByType = (label?: string) => {
 }
 
 function NumberDashboard(shop: any) {
-	console.log(shop)
 	return route(shop?.name, shop?.parameters)
 }
 

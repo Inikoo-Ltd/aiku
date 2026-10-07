@@ -9,6 +9,7 @@
 namespace App\Actions\Billables\Packaging;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePackagingFamily extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     public function handle(Shop $shop, array $modelData): Collection
     {
         return DB::transaction(function () use ($shop, $modelData) {
@@ -40,15 +42,6 @@ class StorePackagingFamily extends OrgAction
 
             return $packagings;
         });
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
     public function rules(): array

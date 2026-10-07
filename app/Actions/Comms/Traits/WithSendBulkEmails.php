@@ -210,6 +210,7 @@ trait WithSendBulkEmails
             'blade-discount-details' => Arr::get($additionalData, 'blade_discount_details'),
             'trigger-type' => Arr::get($additionalData, 'trigger_type'),
             'voucher' => Arr::get($additionalData, 'voucher'),
+            'voucher-end-date' => Arr::get($additionalData, 'voucher_end_date'),
             'customer-id' => Arr::get($additionalData, 'customer_id'),
 
 
@@ -244,6 +245,9 @@ trait WithSendBulkEmails
             'gold-reward-deadline' => Arr::get($additionalData, 'gold_reward_deadline'),
 
             'abandoned-cart-items' => Arr::get($additionalData, 'abandoned_cart_items'),
+
+            'basket-on-offer-items' => Arr::get($additionalData, 'basket_on_offer_items'),
+            'favourites-on-offer-items' => Arr::get($additionalData, 'favourites_on_offer_items'),
 
             default => $originalPlaceholder,
         };

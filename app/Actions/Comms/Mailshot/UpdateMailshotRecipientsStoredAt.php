@@ -26,6 +26,10 @@ class UpdateMailshotRecipientsStoredAt
                 ]
             );
 
+            if ($mailshot->recipients_count === 0) {
+                UpdateMailshotSentState::run($mailshot);
+            }
+
             return true;
         }
 

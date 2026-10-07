@@ -32,6 +32,7 @@ return [
         'JobOrders',
         'OrgStockMovements',
         'PurchaseOrgStockMovements',
+        'PurchaseOrderNotes',
         'PurchaseOrders',
         'PurchaseOrderTransactions',
         'RawMaterials',
@@ -42,20 +43,6 @@ return [
         'SupplierProducts',
         'Suppliers',
         'TradeUnits',
-    ],
-
-    /*
-     * HR and sysadmin records are maintained in aiku for every organisation, including the
-     * ones still following Aurora. These fetchers must never create or update anything —
-     * not even with --force. Timesheets is here because its fetcher also writes Clockings.
-     */
-    'forbidden_fetchers' => [
-        'ClockingMachines',
-        'DeletedEmployees',
-        'DeletedUsers',
-        'Employees',
-        'Timesheets',
-        'Users',
     ],
 
 ];

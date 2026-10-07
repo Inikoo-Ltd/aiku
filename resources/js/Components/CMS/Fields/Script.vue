@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, watch } from "vue"
+import { computed, ref, shallowRef, watch } from "vue"
 import codemirrorPkg from 'vue-codemirror';
 import { javascript } from "@codemirror/lang-javascript"
 import { css } from "@codemirror/lang-css"
@@ -7,6 +7,7 @@ import { html } from "@codemirror/lang-html"
 import { EditorView } from "@codemirror/view"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
     uploadRoutes: routeType
@@ -16,6 +17,8 @@ const model = defineModel<string>()
 const { Codemirror } = codemirrorPkg;
 
 const extensions = [javascript(), css(), html()]
+
+const hasBase64Files = computed(() => (model.value ?? "").includes(";base64,"))
 
 // const view = shallowRef<EditorView>()
 
@@ -48,6 +51,10 @@ const applyCode = () => {
             :extensions="extensions"
             @ready="handleReady"
         />
+
+        <p v-if="hasBase64Files" class="mt-2 text-xs text-slate-500">
+            {{ ctrans("This script has embedded base64 files. You can upload them to the website when you publish.") }}
+        </p>
     </div>
 </template>
 

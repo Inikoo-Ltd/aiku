@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from "@/Stores/locale"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { ref, watch, onMounted } from "vue"
@@ -64,7 +64,6 @@ const onCancel = () => {
 }
 
 const onAddRow = (closed) => {
-    console.log(palletForm.pallet)
     cloneData.value.push({
         id: palletForm.pallet.id,
         reference: palletForm.pallet.reference,
@@ -115,7 +114,7 @@ defineExpose({
 
 <template>
     <div class="flex justify-between border-b border-gray-300 p-2">
-        <div class="font-semibold">{{trans("Contain Pallet")}} :</div>
+        <div class="font-semibold">{{ctrans("Contain Pallet")}} :</div>
         <div class="flex flex-shrink-0 gap-3">
             <Button v-if="!editable" type="edit" size="xs" @click="editable = true" />
             <Button v-if="editable" type="tertiary" label="Cancel" size="xs" @click="onCancel" />
@@ -126,10 +125,10 @@ defineExpose({
     <div v-if="editable" class="flex justify-between align-middle">
         <div>
             <div class="text-sm text-blue-500 font-medium px-2 py-2">
-                {{trans("Total Quantity :")}} {{ totalQuantity }}
+                {{ctrans("Total Quantity :")}} {{ totalQuantity }}
             </div>
             <div class="text-sm text-red-500 font-medium px-2 py-2">
-                {{ trans("Unlocated Stored Items")}} : {{ unlocatedPallet }}
+                {{ ctrans("Unlocated Stored Items")}} : {{ unlocatedPallet }}
             </div>
         </div>
         <div class="px-2 py-4">
@@ -156,7 +155,7 @@ defineExpose({
     <div v-if="editable && unlocatedPallet !== 0"
         class="flex justify-start flex-shrink-0 gap-4 bg-yellow-100 rounded-md border p-2 border-yellow-500 my-2">
         <font-awesome-icon :icon="['fal', 'exclamation-triangle']" class="text-yellow-600" fixed-width />
-        <span class="text-xs text-yellow-600">{{trans("You have to set all unlocated items")}}</span>
+        <span class="text-xs text-yellow-600">{{ctrans("You have to set all unlocated items")}}</span>
     </div>
 
     <div class="mt-2 flow-root">
@@ -166,17 +165,17 @@ defineExpose({
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-sm font-semibold text-start border-b border-gray-500">
-                                {{ trans('Pallet') }}
+                                {{ ctrans('Pallet') }}
                             </th>
                             <th scope="col" class="px-4 py-3 text-sm font-semibold text-start border-b border-gray-500">
-                                {{ trans('Location') }}
+                                {{ ctrans('Location') }}
                             </th>
                             <th scope="col" class="px-4 py-3 text-sm font-semibold text-start border-b border-gray-500">
-                                {{ trans('Quantity') }}
+                                {{ ctrans('Quantity') }}
                             </th>
                             <th v-if="editable" scope="col"
                                 class="px-4 py-3 text-sm font-semibold text-end border-b border-gray-500">
-                                {{ trans('Action') }}
+                                {{ ctrans('Action') }}
                             </th>
                         </tr>
                     </thead>
@@ -204,7 +203,7 @@ defineExpose({
 
                                     <template #content="{ close: closed }">
                                         <div class="py-2 font-medium">
-                                           {{trans("Are you sure you want to delete this pallet?")}}
+                                           {{ctrans("Are you sure you want to delete this pallet?")}}
                                         </div>
                                         <div class="flex  flex-shrink-0 gap-2 justify-end">
                                             <Button label="No" type="tertiary" size="xs" @click="() => closed()" />

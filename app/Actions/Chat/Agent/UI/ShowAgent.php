@@ -15,13 +15,22 @@ use App\Http\Resources\CRM\Livechat\ChatAgentResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowAgent extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
     use AsAction;
     use WithInertia;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->userCanWorkChatOnOrganisation($request->user(), $this->organisation)
+            || $this->userSupervisesChatOnOrganisation($request->user(), $this->organisation);
+    }
 
     public function handle(Organisation|Shop $scope): Shop|Organisation
     {
@@ -74,11 +83,6 @@ class ShowAgent extends OrgAction
                     ],
                 ],
                 'data'   => ChatAgentResource::collection($agents),
-                'routes' => [
-                    'delete'       => 'grp.org.chat.agents.delete',
-                    'restore'      => 'grp.org.chat.agents.restore',
-                    'force_delete' => 'grp.org.chat.agents.force_delete',
-                ],
             ],
         )->table(
             $indexAgentAction->tableStructure(parent: $this->organisation, prefix: 'agents')

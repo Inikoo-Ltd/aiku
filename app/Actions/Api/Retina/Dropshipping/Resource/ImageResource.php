@@ -21,7 +21,7 @@ class ImageResource extends JsonResource
         $imageThumbnail = $media->getImage()->resize(0, 48);
 
         return [
-            'id'                   => $media->media_id,
+            'id'                   => $media->id,
             'is_animated'          => $media->is_animated,
             'slug'                 => $media->slug,
             'uuid'                 => $media->uuid,

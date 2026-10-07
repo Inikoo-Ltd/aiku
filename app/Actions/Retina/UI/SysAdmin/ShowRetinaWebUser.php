@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Http\Resources\CRM\WebUserResource;
 use App\Models\CRM\WebUser;
 use Inertia\Inertia;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaWebUser extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
+
     public function handle(WebUser $webUser): WebUser
     {
         return $webUser;
@@ -25,7 +28,7 @@ class ShowRetinaWebUser extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        return $request->user()->is_root && $this->retinaCustomerOwnsRouteModels($request);
     }
 
 

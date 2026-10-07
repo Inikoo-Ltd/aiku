@@ -21,6 +21,8 @@ class PlatformHydratePortfolios implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'hydrators-slave';
+
     public function getJobUniqueId(Platform $platform): string
     {
         return $platform->id;

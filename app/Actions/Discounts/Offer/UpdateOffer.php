@@ -37,6 +37,13 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
+        if (array_key_exists('show_on_customer_dashboard', $modelData)) {
+            $modelData['settings'] = array_merge(
+                $offer->settings ?? [],
+                ['show_on_customer_dashboard' => (bool) Arr::pull($modelData, 'show_on_customer_dashboard')]
+            );
+        }
+
         $newTriggerData = null;
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
@@ -70,7 +77,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.item_quantity
             if (isset($editOffer['trigger_item_quantity']) && $editOffer['trigger_item_quantity'] !== '') {
-                $triggerData = $newTriggerData;
+                $triggerData = $newTriggerData ?? $offer->trigger_data;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {
@@ -86,7 +93,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.min_amount
             if (isset($editOffer['trigger_min_amount']) && $editOffer['trigger_min_amount'] !== '') {
-                $triggerData = $newTriggerData;
+                $triggerData = $newTriggerData ?? $offer->trigger_data;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {
@@ -102,7 +109,7 @@ class UpdateOffer extends OrgAction
 
             // Set to trigger_data.order_number
             if (isset($editOffer['trigger_order_number']) && $editOffer['trigger_order_number'] !== '') {
-                $triggerData = $newTriggerData;
+                $triggerData = $newTriggerData ?? $offer->trigger_data;
 
                 // Make sure it is an array
                 if (!is_array($triggerData)) {
@@ -192,7 +199,8 @@ class UpdateOffer extends OrgAction
             'start_at'                   => ['sometimes', 'date'],
             'end_at'                     => ['sometimes', 'nullable', 'date'],
             'edit_offer_trigger'         => ['sometimes', 'nullable'],
-            'edit_offer_discount'        => ['sometimes', 'nullable']
+            'edit_offer_discount'        => ['sometimes', 'nullable'],
+            'show_on_customer_dashboard' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

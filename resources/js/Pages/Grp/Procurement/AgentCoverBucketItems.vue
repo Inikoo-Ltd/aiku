@@ -153,7 +153,7 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
                                     <template v-if="item.our_days_of_cover !== null">
                                         ·
                                         <span :class="{ 'font-medium text-red-600': item.our_days_of_cover <= 30, 'text-amber-600': item.our_days_of_cover > 30 && item.our_days_of_cover <= 60 }">
-                                            {{ item.our_days_of_cover === 0 ? trans("we run out now") : `${trans("we run out in")} ~${item.our_days_of_cover} ${trans("days")}` }}
+                                            {{ item.our_days_of_cover === 0 ? trans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${item.our_days_of_cover} ${trans("days")}` }}
                                         </span>
                                     </template>
                                     <template v-if="item.units_per_carton">

@@ -7,7 +7,10 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import BeefreeDynamicProducts from './BeefreeDynamicProducts.vue'
-import { trans } from "laravel-vue-i18n";
+import BeefreeDynamicBlocks from './BeefreeDynamicBlocks.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = withDefaults(defineProps<{
     updateRoute?: routeType;
@@ -30,6 +33,33 @@ const showBee = ref(false)
 const isLoading = ref(false)
 const beeInstance = ref<BeefreeSDK | null>(null)
 const dynamicProductsRef = ref<InstanceType<typeof BeefreeDynamicProducts> | null>(null)
+const dynamicBlocksRef = ref<InstanceType<typeof BeefreeDynamicBlocks> | null>(null)
+
+const isDynamicContentChooserOpen = ref(false)
+let dynamicContentResolve: ((value: any) => void) | null = null
+let dynamicContentReject: (() => void) | null = null
+
+const openDynamicContentChooser = (resolve: (value: any) => void, reject: () => void) => {
+    dynamicContentResolve = resolve
+    dynamicContentReject = reject
+    isDynamicContentChooserOpen.value = true
+}
+
+const chooseDynamicContent = (picker: typeof dynamicProductsRef.value | typeof dynamicBlocksRef.value) => {
+    const resolve = dynamicContentResolve!
+    const reject = dynamicContentReject!
+    dynamicContentResolve = null
+    dynamicContentReject = null
+    isDynamicContentChooserOpen.value = false
+    picker?.openModal().then(resolve).catch(reject)
+}
+
+const closeDynamicContentChooser = () => {
+    dynamicContentReject?.()
+    dynamicContentResolve = null
+    dynamicContentReject = null
+    isDynamicContentChooserOpen.value = false
+}
 
 
 
@@ -103,12 +133,8 @@ const initializeBeefree = async () => {
             autosave: 20,
             contentDialog: {
                 mergeContents: {
-                    label: trans('Insert Products'),
-                    handler: function (resolve: (value: any) => void, reject: () => void) {
-                        if (dynamicProductsRef.value) {
-                            dynamicProductsRef.value.openModal().then(resolve).catch(reject)
-                        }
-                    }
+                    label: ctrans('Insert Products / Dynamic Blocks'),
+                    handler: openDynamicContentChooser
                 },
             },
             onSend: (htmlFile: string, jsonFile: string) => {
@@ -213,6 +239,21 @@ defineExpose({
     <!-- Dynamic Products Component -->
     <BeefreeDynamicProducts ref="dynamicProductsRef" :shopSlug="shopSlug" :shopId="shopId"
         :organisationSlug="organisationSlug" />
+
+    <BeefreeDynamicBlocks ref="dynamicBlocksRef" :shopSlug="shopSlug" />
+
+    <Modal :isOpen="isDynamicContentChooserOpen" @onClose="closeDynamicContentChooser" width="w-full max-w-md"
+        :closeButton="true">
+        <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">{{ ctrans('Dynamic content') }}</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <Button type="secondary" full :label="ctrans('Insert Products')"
+                    @click="chooseDynamicContent(dynamicProductsRef)" />
+                <Button type="secondary" full :label="ctrans('Dynamic Blocks')"
+                    @click="chooseDynamicContent(dynamicBlocksRef)" />
+            </div>
+        </div>
+    </Modal>
 </template>
 
 <style scoped>

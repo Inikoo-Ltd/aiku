@@ -22,12 +22,12 @@ import { Bar, Doughnut } from "vue-chartjs"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime, useSecondsToMS } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt, faCalendarMinus, faCalendarAlt } from "@fal"
+import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt, faCalendarMinus, faCalendarAlt, faChartNetwork } from "@fal"
 
-library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt, faCalendarMinus, faCalendarAlt)
+library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical, faCommentsAlt, faCalendarMinus, faCalendarAlt, faChartNetwork)
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 interface AttendanceRow {
@@ -222,7 +222,7 @@ const leaveOverviewData = computed(() => ({
 	labels: props.leaveOverview.map((d) => d.label),
 	datasets: [
 		{
-			label: trans("Employees"),
+			label: ctrans("Employees"),
 			data: props.leaveOverview.map((d) => d.count),
 			backgroundColor: props.leaveOverview.map((d) => (d.is_today ? "#10b981" : "#e5e7eb")),
 			borderRadius: 6,
@@ -238,7 +238,7 @@ const leaveOverviewOptions = {
 		legend: { display: false },
 		tooltip: {
 			callbacks: {
-				label: (context: any) => `${context.parsed.y} ${trans("Employees")}`,
+				label: (context: any) => `${context.parsed.y} ${ctrans("Employees")}`,
 			},
 		},
 	},
@@ -346,20 +346,20 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				<div>
 					<h2 class="text-lg font-bold text-gray-800">
 						<template v-if="activeCard">{{ activeCard.name }}</template>
-						<template v-else>{{ isShowingToday ? trans("Today's attendance") : trans("Attendance") }}</template>
+						<template v-else>{{ isShowingToday ? ctrans("Today's attendance") : ctrans("Attendance") }}</template>
 						<Link v-if="show" :href="route(showRoute.name, showRoute.parameters)" preserve-scroll class="ml-2 text-xs font-medium text-[--app-accent] hover:underline">
-							{{ trans("Show all") }}
+							{{ ctrans("Show all") }}
 						</Link>
 					</h2>
 					<p class="text-xs text-gray-500">
-						{{ shownLabel }} · {{ trans("earliest arrivals first") }}
+						{{ shownLabel }} · {{ ctrans("earliest arrivals first") }}
 					</p>
 				</div>
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
 						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50"
-						:title="trans('Previous day')"
+						:title="ctrans('Previous day')"
 						@click="shiftDay(-1)">
 						<FontAwesomeIcon :icon="faChevronLeft" fixed-width />
 					</button>
@@ -375,7 +375,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					<button
 						type="button"
 						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-						:title="trans('Next day')"
+						:title="ctrans('Next day')"
 						:disabled="isShowingToday"
 						@click="shiftDay(1)">
 						<FontAwesomeIcon :icon="faChevronRight" fixed-width />
@@ -385,10 +385,10 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						type="button"
 						class="rounded-md px-3 py-1.5 text-sm font-medium text-[--app-accent] ring-1 ring-[--app-accent-muted] transition hover:bg-[--app-accent-soft]"
 						@click="goToDate(maxDate)">
-						{{ trans("Today") }}
+						{{ ctrans("Today") }}
 					</button>
 					<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-						{{ attendance.length }} {{ trans("present") }}
+						{{ attendance.length }} {{ ctrans("present") }}
 					</span>
 				</div>
 			</div>
@@ -397,8 +397,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 border-b border-gray-200">
-							<th class="py-2 pr-3">{{ trans("Name") }}</th>
-							<th class="py-2 px-3">{{ trans("Details") }}</th>
+							<th class="py-2 pr-3">{{ ctrans("Name") }}</th>
+							<th class="py-2 px-3">{{ ctrans("Details") }}</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100">
@@ -420,7 +420,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 							<td class="py-2 px-3 text-gray-500">{{ row.detail || "—" }}</td>
 						</tr>
 						<tr v-if="people.length === 0">
-							<td colspan="2" class="py-10 text-center text-gray-400">{{ trans("No one.") }}</td>
+							<td colspan="2" class="py-10 text-center text-gray-400">{{ ctrans("No one.") }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -430,15 +430,15 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 border-b border-gray-200">
-							<th class="py-2 pr-3">{{ trans("Name") }}</th>
-							<th class="py-2 px-3">{{ trans("Start At") }}</th>
-							<th class="py-2 px-3">{{ trans("End At") }}</th>
-							<th class="py-2 px-3">{{ trans("Status") }}</th>
-							<th class="py-2 px-3">{{ trans("Notes") }}</th>
-							<th class="py-2 px-3 text-right">{{ trans("Working") }}</th>
-							<th class="py-2 px-3 text-right">{{ trans("Breaks") }}</th>
-							<th class="py-2 px-3 text-center">{{ trans("Clock In") }}</th>
-							<th class="py-2 pl-3 text-center">{{ trans("Clock Out") }}</th>
+							<th class="py-2 pr-3">{{ ctrans("Name") }}</th>
+							<th class="py-2 px-3">{{ ctrans("Start At") }}</th>
+							<th class="py-2 px-3">{{ ctrans("End At") }}</th>
+							<th class="py-2 px-3">{{ ctrans("Status") }}</th>
+							<th class="py-2 px-3">{{ ctrans("Notes") }}</th>
+							<th class="py-2 px-3 text-right">{{ ctrans("Working") }}</th>
+							<th class="py-2 px-3 text-right">{{ ctrans("Breaks") }}</th>
+							<th class="py-2 px-3 text-center">{{ ctrans("Clock In") }}</th>
+							<th class="py-2 pl-3 text-center">{{ ctrans("Clock Out") }}</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100">
@@ -461,18 +461,18 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 								{{ useFormatTime(row.start_at, { formatTime: "hh:mm a" }) }}
 							</td>
 							<td class="py-2 px-3 whitespace-nowrap text-gray-700">
-								<span v-if="row.is_open" class="text-blue-500 italic">{{ trans("Still working") }}</span>
+								<span v-if="row.is_open" class="text-blue-500 italic">{{ ctrans("Still working") }}</span>
 								<span v-else>{{ useFormatTime(row.end_at, { formatTime: "hh:mm a" }) }}</span>
 							</td>
 							<td class="py-2 px-3">
 								<span v-if="row.is_late" class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-									{{ trans("Late") }}
+									{{ ctrans("Late") }}
 								</span>
 								<span v-else-if="row.is_open" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-									{{ trans("Working") }}
+									{{ ctrans("Working") }}
 								</span>
 								<span v-else class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-									{{ trans("On time") }}
+									{{ ctrans("On time") }}
 								</span>
 							</td>
 							<td class="py-2 px-3 text-gray-500 max-w-[14rem] truncate">{{ row.notes || "—" }}</td>
@@ -483,7 +483,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						</tr>
 						<tr v-if="visibleAttendance.length === 0">
 							<td colspan="9" class="py-10 text-center text-gray-400">
-								{{ trans("No one has clocked in yet today.") }}
+								{{ ctrans("No one has clocked in yet today.") }}
 							</td>
 						</tr>
 					</tbody>
@@ -496,8 +496,8 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		<!-- Leave overview -->
 		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<div class="flex items-center justify-between mb-4">
-				<h2 class="text-lg font-bold text-gray-800">{{ trans("Leave overview") }}</h2>
-				<span class="text-xs text-gray-400">{{ trans("This week") }}</span>
+				<h2 class="text-lg font-bold text-gray-800">{{ ctrans("Leave overview") }}</h2>
+				<span class="text-xs text-gray-400">{{ ctrans("This week") }}</span>
 			</div>
 			<div class="h-64">
 				<Bar :data="leaveOverviewData" :options="leaveOverviewOptions" />
@@ -506,7 +506,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 
 		<!-- Employee leaves -->
 		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
-			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Employee leaves") }}</h2>
+			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ ctrans("Employee leaves") }}</h2>
 			<ul v-if="employeeLeaves.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
 				<li v-for="leave in employeeLeaves" :key="leave.id" class="flex items-center gap-3 py-2.5">
 					<img v-if="showAvatar(leave.avatar)" :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(leave.avatar)" loading="lazy" decoding="async" />
@@ -519,19 +519,19 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				</li>
 			</ul>
 			<div v-else class="flex-1 flex items-center justify-center py-10 text-center text-gray-400 text-sm">
-				{{ trans("No upcoming leaves.") }}
+				{{ ctrans("No upcoming leaves.") }}
 			</div>
 		</div>
 
 		<!-- Leave types -->
 		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
-			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Leave types") }}</h2>
+			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ ctrans("Leave types") }}</h2>
 			<div class="relative h-40 w-40 mx-auto shrink-0">
-				<Doughnut v-if="leaveTypes.total > 0" :data="leaveTypesData" :options="leaveTypesOptions" />
+				<Doughnut v-if="leaveTypes.total > 0" :data="leaveTypesData" :options="leaveTypesOptions" class="relative z-10" />
 				<div v-else class="flex h-full w-full items-center justify-center rounded-full border-8 border-gray-100" />
-				<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+				<div class="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
 					<span class="text-3xl font-bold text-gray-800">{{ leaveTypes.total }}</span>
-					<span class="text-xs text-gray-400">{{ trans("Employees") }}</span>
+					<span class="text-xs text-gray-400">{{ ctrans("Employees") }}</span>
 				</div>
 			</div>
 			<div class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -546,11 +546,11 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						<span class="truncate text-gray-700">{{ type.name }}</span>
 					</div>
 					<span class="whitespace-nowrap text-gray-500">
-						{{ type.count }} {{ type.count === 1 ? trans("employee") : trans("employees") }}
+						{{ type.count }} {{ type.count === 1 ? ctrans("employee") : ctrans("employees") }}
 					</span>
 				</div>
 				<div v-if="leaveTypes.types.length === 0" class="py-6 text-center text-gray-400 text-sm">
-					{{ trans("No leaves this month.") }}
+					{{ ctrans("No leaves this month.") }}
 				</div>
 			</div>
 		</div>
@@ -559,29 +559,29 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 		<div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-100 p-4 flex flex-col">
 			<div class="flex items-center gap-2 mb-3">
 				<FontAwesomeIcon :icon="faBirthdayCake" class="text-pink-500" fixed-width />
-				<h2 class="text-lg font-bold text-gray-800">{{ trans("Birthdays this month") }}</h2>
+				<h2 class="text-lg font-bold text-gray-800">{{ ctrans("Birthdays this month") }}</h2>
 			</div>
 
-			<ul v-if="birthdays.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
+			<ul v-if="birthdays.length" class="max-h-64 space-y-1 overflow-y-auto overflow-x-hidden">
 				<li
 					v-for="person in birthdays"
 					:key="person.id"
-					class="flex items-center gap-3 py-2.5"
-					:class="{ 'bg-pink-50 -mx-2 px-2 rounded': person.is_today }">
-					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" loading="lazy" decoding="async" />
-<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(person.name) }}</div>
+					class="flex items-center gap-3 rounded-md px-2 py-2"
+					:class="person.is_today ? 'bg-pink-50 ring-1 ring-inset ring-pink-200' : person.day < new Date().getDate() ? 'opacity-60' : ''">
+					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 shrink-0 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" loading="lazy" decoding="async" />
+					<div v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(person.name) }}</div>
 					<div class="min-w-0 flex-1">
-						<div class="font-medium text-gray-900 truncate">{{ person.name }}</div>
-						<div class="text-xs text-gray-500 truncate">{{ person.job_title || "—" }}</div>
+						<div class="truncate text-sm font-medium text-gray-900">{{ person.name }}</div>
+						<div class="truncate text-xs text-gray-500">{{ person.job_title || "—" }}</div>
 					</div>
-					<div class="text-right">
-						<div class="text-sm font-medium text-gray-700">{{ person.date_label }}</div>
-						<div v-if="person.is_today" class="text-xs font-semibold text-pink-600">🎂 {{ trans("Today") }}</div>
+					<div class="flex shrink-0 flex-col items-end gap-0.5">
+						<span class="whitespace-nowrap text-sm font-medium tabular-nums text-gray-700">{{ person.date_label }}</span>
+						<span v-if="person.is_today" class="rounded-full bg-pink-500 px-2 py-px text-[10px] font-semibold uppercase tracking-wide text-white">🎂 {{ ctrans("Today") }}</span>
 					</div>
 				</li>
 			</ul>
 			<div v-else class="flex-1 flex items-center justify-center py-10 text-center text-gray-400 text-sm">
-				{{ trans("No birthdays this month.") }}
+				{{ ctrans("No birthdays this month.") }}
 			</div>
 		</div>
 	</div>

@@ -32,10 +32,12 @@ use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerc
 use App\Actions\Helpers\Ticket\ReceiveSlackInteraction;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketCommand;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
+use App\Actions\DevOps\CiRun\ReceiveGitHubWorkflowWebhook;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
+    Route::post('github', ReceiveGitHubWorkflowWebhook::class)->name('github')->middleware(Sample::rate(0.1));
     Route::post('slack-ticket', ReceiveSlackTicketCommand::class)->name('slack_ticket');
     Route::post('slack-events', ReceiveSlackTicketReaction::class)->name('slack_events');
     Route::post('slack-interactivity', ReceiveSlackInteraction::class)->name('slack_interactivity');
@@ -54,7 +56,7 @@ Route::middleware('verify.shopify.webhook')->prefix('shopify/{shopifyUser:id}')-
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
     Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');
-    Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted');
+    Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted')->withTrashed()->missing(fn () => response()->noContent(200));
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
 });
 

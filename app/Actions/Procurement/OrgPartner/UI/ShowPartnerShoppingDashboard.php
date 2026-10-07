@@ -75,7 +75,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function openStockDeliveries(OrgPartner $orgPartner): array
+    public function openStockDeliveries(OrgPartner $orgPartner): array
     {
         return DB::table('stock_deliveries')
             ->where('organisation_id', $orgPartner->organisation_id)
@@ -117,7 +117,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
 
         $priorityBreakdown = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->selectRaw('priority, count(*) as total')
             ->groupBy('priority')
             ->pluck('total', 'priority');
@@ -125,13 +125,13 @@ class ShowPartnerShoppingDashboard extends OrgAction
 
         return [
             'cover'              => GetPartnerStockCoverBuckets::run($orgPartner),
+            'rescuable'          => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, 0),
             'order_capacity'     => $orderCapacity,
             'late_purchase_orders' => $this->latePurchaseOrders($orgPartner),
-            'open_stock_deliveries' => $this->openStockDeliveries($orgPartner),
             'open_items_count'   => $orgPartner->stats->number_open_shopping_list_items,
             'oldest_item_at'     => DB::table('partner_shopping_list_items')
                 ->where('org_partner_id', $orgPartner->id)
-                ->where('state', ShoppingListItemStateEnum::OPEN->value)
+                ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
                 ->whereNull('deleted_at')
                 ->min('created_at'),
             'estimated_total'    => $estimatedTotal,
@@ -173,6 +173,17 @@ class ShowPartnerShoppingDashboard extends OrgAction
                     ],
                     'model'         => $this->orgPartner->partner->name,
                     'title'         => __('Shopping'),
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exit',
+                            'label' => __('Partners'),
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_partners.index',
+                                'parameters' => [$this->orgPartner->organisation->slug],
+                            ],
+                        ],
+                    ],
                     'subNavigation' => $this->getPartnerShoppingNavigation($this->orgPartner),
                 ],
                 'orgPartner'  => [
@@ -196,6 +207,9 @@ class ShowPartnerShoppingDashboard extends OrgAction
                     'estimated_total'    => $data['estimated_total'],
                     'priority_breakdown' => $data['priority_breakdown'],
                 ],
+                'rescuable'         => $data['rescuable'],
+                'shoppingListRows'  => IndexOrgPartners::make()->shoppingListRows($this->orgPartner)->keyBy('state'),
+                'canPrepareOrder'   => $request->user()->authTo("procurement.{$this->organisation->id}.edit"),
                 'coverBuckets'      => $data['cover']['buckets'],
                 'coverTotal'        => $data['cover']['total'],
                 'leadTime'          => $data['cover']['lead_time'],
@@ -205,11 +219,6 @@ class ShowPartnerShoppingDashboard extends OrgAction
                     'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
                 ],
                 'latePurchaseOrders' => $data['late_purchase_orders'],
-                'openStockDeliveries' => $data['open_stock_deliveries'],
-                'stockDeliveriesRoute' => [
-                    'name'       => 'grp.org.procurement.org_partners.show.stock-deliveries.index',
-                    'parameters' => [$this->orgPartner->organisation->slug, $this->orgPartner->id],
-                ],
             ]
         );
     }

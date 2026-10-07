@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
+use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;
@@ -160,7 +161,13 @@ class StoreExternalShop extends OrgAction
     {
         $redirect =  Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug]);
 
-        if ($redirectUri = Arr::get($shop->settings, 'shopify.auth_url')) {
+        $redirectUri = Arr::get($shop->settings, 'shopify.auth_url');
+
+        if ($shop->engine === ShopEngineEnum::WIX) {
+            $redirectUri = AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop);
+        }
+
+        if ($redirectUri) {
             $redirect->with('redirect', [
                 'url'  => $redirectUri,
                 'target'  => '_blank',

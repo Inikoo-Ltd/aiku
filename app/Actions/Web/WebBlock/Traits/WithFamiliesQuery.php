@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Traits;
 
+use App\Actions\Catalogue\ProductCategory\WithFamiliesFromParentCollections;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -20,7 +21,9 @@ use Illuminate\Support\Facades\DB;
 
 trait WithFamiliesQuery
 {
-    public function getFamilyList(Webpage $webpage, ?array $customSelect = null)
+    use WithFamiliesFromParentCollections;
+
+    public function getFamilyList(Webpage $webpage, ?array $customSelect = null, bool $useCuratedOrder = false)
     {
         $families = null;
 
@@ -48,22 +51,16 @@ trait WithFamiliesQuery
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                ->when(
+                    !$useCuratedOrder,
+                    fn ($query) => $query->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                )
                 ->select($select)
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $webpage->model_id)
-                            ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
-                                $sub->select('chm.model_id')
-                                    ->from('collection_has_models as chm')
-                                    ->where('chm.model_type', 'ProductCategory')
-                                    ->whereIn('chm.collection_id', function ($sub2) use ($webpage) {
-                                        $sub2->select('mhc.collection_id')
-                                            ->from('model_has_collections as mhc')
-                                            ->where('mhc.model_id', $webpage->model_id);
-                                    });
-                            });
+                            ->orWhereIn('product_categories.id', $this->familyIdsFromParentCollections($webpage->model_id));
                     } else {
                         $query->where('product_categories.sub_department_id', $webpage->model_id);
                     }
@@ -78,7 +75,10 @@ trait WithFamiliesQuery
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                ->when(
+                    !$useCuratedOrder,
+                    fn ($query) => $query->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                )
                 ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id);
@@ -97,6 +97,20 @@ trait WithFamiliesQuery
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->whereNull('webpages.deleted_at')
-            ->orderByRaw('yearly_sales.total_sales DESC NULLS LAST');
+            ->when(
+                $useCuratedOrder,
+                function ($query) use ($webpage) {
+                    $query->when(
+                        $webpage->model instanceof ProductCategory && $webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT,
+                        fn ($query) => $query->orderByRaw('CASE WHEN product_categories.department_id = ? THEN 0 ELSE 1 END', [$webpage->model_id])
+                    )
+                        ->orderByRaw('product_categories.website_position ASC NULLS LAST')
+                        ->orderByRaw('product_categories.created_at DESC');
+                },
+                function ($query) {
+                    $query->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
+                        ->orderByRaw('product_categories.created_at DESC');
+                }
+            );
     }
 }

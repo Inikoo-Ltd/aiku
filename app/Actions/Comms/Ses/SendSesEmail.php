@@ -54,7 +54,7 @@ class SendSesEmail
     /**
      * @param array<int, array{content: string, filename: string}> $attachments
      */
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false, array $attachments = []): DispatchedEmail
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false, array $attachments = [], ?string $replyTo = null): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
@@ -67,6 +67,8 @@ class SendSesEmail
 
         $actuallySend = false;
         if (app()->isProduction()) {
+            $actuallySend = true;
+        } elseif (!$isTest && $this->isPasswordResetSentToRecipientOutsideProduction($dispatchedEmail)) {
             $actuallySend = true;
         } elseif (config('app.send_email_in_non_production_env') || $isTest) {
             $actuallySend = true;
@@ -98,6 +100,10 @@ class SendSesEmail
             return $dispatchedEmail;
         }
 
+        if (!app()->isProduction()) {
+            $subject       = $this->markSubjectAsNotProduction($subject);
+            $emailHtmlBody = $this->markHtmlBodyAsNotProduction($emailHtmlBody);
+        }
 
         $emailData = $this->getEmailData(
             $subject,
@@ -106,7 +112,8 @@ class SendSesEmail
             $emailHtmlBody,
             $unsubscribeUrl,
             $senderName,
-            $attachments
+            $attachments,
+            $replyTo
         );
 
 
@@ -151,6 +158,7 @@ class SendSesEmail
                             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
                             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
                             OutboxCodeEnum::RENTAL_AGREEMENT,
+                            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
                         ])) {
                         StoreEmailCopy::make()->action($dispatchedEmail, [
                             'subject' => $subject,
@@ -229,6 +237,32 @@ class SendSesEmail
         return $dispatchedEmail;
     }
 
+    public function markSubjectAsNotProduction(string $subject): string
+    {
+        return '⚠️ ['.strtoupper(app()->environment()).' - TEST EMAIL] '.$subject;
+    }
+
+    public function markHtmlBodyAsNotProduction(string $emailHtmlBody): string
+    {
+        $banner = '<div style="background:#dc2626;color:#ffffff;border:6px solid #7f1d1d;padding:24px;margin:0 0 24px 0;font-family:Arial,sans-serif;font-size:18px;line-height:1.5;text-align:center;">'
+            .'<strong style="font-size:28px;letter-spacing:1px;">TEST EMAIL FROM '.strtoupper(app()->environment()).'</strong><br>'
+            .'<div style="font-size:34px;font-weight:bold;font-family:Courier New,monospace;margin:12px 0;">'.e(config('app.domain')).'</div>'
+            .'Test websites start with <strong style="font-size:22px;">canary.</strong> (for example canary.aw-dropship.com)<br><br>'
+            .'This email comes from our test copy of the website, not the live site. '
+            .'Links open the test copy, and nothing you do there changes your real account or orders.'
+            .'</div>';
+
+        $bodyOpened = preg_replace('/(<body[^>]*>)/i', '$1'.$banner, $emailHtmlBody, 1, $replacements);
+
+        return $replacements ? $bodyOpened : $banner.$emailHtmlBody;
+    }
+
+    public function isPasswordResetSentToRecipientOutsideProduction(DispatchedEmail $dispatchedEmail): bool
+    {
+        return config('app.send_password_reset_to_recipient_in_non_production_env')
+            && $dispatchedEmail->outbox?->code === OutboxCodeEnum::PASSWORD_REMINDER;
+    }
+
     /** Exponential backoff with jitter, capped so the whole retry run stays well under the queue retry_after. */
     public function throttleBackoffMicroseconds(int $attempt): int
     {
@@ -236,7 +270,7 @@ class SendSesEmail
             + rand(0, self::THROTTLE_BACKOFF_JITTER_MICROSECONDS);
     }
 
-    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = []): array
+    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = [], ?string $replyTo = null): array
     {
         $message = [
             'Message' => [
@@ -269,6 +303,7 @@ class SendSesEmail
             'Message'     => $message['Message'],
             'Headers'     => $headers,
             'Attachments' => $attachments,
+            'ReplyTo'     => $replyTo,
         ];
     }
 
@@ -281,6 +316,10 @@ class SendSesEmail
 
         $mail->addAddress($emailData['Destination']['ToAddresses'][0]);
         $mail->setFrom($emailData['Source'], $emailData['SourceName'] ?? '');
+
+        if (Arr::get($emailData, 'ReplyTo')) {
+            $mail->addReplyTo($emailData['ReplyTo']);
+        }
 
         foreach (Arr::get($emailData, 'Headers', []) as $key => $header) {
             $mail->addCustomHeader($key, $header);

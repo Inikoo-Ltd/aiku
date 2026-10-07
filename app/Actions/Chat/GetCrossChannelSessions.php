@@ -7,6 +7,8 @@
 
 namespace App\Actions\Chat;
 
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
+use App\Actions\Chat\ChatSession\GetChatReplyPromise;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -14,6 +16,7 @@ use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -36,12 +39,17 @@ class GetCrossChannelSessions
             'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'statuses'        => ['sometimes', 'array'],
             'statuses.*'      => ['string', 'in:'.implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))],
+            'closed_period'   => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::CLOSED_PERIODS)],
             'assigned_to_me'  => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'promised'        => ['sometimes', 'boolean'],
+            'carrier'         => ['sometimes', 'boolean'],
+            'colleague'       => ['sometimes', 'boolean'],
+            'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'page'            => ['sometimes', 'integer', 'min:1'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
@@ -80,7 +88,7 @@ class GetCrossChannelSessions
 
         // Rubbish is a mark on an imported mailbox's backlog; WhatsApp has no such history and
         // no such column, so its bin is email and website only.
-        $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false))
+        $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false)) && (! ($filters['carrier'] ?? false)) && (! ($filters['colleague'] ?? false))
             && ($wantsAll || $channels->contains('whatsapp'));
         $wantsSessions = $wantsAll || $channels->contains(fn ($channel) => $channel !== 'whatsapp');
 
@@ -91,13 +99,17 @@ class GetCrossChannelSessions
             ->map(fn ($session) => ['channel' => $session->channel?->value ?? 'website', 'session' => $session])
             ->concat(
                 collect($meta?->items() ?? [])->map(fn ($session) => ['channel' => 'whatsapp', 'session' => $session])
-            )
-            ->sortBy(
-                fn (array $row) => $this->lastActivityAt($row['session']),
-                SORT_REGULAR,
-                !GetChatSessions::oldestFirst($filters)
-            )
-            ->values();
+            );
+
+        $rows = GetChatSessions::oldestFirst($filters)
+            ? $rows->sort(function (array $a, array $b) {
+                $priority = (int) GetChatReplyPromise::isWaiting($b['session']) - (int) GetChatReplyPromise::isWaiting($a['session']);
+
+                return $priority !== 0 ? $priority : Carbon::parse($a['session']->waiting_since) <=> Carbon::parse($b['session']->waiting_since);
+            })
+            : $rows->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']));
+
+        $rows = $rows->values();
 
         return [
             'rows'     => $rows->slice(($page - 1) * $limit, $limit)->values(),

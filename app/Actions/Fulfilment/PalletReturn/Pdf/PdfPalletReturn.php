@@ -94,7 +94,7 @@ class PdfPalletReturn
 
         $pdf = PDF::chunkLoadView('<html-separator/>', 'pickings.templates.pdf.return', $data, [], $config);
 
-        return response($pdf->stream($filename . '.pdf'), 200)
+        return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
     }

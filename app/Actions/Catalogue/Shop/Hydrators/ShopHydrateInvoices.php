@@ -40,7 +40,7 @@ class ShopHydrateInvoices implements ShouldBeUnique
                 enum: InvoiceTypeEnum::class,
                 models: Invoice::class,
                 where: function ($q) use ($shop) {
-                    $q->where('shop_id', $shop->id);
+                    $q->where('shop_id', $shop->id)->where('in_process', false);
                 }
             )
         );

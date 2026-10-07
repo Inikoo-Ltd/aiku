@@ -3,7 +3,7 @@ import { inject, ref, watch } from 'vue'
 import Modal from '../Utils/Modal.vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
 import { Link, router } from '@inertiajs/vue3'
@@ -47,12 +47,11 @@ const fetchTrolleysList = async () => {
             )
         )
         
-        console.log('Response axios:', response.data)
         listTrolleys.value = response.data.data
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Please try again or contact administrator"),
             type: 'error'
         })
     } finally {
@@ -74,12 +73,11 @@ const fetchUnavailableTrolleysList = async () => {
             )
         )
         
-        console.log('Response unavailable_trolleys:', response.data)
         listUnavailableTrolleys.value = response.data.data
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Please try again or contact administrator"),
             type: 'error'
         })
     } finally {
@@ -117,15 +115,15 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
             onSuccess: () => {
                 isOpenModal.value = false
                 // notify({
-                //     title: trans("Success"),
-                //     text: trans("Successfully submit the data"),
+                //     title: ctrans("Success"),
+                //     text: ctrans("Successfully submit the data"),
                 //     type: "success"
                 // })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to attach trolley"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to attach trolley"),
                     type: "error"
                 })
             },
@@ -153,7 +151,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
     <div>
         <slot name="default" :setOpenModal="() => isOpenModal = !isOpenModal">
             <Button
-                :label="trans('Attach trolley')"
+                :label="ctrans('Attach trolley')"
                 @click="() => isOpenModal = true"
                 icon="far fa-plus"
                 type="dashed"
@@ -163,15 +161,15 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="font-bold text-xl text-center">
-                {{ trans("Select trolley to attach") }}
+                {{ ctrans("Select trolley to attach") }}
             </div>
 
             <div class="italic opacity-50 text-xs text-center mb-8">
-                {{ trans("Delivery Note") }} {{ deliveryNote.reference }}
+                {{ ctrans("Delivery Note") }} {{ deliveryNote.reference }}
             </div>
 
             <div class="mb-1">
-                {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
+                {{ ctrans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
             <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
                 <div class="grid grid-cols-6 gap-2">
@@ -198,7 +196,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                     <!-- Section: no trolleys found -->
                     <div v-else class="flex items-center justify-center w-full col-span-3 pt-3">
                         <div class="text-center border-gray-200 p-14">
-                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ trans("No trolleys found") }}</h3>
+                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ ctrans("No trolleys found") }}</h3>
                             <a :href="route('grp.org.warehouses.show.dispatching.trolleys.create', {
                                     organisation: layout.currentParams.organisation,
                                     warehouse: props.warehouse.slug
@@ -217,7 +215,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
 
             <!-- Section: unavailable trolleys -->
             <div class="my-1 text-red-500 text-sm">
-                {{ trans("Unavailable trolleys") }} ({{ isLoadingFetchUnavailableTrolleys ? '-' : listUnavailableTrolleys.length }}):
+                {{ ctrans("Unavailable trolleys") }} ({{ isLoadingFetchUnavailableTrolleys ? '-' : listUnavailableTrolleys.length }}):
             </div>
             <div class="xh-64">
                 <div class="grid grid-cols-4 gap-2">

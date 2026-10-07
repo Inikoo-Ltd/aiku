@@ -33,7 +33,6 @@ const props = defineProps<{
 const _datePicker: any = ref(null)
 
 
-console.log('Picker Props: ', props.fieldName, props);
 
 </script>
 
@@ -49,6 +48,7 @@ console.log('Picker Props: ', props.fieldName, props);
             input: fieldData.readonly ? '!text-gray-500' : ''
         }"
         :minDate="fieldData.minDate"
+        teleport
         keepActionRow
         @update:modelValue="() => form.clearErrors()"
     >

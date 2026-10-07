@@ -7,7 +7,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Ticket;
@@ -32,7 +32,7 @@ class TranslateTicketText extends OrgAction
         }
 
         return Cache::remember($cacheKey.':'.$language->id, now()->addDay(), function () use ($body, $language) {
-            $from = DetectLanguageWithAI::run($body);
+            $from = DetectLanguageWithJev::run($body);
 
             if (!$from || $from->id === $language->id) {
                 return ['text' => $body, 'language' => $from?->name];

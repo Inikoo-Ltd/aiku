@@ -16,7 +16,7 @@ class ElevateWebsiteChatStateful
 {
     public function handle(Request $request, Closure $next)
     {
-        if ($request->isMethod('GET') && $request->is('app/api/chats/sessions')) {
+        if ($this->needsVisitorLogin($request)) {
             $host     = $request->getHost();
             $stateful = config('sanctum.stateful', []);
 
@@ -26,6 +26,22 @@ class ElevateWebsiteChatStateful
         }
 
         return $next($request);
+    }
+
+    /**
+     * Posts that arrive with a session cookie are read with the visitor's login. They are left out
+     * of the CSRF check (VerifyCsrfToken::$except): the session cookie is SameSite=lax, so a post
+     * from another site never carries the login, and a stale token would refuse the message.
+     */
+    private function needsVisitorLogin(Request $request): bool
+    {
+        if ($request->isMethod('GET')) {
+            return $request->is('app/api/chats/sessions');
+        }
+
+        return $request->isMethod('POST')
+            && $request->hasCookie(config('session.cookie'))
+            && $request->is('app/api/chats/sessions', 'app/api/chats/offline-message', 'app/api/chats/messages/*/send');
     }
 
     private function isPortalDomain(string $host): bool

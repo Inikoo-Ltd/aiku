@@ -39,7 +39,7 @@ import {
     faPaperclip,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
 import { inject, ref, computed } from "vue"
 import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -93,6 +93,9 @@ interface Customer {
     created_at: string
     number_current_customer_clients: number | null
     address: Address
+    delivery_address: Address | null
+    address_id: number | null
+    delivery_address_id: number | null
     contact_website?: string | null
     is_dropshipping: boolean
     email_subscriptions?: {
@@ -700,6 +703,24 @@ const submitNote = async () => {
                             </dd>
                         </div>
 
+                        <div v-if="data?.customer?.delivery_address_id && data.customer.delivery_address_id !== data.customer.address_id"
+                             class="relative flex items-start w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="trans('Delivery address')" class="flex-none pt-2">
+                                <FontAwesomeIcon icon="fal fa-truck" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="w-full text-gray-500">
+                                <div class="text-xs text-gray-400 mb-1">{{ trans("Delivery address") }}</div>
+                                <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                    <span v-html="data.customer.delivery_address.formatted_address" />
+                                    <div v-if="data.address_management.can_open_address_management && data.shop.type !== 'external'"
+                                         @click="() => isModalAddress = true"
+                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                        <span>{{ trans("Edit") }}</span>
+                                    </div>
+                                </div>
+                            </dd>
+                        </div>
+
                         <!-- Field: Tags -->
                         <div v-if="data.tags.length > 0" class="relative flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Tags'" class="flex-none pt-2">
@@ -1090,6 +1111,13 @@ const submitNote = async () => {
                                                  tooltip="Decrease Balance" fixed-width aria-hidden="true" />
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div v-if="Number(data.customer.credit_limit) > 0" class="mt-2 text-sm text-gray-500">
+                    {{ trans("Credit limit") }}: {{ locale.currencyFormat(data.currency?.code, data.customer.credit_limit) }}
+                    <span v-if="data.customer.payment_terms_days"> · {{ trans(":days days terms", { days: data.customer.payment_terms_days }) }}</span>
+                    <div>
+                        {{ trans("Available") }}: <span class="font-semibold">{{ locale.currencyFormat(data.currency?.code, Number(data.customer.balance) + Number(data.customer.credit_limit)) }}</span>
                     </div>
                 </div>
                 <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"

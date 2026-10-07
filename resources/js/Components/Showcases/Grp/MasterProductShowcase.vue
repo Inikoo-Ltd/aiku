@@ -19,15 +19,17 @@ import {
 	faCheckCircle
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
-import { faImage, faStarfighter, faStarshipFreighter } from "@far"
+import { faStarfighter, faStarshipFreighter } from "@far"
 import ImagePrime from "primevue/image"
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
+import SummaryCard from "@/Components/Goods/SummaryCard.vue"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import Popover from "primevue/popover"
 import { Link, router } from "@inertiajs/vue3"
@@ -35,6 +37,8 @@ import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue'
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import CompositionTriangle from '@/Components/Goods/CompositionTriangle.vue'
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
@@ -65,12 +69,12 @@ library.add(
 
 provide("layout", useLayoutStore())
 const layout = useLayoutStore()
-console.log(layout.app.theme);
 
 const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
 	salesData?: any
+	salesAnalysisTeaser?: object
 	anomalies?: {
 		items: {
 			issues: string[]
@@ -285,9 +289,9 @@ function productRoute(product: any, openEdit = false) {
 }
 
 const getTooltips = () => {
-	let tooltipText = props.data.availability_status.is_for_sale ? trans('Master product is currently for sale and available to be purchased') : trans('Master product is currently not for sale and unavailable to be purchased');
+	let tooltipText = props.data.availability_status.is_for_sale ? ctrans('Master product is currently for sale and available to be purchased') : ctrans('Master product is currently not for sale and unavailable to be purchased');
 	if (props.data.availability_status.from_trade_unit) {
-		tooltipText = trans('This master product For Sale status has been modified from the Trade Unit level')
+		tooltipText = ctrans('This master product For Sale status has been modified from the Trade Unit level')
 	}
 
 	return tooltipText;
@@ -334,7 +338,7 @@ const isModalProductForSale = ref(false)
 						<span
 							v-if="rebelList.length > 0"
 							class="inline-flex items-center gap-1 text-yellow-500 hover:text-yellow-600 cursor-pointer"
-							v-tooltip="trans('Show rebel prices (products not following master pricing)')"
+							v-tooltip="ctrans('Show rebel prices (products not following master pricing)')"
 							@click.stop="toggleRebel"
 						>
 							<FontAwesomeIcon :icon="faStarfighter" fixed-width />
@@ -345,16 +349,16 @@ const isModalProductForSale = ref(false)
 					<template v-for="price in topPrices(prices)" :key="price.code">
 						<span
 							class="self-center text-right text-xs font-normal text-gray-400"
-							v-tooltip="costs ? trans('Margin vs effective cost') : trans('Retail margin vs price')"
+							v-tooltip="costs ? ctrans('Margin vs effective cost') : ctrans('Retail margin vs price')"
 						>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
 						<span class="text-right">{{ formatBlockValue(price.code, price.value, perUnits) }}</span>
 					</template>
 					<template v-for="price in independentMinorPrices(prices)" :key="price.code">
 						<span
 							class="self-center text-right text-xs font-normal text-gray-400"
-							v-tooltip="costs ? trans('Margin vs effective cost') : trans('Retail margin vs price')"
+							v-tooltip="costs ? ctrans('Margin vs effective cost') : ctrans('Retail margin vs price')"
 						>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
-						<span class="text-right text-green-600" v-tooltip="trans('Independent price')">
+						<span class="text-right text-green-600" v-tooltip="ctrans('Independent price')">
 							{{ formatBlockValue(price.code, price.value, perUnits) }}
 						</span>
 					</template>
@@ -362,7 +366,7 @@ const isModalProductForSale = ref(false)
 						v-if="restPrices(prices).length > 0"
 						class="col-span-2 text-right text-xs font-normal text-gray-400 hover:text-gray-600"
 					>
-						{{ trans('Minor currencies') }} ({{ restPrices(prices).length }})
+						{{ ctrans('Minor currencies') }} ({{ restPrices(prices).length }})
 						<FontAwesomeIcon
 							:icon="faChevronDown"
 							class="text-xs transition-transform duration-200"
@@ -406,7 +410,7 @@ const isModalProductForSale = ref(false)
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer "
 				:class="data.availability_status.status ? 'border-green-500' : 'border-red-500'"
 			>
-				{{ data.availability_status.status ? trans('For Sale') : trans('Not For Sale') }}
+				{{ data.availability_status.status ? ctrans('For Sale') : ctrans('Not For Sale') }}
 				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.total_products ? "opacity-80" : ""'>
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.total_products}` }}
 				</span>)
@@ -419,72 +423,68 @@ const isModalProductForSale = ref(false)
 		</div>
 	</div>
 
-	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
-	     gets the rest, with the image beside the summary only when there is room -->
-	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
-		<!-- Content: image + summary. The summary is capped; spare width goes first to
-		     the image column (up to its own cap), the rest stays as breathing room -->
+	<!-- Content area 8/12, right sidebar (prices, analytics) 4/12 but never under 385px;
+	     the image sits beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,8fr)_minmax(385px,4fr)]">
+		<!-- Content: image + summary. The image column has its own cap; the summary takes the rest -->
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
 			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]">
-				<!-- Master Product Tags -->
-				<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-					<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
-						class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
-						{{ tag.name }}
-					</span>
-				</dd>
 				<!-- Image Preview & Thumbnails -->
-				<div class="bg-white p-4 lg:p-5">
-					<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
-					</div>
-					<div v-else>
-						<div
-							class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
-							<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+				<ProductCategoryCard subtle :data="data.masterProduct">
+					<template v-if="tradeUnitTags?.length" #beforeImage>
+						<div class="font-medium flex flex-wrap gap-1 mb-4">
+							<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
+								class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+								{{ tag.name }}
+							</span>
 						</div>
-					</div>
-				</div>
+					</template>
+					<template v-if="props.data?.main_image?.webp" #image>
+						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.masterProduct?.name" preview
+							class="block w-full" imageClass="w-full aspect-square object-contain" />
+					</template>
+				</ProductCategoryCard>
 			</div>
 
 			<!-- Product Summary -->
-			<div class="min-w-0 flex-1 max-w-2xl">
-				<TradeUnitMasterProductSummary
-					:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
-					:gpsr="data.gpsr"
-					:properties="data.properties"
-					:attachments="data.attachment_box"
-					:labelInfo="data.label_info"
-				/>
+			<div class="min-w-0 flex-1">
+				<SummaryCard>
+					<TradeUnitMasterProductSummary
+						:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+						:gpsr="data.gpsr"
+						:properties="data.properties"
+						:attachments="data.attachment_box"
+						:labelInfo="data.label_info"
+					/>
+				</SummaryCard>
 			</div>
 		</div>
 
         <!-- Sales Analytics - right sidebar -->
-        <div class="min-w-0">
+        <div class="min-w-0 h-fit ml-4 mr-2">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
 				<ReuseMasterPriceBlock
-					:title="trans('Price / Outer')"
+					:title="ctrans('Price / Outer')"
 					:prices="data.masterProduct.master_prices"
 					:rebelList="rebelPriceList"
 					:toggleRebel="toggleRebelPrice"
-					:emptyTooltip="trans('Price is not set up for this master product')"
+					:emptyTooltip="ctrans('Price is not set up for this master product')"
 					:costs="data.pricingCosts"
 				/>
 
 				<Popover ref="rebelPricePopover">
 					<div class="min-w-[20rem]">
 						<div class="mb-2 text-xs font-semibold text-gray-700">
-							{{ trans('Rebel Prices') }}
-							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+							{{ ctrans('Rebel Prices') }}
+							<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
 						</div>
 
 						<div class="overflow-x-auto">
 							<table class="w-full border-collapse text-xs">
 								<thead>
 									<tr class="bg-gray-100 text-left text-gray-600">
-										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
-										<th class="border px-3 py-1.5 text-right">{{ trans('Price') }}</th>
+										<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ ctrans('Price') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -500,28 +500,28 @@ const isModalProductForSale = ref(false)
 					</div>
 				</Popover>
 				<ReuseMasterPriceBlock
-					:title="trans('RRP / Unit')"
+					:title="data.is_dropship ? ctrans('RRP / Outer') : ctrans('RRP / Unit')"
 					:prices="data.masterProduct.master_rrp"
 					:rebelList="rebelRrpList"
 					:toggleRebel="toggleRebelRrp"
-					:emptyTooltip="trans('RRP is not set up for this master product')"
-					:perUnits="Number(data.masterProduct?.units) || 0"
+					:emptyTooltip="ctrans('RRP is not set up for this master product')"
+					:perUnits="data.is_dropship ? 0 : Number(data.masterProduct?.units) || 0"
 					:counterpart="data.masterProduct.master_prices"
 				/>
 
 				<Popover ref="rebelRrpPopover">
 					<div class="min-w-[20rem]">
 						<div class="mb-2 text-xs font-semibold text-gray-700">
-							{{ trans('Rebel RRP') }}
-							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+							{{ ctrans('Rebel RRP') }}
+							<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
 						</div>
 
 						<div class="overflow-x-auto">
 							<table class="w-full border-collapse text-xs">
 								<thead>
 									<tr class="bg-gray-100 text-left text-gray-600">
-										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
-										<th class="border px-3 py-1.5 text-right">{{ trans('RRP') }}</th>
+										<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ ctrans('RRP') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -538,6 +538,8 @@ const isModalProductForSale = ref(false)
 				</Popover>
 			</div>
 			<div class="mr-3">
+				<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+				<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />
 			</div>
 
@@ -559,14 +561,14 @@ const isModalProductForSale = ref(false)
 	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">
 		<div class="grid grid-cols-2 font-bold mb-4">
 			<div class="text-left text-lg">
-				{{ trans('Product For Sale Statuses') }}
+				{{ ctrans('Product For Sale Statuses') }}
 			</div>
 			<div class="justify-self-end text-lg">
 				<FontAwesomeIcon
 					icon="fal fa-edit"
 					class="hover:cursor-pointer hover:opacity-80"
 					style="color: var(--theme-color-0);"
-					v-tooltip="trans('Click to edit For Sale status')"
+					v-tooltip="ctrans('Click to edit For Sale status')"
 					v-on:click="editRoute()" fixed-width
 				/>
 				<FontAwesomeIcon
@@ -599,10 +601,10 @@ const isModalProductForSale = ref(false)
 			<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
 				<span
 				v-on:click="router.visit(productRoute(item, true))"
-				v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+				v-tooltip="item.is_for_sale ? ctrans('Product is currently for sale and available to be purchased') : ctrans('Product is currently not for sale and unavailable to be purchased')"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
 				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
-					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
+					{{ item.is_for_sale ? ctrans('For Sale') : ctrans('Not For Sale') }}
 					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'" fixed-width/>
 				</span>
 			</div>

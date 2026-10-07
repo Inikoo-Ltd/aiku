@@ -18,7 +18,7 @@ import {
     faDolly,
     faBoxOpen,
     faBoxes,
-    faCreditCard
+    faCreditCard, faFilter, faIndustry
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
@@ -39,7 +39,7 @@ library.add(
     faDolly,
     faBoxOpen,
     faBoxes,
-    faCreditCard
+    faCreditCard, faFilter, faIndustry
 );
 
 const isFilterVisible = ref(false);

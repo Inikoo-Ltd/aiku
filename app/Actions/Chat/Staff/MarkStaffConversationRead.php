@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff;
 
+use App\Events\StaffConversationRead;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,7 +20,11 @@ class MarkStaffConversationRead
 
     public function handle(StaffConversation $conversation, User $user): void
     {
-        $conversation->participants()->updateExistingPivot($user->id, ['last_read_at' => now()->format(StaffConversation::PRECISE_DATE_FORMAT),'archived_at' => null]);
+        $readAt = now();
+
+        $conversation->participants()->updateExistingPivot($user->id, ['last_read_at' => $readAt->format(StaffConversation::PRECISE_DATE_FORMAT),'archived_at' => null]);
+
+        StaffConversationRead::dispatch($conversation, $user, $readAt->toIso8601ZuluString('microsecond'));
     }
 
     public function authorize(ActionRequest $request): bool

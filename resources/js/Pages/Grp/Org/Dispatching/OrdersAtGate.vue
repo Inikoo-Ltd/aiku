@@ -13,7 +13,7 @@ import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
@@ -22,6 +22,7 @@ const props = defineProps<{
     title: string
     data: object
     shortfall: object
+    can_create_job_orders?: boolean
     make_queue: object
     currency_code: string
 }>()
@@ -109,7 +110,7 @@ function release(item: { id: number }) {
             :class="currentTab === 'queue' ? 'border-b-2 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-gray-700'"
             @click="switchTab('queue')"
         >
-            {{ trans("Queue") }}
+            {{ ctrans("Queue") }}
         </button>
         <button
             type="button"
@@ -117,7 +118,7 @@ function release(item: { id: number }) {
             :class="currentTab === 'shortfall' ? 'border-b-2 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-gray-700'"
             @click="switchTab('shortfall')"
         >
-            {{ trans("Shortfall") }}
+            {{ ctrans("Shortfall") }}
         </button>
         <button
             type="button"
@@ -125,19 +126,19 @@ function release(item: { id: number }) {
             :class="currentTab === 'make' ? 'border-b-2 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-gray-700'"
             @click="switchTab('make')"
         >
-            {{ trans("Make queue") }}
+            {{ ctrans("Make queue") }}
         </button>
     </div>
 
     <div
-        v-if="(currentTab === 'shortfall' || currentTab === 'make') && Object.keys(selectedShortfall).length"
+        v-if="can_create_job_orders && (currentTab === 'shortfall' || currentTab === 'make') && Object.keys(selectedShortfall).length"
         class="sticky top-0 z-10 mx-4 mt-2 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white"
     >
-        <span>{{ Object.keys(selectedShortfall).length }} {{ trans("stocks selected") }}</span>
+        <span>{{ Object.keys(selectedShortfall).length }} {{ ctrans("stocks selected") }}</span>
         <Button
             type="tertiary"
             icon="fal fa-hammer"
-            :label="trans('Create job order')"
+            :label="ctrans('Create job order')"
             size="xs"
             :loading="creatingJobOrder"
             @click="createJobOrder"
@@ -245,7 +246,7 @@ function release(item: { id: number }) {
                     ? 'bg-green-100 text-green-800'
                     : 'bg-amber-100 text-amber-800'"
             >
-                {{ item.ready_lines }}/{{ item.total_lines }} {{ trans("ready") }}
+                {{ item.ready_lines }}/{{ item.total_lines }} {{ ctrans("ready") }}
             </span>
         </template>
         <template #cell(net_amount)="{ item }">
@@ -254,13 +255,13 @@ function release(item: { id: number }) {
                     v-if="item.pay_status === 'paid'"
                     :icon="['fas', 'check-circle']"
                     class="text-green-600"
-                    :title="trans('Paid')" fixed-width
+                    :title="ctrans('Paid')" fixed-width
                 />
                 <FontAwesomeIcon
                     v-else
                     :icon="['fal', 'circle']"
                     class="text-amber-500"
-                    :title="trans('Unpaid')" fixed-width
+                    :title="ctrans('Unpaid')" fixed-width
                 />
                 <span class="tabular-nums">{{ useLocaleStore().currencyFormat(item.currency_code, Number(item.net_amount)) }}</span>
             </span>
@@ -272,7 +273,7 @@ function release(item: { id: number }) {
             <Button
                 type="secondary"
                 :icon="['fal', 'truck-loading']"
-                :label="trans('Release DN')"
+                :label="ctrans('Release DN')"
                 size="xs"
                 :loading="releasing === item.id"
                 @click="release(item)"

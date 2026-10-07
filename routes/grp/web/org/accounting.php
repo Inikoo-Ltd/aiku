@@ -43,6 +43,7 @@ use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\Ordering\Order\UI\IndexOrdersBacklogInInvoiceCategory;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
@@ -50,8 +51,6 @@ Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
 Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
 
 
-Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments/create', [IndexPayments::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.create');
-Route::get('/providers/{orgPaymentServiceProvider}/payments/create', [IndexPayments::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.create');
 
 
 Route::get('/providers', IndexOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
@@ -61,10 +60,10 @@ Route::get('/providers/{orgPaymentServiceProvider}/accounts/create', CreatePayme
 
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}', [ShowPaymentAccount::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show');
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/edit', [EditPaymentAccount::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.edit');
-Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments', [IndexPayments::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.index');
+Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments', [IndexPayments::class, 'inPaymentAccountInOrgPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.index');
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments/{payment}', [ShowPayment::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.show');
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments/{payment}/edit', [EditPayment::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.edit');
-Route::get('/providers/{orgPaymentServiceProvider}/payments', [IndexPayments::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.index');
+Route::get('/providers/{orgPaymentServiceProvider}/payments', [IndexPayments::class, 'inOrgPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.index');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/{payment}/edit', [EditPayment::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.edit');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/{payment}', [ShowPayment::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.show');
 
@@ -123,6 +122,7 @@ Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::cla
 Route::get('/invoice-categories/{invoiceCategory}/invoices/omega', [OmegaManyInvoice::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index.omega');
 
 Route::get('/invoice-categories/{invoiceCategory}/refunds', [IndexRefunds::class, 'inInvoiceCategory'])->name('invoice-categories.show.refunds.index');
+Route::get('/invoice-categories/{invoiceCategory}/backlog', IndexOrdersBacklogInInvoiceCategory::class)->name('invoice-categories.show.backlog.index');
 
 Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::class)->name('invoice-categories.edit');
 

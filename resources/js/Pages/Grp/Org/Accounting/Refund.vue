@@ -5,9 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { Head, router, Link } from "@inertiajs/vue3";
+import { Head, Link } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
+import { computed, defineAsyncComponent, ref } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
@@ -15,12 +15,11 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue";
 import { routeType } from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
 import { FieldOrderSummary } from "@/types/Pallet";
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import RefundPay from "@/Components/Segmented/InvoiceRefund/RefundPay.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -50,12 +49,7 @@ import { faCheck, faTrashAlt } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import TableInvoiceRefundsInProcessTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceRefundsInProcessTransactions.vue";
-import Modal from "@/Components/Utils/Modal.vue";
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
-import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
 import { InvoiceResource } from "@/types/invoice";
-import axios from "axios";
-import { notify } from "@kyvg/vue3-notification";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import invoice from "@/Pages/Grp/Org/Accounting/Invoice.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -70,7 +64,6 @@ library.add(
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
 
-const locale = inject("locale", aikuLocaleStructure);
 
 
 const props = defineProps<{
@@ -167,101 +160,12 @@ const component = computed(() => {
 });
 
 
-// Section: Payment invoice
-const listPaymentRefund = ref([
-  {
-    label: trans("Refund money to customer's credit balance"),
-    value: "credit_balance"
-  },
-  {
-    label: trans("Refund money to payment method of the invoice"),
-    value: "invoice_payment_method"
-  }
-]);
-const listPaymentMethod = ref([]);
-// const isLoadingFetch = ref(false);
-// const fetchPaymentMethod = async () => {
-//   try {
-//     isLoadingFetch.value = true;
-//     const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters));
-//     listPaymentMethod.value = data.data;
-//   } catch (error) {
-//     notify({
-//       title: trans("Something went wrong"),
-//       text: trans("Failed to fetch payment method list"),
-//       type: "error"
-//     });
-//   } finally {
-//     isLoadingFetch.value = false;
-//   }
-// };
-
-const paymentData = ref({
-  payment_method: null as string | null,
-  payment_account: null as number | null,
-  payment_amount: 0 as number | null
-//   payment_reference: ""
-});
-const isOpenModalPayment = ref(false);
-const isLoadingPayment = ref(false);
-const errorPaymentMethod = ref<null | unknown>(null);
-const onSubmitPayment = () => {
-  let url;
-  if (paymentData.value.payment_method === "credit_balance") {
-    url = route("grp.models.refund.refund_to_credit", {
-      refund: props.box_stats.refund_id
-    });
-  } else {
-    url = route("grp.models.refund.refund_to_payment_account", {
-      refund: props.box_stats.refund_id,
-      paymentAccount: paymentData.value.payment_account
-    });
-  }
-
-  try {
-    router.post(
-      url,
-      {
-        amount: paymentData.value.payment_amount
-      },
-      {
-        onStart: () => isLoadingPayment.value = true,
-        onFinish: () => {
-          isLoadingPayment.value = false,
-            isOpenModalPayment.value = false,
-            notify({
-              title: trans("Success"),
-              text: "Successfully add payment invoice",
-              type: "success"
-            });
-        },
-        onSuccess: () => {
-          paymentData.value.payment_account = null,
-            paymentData.value.payment_amount = 0;
-          // paymentData.value.payment_reference = ""
-        },
-        preserveScroll: true
-      }
-    );
-
-  } catch (error: unknown) {
-    errorPaymentMethod.value = error;
-  }
-};
-
-
 const afterRefundAll = () => {
   if (_refComponents.value.items_in_process) {
     _refComponents.value.items_in_process.reloadForm();
   }
 };
 
-
-watch(paymentData, () => {
-  if (errorPaymentMethod.value) {
-    errorPaymentMethod.value = null;
-  }
-});
 
 // Tax number validation helper functions
 const getStatusIcon = (status: string, valid: boolean) => {
@@ -286,12 +190,12 @@ const getStatusColor = (status: string, valid: boolean) => {
 
 const taxNumberStatusText = computed(() => {
     if (props.original_invoice.tax_number_status === 'invalid' || !props.original_invoice.tax_number_valid) {
-        return trans('Invalid')
+        return ctrans('Invalid')
     }
     if (props.original_invoice.tax_number_status === 'valid' || props.original_invoice.tax_number_valid) {
-        return trans('Valid')
+        return ctrans('Valid')
     }
-    return trans('Pending')
+    return ctrans('Pending')
 })
 
 // Method: get Invoice route
@@ -391,8 +295,8 @@ const getInvoiceRoute = () => {
 
       <!-- Field: Customer name -->
       <dl v-if="original_invoice?.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-        <dt v-tooltip="trans('Customer name')" class="flex-none">
-          <span class="sr-only">{{trans('Customer name')}}</span>
+        <dt v-tooltip="ctrans('Customer name')" class="flex-none">
+          <span class="sr-only">{{ctrans('Customer name')}}</span>
           <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500">{{ original_invoice?.name }}</dd>
@@ -428,7 +332,7 @@ const getInvoiceRoute = () => {
       </dl>
 
       <dl v-if="original_invoice?.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
-        <dt v-tooltip="trans('Tax Number')" class="flex-none">
+        <dt v-tooltip="ctrans('Tax Number')" class="flex-none">
           <span class="sr-only">Tax Number</span>
           <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
@@ -465,7 +369,7 @@ const getInvoiceRoute = () => {
       <div class="mt-1">
 
       <!-- Refund Date -->
-      <dl v-tooltip="trans('Refund created')" class="flex items-center w-fit flex-none gap-x-2">
+      <dl v-tooltip="ctrans('Refund created')" class="flex items-center w-fit flex-none gap-x-2">
         <dt class="flex-none">
           <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500" />
         </dt>
@@ -476,7 +380,7 @@ const getInvoiceRoute = () => {
 
 
         <!-- Section: Order -->
-        <dl v-if="original_order" v-tooltip="trans('Order')" class="flex items-center w-fit flex-none gap-x-2 my-2">
+        <dl v-if="original_order" v-tooltip="ctrans('Order')" class="flex items-center w-fit flex-none gap-x-2 my-2">
             <dt class="flex-none">
                 <FontAwesomeIcon :icon="faShoppingCart" fixed-width aria-hidden="true" class="text-gray-500" />
             </dt>
@@ -493,15 +397,15 @@ const getInvoiceRoute = () => {
         <!-- Credit transaction (standalone credit note settled on the customer balance) -->
         <dl v-if="credit_transaction" class="flex flex-col w-fit gap-y-1 my-2 text-base text-gray-500">
             <Link class="primaryLink w-fit" :href="route(credit_transaction.route.name, credit_transaction.route.parameters)">
-                {{ trans('Settled on customer balance') }} {{ useFormatTime(credit_transaction.date) }}
+                {{ ctrans('Settled on customer balance') }} {{ useFormatTime(credit_transaction.date) }}
             </Link>
-            <div v-if="credit_transaction.requested_by">{{ trans('Requested by') }}: {{ credit_transaction.requested_by }}</div>
-            <div v-if="credit_transaction.applied_by">{{ trans('Applied by') }}: {{ credit_transaction.applied_by }}</div>
+            <div v-if="credit_transaction.requested_by">{{ ctrans('Requested by') }}: {{ credit_transaction.requested_by }}</div>
+            <div v-if="credit_transaction.applied_by">{{ ctrans('Applied by') }}: {{ credit_transaction.applied_by }}</div>
             <div v-if="credit_transaction.notes" class="italic">{{ credit_transaction.notes }}</div>
         </dl>
 
         <!-- Invoice -->
-        <dl v-if="original_invoice" v-tooltip="trans('Invoice')" class="flex items-center w-fit flex-none gap-x-2 my-2">
+        <dl v-if="original_invoice" v-tooltip="ctrans('Invoice')" class="flex items-center w-fit flex-none gap-x-2 my-2">
             <dt class="flex-none">
                 <FontAwesomeIcon :icon="faFileInvoiceDollar" fixed-width aria-hidden="true" class="text-gray-500" />
             </dt>
@@ -543,69 +447,4 @@ const getInvoiceRoute = () => {
 
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
   <component :is="component" :data="props[currentTab]" :tab="currentTab" :ref="(e) => _refComponents[currentTab] = e" :is_tax_only="is_tax_only" />
-
-  <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
-    <div class="isolate bg-white px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl text-center">
-        <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Refund Payment") }}</h2>
-        <p class="text-xs leading-5 text-gray-400">
-          {{ trans("Fill the information about refund payment") }}
-        </p>
-      </div>
-
-      <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-        <div class="col-span-2">
-          <label for="first-name" class="block text-sm font-medium leading-6">
-            <span class="text-red-500">*</span> {{ trans("Select payment method") }}
-          </label>
-          <div class="mt-1 grid grid-cols-2 gap-x-3">
-            <div @click="() => paymentData.payment_method = item.value" v-for="item in listPaymentRefund"
-              :key="item.value"
-              class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
-              :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'">
-              {{ item.label }}
-            </div>
-          </div>
-        </div>
-
-        <Transition name="slide-to-left">
-          <div v-if="paymentData.payment_method === 'invoice_payment_method'" class="col-span-2">
-            <label for="first-name" class="block text-sm font-medium leading-6">
-              <span class="text-red-500">*</span> {{ trans("Select payment account") }}
-            </label>
-            <div class="mt-1">
-              <PureMultiselect v-model="paymentData.payment_account" :options="listPaymentMethod" label="name"
-                valueProp="id" required caret />
-            </div>
-          </div>
-        </Transition>
-
-        <div class="col-span-2">
-          <label for="last-name" class="block text-sm font-medium leading-6">{{ trans("Amount to refund") }}</label>
-          <div class="mt-1">
-            <PureInputNumber v-model="paymentData.payment_amount" />
-          </div>
-          <div class="space-x-1 mt-1 ">
-            <span class="text-sm  text-gray-500">{{ trans("Need to refund") }}: {{
-              locale.currencyFormat(props.invoice_refund.currency_code,
-              Math.abs(Number(box_stats.information.pay_amount))) }}</span>
-            <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)"
-              :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary"
-              :label="trans('Refund all')" size="sm" />
-          </div>
-        </div>
-
-
-      </div>
-
-      <div class="mt-6 mb-4 relative">
-        <Button @click="() => onSubmitPayment()" label="Submit"
-          :disabled="paymentData.payment_method === 'credit_balance' ? false : !(!!paymentData.payment_account)"
-          :loading="isLoadingPayment" full />
-        <Transition name="spin-to-down">
-          <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
-        </Transition>
-      </div>
-    </div>
-  </Modal>
 </template>

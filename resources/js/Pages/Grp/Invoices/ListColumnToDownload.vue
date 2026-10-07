@@ -14,6 +14,8 @@ const props = defineProps<{
     }[]
 }>()
 
+const inEnglish = ref(false)
+
 const selectedCheck = ref<string[]>((props.listColumn || []).map(check => check.is_checked ? check.value : null).filter(Boolean) as string[])
 
 const compSelectedDeck = computed(() => {
@@ -24,7 +26,7 @@ const compSelectedDeck = computed(() => {
 
     if (!props.routeDownload) return '#'
 
-    return route(props.routeDownload?.name, { ...props.routeDownload?.parameters, ...xxx })
+    return route(props.routeDownload?.name, { ...props.routeDownload?.parameters, ...xxx, ...(inEnglish.value ? { lang: 'en' } : {}) })
 })
 </script>
 
@@ -41,6 +43,10 @@ const compSelectedDeck = computed(() => {
             <div v-for="check of (props.listColumn || [])" :key="check.value" class="flex items-center gap-2">
                 <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
                 <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+            </div>
+            <div class="flex items-center gap-2">
+                <Checkbox v-model="inEnglish" inputId="lang_en" name="lang_en" binary />
+                <label for="lang_en" class="cursor-pointer">{{ ctrans("In English") }}</label>
             </div>
         </div>
 

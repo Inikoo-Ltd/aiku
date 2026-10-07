@@ -64,7 +64,7 @@ class ValidateClockingMachineQrCode
                     throw new Exception(__('Location access is required to validate this QR code.'));
                 }
 
-                $this->validateCoordinates($config, $userLat, $userLng);
+                $this->validateCoordinates($clockingMachine, $config, $userLat, $userLng);
             }
 
             StoreQrScanLog::make()->handle(
@@ -213,7 +213,7 @@ class ValidateClockingMachineQrCode
         ];
     }
 
-    private function validateCoordinates(array $config, float $userLat, float $userLng): void
+    private function validateCoordinates(ClockingMachine $clockingMachine, array $config, float $userLat, float $userLng): void
     {
         $targetCoords = $config['coordinates'] ?? null;
         $radius = (float) ($config['radius'] ?? 100);
@@ -232,7 +232,7 @@ class ValidateClockingMachineQrCode
         $distance = $this->calculateDistance($userLat, $userLng, (float)$targetLat, (float)$targetLng);
 
         if ($distance > $radius) {
-            throw new Exception(__('Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.'));
+            throw new Exception(__('This is the :site QR code, and your device reports a location away from :site. Scan the QR code of the site you are at. If you are at :site, enable Precise Location for your browser and try again.', ['site' => $clockingMachine->name]));
         }
     }
 

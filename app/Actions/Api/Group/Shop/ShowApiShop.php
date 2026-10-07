@@ -22,7 +22,7 @@ class ShowApiShop extends OrgAction
         return $request->user()->authTo(
             [
                 'org-supervisor.'.$this->organisation->id,
-                'shops-view'.$this->organisation->id,
+                'shops-view.'.$this->organisation->id,
                 "crm.{$this->shop->id}.view",
                 "accounting.{$this->shop->organisation_id}.view",
                 "products.{$this->shop->id}.view"

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseAndDispatchDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithUnprintedLeafletsGuard;
 
     /**

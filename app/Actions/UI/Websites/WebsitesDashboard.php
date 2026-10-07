@@ -23,6 +23,11 @@ class WebsitesDashboard extends OrgAction
 {
     use AsAction;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function asController(ActionRequest $request): Group
     {
         $this->initialisationFromGroup(group(), $request)->withTab(WebsiteDashboardTabsEnum::values());

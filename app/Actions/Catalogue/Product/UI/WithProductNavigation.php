@@ -32,7 +32,8 @@ trait WithProductNavigation
             return;
         }
 
-        $query->where('shop_id', $product->shop_id);
+        $query->where('shop_id', $product->shop_id)
+            ->where('products.is_main', true);
 
 
         if (in_array($routeName, [

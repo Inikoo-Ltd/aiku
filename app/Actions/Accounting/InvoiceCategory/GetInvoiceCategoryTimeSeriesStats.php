@@ -4,20 +4,26 @@ namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\InvoiceCategory;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetInvoiceCategoryTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null): array
+    /**
+     * @param array<int, array<string, float>> $backlog GetOrderBacklog values by invoice category id, so a category with only a backlog still gets its row
+     */
+    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, bool $includePartners = false, array $backlog = []): array
     {
         $query = InvoiceCategory::query()
-            ->select(['invoice_categories.id', 'invoice_categories.slug', 'invoice_categories.name', 'invoice_categories.state', 'invoice_categories.colour', 'invoice_categories.organisation_id', 'invoice_categories.group_id', 'invoice_categories.currency_id'])
+            ->select(['invoice_categories.id', 'invoice_categories.slug', 'invoice_categories.name', 'invoice_categories.state', 'invoice_categories.colour', 'invoice_categories.organisation_id', 'invoice_categories.group_id', 'invoice_categories.currency_id', 'invoice_categories.type', 'invoice_categories.settings'])
             ->where('invoice_categories.state', InvoiceCategoryStateEnum::ACTIVE)
             ->with([
                 'organisation'          => fn ($q) => $q->select(['id', 'slug', 'code', 'currency_id']),
@@ -41,6 +47,13 @@ class GetInvoiceCategoryTimeSeriesStats
 
         $invoiceCategories = $query->get();
 
+        $shopIds = $invoiceCategories
+            ->filter(fn (InvoiceCategory $invoiceCategory) => $invoiceCategory->type === InvoiceCategoryTypeEnum::SHOP_FALLBACK)
+            ->map(fn (InvoiceCategory $invoiceCategory) => Arr::get($invoiceCategory->settings, 'shop_id'))
+            ->filter()
+            ->unique();
+        $shops = Shop::whereIn('id', $shopIds)->get(['id', 'slug', 'code'])->keyBy('id');
+
         $timeSeriesIds = [];
         $invoiceCategoryToTimeSeriesMap = [];
 
@@ -56,7 +69,7 @@ class GetInvoiceCategoryTimeSeriesStats
         if (!empty($timeSeriesIds)) {
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
-                [
+                CalculateTimeSeriesStats::withPartners([
                     'sales_external'              => 'sales_external',
                     'sales_org_currency_external' => 'sales_org_currency_external',
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
@@ -66,7 +79,7 @@ class GetInvoiceCategoryTimeSeriesStats
                     'invoices'                    => 'invoices',
                     'refunds'                     => 'refunds',
                     'customers_invoiced'          => 'customers_invoiced',
-                ],
+                ], $includePartners),
                 'invoice_category_time_series_records',
                 'invoice_category_time_series_id',
                 $from_date,
@@ -79,13 +92,17 @@ class GetInvoiceCategoryTimeSeriesStats
         $results = [];
         foreach ($invoiceCategories as $invoiceCategory) {
             $timeSeriesId = $invoiceCategoryToTimeSeriesMap[$invoiceCategory->id] ?? null;
-            $stats        = $allStats[$timeSeriesId] ?? [];
+            $stats        = array_merge($allStats[$timeSeriesId] ?? [], $backlog[$invoiceCategory->id] ?? []);
 
             if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
                 continue;
             }
 
+            $shop = $invoiceCategory->type === InvoiceCategoryTypeEnum::SHOP_FALLBACK ? $shops->get(Arr::get($invoiceCategory->settings, 'shop_id')) : null;
+
             $results[] = array_merge($stats, [
+                'shop_slug'                  => $shop?->slug,
+                'shop_code'                  => $shop?->code,
                 'id'                         => $invoiceCategory->id,
                 'slug'                       => $invoiceCategory->slug,
                 'name'                       => $invoiceCategory->name,

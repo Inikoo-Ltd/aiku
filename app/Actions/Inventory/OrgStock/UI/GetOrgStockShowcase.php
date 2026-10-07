@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
@@ -18,8 +19,9 @@ use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
-use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Illuminate\Support\Facades\DB;
 
 class GetOrgStockShowcase
@@ -41,13 +43,15 @@ class GetOrgStockShowcase
             return $a['code'] <=> $b['code'];
         });
 
+        $canEditStock = (bool) request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation));
+
         return collect(
             [
                 'trade_units'        => $dataTradeUnits,
                 'currency_code'      => $orgStock->organisation->currency->code,
                 'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
                 'barcodes'           => GetOrgStockBarcodes::run($orgStock),
-                'barcode_update_route' => [
+                'barcode_update_route' => $canEditStock ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
                     'parameters' => [
                         'organisation' => $warehouse->organisation->slug,
@@ -55,7 +59,7 @@ class GetOrgStockShowcase
                         'orgStock'     => $orgStock->slug,
                     ],
                     'method'     => 'patch',
-                ],
+                ] : null,
                 'label_route'        => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
                     'parameters' => [
@@ -64,14 +68,17 @@ class GetOrgStockShowcase
                         'orgStock'     => $orgStock->slug,
                     ],
                 ],
-                'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
+                'label_options'      => GetOrgStockLabelOptions::run($orgStock),
+                'future_orders'      => $this->getFutureOrders($orgStock),
+                'is_quantity_excess' => in_array(GetOrganisationStockCoverBuckets::make()->bucketOf($orgStock), ['excess', 'dead'], true),
                 'has_no_products'    => $this->hasNoProducts($orgStock),
                 'latest_movements'   => $this->getLatestMovements($orgStock),
                 'stock_history_route' => [
-                    'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes)$/', '', request()->route()->getName()).'.stock_history',
+                    'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes|labels)$/', '', request()->route()->getName()).'.stock_history',
                     'parameters' => request()->route()->originalParameters(),
                 ],
                 'stocks_management'  => [
+                    'can_edit'        => $canEditStock,
                     'routes'          => [
                         'location_route'                         => [
                             'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
@@ -113,6 +120,7 @@ class GetOrgStockShowcase
                         'set_location_as_picking_priority_route' => [],  // TODO
                         'add_parts_location_note'                => [],  // TODO
                     ],
+                    'cover'           => $this->getCover($orgStock),
                     'stock_cost'      => $this->getStockCost($orgStock),
                     'summary'         => [
                         'quantity_in_locations' => [
@@ -148,6 +156,60 @@ class GetOrgStockShowcase
         );
     }
 
+
+    /**
+     * Days of cover and the date the shelf empties at the forecast rate, as
+     * OrgStockHydrateOutOfStockForecast last worked them out.
+     *
+     * @return array{days: int, out_at: ?string, daily_usage: ?float}|null
+     */
+    private function getCover(OrgStock $orgStock): ?array
+    {
+        $stats = $orgStock->stats;
+
+        if (!$stats || $stats->days_of_cover === null) {
+            return null;
+        }
+
+        return [
+            'days'        => (int) $stats->days_of_cover,
+            'out_at'      => $stats->predicted_out_of_stock_at,
+            'daily_usage' => $stats->predicted_daily_usage !== null ? round((float) $stats->predicted_daily_usage, 2) : null,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getFutureOrders(OrgStock $orgStock): array
+    {
+        return collect(GetProductIncomingStock::make()->forOrgStocks([$orgStock->id]))
+            ->map(fn (array $line, int $index) => [
+                'id'                    => $line['type'].':'.$line['reference'].':'.$index,
+                'reference'             => $line['reference'],
+                'supplier_name'         => $line['type'] === 'partner_request' ? null : $line['supplier_name'],
+                'delivery_state_label'  => $line['state_label'],
+                'estimated_received_at' => $line['eta'],
+                'is_estimate'           => $line['is_estimate'],
+                'quantity'              => trimDecimalZeros($line['quantity']),
+                'quantity_fractional'   => $this->getFractionalQuantity($line['quantity'], $orgStock->packed_in),
+                'route'                 => match ($line['type']) {
+                    'purchase_order' => [
+                        'name'       => 'grp.org.procurement.purchase_orders.show',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'purchaseOrder' => $line['slug']],
+                    ],
+                    'stock_delivery' => [
+                        'name'       => 'grp.org.procurement.stock_deliveries.show',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'stockDelivery' => $line['slug']],
+                    ],
+                    default          => [
+                        'name'       => 'grp.org.procurement.org_partners.show.shopping_list.index',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'orgPartner' => $line['org_partner_id']],
+                    ],
+                },
+            ])
+            ->all();
+    }
 
     private function hasNoProducts(OrgStock $orgStock): bool
     {

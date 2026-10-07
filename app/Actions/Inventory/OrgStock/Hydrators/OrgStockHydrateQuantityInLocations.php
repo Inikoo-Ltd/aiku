@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\Hydrators;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Dispatching\FulfilmentGate\ReleaseCoverableOrdersAtGate;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
+use App\Actions\Ordering\PreOrder\AllocatePreOrderStock;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Models\Inventory\OrgStock;
@@ -58,7 +59,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             ->where('locations.is_goods_out', true)
             ->sum('location_org_stocks.quantity');
 
-        $quantityAvailable = $quantityInLocations - $quantityInGoodsOut - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
+        /* Goods that arrived for a pre-order are kept for it while its balance is due (HELP-3432). */
+        $quantityAvailable = $quantityInLocations - $quantityInGoodsOut - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked - $orgStock->quantity_reserved_for_pre_orders;
 
         // The source_ columns mirror Aurora's own reservations and only Aurora's stock
         // locations fetch writes them. Once an organisation runs its stock control in
@@ -85,6 +87,10 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
             if ($quantityAvailable > $oldQuantityAvailable && $orgStock->organisation->hasFulfilmentGate()) {
                 ReleaseCoverableOrdersAtGate::dispatch($orgStock->organisation_id)->delay(5);
+            }
+
+            if ($quantityAvailable > $oldQuantityAvailable && AllocatePreOrderStock::make()->hasWaitingPreOrders($orgStock->id)) {
+                AllocatePreOrderStock::dispatch($orgStock->id)->delay(5);
             }
 
             //            DB::table('debug_stock_updates')->insert([

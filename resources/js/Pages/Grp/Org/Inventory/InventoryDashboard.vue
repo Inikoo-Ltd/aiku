@@ -10,8 +10,8 @@ import FlatTreeMap from "@/Components/Navigation/FlatTreeMap.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Pie } from "vue-chartjs"
-import { trans } from "laravel-vue-i18n"
-import { faBox, faInventory, faSkullCow, faDollarSign, faBan, faClipboardListCheck } from "@fal"
+import { ctrans } from "@/Composables/useTrans"
+import { faBox, faInventory, faSkullCow, faDollarSign, faBan, faClipboardListCheck, faChartNetwork, faBoxesAlt, faBars, faBarcodeRead } from "@fal"
 import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faDollyFlatbedEmpty, faShoppingBasket } from "@fas"
 
 import { capitalize } from "@/Composables/capitalize"
@@ -21,6 +21,8 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import StatsBoxNegativeList from "@/Components/Stats/StatsBoxNegativeList.vue"
+import ActionGauges from "@/Components/Stats/ActionGauges.vue"
+import { ActionGaugeTS } from "@/types/Components/ActionGauge"
 
 library.add(
     faBox,
@@ -34,7 +36,7 @@ library.add(
     faBan,
     faClipboardListCheck,
     faDollyFlatbedEmpty,
-    faShoppingBasket,
+    faShoppingBasket, faChartNetwork, faBoxesAlt, faBars, faBarcodeRead
 )
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
@@ -57,6 +59,7 @@ defineProps<{
             }>
         }>
     }
+    actionGauges?: ActionGaugeTS[]
     statsBox: {}
     additionalStatBox?: {}[]
     stockHistoryToday?: {
@@ -82,7 +85,7 @@ defineProps<{
             parameters: Record<string, string>
         }
     } | null
-    dashboardStats: {
+    dashboardStats?: {
         [key: string]: {
             label: string
             count: number
@@ -126,6 +129,8 @@ const options = {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
 
+    <ActionGauges v-if="actionGauges?.length" :gauges="actionGauges" />
+
     <div v-if="stockHistoryToday" class="px-4 mt-4">
         <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-gray-100 bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden">
             <div
@@ -134,7 +139,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
-                    {{ trans('Stock Value') }}
+                    {{ ctrans('Stock Value') }}
                     <FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryToday.valuation_legend" />
                 </dt>
                 <dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
@@ -147,7 +152,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
-                    {{ trans('Stored SKOs') }}
+                    {{ ctrans('Stored SKOs') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
                     {{ locale.number(stockHistoryToday.number_org_stocks) }}
@@ -159,7 +164,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium">
                     <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
-                    {{ trans('Locations') }}
+                    {{ ctrans('Locations') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">
                     {{ locale.number(stockHistoryToday.number_locations) }}
@@ -171,7 +176,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fas fa-times-circle" class="text-red-400" fixed-width aria-hidden="true" />
-                    {{ trans('Out of Stock') }}
+                    {{ ctrans('Out of Stock') }}
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
                     <span class="text-2xl font-semibold tabular-nums text-red-500">
@@ -179,7 +184,7 @@ const options = {
                     </span>
                     <span
                         class="text-sm font-medium tabular-nums text-red-500"
-                        v-tooltip="trans('Percentage of total SKOs')"
+                        v-tooltip="ctrans('Percentage of total SKOs')"
                     >
                         {{ stockHistoryToday.percentage_out_of_stock }}%
                     </span>
@@ -191,7 +196,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-skull-cow" class="text-red-500" fixed-width aria-hidden="true" />
-                    {{ trans('Dormant 1Y') }}
+                    {{ ctrans('Dormant 1Y') }}
                     <FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryToday.valuation_legend" />
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
@@ -200,7 +205,7 @@ const options = {
                     </span>
                     <span
                         class="text-sm font-medium tabular-nums text-red-500"
-                        v-tooltip="trans('Percentage of total stock value')"
+                        v-tooltip="ctrans('Percentage of total stock value')"
                     >
                         {{ stockHistoryToday.percentage_dormant_1y }}%
                     </span>
@@ -212,7 +217,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-ban" class="text-red-500" fixed-width aria-hidden="true" />
-                    {{ trans('No Sold 1Y') }}
+                    {{ ctrans('No Sold 1Y') }}
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
                     <span class="text-2xl font-semibold tabular-nums text-red-500">
@@ -220,7 +225,7 @@ const options = {
                     </span>
                     <span
                         class="text-sm font-medium tabular-nums text-red-500"
-                        v-tooltip="trans('Percentage of total SKOs')"
+                        v-tooltip="ctrans('Percentage of total SKOs')"
                     >
                         {{ stockHistoryToday.percentage_not_sold_1y }}%
                     </span>
@@ -232,7 +237,7 @@ const options = {
     <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" />
 
     <div class="py-6 px-4">
-        <span class="font-semibold">{{ trans('Inventory') }}</span>
+        <span class="font-semibold">{{ ctrans('Inventory') }}</span>
         <dl class="pt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
             <StatsBox v-for="(stat, index) in statsBox"
                 :key="index"
@@ -242,7 +247,7 @@ const options = {
     </div>
 
     <div v-if="additionalStatBox?.length" class="px-4 pb-6">
-        <span class="font-semibold">{{ trans('Faulty Inventory') }}</span>
+        <span class="font-semibold">{{ ctrans('Faulty Inventory') }}</span>
         <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5 gap-2">
             <StatsBoxNegativeList :stats="additionalStatBox" />
         </div>
@@ -275,7 +280,7 @@ const options = {
                     <div class="flex gap-x-2 items-end">
                         {{ locale.number(stats.count) }}
                         <span class="text-sm font-medium leading-4 text-gray-500">{{
-                            trans("current")
+                            ctrans("current")
                         }}</span>
                     </div>
 

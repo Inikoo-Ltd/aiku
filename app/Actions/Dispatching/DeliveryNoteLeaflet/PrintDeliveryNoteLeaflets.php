@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteLeaflet;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithPrintNode;
 use App\Models\Dispatching\DeliveryNote;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class PrintDeliveryNoteLeaflets extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithPrintNode;
     use WithPrintDeliveryNoteLeaflet;
 

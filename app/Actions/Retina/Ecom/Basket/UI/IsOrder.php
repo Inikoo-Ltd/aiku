@@ -25,7 +25,10 @@ use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Accounting\Invoice;
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Ordering\Transaction;
+use Illuminate\Support\Collection;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Helpers\NaturalLanguage;
@@ -52,19 +55,46 @@ trait IsOrder
             return null;
         }
 
-        $notPickedNet = 0;
-        $items        = DeliveryNoteItem::whereIn('delivery_note_id', $order->deliveryNotes()->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::CANCELLED)->pluck('delivery_notes.id'))
-            ->where('quantity_not_picked', '>', 0)
-            ->with('transaction')
-            ->get();
-        foreach ($items as $item) {
-            $transaction = $item->transaction;
-            if (!$transaction || $transaction->quantity_ordered <= 0) {
-                continue;
-            }
-            $notPickedNet += $item->quantity_not_picked * $transaction->net_amount / $transaction->quantity_ordered;
-        }
-        if ($notPickedNet <= 0) {
+        $deliveryNoteIds = $order->deliveryNotes()->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::CANCELLED)->pluck('delivery_notes.id');
+
+        $partsOfTransactionsWithNotPicked = DB::table('delivery_note_items')
+            ->leftJoin('org_stocks', 'org_stocks.id', 'delivery_note_items.org_stock_id')
+            ->whereIn('delivery_note_items.delivery_note_id', $deliveryNoteIds)
+            ->whereIn(
+                'delivery_note_items.transaction_id',
+                DeliveryNoteItem::whereIn('delivery_note_id', $deliveryNoteIds)->where('quantity_not_picked', '>', 0)->select('transaction_id')
+            )
+            ->get([
+                'delivery_note_items.delivery_note_id',
+                'delivery_note_items.transaction_id',
+                'delivery_note_items.quantity_required',
+                'delivery_note_items.quantity_not_picked',
+                'org_stocks.sku_commercial_value',
+            ]);
+
+        $transactions             = Transaction::whereIn('id', $partsOfTransactionsWithNotPicked->pluck('transaction_id')->unique())->get()->keyBy('id');
+        $generateInvoiceFromOrder = GenerateInvoiceFromOrder::make();
+
+        $notPickedNet = $partsOfTransactionsWithNotPicked
+            ->groupBy(fn ($part) => $part->delivery_note_id.'-'.$part->transaction_id)
+            ->sum(function (Collection $parts) use ($transactions, $generateInvoiceFromOrder) {
+                $transaction = $transactions->get($parts->first()->transaction_id);
+                if (!$transaction) {
+                    return 0;
+                }
+
+                $partsIfEverythingElseIsPicked = $parts->map(fn ($part) => (object)[
+                    'quantity_required'    => $part->quantity_required,
+                    'quantity_picked'      => max(0, $part->quantity_required - $part->quantity_not_picked),
+                    'sku_commercial_value' => $part->sku_commercial_value,
+                ]);
+
+                $pickedFraction = $generateInvoiceFromOrder->getPickedFraction($partsIfEverythingElseIsPicked, $generateInvoiceFromOrder->isIndivisible($transaction));
+
+                return (float)$transaction->net_amount * (1 - $pickedFraction);
+            });
+
+        if ($notPickedNet <= 0.000001) {
             return null;
         }
 
@@ -73,7 +103,7 @@ trait IsOrder
 
         return [
             'amount'          => $amount,
-            'expected_return' => round(max(0, $order->payment_amount - ($totalToPay - $amount)), 2),
+            'expected_return' => round(min($amount, max(0, $order->payment_amount - ($totalToPay - $amount))), 2),
         ];
     }
 
@@ -176,7 +206,7 @@ trait IsOrder
                 $clientRoute
             );
         }
-        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotes     = $order->deliveryNotes->loadMissing('shipments.shipper');
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
@@ -209,7 +239,7 @@ trait IsOrder
                         ]
                     ],
                     'shipper_directive'            => $this->getShipperDirective($deliveryNote),
-                    'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments'                    => ShipmentsResource::collection($deliveryNote->shipments)->resolve(),
                     'shipments_routes'             => [
                         'submit_route' => [
                             'name'       => 'grp.models.delivery_note.shipment.store',
@@ -483,7 +513,7 @@ trait IsOrder
                 'estimated_weight' => $estWeight,
             ],
             'cart_gross_amount'  => $order?->gross_amount ?? 0,
-            'voucher' => GetVoucherData::run($order->offer_voucher_id),
+            'voucher' => GetVoucherData::run($order->offer_voucher_id, $order->customer_id),
             'order_summary' => $orderSummary,
             'currency'      => CurrencyResource::make($order->currency),
             'external_shop' => $order->shop->type == ShopTypeEnum::EXTERNAL ? [

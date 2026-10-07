@@ -6,13 +6,16 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Models\Catalogue\Shop;
+use App\Broadcasting\ChatListChannel;
+use App\Broadcasting\MetaChatSessionChannel;
+use App\Broadcasting\WhatsappCallChannel;
+use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
-use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Ticket;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -68,6 +71,15 @@ Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, i
     return $user->employees()->where('id', $employeeID)->exists();
 });
 
+Broadcast::channel('grp.purchase_order.{purchaseOrderId}', function (User $user, int $purchaseOrderId) {
+    $purchaseOrder = \App\Models\Procurement\PurchaseOrder::find($purchaseOrderId);
+
+    return $purchaseOrder && $user->authTo([
+        'procurement.'.$purchaseOrder->organisation_id.'.view',
+        'supply-chain.view',
+    ]);
+});
+
 Broadcast::channel('grp.production.{productionId}.floor', function (User $user, int $productionId) {
     $production = \App\Models\Production\Production::find($productionId);
 
@@ -91,6 +103,14 @@ Broadcast::channel('grp.org.{organisationId}.production-queues', function (User 
         ]));
 });
 
+Broadcast::channel('grp.shop.{shopId}.new-orders', function (User $user, int $shopId) {
+    return GetUserOrderAlerts::make()->canHear($user, $shopId);
+});
+
+Broadcast::channel('grp.ticket.{ticketId}', function (User $user, int $ticketId) {
+    return Ticket::whereKey($ticketId)->where('group_id', $user->group_id)->visibleTo($user)->exists();
+});
+
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
     return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
 });
@@ -109,6 +129,14 @@ Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $
 
 Broadcast::channel('grp.{groupID}.general', function (User $user, int $groupID) {
     return $user->group_id === $groupID;
+});
+
+Broadcast::channel('grp.{groupID}.devops.ci', function (User $user, int $groupID) {
+    return $user->group_id === $groupID && $user->hasGroupAccess();
+});
+
+Broadcast::channel('grp.{groupID}.devops.servers', function (User $user, int $groupID) {
+    return $user->group_id === $groupID && $user->hasGroupAccess();
 });
 
 Broadcast::channel('grp.{groupID}.mailshots.{mailshotId}', function (User $user, int $groupID, int $mailshotId) {
@@ -211,55 +239,11 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
     return false;
 });
 
-Broadcast::channel('meta-chat-session.{ulid}', function (User $user, string $ulid) {
-    $agent = $user->chatAgent;
+Broadcast::channel('meta-chat-session.{ulid}', MetaChatSessionChannel::class);
 
-    if (!$agent) {
-        return false;
-    }
+Broadcast::channel('chat-list.{shopId}', ChatListChannel::class);
 
-    $shopId = MetaChatSession::where('ulid', $ulid)->value('shop_id');
-
-    if (!$shopId) {
-        return false;
-    }
-
-    $organisationId = Shop::where('id', $shopId)->value('organisation_id');
-
-    return $agent->shopAssignments()
-        ->where(function ($query) use ($shopId, $organisationId) {
-            $query->where('shop_id', $shopId)
-                ->orWhere(function ($orgWide) use ($organisationId) {
-                    $orgWide->whereNull('shop_id')
-                        ->where('organisation_id', $organisationId);
-                });
-        })
-        ->exists();
-});
-
-Broadcast::channel('chat-list.{shopId}', function ($user, string $shopId) {
-    $agent = $user->chatAgent;
-
-    if (!$agent) {
-        return false;
-    }
-
-    $organisationId = Shop::where('id', $shopId)->value('organisation_id');
-
-    $handlesShop = $agent->shopAssignments()
-        ->where(function ($query) use ($shopId, $organisationId) {
-            $query->where('shop_id', $shopId)
-                ->orWhere(function ($orgWide) use ($organisationId) {
-                    $orgWide->whereNull('shop_id')
-                        ->where('organisation_id', $organisationId);
-                });
-        })
-        ->exists();
-
-    return $handlesShop
-        ? ['id' => $user->id, 'name' => $user->contact_name]
-        : false;
-});
+Broadcast::channel('whatsapp-calls.{shopId}', WhatsappCallChannel::class);
 
 Broadcast::channel('website.{websiteId}.analytics', function (User $user, int|string $websiteId) {
     return Website::where('id', $websiteId)->value('group_id') === $user->group_id;

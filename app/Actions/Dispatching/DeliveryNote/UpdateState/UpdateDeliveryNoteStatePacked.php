@@ -8,7 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
 use App\Actions\Dispatching\Packing\StorePacking;
@@ -38,6 +40,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStatePacked extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
     use WithUnprintedLeafletsGuard;
@@ -59,14 +62,18 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
         }
 
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot pack: every insert must be printed first'));
+        }
+
         if (static::hasMissingParcelDimensions($deliveryNote)) {
             throw ValidationException::withMessages([
                 'parcels' => __('Enter the dimensions of every parcel before setting as packed'),
             ]);
         }
 
-        if ($deliveryNote->hasUnprintedLeaflets()) {
-            abort(422, __('Cannot pack: every insert must be printed first'));
+        if ($missingBoxesMessage = DeliveryNoteBoxPackingList::make()->missingBoxesMessage($deliveryNote)) {
+            throw ValidationException::withMessages(['boxes' => $missingBoxesMessage]);
         }
 
         $oldState = $deliveryNote->state;

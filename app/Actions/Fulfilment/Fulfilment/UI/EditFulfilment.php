@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Fulfilment\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
@@ -21,10 +20,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditFulfilment extends OrgAction
 {
+    use WithFulfilmentShopEditAuthorisation;
     public function handle(Fulfilment $fulfilment): Fulfilment
     {
         return $fulfilment;
@@ -168,7 +169,6 @@ class EditFulfilment extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($fulfilment->shop->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                                 'registration_number' => [

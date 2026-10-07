@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\ApiToken;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -20,6 +21,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 
 class DeleteCustomerAccessToken extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     public function handle(PersonalAccessToken $token): void

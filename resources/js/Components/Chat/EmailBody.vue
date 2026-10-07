@@ -9,6 +9,7 @@
  * can be measured. Without scripts that grants the message no reach of its own.
  */
 import { ref, computed, onBeforeUnmount, watch } from "vue"
+import { collapseQuotedEmail } from "@/Composables/collapseQuotedEmail"
 
 const props = defineProps<{ html: string }>()
 
@@ -25,18 +26,45 @@ const document = computed(() => `<!doctype html><html><head><meta charset="utf-8
   table{max-width:100%;}
 </style></head><body>${props.html}</body></html>`)
 
+let zoomedBlocks: HTMLElement[] = []
+
+const fitWideBlocks = (parent: Element) => {
+    const available = parent.clientWidth
+
+    for (const child of Array.from(parent.children) as HTMLElement[]) {
+        const width = child.getBoundingClientRect().width
+
+        if (width > available) {
+            child.style.zoom = String(available / width)
+            zoomedBlocks.push(child)
+        } else if (child.scrollWidth > available) {
+            fitWideBlocks(child)
+        }
+    }
+}
+
 const measure = () => {
     const body = frame.value?.contentDocument?.body
 
-    if (body) {
-        height.value = Math.min(Math.max(body.scrollHeight + 8, 60), 1600)
+    if (!body) {
+        return
     }
+
+    zoomedBlocks.forEach((block) => block.style.zoom = "")
+    zoomedBlocks = []
+    fitWideBlocks(body)
+
+    height.value = Math.min(Math.max(Math.ceil(body.getBoundingClientRect().height) + 8, 60), 1600)
 }
 
 // Images arrive after the frame reports it has loaded, and each one changes the height.
 let observer: ResizeObserver | null = null
 
 const onLoad = () => {
+    if (frame.value?.contentDocument) {
+        collapseQuotedEmail(frame.value.contentDocument)
+    }
+
     measure()
 
     const body = frame.value?.contentDocument?.body

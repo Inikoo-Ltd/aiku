@@ -8,6 +8,7 @@ use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -15,6 +16,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetCustomerChatHistory
 {
     use AsAction;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user() instanceof User;
+    }
 
     public function rules(): array
     {

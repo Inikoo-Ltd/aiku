@@ -19,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetShopifyProducts extends OrgAction
 {
+    use WithRetinaOwnedCustomerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
         $products = GetShopifyListedProducts::run(
@@ -42,6 +44,10 @@ class GetShopifyProducts extends OrgAction
     private function variantToLink(Portfolio $portfolio, array $product): ?string
     {
         $numberVariants = Arr::get($product, 'number_variants', 0);
+
+        if ($numberVariants === 1) {
+            return Arr::get($product, 'sku_list.0') ?: null;
+        }
 
         if ($numberVariants < 2 || $numberVariants >= GetShopifyListedProducts::VARIANTS_READ_PER_PRODUCT) {
             return null;

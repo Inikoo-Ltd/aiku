@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, ref, toRaw, watch, computed } from 'vue'
 import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
@@ -82,8 +82,8 @@ const onAddToAllPortfolios = async (product: ProductResource) => {
         productHasPortfolioList.value = keys
 
         notify({
-            title: trans("Success"),
-            text: trans("Added to all portfolios"),
+            title: ctrans("Success"),
+            text: ctrans("Added to all portfolios"),
             type: "success"
         })
 
@@ -91,8 +91,8 @@ const onAddToAllPortfolios = async (product: ProductResource) => {
     } catch (errors: any) {
         console.error(errors)
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to add to portfolio"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to add to portfolio"),
             type: "error"
         })
     } finally {
@@ -109,7 +109,6 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
     }
 
     const channelId = Number(channel.id)
-    console.log(`Adding product with ID ${product.id} to portfolio for channel ID ${channelId}`)
 
     // Start loading
     isLoadingSpecificChannel.value.push(channelId)
@@ -130,8 +129,8 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
         }
 
         notify({
-            title: trans("Success"),
-            text: trans("Added product :productName", { productName: product.name }),
+            title: ctrans("Success"),
+            text: ctrans("Added product :productName", { productName: product.name }),
             type: "success"
         })
 
@@ -139,8 +138,8 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
     } catch (errors: any) {
         console.error(errors)
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to add to portfolio"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to add to portfolio"),
             type: "error"
         })
     } finally {
@@ -195,7 +194,7 @@ watch(
                 <div class="w-full flex flex-nowrap relative">
 
                     <Button v-if="isInAllChannels"
-                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')"
+                        :label="CheckChannels ? ctrans('Exist on all channels') : ctrans('Exist on some channels')"
                         type="tertiary"
                         disabled
                         class="border-none border-transparent"
@@ -203,7 +202,7 @@ watch(
                         full
                         :iconRight="CheckChannels ? 'fal fa-check-double' : ''"
                     />
-                    <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
+                    <Button v-else @click="() => onAddToAllPortfolios(product)" :label="ctrans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
                         class="border-none border-transparent" full   :injectStyle="buttonStyle"/>
 
@@ -215,7 +214,7 @@ watch(
                     <Popover  ref="_popover">
                         <div class="w-64 relative">
                             <div class="text-sm mb-2">
-                                {{ trans("Add product to a specific channel") }}:
+                                {{ ctrans("Add product to a specific channel") }}:
                             </div>
 
                             <div class="space-y-2">
@@ -250,7 +249,7 @@ watch(
         </div>
 
         <div v-else>
-            <Button :label="trans('Product Discontinued')" type="tertiary" disabled full />
+            <Button :label="ctrans('Product Discontinued')" type="tertiary" disabled full />
         </div>
     </div>
 

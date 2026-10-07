@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ConvertMailshotToBlog extends OrgAction
 {
-    public function handle(Mailshot $mailshot): Webpage
+    public function handle(Mailshot $mailshot, ?int $authorId = null): Webpage
     {
         $pageJson = BeefreeConvertEmailJsonToPageJson::make()->handle($mailshot->organisation, $mailshot);
 
@@ -48,6 +48,7 @@ class ConvertMailshotToBlog extends OrgAction
                 'sub_type'     => WebpageSubTypeEnum::MAILSHOT,
                 'layout_style' => 'Beefree',
                 'fieldValue' =>  $fieldValue,
+                'author_id'    => $authorId,
             ]
         );
 
@@ -58,7 +59,7 @@ class ConvertMailshotToBlog extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($mailshot);
+        return $this->handle($mailshot, $request->user()->id);
     }
 
     public function htmlResponse(Webpage $webpage): RedirectResponse

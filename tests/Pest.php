@@ -63,7 +63,10 @@ $seedFaker = function (): void {
     fake('en_GB')->seed($seed);
 };
 
-uses(TestCase::class)->beforeEach($seedFaker)->in('Feature');
+uses(TestCase::class)->beforeEach(function () use ($seedFaker): void {
+    $seedFaker->call($this);
+    $this->withoutVite();
+})->in('Feature');
 uses(TestCase::class)->beforeEach($seedFaker)->in('Unit');
 uses(TestCase::class)->group('integration')->beforeEach($seedFaker)->in('Integration');
 uses(TestCase::class)->group('browser')->beforeEach($seedFaker)->in('Browser');
@@ -103,6 +106,34 @@ function loadDB(): void
        missing sequence or an empty table - fail here, where the cause is still readable. */
     if ($exitCode !== 0) {
         throw new RuntimeException("Restoring {$databaseName} failed:\n".implode("\n", $output));
+    }
+
+    assertTestDumpHasAllMigrations($databaseName);
+}
+
+/**
+ * Tests run on the restored dump without migrating, so a dump older than the code fails far from
+ * the cause, often inside a catch that swallows the missing column (orders silently not created).
+ */
+function assertTestDumpHasAllMigrations(string $databaseName): void
+{
+    $pdo = new PDO(
+        'pgsql:host='.env('DB_HOST').';port='.env('DB_PORT').';dbname='.$databaseName,
+        env('DB_USERNAME'),
+        env('DB_PASSWORD')
+    );
+
+    $migrationsInDump = $pdo->query('select migration from migrations')->fetchAll(PDO::FETCH_COLUMN);
+    $migrationFiles   = array_map(fn (string $file) => str_replace('.php', '', basename($file)), glob(__DIR__.'/../database/migrations/*.php'));
+
+    $missingMigrations = array_values(array_diff($migrationFiles, $migrationsInDump));
+
+    if ($missingMigrations) {
+        throw new RuntimeException(
+            "tests/datasets/db_dumps/aiku.dump is older than the code, it lacks these migrations:\n"
+            .implode("\n", $missingMigrations)
+            ."\nRegenerate it: PATH=\"/opt/homebrew/opt/postgresql@18/bin:\$PATH\" ./generate_testing_db_dumps.sh php aiku localhost 5432 C"
+        );
     }
 }
 
@@ -317,7 +348,7 @@ function createWarehouse(): Warehouse
  */
 function createCustomer(Shop $shop): Customer
 {
-    $customer = $shop->customers()->first();
+    $customer = $shop->customers()->oldest('id')->first();
     if (!$customer) {
         $customer = StoreCustomer::make()->action(
             $shop,
@@ -589,4 +620,70 @@ function createWebUser(Customer $customer): WebUser
     }
 
     return $webUser;
+}
+
+function createAttachedMedia(string $modelType, int $modelId, string $scope): \App\Models\Helpers\Media
+{
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => test()->organisation->group_id,
+        'ulid'                  => (string) \Illuminate\Support\Str::ulid(),
+        'uuid'                  => (string) \Illuminate\Support\Str::uuid(),
+        'name'                  => $scope,
+        'file_name'             => $scope.'.txt',
+        'mime_type'             => 'text/plain',
+        'disk'                  => 'local',
+        'collection_name'       => 'attachment',
+        'size'                  => 4,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    @mkdir(dirname($media->getPath()), 0777, true);
+    file_put_contents($media->getPath(), 'data');
+    $path        = $media->getPath();
+    $storageRoot = storage_path('app');
+    register_shutdown_function(function () use ($path, $storageRoot) {
+        @unlink($path);
+        for ($directory = dirname($path); $directory !== $storageRoot && @rmdir($directory); $directory = dirname($directory)) {
+        }
+    });
+
+    \Illuminate\Support\Facades\DB::table('model_has_attachments')->insert([
+        'group_id'   => $media->group_id,
+        'model_type' => $modelType,
+        'model_id'   => $modelId,
+        'media_id'   => $media->id,
+        'scope'      => $scope,
+        'data'       => '{}',
+    ]);
+
+    return $media;
+}
+
+/**
+ * Logs the test in as $user holding only $roles; pass the roles it had before to restore them.
+ *
+ * @param array<int, string> $roles
+ */
+function actingAsUserWithRoles(\App\Models\SysAdmin\User $user, array $roles): void
+{
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($roles);
+    \Illuminate\Support\Facades\Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    \Pest\Laravel\actingAs($user->refresh());
+}
+
+/**
+ * A line on a partner shopping list as the seller gets it: added by the buyer and submitted.
+ */
+function submittedPartnerShoppingListItem(\App\Models\Procurement\OrgPartner $orgPartner, \App\Models\Inventory\OrgStock $orgStock, array $modelData): \App\Models\Procurement\PartnerShoppingListItem
+{
+    $draft = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, $modelData);
+    \App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList::make()->action($orgPartner);
+
+    return \App\Models\Procurement\PartnerShoppingListItem::find($draft->id)
+        ?? \App\Models\Procurement\PartnerShoppingListItem::openPartnerLineFor($orgPartner->id, $draft->org_stock_id)->firstOrFail();
 }

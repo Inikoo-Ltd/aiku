@@ -30,6 +30,11 @@ class IndexBarcode extends OrgAction
 {
     private Group $parent;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(['goods.view', 'masters.view']);
+    }
+
     public function handle(Group $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -144,7 +149,15 @@ class IndexBarcode extends OrgAction
                     'title' => $title,
                 ],
                 'actions'   => [
-
+                    $request->user()->authTo('goods.edit') ? [
+                        'type'  => 'button',
+                        'style' => 'create',
+                        'label' => __('Add barcode'),
+                        'route' => [
+                            'name'       => 'grp.trade_units.barcodes.create',
+                            'parameters' => []
+                        ]
+                    ] : false,
                 ]
             ],
             'tabs'                         => [

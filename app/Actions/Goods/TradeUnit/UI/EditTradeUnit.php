@@ -8,18 +8,16 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitEditSections;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\IngredientsResource;
 use App\Actions\Traits\UI\WithBucketNavigation;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
-use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
-use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithComplianceEditing;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 
@@ -28,6 +26,8 @@ class EditTradeUnit extends OrgAction
     use WithBucketNavigation;
 
     use WithGoodsAuthorisation;
+    use WithTradeUnitEditSections;
+    use WithComplianceEditing;
 
 
     public function handle(TradeUnit $tradeUnit): TradeUnit
@@ -141,7 +141,7 @@ class EditTradeUnit extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => $this->complianceOnlyBlueprint([
                         [
                             'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
@@ -214,7 +214,8 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Weight').' ('.__('Shipping').')',
                                     'value' => $tradeUnit->gross_weight,
                                     'bind'  => [
-                                        'suffix' => 'g'
+                                        'suffix'            => 'g',
+                                        'maxFractionDigits' => 0
                                     ]
                                 ],
 //                                'net_weight' => [
@@ -230,7 +231,8 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Weight').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_weight,
                                     'bind'  => [
-                                        'suffix' => 'g'
+                                        'suffix'            => 'g',
+                                        'maxFractionDigits' => 0
                                     ]
                                 ],
                                 'marketing_dimensions' => [
@@ -367,193 +369,14 @@ class EditTradeUnit extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('GPSR (if empty will use Part GPSR)'),
+                            'label'  => __('GPSR'),
                             'icon'   => 'fa-light fa-biohazard',
-                            'fields' => [
-                                'gpsr_manufacturer' => [
-                                    'type'  => 'input',
-                                    'label' => __('Manufacturer'),
-                                    'value' => $tradeUnit->gpsr_manufacturer
-                                ],
-                                'gpsr_eu_responsible' => [
-                                    'type'  => 'input',
-                                    'label' => __('EU Responsible'),
-                                    'value' => $tradeUnit->gpsr_eu_responsible
-                                ],
-                                'gpsr_warnings' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('Warnings'),
-                                    'value' => $tradeUnit->gpsr_warnings
-                                ],
-                                'gpsr_manual' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('How To Use'),
-                                    'value' => $tradeUnit->gpsr_manual
-                                ],
-                                'gpsr_class_category_danger' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('Class & category of danger'),
-                                    'value' => $tradeUnit->gpsr_class_category_danger,
-                                ],
-                                'pictogram_toxic' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Acute Toxicity'),
-                                    'value' => $tradeUnit->pictogram_toxic,
-                                    'suffixImage' => '/hazardIcon/toxic-icon.png'
-                                ],
-                                'pictogram_corrosive' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Corrosive'),
-                                    'value' => $tradeUnit->pictogram_corrosive,
-                                    'suffixImage' => '/hazardIcon/corrosive-icon.png'
-                                ],
-                                'pictogram_explosive' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Explosive'),
-                                    'value' => $tradeUnit->pictogram_explosive,
-                                    'suffixImage' => '/hazardIcon/explosive.jpg'
-                                ],
-                                'pictogram_flammable' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Flammable'),
-                                    'value' => $tradeUnit->pictogram_flammable,
-                                    'suffixImage' => '/hazardIcon/flammable.png'
-                                ],
-                                'pictogram_gas' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Gas Under Pressure'),
-                                    'value' => $tradeUnit->pictogram_gas,
-                                    'suffixImage' => '/hazardIcon/gas.png'
-                                ],
-                                'pictogram_environment' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Hazardous to the Environment'),
-                                    'value' => $tradeUnit->pictogram_environment,
-                                    'suffixImage' => '/hazardIcon/hazard-env.png'
-                                ],
-                                'pictogram_health' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Health Hazard'),
-                                    'value' => $tradeUnit->pictogram_health,
-                                    'suffixImage' => '/hazardIcon/health-hazard.png'
-                                ],
-                                'pictogram_oxidising' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Oxidising'),
-                                    'value' => $tradeUnit->pictogram_oxidising,
-                                    'suffixImage' => '/hazardIcon/oxidising.png'
-                                ],
-                                'pictogram_danger' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Serious Health Hazard'),
-                                    'value' => $tradeUnit->pictogram_danger,
-                                    'suffixImage' => '/hazardIcon/serious-health-hazard.png'
-                                ],
-                            ],
+                            'fields' => $this->getTradeUnitGpsrFields($tradeUnit),
                         ],
                         [
                             'label'  => __('Labeling & Compliance Marks'),
                             'icon'   => 'fa-light fa-stamp',
-                            'fields' => [
-                                'label_info_approved' => [
-                                    'type'               => 'toggle',
-                                    'label'              => __('Publish Regulatory & Label Information'),
-                                    'value'              => data_get($tradeUnit->label_info, 'label_info_approved', false),
-                                    'single_description' => __('Switch on only once all the regulatory and label information below has been checked and completed. While off, the Regulatory & Label Information tab stays hidden on the website.'),
-                                    'saveConfirmation'   => [
-                                        'description' => __('The Regulatory & Label Information tab is only published on the website when every trade unit of a product has been approved.'),
-                                    ],
-                                ],
-                                'markets' => [
-                                    'type'         => 'checkbox',
-                                    'label'        => __('Markets'),
-                                    'mode'         => 'inline',
-                                    'emptyWarning' => __('Markets are shown on the product page. With none selected, the product page may not show market details.'),
-                                    'value'        => TradeUnitMarketEnum::checkboxValue(data_get($tradeUnit->label_info, 'markets')),
-                                ],
-                                'languages' => [
-                                    'type'         => 'select-improved',
-                                    'label'        => __('Languages'),
-                                    'placeholder'  => __('Select languages'),
-                                    'options'      => array_values(array_map(
-                                        fn (array $language) => $language + ['label' => '('.strtoupper($language['code']).') '.$language['name']],
-                                        GetLanguagesOptions::make()->all()
-                                    )),
-                                    'labelProp'    => 'label',
-                                    'valueProp'    => 'code',
-                                    'tagLabelProp' => 'code',
-                                    'tagUppercase' => true,
-                                    'value'        => data_get($tradeUnit->label_info, 'languages', []),
-                                ],
-                                'best_before' => [
-                                    'type'        => 'select-improved',
-                                    'label'       => __('PAO / Expiry Date / Best Before'),
-                                    'placeholder' => __('Select an option'),
-                                    'multiple'    => false,
-                                    'options'     => TradeUnitBestBeforeEnum::options(),
-                                    'labelProp'   => 'label',
-                                    'valueProp'   => 'value',
-                                    'value'       => data_get($tradeUnit->label_info, 'best_before'),
-                                ],
-                                'packaging_material_codes' => [
-                                    'type'             => 'select-improved',
-                                    'label'            => __('Packaging Material Codes'),
-                                    'placeholder'      => __('Select packaging materials'),
-                                    'options'          => TradeUnitPackagingMaterialEnum::options(),
-                                    'labelProp'        => 'label',
-                                    'valueProp'        => 'value',
-                                    'tagLabelProp'     => 'code',
-                                    'enableHideToggle' => true,
-                                    'toggle_value'     => data_get($tradeUnit->label_info, 'packaging_material_codes.show', false),
-                                    'hasOther'         => [
-                                        'name'  => 'packaging_material_codes_show',
-                                        'value' => data_get($tradeUnit->label_info, 'packaging_material_codes.show', false),
-                                    ],
-                                    'value'            => data_get($tradeUnit->label_info, 'packaging_material_codes.value', []),
-                                ],
-                                'batch_number' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Batch Number'),
-                                    'value' => data_get($tradeUnit->label_info, 'batch_number', false),
-                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
-                                ],
-                                'ce_marking' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('CE Markings'),
-                                    'value' => data_get($tradeUnit->label_info, 'ce_marking', false),
-                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
-                                ],
-                                'ukca_marking' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('UKCA Markings'),
-                                    'value' => data_get($tradeUnit->label_info, 'ukca_marking', false),
-                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
-                                ],
-                                'weee_symbol' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('WEEE Symbol'),
-                                    'value' => data_get($tradeUnit->label_info, 'weee_symbol', false),
-                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
-                                ],
-                                'ip_rating' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('IP Rating'),
-                                    'value' => data_get($tradeUnit->label_info, 'ip_rating', false),
-                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
-                                ],
-                                'sorting_recycling_information' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Sorting / Recycling Information'),
-                                    'value' => data_get($tradeUnit->label_info, 'sorting_recycling_information', false),
-                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
-                                ],
-                                'safety_icons' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Safety Icons'),
-                                    'value' => data_get($tradeUnit->label_info, 'safety_icons', false),
-                                    'single_description' => __('Candles only. When enabled, candle safety warning pictograms are shown on the product page'),
-                                ],
-                            ],
+                            'fields' => $this->getTradeUnitLabelInfoFields($tradeUnit->label_info),
                         ],
                         [
                             'label'  => __('Sale Status'),
@@ -569,7 +392,7 @@ class EditTradeUnit extends OrgAction
                                 ],
                             ],
                         ],
-                    ],
+                    ]),
 
 
                     'args' => [

@@ -7,7 +7,8 @@ import { EditorContent } from "@tiptap/vue-3"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import TranslationRating from "@/Components/Forms/Fields/TranslationRating.vue"
 import { faLanguage } from "@far"
 import { faMale } from "@fas"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
@@ -27,6 +28,8 @@ const props = defineProps<{
   fieldData: {
     main?: string
     reviewed?: boolean
+    value?: string
+    review_route?: { name: string; parameters: Record<string, unknown> }
     disable?: boolean
     language_from?: string
     language_to?: string
@@ -47,6 +50,10 @@ const emits = defineEmits()
 const loading = ref(false)
 const key = ref(ulid())
 
+watch(() => props.fieldData.value, () => {
+  key.value = ulid()
+})
+
 
 const languagesTo = ref<Language>(
   Object.values(props.fieldData.languages).find(
@@ -56,6 +63,7 @@ const languagesTo = ref<Language>(
 
 if (typeof props.form[props.fieldName] !== "string") {
   props.form[props.fieldName] = ""
+  props.form.defaults?.(props.fieldName, "")
 }
 
 
@@ -83,10 +91,10 @@ const changeValue = (async () => {
   }).finally(() => {
     isLoadingFollowMaster.value = false;
     let textDisplay = props.fieldData.follow_master ? 
-      trans(':_fieldname will follow master', {_fieldname: capitalizeFirstLetter(props.fieldName)}) 
-      : trans(':_fieldname stops following master', {_fieldname: capitalizeFirstLetter(props.fieldName)});
+      ctrans(':_fieldname will follow master', {_fieldname: capitalizeFirstLetter(props.fieldName)}) 
+      : ctrans(':_fieldname stops following master', {_fieldname: capitalizeFirstLetter(props.fieldName)});
     notify({
-      title: trans('Success'),
+      title: ctrans('Success'),
       text: textDisplay,
       type: 'success'
     })
@@ -103,7 +111,7 @@ const generateTranslateAI = async () => {
         languageFrom: props.fieldData.language_from || "en",
         languageTo: languagesTo.value.code || "en",
       }),
-      { text: props.fieldData.main }
+      { text: props.fieldData.main, catalogue: true }
     )
 
     if (data) {
@@ -112,15 +120,15 @@ const generateTranslateAI = async () => {
       key.value = ulid()
 
       notify({
-        title: trans("Translation Completed"),
-        text: trans("Translation generated successfully."),
+        title: ctrans("Translation Completed"),
+        text: ctrans("Translation generated successfully."),
         type: "success",
       })
     }
   } catch (error: any) {
     notify({
-      title: trans("Translation Error"),
-      text: error.response?.data?.message || trans("Failed to generate translation."),
+      title: ctrans("Translation Error"),
+      text: error.response?.data?.message || ctrans("Failed to generate translation."),
       type: "error",
     })
   } finally {
@@ -149,10 +157,10 @@ const countWords = (value?: string | null) => {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div  v-if="fieldData.show_follow_master" class="px-3 py-1 flex col-span-2 items-end justify-items-center align-middle w-full">
           <span class="align-middle h-full w-full text-end mr-3 font-semibold">
-            {{ trans('Follow Master') }}
+            {{ ctrans('Follow Master') }}
           </span>
           <Toggle
-            v-tooltip="trans('Turning this option on would make it so that this item will follow its master counterpart')"
+            v-tooltip="ctrans('Turning this option on would make it so that this item will follow its master counterpart')"
             :modelValue="fieldData.follow_master"
             @update:modelValue="changeValue()"
             :loading="isLoadingFollowMaster"
@@ -164,7 +172,7 @@ const countWords = (value?: string | null) => {
           <!-- Icon -->
           <div class="h-6 w-6 flex items-center justify-center
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
-            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
+            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="ctrans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
               class="h-3.5 w-3.5" fixed-width />
           </div>
 
@@ -178,7 +186,7 @@ const countWords = (value?: string | null) => {
             v-html="fieldData.main" />
           <div class="h-6 w-6 flex items-center justify-center
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
-            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
+            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="ctrans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
               class="h-3.5 w-3.5" fixed-width />
           </div>
         </div>
@@ -202,9 +210,9 @@ const countWords = (value?: string | null) => {
                 </EditorV2>
               </div>
               <div class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
-                <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
+                <p class="">{{ ctrans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
                 <p class="">
-                  {{ trans('Words') }}:   {{ countWords(form[fieldName]) }}
+                  {{ ctrans('Words') }}:   {{ countWords(form[fieldName]) }}
                 </p>
               </div>
             </div>
@@ -221,13 +229,19 @@ const countWords = (value?: string | null) => {
               rounded-md bg-white hover:bg-gray-300 border
               disabled:opacity-50 disabled:pointer-events-none
               shrink-0 transition mt-0.5" @click="generateTranslateAI" :disabled="isDisabled || loading"
-              v-tooltip="trans('Get translation from AI')"
+              v-tooltip="ctrans('Get translation from AI')"
             >
               <LoadingIcon v-if="loading" class="h-3.5 w-3.5 animate-spin" />
               <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
             </button>
 
           </div>
+          <TranslationRating
+            v-if="fieldData.review_route && !fieldData.reviewed && fieldData.value"
+            class="mt-2"
+            :field="fieldName"
+            :reviewRoute="fieldData.review_route"
+          />
         </div>
       </div>
     </div>

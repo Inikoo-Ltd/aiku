@@ -27,6 +27,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\SalesChannel;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +35,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -142,6 +144,10 @@ class StoreOrder extends OrgAction
             $orderCustomer = $parent->customer;
         }
 
+        if ($this->strict) {
+            $this->ensureNotPartnerOrderToHub($orderCustomer, $shop, Arr::get($modelData, 'sales_channel_id'));
+        }
+
         $isRe = $orderCustomer?->is_re ?? false;
 
 
@@ -161,7 +167,7 @@ class StoreOrder extends OrgAction
                     country: $this->organisation->country,
                     taxNumber: $taxNumber,
                     billingAddress: $billingAddress,
-                    deliveryAddress: $deliveryAddress,
+                    deliveryAddress: $this->isCollection($modelData) && !$taxNumber?->valid && $shop->collectionAddress ? $shop->collectionAddress : $deliveryAddress,
                     isRe: $isRe,
                 )->id
             );
@@ -279,6 +285,45 @@ class StoreOrder extends OrgAction
         return $order->fresh();
     }
 
+    /**
+     * A partner organisation buys from a manufacturing hub only through the shopping list, which places
+     * its orders on the intercompany channel; a normal order from the website or the back office is refused.
+     */
+    public static function isPartnerBuyingFromHub(?Customer $customer, Shop $shop): bool
+    {
+        return $customer?->as_organisation_id && $shop->organisation->is_manufacturing_hub;
+    }
+
+    public static function partnerBuyingFromHubError(Customer $customer, Shop $shop): ValidationException
+    {
+        return ValidationException::withMessages([
+            'customer' => __(':customer orders from :hub only with the shopping list in Procurement', [
+                'customer' => $customer->name,
+                'hub'      => $shop->organisation->name,
+            ]),
+        ]);
+    }
+
+    private function ensureNotPartnerOrderToHub(?Customer $customer, Shop $shop, ?int $salesChannelId): void
+    {
+        if (!self::isPartnerBuyingFromHub($customer, $shop)) {
+            return;
+        }
+
+        if ($salesChannelId && SalesChannel::where('id', $salesChannelId)->where('code', 'intercompany')->exists()) {
+            return;
+        }
+
+        throw self::partnerBuyingFromHubError($customer, $shop);
+    }
+
+    private function isCollection(array $modelData): bool
+    {
+        $handingType = Arr::get($modelData, 'handing_type');
+
+        return ($handingType instanceof OrderHandingTypeEnum ? $handingType : OrderHandingTypeEnum::tryFrom((string)$handingType)) === OrderHandingTypeEnum::COLLECTION;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -304,6 +349,7 @@ class StoreOrder extends OrgAction
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
             'platform_order_id'         => ['sometimes', 'nullable'],
+            'platform_order_created_at' => ['sometimes', 'nullable', 'date'],
             'is_shipping_by_external'   => ['sometimes', 'nullable'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],

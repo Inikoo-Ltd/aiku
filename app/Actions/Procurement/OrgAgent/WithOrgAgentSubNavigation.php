@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\OrgAgent;
 
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Procurement\OrgAgent;
 
 trait WithOrgAgentSubNavigation
@@ -20,7 +21,7 @@ trait WithOrgAgentSubNavigation
                 "label"    => $parent->slug,
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-people-arrows"],
@@ -28,22 +29,24 @@ trait WithOrgAgentSubNavigation
                 ],
                 "isAnchor" => true,
             ],
-            [
-                "label"    => __("Shopping"),
-                "route"    => [
-                    "name"       => "grp.org.procurement.org_agents.show.shopping.dashboard",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+            ...($this->organisation->type === OrganisationTypeEnum::AGENT ? [] : [
+                [
+                    "label"    => __("Shopping"),
+                    "route"    => [
+                        "name"       => "grp.org.procurement.org_agents.show.shopping.dashboard",
+                        "parameters" => [$this->organisation->slug, $parent->slug],
+                    ],
+                    "leftIcon" => [
+                        "icon"    => ["fal", "fa-shopping-basket"],
+                        "tooltip" => __("Shopping"),
+                    ],
                 ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-shopping-basket"],
-                    "tooltip" => __("Shopping"),
-                ],
-            ],
+            ]),
             [
                 "label"    => __("Suppliers"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.suppliers.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-person-dolly"],
@@ -55,7 +58,7 @@ trait WithOrgAgentSubNavigation
                 "label"    => __("Products"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.supplier_products.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-box-usd"],
@@ -67,7 +70,7 @@ trait WithOrgAgentSubNavigation
                 "label"    => __("Purchase Orders"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.purchase-orders.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-clipboard"],
@@ -79,7 +82,7 @@ trait WithOrgAgentSubNavigation
                 "label"    => __("Supplier Purchase Orders"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-clipboard-list"],
@@ -91,7 +94,7 @@ trait WithOrgAgentSubNavigation
                 "label"    => __("Stock Deliveries"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_agents.show.stock-deliveries.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                    "parameters" => [$this->organisation->slug, $parent->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-truck-container"],

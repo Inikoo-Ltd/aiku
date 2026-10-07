@@ -13,17 +13,35 @@ use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StorePartnerStockDeliveryFromDeliveryNote
 {
     use AsAction;
+
+    public function reference(DeliveryNote $deliveryNote, Organisation $buyerOrganisation): string
+    {
+        $isTaken = StockDelivery::where('organisation_id', $buyerOrganisation->id)
+            ->whereRaw('lower(reference) = lower(?)', [$deliveryNote->reference])
+            ->exists();
+
+        if ($isTaken) {
+            return GetSerialReference::run(
+                container: $buyerOrganisation,
+                modelType: SerialReferenceModelEnum::STOCK_DELIVERY
+            );
+        }
+
+        return $deliveryNote->reference;
+    }
 
     public function handle(DeliveryNote $deliveryNote): ?StockDelivery
     {
@@ -39,10 +57,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
         $stockDelivery = StoreStockDelivery::make()->action(
             $orgPartner,
             [
-                'reference'        => GetSerialReference::run(
-                    container: $buyerOrganisation,
-                    modelType: SerialReferenceModelEnum::STOCK_DELIVERY
-                ),
+                'reference'        => $this->reference($deliveryNote, $buyerOrganisation),
                 'state'            => StockDeliveryStateEnum::CONFIRMED,
                 'confirmed_at'     => now(),
                 'date'             => now(),
@@ -51,10 +66,10 @@ class StorePartnerStockDeliveryFromDeliveryNote
             strict: false
         );
 
-        $orderNetAmount     = (float) $order->net_amount;
-        $totalUnitsRequired = (float) $deliveryNote->deliveryNoteItems()->sum('quantity_required');
+        $deliveryNoteItems          = $deliveryNote->deliveryNoteItems()->with(['transaction', 'orgStock'])->get();
+        $unitsRequiredByTransaction = $deliveryNoteItems->groupBy('transaction_id')->map->sum('quantity_required');
 
-        foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+        foreach ($deliveryNoteItems as $deliveryNoteItem) {
             $buyerOrgStock = OrgStock::where('organisation_id', $buyerOrganisation->id)
                 ->where('stock_id', $deliveryNoteItem->orgStock?->stock_id)
                 ->first();
@@ -67,10 +82,10 @@ class StorePartnerStockDeliveryFromDeliveryNote
                 continue;
             }
 
-            $unitQuantity = (float) $deliveryNoteItem->quantity_required;
-            // ponytail: pro-rate order value by units, per-line pricing if transfer pricing ever diverges
-            $netAmount = $totalUnitsRequired > 0
-                ? round($orderNetAmount * $unitQuantity / $totalUnitsRequired, 2)
+            $unitQuantity     = (float) $deliveryNoteItem->quantity_required * (float) ($deliveryNoteItem->orgStock?->packed_in ?: 1);
+            $transactionUnits = (float) $unitsRequiredByTransaction->get($deliveryNoteItem->transaction_id, 0);
+            $netAmount        = $transactionUnits > 0 && $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT
+                ? round((float) $deliveryNoteItem->transaction?->net_amount * (float) $deliveryNoteItem->quantity_required / $transactionUnits, 2)
                 : 0;
 
             StoreStockDeliveryItem::make()->action(
@@ -92,7 +107,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
     public function resolveOrgPartner(DeliveryNote $deliveryNote): ?OrgPartner
     {
         $order = $deliveryNote->orders()->first();
-        if (!$order || $order->salesChannel?->code !== 'intercompany') {
+        if (!$order || $order->source_id || $deliveryNote->source_id) {
             return null;
         }
 

@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
@@ -182,7 +181,6 @@ class CreateReplacementDeliveryNote extends OrgAction
             'address'               => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
                 ]
             ],
             'delivery_address'      => AddressResource::make($deliveryNote->deliveryAddress),
@@ -195,7 +193,6 @@ class CreateReplacementDeliveryNote extends OrgAction
                 'address'      => [
                     'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
                     ]
                 ]
             ],
@@ -240,7 +237,6 @@ class CreateReplacementDeliveryNote extends OrgAction
             'address' => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
                 ]
             ],
 

@@ -6,7 +6,6 @@ import {
 } from '@headlessui/vue'
 
 import { getStyles } from '@/Composables/styles'
-import { trans } from 'laravel-vue-i18n'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlus, faMinus } from '@fas'

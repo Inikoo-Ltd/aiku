@@ -9,15 +9,19 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
+use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\ArtefactLabel;
@@ -44,6 +48,10 @@ class IndexPartnerShippingList extends OrgAction
 
     private int $hitchhikerCount = 0;
 
+    private bool $ignorePipeline = false;
+
+    private int $pipelineCount = 0;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo([
@@ -59,6 +67,7 @@ class IndexPartnerShippingList extends OrgAction
     public function handle(Organisation $seller): LengthAwarePaginator
     {
         $this->showHitchhikers = request()->boolean('hitchhikers');
+        $this->ignorePipeline  = request()->boolean('ignore_pipeline');
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -131,13 +140,9 @@ class IndexPartnerShippingList extends OrgAction
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
             })
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
-            ->whereNull('partner_shopping_list_items.pre_picked_at')
-            ->where(function ($query) {
-                $query->whereNotNull('partner_shopping_list_items.job_order_id')
-                    ->orWhereNull('partner_shopping_list_items.partner_organisation_id')
-                    ->orWhereRaw('coalesce(org_stocks.quantity_available, 0) <= 0');
-            });
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN);
+
+        PartnerShoppingListItem::whereRoutedToProduction($queryBuilder->getEloquentBuilder());
 
         if ($this->groupBy) {
             $queryBuilder->whereNotNull('artefacts.id');
@@ -152,7 +157,7 @@ class IndexPartnerShippingList extends OrgAction
         }
 
 
-        return $queryBuilder
+        $queryBuilder
             ->select([
                 'partner_shopping_list_items.id',
                 'partner_shopping_list_items.job_order_id',
@@ -169,8 +174,10 @@ class IndexPartnerShippingList extends OrgAction
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
                 'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
+                DB::raw(PartnerShoppingListItem::promisedNotStagedSql((string) $seller->id, 'stocks.id').' as stock_promised'),
                 DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
                 DB::raw('coalesce(customer_demand.lines, 0) as customer_demand_lines'),
                 'stocks.code as stock_code',
@@ -185,14 +192,20 @@ class IndexPartnerShippingList extends OrgAction
                 'job_orders.slug as job_order_slug',
                 'job_orders.state as job_order_state',
                 'job_order_artisans.contact_name as job_order_artisan',
+                DB::raw("(select json_agg(json_build_object('artisan', sub_job_artisans.contact_name, 'quantity', job_order_items.quantity) order by job_order_items.id) from job_order_items left join employees as sub_job_artisans on sub_job_artisans.id = job_order_items.employee_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_sub_jobs"),
                 DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
                 DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_item_tasks.state = 'in_progress') as is_in_progress"),
                 DB::raw("(select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as is_finished"),
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
-            ->withPaginator(null, $this->groupBy === 'mixes' ? 1 : ($this->groupBy ? 10000 : null), tableName: request()->route()->getName())
+            ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at']);
+
+        $paginator = $this->groupBy && $this->groupBy !== 'mixes'
+            ? $queryBuilder->paginate(perPage: 10000)
+            : $queryBuilder->withPaginator(null, $this->groupBy === 'mixes' ? 1 : null, tableName: request()->route()->getName());
+
+        return $paginator
             ->withQueryString()
             ->through(function ($item) {
                 $item->job_units = BatchedUnitsForDemand::run(
@@ -200,6 +213,14 @@ class IndexPartnerShippingList extends OrgAction
                     $item->packed_in,
                     $item->batch_size
                 );
+                $subJobs              = collect(json_decode($item->job_order_sub_jobs ?? '[]', true));
+                $item->job_order_sub_jobs = $subJobs->count() > 1
+                    ? $subJobs->values()->map(fn (array $subJob, int $index) => [
+                        'reference' => $item->job_order_reference.'-'.chr(65 + $index),
+                        'artisan'   => $subJob['artisan'],
+                        'quantity'  => (float) $subJob['quantity'],
+                    ])->all()
+                    : [];
                 $item->order_quantum  = BatchedUnitsForDemand::make()->quantumInSkos($item->packed_in, $item->batch_size);
                 $item->is_hitchhiker  = !$item->job_order_id
                     && $item->order_quantum > 1
@@ -367,16 +388,18 @@ class IndexPartnerShippingList extends OrgAction
             $preparingItems->concat($backlogItems)->pluck('artefact_id')->filter()->unique()->values()->all()
         );
 
+        $this->markSurplusInPipeline($backlogItems);
+
         $backlogItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $this->getBatchCode($item);
+            $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
         });
 
         $preparingItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $this->getBatchCode($item);
+            $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
         });
@@ -388,8 +411,45 @@ class IndexPartnerShippingList extends OrgAction
     }
 
     /**
+     * Oldest backlog lines claim the surplus first, the same order booking in fulfils them.
+     */
+    private function markSurplusInPipeline(Collection $backlogItems): void
+    {
+        if ($this->ignorePipeline) {
+            return;
+        }
+
+        $surplus = GetProductionSurplusInPipeline::run($backlogItems->pluck('org_stock_id')->filter()->unique()->values()->all());
+
+        $backlogItems->sortBy(fn ($item) => [$item->created_at, $item->id])->each(function ($item) use (&$surplus) {
+            $row = $surplus[$item->org_stock_id] ?? null;
+            if (!$row) {
+                return;
+            }
+
+            $needed         = (float) $item->quantity;
+            $pendingBooking = min($needed, $row['pending_booking']);
+            $inProduction   = min($needed - $pendingBooking, $row['in_production']);
+
+            if ($pendingBooking + $inProduction <= 0) {
+                return;
+            }
+
+            $surplus[$item->org_stock_id]['pending_booking'] -= $pendingBooking;
+            $surplus[$item->org_stock_id]['in_production']   -= $inProduction;
+
+            $item->pipeline = [
+                'pending_booking' => round($pendingBooking, 3),
+                'in_production'   => round($inProduction, 3),
+                'job_orders'      => $row['job_orders'],
+            ];
+            $this->pipelineCount++;
+        });
+    }
+
+    /**
      * @param  array<int, int>  $artefactIds
-     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, batch_code: string|null, expiry_date: string|null, pdf_url: string}>>
+     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, run_sources: array<int, string>, expiry_date: string|null, pdf_url: string}>>
      */
     public function getPublishedLabelsByArtefact(array $artefactIds): Collection
     {
@@ -406,26 +466,11 @@ class IndexPartnerShippingList extends OrgAction
                 'id'          => $label->id,
                 'artefact_id' => $label->artefact_id,
                 'name'        => $label->name,
-                'batch_code'  => $this->getPrintedText($label, 'batch_code'),
+                'run_sources' => DownloadArtefactLabelPdf::getRunSources($label),
                 'expiry_date' => $this->getPrintedText($label, 'expiry_date'),
                 'pdf_url'     => route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id]),
             ])
             ->groupBy('artefact_id');
-    }
-
-    /**
-     * The batch code the artisan should mark the run with. What was typed when the run was prepared
-     * wins, then a published label that prints one, because the board must never contradict the
-     * sheet coming out of the printer. Nothing is invented when neither exists: the batch is named
-     * after the job order once it is made, and showing a guess here would name it twice.
-     */
-    private function getBatchCode(object $item): ?string
-    {
-        if ($item->run_batch_code) {
-            return $item->run_batch_code;
-        }
-
-        return collect($item->published_labels)->pluck('batch_code')->filter()->first();
     }
 
     private function getPrintedText(ArtefactLabel $label, string $source): ?string
@@ -465,6 +510,59 @@ class IndexPartnerShippingList extends OrgAction
     private function getRunExpiryDate(object $item): ?string
     {
         return $item->run_expiry_date ? Carbon::parse($item->run_expiry_date)->format('Y-m-d') : null;
+    }
+
+    /**
+     * What the Create job order form offers: every product this factory makes, with what the
+     * planner should see before adding it (stock on hand, lines already on the board). Only
+     * loaded when the form opens, the list runs to thousands.
+     *
+     * @return array{reasons: array<int, string>, artefacts: array<int, array<string, mixed>>}
+     */
+    public function getManualJobOrderOptions(): array
+    {
+        $onBoard = DB::table('partner_shopping_list_items')
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->where('partner_organisation_id', $this->organisation->id)
+                    ->orWhere(function ($query) {
+                        $query->whereNull('partner_organisation_id')->where('organisation_id', $this->organisation->id);
+                    });
+            })
+            ->groupBy('stock_id')
+            ->select('stock_id', DB::raw('count(*) as lines'));
+
+        return [
+            'reasons'   => StoreManualJobOrder::REASONS,
+            'artefacts' => DB::table('artefacts')
+                ->join('org_stocks', 'org_stocks.id', 'artefacts.org_stock_id')
+                ->join('stocks', 'stocks.id', 'org_stocks.stock_id')
+                ->leftJoinSub($onBoard, 'on_board', 'on_board.stock_id', 'org_stocks.stock_id')
+                ->where('artefacts.production_id', $this->production->id)
+                ->whereNull('artefacts.deleted_at')
+                ->where('artefacts.state', '!=', ArtefactStateEnum::DORMANT->value)
+                ->orderBy('artefacts.code')
+                ->get([
+                    'artefacts.id',
+                    'artefacts.code',
+                    'artefacts.name',
+                    'org_stocks.packed_in',
+                    'org_stocks.quantity_available as stock_available',
+                    'stocks.gross_weight',
+                    DB::raw('coalesce(on_board.lines, 0) as on_board'),
+                ])
+                ->map(fn ($artefact) => [
+                    'id'              => $artefact->id,
+                    'code'            => $artefact->code,
+                    'name'            => $artefact->name,
+                    'packed_in'       => $artefact->packed_in ? (float) $artefact->packed_in : null,
+                    'stock_available' => $artefact->stock_available !== null ? (float) $artefact->stock_available : null,
+                    'gross_weight'    => $artefact->gross_weight ? (int) $artefact->gross_weight : null,
+                    'on_board'        => (int) $artefact->on_board,
+                ])
+                ->all(),
+        ];
     }
 
     /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
@@ -541,9 +639,15 @@ class IndexPartnerShippingList extends OrgAction
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],
+                'pipeline'     => ['count' => $this->pipelineCount, 'ignoring' => $this->ignorePipeline],
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,
+                'manualJobOrder' => Inertia::optional(fn () => $this->getManualJobOrderOptions()),
+                'canCreateJobOrder' => $request->user()->authTo([
+                    'org-supervisor.'.$this->organisation->id,
+                    "productions_operations.{$this->production->id}.orchestrate",
+                ]),
             ]
         )->table($this->tableStructure());
     }

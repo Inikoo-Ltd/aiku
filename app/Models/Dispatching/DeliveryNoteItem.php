@@ -94,6 +94,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $composition_dirty_at The SKU composition changed after picking work was done, a human must roll back or confirm
  * @property numeric|null $composition_dirty_quantity_required What quantity_required would be under the new composition
  * @property bool $is_dirty
+ * @property array<array-key, mixed>|null $boxes [{box, quantity}] parcel numbers the picked quantity was packed in, for box packing lists
  * @property-read \App\Models\Dispatching\BatchCode|null $batchCode
  * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \App\Models\SysAdmin\Group|null $group
@@ -118,6 +119,7 @@ class DeliveryNoteItem extends Model
 
     protected $casts = [
         'data'         => 'array',
+        'boxes'        => 'array',
         'state'        => DeliveryNoteItemStateEnum::class,
         'sales_type'   => DeliveryNoteItemSalesTypeEnum::class,
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,

@@ -148,25 +148,36 @@ class WixCatalogV1 implements WixCatalog
 
     public function setInventory(string $productId, int $quantity): array
     {
-        $inventoryItemId = Arr::get($this->wixUser->makeApiRequest('POST', '/stores/v2/inventoryItems/query', [
+        $inventoryItem = Arr::get($this->wixUser->makeApiRequest('POST', '/stores/v2/inventoryItems/query', [
             'query' => [
                 'filter' => json_encode(['productId' => ['$eq' => $productId]]),
                 'paging' => ['limit' => 1, 'offset' => 0],
             ],
-        ]), 'inventoryItems.0.id');
+        ]), 'inventoryItems.0');
+
+        $inventoryItemId = Arr::get($inventoryItem, 'id');
 
         if (!$inventoryItemId) {
             return ['message' => 'Wix inventory item not found for product '.$productId];
         }
 
+        $variantIds = collect(Arr::get($inventoryItem, 'variants', []))
+            ->pluck('variantId')
+            ->filter()
+            ->all();
+
+        if (!$variantIds) {
+            $variantIds = ['00000000-0000-0000-0000-000000000000'];
+        }
+
         return $this->wixUser->makeApiRequest('PATCH', "/stores/v2/inventoryItems/$inventoryItemId", [
             'inventoryItem' => [
                 'trackQuantity' => true,
-                'variants'      => [[
-                    'variantId' => '00000000-0000-0000-0000-000000000000',
+                'variants'      => collect($variantIds)->map(fn ($variantId) => [
+                    'variantId' => $variantId,
                     'inStock'   => $quantity > 0,
                     'quantity'  => $quantity,
-                ]],
+                ])->all(),
             ],
         ]);
     }

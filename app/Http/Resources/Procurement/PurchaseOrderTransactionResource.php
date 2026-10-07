@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -21,25 +22,37 @@ class PurchaseOrderTransactionResource extends JsonResource
         $transaction = $this->resource;
 
         $supplierProduct = $transaction->supplierProduct;
-        $tradeUnit       = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+        $orgStock        = $transaction->orgStock;
+        $tradeUnit       = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
 
         return [
             'id'                   => $transaction->id,
             'slug'                 => $supplierProduct?->slug,
-            'code'                 => $supplierProduct?->code,
-            'name'                 => $supplierProduct?->name,
+            'code'                 => $supplierProduct?->code ?? $orgStock?->code,
+            'name'                 => $supplierProduct?->name ?? $orgStock?->name,
             'supplier_name'        => $supplierProduct?->supplier?->name,
             'supplier_slug'        => $transaction->orgSupplierProduct?->orgSupplier?->slug,
             'org_stock_id'         => $transaction->org_stock_id,
-            'image_thumbnail'      => $tradeUnit?->imageSources(64, 64),
+            'image_thumbnail'      => $tradeUnit?->imageSources(160, 160),
+            'image_preview'        => $tradeUnit?->imageSources(480, 480),
+            'stock_in_locations'   => $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations),
+            'quarterly_usage'      => $transaction->quarterly_usage ?? [],
+            'stock_cover'          => $transaction->buying_signals ?? GetOrgStockBuyingSignals::run($orgStock, $supplierProduct),
+            'stock_deliveries'     => $transaction->stock_deliveries,
+            'other_open_purchase_orders' => $transaction->other_open_purchase_orders ?? [],
+            'partner_stock'        => $transaction->partner_stock?->stock === null ? null : (float) $transaction->partner_stock->stock,
+            'partner_units_per_carton' => $transaction->partner_stock?->units_per_carton,
+            'hub_name'             => $transaction->partner_stock?->hub_name,
 
-            'unit_cost'            => $supplierProduct?->cost,
-            'units_per_pack'       => $supplierProduct?->units_per_pack,
-            'units_per_carton'     => $supplierProduct?->units_per_carton,
+            'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
+            'supplier_unit_cost'   => $supplierProduct?->cost,
+            'can_update_supplier_cost' => $supplierProduct !== null && $request->user()?->authTo('supply-chain.edit'),
+            'units_per_pack'       => $supplierProduct ? $supplierProduct->units_per_pack : $orgStock?->packed_in,
+            'units_per_carton'     => $supplierProduct ? $supplierProduct->units_per_carton : $orgStock?->packed_in,
             'quantity_ordered'     => $transaction->quantity_ordered,
 
             'net_amount'           => $transaction->net_amount,
-            'net_currency'         => $supplierProduct?->currency?->code,
+            'net_currency'         => $transaction->purchaseOrder?->currency?->code ?? $supplierProduct?->currency?->code,
             'org_net_amount'       => $transaction->org_net_amount,
             'org_currency'         => $transaction->organisation?->currency?->code,
             'org_exchange'         => $transaction->org_exchange,
@@ -71,7 +84,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'delete',
             ],
-            'cancelRoute'          => $transaction->state === PurchaseOrderTransactionStateEnum::SUBMITTED ? [
+            'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'       => 'grp.models.purchase-order.transaction.cancel',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -80,5 +93,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
         ];
+    }
+
+    private function isCancellable(PurchaseOrderTransaction $transaction): bool
+    {
+        return match ($transaction->state) {
+            PurchaseOrderTransactionStateEnum::SUBMITTED => true,
+            PurchaseOrderTransactionStateEnum::CONFIRMED => !$transaction->is_on_delivery,
+            default => false,
+        };
     }
 }

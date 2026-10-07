@@ -4,20 +4,23 @@ import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
+import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
+import NewEmailChatDialog from "@/Components/Chat/NewEmailChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye } from "@fal"
+import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -39,6 +42,7 @@ const props = defineProps<{
         slug: string
         type: string | null
         is_read_only?: boolean
+        can_start_email?: boolean
         channels: Array<{
             key: string
             name: string
@@ -58,6 +62,7 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
+const isEmbedded = inject("isEmbedded", false)
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout.user?.id
 
@@ -101,25 +106,20 @@ const toggleStatus = (status: ChatStatus) => {
 // The status capsules count exactly the squares that are on.
 const ZERO_TALLY = { waiting: 0, active: 0, closed: 0, mine: 0, colleagues: 0, closed_mine: 0, closed_colleagues: 0 }
 
-// Which shop's squares each capsule counts. One shop is the squares that are on; several shops
-// is every channel on each of them, which is what the list is showing.
+// The capsules count the squares that are on, on every shop that is on: the same pairs the
+// list is filtered by, so a capsule never promises a chat the list cannot show.
 const countedTallies = computed(() => {
-    if (selectedShopIds.value.length > 1) {
-        return selectedShopIds.value.flatMap((shopId) => {
-            const inbox = props.inboxes?.find((i) => i.id === shopId)
+    const inboxes = selectedShopIds.value.length > 1
+        ? selectedShopIds.value.map((shopId) => props.inboxes?.find((i) => i.id === shopId))
+        : [selectedInbox.value]
 
-            return liveChannels(inbox).flatMap((channel) => [
-                inbox?.channels?.find((c) => c.key === channel.key)?.customer,
-                inbox?.channels?.find((c) => c.key === channel.key)?.guest,
-            ])
+    return inboxes.flatMap((inbox) =>
+        selectedCells.value.map((cell) => {
+            const [channelKey, kind] = cell.split(":") as [string, ChatKind]
+
+            return inbox?.channels?.find((c) => c.key === channelKey && c.available !== false)?.[kind]
         })
-    }
-
-    return selectedCells.value.map((cell) => {
-        const [channelKey, kind] = cell.split(":") as [string, ChatKind]
-
-        return selectedInbox.value?.channels?.find((c) => c.key === channelKey)?.[kind]
-    })
+    )
 })
 
 const selectedChannelCounts = computed(() =>
@@ -168,6 +168,38 @@ const statusCapsules = computed(() =>
 
 const onlyClosed = computed(() => selectedStatuses.value.length === 1 && selectedStatuses.value[0] === "closed")
 
+// Closed conversations are kept forever, so the list has to say how far back it reaches. Today
+// is what the capsule counts and what the queue means by closed; the longer periods are
+// somebody going back through the history, which is the same pair the tickets board uses.
+const closedPeriods: { key: string; label: string }[] = [
+    { key: "today", label: ctrans("Today") },
+    { key: "24h", label: ctrans("24h") },
+    { key: "1w", label: ctrans("1 week") },
+    { key: "1m", label: ctrans("1 month") },
+    { key: "1y", label: ctrans("1 year") },
+    { key: "all", label: ctrans("All") },
+]
+
+const closedPeriod = ref("today")
+
+const setClosedPeriod = (period: string) => {
+    closedPeriod.value = period
+    afterSelectionChanged()
+}
+
+const dsKinds: { key: "" | "integration" | "documents"; label: string }[] = [
+    { key: "", label: ctrans("All") },
+    { key: "integration", label: ctrans("Integration") },
+    { key: "documents", label: ctrans("Documents") },
+]
+
+const dsKind = ref<"" | "integration" | "documents">("")
+
+const setDsKind = (kind: "" | "integration" | "documents") => {
+    dsKind.value = kind
+    afterSelectionChanged()
+}
+
 // Nobody is waiting on a colleague's chat, so the team view drops that state and keeps
 // whatever else was picked, falling back to active rather than to nothing.
 const dropWaitingInTeamView = (): boolean => {
@@ -185,11 +217,19 @@ const rubbishView = ref(false)
 const trashView = ref(false)
 const highlightView = ref(false)
 
-// Nobody has taken these, past the time agreed for their channel. The group's queue, not this
-// agent's: which shops somebody works is exactly what let last week's chats go unanswered, so
-// it spans every shop and every channel and carries no my/team of its own.
+// Nobody has taken these, past the time agreed for their channel. Not limited to the shops this
+// agent works, and no my/team of its own; like every folder it reads the shops picked above.
 const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
+const carrierView = ref(false)
+const carriersCount = ref(0)
+const colleagueView = ref(false)
+const colleaguesCount = ref(0)
+// Told while we were closed that we would answer when we open: every one still unanswered in
+// the shops picked, whoever holds it, so the morning starts with them and the number on the
+// capsule is the list.
+const promisedOnly = ref(false)
+const promisedCount = ref(0)
 const spamCount = ref(0)
 
 // Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
@@ -201,7 +241,18 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => trashView.value || rubbishView.value || spamView.value || highlightView.value || unclaimedView.value)
+const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value)
+    && selectedShopIds.value.length !== 1)
+
+// Folders read the shops picked above: somebody covering many shops clears their own backlog,
+// not everybody's.
+const folderScope = computed(() =>
+    selectedShopIds.value.length === 0
+        ? ctrans("Every shop")
+        : selectedShopIds.value.length === 1
+            ? (selectedInbox.value?.name ?? "")
+            : ctrans(":count shops", { count: String(selectedShopIds.value.length) })
+)
 
 const openMenuUlid = ref<string | null>(null)
 const menuPos = ref({ top: 0, left: 0 })
@@ -258,6 +309,7 @@ const panelSession = computed(() => {
         status: s.status,
         priority: s.priority ?? null,
         assigned_agent: s.assigned_agent?.name ?? null,
+        assigned_agent_id: s.assigned_agent?.id ?? null,
         started: s.created_at ?? null,
         ai_summary: s.ai_summary ?? null,
     }
@@ -272,15 +324,30 @@ const selectedItemStyle = {
 
 const sidePanelVisible = ref(false)
 const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
+const stackedPanelHeight = useLocalStorage(`chat-pane-details-height:${layout.user?.id ?? "anonymous"}`, 50)
+const conversationColumn = ref<HTMLElement | null>(null)
+
+const startStackedPanelResize = (event: PointerEvent) => {
+    const column = conversationColumn.value?.getBoundingClientRect()
+
+    if (!column) {
+        return
+    }
+
+    followPointer(event, (move) => {
+        stackedPanelHeight.value = Math.round(Math.min(80, Math.max(20, ((column.bottom - move.clientY) / column.height) * 100)))
+    })
+}
 
 watch(() => [panelSession.value?.ulid, panelSession.value?.is_guest, !!panelSession.value?.customer_suggestion?.customer], ([ulid, isGuest, hasSuggestion]) => {
-    if (ulid && (!isGuest || hasSuggestion)) sidePanelVisible.value = sidePanelPreferred.value
+    if (ulid && (isEmbedded || !isGuest || hasSuggestion)) sidePanelVisible.value = sidePanelPreferred.value
 }, { immediate: true })
 
 const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "slack">("general")
 
 const newChatVisible = ref(false)
+const newEmailVisible = ref(false)
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -288,6 +355,13 @@ const openChatSettings = () => {
 const onOpenSlackSettings = () => {
     settingInitialTab.value = "slack"
     chatSettingVisible.value = true
+}
+
+const formatPromiseTime = (iso: string) => {
+    const d = new Date(iso)
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+
+    return d.toDateString() === new Date().toDateString() ? time : `${d.toLocaleDateString([], { weekday: "short" })} ${time}`
 }
 
 const mapSession = (s: SessionAPI): Contact => ({
@@ -311,7 +385,12 @@ const mapSession = (s: SessionAPI): Contact => ({
     can_dispose: (s as any).can_dispose,
     open_tickets_count: Number((s as any).open_tickets_count ?? 0),
     blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
+    open_tasks: (s as any).open_tasks ?? [],
     noise: (s as any).noise ?? null,
+    claim: (s as any).claim ?? null,
+    promise: (s as any).promise ?? null,
+    urgent: (s as any).urgent ?? null,
+    waiting_until: (s as any).waiting_until ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -396,6 +475,7 @@ const storeSelection = () => {
             shopIds: selectedShopIds.value,
             cells: selectedCells.value,
             statuses: selectedStatuses.value,
+            closedPeriod: closedPeriod.value,
         }))
     } catch {
         // A private window, or storage turned off. Losing the choice is not worth an error.
@@ -430,6 +510,10 @@ const restoreSelection = (): boolean => {
 
     if (statuses.length) {
         selectedStatuses.value = statuses as ChatStatus[]
+    }
+
+    if (closedPeriods.some((p) => p.key === stored.closedPeriod)) {
+        closedPeriod.value = stored.closedPeriod
     }
 
     return true
@@ -496,13 +580,15 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !unclaimedView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
     const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
         spamView.value = false
         rubbishView.value = false
         trashView.value = false
+        carrierView.value = false
+        colleagueView.value = false
         highlightView.value = false
         unclaimedView.value = false
         setShop(shopId)
@@ -527,7 +613,28 @@ const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
 
 const isMultiChannel = computed(() => selectedChannels.value.length > 1)
 
-const buildParams = (page: number) => ({
+const promisedCapsuleShown = computed(() =>
+    !spamView.value && !trashView.value && !unclaimedView.value && !rubbishView.value && !highlightView.value
+    && !carrierView.value && !colleagueView.value && !agentView.value
+)
+
+const isPromisedList = computed(() => promisedOnly.value && promisedCapsuleShown.value)
+
+// The capsule only appears while there is a promise to keep, so the row is the usual three for
+// most of the day. Kept on screen while it is switched on, or there would be no way back.
+watch(promisedCount, (count) => {
+    if (!count && promisedOnly.value && !contacts.value.some((c) => c.promise)) {
+        promisedOnly.value = false
+    }
+})
+
+const buildParams = (page: number) => isPromisedList.value ? ({
+    promised: 1,
+    statuses: ["waiting", "active"],
+    page,
+    ...(selectedShopIds.value.length ? { shop_ids: selectedShopIds.value } : {}),
+    ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
+}) : ({
     ...(trashView.value
         ? { trashed: 1 }
         : rubbishView.value
@@ -538,11 +645,17 @@ const buildParams = (page: number) => ({
                     ? { unclaimed: 1 }
                     : highlightView.value
                         ? { highlighted: 1, statuses: selectedStatuses.value }
-                        : { statuses: selectedStatuses.value }),
+                        : carrierView.value
+                            ? { carrier: 1, statuses: selectedStatuses.value }
+                            : colleagueView.value
+                                ? { colleague: 1, statuses: selectedStatuses.value }
+                                : { statuses: selectedStatuses.value }),
+    ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
+    ...(showDsKinds.value && dsKind.value ? { ds_kind: dsKind.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
-    ...(selectedShopIds.value.length && !highlightView.value && !unclaimedView.value && !agentView.value
+    ...(selectedShopIds.value.length && !agentView.value
         ? { shop_ids: selectedShopIds.value }
         : {}),
     ...(selectedCells.value.length && !agentView.value && !unclaimedView.value ? { pairs: selectedCells.value } : {}),
@@ -553,7 +666,7 @@ const buildParams = (page: number) => ({
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || unclaimedView.value || agentView.value
+    isPromisedList.value || spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -761,8 +874,9 @@ const revealViewFor = (contact: Contact): void => {
 }
 
 const matchesCurrentView = (c: Contact) =>
+    (!isPromisedList.value || (!!c.promise && ["waiting", "active"].includes(c.status as string))) &&
     (spamView.value || trashView.value || unclaimedView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
-    (highlightView.value || unclaimedView.value || agentView.value || !selectedShopIds.value.length
+    (agentView.value || !selectedShopIds.value.length
         || (c.shop?.id && selectedShopIds.value.includes(c.shop.id))) &&
     (!selectedAgentIds.value.length ||
         (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
@@ -771,7 +885,9 @@ const filteredContacts = computed(() => {
     const list = contacts.value.filter(matchesCurrentView)
     const linked = linkedContact.value
 
-    if (linked && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
+    const linkedChannelShown = isMergedView.value || !selectedChannels.value.length || isChannelOn(linked?.channel as string)
+
+    if (linked && linkedChannelShown && matchesCurrentView(linked) && !list.some((c) => c.ulid === linked.ulid)) {
         return [linked, ...list]
     }
 
@@ -781,6 +897,30 @@ const filteredContacts = computed(() => {
 const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
 )
+
+const showDsKinds = computed(() =>
+    selectedShopId.value !== null && selectedInbox.value?.type === "dropshipping"
+    && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !colleagueView.value && !unclaimedView.value
+)
+
+// Writing a fresh email needs one shop, its mailbox, and the right to answer on it. The button
+// stays in sight whenever some shop could send one, and says what is missing instead of vanishing.
+const showNewEmailButton = computed(
+    () => !isReadOnly.value && (props.inboxes ?? []).some((inbox) => inbox.can_start_email === true)
+)
+const newEmailBlockedReason = computed<string | null>(() => {
+    if (!selectedShopId.value) {
+        return ctrans("Select one shop to write a new email")
+    }
+    if (selectedInbox.value?.can_start_email !== true) {
+        return ctrans("This shop has no mailbox connected")
+    }
+    if (!carrierView.value && selectedChannel.value !== "email") {
+        return ctrans("Select only the Email squares to write a new email")
+    }
+
+    return null
+})
 
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
@@ -837,7 +977,7 @@ const fitChatArea = () => {
         return
     }
 
-    const footer = document.querySelector("footer")
+    const footer = document.getElementById("grp_footer")
     const footerHeight = footer ? footer.getBoundingClientRect().height : 0
     const next = Math.max(320, window.innerHeight - element.getBoundingClientRect().top - footerHeight)
 
@@ -871,9 +1011,68 @@ onUnmounted(() => {
     chatAreaObserver?.disconnect()
 })
 
+type FolderGroup = "queues" | "bins"
+
+// The chevron alone decides whether the rest of a group shows: closed, a click pins it open;
+// open, a click closes it. No hover timing involved — hover is just a plain visual highlight.
+const pinnedFolderGroups = ref<Record<FolderGroup, boolean>>({ queues: false, bins: false })
+
+const folderGroupLead = computed<Record<FolderGroup, string>>(() => ({
+    queues: carrierView.value ? "carriers" : colleagueView.value ? "colleagues" : "unclaimed",
+    bins: rubbishView.value ? "ignored" : trashView.value ? "trash" : "spam",
+}))
+
+const isFolderGroupOpen = (group: FolderGroup) => pinnedFolderGroups.value[group]
+
+const showsFolder = (group: FolderGroup, folder: string) =>
+    !railCollapsed.value || pinnedFolderGroups.value[group] || folderGroupLead.value[group] === folder
+
+const toggleFolderGroupPin = (group: FolderGroup) => {
+    pinnedFolderGroups.value[group] = !pinnedFolderGroups.value[group]
+}
+
+watch(railCollapsed, () => {
+    pinnedFolderGroups.value = { queues: false, bins: false }
+})
+
 const railElement = ref<HTMLElement | null>(null)
 
-/* On a tablet or a phone the rail is a third of the screen, so it is opened to pick a shop and
+// A column of avatar circles gives no hint that there is more above or below, so the edge
+// that actually has more gets a shade. Recomputed on scroll and whenever the list's own size
+// changes — a shop added, the rail folded, the window resized.
+const shopListElement = ref<HTMLElement | null>(null)
+const shopListHasMoreAbove = ref(false)
+const shopListHasMoreBelow = ref(false)
+
+const updateShopListOverflow = () => {
+    const el = shopListElement.value
+
+    if (!el) {
+        shopListHasMoreAbove.value = false
+        shopListHasMoreBelow.value = false
+
+        return
+    }
+
+    shopListHasMoreAbove.value = el.scrollTop > 1
+    shopListHasMoreBelow.value = el.scrollTop + el.clientHeight < el.scrollHeight - 1
+}
+
+let shopListObserver: ResizeObserver | null = null
+
+onMounted(() => {
+    if (shopListElement.value && typeof ResizeObserver !== "undefined") {
+        shopListObserver = new ResizeObserver(updateShopListOverflow)
+        shopListObserver.observe(shopListElement.value)
+    }
+    updateShopListOverflow()
+})
+
+onUnmounted(() => shopListObserver?.disconnect())
+
+watch(railCollapsed, () => nextTick(updateShopListOverflow))
+
+/* Below 1440px (a phone, a tablet, a 14" laptop) the rail is a third of the screen, so it is opened to pick a shop and
    then wants to be out of the way: four seconds after the last touch it folds itself back.
    Anything the pointer or keyboard does inside it starts the count again, so it never closes
    under somebody mid-scroll. On a desktop there is room for it, and folding a rail the user
@@ -881,7 +1080,7 @@ const railElement = ref<HTMLElement | null>(null)
 const RAIL_IDLE_MS = 4000
 
 const narrowScreen = typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(max-width: 1023px)")
+    ? window.matchMedia("(max-width: 1439px)")
     : null
 
 let railIdleTimer: ReturnType<typeof setTimeout> | null = null
@@ -918,27 +1117,15 @@ onUnmounted(() => {
 })
 
 const startResize = (section: "agents" | "folders", event: PointerEvent) => {
-    event.preventDefault()
-
     const startY = event.clientY
     const startHeight = railSectionHeight.value[section]
     const limit = Math.max(MIN_SECTION_HEIGHT, (railElement.value?.clientHeight ?? 600) * 0.6)
 
-    const onMove = (move: PointerEvent) => {
+    followPointer(event, (move) => {
         // The handle sits above the section, so dragging up makes it taller.
         const next = startHeight + (startY - move.clientY)
         railSectionHeight.value = { ...railSectionHeight.value, [section]: Math.min(limit, Math.max(MIN_SECTION_HEIGHT, next)) }
-    }
-
-    const onUp = () => {
-        window.removeEventListener("pointermove", onMove)
-        window.removeEventListener("pointerup", onUp)
-        document.body.style.userSelect = ""
-    }
-
-    document.body.style.userSelect = "none"
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
+    })
 }
 
 const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
@@ -983,6 +1170,8 @@ const selectChannel = (shopId: number, channelKey: string) => {
     spamView.value = false
     rubbishView.value = false
     trashView.value = false
+    carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
     setShop(shopId)
@@ -996,6 +1185,7 @@ function afterSelectionChanged() {
     linkedContact.value = null
     messages.value = []
     newChatVisible.value = false
+    newEmailVisible.value = false
     selectedAgentIds.value = []
     agentView.value = false
 
@@ -1005,16 +1195,67 @@ function afterSelectionChanged() {
     reloadContacts()
 }
 
+// What was on before switching into a folder view — every shop a supervisor had selected,
+// not just one — so unclicking that folder can put it back exactly, rather than falling
+// through to a single-shop reset that silently drops the rest of the selection.
+let preFolderViewSelection: { shopIds: number[]; cells: string[] } | null = null
+
+const captureInboxSnapshot = () => {
+    if (crossShopView.value) {
+        return
+    }
+
+    preFolderViewSelection = { shopIds: [...selectedShopIds.value], cells: [...selectedCells.value] }
+}
+
+// Clicking an already-selected folder a second time turns it off rather than doing nothing,
+// landing back on the ordinary inbox: exactly the shops and channels that were on before,
+// or whatever was last looked at, or the first shop if nothing was stored.
+const backToMainInbox = () => {
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+
+    if (preFolderViewSelection) {
+        selectedShopIds.value = preFolderViewSelection.shopIds
+        selectedCells.value = preFolderViewSelection.cells
+        preFolderViewSelection = null
+        reloadContacts()
+
+        return
+    }
+
+    selectedCells.value = []
+
+    if (restoreSelection()) {
+        reloadContacts()
+
+        return
+    }
+
+    if (props.inboxes?.[0]?.id) {
+        selectInbox(props.inboxes[0].id)
+    }
+}
+
 // Rubbish is the takeover backlog: an out of office, a circular, a newsletter. Not spam, so
 // nobody is blocked, and the conversation keeps its status so unmarking restores it exactly.
 const selectRubbish = () => {
-    if (rubbishView.value) return
+    if (rubbishView.value) {
+        rubbishView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     rubbishView.value = true
     spamView.value = false
     trashView.value = false
+    carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1024,13 +1265,20 @@ const selectRubbish = () => {
 }
 
 const selectSpam = () => {
-    if (spamView.value) return
+    if (spamView.value) {
+        spamView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     spamView.value = true
     rubbishView.value = false
     trashView.value = false
+    carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1040,13 +1288,20 @@ const selectSpam = () => {
 }
 
 const selectTrash = () => {
-    if (trashView.value) return
+    if (trashView.value) {
+        trashView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     trashView.value = true
     rubbishView.value = false
     spamView.value = false
+    carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1058,13 +1313,66 @@ const selectTrash = () => {
 // Taking one out of here is answering it: the row leaves the queue as soon as somebody holds
 // it, so the list is reloaded rather than trusted after any action.
 const selectUnclaimed = () => {
-    if (unclaimedView.value) return
+    if (unclaimedView.value) {
+        unclaimedView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     unclaimedView.value = true
+    carrierView.value = false
+    colleagueView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
-    setShop(null)
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectCarriers = () => {
+    if (carrierView.value) {
+        carrierView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
+    carrierView.value = true
+    colleagueView.value = false
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectColleagues = () => {
+    if (colleagueView.value) {
+        colleagueView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
+    colleagueView.value = true
+    carrierView.value = false
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1074,12 +1382,19 @@ const selectUnclaimed = () => {
 }
 
 const selectHighlight = () => {
-    if (highlightView.value) return
+    if (highlightView.value) {
+        highlightView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
     highlightView.value = true
+    carrierView.value = false
+    colleagueView.value = false
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1142,6 +1457,15 @@ const onPriorityUpdated = (value: string) => {
     if (found) found.priority = value
 }
 
+const onAgentAssigned = (agent: { id: number; name: string }) => {
+    const ulid = selectedSession.value?.ulid
+    if (selectedSession.value) {
+        selectedSession.value.assigned_agent = { id: String(agent.id), name: agent.name }
+    }
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) found.agent = { id: String(agent.id), name: agent.name }
+}
+
 // A guest was matched to a registered Aiku customer by email: promote it to a customer.
 const onSessionSynced = (webUser: { id: number; name: string; email: string | null }) => {
     if (!selectedSession.value || !webUser) return
@@ -1155,6 +1479,24 @@ const onSessionSynced = (webUser: { id: number; name: string; email: string | nu
     if (found) {
         found.webUser = { id: webUser.id, name: webUser.name } as any
         found.name = webUser.name || found.name
+    }
+}
+
+const onSessionUnlinked = () => {
+    if (!selectedSession.value) return
+    const ulid = selectedSession.value.ulid
+    const guestName = (selectedSession.value as any).metadata?.name || (selectedSession.value as any).guest_profile?.name || selectedSession.value.guest_identifier || "Guest"
+    selectedSession.value = {
+        ...selectedSession.value,
+        web_user: null,
+        web_user_id: null,
+        is_guest: true,
+        contact_name: guestName,
+    } as SessionAPI
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) {
+        found.webUser = null
+        found.name = guestName
     }
 }
 
@@ -1270,7 +1612,7 @@ const openPendingSession = async () => {
         // Cleared before the reload below, because that reload calls back into here.
         pendingSessionUlid.value = null
 
-        if (mapped.shop?.id && mapped.shop.id !== selectedShopId.value) {
+        if (mapped.shop?.id && (mapped.shop.id !== selectedShopId.value || !isChannelOn(mapped.channel as string))) {
             revealInbox(mapped.shop.id, mapped.channel)
         }
 
@@ -1293,12 +1635,33 @@ const reloadInboxCountsSoon = useDebounceFn(() => router.reload({ only: ["inboxe
 
 const fetchInboxNotifications = async () => {
     reloadInboxCountsSoon()
+    await Promise.all([fetchAgentNotifications(), fetchAllShopsTotals()])
+}
 
+const fetchAllShopsTotals = async () => {
+    if (!myAgentId || allShopIds.value.length < 2) return
+    try {
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`, {
+            params: { shop_ids: allShopIds.value },
+        })
+        totalUnclaimed.value = data?.data?.unclaimed ?? 0
+        totalSpam.value = data?.data?.spam ?? 0
+    } catch (e) {
+        // silent — badges are non-critical
+    }
+}
+
+const fetchAgentNotifications = async () => {
     if (!myAgentId || isReadOnly.value) return
     try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`, {
+            params: { shop_ids: selectedShopIds.value },
+        })
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
+        carriersCount.value = data?.data?.carriers ?? 0
+        colleaguesCount.value = data?.data?.colleagues ?? 0
+        promisedCount.value = data?.data?.promised ?? 0
         spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
@@ -1330,6 +1693,26 @@ const inboxUnread = computed(() => countByInbox((c) => c.customer?.waiting ?? 0)
 const inboxGuestsWaiting = computed(() => countByInbox((c) => c.guest?.waiting ?? 0))
 const inboxActive = computed(() => countByInbox((c) => (c.customer?.active ?? 0) + (c.guest?.active ?? 0)))
 
+// People work one shop at a time, so the folders follow it; the strip above keeps every shop
+// they may see in sight, and a click opens that folder across all of them.
+const allShopIds = computed(() => (props.inboxes ?? []).map((inbox) => inbox.id))
+const sumOf = (byInbox: Record<number, number>) => Object.values(byInbox).reduce((sum, n) => sum + n, 0)
+const totalCustomersWaiting = computed(() => sumOf(inboxUnread.value))
+const totalGuestsWaiting = computed(() => sumOf(inboxGuestsWaiting.value))
+const totalActive = computed(() => sumOf(inboxActive.value))
+const totalUnclaimed = ref(0)
+const totalSpam = ref(0)
+
+const openAcrossAllShops = (select: () => void, alreadyOpen: boolean) => {
+    selectedShopIds.value = [...allShopIds.value]
+    if (alreadyOpen) {
+        reloadContacts()
+
+        return
+    }
+    select()
+}
+
 const openChat = (c: Contact) => {
     // Moving to another chat retires the linked one, so it does not sit pinned above
     // the list once the agent has moved on.
@@ -1357,6 +1740,7 @@ const openChat = (c: Contact) => {
         can_dispose: (c as any).can_dispose,
         open_tickets_count: (c as any).open_tickets_count ?? 0,
         blocking_tickets_count: (c as any).blocking_tickets_count ?? 0,
+        open_tasks: c.open_tasks ?? [],
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
@@ -1391,10 +1775,106 @@ const onWhatsappChatCreated = (session: any) => {
     reloadContacts()
 }
 
+const LONG_PRESS_MS = 500
+
+const previewContact = ref<Contact | null>(null)
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let longPressStart: { x: number, y: number } | null = null
+let lastPointerType = "mouse"
+let swallowNextRowClick = false
+
+const cancelLongPress = () => {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
+    }
+    longPressStart = null
+}
+
+const startLongPress = (c: Contact, event: PointerEvent) => {
+    lastPointerType = event.pointerType
+    swallowNextRowClick = false
+    cancelLongPress()
+
+    if (event.button !== 0) {
+        return
+    }
+
+    longPressStart = { x: event.clientX, y: event.clientY }
+    longPressTimer = setTimeout(() => {
+        longPressTimer = null
+        swallowNextRowClick = true
+        previewContact.value = c
+    }, LONG_PRESS_MS)
+}
+
+const moveLongPress = (event: PointerEvent) => {
+    if (longPressStart && Math.hypot(event.clientX - longPressStart.x, event.clientY - longPressStart.y) > 10) {
+        cancelLongPress()
+    }
+}
+
+const onRowClick = (c: Contact) => {
+    if (swallowNextRowClick) {
+        swallowNextRowClick = false
+
+        return
+    }
+
+    handleClickContact(c)
+}
+
+const onRowContextMenu = (c: Contact, event: MouseEvent) => {
+    if (lastPointerType === "touch") {
+        return
+    }
+
+    toggleRowMenu(c.ulid, event)
+}
+
+const closePreview = () => {
+    previewContact.value = null
+    swallowNextRowClick = false
+}
+
+const openFromPreview = () => {
+    const contact = previewContact.value
+    previewContact.value = null
+    swallowNextRowClick = false
+
+    if (contact) {
+        handleClickContact(contact)
+    }
+}
+
 const handleClickContact = (c: Contact) => {
     errorPerContact.value[c.ulid] = ""
     // Waiting chats open into an "Assign to me" step (no composer) until assigned.
     openChat(c)
+}
+
+const stepConversation = (step: number) => {
+    const list = filteredContacts.value
+    const next = list[list.findIndex((c) => c.ulid === selectedSession.value?.ulid) + step]
+
+    if (next) {
+        handleClickContact(next)
+    }
+}
+
+const onChatPaneMessage = (event: MessageEvent) => {
+    if (event.source === window.parent && typeof event.data?.chatPaneStep === "number") {
+        stepConversation(event.data.chatPaneStep)
+    }
+}
+
+if (isEmbedded) {
+    window.addEventListener("message", onChatPaneMessage)
+    onUnmounted(() => window.removeEventListener("message", onChatPaneMessage))
+
+    watch([() => selectedSession.value?.ulid, filteredContacts], ([ulid, list]) => {
+        window.parent.postMessage({ chatPanePosition: { at: list.findIndex((c) => c.ulid === ulid) + 1, total: list.length } }, window.location.origin)
+    }, { immediate: true })
 }
 
 // In merged views the open conversation may belong to another channel than the one
@@ -1441,21 +1921,25 @@ const updateUrl = (ulid: string) => {
     window.history.replaceState(window.history.state, "", url)
 }
 
-const handleSendMessage = async ({ text, files, message_type, is_email_notif, onFailed }: {
+const handleSendMessage = async ({ text, files, message_type, is_email_notif, email_cc_excluded, onFailed }: {
     text: string
     files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
+    email_cc_excluded?: string[]
     onFailed?: (message: string) => void
 }) => {
     if (!selectedSession.value?.ulid) return
+    const sessionUlid = selectedSession.value.ulid
+    const claimsChat = selectedSession.value.status === "waiting"
     try {
         const formData = new FormData()
         formData.append("message_text", text ?? "")
         formData.append("message_type", message_type)
         formData.append("sender_type", "agent")
         formData.append("is_email_notif", String(is_email_notif ?? false))
+        email_cc_excluded?.forEach((address) => formData.append("email_cc_excluded[]", address))
 
         if (files?.length === 1) {
             formData.append(message_type === "image" ? "image" : "file", files[0])
@@ -1464,10 +1948,14 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, on
         }
 
         await axios.post(
-            route("grp.org.chat.agents.messages.send", [props.organisation.slug, selectedSession.value.ulid]),
+            route("grp.org.chat.agents.messages.send", [props.organisation.slug, sessionUlid]),
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
+
+        if (claimsChat && selectedSession.value?.ulid === sessionUlid) {
+            await onAssignSelfSuccess()
+        }
     } catch (error) {
         console.error("Error sending message:", error)
 
@@ -1475,19 +1963,18 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, on
     }
 }
 
-const toggleSidePanel = () => {
-    sidePanelVisible.value = !sidePanelVisible.value
-    sidePanelPreferred.value = sidePanelVisible.value
-}
-const showHistoryPanel = () => toggleSidePanel()
-const showProfilePanel = () => toggleSidePanel()
-const sidePanelTab = ref<'profile' | 'tickets'>('profile')
-const showTicketsPanel = () => {
-    sidePanelTab.value = 'tickets'
+const sidePanelTab = ref<'profile' | 'tickets' | 'history'>('profile')
+
+// Asking for a tab is asking for that tab, never for the panel to go away: these used to
+// toggle, so pressing View Profile with the panel already open closed it instead.
+const openSidePanelOn = (tab: 'profile' | 'tickets' | 'history') => {
+    sidePanelTab.value = tab
     sidePanelVisible.value = true
     sidePanelPreferred.value = true
 }
-const showMessageDetailsPanel = () => toggleSidePanel()
+const showHistoryPanel = () => openSidePanelOn('history')
+const showProfilePanel = () => openSidePanelOn('profile')
+const showTicketsPanel = () => openSidePanelOn('tickets')
 const closeSidePanel = () => {
     sidePanelVisible.value = false
     sidePanelPreferred.value = false
@@ -1505,7 +1992,7 @@ const onTransferAgentSuccess = async () => {
 }
 
 
-watch([selectedStatuses, viewMode], async () => {
+watch([selectedStatuses, viewMode, promisedOnly], async () => {
     selectedSession.value = null
     linkedContact.value = null
     messages.value = []
@@ -1613,12 +2100,13 @@ onMounted(async () => {
 
     // Registered after the restore so putting the stored choice back does not write it again.
     watch([selectedShopIds, selectedCells, selectedStatuses], storeSelection, { deep: true })
+    watch(selectedShopIds, fetchAgentNotifications, { deep: true })
 
     const init = props.initialSession
 
     // Jump to the shop (inbox) the opened chat belongs to.
     if (init?.shop?.id) {
-        revealInbox(init.shop.id, urlChannel)
+        revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
     }
 
     if (init) {
@@ -1676,22 +2164,59 @@ onUnmounted(() => {
 <template>
     <Head :title="title" />
 
-    <PageHeading :data="pageHead">
-        <template #other>
+    <template v-if="!isEmbedded">
+    <div class="mx-4 my-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-gray-500">
+        <template v-if="inboxes.length > 1">
+            <span v-tooltip="ctrans('Customers waiting, every shop')" class="inline-flex items-center gap-1">
+                <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalCustomersWaiting }}</span>
+                <span class="hidden xl:inline">{{ ctrans("waiting") }}</span>
+            </span>
+            <span v-tooltip="ctrans('Guests waiting, every shop')" class="inline-flex items-center gap-1">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalGuestsWaiting }}</span>
+                <span class="hidden xl:inline">{{ ctrans("guests") }}</span>
+            </span>
+            <span v-tooltip="ctrans('Active, every shop')" class="inline-flex items-center gap-1">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalActive }}</span>
+                <span class="hidden xl:inline">{{ ctrans("active") }}</span>
+            </span>
+            <span class="h-3.5 w-px bg-gray-200" aria-hidden="true" />
+            <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-gray-100"
+                :class="unclaimedView && 'bg-gray-100'"
+                @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
+                <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                <span class="font-semibold" :class="totalUnclaimed ? 'text-red-600' : 'text-gray-800'">{{ totalUnclaimed }}</span>
+                <span class="hidden xl:inline">{{ ctrans("unclaimed") }}</span>
+            </button>
+            <button type="button" v-tooltip="ctrans('Spam, every shop')"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-gray-100"
+                :class="spamView && 'bg-gray-100'"
+                @click="openAcrossAllShops(selectSpam, spamView)">
+                <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-800">{{ totalSpam }}</span>
+                <span class="hidden xl:inline">{{ ctrans("spam") }}</span>
+            </button>
+        </template>
+        <div class="ml-auto flex items-center gap-0.5">
             <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
                 v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
-                class="p-2 rounded-lg transition-colors"
+                :aria-label="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
+                class="rounded-md p-1 transition-colors"
                 :class="phoneCallState.call
                     ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'">
-                <FontAwesomeIcon :icon="faPhone" class="text-base" fixed-width />
+                <FontAwesomeIcon :icon="faPhone" class="text-sm" fixed-width />
             </button>
-            <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" @click="openChatSettings"
-                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-                <FontAwesomeIcon :icon="faCog" class="text-base" fixed-width />
+            <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" :aria-label="ctrans('Chat settings')" @click="openChatSettings"
+                class="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700">
+                <FontAwesomeIcon :icon="faCog" class="text-sm" fixed-width />
             </button>
-        </template>
-    </PageHeading>
+        </div>
+    </div>
+    </template>
 
     <Dialog v-model:visible="chatSettingVisible" modal :header="ctrans('Chat Settings')"
         :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
@@ -1701,11 +2226,19 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" :to-address="carrierView" />
+
+    <ChatPreviewModal :contact="previewContact" @close="closePreview" @open="openFromPreview" />
+
     <div ref="chatArea" :style="{ height: chatAreaHeight }"
-        class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
+        class="relative isolate flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
-        <div ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
-            :class="railCollapsed ? 'w-16' : 'w-64'"
+        <!-- Below 1440px the rail lies over the conversation instead of pushing it aside: a phone,
+             a tablet or a 14" laptop has no room for both, and squeezed, the thread header's buttons ran over the name. It stays
+             lifted while folded too, or closing would animate it back in the flow and shove the
+             thread sideways before letting go. -->
+        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-[1439px]:absolute max-[1439px]:inset-y-0 max-[1439px]:left-0 max-[1439px]:z-40"
+            :class="railCollapsed ? 'w-16' : 'w-64 max-[1439px]:shadow-xl'"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
             <!-- Header + collapse toggle -->
@@ -1725,9 +2258,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Shop list -->
-            <div v-if="!railCollapsed && !railSectionOpen.shops" class="flex-1" />
+            <div class="relative flex-1 min-h-0">
+            <div v-if="!railCollapsed && !railSectionOpen.shops" class="absolute inset-0" />
 
-            <div v-show="railCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
+            <div v-show="railCollapsed || railSectionOpen.shops" ref="shopListElement" @scroll="updateShopListOverflow"
+                class="absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div v-for="inbox in inboxes" :key="inbox.id"
                     class="transition-colors border-b border-gray-200"
                     :class="shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'">
@@ -1735,16 +2270,19 @@ onUnmounted(() => {
                         v-tooltip="railCollapsed ? inbox.name : undefined"
                         class="w-full flex items-center gap-2 min-w-0"
                         :class="[
-                            railCollapsed ? 'justify-center py-1' : 'px-2 py-1',
+                            railCollapsed ? 'justify-center py-2' : 'px-2 py-1',
                             shopIsOn(inbox.id) ? 'font-medium text-gray-800' : 'text-gray-700',
                         ]">
                         <!-- The initials only stand in for the name when the rail is folded and
                              there is no room for it; beside the name they said it twice. -->
                         <div v-if="railCollapsed" class="relative shrink-0">
-                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold transition hover:scale-110"
+                                :class="shopIsOn(inbox.id) ? 'ring-2 ring-green-500 ring-offset-1' : (!agentView && selectedShopIds.length ? 'opacity-50' : '')"
                                 :style="shopAvatarStyle(inbox)">
                                 {{ shopInitials(inbox.name) }}
                             </div>
+                            <FontAwesomeIcon v-if="shopIsOn(inbox.id)" :icon="faCircleCheck"
+                                class="absolute -bottom-1.5 -right-1.5 rounded-full bg-white text-[11px] text-green-500" fixed-width aria-hidden="true" />
                             <span v-if="inboxUnread[inbox.id]"
                                 v-tooltip="ctrans('Customers waiting')"
                                 class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
@@ -1852,6 +2390,12 @@ onUnmounted(() => {
                 </div>
             </div>
 
+            <!-- A column of circles says nothing about what is past the edge on its own, so a
+                 shade stands in for it — only on the edge that actually has more behind it. -->
+            <div v-show="shopListHasMoreAbove" class="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-black/15 to-transparent" />
+            <div v-show="shopListHasMoreBelow" class="pointer-events-none absolute inset-x-0 bottom-0 h-5 bg-gradient-to-t from-black/15 to-transparent" />
+            </div>
+
             <!-- The people on these shops: who is there and what they are holding -->
             <template v-if="supervisor && !railCollapsed">
                 <div v-if="railSectionOpen.agents" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
@@ -1899,7 +2443,7 @@ onUnmounted(() => {
                     @click="railSectionOpen = { ...railSectionOpen, folders: !railSectionOpen.folders }">
                     <FontAwesomeIcon :icon="railSectionOpen.folders ? faAngleDown : faAngleRight" class="text-[10px]" />
                     {{ ctrans("Folders") }}
-                    <span v-if="unclaimedCount" class="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold normal-case text-white">
+                    <span v-if="unclaimedCount" class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none normal-case tabular-nums text-white">
                         {{ unclaimedCount }}
                     </span>
                 </button>
@@ -1907,8 +2451,11 @@ onUnmounted(() => {
 
             <div v-show="railCollapsed || railSectionOpen.folders"
                 class="shrink-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300"
+                :class="railCollapsed && 'border-t border-gray-200'"
                 :style="railCollapsed ? {} : { height: railSectionHeight.folders + 'px' }">
             <div class="py-1">
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'unclaimed') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectUnclaimed"
                     v-tooltip="ctrans('Nobody has taken these yet, on any shop')"
                     class="w-full flex items-center text-sm transition-colors"
@@ -1929,14 +2476,63 @@ onUnmounted(() => {
                     </span>
                     <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
                     <span v-if="!railCollapsed && unclaimedCount"
-                        class="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-red-500 text-white shrink-0">
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none tabular-nums text-white">
                         {{ unclaimedCount }}
                     </span>
+                </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'carriers') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
+                <button type="button" @click="selectCarriers"
+                    v-tooltip="ctrans('Emails from couriers about deliveries')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        carrierView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="carrierView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faTruck" class="text-sm shrink-0" :class="carrierView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Couriers") }}</span>
+                    <span v-if="!railCollapsed && carriersCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ carriersCount }}
+                    </span>
+                </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'colleagues') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
+                <button type="button" @click="selectColleagues"
+                    v-tooltip="ctrans('Emails colleagues wrote to this mailbox; their circulars, newsletters and notifications stay out')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        colleagueView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="colleagueView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faUsers" class="text-sm shrink-0" :class="colleagueView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Colleagues") }}</span>
+                    <span v-if="!railCollapsed && colleaguesCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ colleaguesCount }}
+                    </span>
+                </button>
+                </div>
+                </div>
+                <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('queues')"
+                    :aria-label="pinnedFolderGroups.queues ? ctrans('Show less') : ctrans('Show more')"
+                    class="relative w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[10px] transition-transform" :class="isFolderGroupOpen('queues') && 'rotate-180'" fixed-width aria-hidden="true" />
+                    <span v-if="!isFolderGroupOpen('queues') && folderGroupLead.queues !== 'unclaimed' && unclaimedCount"
+                        class="absolute top-0.5 right-5 h-1.5 w-1.5 rounded-full bg-red-500" />
                 </button>
             </div>
 
             <!-- Spam -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'spam') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectSpam"
                     v-tooltip="railCollapsed ? spamRailTooltip : undefined"
                     class="w-full flex items-center text-sm transition-colors"
@@ -1953,6 +2549,10 @@ onUnmounted(() => {
                         {{ spamCount }}
                     </span>
                 </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'ignored') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectRubbish"
                     v-tooltip="railCollapsed ? ctrans('Ignored') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
@@ -1964,6 +2564,10 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Ignored") }}</span>
                 </button>
+                </div>
+                </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'trash') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
                 <button type="button" @click="selectTrash"
                     v-tooltip="railCollapsed ? ctrans('Trash') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
@@ -1974,6 +2578,13 @@ onUnmounted(() => {
                     :style="trashView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Trash") }}</span>
+                </button>
+                </div>
+                </div>
+                <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('bins')"
+                    :aria-label="pinnedFolderGroups.bins ? ctrans('Show less') : ctrans('Show more')"
+                    class="w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[10px] transition-transform" :class="isFolderGroupOpen('bins') && 'rotate-180'" fixed-width aria-hidden="true" />
                 </button>
             </div>
 
@@ -1994,23 +2605,33 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <!-- Holds the folded rail's place so nothing behind shifts, and a tap on the dimmed thread
+             folds the rail away for this page only, as the idle timer does. -->
+        <template v-if="!isEmbedded">
+            <div class="min-[1440px]:hidden shrink-0 w-16" />
+            <div v-if="!railCollapsed" class="min-[1440px]:hidden absolute inset-0 z-[35] bg-black/20" @click="railAutoCollapsed = true" />
+        </template>
+
         <!-- PANEL 2: conversation list for the selected inbox.
              Narrow screens have room for one column, not three, so the list and the thread take
              turns: the list until a conversation is picked, the thread after, with its own back
-             button to return. From lg up both stand side by side as before. -->
-        <div class="border-r border-gray-200 flex-col lg:w-80 lg:shrink-0 lg:flex-none"
-            :class="selectedSession ? 'hidden lg:flex' : 'flex flex-1 min-w-0'">
+             button to return. From 1440px up both stand side by side. -->
+        <div class="border-r border-gray-200 flex-col min-[1440px]:w-80 min-[1440px]:shrink-0 min-[1440px]:flex-none"
+            :class="selectedSession ? 'hidden min-[1440px]:flex' : 'flex flex-1 min-w-0'">
             <!-- Selected inbox + My/Team segmented toggle -->
-            <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
+            <div class="px-3 py-1.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
-                    <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                    <div class="text-sm font-semibold text-gray-800 truncate mb-0.5">
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : colleagueView ? ctrans("Colleagues") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
                     </div>
-                    <div v-else-if="unclaimedView" class="text-[11px] text-gray-500">
-                        {{ ctrans("Every shop, waiting longer than agreed") }}
+                    <div v-else-if="unclaimedView" class="text-[11px] text-gray-500 truncate">
+                        {{ ctrans(":shops, waiting longer than agreed", { shops: folderScope }) }}
+                    </div>
+                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView || colleagueView" class="text-[11px] text-gray-500 truncate">
+                        {{ folderScope }}
                     </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
                         {{ selectedShopIds.length }} {{ ctrans("shops, every channel") }}
@@ -2039,6 +2660,16 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <button v-if="showNewEmailButton" type="button"
+                        v-tooltip="newEmailBlockedReason ?? ctrans('New email')"
+                        :aria-disabled="newEmailBlockedReason !== null"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium"
+                        :class="newEmailBlockedReason ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-indigo-600'"
+                        @click="newEmailBlockedReason === null && (newEmailVisible = true)">
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
+                        {{ ctrans("New email") }}
+                    </button>
+
                     <button v-if="selectedChannel === 'whatsapp' && !isReadOnly" type="button"
                         v-tooltip="ctrans('New WhatsApp chat')"
                         class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
@@ -2102,11 +2733,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Status capsules: any combination, never none -->
-            <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-2 border-b">
-                <div class="flex items-center gap-1.5 text-xs">
-                    <button v-for="capsule in statusCapsules" :key="capsule.key" type="button"
+            <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-1.5 border-b">
+                <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                    <button v-for="capsule in statusCapsules" v-show="!isPromisedList" :key="capsule.key" type="button"
                         v-tooltip="ctrans('Show or hide these, at least one stays on')"
-                        class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        class="shrink-0 py-1 px-3 rounded-full border transition-all inline-flex items-center justify-center gap-1"
                         :class="isStatusOn(capsule.key)
                             ? 'bg-white shadow-sm font-semibold border-transparent'
                             : 'border-gray-200 text-gray-500 hover:text-gray-700'"
@@ -2117,6 +2748,42 @@ onUnmounted(() => {
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
                             :class="isStatusOn(capsule.key) ? 'text-white' : 'text-gray-600 bg-gray-200'"
                             :style="isStatusOn(capsule.key) ? { backgroundColor: 'var(--theme-color-4)' } : {}">{{ capsule.count }}</span>
+                    </button>
+                    <button v-if="promisedCapsuleShown && (promisedCount || promisedOnly)" type="button"
+                        v-tooltip="ctrans('Only the chats told while we were closed that we would reply when we open, not answered yet, in every channel and whoever holds them')"
+                        class="shrink-0 py-1 px-3 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        :class="promisedOnly
+                            ? 'bg-amber-50 shadow-sm font-semibold border-amber-400 text-amber-700'
+                            : 'border-gray-200 text-gray-500 hover:text-gray-700'"
+                        @click="promisedOnly = !promisedOnly">
+                        {{ ctrans("Promised") }}
+                        <span v-if="promisedCount"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
+                            :class="promisedOnly ? 'text-white bg-amber-500' : 'text-amber-700 bg-amber-100'">{{ promisedCount }}</span>
+                    </button>
+                </div>
+
+                <!-- How far back the closed list reaches. Only on when closed is being looked
+                     at: waiting and active are open work and have no period. -->
+                <div v-if="isStatusOn('closed') && !isPromisedList" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                    <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Closed") }}</span>
+                    <button v-for="period in closedPeriods" :key="period.key" type="button"
+                        class="px-1.5 py-0.5 rounded transition-colors"
+                        :class="closedPeriod === period.key ? 'font-semibold text-white' : 'hover:bg-gray-100'"
+                        :style="closedPeriod === period.key ? { backgroundColor: 'var(--theme-color-4)' } : {}"
+                        @click="setClosedPeriod(period.key)">
+                        {{ period.label }}
+                    </button>
+                </div>
+
+                <div v-if="showDsKinds" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                    <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Kind") }}</span>
+                    <button v-for="kind in dsKinds" :key="kind.key" type="button"
+                        class="px-1.5 py-0.5 rounded transition-colors"
+                        :class="dsKind === kind.key ? 'font-semibold text-white' : 'hover:bg-gray-100'"
+                        :style="dsKind === kind.key ? { backgroundColor: 'var(--theme-color-4)' } : {}"
+                        @click="setDsKind(kind.key)">
+                        {{ kind.label }}
                     </button>
                 </div>
             </div>
@@ -2134,8 +2801,13 @@ onUnmounted(() => {
                         <div class="group relative flex items-center gap-2 px-3 py-2 border-b cursor-pointer transition-colors"
                             :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
                             :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
-                            @click="handleClickContact(c)"
-                            @contextmenu.prevent="toggleRowMenu(c.ulid, $event)">
+                            @click="onRowClick(c)"
+                            @pointerdown="startLongPress(c, $event)"
+                            @pointermove="moveLongPress"
+                            @pointerup="cancelLongPress"
+                            @pointerleave="cancelLongPress"
+                            @pointercancel="cancelLongPress"
+                            @contextmenu.prevent="onRowContextMenu(c, $event)">
                             <div v-if="isAssigning[c.ulid] || isSpamming[c.ulid]"
                                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                                 <LoadingIcon class="w-8 h-8 text-white" />
@@ -2159,7 +2831,13 @@ onUnmounted(() => {
                                     </span>
                                     <img v-if="(c as any).country_code" :src="`/flags/${(c as any).country_code.toLowerCase()}.png`"
                                         :alt="(c as any).country_code" v-tooltip="(c as any).country_code" class="shrink-0 h-3 w-auto" />
-                                    <span class="flex-1 min-w-0 text-sm text-gray-800 truncate" :class="c.unread && !onlyClosed ? 'font-bold' : 'font-medium'">{{ capitalize(c.name) }}</span>
+                                    <span class="min-w-0 text-sm text-gray-800 truncate" :class="c.unread && !onlyClosed ? 'font-bold' : 'font-medium'">{{ capitalize(c.name) }}</span>
+                                    <button type="button" v-tooltip="ctrans('Preview')" :aria-label="ctrans('Preview')"
+                                        class="shrink-0 -my-1 flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                                        @click.stop="previewContact = c" @pointerdown.stop>
+                                        <FontAwesomeIcon :icon="faEye" class="text-xs" fixed-width aria-hidden="true" />
+                                    </button>
+                                    <span class="flex-1" />
                                     <span class="text-[10px] text-gray-500 shrink-0">
                                         {{ c.lastMessageTime }}
                                         <span v-if="c.lastMessageAge" class="text-gray-400">({{ c.lastMessageAge }})</span>
@@ -2183,6 +2861,44 @@ onUnmounted(() => {
                                         :class="c.noise.automatic ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'">
                                         {{ c.noise.automatic ? ctrans("Put aside automatically") : ctrans("Possible noise") }}: {{ c.noise.label }}
                                     </span>
+                                    <span v-if="c.claim" v-tooltip="ctrans('Asked out of hours for the order number, the items and photos. This is what has arrived since.')"
+                                        class="shrink-0 truncate rounded px-1 font-medium"
+                                        :class="c.claim.order_reference && c.claim.photos ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                                        {{ ctrans("Claim") }}:
+                                        {{ c.claim.order_reference ? c.claim.order_reference : ctrans("no order number") }}
+                                        ·
+                                        {{ c.claim.photos ? ctrans(":count photos", { count: c.claim.photos }) : ctrans("no photos") }}
+                                    </span>
+                                    <span v-for="task in c.open_tasks" :key="task.reference"
+                                        v-tooltip="ctrans(':reference for :who', { reference: task.reference, who: task.who })"
+                                        class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Waiting") }}: {{ task.subject }}
+                                    </span>
+                                    <span v-if="c.metadata?.ds_kind === 'integration'" v-tooltip="ctrans('Needs technical help with their store or marketplace connection')"
+                                        class="shrink-0 truncate rounded bg-sky-50 px-1 font-medium text-sky-700">
+                                        {{ ctrans("Integration") }}
+                                    </span>
+                                    <span v-else-if="c.metadata?.ds_kind === 'documents'" v-tooltip="ctrans('Asks for a compliance document, an invoice or customs paperwork')"
+                                        class="shrink-0 truncate rounded bg-violet-50 px-1 font-medium text-violet-700">
+                                        {{ ctrans("Documents") }}
+                                    </span>
+                                    <span v-if="c.urgent === 'delivery_instruction'" v-tooltip="ctrans('Tells us how to deliver an order that has not arrived yet, such as a safe place. First in the queue until answered.')"
+                                        class="shrink-0 truncate rounded bg-orange-500 px-1 font-semibold text-white">
+                                        {{ ctrans("Delivery instruction") }}
+                                    </span>
+                                    <span v-else-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
+                                        class="shrink-0 truncate rounded bg-red-600 px-1 font-semibold text-white">
+                                        {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
+                                    </span>
+                                    <span v-if="c.waiting_until" v-tooltip="ctrans('Waiting for the customer to write back. Closes by itself if they write nothing.')"
+                                        class="shrink-0 truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        ⏳ {{ waitingLeft(c.waiting_until) }}
+                                    </span>
+                                    <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
+                                        class="shrink-0 truncate rounded px-1 font-medium"
+                                        :class="c.promise.overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
+                                        {{ ctrans("Promised :time", { time: formatPromiseTime(c.promise.at) }) }}
+                                    </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs truncate flex-1 leading-snug" :class="c.unread && !onlyClosed ? 'font-semibold text-gray-800' : 'text-gray-500'">{{ c.lastMessage }}</span>
@@ -2196,9 +2912,9 @@ onUnmounted(() => {
                                     <button v-if="!trashView && !isReadOnly" type="button"
                                         v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
                                         class="shrink-0 flex items-center justify-center transition-opacity"
-                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
+                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-400 opacity-0 group-hover:opacity-100 hover:text-amber-500'"
                                         @click.stop="toggleHighlight(c)">
-                                        <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" fixed-width />
+                                        <FontAwesomeIcon :icon="c.is_highlighted ? faStarSolid : faStar" class="text-[11px]" fixed-width />
                                     </button>
                                     <span v-if="c.unread && !onlyClosed"
                                         v-tooltip="ctrans('Unread messages')"
@@ -2230,15 +2946,15 @@ onUnmounted(() => {
         </div>
 
         <!-- CENTER: thread + composer -->
-        <div class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden lg:block'">
+        <div class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden min-[1440px]:block'">
             <div v-if="!selectedSession"
                 class="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
                 <div class="text-4xl">💬</div>
                 <div class="text-sm">{{ ctrans("Select a conversation") }}</div>
             </div>
 
-            <div v-else class="h-full">
-                <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'"
+            <div v-else ref="conversationColumn" class="h-full flex flex-col">
+                <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'" class="flex-1 min-h-0"
                     :messages="messages" :session="selectedSession"
                     :organisation-slug="organisation.slug"
                     :read-only="isReadOnly" :show-shop="crossShopView"
@@ -2246,28 +2962,38 @@ onUnmounted(() => {
                     @assign-self-success="onAssignSelfSuccess"
                     @close-session="closeSession"
                     @spam-success="onSpamFromThread"
+                    @task-created="reloadContactsSoon"
                     @view-profile="showProfilePanel" />
-                <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
+                <MessageAreaAgent v-else class="flex-1 min-h-0" :messages="messages" :session="selectedSession"
                     :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
-                    @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
+                    @view-user-profile="showProfilePanel"
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
                     @view-tickets="showTicketsPanel"
+                    @task-created="reloadContactsSoon"
                     @restore-success="onRestoreFromThread" />
+
+                <template v-if="isEmbedded && panelSession && sidePanelVisible">
+                    <div class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
+                        v-tooltip="ctrans('Drag to resize')" @pointerdown="startStackedPanelResize" />
+                    <ChatConversationSidePanel stacked :style="{ height: `${stackedPanelHeight}%` }"
+                        :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
+                        @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
+                </template>
             </div>
         </div>
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
-        <div v-if="panelSession && sidePanelVisible" class="absolute inset-0 z-20 bg-black/20 xl:hidden"
+        <div v-if="!isEmbedded && panelSession && sidePanelVisible" class="absolute inset-0 z-20 bg-black/20 xl:hidden"
             @click="closeSidePanel" />
 
-        <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
-            @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
+        <ChatConversationSidePanel v-if="!isEmbedded && panelSession && sidePanelVisible"
+            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">

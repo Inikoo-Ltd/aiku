@@ -11,7 +11,6 @@ const props = defineProps<{
     bannerType: string
 }>()
 
-console.log(props)
 </script>
 
 <template>

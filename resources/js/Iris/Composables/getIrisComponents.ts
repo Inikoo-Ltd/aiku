@@ -2,6 +2,14 @@ import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
+import Header2Iris from "@/Iris/Components/IrisBlocks/Header2Iris.vue"
+import Header1Iris from "@/Iris/Components/IrisBlocks/Header1Iris.vue"
+import Topbar1FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"
+import Topbar2FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"
+import Topbar1Iris from "@/Iris/Components/IrisBlocks/Topbar1Iris.vue"
+import Topbar2Iris from "@/Iris/Components/IrisBlocks/Topbar2Iris.vue"
+import Menu1Iris from "@/Iris/Components/IrisBlocks/Menu1Iris.vue"
+import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
@@ -49,16 +57,9 @@ const RenderEcommerceProduct = async(() => import("@/Iris/Components/IrisBlocks/
 const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
 const ProductIris2Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris2Ecom.vue"))
 const ProductIris3Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"))
+const ProductIris4Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris4Ecom.vue"))
 const AnnouncementInformational1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue"))
 const Products2Render = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"))
-const Header2Iris = async(() => import("@/Iris/Components/IrisBlocks/Header2Iris.vue"))
-const Header1Iris = async(() => import("@/Iris/Components/IrisBlocks/Header1Iris.vue"))
-const Topbar1FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"))
-const Topbar2FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"))
-const Topbar1Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1Iris.vue"))
-const Topbar2Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2Iris.vue"))
-const Menu1Workshop = async(() => import("@/Iris/Components/IrisBlocks/Menu1Iris.vue"))
-const Footer1Iris = async(() => import("@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"))
 const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"))
 const family1Iris = async(() => import("@/Iris/Components/IrisBlocks/family1Iris.vue"))
 const family2Iris = async(() => import("@/Iris/Components/IrisBlocks/family2Iris.vue"))
@@ -144,7 +145,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 
 		//menu
-		"menu-1": Menu1Workshop,
+		"menu-1": Menu1Iris,
 
 		//footer
 		"footer-1": Footer1Iris,
@@ -183,10 +184,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
-
 		"product-2": RenderEcommerceProduct,
-
 		"product-3": RenderEcommerceProduct,
+		"product-4": RenderEcommerceProduct,
 
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
@@ -261,6 +261,24 @@ export const getIrisComponent = (
 	return components(options?.shop_type)[componentName] ?? NotFoundComponent
 }
 
+const preloadAsyncComponent = (component: any): Promise<unknown> | null =>
+	component?.__asyncResolved || typeof component?.__asyncLoader !== "function" ? null : component.__asyncLoader().catch(() => null)
+
+export const preloadIrisBlocks = (webBlocks: any, shopType?: string): Promise<unknown> =>
+	Promise.all(
+		(Array.isArray(webBlocks) ? webBlocks : Object.values(webBlocks ?? {})).map((webBlock: any) =>
+			preloadAsyncComponent(getIrisComponent(webBlock?.type, { shop_type: shopType }))
+		)
+	)
+
+export const preloadIrisPage = (pageProps: any): Promise<unknown> =>
+	Promise.all([
+		preloadIrisBlocks(pageProps?.web_blocks, pageProps?.retina?.type),
+		...(pageProps?.announcements ?? []).map((announcement: any) =>
+			preloadAsyncComponent(getIrisAnnouncementComponent(announcement?.template_code))
+		),
+	])
+
 export const getProductsRenderDropshippingComponent = (
 	componentName: string,
 	options: Record<string, any> = {}
@@ -293,6 +311,7 @@ export const getProductRenderB2bComponent = (
 		"product-1": ProductIris1Ecom,
 		"product-2": ProductIris2Ecom,
 		"product-3": ProductIris3Ecom,
+		"product-4": ProductIris4Ecom,
 	}
 
 	return components[componentName] ?? null

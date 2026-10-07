@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from "vue"
+import { useRevealOutOfView } from "@/Iris/Composables/useRevealOutOfView"
 import { getStyles } from "@/Composables/styles"
 
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -14,7 +15,7 @@ import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/Recom
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RecommendationProduct } from "@/types/RecommendationProduct"
 library.add(faChevronLeft, faChevronRight)
 
@@ -51,8 +52,8 @@ const slidesPerView = computed(() => {
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<RecommendationProduct[]>([])
-const isLoadingFetch = ref(false)
-const isFetched = ref(false)
+const blockContainer = ref<HTMLElement | null>(null)
+const isShown = useRevealOutOfView(blockContainer, () => (listProducts.value?.length ?? 0) > 3)
 
 const listLoadingProducts = ref<Record<string, string>>({})
 const isProductLoading = (productId: string) => {
@@ -63,26 +64,19 @@ const webpageId = inject<number | null>('webpage_id', null)
 
 const fetchProductsLastSeen = async () => {
     if (!webpageId) {
-        isFetched.value = true
         return
     }
 
     try {
-        isLoadingFetch.value = true
-
         const response = await axios.post(
             route('iris.json.product_last_seen.store', { webpage: webpageId })
         )
 
         listProducts.value = response.data.data
         
-        console.log(`LLS Internal (${response.data.data?.length}): `, response.data.data)
 
     } catch (error: any) {
         console.error('Error on fetching products last seen:', error)
-    } finally {
-        isFetched.value = true
-        isLoadingFetch.value = false
     }
 }
 
@@ -92,13 +86,13 @@ onMounted(() => {
 </script>
 
 <template>    
-    <div data-block-type="internal-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'internal-last-seen-1-iris'+indexBlock"  component="internal-last-seen-1-iris"
+    <div ref="blockContainer" data-block-type="internal-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'internal-last-seen-1-iris'+indexBlock"  component="internal-last-seen-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProducts?.length > 3">
+        <template v-if="isShown">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-3xl font-semibold">
@@ -116,23 +110,16 @@ onMounted(() => {
                     spaceBetween="12"
                     autoHeight
                 >
-                    <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                        <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
-                        </div>
-                    </div>
-
-                    <template v-else>
-                        <SwiperSlide
-                            v-for="(product, index) in listProducts"
-                            :key="index"
-                            class="w-full cursor-grab relative !grid h-full min-h-full"
-                        >
-                            <RecommendationSlideLastSeen
-                                :product
-                                :isProductLoading
-                            />
-                        </SwiperSlide>
-                    </template>
+                    <SwiperSlide
+                        v-for="(product, index) in listProducts"
+                        :key="index"
+                        class="w-full cursor-grab relative !grid h-full min-h-full"
+                    >
+                        <RecommendationSlideLastSeen
+                            :product
+                            :isProductLoading
+                        />
+                    </SwiperSlide>
                 </Swiper>
             </div>
         </template>

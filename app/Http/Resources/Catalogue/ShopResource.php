@@ -30,6 +30,7 @@ class ShopResource extends JsonResource
             'slug'    => $shop->slug,
             'code'    => $shop->code,
             'name'    => $shop->name,
+            'short_name' => $shop->short_name,
             'type'    => $shop->type,
             'state'   => $shop->state,
             'sales'   => $shop->orderingStats

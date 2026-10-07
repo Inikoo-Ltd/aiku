@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Spaces\UI;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\UI\Fulfilment\SpaceTabsEnum;
 use App\Http\Resources\Fulfilment\SpaceResource;
 use App\Models\Fulfilment\Space;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaSpace extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Space $space): Space
     {
         return $space;

@@ -20,6 +20,7 @@ class SyncUserJobPositions
 
     public function handle(User $user, array $jobPositions): void
     {
+        $jobPositions = DropLowerGradeJobPositionScopes::run($jobPositions);
         $jobPositionsIds = array_keys($jobPositions);
 
         $currentJobPositions = $user->pseudoJobPositions()->pluck('job_positions.id')->all();

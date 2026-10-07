@@ -12,9 +12,13 @@ use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\FulfilToProduceItemsFromSurplus;
+use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\Warehouse;
@@ -113,7 +117,13 @@ class ReceiveJobOrderIntoStock extends OrgAction
 
                 $this->deductRawMaterials($item, $producedUnits, $userId);
 
+                $surplusBefore = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received);
                 $item->update(['quantity_received' => round((float) $item->quantity_received + $producedUnits, 3)]);
+                $surplusBooked = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received) - $surplusBefore;
+
+                if ($surplusBooked > 0 && !$orgStock->organisation->orgPartners()->withBay($location->id)->exists()) {
+                    FulfilToProduceItemsFromSurplus::run($orgStock, $surplusBooked);
+                }
             }
 
             $stillOut = $items->contains(fn (JobOrderItem $item) => round($this->producedQuantity($item) - (float) $item->refresh()->quantity_received, 3) > 0);
@@ -123,6 +133,15 @@ class ReceiveJobOrderIntoStock extends OrgAction
                     'state'       => JobOrderStateEnum::RECEIVED,
                     'received_at' => now(),
                 ]);
+
+                // Our own restock and hand-made lines have no order to dispatch and no partner to
+                // pick for, so nothing else closes them: left open they vanish from the board yet
+                // keep counting and block the product from being queued again.
+                PartnerShoppingListItem::where('job_order_id', $jobOrder->id)
+                    ->whereNull('partner_organisation_id')
+                    ->whereNull('transaction_id')
+                    ->where('state', ShoppingListItemStateEnum::OPEN)
+                    ->update(['state' => ShoppingListItemStateEnum::DISMISSED]);
             }
         });
 
@@ -135,7 +154,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
      */
     private function producedQuantity(JobOrderItem $item): float
     {
-        $lastTask = $item->tasks->sortByDesc('position')->first();
+        $lastTask = $item->tasks->last();
 
         if (!$lastTask) {
             return 0.0;
@@ -196,7 +215,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
             }
 
             StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [
-                'quantity' => -$consumption['quantity'],
+                'quantity' => -$consumption['quantity'] / max(1, (int) $orgStock->packed_in),
                 'type'     => OrgStockMovementTypeEnum::PRODUCTION,
                 'user_id'  => $userId,
             ]);

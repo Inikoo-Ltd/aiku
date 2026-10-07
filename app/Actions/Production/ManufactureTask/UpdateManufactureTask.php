@@ -74,6 +74,8 @@ class UpdateManufactureTask extends OrgAction
             'operative_reward_terms'            => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
             'operative_reward_allowance_type'   => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
             'operative_reward_amount'           => ['sometimes', 'numeric', 'min:0'],
+            'description'                       => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'status'                            => ['sometimes', 'boolean'],
             'is_piece_rate'                     => ['sometimes', 'boolean'],
         ];
     }

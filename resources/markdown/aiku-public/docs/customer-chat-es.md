@@ -1,22 +1,24 @@
 ---
 title: Hablar con clientes en Chat
-summary: Una bandeja de entrada para el chat de la web, WhatsApp y el correo de la tienda - toma una conversación, responde con los pedidos del cliente a tu lado, registra una llamada, abre un ticket y consulta cómo va el equipo.
-date: 2026-09-21
-source_date: 2026-09-21
+summary: Una sola bandeja para el chat de la web, WhatsApp y el correo de la tienda - toma una conversación, responde con los pedidos del cliente a tu lado, registra una llamada, abre un ticket y consulta cómo va el equipo.
+date: 2026-10-01
+source_date: 2026-10-01
 tags: crm, chat
-category: crm
+category: help-desk
+series: Chat
+order: 1
 ---
 
 <aside class="tldr">
-<b>Chat</b> (Chat) es donde llega toda conversación con un cliente, venga por donde venga: la burbuja de chat de la web, <b>WhatsApp</b> o un <b>email</b> al buzón de la tienda. Todas caen en una sola bandeja, se responden de la misma forma, y la respuesta vuelve por donde vino el cliente. Junto a la conversación ves quién es, qué ha pedido y de qué habló la última vez. Una llamada se registra desde la misma pantalla, así que también queda en la ficha del cliente, y un problema que dura más que la conversación se convierte en un <b>ticket</b> (ticket) sin tener que volver a escribirlo.
+<b>Chat</b> es donde llega toda conversación con un cliente, venga por donde venga: la burbuja de chat de la web, <b>WhatsApp</b> o un <b>email</b> al buzón de la tienda. Todas caen en la misma bandeja, se responden de la misma forma, y la respuesta vuelve por donde vino el cliente. Junto a la conversación ves quién es, qué ha pedido y de qué habló la última vez. Una llamada se registra desde la misma pantalla, así que también queda en la ficha del cliente, y un problema que dura más que la conversación se convierte en un <b>ticket</b> sin tener que volver a escribirlo.
 </aside>
 
 ## Dónde está
 
-Abre <b>Chat</b> (Chat) en el menú de tu tienda o de tu organización. Lo que ves depende de tu puesto de trabajo, no de una lista que alguien mantiene a mano:
+Abre <b>Chat</b> en el menú de tu tienda o de tu organización. Lo que ves depende de tu puesto de trabajo, no de una lista que alguien mantenga a mano:
 
 - <b>Customer Inbox</b> (Bandeja del cliente) - la pantalla de trabajo. La tienes si tu puesto es atención al cliente en esa tienda; eso te hace agente de su chat de la web, WhatsApp y email a la vez.
-- <b>Supervision</b> (Supervisión) - la misma pantalla para quien supervisa el chat: todas las conversaciones de las tiendas que dirige, quién las tiene y los agentes al lado con si están conectados y cuánto llevan. Los supervisores y administradores pueden hacerse cargo, escribir y cerrar cualquier conversación sin que se les haya asignado.
+- <b>Supervision</b> (Supervisión) - la misma pantalla para quien supervisa el chat, con la potestad de hacerse cargo, escribir y cerrar cualquier conversación sin que se le haya asignado. Consulta <a href="/docs/overseeing-chat-es">Supervisar el chat</a>.
 - <b>Phone calls</b> (Llamadas) - las notas de cada llamada registrada en las tiendas en las que trabajas.
 - <b>Reports</b> (Informes) - las cifras, por tienda, por organización o de todo el grupo.
 - <b>Settings</b> (Ajustes) - horario de trabajo, el buzón y los canales.
@@ -27,19 +29,17 @@ Cuando alguien cambia de puesto o se va, su acceso cambia solo y las conversacio
 
 La columna de la izquierda enumera tus tiendas con lo que está <b>waiting</b> (esperando) y <b>active</b> (activo) en cada canal. Quien supervisa el chat puede activar varias tiendas a la vez y leerlas como una sola lista.
 
-- <b>Website</b> (Web) - el cliente escribe en la burbuja de la web. Fuera del horario de trabajo, el widget avisa de cuándo vuelves y pide un nombre, un email y un mensaje en su lugar.
-- <b>WhatsApp</b> (WhatsApp) - mensajes al número de la tienda. Consulta <a href="/docs/connecting-whatsapp-to-your-shop-es">Conectar WhatsApp a tu tienda</a>. Nuestras propias promociones no aparecen en la lista de Waiting.
-- <b>Email</b> (Correo) - el buzón de Gmail de la tienda, conectado una vez en los ajustes de la tienda; consulta <a href="/docs/connecting-an-email-mailbox-to-your-shop-es">Conectar un buzón de correo a tu tienda</a>. Un correo entrante abre una conversación y trae con él el resto de su hilo, así que lees el intercambio completo. Tu respuesta sale desde ese buzón, en el mismo hilo, con tu firma y tus adjuntos.
+- <b>Website</b> (Web) - el cliente escribe en la burbuja de la web, o deja un mensaje fuera del horario de trabajo. Consulta <a href="/docs/live-chat-on-the-website-es">Chat en directo en la web</a>.
+- <b>WhatsApp</b> (WhatsApp) - mensajes al número de la tienda. Consulta <a href="/docs/whatsapp-in-chat-es">WhatsApp en Chat</a>.
+- <b>Email</b> (Correo) - el buzón de Gmail de la tienda, conectado una vez en los ajustes de la tienda. Consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a>.
 
 ## Tomar una conversación
 
 La bandeja tiene dos listas, cada una con su contador: <b>My Chats</b> (Mis chats) y <b>Colleagues' Chats</b> (Chats de compañeros), los que lleva otra persona en una tienda en la que también trabajas. Dentro de ellas, <b>Waiting</b> (Esperando) es lo que nadie ha recogido, <b>Active</b> (Activo) está en mano y <b>Closed</b> (Cerrado) es lo que se cerró hoy. <b>Assign to me</b> (Asignarme) hace tuya una conversación en espera; <b>Take Over</b> (Hacerse cargo) te la traspasa de un compañero que se ha ido a comer.
 
-Después funciona como cualquier mensajería: escribe y envía, añade un emoji, adjunta tantas imágenes o documentos como necesites. <b>Translate</b> (Traducir) te deja leer al cliente en tu idioma y responder en el suyo.
+Después funciona como cualquier mensajería: escribe y envía, añade un emoji, adjunta imágenes y documentos, hasta 30 archivos a la vez (consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a> para ver qué archivos). <b>Translate</b> (Traducir) te deja leer al cliente en tu idioma y responder en el suyo.
 
 Un mensaje enviado no se puede editar, porque el cliente ya lo tiene. <b>Take back</b> (Retirar) lo quita de todos los canales y avisa al cliente. <b>Redact</b> (Tachar) elimina para siempre el texto seleccionado de un mensaje - un número de tarjeta, una contraseña.
-
-<b>&#8942;</b> &rarr; <b>Email notification</b> (Aviso por correo) indica <b>On</b> (Activado) u <b>Off</b> (Desactivado). Activado, lo que envías le llega al cliente también por correo, pensado para quien preguntó en la web y cerró la pestaña. Solo se ofrece en una conversación que tengas tú, cuando hay una dirección a la que escribir, y nunca en una conversación de correo, que ya es un correo.
 
 ## El cliente a tu lado
 
@@ -54,6 +54,12 @@ Muchos invitados son clientes que simplemente no han iniciado sesión. Cada mens
 Es una sugerencia y decides tú. Cualquiera puede escribir el email de otra persona, y una conversación vinculada pone los pedidos de ese cliente delante de ti. <b>Confirm</b> (Confirmar) vincula la conversación; <b>Not them</b> (No es él/ella) quita la sugerencia para siempre. Un cliente de una tienda hermana, o alguien del mismo dominio de empresa, se muestra como una pista que no se puede confirmar.
 
 Cuando nada identifica a un invitado que escribe como un cliente ya existente, se le pregunta una vez, automáticamente, por el email de su cuenta o un número de pedido. Esto pasa en la web y en WhatsApp, nunca por email.
+
+## Respuestas automáticas
+
+Algunos mensajes salen sin que nadie los escriba, y aparecen en la conversación como notas grises. Cuando la tienda está cerrada, se le dice al cliente cuándo vuelve a abrir. Si está comunicando un problema con la mercancía, también se le piden los datos que vas a necesitar, como el número de pedido, fotos, y los productos y cantidades. Fuera del horario laboral, también puede salir por sí sola una respuesta de la IA a una pregunta que la IA ha aprendido a responder bien.
+
+Estas respuestas no se desactivan cuando una sale mal: son como aprendemos qué funciona. Debajo de cada nota hay un <b>Wrong?</b> (¿Incorrecta?). Haz clic, escribe por qué fue incorrecta (por ejemplo, "el cliente ya había indicado los productos y las cantidades") y pulsa <b>Mark as wrong</b> (Marcar como incorrecta). El motivo es obligatorio, porque es lo que usamos para corregir las respuestas. Una respuesta incorrecta de la IA también hace que, durante un tiempo, la IA deje de responder por sí sola a ese tipo de pregunta en esa tienda. Marcar como incorrecta una respuesta de cierre o una petición de datos no la detiene: se sigue enviando hasta que se corrige.
 
 ## Ruido
 

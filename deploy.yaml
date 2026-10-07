@@ -17,10 +17,18 @@ hosts:
     branch: production
     labels:
       env: prod
-  aiku_helio:
+  aiku_litio:
+    hostname: 65.109.156.59
+    remote_user: aiku
+    ssh_arguments:
+      - '-o ServerAliveInterval=30'
+      - '-o ServerAliveCountMax=20'
+      - '-o UserKnownHostsFile=deploy/known_hosts_litio'
+      - '-o StrictHostKeyChecking=yes'
     environment: 'production'
     deploy_path: '~/aiku'
     branch: production
+    octane_replica_state_file: logs/litio-replica-octane-server-state.json
     labels:
       env: prod
   staging:

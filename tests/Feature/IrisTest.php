@@ -6,6 +6,18 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
+use App\Actions\Iris\Docs\ShowIrisDoc;
+use App\Actions\Iris\Docs\ShowIrisDocs;
+use App\Actions\UI\AikuPublic\BlogPosts;
+use App\Actions\Web\Webpage\StoreWebpage;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Helpers\Language;
+use App\Models\Web\Webpage;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareUrl;
 use App\Http\Middleware\DetectIrisWebsite;
@@ -16,7 +28,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+use function Pest\Laravel\actingAs;
 
 beforeEach(function () {
     loadDB();
@@ -415,4 +435,172 @@ test('iris streams a product ingredients label pdf only for its own shop product
     $otherShop = createOwnShop('ingredients-label-other-shop')[2];
     $product->updateQuietly(['shop_id' => $otherShop->id]);
     $this->get($url)->assertNotFound();
+});
+
+test('iris attachment routes only serve public product documents and labeling guides', function () {
+    Storage::fake('local');
+    [, $product] = createProduct($this->shop);
+    $customer    = createCustomer($this->shop);
+    $baseUrl     = 'http://'.$this->website->domain.'/attachment/';
+
+    $productSds       = createAttachedMedia('Product', $product->id, 'sds');
+    $tradeUnitIfra    = createAttachedMedia('TradeUnit', 1, 'ifra');
+    $labelingGuide    = createAttachedMedia('TradeUnitFamily', 1, 'labeling_guide');
+    $privateSds       = createAttachedMedia('TradeUnit', 1, 'sds_private');
+    $employeeContract = createAttachedMedia('Employee', 1, 'Contract');
+    $customerNote     = createAttachedMedia('Customer', $customer->id, 'CustomerNote');
+
+    foreach ([$productSds, $tradeUnitIfra, $labelingGuide] as $media) {
+        $this->get($baseUrl.$media->ulid)->assertOk();
+        $this->get($baseUrl.$media->ulid.'/download')->assertOk();
+    }
+
+    foreach ([$privateSds, $employeeContract, $customerNote] as $media) {
+        $this->get($baseUrl.$media->ulid)->assertNotFound();
+        $this->get($baseUrl.$media->ulid.'/download')->assertNotFound();
+    }
+});
+
+test('retina attachment download serves public documents and the customer own order files only', function () {
+    Storage::fake('local');
+    [, $product]   = createProduct($this->shop);
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $webUser       = createWebUser($customer);
+
+    $order      = createOrder($customer, $product);
+    $orderFile  = createAttachedMedia('Order', $order->id, 'Other');
+    $productSds = createAttachedMedia('Product', $product->id, 'sds');
+    $employeeCv = createAttachedMedia('Employee', 1, 'CV');
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    actingAs($webUser, 'retina');
+
+    $this->get(route('retina.models.attachment.download', $orderFile->ulid))->assertOk();
+    $this->get(route('retina.models.attachment.download', $productSds->ulid))->assertOk();
+    $this->get(route('retina.models.attachment.download', $employeeCv->ulid))->assertNotFound();
+
+    $order->updateQuietly(['customer_id' => $otherCustomer->id]);
+    $this->get(route('retina.models.attachment.download', $orderFile->ulid))->assertNotFound();
+
+    $order->updateQuietly(['customer_id' => $customer->id]);
+});
+
+test('iris invoice pdf is not served on another shop website', function () {
+    $customer = createCustomer($this->shop);
+    createInvoiceFor($customer, $this->shop, now()->toDateString(), 10);
+    $invoice = Invoice::where('customer_id', $customer->id)->latest('id')->first();
+    $invoice->updateQuietly(['ulid' => (string) Str::ulid()]);
+
+    $otherWebsite = createWebsite(createOwnShop('iris-invoice-other-shop')[2]);
+    $otherWebsite->update(['status' => true]);
+
+    $this->get('http://'.$otherWebsite->domain.'/invoice/'.$invoice->ulid)->assertNotFound();
+    $this->get('http://'.$this->website->domain.'/invoice/'.$invoice->ulid)->assertOk();
+});
+
+function writeDropshippingDoc(string $slug, array $meta, string $body): string
+{
+    $directory = resource_path('markdown/'.BlogPosts::DROPSHIPPING_DOCS);
+    @mkdir($directory, 0777, true);
+    $frontMatter = collect(array_merge(['title' => $slug, 'summary' => 'Summary of '.$slug, 'date' => '2026-09-01'], $meta))
+        ->map(fn ($value, $key) => $key.': '.$value)
+        ->implode("\n");
+    file_put_contents($directory.'/'.$slug.'.md', "---\n".$frontMatter."\n---\n".$body);
+
+    return $directory.'/'.$slug.'.md';
+}
+
+function asDropshippingWebsite(Website $website, string $shopSlug, string $languageCode): Website
+{
+    $shop = $website->shop->replicate();
+    $shop->type = ShopTypeEnum::DROPSHIPPING;
+    $shop->slug = $shopSlug;
+    $shop->setRelation('language', (new Language())->forceFill(['code' => $languageCode]));
+    $website->setRelation('shop', $shop);
+
+    return $website;
+}
+
+test('dropshipping docs are listed in the website language and only for their shops', function () {
+    $files = [
+        writeDropshippingDoc('zz-pest-connecting', ['category' => 'sales-channels', 'shops' => 'zz-pest-dse, zz-pest-awd'], 'See [the other guide](/docs/zz-pest-other).'),
+        writeDropshippingDoc('zz-pest-connecting-es', ['category' => 'sales-channels', 'title' => 'Conectar', 'source_date' => '2026-09-01'], 'Hola'),
+        writeDropshippingDoc('zz-pest-other', ['category' => 'products'], 'Other'),
+        writeDropshippingDoc('zz-pest-other-es', ['category' => 'products', 'title' => 'Otra', 'source_date' => '2026-09-01'], 'Otra'),
+        writeDropshippingDoc('zz-pest-uk-only', ['shops' => 'zz-pest-awd'], 'UK'),
+    ];
+
+    try {
+        $website = asDropshippingWebsite($this->website, 'zz-pest-dse', 'es');
+
+        $slugs = collect(ShowIrisDocs::make()->handle($website))->pluck('slug')->filter(fn (string $slug) => str_starts_with($slug, 'zz-pest-'))->values()->all();
+        expect($slugs)->toEqualCanonicalizing(['zz-pest-connecting-es', 'zz-pest-other-es']);
+
+        $page = ShowIrisDoc::make()->handle($website, 'zz-pest-connecting');
+        expect($page['doc']['html'])->toContain('href="/docs/zz-pest-other-es"')
+            ->and(collect($page['translations'])->pluck('lang')->all())->toBe(['en', 'es']);
+
+        expect(fn () => ShowIrisDoc::make()->handle($website, 'zz-pest-uk-only'))->toThrow(NotFoundHttpException::class);
+    } finally {
+        array_map('unlink', $files);
+    }
+});
+
+test('docs are not served on a website that is not dropshipping', function () {
+    $this->get('http://'.$this->website->domain.'/docs')->assertNotFound();
+});
+
+test('a webpage can not take the docs address', function () {
+    expect(fn () => StoreWebpage::make()->action($this->website, array_merge(Webpage::factory()->definition(), [
+        'url'      => 'docs',
+        'type'     => WebpageTypeEnum::CONTENT->value,
+        'sub_type' => WebpageSubTypeEnum::CONTENT->value,
+    ])))->toThrow(ValidationException::class);
+});
+
+test('dropshipping docs fill in the website own company, address and blocked countries', function () {
+    $website = asDropshippingWebsite($this->website, 'zz-pest-dse', 'es');
+    $website->shop->company_name = 'Pest & Co';
+    $website->shop->banned_country_regions = [
+        'GB' => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => null],
+        'FR' => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => '/^20/'],
+        'DE' => ['billing' => true, 'delivery' => false, 'ip_block' => false, 'postcode' => null],
+    ];
+
+    $html = ShowIrisDocs::make()->fillPlaceholders('{company_name}|{blocked_delivery_countries}', $website, isHtml: true);
+
+    expect($html)->toContain('Pest &amp; Co|')
+        ->toContain('<li>Reino Unido</li>')
+        ->toContain('<li>Francia (')
+        ->not->toContain('Alemania')
+        ->and(ShowIrisDocs::make()->fillPlaceholders('{company_name}', $website))->toBe('Pest & Co');
+});
+
+test('saving a dropshipping shop queues a purge of its docs from the website cache', function () {
+    config(['iris.cache.varnish' => true]);
+    Queue::fake();
+
+    PurgeIrisDocsFromVarnish::forShop($this->shop);
+    PurgeIrisDocsFromVarnish::assertNotPushed();
+
+    $website = asDropshippingWebsite($this->website, 'zz-pest-dse', 'es');
+    $website->shop->setRelation('website', $website);
+    PurgeIrisDocsFromVarnish::forShop($website->shop);
+    PurgeIrisDocsFromVarnish::assertPushed();
+});
+
+test('iris family page does not ship the family products twice', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    $response = $this->withoutVite()->get('http://'.$this->website->domain.'/catalogue/family/'.$family->slug);
+    $response->assertOk();
+
+    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
+    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+
+    expect($page['component'])->toBe('Catalogue/Family')
+        ->and($page['props']['data']['family']['slug'])->toBe($family->slug)
+        ->and($page['props']['data']['family'])->not->toHaveKey('products');
 });

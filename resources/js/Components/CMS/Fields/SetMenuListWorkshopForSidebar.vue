@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTrash } from "@fas";
 import ConfirmPopup from "primevue/confirmpopup"
 import { faExclamationTriangle, faEye, faEyeSlash } from "@far";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import { set } from "lodash-es";
 import UploadImage from "@/Components/Pure/UploadImage.vue"
@@ -29,7 +29,6 @@ const props = defineProps<{
     autosaveRoute: routeType
     uploadImageRoute: routeType
 }>()
-console.log('-- Menu list props.data', props.data)
 
 const emits = defineEmits<{
     (e: 'auto-save'): void
@@ -176,8 +175,6 @@ const getCurrentItem = computed(() => {
 
 const autoSave = async (event?) => {
     emits('auto-save')
-    console.log('Navigation data:', props.data.data.fieldValue.navigation);
-    console.log('Navigation bottom data:', props.data.data.fieldValue.navigation_bottom);
 }
 
 </script>
@@ -186,8 +183,8 @@ const autoSave = async (event?) => {
     <!-- Section: upload logo -->
     <div class="my-4">
         <div class="text-base font-medium mb-2">
-            {{ trans("Logo") }}
-            <InformationIcon :information="trans('The logo will only apply for sidebar. If logo is not provided, Sidebar will use main logo.')" />
+            {{ ctrans("Logo") }}
+            <InformationIcon :information="ctrans('The logo will only apply for sidebar. If logo is not provided, Sidebar will use main logo.')" />
         </div>
 
         <UploadImage
@@ -203,7 +200,7 @@ const autoSave = async (event?) => {
     <!-- Top Navigation Area -->
     <div class="my-4">
         <div class="text-base font-medium mb-2">
-            {{ trans("Top Custom Menu") }}
+            {{ ctrans("Top Custom Menu") }}
         </div>
         <div class="mb-3">
             <Button :label="'Add Top Navigation'" type="create" :size="'xs'" @click="() => addNavigation('top')" />
@@ -246,8 +243,8 @@ const autoSave = async (event?) => {
             </template>
             <template #fallback>
                 <div class="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <div class="text-sm">{{ trans("Drop top navigation items here") }}</div>
-                    <div class="text-xs mt-1">{{ trans('or click "Add Top Navigation" to create new item') }}</div>
+                    <div class="text-sm">{{ ctrans("Drop top navigation items here") }}</div>
+                    <div class="text-xs mt-1">{{ ctrans('or click "Add Top Navigation" to create new item') }}</div>
                 </div>
             </template>
         </draggable>
@@ -257,14 +254,14 @@ const autoSave = async (event?) => {
     <div class="flex items-center my-6">
         <!-- <div class="flex-grow border-t border-gray-300"></div> -->
         <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-dashed border-gray-400 rounded">
-            {{ trans("Area reserved by system") }}
-            <InformationIcon :information="trans('Automatically showed Departments list')" />
+            {{ ctrans("Area reserved by system") }}
+            <InformationIcon :information="ctrans('Automatically showed Departments list')" />
         </div>
     </div>
 
     <!-- Bottom Navigation Area -->
     <div class="mb-4">
-        <div class="text-base font-medium mb-2">{{ trans("Bottom Custom Menu") }}</div>
+        <div class="text-base font-medium mb-2">{{ ctrans("Bottom Custom Menu") }}</div>
         <div class="mb-3">
             <Button :label="'Add Bottom Navigation'" type="create" :size="'xs'"
                 @click="() => addNavigation('bottom')" />
@@ -306,8 +303,8 @@ const autoSave = async (event?) => {
             </template>
             <template #fallback>
                 <div class="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <div class="text-sm">{{ trans("Drop bottom navigation items here") }}</div>
-                    <div class="text-xs mt-1">{{ trans("or click \"Add Bottom Navigation\" to create new item") }}</div>
+                    <div class="text-sm">{{ ctrans("Drop bottom navigation items here") }}</div>
+                    <div class="text-xs mt-1">{{ ctrans("or click \"Add Bottom Navigation\" to create new item") }}</div>
                 </div>
             </template>
         </draggable>

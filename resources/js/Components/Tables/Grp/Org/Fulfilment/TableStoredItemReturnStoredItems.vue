@@ -7,7 +7,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { debounce, set, get } from 'lodash-es';
 import { Link, router } from "@inertiajs/vue3"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Tag from '@/Components/Tag.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
@@ -75,7 +75,6 @@ const SetSelected = () => {
             preserveScroll: true,
             onSuccess: () => {},
             onError: (e) => {
-                console.log('Failed to save', e);
                 notify({
                     title: 'Something went wrong.',
                     text: 'Failed to save',
@@ -256,8 +255,8 @@ const notifyRequestError = (error: unknown) => {
     const uniqueMessages = [...new Set(messages)].filter(Boolean)
 
     notify({
-        title: trans('Something went wrong.'),
-        text: uniqueMessages[0] ?? trans('Request failed'),
+        title: ctrans('Something went wrong.'),
+        text: uniqueMessages[0] ?? ctrans('Request failed'),
         type: 'error',
     })
 }
@@ -329,8 +328,8 @@ const switchPalletStoredItemForRequestedItem = async (item: any, currentPalletSt
     const hasProcessedQuantity = Number(currentPalletStoredItem?.picked_quantity || 0) > 0 || Number(currentPalletStoredItem?.not_picked_quantity || 0) > 0
     if (hasProcessedQuantity) {
         notify({
-            title: trans('Cannot change location'),
-            text: trans('This requested pallet already has picked/not picked quantity.'),
+            title: ctrans('Cannot change location'),
+            text: ctrans('This requested pallet already has picked/not picked quantity.'),
             type: 'warn',
         })
         return
@@ -341,8 +340,8 @@ const switchPalletStoredItemForRequestedItem = async (item: any, currentPalletSt
 
     if (selectedQuantityToMove > targetMaxQuantity) {
         notify({
-            title: trans('Cannot change location'),
-            text: trans('Insufficient stock in selected pallet location.'),
+            title: ctrans('Cannot change location'),
+            text: ctrans('Insufficient stock in selected pallet location.'),
             type: 'warn',
         })
         return
@@ -546,25 +545,25 @@ function getRequestedPalletStoredItems(item: any) {
                                     </Link>
                                     <div v-else>{{ pallet_stored_item.reference }}</div>
                                 </span>
-                                <span v-else class="text-gray-400 italic">({{ trans('No reference') }})</span>
+                                <span v-else class="text-gray-400 italic">({{ ctrans('No reference') }})</span>
                                 <span
                                     v-if="
                                         pallet_stored_item.location?.code &&
                                         ['in_process', 'submitted', 'confirmed'].includes(palletReturn.state)
                                     "
-                                    v-tooltip="trans('Location code of the pallet')"
+                                    v-tooltip="ctrans('Location code of the pallet')"
                                     class="text-gray-400"
                                 >
                                     [{{ pallet_stored_item.location?.code }}]
                                 </span>
-                                <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="trans('Will be picked')" class="pl-1 pb-1 inline" >
+                                <div  v-if="pallet_stored_item.selected_quantity && palletReturn.state === 'in_process'" v-tooltip="ctrans('Will be picked')" class="pl-1 pb-1 inline" >
                                     <FontAwesomeIcon icon='fas fa-circle' class='text-[7px] text-blue-500 animate-pulse' fixed-width aria-hidden='true' />
                                 </div>
                                 <!-- <div v-if="palletReturn.state === 'picking'"
                                     @xxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
-                                    v-tooltip="trans(`Total Customer's SKO in this pallet`)"
+                                    v-tooltip="ctrans(`Total Customer's SKO in this pallet`)"
                                     class="text-gray-400 tabular-nums xcursor-pointer xhover:text-gray-600">
-                                    {{ trans("Stocks in pallet") }}: {{ pallet_stored_item.quantity_in_pallet }}
+                                    {{ ctrans("Stocks in pallet") }}: {{ pallet_stored_item.quantity_in_pallet }}
                                 </div> -->
                             </div>
 
@@ -579,13 +578,13 @@ function getRequestedPalletStoredItems(item: any) {
                                         },
                                         method: 'patch'
                                     }"
-                                    :title="trans(`Return pallet :palletReference to customer?`, { palletReference: pallet_stored_item.reference ?? '' })"
-                                    :description="trans(`The pallet :palletReference will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`, { palletReference: pallet_stored_item.reference ?? '' })"
+                                    :title="ctrans(`Return pallet :palletReference to customer?`, { palletReference: pallet_stored_item.reference ?? '' })"
+                                    :description="ctrans(`The pallet :palletReference will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`, { palletReference: pallet_stored_item.reference ?? '' })"
                                 >
                                     <template #default="{ changeModel }">
                                         <Button
                                             @click="() => changeModel()"
-                                            :label="trans('Return pallet')"
+                                            :label="ctrans('Return pallet')"
                                             size="xs"
                                         />
                                     </template>
@@ -594,22 +593,22 @@ function getRequestedPalletStoredItems(item: any) {
                                         <Button
                                             :loading="isLoadingdelete"
                                             @click="() => clickYes()"
-                                            :label="trans('Yes, return the pallet')"
+                                            :label="ctrans('Yes, return the pallet')"
                                         />
                                     </template>
                                 </ModalConfirmation>
 
                                 <Tag
                                     v-if="pallet_stored_item.is_pallet_returned"
-                                    v-tooltip="trans('Pallet was returned to customer')"
-                                    :label="trans('Pallet returned')"
+                                    v-tooltip="ctrans('Pallet was returned to customer')"
+                                    :label="ctrans('Pallet returned')"
                                     :theme="8"
                                     size="xs"
                                     noHoverColor
                                 />
 
-                                <div v-if="palletReturn.state === 'in_process'" v-tooltip="trans('Available quantity')" class="text-base">{{ pallet_stored_item.available_quantity }}</div>
-                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans(`Quantity of Customer's SKO that should be picked`)" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
+                                <div v-if="palletReturn.state === 'in_process'" v-tooltip="ctrans('Available quantity')" class="text-base">{{ pallet_stored_item.available_quantity }}</div>
+                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="ctrans(`Quantity of Customer's SKO that should be picked`)" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
 
                                 <!-- Button: input number (in_process) -->
                                 <NumberWithButtonSave
@@ -651,13 +650,13 @@ function getRequestedPalletStoredItems(item: any) {
                                 <div v-else-if="palletReturn.state === 'dispatched'" class="hidden" />
 
                                 <div v-else-if="!['picking', 'picked', 'dispatched'].includes(palletReturn.state)" class="flex flex-nowrap gap-x-1 items-center tabular-nums">
-                                    <span v-if="pallet_stored_item.state == 'cancel'" class="pr-2 mr-1 text-red-500 border-r-2 border-gray-300" v-tooltip="trans('Item quantity on storage left untouched')">
+                                    <span v-if="pallet_stored_item.state == 'cancel'" class="pr-2 mr-1 text-red-500 border-r-2 border-gray-300" v-tooltip="ctrans('Item quantity on storage left untouched')">
                                         <FontAwesomeIcon :icon="faTimes" fixed-width />
-                                        {{ trans('Cancelled') }}
+                                        {{ ctrans('Cancelled') }}
                                     </span>
                                     {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
-                                    <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="trans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
-                                    <FontAwesomeIcon v-if="pallet_stored_item.state == 'not_picked'" v-tooltip="trans('Not picked')" icon='fas fa-skull' class='text-red-500' fixed-width aria-hidden='true' />
+                                    <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="ctrans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
+                                    <FontAwesomeIcon v-if="pallet_stored_item.state == 'not_picked'" v-tooltip="ctrans('Not picked')" icon='fas fa-skull' class='text-red-500' fixed-width aria-hidden='true' />
                                 </div>
 
                             </div>
@@ -668,7 +667,7 @@ function getRequestedPalletStoredItems(item: any) {
                 </template>
 
                 <div v-if="!getRequestedPalletStoredItems(value).length" class="italic text-gray-400">
-                    {{ trans('No pallet') }}
+                    {{ ctrans('No pallet') }}
                 </div>
 
                 <!-- Section: area for pallet that have 0 selected quantity -->
@@ -709,8 +708,8 @@ function getRequestedPalletStoredItems(item: any) {
                             <FontAwesomeIcon :icon="faTimes" fixed-width />
                         </span>
                         <span>{{ locale.number(pallet_stored_item.picked_quantity || 0) }}/{{ locale.number(pallet_stored_item.selected_quantity || 0) }}</span>
-                        <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="trans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="pallet_stored_item.state == 'not_picked'" v-tooltip="trans('Not picked')" icon='fas fa-skull' class='text-red-500' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="ctrans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="pallet_stored_item.state == 'not_picked'" v-tooltip="ctrans('Not picked')" icon='fas fa-skull' class='text-red-500' fixed-width aria-hidden='true' />
                     </template>
                 </div>
             </div>
@@ -729,7 +728,7 @@ function getRequestedPalletStoredItems(item: any) {
                     <span>{{ locale.number(pallet_stored_item.picked_quantity || 0) }}</span>
                     <span
                         v-if="Number(pallet_stored_item.not_picked_quantity || 0) > 0"
-                        v-tooltip="trans('Not picked')"
+                        v-tooltip="ctrans('Not picked')"
                         class="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-sm border border-red-400 bg-red-50 text-red-600 text-xs"
                     >
                         {{ locale.number(pallet_stored_item.not_picked_quantity || 0) }}
@@ -762,10 +761,10 @@ function getRequestedPalletStoredItems(item: any) {
                             v-else
                             :modelValue="0"
                             disabled
-                            v-tooltip="trans('Check the row to edit')"
+                            v-tooltip="ctrans('Check the row to edit')"
                         />
 
-                        <p v-if="proxyItem.error_quantity" class="mt-1 text-left text-xs text-red-500 italic">*{{ trans(`Quantity can't empty`) }}</p>
+                        <p v-if="proxyItem.error_quantity" class="mt-1 text-left text-xs text-red-500 italic">*{{ ctrans(`Quantity can't empty`) }}</p>
                     </template>
 
                     <div v-else class="py-3">{{ item.data.quantity }}</div>
@@ -807,12 +806,12 @@ function getRequestedPalletStoredItems(item: any) {
                             </span>
                         </div>
                         <span v-else class="text-xs text-gray-400 italic">
-                            {{ trans('No items picked yet') }}
+                            {{ ctrans('No items picked yet') }}
                         </span>
                     </div>
                 </div>
                 <div v-else class="text-xs text-gray-400 italic">
-                    {{ trans('No items picked yet') }}
+                    {{ ctrans('No items picked yet') }}
                 </div>
             </div>
             <div v-else-if="getRequestedPalletStoredItems(item).length" class="grid gap-y-1">
@@ -835,7 +834,7 @@ function getRequestedPalletStoredItems(item: any) {
                     <div
                         v-if="Number(pallet_stored_item.picked_quantity || 0) > 0"
                         class="text-gray-500 tabular-nums whitespace-nowrap"
-                        v-tooltip="trans('Total picked quantity in this location')"
+                        v-tooltip="ctrans('Total picked quantity in this location')"
                     >
                         <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
                         {{ locale.number(pallet_stored_item.picked_quantity || 0) }}
@@ -843,7 +842,7 @@ function getRequestedPalletStoredItems(item: any) {
                     <div
                         v-if="Number(pallet_stored_item.not_picked_quantity || 0) > 0"
                         class="text-red-500 tabular-nums whitespace-nowrap"
-                        v-tooltip="trans('Quantity not gonna be picked')"
+                        v-tooltip="ctrans('Quantity not gonna be picked')"
                     >
                         <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
                         {{ locale.number(pallet_stored_item.not_picked_quantity || 0) }}
@@ -852,7 +851,7 @@ function getRequestedPalletStoredItems(item: any) {
                         v-if="Number(pallet_stored_item.picked_quantity || 0) <= 0 && Number(pallet_stored_item.not_picked_quantity || 0) <= 0"
                         class="text-xs text-gray-400 italic"
                     >
-                        {{ trans('No items picked yet') }}
+                        {{ ctrans('No items picked yet') }}
                     </span>
 
                     <Button
@@ -870,7 +869,7 @@ function getRequestedPalletStoredItems(item: any) {
                 </div>
             </div>
             <div v-else class="text-xs text-gray-400 italic">
-                {{ trans('No item picked yet') }}
+                {{ ctrans('No item picked yet') }}
             </div>
         </template>
 
@@ -947,7 +946,7 @@ function getRequestedPalletStoredItems(item: any) {
 
         <div class="mt-6 flex justify-end">
             <Button
-                :label="trans('Close')"
+                :label="ctrans('Close')"
                 type="tertiary"
                 @click="isModalLocation = false"
                 :loading="isSwitchingPalletStoredItem"

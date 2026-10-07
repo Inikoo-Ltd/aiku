@@ -53,6 +53,8 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.number_orders as number_orders',
                 'customer_sales_channels.platform_id',
                 'customer_sales_channels.platform_status',
+                'customer_sales_channels.platform_user_type',
+                'customer_sales_channels.platform_user_id',
 
 
             ])

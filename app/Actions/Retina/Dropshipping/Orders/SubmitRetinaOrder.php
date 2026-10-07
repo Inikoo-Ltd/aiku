@@ -9,10 +9,13 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,12 +24,23 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SubmitRetinaOrder extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order): Order
     {
+        GetBasketPreOrders::make()->ensureTermsAccepted($order);
+
         $order = SubmitOrder::run($order);
 
 
@@ -43,14 +57,11 @@ class SubmitRetinaOrder extends RetinaAction
         return $order;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
-
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisation($request);
+
+        CaptureOrderGoogleAnalyticsClient::run($order, $request);
 
         return $this->handle($order, $this->validatedData);
     }

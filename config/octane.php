@@ -1,5 +1,6 @@
 <?php
 
+use App\Listeners\ForgetWildcardPermissionIndex;
 use App\Listeners\PrepareViteForNextOperation;
 use Laravel\Octane\Contracts\OperationTerminated;
 use Laravel\Octane\Events\RequestHandled;
@@ -107,6 +108,7 @@ return [
         OperationTerminated::class => [
             FlushOnce::class,
             FlushTemporaryContainerInstances::class,
+            ForgetWildcardPermissionIndex::class,
             // DisconnectFromDatabases::class,
             // CollectGarbage::class,
         ],

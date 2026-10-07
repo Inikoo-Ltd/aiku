@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -109,6 +110,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
         }
 
+        if (Arr::has($modelData, 'procurement_shop_ids')) {
+            data_set($modelData, 'settings.procurement.shop_ids', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'procurement_shop_ids')))));
+        }
+
         if (Arr::has($modelData, 'procurement_shop_id')) {
             data_set($modelData, 'settings.procurement.shop_id', Arr::pull($modelData, 'procurement_shop_id'));
         }
@@ -145,6 +150,20 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.orders.allow_scan_to_pack', Arr::pull($modelData, 'allow_scan_to_pack'));
         }
 
+        if (Arr::has($modelData, 'box_packing_list')) {
+            data_set($modelData, 'settings.dispatching.box_packing_list', Arr::pull($modelData, 'box_packing_list'));
+        }
+
+        if (Arr::has($modelData, 'box_packing_list_destinations')) {
+            data_set($modelData, 'settings.dispatching.box_packing_list_destinations', collect(Arr::pull($modelData, 'box_packing_list_destinations'))
+                ->map(fn (array $rule) => [
+                    'country_id' => Arr::get($rule, 'country_id'),
+                    'postcode'   => Arr::get($rule, 'postcode') ?: null,
+                ])
+                ->values()
+                ->all());
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -179,6 +198,10 @@ class UpdateOrganisation extends OrgAction
             if ($workSchedule) {
                 app(UpdateWorkSchedule::class)->action($organisation, $workSchedule, ['working_hours' => $workingHours]);
             }
+        }
+
+        if (Arr::has($modelData, 'time_format')) {
+            data_set($modelData, 'settings.time_format', Arr::pull($modelData, 'time_format'));
         }
 
         if (Arr::has($modelData, 'hr_annual_leave_days')) {
@@ -278,6 +301,7 @@ class UpdateOrganisation extends OrgAction
             'address'                               => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
+            'time_format'                           => ['sometimes', Rule::in(Organisation::TIME_FORMATS)],
             'currency_id'                           => ['sometimes', 'exists:currencies,id'],
             'email'                                 => ['sometimes', 'nullable', 'email'],
             'phone'                                 => ['sometimes', 'nullable', new Phone()],
@@ -294,6 +318,8 @@ class UpdateOrganisation extends OrgAction
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'margin_break_even_pct'                 => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'default_shelf_life_days'               => ['sometimes', 'integer', 'min:1', 'max:3650'],
+            'procurement_shop_ids'                  => ['sometimes', 'array'],
+            'procurement_shop_ids.*'                => ['integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)->whereNot('type', ShopTypeEnum::EXTERNAL->value)],
             'procurement_shop_id'                   => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
@@ -321,6 +347,10 @@ class UpdateOrganisation extends OrgAction
             'preferred_shipping.*.postcode'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
             'preferred_shipping.*.trade_scope'        => ['sometimes', Rule::in(['b2b', 'b2c'])],
+            'box_packing_list'                           => ['sometimes', 'boolean'],
+            'box_packing_list_destinations'              => ['sometimes', 'nullable', 'array'],
+            'box_packing_list_destinations.*.country_id' => ['nullable', 'required_without:box_packing_list_destinations.*.postcode', 'integer', Rule::exists('countries', 'id')],
+            'box_packing_list_destinations.*.postcode'   => ['nullable', 'required_without:box_packing_list_destinations.*.country_id', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {
@@ -329,6 +359,13 @@ class UpdateOrganisation extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'procurement_shop_ids.*.exists' => __('Only this organisation\'s own shops can be listed, not external ones.'),
+        ];
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation

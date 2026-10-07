@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\StoredItem;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithExportData;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PdfStoredItems extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithExportData;
     use WithStoredItemsExport;
 

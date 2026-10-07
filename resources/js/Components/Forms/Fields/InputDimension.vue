@@ -30,7 +30,6 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
-console.log("Input.vue", props)
 const setFormValue = (data: Object, fieldName: String) => {
     if (Array.isArray(fieldName)) {
         return getNestedValue(data, fieldName)
@@ -50,7 +49,6 @@ const value = ref(setFormValue(props.form, props.fieldName));
 
 
 const updateFormValue = (newValue) => {
-    console.log(newValue)
     let target = props.form;
     if (Array.isArray(props.fieldName)) {
         set(target, props.fieldName, newValue);

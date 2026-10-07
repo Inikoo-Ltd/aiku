@@ -8,15 +8,18 @@
 
 namespace App\Actions\Retina\Shopify;
 
+use App\Models\Catalogue\Product;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**
@@ -32,7 +35,7 @@ class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
                     ->from('products as p')
                     ->whereColumn('p.id', 'portfolios.item_id')
                     ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                    ->where('p.is_for_sale', true);
+                    ->whereRaw(Product::sellableThroughSalesChannelsSql('p'));
             })
             ->where('status', true)
             ->where('platform_status', false)

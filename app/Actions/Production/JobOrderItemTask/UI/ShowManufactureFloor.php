@@ -25,6 +25,7 @@ use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,6 +33,9 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowManufactureFloor extends OrgAction
 {
     private ?Employee $employee = null;
+
+    /** @var array<int, string[]> */
+    private array $missingMixes = [];
 
     public function handle(Production $production): Production
     {
@@ -74,7 +78,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask'])
             ->first();
 
         $workingOnBy = ManufactureTaskSession::where('production_id', $production->id)
@@ -87,25 +91,53 @@ class ShowManufactureFloor extends OrgAction
 
         $canPickOpenJobs = $this->canPickOpenJobs($user, $production);
 
-        $tasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
+        $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['jobOrderItem.artefact', 'jobOrder.employee', 'manufactureTask'])
+            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+            ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
             ->where(function ($query) {
                 $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                     ->orWhere(function ($query) {
                         $query->where('job_orders.state', JobOrderStateEnum::IN_PROCESS)
-                            ->where('job_orders.employee_id', $this->employee?->id ?? 0);
+                            ->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0]);
                     });
             })
-            ->when(!$canPickOpenJobs, fn ($query) => $query->where('job_orders.employee_id', $this->employee?->id ?? 0))
+            ->when(!$canPickOpenJobs, fn ($query) => $query->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0]))
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
+            ->orderBy('job_order_item_tasks.id')
             ->select('job_order_item_tasks.*')
+            ->get();
+
+        $openTasksByJobOrderItem = $openTasks->groupBy('job_order_item_id');
+
+        $stepsByJobOrderItem = JobOrderItemTask::whereIn('job_order_item_id', $openTasksByJobOrderItem->keys())
+            ->with([
+                'manufactureTask',
+                'sessions' => fn ($query) => $query->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])->with('user'),
+            ])
+            ->orderBy('position')
+            ->orderBy('id')
             ->get()
-            ->map(fn (JobOrderItemTask $task) => $this->serializeTask($task) + ['working_on_by' => $workingOnBy->get($task->id, [])])
-            ->sortBy(fn (array $task) => count($task['waiting_for']) > 0)
+            ->groupBy('job_order_item_id');
+
+        $serializedSteps = [];
+
+        $tasks = $openTasks
+            ->map(function (JobOrderItemTask $task) use ($openTasksByJobOrderItem, $workingOnBy, $stepsByJobOrderItem, &$serializedSteps) {
+                $blockingStep = $task->blockingStep($openTasksByJobOrderItem->get($task->job_order_item_id));
+                $workingOn    = $workingOnBy->get($task->id, []);
+
+                return $this->serializeTask($task) + [
+                    'working_on_by'   => $workingOn,
+                    'blocked_by_step' => $blockingStep?->manufactureTask->name,
+                    'can_start'       => !$blockingStep && !$workingOn,
+                    'steps'           => $serializedSteps[$task->job_order_item_id] ??= $this->serializeSteps($stepsByJobOrderItem->get($task->job_order_item_id), $task),
+                ];
+            })
+            ->sortBy(fn (array $task) => !$task['can_start'] || count($task['waiting_for']))
             ->values();
 
         $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
@@ -136,6 +168,7 @@ class ShowManufactureFloor extends OrgAction
             'Org/Production/ManufactureFloor',
             [
                 'title'       => __('Manufacture floor'),
+                'server_time' => now()->toIso8601ZuluString('millisecond'),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'pageHead'    => [
                     'icon'  => [
@@ -189,7 +222,7 @@ class ShowManufactureFloor extends OrgAction
 
     protected function bandFeedback(ManufactureTaskSession $session): ?array
     {
-        $standardRate = $session->manufactureTask?->standard_rate;
+        $standardRate = $session->recipeStandardRate();
         if ($standardRate === null) {
             return null;
         }
@@ -228,6 +261,32 @@ class ShowManufactureFloor extends OrgAction
         ];
     }
 
+    /**
+     * @param Collection<int, JobOrderItemTask> $steps
+     * @return array<int, array{id: int, task_name: string, state: JobOrderItemTaskStateEnum, quantity_made: float, quantity_required: float, blocked_by_step: string|null, worked_by: string[], working_on_by: string[], seconds: int}>
+     */
+    protected function serializeSteps(Collection $steps, JobOrderItemTask $openTask): array
+    {
+        $steps->each(fn (JobOrderItemTask $step) => $step->setRelation('jobOrderItem', $openTask->jobOrderItem));
+        $userName = fn (ManufactureTaskSession $session) => $session->user->contact_name ?: $session->user->username;
+
+        return $steps->map(function (JobOrderItemTask $step) use ($steps, $userName) {
+            $closedSessions = $step->sessions->where('state', ManufactureTaskSessionStateEnum::CLOSED);
+
+            return [
+                'id'                => $step->id,
+                'task_name'         => $step->manufactureTask->name,
+                'state'             => $step->state,
+                'quantity_made'     => (float)$step->quantity_made,
+                'quantity_required' => (float)$step->quantity_required,
+                'blocked_by_step'   => $step->blockingStep($steps)?->manufactureTask->name,
+                'worked_by'         => $closedSessions->map($userName)->unique()->values()->all(),
+                'working_on_by'     => $step->sessions->where('state', ManufactureTaskSessionStateEnum::OPEN)->map($userName)->values()->all(),
+                'seconds'           => (int)round($closedSessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()) * 3600),
+            ];
+        })->values()->all();
+    }
+
     protected function serializeTask(JobOrderItemTask $task): array
     {
         return [
@@ -239,9 +298,9 @@ class ShowManufactureFloor extends OrgAction
             'artefact_code'       => $task->jobOrderItem->artefact->code,
             'artefact_name'       => $task->jobOrderItem->artefact->name,
             'job_order_reference' => $task->jobOrder->reference,
-            'artisan'             => $task->jobOrder->employee?->contact_name,
-            'is_mine'             => $this->employee && $task->jobOrder->employee_id == $this->employee->id,
-            'waiting_for'         => array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
+            'artisan'             => $task->jobOrderItem->artisan()?->contact_name,
+            'is_mine'             => $this->employee && $task->jobOrderItem->artisanId() == $this->employee->id,
+            'waiting_for'         => $this->missingMixes[$task->job_order_item_id] ??= array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
             'quantity_required'   => (float)$task->quantity_required,
             'quantity_made'       => (float)$task->quantity_made,
             'start_route'         => [

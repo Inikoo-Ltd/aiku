@@ -14,6 +14,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Web\Website;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 
 class RedoWebsiteTimeSeries implements ShouldBeUnique
@@ -70,14 +71,20 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
             $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
+        $jobs = [];
+
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
             if ($async) {
-                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
+                $jobs[] = ProcessWebsiteTimeSeriesRecords::makeJob($website->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
                 ProcessWebsiteTimeSeriesRecords::run($website->id, $frequency, $periodFrom, $periodTo);
             }
+        }
+
+        if ($jobs) {
+            Bus::chain($jobs)->dispatch();
         }
     }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from '@kyvg/vue3-notification'
 import { onMounted, ref, watch, computed, inject, onBeforeUnmount, type Ref } from 'vue'
@@ -73,19 +73,19 @@ const idxSubmitSuccess = ref(0)
 // Filter portfolios by type
 const filterList = [
     {
-        label: trans("Product"),
+        label: ctrans("Product"),
         value: "product",
     },
     {
-        label: trans("Department"),
+        label: ctrans("Department"),
         value: "department",
     },
     {
-        label: trans("Sub-department"),
+        label: ctrans("Sub-department"),
         value: "sub_department",
     },
     {
-        label: trans("Family"),
+        label: ctrans("Family"),
         value: "family",
     }
 ]
@@ -258,8 +258,8 @@ const fetchMediaGallery = async () => {
         console.error(e)
 
         notify({
-            title: trans('Error'),
-            text: trans('Failed to load media'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to load media'),
             type: 'error'
         })
     } finally {
@@ -284,13 +284,13 @@ const handleStoreBundle = async () => {
         props.step.current = 1
 
         notify({
-            title: trans('Success'),
+            title: ctrans('Success'),
             type: 'success'
         })
     } catch (e) {
         notify({
-            title: trans('Error'),
-            text: trans('Failed to create bundle'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to create bundle'),
             type: 'error'
         })
     }
@@ -323,8 +323,8 @@ const submitBundle = async () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Success'),
-                    text: trans('Success submit bundle'),
+                    title: ctrans('Success'),
+                    text: ctrans('Success submit bundle'),
                     type: 'success'
                 })
                 bundle.resetBundle()
@@ -340,10 +340,10 @@ const submitBundle = async () => {
                     errors.description ||
                     errors.images ||
                     Object.values(errors)[0] ||
-                    trans("Failed to submit the data, please try again")
+                    ctrans("Failed to submit the data, please try again")
 
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: submitError.value,
                     type: "error"
                 })
@@ -384,12 +384,11 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const uploadFilesLocal = async (files: FileList) => {
     if (!bundle.product_id.value) {
         notify({
-            title: trans('Error'),
-            text: trans('Reload Pages'),
+            title: ctrans('Error'),
+            text: ctrans('Reload Pages'),
             type: 'error'
         })
     }
-    console.log("productid", bundle.product_id.value)
     try {
         const formData = new FormData()
 
@@ -461,8 +460,8 @@ const confirm = useConfirm()
 
 const handleClose = () => {
     confirm.require({
-        message: trans('close this modal will discard this bundle. You’ll need to start again.'),
-        header: trans('Discard bundle?'),
+        message: ctrans('close this modal will discard this bundle. You’ll need to start again.'),
+        header: ctrans('Discard bundle?'),
         acceptLabel: 'Discard',
         rejectLabel: 'Stay',        
         accept: () => {
@@ -492,8 +491,8 @@ const handleDelete = () => {
 
         onError: () => {
             notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
+                title: ctrans('Error'),
+                text: ctrans('Failed to delete bundle'),
                 type: 'error'
             })
         }
@@ -524,8 +523,8 @@ const fetchGetBundle = async () => {
     } catch (e) {
         console.error('[AddBundles] fetchGetBundle failed', e)
         notify({
-            title: trans('Error'),
-            text: trans('Failed to load bundle'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to load bundle'),
             type: 'error'
         })
     }
@@ -599,13 +598,13 @@ watch(
             <!-- LEFT -->
             <div>
                 <div class="text-lg sm:text-xl font-semibold">
-                    {{ trans('Create Your Bundle') }}
+                    {{ ctrans('Create Your Bundle') }}
                     <FontAwesomeIcon icon="fal fa-layer-group" class="text-lg sm:text-xl text-black" fixed-width
                         aria-hidden="true" />
                 </div>
 
                 <div class="text-sm mt-1">
-                    {{ trans('STEP') }} {{ step.current + 1 }}/2
+                    {{ ctrans('STEP') }} {{ step.current + 1 }}/2
                 </div>
             </div>
 
@@ -627,28 +626,28 @@ watch(
 
                     <template v-else>
                         <div class="flex justify-between gap-3 border-b pb-1">
-                            <span class="text-gray-500">{{trans('Cost Price (Individual Purchase)')}}</span>
+                            <span class="text-gray-500">{{ctrans('Cost Price (Individual Purchase)')}}</span>
                             <span class="font-medium text-right whitespace-nowrap">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between gap-3 border-b pb-1">
-                            <span class="text-gray-500">{{trans('Bundle Price')}}</span>
+                            <span class="text-gray-500">{{ctrans('Bundle Price')}}</span>
                             <span class="font-medium text-green-600 text-right whitespace-nowrap">
                                  {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between gap-3 border-b pb-1">
-                            <span class="text-gray-500">{{trans('RRP')}}</span>
+                            <span class="text-gray-500">{{ctrans('RRP')}}</span>
                             <span class="font-medium text-right whitespace-nowrap">
                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between gap-3 pt-1">
-                            <span class="text-gray-500">{{trans('Profit')}}</span>
+                            <span class="text-gray-500">{{ctrans('Profit')}}</span>
                             <span class="font-semibold text-green-600 text-right whitespace-nowrap"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
                                 </span>
                         </div>
@@ -660,7 +659,7 @@ watch(
 
         <!-- 0: Select Product -->
         <KeepAlive>
-            <BundlesSelector v-if="step.current === 0" xheadLabel="trans('Add products to portfolios')"
+            <BundlesSelector v-if="step.current === 0" xheadLabel="ctrans('Add products to portfolios')"
                 @update:selected="onUpdateSelectedProducts" :route-fetch="{
                     name: props.routes.itemRoute.name,
                     parameters: {
@@ -673,7 +672,7 @@ watch(
                     <div>
                         <div class="mb-4">
                             <label class="text-sm block mb-1">
-                                {{trans('Bundle Title')}}
+                                {{ctrans('Bundle Title')}}
                             </label>
 
                             <div class="relative">
@@ -687,7 +686,7 @@ watch(
                                     :loading="bundle.isGeneratingAI.value"
                                     :disabled="!bundle.productIds.value.length || bundle.isGeneratingAI.value"
                                     icon="fal fa-sparkles"
-                                    v-tooltip="trans('Generate AI')" class="absolute right-2 top-1/2 -translate-y-1/2 
+                                    v-tooltip="ctrans('Generate AI')" class="absolute right-2 top-1/2 -translate-y-1/2 
                                         h-7 w-7 flex items-center justify-center 
                                         rounded-md border bg-white hover:bg-gray-100 
                                         transition shadow-sm" />
@@ -740,10 +739,10 @@ watch(
                             <!-- CENTER: TITLE -->
                             <div class="text-left">
                                 <div class="text-lg sm:text-xl font-semibold flex items-center justify-start gap-2">
-                                    {{trans('Create Your Bundle')}}
+                                    {{ctrans('Create Your Bundle')}}
 
                                     <FontAwesomeIcon
-                                        v-tooltip="trans('Bundle generator')"
+                                        v-tooltip="ctrans('Bundle generator')"
                                         icon="fal fa-layer-group"
                                         class="text-gray-500"
                                         fixed-width
@@ -751,7 +750,7 @@ watch(
                                 </div>
 
                                 <div class="text-sm text-gray-400">
-                                    {{trans('STEP')}} 2 / 2
+                                    {{ctrans('STEP')}} 2 / 2
                                 </div>
                             </div>
                         </div>
@@ -769,7 +768,7 @@ watch(
                     <!-- DESCRIPTION -->
                     <div class="mb-5">
                         <label class="text-sm font-semibold">
-                            {{ trans('Description') }}
+                            {{ ctrans('Description') }}
                         </label>
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
@@ -785,7 +784,7 @@ watch(
 
                             <Button @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value"
                             icon="fal fa-sparkles"
-                            :label="trans('Generate with AI')"
+                            :label="ctrans('Generate with AI')"
                                 type="primary" :disabled="!bundle.productIds.value.length"
                                 class="w-full justify-center sm:w-auto sm:justify-start" />
                         </div>
@@ -803,11 +802,11 @@ watch(
                                 aria-hidden='true' />
 
                             <div class="text-sm font-medium">
-                                {{trans('Upload Media')}}
+                                {{ctrans('Upload Media')}}
                             </div>
 
                             <div class="text-xs">
-                                {{trans('Drag & drop images or click')}}
+                                {{ctrans('Drag & drop images or click')}}
                             </div>
 
                         </div>
@@ -820,13 +819,13 @@ watch(
                             <Button @click="openExistingMedia" type="secondary"
                                 class="w-full justify-center sm:w-auto">
                                 <FontAwesomeIcon :icon="faImages" class="mr-2" fixed-width />
-                                {{trans('Select existing media')}}
+                                {{ctrans('Select existing media')}}
                             </Button>
 
                             <Button @click="showGenerateModal = true" type="primary" icon="fal fa-arrow-left"
                                 :disabled="!selectedMedia.length" class="w-full justify-center sm:w-auto">
                                 <FontAwesomeIcon :icon="faSparkles" class="mr-2" fixed-width />
-                                {{trans('Generate Image AI')}}
+                                {{ctrans('Generate Image AI')}}
                             </Button>
                         </div>
                     </div>
@@ -834,7 +833,7 @@ watch(
                     <!-- PREVIEW -->
                     <div class="mb-2">
                         <label class="text-sm font-semibold">
-                            {{ trans('Bundle media') }}
+                            {{ ctrans('Bundle media') }}
                         </label>
 
                         <div class="bg-gray-100 rounded-xl p-3 sm:p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 min-h-[140px]">
@@ -845,7 +844,7 @@ watch(
                                     @change="setMainImage(img.image_id)" class="absolute top-2 left-2 z-20" />
                                 <div v-if="img.is_main"
                                     class="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1 rounded">
-                                    {{trans('MAIN IMAGE')}}
+                                    {{ctrans('MAIN IMAGE')}}
                                 </div>
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100"
@@ -861,7 +860,7 @@ watch(
                         {{ submitError }}
                     </div>
                     <Button @click="submitBundle" icon="fal fa-layer-group" class="flex justify-center items-center w-full" type="primary" 
-                    :label="trans('Create Bundle')"
+                    :label="ctrans('Create Bundle')"
                     :disabled="!bundle.description.value.length || bundle.isStoringBundle.value || !selectedMedia.length"
                         :loading="isSubmitBundle" />
                   
@@ -913,7 +912,7 @@ watch(
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-2">
-                            {{trans('Select images of products you want to include in generated image')}}
+                            {{ctrans('Select images of products you want to include in generated image')}}
                         </div>
 
                         <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -946,7 +945,7 @@ watch(
 
                     <div class="mb-4">
                         <div class="text-sm font-semibold mb-1">
-                            {{trans('Describe your image')}}
+                            {{ctrans('Describe your image')}}
                         </div>
 
                         <Textarea v-model="aiPrompt" rows="3" class="w-full" placeholder="Input description" />
@@ -957,7 +956,7 @@ watch(
                     </div>
 
                     <template #footer>
-                        <Button :label="trans('Generate')" @click="handleGenerateAIImages" :loading="isGeneratingAI"
+                        <Button :label="ctrans('Generate')" @click="handleGenerateAIImages" :loading="isGeneratingAI"
                             :disabled="!selectedMediaForAI.length || !aiPrompt" />
                     </template>
 
@@ -965,7 +964,7 @@ watch(
 
                 <Dialog
                     v-model:visible="showGenerateProgressModal"
-                    :header="trans('Generating AI Image')"
+                    :header="ctrans('Generating AI Image')"
                     modal
                     :closable="false"
                     :closeOnEscape="false"
@@ -976,10 +975,10 @@ watch(
                     <div class="py-6 flex flex-col items-center text-center">
                         <LoadingIcon class="mb-4" />
                         <div class="text-sm font-semibold text-gray-800">
-                            {{ trans('Generating your image...') }}
+                            {{ ctrans('Generating your image...') }}
                         </div>
                         <div class="text-xs text-gray-500 mt-2">
-                            {{ trans('Please wait while we process your prompt and listen for the result.') }}
+                            {{ ctrans('Please wait while we process your prompt and listen for the result.') }}
                         </div>
                     </div>
                 </Dialog>

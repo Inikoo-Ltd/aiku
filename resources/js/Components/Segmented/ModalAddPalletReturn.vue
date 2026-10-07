@@ -14,7 +14,7 @@ import { router, useForm } from "@inertiajs/vue3"
 import { faCloud, faCompressWide, faExpandArrowsAlt, faSearch, faSpinner } from "@fal"
 import { faMinus, faPlus, faSave, faUndo } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import QuantityInput from "@/Components/Utils/QuantityInput.vue"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import PureInputNumber from "../Pure/PureInputNumber.vue"
@@ -168,7 +168,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 	<div class="flex flex-col h-[600px] overflow-y-auto pb-4 px-3">
 		<!-- Title -->
 		<div class="flex justify-center py-2 font-semibold mb-3">
-			<h2 class="text-xl">{{ trans("Pallets list") }}</h2>
+			<h2 class="text-xl">{{ ctrans("Pallets list") }}</h2>
 		</div>
 
 		<!-- Search and Table -->
@@ -198,7 +198,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 								</InputIcon>
 								<InputText
 									v-model="searchQuery"
-									:placeholder="trans('Search products')"
+									:placeholder="ctrans('Search products')"
 									@input="onSearchQuery(searchQuery)"
 									class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
 							</IconField>
@@ -207,7 +207,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 				</template>
 				<template #empty>
 					<div class="w-full text-center text-gray-500">
-						{{ trans('No pallets to select') }}
+						{{ ctrans('No pallets to select') }}
 					</div>
 				</template>
 
@@ -226,11 +226,11 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 					<template #body="{ data }">
 						<div class="">
 							<span v-if="data.reference">{{ data.reference }}</span>
-							<span v-else class="text-gray-400 italic">({{ trans('No system reference') }})</span>
+							<span v-else class="text-gray-400 italic">({{ ctrans('No system reference') }})</span>
 						</div>
-						<div v-tooltip="trans('Customer reference')" class="">
+						<div v-tooltip="ctrans('Customer reference')" class="">
 							<span v-if="data.customer_reference">{{ data.customer_reference }}</span>
-							<span v-else class="text-gray-400 italic">({{ trans('No pallet reference') }})</span>
+							<span v-else class="text-gray-400 italic">({{ ctrans('No pallet reference') }})</span>
 						</div>
 					</template>
 				</Column>
@@ -243,7 +243,7 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 								v-if="!data.id"
 								:modelValue="get(data, ['quantity_selected'], 0)"
 								@update:modelValue="(e) => (set(data, ['quantity_selected'], e))"
-								@xonSave="(form) => (console.log('form', form), set(data, ['quantity_selected'], form.quantity))"
+								@xonSave="(form) => set(data, ['quantity_selected'], form.quantity)"
 								noSaveButton
 								noUndoButton
 							/>
@@ -261,9 +261,9 @@ const onSelectAttach = (attachRoute: routeType, idPallet: number, item: {}) => {
 							type="tertiary"
 							icon="fal fa-plus"
 							:xdisabled="get(data, ['quantity_selected'], 0) < 1"
-							:xxv-tooltip="get(data, ['quantity_selected'], 0) < 1 ? trans('Add quantity to select') : false"
+							:xxv-tooltip="get(data, ['quantity_selected'], 0) < 1 ? ctrans('Add quantity to select') : false"
 							:loading="isLoadingAttach.includes(data.pallet_id)"
-							:label="trans('Select')"
+							:label="ctrans('Select')"
 						/>
 					</template>
 				</Column>

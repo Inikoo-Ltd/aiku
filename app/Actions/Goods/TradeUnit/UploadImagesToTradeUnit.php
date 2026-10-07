@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithTradeUnitMediaEditAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Goods\TradeUnit;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToTradeUnit extends OrgAction
 {
+    use WithTradeUnitMediaEditAuthorisation;
     use WithUploadModelImages;
     use WithAttachMediaToModel;
 

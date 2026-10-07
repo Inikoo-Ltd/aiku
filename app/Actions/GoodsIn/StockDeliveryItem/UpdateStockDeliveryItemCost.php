@@ -8,19 +8,21 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
+use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemCostResource;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDeliveryItemCost extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
     use WithActionUpdate;
 
     private const COST_FIELDS = [
@@ -62,7 +64,22 @@ class UpdateStockDeliveryItemCost extends OrgAction
         $costs['cost_tax']   = $costs['cost_tax'] ?? 0;
         $costs['cost_total'] = array_sum(array_map(fn ($value) => (float) $value, $costs));
 
+        $handSplitFields = array_filter(
+            ['cost_extra', 'cost_shipping', 'cost_duties'],
+            fn (string $field) => array_key_exists($field, $modelData) && EvaluateStockDeliveryCosting::cents((float) $modelData[$field]) !== EvaluateStockDeliveryCosting::cents((float) $stockDeliveryItem->{$field})
+        );
+
         $stockDeliveryItem = $this->update($stockDeliveryItem, $costs);
+
+        if ($handSplitFields) {
+            $stockDelivery = $stockDeliveryItem->stockDelivery;
+            $amounts       = EvaluateStockDeliveryCosting::splitAmounts($stockDelivery->costs()->get());
+            $handSplit     = Arr::get($stockDelivery->data, 'costing_hand_split', []);
+            foreach ($handSplitFields as $field) {
+                $handSplit[$field] = EvaluateStockDeliveryCosting::cents($amounts[$field]);
+            }
+            $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['costing_hand_split' => $handSplit])]);
+        }
 
         StockDeliveriesHydrateCosts::run($stockDeliveryItem->stockDelivery);
 

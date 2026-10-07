@@ -19,3 +19,10 @@ test('applies retry settings to the queued action', function () {
         ->and($job->tries)->toBe(3)
         ->and($job->backoff())->toBe([10, 30]);
 });
+
+test('stays unique until the hydration delayed by the ses callbacks has finished', function () {
+    $sesCallbackDelay = 900;
+    $job              = OutboxHydrateDispatchedEmails::makeJob(1);
+
+    expect($job->uniqueFor)->toBeGreaterThan($sesCallbackDelay + $job->timeout);
+});

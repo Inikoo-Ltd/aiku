@@ -31,8 +31,11 @@ class GetStaffMessages
 
     public function asController(StaffConversation $staffConversation, ActionRequest $request): AnonymousResourceCollection
     {
+        $leftAt = $staffConversation->leftAtFor($request->user());
+
         $messages = $staffConversation->messages()
             ->with(['user', 'translations', 'reactions', 'conversation'])
+            ->when($leftAt, fn ($query) => $query->where('created_at', '<=', $leftAt))
             ->when($request->validated('before_id'), fn ($query, $beforeId) => $query->where('id', '<', $beforeId))
             ->latest('id')
             ->limit(50)

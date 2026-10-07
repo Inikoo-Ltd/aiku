@@ -136,7 +136,7 @@ class GetPartnerOrderCapacity
             })
             ->where('dni.quantity_dispatched', '>', 0)
             ->where('dni.created_at', '>=', now()->subDays(90))
-            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id').', 0)) / 3, 0) as total')
+            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id', GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)) / 3, 0) as total')
             ->value('total'), 2);
     }
 
@@ -147,9 +147,9 @@ class GetPartnerOrderCapacity
     {
         $row = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
-            ->selectRaw('count(*) as lines, coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery().', 0)), 0) as value')
+            ->selectRaw('count(*) as lines, coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery($orgPartner).', 0)), 0) as value')
             ->first();
 
         return [
@@ -158,9 +158,9 @@ class GetPartnerOrderCapacity
         ];
     }
 
-    public function pricePerSkoSubQuery(): string
+    public function pricePerSkoSubQuery(OrgPartner $orgPartner): string
     {
-        return PartnerShoppingListItem::pricePerSkoSql();
+        return PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner));
     }
 
     /**
@@ -210,7 +210,7 @@ class GetPartnerOrderCapacity
         return (int) DB::table('partner_shopping_list_items')
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
+            ->whereIn('partner_shopping_list_items.state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('partner_shopping_list_items.deleted_at')
             ->whereNotExists(function ($query) {
                 $query->selectRaw('1')
@@ -247,10 +247,13 @@ class GetPartnerOrderCapacity
 
     public static function guardAdd(OrgPartner $orgPartner, OrgStock $sellerOrgStock): void
     {
+        if (!static::isNeverStocked($orgPartner, $sellerOrgStock)) {
+            return;
+        }
+
         $capacity = static::run($orgPartner);
 
-
-        if ($capacity['warehouse']['total_locations'] > 0 && static::isNeverStocked($orgPartner, $sellerOrgStock)) {
+        if ($capacity['warehouse']['total_locations'] > 0) {
             if ($capacity['blocked']['warehouse_full']) {
                 abort(422, __("Warehouse has fewer than 5% locations free — new products can't be added until space frees up."));
             }

@@ -5,21 +5,29 @@
  * Copyright 2026
 */
 
-import { onBeforeUnmount, onMounted, ref, type Ref } from "vue"
+import { onBeforeUnmount, onMounted, ref, watch, type Ref } from "vue"
 
-export const useScrollArrows = (scroller: Ref<HTMLElement | null>) => {
+export const useScrollArrows = (scroller: Readonly<Ref<HTMLElement | null>>) => {
     const canScrollLeft = ref(false)
     const canScrollRight = ref(false)
+    const canScrollUp = ref(false)
+    const canScrollDown = ref(false)
 
     const update = () => {
         const element = scroller.value
         if (!element) return
         canScrollLeft.value = element.scrollLeft > 1
         canScrollRight.value = element.scrollLeft + element.clientWidth < element.scrollWidth - 1
+        canScrollUp.value = element.scrollTop > 1
+        canScrollDown.value = element.scrollTop + element.clientHeight < element.scrollHeight - 1
     }
 
     const scrollBy = (direction: 1 | -1) => {
         scroller.value?.scrollBy({ left: direction * scroller.value.clientWidth * 0.7, behavior: "smooth" })
+    }
+
+    const scrollVerticallyBy = (direction: 1 | -1) => {
+        scroller.value?.scrollBy({ top: direction * scroller.value.clientHeight * 0.7, behavior: "smooth" })
     }
 
     const dragThresholdInPixels = 5
@@ -85,33 +93,49 @@ export const useScrollArrows = (scroller: Ref<HTMLElement | null>) => {
         update()
     }
 
-    onMounted(() => {
+    const attach = (element: HTMLElement) => {
+        element.addEventListener("scroll", update, { passive: true })
+        element.addEventListener("pointerdown", onPointerDown)
+        element.addEventListener("click", onClickCapture, true)
+        element.addEventListener("dragstart", onDragStart)
         update()
-        scroller.value?.addEventListener("scroll", update, { passive: true })
-        scroller.value?.addEventListener("pointerdown", onPointerDown)
-        scroller.value?.addEventListener("click", onClickCapture, true)
-        scroller.value?.addEventListener("dragstart", onDragStart)
+        if (typeof ResizeObserver === "undefined") return
+        resizeObserver ??= new ResizeObserver(update)
+        observeChildren()
+        mutationObserver ??= new MutationObserver(observeChildren)
+        mutationObserver.observe(element, { childList: true })
+    }
+
+    const detach = (element: HTMLElement) => {
+        element.removeEventListener("scroll", update)
+        element.removeEventListener("pointerdown", onPointerDown)
+        element.removeEventListener("click", onClickCapture, true)
+        element.removeEventListener("dragstart", onDragStart)
+        resizeObserver?.disconnect()
+        mutationObserver?.disconnect()
+        canScrollLeft.value = false
+        canScrollRight.value = false
+        canScrollUp.value = false
+        canScrollDown.value = false
+    }
+
+    watch(scroller, (element, previousElement) => {
+        if (previousElement) detach(previousElement)
+        if (element) attach(element)
+    }, { immediate: true, flush: "post" })
+
+    onMounted(() => {
         window.addEventListener("pointermove", onPointerMove)
         window.addEventListener("pointerup", onPointerUp)
         window.addEventListener("pointercancel", onPointerUp)
-        if (typeof ResizeObserver === "undefined" || !scroller.value) return
-        resizeObserver = new ResizeObserver(update)
-        observeChildren()
-        mutationObserver = new MutationObserver(observeChildren)
-        mutationObserver.observe(scroller.value, { childList: true })
     })
 
     onBeforeUnmount(() => {
-        scroller.value?.removeEventListener("scroll", update)
-        scroller.value?.removeEventListener("pointerdown", onPointerDown)
-        scroller.value?.removeEventListener("click", onClickCapture, true)
-        scroller.value?.removeEventListener("dragstart", onDragStart)
+        if (scroller.value) detach(scroller.value)
         window.removeEventListener("pointermove", onPointerMove)
         window.removeEventListener("pointerup", onPointerUp)
         window.removeEventListener("pointercancel", onPointerUp)
-        resizeObserver?.disconnect()
-        mutationObserver?.disconnect()
     })
 
-    return { canScrollLeft, canScrollRight, scrollBy }
+    return { canScrollLeft, canScrollRight, canScrollUp, canScrollDown, scrollBy, scrollVerticallyBy }
 }

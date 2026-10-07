@@ -10,6 +10,7 @@ namespace App\Exports\Catalogue;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
+use App\Actions\Helpers\Images\ShortenImgProxyUrls;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Helpers\ImgProxy\Image;
 use App\InertiaTable\InertiaTable;
@@ -258,8 +259,20 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             }
         }
 
-        if (property_exists($row, 'images') && $row->images) {
-            $row->images = implode(', ', array_map(self::jpgUrl(...), explode(', ', $row->images)));
+        $images = property_exists($row, 'images') && $row->images
+            ? array_map(self::jpgUrl(...), explode(', ', $row->images))
+            : [];
+
+        $shortUrls = ShortenImgProxyUrls::run(array_merge($images, array_filter([$row->image_1 ?? null, $row->image_2 ?? null, $row->image_3 ?? null])));
+
+        foreach (['image_1', 'image_2', 'image_3'] as $field) {
+            if (property_exists($row, $field) && $row->$field) {
+                $row->$field = $shortUrls[$row->$field];
+            }
+        }
+
+        if ($images !== []) {
+            $row->images = implode(', ', array_map(fn ($url) => $shortUrls[$url], $images));
         }
 
         return array_values((array) $row);

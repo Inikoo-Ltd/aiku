@@ -32,7 +32,7 @@ class GetStockDeliveryData
                         ],
                     ],
                     'reference'     => [
-                        'type'  => 'readonly',
+                        'type'  => 'input',
                         'label' => __('Public Id'),
                         'value' => $stockDelivery->reference,
                     ],

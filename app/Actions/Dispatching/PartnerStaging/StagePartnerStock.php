@@ -45,10 +45,12 @@ class StagePartnerStock extends OrgAction
             throw ValidationException::withMessages(['quantity' => __('Not that much stock in :location', ['location' => $source->location->code])]);
         }
 
-        $target = LocationOrgStock::where('location_id', $orgPartner->goods_out_location_id)
+        $bay = $orgPartner->bayFor((bool) $source->orgStock->stock->is_cosmetic);
+
+        $target = LocationOrgStock::where('location_id', $bay->id)
             ->where('org_stock_id', $source->org_stock_id)
             ->first()
-            ?? StoreLocationOrgStock::make()->action($source->orgStock, $orgPartner->goodsOutLocation, [
+            ?? StoreLocationOrgStock::make()->action($source->orgStock, $bay, [
                 'type' => LocationStockTypeEnum::PICKING,
             ]);
 
@@ -76,7 +78,7 @@ class StagePartnerStock extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("dispatching.{$this->organisation->id}.edit");
+        return $request->user()->authTo("dispatching.{$this->warehouse->id}.edit");
     }
 
     /**

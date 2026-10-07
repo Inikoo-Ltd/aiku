@@ -67,8 +67,8 @@ trait IsProcurementOrder
     {
         $table->unsignedSmallInteger('currency_id');
         $table->foreign('currency_id')->references('id')->on('currencies');
-        $table->decimal('grp_exchange', 16, 4)->nullable();
-        $table->decimal('org_exchange', 16, 4)->nullable();
+        $table->decimal('grp_exchange', 22, 10)->nullable();
+        $table->decimal('org_exchange', 22, 10)->nullable();
 
         $table->boolean('is_costed')->default(false)->index();
         $table->jsonb('cost_data');

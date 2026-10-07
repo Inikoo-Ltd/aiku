@@ -8,11 +8,14 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -35,25 +38,46 @@ class CallbackFetchStock extends OrgAction
             return [];
         }
 
-
-
         $cacheKey = "shopify:fetch_stock:channel:".$channelId;
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($channelId) {
-            $stock = [];
+            /** @var CustomerSalesChannel $customerSalesChannel */
+            $customerSalesChannel = CustomerSalesChannel::findOrFail($channelId);
+
+            $products = Product::query()
+                ->whereIn(
+                    'id',
+                    Portfolio::where('customer_sales_channel_id', $channelId)
+                        ->where('item_type', 'Product')
+                        ->pluck('item_id')
+                )
+                ->get()
+                ->keyBy('id');
+
+            $stock        = [];
+            $platformSkus = [];
             foreach (
-                DB::table('portfolios')->select('portfolios.id', 'sku', 'available_quantity')
-                    ->where('portfolios.customer_sales_channel_id', $channelId)
-                    ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
-                    ->where('portfolios.item_type', 'Product')->get() as $stockData
+                Portfolio::where('customer_sales_channel_id', $channelId)
+                    ->where('item_type', 'Product')
+                    ->get(['sku', 'platform_sku', 'item_id']) as $portfolio
             ) {
-                if ($stockData->sku === null) {
+                $product = $products->get($portfolio->item_id);
+                if (!$product) {
                     continue;
                 }
-                $stock[$stockData->sku] = $stockData->available_quantity;
+
+                $quantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
+
+                if ($portfolio->sku !== null) {
+                    $stock[$portfolio->sku] = $quantity;
+                }
+
+                if ($portfolio->platform_sku !== null) {
+                    $platformSkus[$portfolio->platform_sku] = $quantity;
+                }
             }
 
-            return $stock;
+            return $stock + $platformSkus;
         });
     }
 

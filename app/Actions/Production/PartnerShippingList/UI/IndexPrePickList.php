@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -28,12 +29,14 @@ class IndexPrePickList extends OrgAction
 {
     private const CATEGORY = "coalesce(artefact_departments.name, '')";
 
+    private const COSMETIC = "case when stocks.is_cosmetic then 'cosmetic' else 'non-cosmetic' end";
+
     private ?array $elementGroups = null;
 
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo([
+        return $this->organisation->is_manufacturing_hub && $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.view",
@@ -69,6 +72,8 @@ class IndexPrePickList extends OrgAction
             ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
             ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('partner_shopping_list_items.pre_picked_at')
+            ->whereNull('partner_shopping_list_items.job_order_id')
+            ->whereNull('partner_shopping_list_items.preparing_at')
             ->where('org_stocks.quantity_available', '>', 0);
 
         foreach ($this->getElementGroups() as $key => $elementGroup) {
@@ -89,15 +94,42 @@ class IndexPrePickList extends OrgAction
                 'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
+                'stocks.is_cosmetic',
                 'organisations.code as buyer_code',
+                DB::raw("(select locations.code from org_partners to_partner
+                    join locations on locations.id = ".OrgPartner::bayIdSql('to_partner', 'stocks.is_cosmetic')."
+                    where to_partner.organisation_id = partner_shopping_list_items.partner_organisation_id
+                        and to_partner.partner_id = partner_shopping_list_items.organisation_id) as to_location"),
                 DB::raw(self::CATEGORY.' as category'),
-                DB::raw('least(partner_shopping_list_items.quantity, org_stocks.quantity_available) as can_pick'),
+                DB::raw('least(partner_shopping_list_items.quantity, '.PartnerShoppingListItem::freeStockSql().') as can_pick'),
+                DB::raw(PartnerShoppingListItem::queuedThroughSql().' as queued_through'),
+                DB::raw(PartnerShoppingListItem::freeStockSql().' as free_stock'),
+                DB::raw(PartnerShoppingListItem::shortfallSql().' as shortfall'),
             ])
             ->defaultSort('stock_code')
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['stock_code', 'buyer_code', 'quantity', 'stock_available', 'can_pick', 'priority', 'needed_by', 'created_at'])
+            ->allowedSorts(['stock_code', 'buyer_code', 'quantity', 'stock_available', 'can_pick', 'shortfall', 'priority', 'needed_by', 'created_at'])
             ->withPaginator(null, $perPage, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function ($item) {
+                $item->automation_status = self::automationStatus((float) $item->quantity, (float) $item->queued_through, (float) $item->free_stock, (float) $item->shortfall);
+
+                return $item;
+            });
+    }
+
+    /**
+     * Why a line is still here: released lines leave the list, the rest wait for a full line plus
+     * one on the shelf, and only the missing part goes to production.
+     */
+    public static function automationStatus(float $quantity, float $queuedThrough, float $freeStock, float $shortfall): string
+    {
+        return match (true) {
+            $queuedThrough < $freeStock => 'releasing',
+            $shortfall <= 0             => 'held_buffer',
+            $shortfall < $quantity      => 'awaiting_full_stock',
+            default                     => 'to_produce',
+        };
     }
 
     /**
@@ -108,7 +140,9 @@ class IndexPrePickList extends OrgAction
     public function eligibleLines(Organisation $seller): array
     {
         return collect($this->handle($seller, 10000)->items())
+            ->filter(fn ($row) => (float) $row->can_pick > 0)
             ->map(fn ($row) => ['id' => (int) $row->id, 'quantity' => (float) $row->can_pick])
+            ->values()
             ->all();
     }
 
@@ -135,6 +169,8 @@ class IndexPrePickList extends OrgAction
             ->where('partner_shopping_list_items.partner_organisation_id', $this->organisation->id)
             ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('partner_shopping_list_items.pre_picked_at')
+            ->whereNull('partner_shopping_list_items.job_order_id')
+            ->whereNull('partner_shopping_list_items.preparing_at')
             ->where('org_stocks.quantity_available', '>', 0)
             ->selectRaw("$expression as element, count(*) as total")
             ->groupBy('element')
@@ -153,6 +189,7 @@ class IndexPrePickList extends OrgAction
 
         return $this->elementGroups = [
             'category'  => $group(__('Category'), self::CATEGORY, $counts(self::CATEGORY)),
+            'cosmetic'  => $group(__('Cosmetic'), self::COSMETIC, $counts(self::COSMETIC)),
             'requester' => $group(__('Requester'), 'organisations.code', $counts('organisations.code')),
             'priority'  => $group(__('Urgency'), 'partner_shopping_list_items.priority', $counts('partner_shopping_list_items.priority')),
         ];
@@ -171,9 +208,12 @@ class IndexPrePickList extends OrgAction
                 ->column(key: 'pick', label: '', canBeHidden: false)
                 ->column(key: 'buyer_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'stock_code', label: __('Artefact'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'to_location', label: __('To'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Asked'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'stock_available', label: __('In stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'can_pick', label: __('Can pick'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'shortfall', label: __('Shortfall'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'automation_status', label: __('Status'), canBeHidden: false)
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->column(key: 'action', label: '', canBeHidden: false, align: 'right')

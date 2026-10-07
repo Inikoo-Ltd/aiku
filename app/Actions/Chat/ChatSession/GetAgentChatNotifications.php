@@ -31,23 +31,37 @@ class GetAgentChatNotifications
         ChatSenderTypeEnum::USER->value,
     ];
 
-    public function handle(ChatAgent $agent): array
+    /**
+     * The folders follow the shops picked on the rail, so their numbers do too: none picked
+     * means every shop, which is how the folders read then.
+     *
+     * @param  array<int, int>  $shownShopIds
+     */
+    public function handle(ChatAgent $agent, array $shownShopIds = []): array
     {
-        $shopIds = collect($this->shopIdsWorkedBy($agent->user_id));
+        $shopIds = collect($this->shopIdsWorkedBy($agent->user_id))
+            ->when($shownShopIds !== [], fn ($ids) => $ids->intersect($shownShopIds)->values());
 
-        // Counted across every shop, not this agent's: the point of the unclaimed queue is that
+        // Not limited to the shops this agent works: the point of the unclaimed queue is that
         // somebody who does not work the shop is the one who ends up noticing.
-        $unclaimed = $this->unclaimedChatSessions()->count()
-            + $this->unclaimedMetaChatSessions()->count();
+        $unclaimed = $this->unclaimedChatSessions()
+            ->when($shownShopIds !== [], fn ($query) => $query->whereIn('shop_id', $shownShopIds))
+            ->count()
+            + $this->unclaimedMetaChatSessions()
+                ->when($shownShopIds !== [], fn ($query) => $query->whereIn('shop_id', $shownShopIds))
+                ->count();
 
         if ($shopIds->isEmpty()) {
-            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0];
+            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => 0, 'colleagues' => 0, 'promised' => 0];
         }
 
         return [
             'team_unread' => $this->teamUnreadByShop($agent, $shopIds),
             'unclaimed'   => $unclaimed,
             'spam'        => $this->spamCount($shopIds),
+            'carriers'    => $this->carrierCount($shopIds),
+            'colleagues'  => $this->colleagueCount($shopIds),
+            'promised'    => $this->promisedCount($shopIds),
         ];
     }
 
@@ -58,6 +72,61 @@ class GetAgentChatNotifications
      *
      * @param  \Illuminate\Support\Collection<int, int>  $shopIds
      */
+    /**
+     * Courier conversations still open in the shops this agent works: what the Couriers folder
+     * badge promises.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $shopIds
+     */
+    private function carrierCount($shopIds): int
+    {
+        return ChatSession::query()
+            ->where('is_carrier', true)
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+            ->whereIn('shop_id', $shopIds)
+            ->count();
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, int>  $shopIds
+     */
+    private function colleagueCount($shopIds): int
+    {
+        return ChatSession::query()
+            ->where('is_colleague', true)
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+            ->whereIn('shop_id', $shopIds)
+            ->count();
+    }
+
+    /**
+     * Told while we were closed that we would answer when we open, and not answered yet: what
+     * the Promised capsule lists over the same shops.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $shopIds
+     */
+    private function promisedCount($shopIds): int
+    {
+        return ChatSession::query()
+            ->tap(fn ($query) => GetChatReplyPromise::scopeWaiting($query))
+            ->whereHas('messages')
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('is_carrier', false)
+            ->where('is_colleague', false)
+            ->whereIn('shop_id', $shopIds)
+            ->count()
+            + MetaChatSession::query()
+                ->tap(fn ($query) => GetChatReplyPromise::scopeWaiting($query))
+                ->where('is_spam', false)
+                ->whereIn('shop_id', $shopIds)
+                ->count();
+    }
+
     private function spamCount($shopIds): int
     {
         return ChatSession::query()
@@ -81,12 +150,6 @@ class GetAgentChatNotifications
      */
     private function teamUnreadByShop(ChatAgent $agent, $shopIds): array
     {
-        $teamAgentIds = $this->agentIdsCovering(collect($shopIds)->all(), $agent->id);
-
-        if ($teamAgentIds === []) {
-            return [];
-        }
-
         return ChatSession::query()
             ->where('is_spam', false)
             ->whereIn('shop_id', $shopIds)
@@ -94,8 +157,8 @@ class GetAgentChatNotifications
                 ChatSessionStatusEnum::ACTIVE->value,
                 ChatSessionStatusEnum::CLOSED->value,
             ])
-            ->whereHas('assignments', function ($assignmentQuery) use ($teamAgentIds) {
-                $assignmentQuery->whereIn('chat_agent_id', $teamAgentIds)
+            ->whereHas('assignments', function ($assignmentQuery) use ($agent) {
+                $assignmentQuery->where('chat_agent_id', '!=', $agent->id)
                     ->whereIn('status', [
                         ChatAssignmentStatusEnum::ACTIVE->value,
                         ChatAssignmentStatusEnum::RESOLVED->value,
@@ -129,14 +192,17 @@ class GetAgentChatNotifications
             return response()->json([
                 'success' => true,
                 'message' => 'User is not a chat agent',
-                'data'    => ['team_unread' => (object) [], 'unclaimed' => 0, 'spam' => 0],
+                'data'    => ['team_unread' => (object) [], 'unclaimed' => 0, 'spam' => 0, 'carriers' => 0],
             ]);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Agent chat notifications retrieved successfully',
-            'data'    => $this->handle($user->chatAgent),
+            'data'    => $this->handle(
+                $user->chatAgent,
+                array_map('intval', array_filter((array) $request->query('shop_ids', []), 'is_numeric'))
+            ),
         ]);
     }
 }

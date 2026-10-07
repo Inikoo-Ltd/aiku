@@ -16,8 +16,8 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableShippingZoneSchemas from '@/Components/Tables/Grp/Org/Catalogue/TableShippingZoneSchemas.vue'
 
-import { faCheckCircle, faBan } from "@fal"
-library.add(faCheckCircle, faBan)
+import { faCheckCircle, faBan, faShippingFast, faCube } from "@fal"
+library.add(faCheckCircle, faBan, faShippingFast, faCube)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

@@ -428,6 +428,7 @@ class IndexCustomers extends OrgAction
             'created_at',
             'number_invoices_type_invoice',
             'last_invoiced_at',
+            'expected_date_of_next_order',
             'sales_all',
             'invoiced_org_net_amount',
             'invoiced_grp_net_amount',
@@ -512,6 +513,7 @@ class IndexCustomers extends OrgAction
                 'customer_stats.number_current_portfolios',
                 'customer_stats.number_current_customer_clients',
                 'customer_stats.last_invoiced_at',
+                'customer_stats.expected_date_of_next_order',
                 'customer_stats.number_invoices_type_invoice',
                 'customer_stats.sales_all',
                 'customer_stats.sales_org_currency_all',
@@ -649,6 +651,7 @@ class IndexCustomers extends OrgAction
 
             $table
                 ->column(key: 'last_invoiced_at', label: __('Last Invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
+                ->column(key: 'expected_date_of_next_order', label: __('Next order'), tooltip: __('Estimated from the last invoice and the average time between orders'), canBeHidden: true, sortable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sales_all', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 

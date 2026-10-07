@@ -49,7 +49,7 @@ import TableEmployeeRequests from '@/Components/Tables/Grp/Org/HumanResources/Ta
 import TableEmployeeSearches from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeSearches.vue';
 import TableEmployeeChats from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeChats.vue';
 import TableEmployeeAiQueries from '@/Components/Tables/Grp/Org/HumanResources/TableEmployeeAiQueries.vue';
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Dialog from "primevue/dialog"
 import PureInput from "@/Components/Pure/PureInput.vue"
 
@@ -200,7 +200,7 @@ const createUser = () => {
                             autofocus
                             autocomplete="off"
                             :isError="!!createUserForm.errors.username"
-                            :placeholder="trans('Username')"
+                            :placeholder="ctrans('Username')"
                         />
                         <div v-if="createUserForm.errors.username" class="mt-1 text-xs text-red-600">
                             {{ createUserForm.errors.username }}
@@ -216,7 +216,7 @@ const createUser = () => {
                             type="password"
                             autocomplete="new-password"
                             :isError="!!createUserForm.errors.password"
-                            :placeholder="trans('Password')"
+                            :placeholder="ctrans('Password')"
                         />
                         <div v-if="createUserForm.errors.password" class="mt-1 text-xs text-red-600">
                             {{ createUserForm.errors.password }}
@@ -232,7 +232,7 @@ const createUser = () => {
                             type="password"
                             autocomplete="new-password"
                             :isError="!!createUserForm.errors.password_confirmation"
-                            :placeholder="trans('Retype password')"
+                            :placeholder="ctrans('Retype password')"
                         />
                         <div v-if="createUserForm.errors.password_confirmation" class="mt-1 text-xs text-red-600">
                             {{ createUserForm.errors.password_confirmation }}
@@ -275,9 +275,9 @@ const createUser = () => {
         </template>
         <template #other>
             <Button
-                v-if="currentTab === 'attachments'"
+                v-if="currentTab === 'attachments' && attachmentRoutes"
                 @click="() => isModalUploadOpen = true"
-                :label="trans('Attach file')"
+                :label="ctrans('Attach file')"
                 icon="fal fa-upload"
                 type="secondary"
             />
@@ -288,17 +288,17 @@ const createUser = () => {
     <!--
     <div v-if="!employee.data.user || ( $page.props.flash.notification && $page.props.flash.notification.type==='newUser')"   class="m-4 bg-white shadow sm:rounded-lg max-w-2xl">
             <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">{{ trans('System user')}}  <span v-if="$page.props.flash.notification" class="text-green-600 ml-2 text-sm">
+                <h3 class="text-lg font-medium leading-6 text-gray-900">{{ ctrans('System user')}}  <span v-if="$page.props.flash.notification" class="text-green-600 ml-2 text-sm">
                     <FontAwesomeIcon aria-hidden="true" icon="fa-solid fa-check-circle" size="lg" /> {{$page.props.flash.notification.message}}</span></h3>
                 <div v-if="!employee.data.user"  class="mt-2 sm:flex sm:items-start sm:justify-between">
                     <div class="max-w-xl text-sm text-gray-500">
-                        <p class="text-red-500">{{ trans('This employee is not an user') }}.</p>
+                        <p class="text-red-500">{{ ctrans('This employee is not an user') }}.</p>
                     </div>
 
 
                     <div class="mt-5 sm:mt-0 sm:ml-6 sm:flex sm:flex-shrink-0 sm:items-center">
                         <button @click="createEmployeeUser" type="button" class="mr-5 inline-flex items-center rounded-md border border-transparent bg-[--app-accent] px-4 py-2 font-medium text-white shadow-sm hover:bg-[--app-accent-strong] focus:outline-none focus:ring-2 focus:ring-[--app-accent] focus:ring-offset-2 sm:text-sm">
-                            {{ trans('Add employee to system users') }}
+                            {{ ctrans('Add employee to system users') }}
                         </button>
 
                     </div>
@@ -324,9 +324,9 @@ const createUser = () => {
     -->
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes?.detachRoute"></component>
 
-    <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
+    <UploadAttachment v-if="attachmentRoutes" v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />

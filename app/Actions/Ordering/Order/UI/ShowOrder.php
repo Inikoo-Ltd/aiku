@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
+use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -191,8 +193,37 @@ class ShowOrder extends OrgAction
 
     public function getOrderNotes(Order $order): array
     {
+        $noteList = [];
+
+        if ($order->has_gift_message) {
+            $giftMessagePdf = $order->gift_message
+                ? null
+                : $order->attachments()->wherePivot('scope', 'GiftMessage')->first();
+
+            $noteList[] = [
+                "label"       => __("Gift message"),
+                "note"        => $order->gift_message ?: __("PDF uploaded"),
+                "information" => __("The gift message the customer asked to be printed with the order."),
+                "editable"    => false,
+                "field"       => "gift_message",
+                "bgColor"       => "#ececec",
+                "pdf_preview" => $giftMessagePdf ? [
+                    "label" => $order->giftMessagePdfName() ?? __("Gift message"),
+                    "route" => [
+                        "name"       => "grp.media.download",
+                        "parameters" => [
+                            "media"  => $giftMessagePdf->ulid,
+                            "inline" => 1,
+                        ],
+                    ],
+                ] : null,
+                // "textColor"     => "#ececec",
+            ];
+        }
+
         return [
             "note_list" => [
+                ...$noteList,
                 [
                     "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $order->shipping_notes ?? '',
@@ -251,7 +282,8 @@ class ShowOrder extends OrgAction
         $orderBanStatus = $this->isForbiddenDetailed($order);
 
         $lockedInAurora = $order->isLockedInAurora();
-        $canEdit        = $this->canEdit && !$lockedInAurora;
+        $preOrderLocked = $order->preOrder && !$order->preOrder->canBeEditedBy($request->user());
+        $canEdit        = $this->canEdit && !$lockedInAurora && !$preOrderLocked;
 
         $actions = match (true) {
             $lockedInAurora => [],
@@ -259,12 +291,35 @@ class ShowOrder extends OrgAction
             default => GetEcomOrderActions::run($order, $canEdit),
         };
 
+        if (!$canEdit
+            && !$lockedInAurora
+            && !$preOrderLocked
+            && $order->state == OrderStateEnum::SUBMITTED
+            && $order->pay_status != OrderPayStatusEnum::PAID
+            && $order->transactions()->exists()
+            && $request->user()->authTo("org-supervisor.{$order->organisation_id}.accounting")) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'key'     => 'send-unpaid-to-warehouse',
+                'label'   => __('Send to warehouse (unpaid)'),
+                'tooltip' => __('Release this order to the warehouse before it is fully paid, e.g. for a customer on payment terms'),
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.order.state.in-warehouse-unpaid',
+                    'parameters' => [
+                        'order' => $order->id,
+                    ],
+                ],
+            ];
+        }
+
         $allowOrderModification = $canEdit
             && $order->shop->type != ShopTypeEnum::EXTERNAL
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
             && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
-        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora) {
+        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora && !$preOrderLocked) {
             $wrapped_actions = [
                 [
                     'type'  => 'button',
@@ -371,6 +426,7 @@ class ShowOrder extends OrgAction
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
                 ],
+                'basket_customer_balance' => $order->state == OrderStateEnum::CREATING ? $order->customer->balance : null,
                 'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
                 'staff_chat'  => [
@@ -487,6 +543,23 @@ class ShowOrder extends OrgAction
                     'insurance'        => $orderCharges['insurance'] ? ChargeResource::make($orderCharges['insurance'])->toArray(request()) : null,
                 ],
                 'data'                        => OrderResource::make($order),
+                'pre_order'                   => $order->preOrder ? array_merge(GetPreOrderShowcase::run($order->preOrder), [
+                    'update_route'         => [
+                        'name'       => 'grp.models.order.pre_order.update',
+                        'parameters' => ['order' => $order->id],
+                        'method'     => 'patch',
+                    ],
+                    'cancellation_reasons' => PreOrderCancellationReasonEnum::valuesWithLabels(),
+                    'lock'                 => [
+                        'is_locked'        => $order->preOrder->isLocked(),
+                        'is_locked_for_me' => $preOrderLocked,
+                        'unlocked_until'   => $order->preOrder->isUnlockedFor($request->user()) ? $order->preOrder->unlockedUntil()?->toIso8601String() : null,
+                    ],
+                ]) : null,
+                'split_pre_order'             => $order->splitPreOrder ? [
+                    'reference' => $order->splitPreOrder->order->reference,
+                    'slug'      => $order->splitPreOrder->order->slug,
+                ] : null,
                 'delivery_note'               => $deliveryNoteResource,
 
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
@@ -751,14 +824,15 @@ class ShowOrder extends OrgAction
             return $boxStats;
         }
 
-        $symbol = $order->currency->symbol ?? $order->currency->code;
+        $symbol      = $order->currency->symbol ?? $order->currency->code;
+        $profitLabel = ($summary['profit_amount'] < 0 ? '-' : '').$symbol.number_format(abs($summary['profit_amount']), 2);
 
         $marginRow = [
             'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
             'status'        => $summary['margin_status'],
             'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
-            'profit_label'  => $symbol.number_format($summary['profit_amount'], 2),
-            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $symbol.number_format($summary['profit_amount'], 2)]),
+            'profit_label'  => $profitLabel,
+            'tooltip'       => __(':amount is the item profit only: what the items sold for minus what the stock cost. HR, rent, shipping, marketing, payment fees and all other expenses still need to be subtracted, the real profit is much lower.', ['amount' => $profitLabel]),
             'below'         => $summary['is_below_break_even'] ? __('below :pct% break-even', ['pct' => $summary['break_even_pct']]) : null,
             'without_cost'  => $summary['lines_without_cost'] > 0 ? __(':count lines without cost excluded', ['count' => $summary['lines_without_cost']]) : null,
         ];

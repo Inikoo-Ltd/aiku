@@ -127,10 +127,14 @@ class GetWebsiteSearchAnalytics
         $base = WebsiteSearchLog::where('website_search_logs.website_id', $website->id)
             ->where('website_search_logs.created_at', '>=', now()->subDays($days));
 
-        $totalSearches    = (clone $base)->count();
-        $clicked          = (clone $base)->whereNotNull('clicked_at')->count();
-        $zeroResults      = (clone $base)->where('keyword_results_count', 0)->count();
-        $loggedInSearches = (clone $base)->whereNotNull('web_user_id')->count();
+        $counts = $base->selectRaw(
+            'count(*) as total, count(clicked_at) as clicked, count(*) filter (where keyword_results_count = 0) as zero_results, count(web_user_id) as logged_in'
+        )->first();
+
+        $totalSearches    = (int)$counts->total;
+        $clicked          = (int)$counts->clicked;
+        $zeroResults      = (int)$counts->zero_results;
+        $loggedInSearches = (int)$counts->logged_in;
 
         return [
             'total_searches'     => $totalSearches,

@@ -43,9 +43,9 @@ trait WithInvoicesExport
         }
     }
 
-    public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
+    public function processDataExportPdf(Invoice $invoice, ?string $locale = null): \Symfony\Component\HttpFoundation\Response
     {
-        $locale = $invoice->shop->language->code;
+        $locale ??= $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {
@@ -66,7 +66,7 @@ trait WithInvoicesExport
                 }
             }
 
-            return response($pdf->stream($filename.'.pdf'), 200)
+            return response($pdf->output(), 200)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {
@@ -109,10 +109,13 @@ trait WithInvoicesExport
      *
      * Covers the short shipped lines too: a line that was ordered 12 and supplied 8.5 is missing 3.5
      * even though it is dispatched, priced and stays in the main table.
+     *
+     * The invoiced quantity is read at 3 decimals, so the ordered one is too: a third of a product
+     * (0.333333) invoiced in full would otherwise leave 0.000333 "not supplied" (HELP-3574).
      */
     public function undeliveredQuantity(object $transaction): float
     {
-        $ordered = (float)($transaction->transaction?->quantity_ordered ?? 0);
+        $ordered = round((float)($transaction->transaction?->quantity_ordered ?? 0), 3);
 
         return max(0.0, $ordered - (float)$transaction->quantity);
     }
@@ -164,7 +167,7 @@ trait WithInvoicesExport
      */
     public function getInvoicePdfTransactions(Invoice $invoice): \Illuminate\Support\Collection
     {
-        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction'])->get();
+        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction', 'recurringBillTransaction.item'])->get();
 
         if ($invoice->customer->is_fulfilment || $invoice->type == InvoiceTypeEnum::REFUND) {
             return $invoiceTransactions;
@@ -196,9 +199,20 @@ trait WithInvoicesExport
 
         $transactionModel = $this->getInvoicePdfTransactions($invoice);
 
-        $transactions = $transactionModel->map(function ($transaction) {
+        $pallets = Pallet::whereIn('id', $transactionModel->map(fn ($transaction) => $transaction->data['pallet_id'] ?? null)->filter()->unique())->get()->keyBy('id');
+
+        $batchCodesByTransaction = DB::table('delivery_note_items')
+            ->join('pickings', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->join('batch_codes', 'batch_codes.id', '=', 'pickings.batch_code_id')
+            ->whereIn('delivery_note_items.transaction_id', $transactionModel->pluck('transaction_id')->filter()->unique())
+            ->whereNotNull('pickings.batch_code_id')
+            ->distinct()
+            ->get(['delivery_note_items.transaction_id', 'batch_codes.code'])
+            ->groupBy('transaction_id');
+
+        $transactions = $transactionModel->map(function ($transaction) use ($pallets, $batchCodesByTransaction) {
             if (!empty($transaction->data['pallet_id'])) {
-                $pallet                      = Pallet::find($transaction->data['pallet_id']);
+                $pallet                      = $pallets->get($transaction->data['pallet_id']);
                 $transaction->pallet         = $pallet->reference;
                 $transaction->customerPallet = $pallet->customer_reference;
             } elseif ($transaction->model_type == 'Rental' && $transaction->recurringBillTransaction) {
@@ -211,14 +225,7 @@ trait WithInvoicesExport
             }
 
             if ($transaction->transaction_id) {
-                $transaction->batch_codes = DB::table('delivery_note_items')
-                    ->join('pickings', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
-                    ->join('batch_codes', 'batch_codes.id', '=', 'pickings.batch_code_id')
-                    ->where('delivery_note_items.transaction_id', $transaction->transaction_id)
-                    ->whereNotNull('pickings.batch_code_id')
-                    ->distinct()
-                    ->pluck('batch_codes.code')
-                    ->implode(', ');
+                $transaction->batch_codes = $batchCodesByTransaction->get($transaction->transaction_id, collect())->pluck('code')->unique()->implode(', ');
             } else {
                 $transaction->batch_codes = null;
             }

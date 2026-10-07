@@ -11,6 +11,7 @@ namespace App\Models\Production;
 use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionUnderTargetReasonEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -46,6 +47,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $hourly_rate
  * @property numeric|null $pay
  * @property numeric|null $bonus
+ * @property numeric|null $standard_rate
+ * @property bool $is_under_target
+ * @property ManufactureTaskSessionUnderTargetReasonEnum|null $under_target_reason
+ * @property string|null $under_target_note
+ * @property int|null $under_target_reviewed_by
+ * @property \Illuminate\Support\Carbon|null $under_target_reviewed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Employee|null $employee
@@ -56,6 +63,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read User|null $user
+ * @property-read User|null $underTargetReviewer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession query()
@@ -75,7 +83,31 @@ class ManufactureTaskSession extends Model
         'activity_type' => ManufactureTaskSessionActivityTypeEnum::class,
         'started_at'    => 'datetime',
         'ended_at'      => 'datetime',
+        'is_under_target'          => 'boolean',
+        'under_target_reason'      => ManufactureTaskSessionUnderTargetReasonEnum::class,
+        'under_target_reviewed_at' => 'datetime',
     ];
+
+    public function paidHours(): float
+    {
+        return max(0, $this->started_at->diffInSeconds($this->ended_at) / 3600 - $this->break_minutes / 60);
+    }
+
+    public function recipeStandardRate(): ?float
+    {
+        $artefactId = $this->jobOrderItemTask?->jobOrderItem?->artefact_id;
+
+        $stepRate = $artefactId
+            ? ArtefactManufactureTask::where('artefact_id', $artefactId)
+                ->where('manufacture_task_id', $this->manufacture_task_id)
+                ->whereNotNull('standard_rate')
+                ->value('standard_rate')
+            : null;
+
+        $rate = $stepRate ?? $this->manufactureTask?->standard_rate;
+
+        return $rate === null ? null : (float) $rate;
+    }
 
     public function organisation(): BelongsTo
     {
@@ -104,12 +136,17 @@ class ManufactureTaskSession extends Model
 
     public function manufactureTask(): BelongsTo
     {
-        return $this->belongsTo(ManufactureTask::class);
+        return $this->belongsTo(ManufactureTask::class)->withTrashed();
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function underTargetReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'under_target_reviewed_by');
     }
 
     public function employee(): BelongsTo

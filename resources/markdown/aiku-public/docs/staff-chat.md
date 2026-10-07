@@ -3,7 +3,7 @@ title: Talking to colleagues in staff chat
 summary: The messaging bar on the right of every aiku screen - message a coworker, ask CRM or the warehouse about a specific order or delivery note in one tap, and decide who receives those questions.
 date: 2026-09-02
 tags: crm, dispatch, hr, chat, messaging
-category: crm
+category: help-desk
 help_routes: grp.chat.staff
 ---
 

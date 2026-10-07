@@ -3,7 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { ref, onMounted, nextTick} from 'vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue';
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Address from '@/Components/Forms/Fields/Address.vue';
 import CustomerDataForm from '@/Components/CustomerDataForm.vue';
 
@@ -18,7 +18,6 @@ const props = defineProps({
   }
 });
 
-console.log('sdsd',props)
 
 // Define form using Inertia's useForm
 const form = useForm({
@@ -95,7 +94,7 @@ onMounted(async () => {
 <template>
   <form @submit.prevent="submit" class="space-y-12 px-14 py-10">
     <div class="text-xl font-semibold flex justify-center">
-     {{trans("Join Our Fulfillment – Register Now!")}}
+     {{ctrans("Join Our Fulfillment – Register Now!")}}
     </div>
     <div class="border-b border-gray-900/10 pb-12">
       <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
@@ -103,7 +102,7 @@ onMounted(async () => {
 
         <!-- First Name -->
         <div class="sm:col-span-6">
-          <label for="name" class="capitalize block text-sm font-medium text-gray-700">{{trans("Name")}}</label>
+          <label for="name" class="capitalize block text-sm font-medium text-gray-700">{{ctrans("Name")}}</label>
           <div class="mt-2">
             <PureInput v-model="form.contact_name" type="text" id="contact_name" name="contact_name" required />
             <p v-if="form.errors.contact_name" class="text-sm text-red-600 mt-1">{{ form.errors.contact_name }}</p>
@@ -113,7 +112,7 @@ onMounted(async () => {
 
         <!-- Email -->
         <div class="sm:col-span-3">
-          <label for="email" class="capitalize block text-sm font-medium text-gray-700">{{trans("Email")}}</label>
+          <label for="email" class="capitalize block text-sm font-medium text-gray-700">{{ctrans("Email")}}</label>
           <div class="mt-2">
             <PureInput v-model="form.email" type="email" id="email" name="email" required />
             <p v-if="form.errors.email" class="text-sm text-red-600 mt-1">{{ form.errors.email }}</p>
@@ -122,7 +121,7 @@ onMounted(async () => {
 
         <!-- Phone Number -->
         <div class="sm:col-span-3">
-          <label for="phone-number" class="capitalize block text-sm font-medium text-gray-700">{{trans("Phone Number")}}</label>
+          <label for="phone-number" class="capitalize block text-sm font-medium text-gray-700">{{ctrans("Phone Number")}}</label>
           <div class="mt-2">
             <PureInput v-model="form.phone" type="text" id="phone-number" name="phone" required />
             <p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">{{ form.errors.phone }}</p>
@@ -131,7 +130,7 @@ onMounted(async () => {
 
         <!-- Business Name -->
         <div class="sm:col-span-6">
-          <label for="business-name" class="capitalize block text-sm font-medium text-gray-700">{{trans("Business Name")}}</label>
+          <label for="business-name" class="capitalize block text-sm font-medium text-gray-700">{{ctrans("Business Name")}}</label>
           <div class="mt-2">
             <PureInput v-model="form.company_name" type="text" id="business-name" name="company_name" />
             <p v-if="form.errors.company_name" class="text-sm text-red-600 mt-1">{{ form.errors.company_name }}</p>
@@ -140,7 +139,7 @@ onMounted(async () => {
 
         <!-- Website -->
         <div class="sm:col-span-6">
-          <label for="website" class="capitalize block text-sm font-medium text-gray-700">{{trans("Website")}}</label>
+          <label for="website" class="capitalize block text-sm font-medium text-gray-700">{{ctrans("Website")}}</label>
           <div class="mt-2">
             <PureInput v-model="form.website" />
             <p v-if="form.errors.website" class="text-sm text-red-600 mt-1">{{ form.errors.website }}</p>
@@ -152,7 +151,7 @@ onMounted(async () => {
         </div>
 
         <div class="sm:col-span-6">
-          <label for="website" class="capitalize block text-sm font-medium text-gray-700">{{trans("Country")}}</label>
+          <label for="website" class="capitalize block text-sm font-medium text-gray-700">{{ctrans("Country")}}</label>
           <Address v-model="form[contact_address]" fieldName="contact_address" :form="form" :options="{countriesAddressData :countriesAddressData}" :fieldData="addressFieldData" />
         </div>
 
@@ -168,7 +167,7 @@ onMounted(async () => {
         </div>
 
         <div class="sm:col-span-6 flex flex-col">
-          <label class="capitalize block text-sm font-medium text-gray-700">{{ trans("User Interests") }}</label>
+          <label class="capitalize block text-sm font-medium text-gray-700">{{ ctrans("User Interests") }}</label>
           <div class="mt-2 flex flex-wrap gap-6">
             <!-- Loop through the interests -->
             <div
@@ -223,7 +222,7 @@ onMounted(async () => {
       <button type="submit"
         class="inline-flex items-center px-6 bg-[#C1A027] text-white py-3 border border-transparent text-sm font-medium rounded-md shadow-sm">
         <span v-if="isLoading" class="loader mr-2"></span>
-        {{trans("Register")}}
+        {{ctrans("Register")}}
       </button>
     </div>
   </form>

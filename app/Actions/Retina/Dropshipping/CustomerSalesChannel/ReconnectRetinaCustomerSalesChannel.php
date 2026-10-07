@@ -11,9 +11,11 @@ namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Ebay\ReAuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
+use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -25,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, ?ActionRequest $request): ?string
@@ -37,9 +40,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
         }
 
         return match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => route('pupil.authenticate', [
-                'shop' => $platformUser->name
-            ]),
+            PlatformTypeEnum::SHOPIFY => ClaimShopifyUser::make()->authenticateUrl($customerSalesChannel->customer, $platformUser->name),
             PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
             PlatformTypeEnum::EBAY => ReAuthorizeRetinaEbayUser::make()->action($platformUser, $request),

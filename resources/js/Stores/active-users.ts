@@ -99,7 +99,7 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                 })
 
                 .error((error) => {
-                    console.log('error', error)
+                    console.error('error', error)
                 })
 
                 .listenForWhisper('otherIsNavigating', (e: LiveUser) => {

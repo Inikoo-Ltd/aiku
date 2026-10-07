@@ -11,7 +11,7 @@ import { computed, ref, watch } from "vue"
 const props = withDefaults(defineProps<{
     name: string | null
     avatar?: Record<string, string> | null
-    size?: "xs" | "sm" | "md" | "lg"
+    size?: "xs" | "sm" | "md" | "lg" | "xl"
 }>(), { avatar: null, size: "md" })
 
 const hasLoaded = ref(false)
@@ -37,6 +37,7 @@ const sizeClasses: Record<string, string> = {
     sm: "h-6 w-6 text-[9px]",
     md: "h-7 w-7 text-[10px]",
     lg: "h-9 w-9 text-xs",
+    xl: "h-10 w-10 text-sm",
 }
 
 const sizeClass = computed(() => sizeClasses[props.size])

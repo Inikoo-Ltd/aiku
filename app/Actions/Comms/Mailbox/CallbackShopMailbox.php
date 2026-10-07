@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailbox;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -44,9 +45,30 @@ class CallbackShopMailbox extends OrgAction
             ->get('https://gmail.googleapis.com/gmail/v1/users/me/profile')
             ->json();
 
+        $mailbox = Arr::get($profile, 'emailAddress');
+
+        // A mailbox belongs to one shop. Connected to two, both fetch the same inbox every minute
+        // and every mail is taken in twice, once under each shop: the same conversation appears
+        // twice in the inbox and two people can answer it separately. It has to be refused here,
+        // because by the time it is saved there is nothing left to tell the copies apart.
+        $takenBy = Shop::where('id', '!=', $shop->id)
+            ->where('settings->gmail->email', $mailbox)
+            ->first() ?? CallbackProcurementMailbox::procurementMailboxOwner($mailbox);
+
+        if ($takenBy) {
+            return Redirect::to($state['return'])->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Gmail not connected'),
+                'description' => __(':mailbox is already the mailbox of :shop. Disconnect it there first, or connect this shop to a mailbox of its own.', [
+                    'mailbox' => $mailbox,
+                    'shop'    => $takenBy->name,
+                ]),
+            ]);
+        }
+
         $settings = $shop->settings ?? [];
         data_set($settings, 'gmail', [
-            'email'                => Arr::get($profile, 'emailAddress'),
+            'email'                => $mailbox,
             'refresh_token'        => Crypt::encryptString($refreshToken),
             'history_id'           => Arr::get($profile, 'historyId'),
             'connected_at'         => now()->toIso8601String(),
@@ -74,11 +96,17 @@ class CallbackShopMailbox extends OrgAction
 
         $state = json_decode(Crypt::decryptString((string) $request->query('state')), true);
 
-        $shop = Shop::findOrFail($state['shop_id']);
-
-        $this->initialisationFromShop($shop, $request);
-
         try {
+            if (isset($state['procurement_organisation_id'])) {
+                $organisation = Organisation::findOrFail($state['procurement_organisation_id']);
+
+                return CallbackProcurementMailbox::make()->handle($organisation, (string) $request->query('code'), $state);
+            }
+
+            $shop = Shop::findOrFail($state['shop_id']);
+
+            $this->initialisationFromShop($shop, $request);
+
             return $this->handle((string) $request->query('code'), $state);
         } catch (RequestException $exception) {
             return Redirect::to($state['return'])->with('notification', [

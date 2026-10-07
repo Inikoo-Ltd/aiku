@@ -9,6 +9,7 @@ namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceCampaign;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourceCostFetchedViaEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -294,8 +295,23 @@ class FetchGoogleAdsCampaigns
 
         $campaign = TrafficSourceCampaign::find($campaignId);
 
+        /* Google's own status decides the state of anything it knows about, every night, so a campaign
+           switched on or paused in Google Ads reads correctly here without anybody telling Aiku.
+           A campaign still in process has no Google id, so it never matches and is never touched. */
+        $state = GoogleAdsCampaignStateEnum::fromGoogleStatus(
+            data_get($result, 'campaign.primaryStatus') ?? data_get($result, 'campaign.status')
+        );
+
         $campaign->update([
-            'name' => $name,
+            'name'  => $name,
+            'state' => $state,
+
+            /* Stamped the first time it is seen serving and left alone after, so the timeline reads
+               as when it started rather than when it was last checked. */
+            'serving_at' => $state === GoogleAdsCampaignStateEnum::PUBLISHED_SERVING
+                ? ($campaign->serving_at ?? now())
+                : $campaign->serving_at,
+            'published_at' => $campaign->published_at ?? $campaign->created_at,
             'data' => array_merge($campaign->data ?? [], [
                 'status'                 => data_get($result, 'campaign.status'),
                 'primary_status'         => data_get($result, 'campaign.primaryStatus'),

@@ -8,8 +8,15 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Events\BroadcastPurchaseOrderLastEdited;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
+use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
+use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
@@ -24,12 +31,16 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
+use App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier;
+use App\Actions\Ordering\Order\UI\IndexDispatchedEmailsInOrder;
+use App\Http\Resources\Ordering\DispatchedEmailsInOrderResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -37,6 +48,8 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,7 +68,7 @@ class ShowPurchaseOrder extends OrgAction
 
     public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
@@ -63,7 +76,7 @@ class ShowPurchaseOrder extends OrgAction
 
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
@@ -71,7 +84,7 @@ class ShowPurchaseOrder extends OrgAction
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
@@ -79,10 +92,19 @@ class ShowPurchaseOrder extends OrgAction
 
     public function inOrgPartner(Organisation $organisation, OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
+    }
+
+    private function defaultTab(PurchaseOrder $purchaseOrder): string
+    {
+        $isEmptyOpenOrder = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier)
+            && !$purchaseOrder->purchaseOrderTransactions()->exists();
+
+        return $isEmptyOpenOrder ? PurchaseOrderTabsEnum::PRODUCTS->value : PurchaseOrderTabsEnum::ITEMS->value;
     }
 
     public function htmlResponse(PurchaseOrder $purchaseOrder, ActionRequest $request): Response
@@ -91,6 +113,7 @@ class ShowPurchaseOrder extends OrgAction
 
         $showProductsTab = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
             && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier);
+        $uploadExcel = $this->canEdit && $this->acceptsSpreadsheet($purchaseOrder);
 
         $orderer = [];
         $productListRoute = [];
@@ -104,11 +127,21 @@ class ShowPurchaseOrder extends OrgAction
 
         if ($purchaseOrder->parent instanceof OrgAgent) {
             $orderer = OrgAgentResource::make($purchaseOrder->parent)->toArray($request);
-            $productListRoute = [
+            $productListRoute = !$this->canEdit ? [] : [
                 'method'     => 'get',
                 'name'       => 'grp.json.org-agent.org-supplier-products',
                 'parameters' => [
                     'orgAgent' => $purchaseOrder->parent->slug,
+                    'purchaseOrder' => $purchaseOrder->slug,
+                ],
+            ];
+        } elseif ($purchaseOrder->parent instanceof OrgPartner) {
+            $orderer = ['name' => $purchaseOrder->parent->partner->name, 'type' => 'Partner'];
+            $productListRoute = [
+                'method'     => 'get',
+                'name'       => 'grp.json.org-partner.purchase-order-org-stocks',
+                'parameters' => [
+                    'orgPartner'    => $purchaseOrder->parent->id,
                     'purchaseOrder' => $purchaseOrder->slug,
                 ],
             ];
@@ -127,42 +160,67 @@ class ShowPurchaseOrder extends OrgAction
         return Inertia::render(
             'Procurement/PurchaseOrder',
             [
-                'title'       => __('Purchase Order'),
+                'title'       => '(' . $purchaseOrder->reference . ') ' . __('Purchase Order'),
                 'breadcrumbs' => $this->getBreadcrumbs($purchaseOrder, $request->route()->getName(), $request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($purchaseOrder, $request),
                     'next'     => $this->getNext($purchaseOrder, $request),
                 ],
                 'pageHead'    => [
-                    'title' => __('Purchase Order'),
+                    'title' => $purchaseOrder->reference,
+                    'model' => __('Purchase Order'),
                     'icon'  => [
                         'icon'  => ['fal', 'clipboard-list'],
                         'title' => __('Purchase Order'),
                     ],
                     'afterTitle' => [
-                        'label' => $purchaseOrder->reference,
+                        'label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
                     ],
-                    'edit' => $this->canEdit ? [
-                        'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters()),
+                    'actions' => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => 'grp.org.procurement.purchase_orders.edit',
+                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
+                            ],
+                        ] : false,
+                        [
+                            'type'   => 'button',
+                            'style'  => 'tertiary',
+                            'label'  => 'PDF',
+                            'target' => '_blank',
+                            'icon'   => 'fal fa-file-pdf',
+                            'key'    => 'pdf',
+                            'route'  => [
+                                'name'       => 'grp.org.procurement.purchase_orders.pdf',
+                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
+                            ],
                         ],
-                    ] : false,
-                    'actions' => $this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : [],
+                        ...($uploadExcel ? [] : [$this->downloadExcelAction($purchaseOrder)]),
+                        ...($this->emailToSupplierAction($purchaseOrder) ?? []),
+                        ...($this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : []),
+                    ],
                 ],
+                'upload_excel'             => $uploadExcel ? $this->uploadExcel($purchaseOrder) : null,
                 'data'                     => PurchaseOrderResource::make($purchaseOrder),
+                'last_edit'                => BroadcastPurchaseOrderLastEdited::lastEdit($purchaseOrder),
                 'timelines'                => $this->getTimeline($purchaseOrder),
                 'stock_delivery_timelines' => $this->getStockDeliveryTimelines($purchaseOrder),
                 'delivery_items'            => $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
                     ? $purchaseOrder->purchaseOrderTransactions()
                         ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
-                        ->with('supplierProduct:id,code,name')
-                        ->get(['id', 'supplier_product_id', 'quantity_ordered'])
+                        ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
+                        ->get(['id', 'supplier_product_id', 'org_stock_id', 'quantity_ordered'])
                         ->map(fn (PurchaseOrderTransaction $transaction) => [
                             'id'               => $transaction->id,
-                            'code'             => $transaction->supplierProduct?->code,
-                            'name'             => $transaction->supplierProduct?->name,
+                            'code'             => $transaction->supplierProduct?->code ?? $transaction->orgStock?->code,
+                            'name'             => $transaction->supplierProduct?->name ?? $transaction->orgStock?->name,
                             'quantity_ordered' => $transaction->quantity_ordered,
+                            'image_thumbnail'  => $transaction->orgStock?->tradeUnits
+                                ->first(fn ($tradeUnit) => $tradeUnit->image_id !== null)
+                                ?->imageSources(80, 80),
                         ])->values()
                     : [],
                 'tabs'        => [
@@ -190,7 +248,9 @@ class ShowPurchaseOrder extends OrgAction
                             'port_of_export'   => Arr::get($purchaseOrder->data, 'port_of_export'),
                             'port_of_import'   => Arr::get($purchaseOrder->data, 'port_of_import'),
                             'delivery_address' => $deliveryAddress,
+                            'is_own_warehouse' => $deliveryAddress === ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->organisation),
                         ],
+                        'seller_order' => $this->sellerOrder($purchaseOrder, $request),
                     ],
                     'second_block'     => [
                         'state'                    => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
@@ -229,9 +289,37 @@ class ShowPurchaseOrder extends OrgAction
                     fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
                     : Inertia::optional(fn () => $showProductsTab ? PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)) : null),
 
-                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
-                    fn () => GetPurchaseOrderData::run($purchaseOrder)
-                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
+                'showcase' => GetPurchaseOrderData::run($purchaseOrder),
+
+                PurchaseOrderTabsEnum::NOTES->value => $this->tab == PurchaseOrderTabsEnum::NOTES->value ?
+                    fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($purchaseOrder, PurchaseOrderTabsEnum::NOTES->value))
+                    : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($purchaseOrder, PurchaseOrderTabsEnum::NOTES->value))),
+
+                'note_store_route' => [
+                    'name'       => 'grp.models.purchase-order.note.store',
+                    'parameters' => [$purchaseOrder->id],
+                ],
+
+                PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))),
+
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.purchase-order.attachment.attach',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'detachRoute' => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.purchase-order.attachment.detach',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                ],
+                'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
+
+                PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value ?
+                    fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $purchaseOrder, prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::optional(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $purchaseOrder, prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
@@ -239,6 +327,9 @@ class ShowPurchaseOrder extends OrgAction
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
             ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure(prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
+            ->table(IndexProcurementNotes::make()->tableStructure(prefix: PurchaseOrderTabsEnum::NOTES->value))
+            ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
+            ->table(IndexDispatchedEmailsInOrder::make()->tableStructure(prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }
 
@@ -247,11 +338,107 @@ class ShowPurchaseOrder extends OrgAction
         return new PurchaseOrderResource($purchaseOrder);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function downloadExcelAction(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'label'   => 'Excel',
+            'tooltip' => __('Download the products of this purchase order'),
+            'target'  => '_blank',
+            'icon'    => 'fal fa-download',
+            'key'     => 'excel',
+            'route'   => [
+                'name'       => 'grp.org.procurement.purchase_orders.transactions.export',
+                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function acceptsSpreadsheet(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier || $purchaseOrder->parent instanceof OrgPartner);
+    }
+
+    private function uploadExcel(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            'title'               => [
+                'label'       => __('Upload products'),
+                'information' => $purchaseOrder->parent_type === 'OrgPartner'
+                    ? __('Columns: code (our SKO code) and quantity (in SKOs). SKOs already on the order get the new quantity.')
+                    : __('Columns: code (the supplier product code) and quantity. Products already on the order get the new quantity.'),
+            ],
+            'progressDescription' => __('Adding products'),
+            'preview_template'    => [
+                'header' => ['code', 'quantity'],
+                'rows'   => [
+                    ['code' => 'Product-001', 'quantity' => '10'],
+                ],
+            ],
+            'upload_spreadsheet'  => [
+                'event'           => 'action-progress',
+                'channel'         => 'grp.personal.'.request()->user()->id,
+                'required_fields' => ['code', 'quantity'],
+                'template'        => [
+                    'label' => __('Download this order (.xlsx)'),
+                ],
+                'route'           => [
+                    'upload'   => [
+                        'name'       => 'grp.models.purchase-order.transaction.upload',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'history'  => [
+                        'name'       => 'grp.json.purchase_order.transaction.recent_uploads',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'download' => [
+                        'name'       => 'grp.org.procurement.purchase_orders.transactions.export',
+                        'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private function emailToSupplierAction(PurchaseOrder $purchaseOrder): ?array
+    {
+        $supplier = $purchaseOrder->parent instanceof OrgSupplier ? $purchaseOrder->parent->supplier : null;
+
+        if (!$supplier || !Arr::get($supplier->settings, 'po_by_email')) {
+            return null;
+        }
+
+        $email   = Arr::get($supplier->settings, 'po_email') ?: $supplier->email;
+        $subject = __('Purchase order :reference from :organisation', ['reference' => $purchaseOrder->reference, 'organisation' => $purchaseOrder->organisation->name]);
+        $body    = __("Hello,\n\nPlease find attached our purchase order :reference.\n\nKind regards,\n:organisation", ['reference' => $purchaseOrder->reference, 'organisation' => $purchaseOrder->organisation->name]);
+
+        return [
+            [
+                'type'    => 'button',
+                'style'   => 'secondary',
+                'label'   => __('Email to supplier'),
+                'tooltip' => $email ? __('Opens your email with :email and downloads the PDF to attach', ['email' => $email]) : __('This supplier has no email address'),
+                'icon'    => 'fal fa-envelope',
+                'key'     => 'email_to_supplier',
+                'mailto'  => $email ? 'mailto:'.$email.'?subject='.rawurlencode($subject).'&body='.rawurlencode($body) : null,
+                'pdfUrl'  => route('grp.org.procurement.purchase_orders.pdf', [$this->organisation->slug, $purchaseOrder->slug]),
+            ]
+        ];
+    }
+
     public function getActions(PurchaseOrder $purchaseOrder, bool $showProductsTab): array
     {
         return match ($purchaseOrder->state) {
             PurchaseOrderStateEnum::IN_PROCESS => [
-                $showProductsTab ? [
+                $showProductsTab || $purchaseOrder->parent instanceof OrgPartner ? [
                     'label'   => __('Add Product'),
                     'tooltip' => __('Add Product'),
                     'type'    => 'button',
@@ -266,6 +453,15 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                 ] : [],
+                $this->acceptsSpreadsheet($purchaseOrder) ? $this->downloadExcelAction($purchaseOrder) : [],
+                $this->acceptsSpreadsheet($purchaseOrder) ? [
+                    'label'   => __('Upload products'),
+                    'tooltip' => __('Add products, or change their quantities, from a spreadsheet'),
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-upload',
+                    'key'     => 'upload_products',
+                ] : [],
                 $purchaseOrder->purchaseOrderTransactions()
                     ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
                     ->exists() ?
@@ -276,6 +472,7 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'save',
                     'icon'    => 'fal fa-paper-plane',
                     'key'     => 'submit_purchase_order',
+                    'send_channels' => SendPurchaseOrderToSupplier::channels($purchaseOrder),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.submit',
@@ -307,13 +504,27 @@ class ShowPurchaseOrder extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'key'     => 'confirm_purchase_order',
-                    'estimated_receiving_date' => Arr::get($purchaseOrder->data, 'estimated_receiving_date'),
+                    'estimated_receiving_date' => $purchaseOrder->estimatedReceivingDate(),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.confirm',
                         'parameters' => [
                             'purchaseOrder' => $purchaseOrder->id,
                         ],
+                    ],
+                ],
+                [
+                    'label'   => __('Delivery date'),
+                    'tooltip' => __('Change estimated delivery date'),
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-calendar-alt',
+                    'key'     => 'edit_estimated_delivery_date',
+                    'estimated_receiving_date' => $purchaseOrder->estimatedReceivingDate(),
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.update',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
                     ],
                 ],
                 [
@@ -354,20 +565,21 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'secondary',
                     'icon'    => 'fal fa-calendar-alt',
                     'key'     => 'edit_estimated_delivery_date',
-                    'estimated_receiving_date' => Arr::get($purchaseOrder->data, 'estimated_receiving_date'),
+                    'estimated_receiving_date' => $purchaseOrder->estimatedReceivingDate(),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.update',
                         'parameters' => ['purchaseOrder' => $purchaseOrder->id],
                     ],
                 ],
-                $this->hasActiveStockDelivery($purchaseOrder) ? [] : [
-                    'label'   => __('New Delivery'),
-                    'tooltip' => __('Create Stock Delivery from this Purchase Order'),
+                !StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($purchaseOrder)->exists() ? [] : [
+                    'label'   => $this->hasActiveStockDelivery($purchaseOrder) ? __('Deliver remaining items') : __('New Delivery'),
+                    'tooltip' => $this->hasActiveStockDelivery($purchaseOrder) ? __('Create a stock delivery with the items still to come') : __('Create Stock Delivery from this Purchase Order'),
                     'type'    => 'button',
                     'style'   => 'create',
                     'icon'    => 'fal fa-plus',
                     'key'     => 'new_stock_delivery',
+                    'disabled_reason' => StoreStockDeliveryFromPurchaseOrder::partnerDeliveryBlockedReason($purchaseOrder),
                     'route'   => [
                         'method'     => 'post',
                         'name'       => 'grp.models.purchase-order.stock-delivery.store',
@@ -384,6 +596,20 @@ class ShowPurchaseOrder extends OrgAction
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.undo-confirm',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
+                $purchaseOrder->stockDeliveries()->exists() ? [] : [
+                    'label'   => __('Cancel'),
+                    'tooltip' => __('Cancel Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'key'     => 'cancel_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.cancel',
                         'parameters' => [
                             'purchaseOrder' => $purchaseOrder->id,
                         ],
@@ -477,7 +703,7 @@ class ShowPurchaseOrder extends OrgAction
             // (e.g. "Estimated 30 days after confirmation"); once confirmed, the default timestamp is
             // calculated as estimated dispatch + delivery days, and once dispatched it becomes the
             // stock delivery estimated received date.
-            $estimatedReceivingDate = Arr::get($purchaseOrder->data, 'estimated_receiving_date');
+            $estimatedReceivingDate = $purchaseOrder->estimatedReceivingDate();
 
             $timeline['estimated_delivery'] = [
                 'label'     => __('Estimated delivery'),
@@ -525,14 +751,16 @@ class ShowPurchaseOrder extends OrgAction
     {
         return $purchaseOrder->stockDeliveries()
             ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+            ->orderBy('stock_deliveries.id')
             ->get()->map(fn (StockDelivery $stockDelivery) => [
             'reference'  => $stockDelivery->reference,
             'state'      => $stockDelivery->state->value,
             'state_icon' => StockDeliveryStateEnum::stateIcon()[$stockDelivery->state->value],
+            'timeline'   => ShowStockDelivery::make()->getTimeline($stockDelivery, withPurchaseOrderStates: false),
             'route'      => [
                 'name'       => 'grp.org.procurement.stock_deliveries.show',
                 'parameters' => [
-                    'organisation'  => $purchaseOrder->organisation->slug,
+                    'organisation'  => $this->organisation->slug,
                     'stockDelivery' => $stockDelivery->slug,
                 ],
             ],
@@ -541,16 +769,30 @@ class ShowPurchaseOrder extends OrgAction
 
     public function getPrevious(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
     {
-        $previous = PurchaseOrder::where('reference', '<', $purchaseOrder->reference)->orderBy('reference', 'desc')->first();
+        $previous = $this->siblingPurchaseOrders($purchaseOrder, $request)->where('reference', '<', $purchaseOrder->reference)->orderBy('reference', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
     {
-        $next = PurchaseOrder::where('reference', '>', $purchaseOrder->reference)->orderBy('reference')->first();
+        $next = $this->siblingPurchaseOrders($purchaseOrder, $request)->where('reference', '>', $purchaseOrder->reference)->orderBy('reference')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function siblingPurchaseOrders(PurchaseOrder $purchaseOrder, ActionRequest $request): Builder
+    {
+        $organisationAgent = $this->getOrganisationAgent($this->organisation);
+        $query             = $organisationAgent
+            ? PurchaseOrder::where('agent_id', $organisationAgent->id)
+            : PurchaseOrder::where('organisation_id', $purchaseOrder->organisation_id);
+
+        if ($request->route()->getName() !== 'grp.org.procurement.purchase_orders.show') {
+            $query->where('parent_type', $purchaseOrder->parent_type)->where('parent_id', $purchaseOrder->parent_id);
+        }
+
+        return $query;
     }
 
     public function getNavigation(?PurchaseOrder $purchaseOrder, string $routeName): ?array
@@ -565,7 +807,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
                 ],
@@ -575,7 +817,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'orgAgent'      => $purchaseOrder->parent->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
@@ -586,7 +828,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'orgSupplier'   => $purchaseOrder->parent->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
@@ -597,7 +839,7 @@ class ShowPurchaseOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'  => $purchaseOrder->organisation->slug,
+                        'organisation'  => $this->organisation->slug,
                         'orgPartner'    => $purchaseOrder->parent->id,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
@@ -699,4 +941,25 @@ class ShowPurchaseOrder extends OrgAction
             default => []
         };
     }
+
+    /**
+     * The order a sister company's purchase order became in their shop, linked when the user can see that shop's orders.
+     *
+     * @return array{reference: string, url: string|null}|null
+     */
+    private function sellerOrder(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
+    {
+        $order = Order::find(Arr::get($purchaseOrder->data, 'seller_order_id'));
+        if (!$order) {
+            return null;
+        }
+
+        return [
+            'reference' => $order->reference,
+            'url'       => $request->user()->authTo(["orders.$order->shop_id.view", "accounting.$order->organisation_id.view"])
+                ? route('grp.org.shops.show.ordering.orders.show', [$order->organisation->slug, $order->shop->slug, $order->slug])
+                : null,
+        ];
+    }
+
 }

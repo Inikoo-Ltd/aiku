@@ -8,7 +8,7 @@
 namespace App\Actions\Chat\PhoneCall\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\CRM\Livechat\ChatPhoneCallResource;
 use App\Models\SysAdmin\Group;
@@ -64,7 +64,7 @@ class ShowGroupChatPhoneCalls extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
+            ShowGroupChatDashboard::make()->getBreadcrumbs('grp.chat.reports', []),
             [
                 [
                     'type'   => 'simple',

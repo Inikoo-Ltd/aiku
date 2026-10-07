@@ -10,8 +10,7 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
-use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
@@ -47,13 +46,7 @@ class RepairLocationOrgStockQuantity implements ShouldBeUnique
             $orgStock->locations as $location
         ) {
             $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
-            $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);
-            UpdateLocationOrgStock::run(
-                $locationOrgStock,
-                [
-                    'quantity' => $stockQuantity
-                ]
-            );
+            $stockQuantity    = SyncLocationOrgStockQuantityFromMovements::run($locationOrgStock);
             $command?->info("$location->code $stockQuantity");
         }
 

@@ -60,13 +60,11 @@ class GetProductsNeedReviewBadgeData
 
     public function totalCount(User $user): int
     {
-        $total = 0;
+        $query = Product::whereIn('products.shop_id', $this->reviewableShops($user)->pluck('id'));
 
-        foreach ($this->reviewableShops($user) as $shop) {
-            $total += $this->query($shop)->count();
-        }
+        $this->applyReviewConstraints($query);
 
-        return $total;
+        return $query->count();
     }
 
     /**

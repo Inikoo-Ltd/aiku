@@ -29,6 +29,7 @@ use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -192,12 +193,12 @@ class IndexSnapshots extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             if ($withLabel) {
-                $table->column(key: 'label', label: __('label'));
+                $table->column(key: 'label', label: __('Label'));
             }
-            $table->column(key: 'publisher', label: __('publisher'), sortable: true)
-            ->column(key: 'published_at', label: __('date published'), sortable: true)
-            ->column(key: 'published_until', label: __('published until'))
-            ->column(key: 'comment', label: __('comment'));
+            $table->column(key: 'publisher', label: Str::ucfirst(__('publisher')), sortable: true)
+            ->column(key: 'published_at', label: Str::ucfirst(__('date published')), sortable: true)
+            ->column(key: 'published_until', label: Str::ucfirst(__('published until')))
+            ->column(key: 'comment', label: Str::ucfirst(__('comment')));
             $table->column(key: 'recyclable', label: ['fal', 'fa-recycle']);
 
             if (

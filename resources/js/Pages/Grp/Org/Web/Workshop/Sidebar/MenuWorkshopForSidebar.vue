@@ -12,9 +12,10 @@ import ProgressSpinner from "primevue/progressspinner"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import SideMenuWorkshop from "./SideMenuWorkshopForSidebar.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -26,6 +27,7 @@ import {
 	faBars,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
+import { faExternalLink } from "@fal"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
@@ -98,7 +100,6 @@ const onPublish = async (action: routeType, popover: Funcition) => {
 }
 
 const sendToIframe = (data: any) => {
-	console.log(data)
 	_iframe.value?.contentWindow.postMessage(data, "*")
 }
 
@@ -129,7 +130,6 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 
 let controller: AbortController | null = null
 const autoSave = async (value: any) => {
-	console.log("Auto saving parents...", value)
 	if (controller) {
 		controller.abort()
 	}
@@ -152,7 +152,6 @@ const autoSave = async (value: any) => {
 			error.name === "CanceledError" ||
 			error.message === "canceled"
 		) {
-			console.log("Autosave request cancelled")
 			return
 		}
 
@@ -191,7 +190,7 @@ const autoSave = async (value: any) => {
                 v-else
                 @click="() => autoSave(data?.sidebar)"
                 type="tertiary"
-                :label="trans('Save')"
+                :label="ctrans('Save')"
                 icon="fas fa-save"
                 size="xs"
                 :loading="statusSave === 'loading'"

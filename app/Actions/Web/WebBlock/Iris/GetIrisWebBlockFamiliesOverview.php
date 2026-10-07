@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Catalogue\ProductCategory\WithFamiliesFromParentCollections;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -24,6 +25,7 @@ use Illuminate\Support\Arr;
 class GetIrisWebBlockFamiliesOverview
 {
     use AsObject;
+    use WithFamiliesFromParentCollections;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
@@ -38,16 +40,7 @@ class GetIrisWebBlockFamiliesOverview
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $webpage->model_id)
-                            ->orWhereIn('product_categories.id', function ($sub) use ($webpage) {
-                                $sub->select('chm.model_id')
-                                    ->from('collection_has_models as chm')
-                                    ->where('chm.model_type', 'ProductCategory')
-                                    ->whereIn('chm.collection_id', function ($sub2) use ($webpage) {
-                                        $sub2->select('mhc.collection_id')
-                                            ->from('model_has_collections as mhc')
-                                            ->where('mhc.model_id', $webpage->model_id);
-                                    });
-                            });
+                            ->orWhereIn('product_categories.id', $this->familyIdsFromParentCollections($webpage->model_id));
                     } else {
                         $query->where('product_categories.sub_department_id', $webpage->model_id);
                     }
@@ -59,6 +52,12 @@ class GetIrisWebBlockFamiliesOverview
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->when(
+                    $webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT,
+                    fn ($query) => $query->orderByRaw('CASE WHEN product_categories.department_id = ? THEN 0 ELSE 1 END', [$webpage->model_id])
+                )
+                ->orderByRaw('product_categories.website_position ASC NULLS LAST')
+                ->orderByRaw('product_categories.created_at DESC')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
             $families = DB::table('product_categories')
@@ -78,6 +77,8 @@ class GetIrisWebBlockFamiliesOverview
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->orderByRaw('product_categories.website_position ASC NULLS LAST')
+                ->orderByRaw('product_categories.created_at DESC')
                 ->get();
         } else {
             return $webBlock;

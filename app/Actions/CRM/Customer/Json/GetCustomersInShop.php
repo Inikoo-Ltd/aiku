@@ -46,6 +46,13 @@ class GetCustomersInShop extends OrgAction
             }
         });
 
+        $hasEmailFilter = AllowedFilter::callback('has_email', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotNull('customers.email')
+                    ->where('customers.email', '!=', '');
+            }
+        });
+
         $phoneFilter = AllowedFilter::callback('phone', function ($query, $value) {
             $query->whereRaw(
                 "regexp_replace(customers.phone, '\\D', '', 'g') = ?",
@@ -57,7 +64,7 @@ class GetCustomersInShop extends OrgAction
         $queryBuilder->where('customers.shop_id', $parent->id);
 
         return $queryBuilder->defaultSort('-id')
-            ->allowedFilters([$globalSearch, $hasPhoneFilter, $phoneFilter])
+            ->allowedFilters([$globalSearch, $hasPhoneFilter, $hasEmailFilter, $phoneFilter])
             ->withPaginator($prefix)
             ->withQueryString();
     }

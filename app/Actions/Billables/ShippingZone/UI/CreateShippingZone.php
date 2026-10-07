@@ -11,7 +11,7 @@ namespace App\Actions\Billables\ShippingZone\UI;
 use App\Actions\Billables\ShippingZoneSchema\UI\ShowShippingZoneSchema;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateShippingZone extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): Response
     {

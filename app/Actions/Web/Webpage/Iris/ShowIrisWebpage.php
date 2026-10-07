@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
@@ -83,6 +84,7 @@ class ShowIrisWebpage
 
 
         $webpageImg = $this->getWebpageShareImageSources($webpage);
+        $visibility = $webpage->searchEngineVisibility();
 
         $title = $this->getWebpageSeoTitle($webpage);
         $baseWebpageData = [
@@ -109,8 +111,8 @@ class ShowIrisWebpage
                     : null,
             ],
             'webpage_img'                       => $webpageImg,
-            'index_page'                        => $webpage->index_page,
-            'follow_link'                       => $webpage->follow_link,
+            'index_page'                        => $visibility['index_page'],
+            'follow_link'                       => $visibility['follow_link'],
             'webpage_slug'                      => $webpage->slug,
             'webpage_id'                        => $webpage->id,
             'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
@@ -201,10 +203,10 @@ class ShowIrisWebpage
         }
 
         if (config('iris.cache.webpage.ttl') == 0) {
-            $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
+            $webpageData = $this->withShortImageUrls($this->getWebpageData($webpageID, $parentPaths, $loggedIn), $request->input('website'));
         } else {
             $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
-            $webpageData = $this->rememberCompressed($key, fn () => $this->getWebpageData($webpageID, $parentPaths, $loggedIn));
+            $webpageData = $this->rememberCompressed($key, fn () => $this->withShortImageUrls($this->getWebpageData($webpageID, $parentPaths, $loggedIn), $request->input('website')));
         }
 
         if (Arr::get($webpageData, 'status') != 'ok') {
@@ -230,6 +232,11 @@ class ShowIrisWebpage
         return $product && $product->isExclusive() ? $product : null;
     }
 
+
+    private function withShortImageUrls(array $webpageData, Website $website): array
+    {
+        return ShortenWebsiteImageUrls::run($webpageData, $website, $this->getEnvironmentUrl($website->storefront?->getCanonicalUrl() ?? $website->getUrl()));
+    }
 
     public function getEnvironmentUrl($url)
     {

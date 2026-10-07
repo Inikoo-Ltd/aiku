@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -49,6 +50,8 @@ class IndexOrgStocks extends OrgAction
     private OrgStockFamily|Organisation|OrgPartner|OrgAgent $parent;
 
     private string $bucket;
+
+    private ?array $artefactElementGroup = null;
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -156,6 +159,70 @@ class IndexOrgStocks extends OrgAction
                     $query->whereIn('org_stocks.state', $elements);
                 },
             ],
+            ...$this->getArtefactElementGroup($parent),
+        ];
+    }
+
+    protected function getBucketStates(): array
+    {
+        return match ($this->bucket ?? 'all') {
+            'active'        => [OrgStockStateEnum::ACTIVE],
+            'discontinuing' => [OrgStockStateEnum::DISCONTINUING],
+            'discontinued'  => [OrgStockStateEnum::DISCONTINUED],
+            'abnormality'   => [OrgStockStateEnum::ABNORMALITY],
+            default         => [OrgStockStateEnum::ACTIVE, OrgStockStateEnum::DISCONTINUING],
+        };
+    }
+
+    protected function getArtefactElementGroup(Organisation|OrgStockFamily|OrgPartner|OrgAgent $parent): array
+    {
+        if (!$parent instanceof Organisation) {
+            return [];
+        }
+
+        return $this->artefactElementGroup ??= $this->buildArtefactElementGroup($parent);
+    }
+
+    protected function buildArtefactElementGroup(Organisation $parent): array
+    {
+        if (!$parent->productions()->exists()) {
+            return [];
+        }
+
+        $hasArtefact = 'exists (select 1 from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null)';
+
+        $counts = DB::table('org_stocks')
+            ->where('organisation_id', $parent->id)
+            ->whereNull('deleted_at')
+            ->whereIn('state', $this->getBucketStates())
+            ->selectRaw("count(*) filter (where is_made_in_house and $hasArtefact) as with_artefact")
+            ->selectRaw("count(*) filter (where is_made_in_house and not $hasArtefact) as missing_artefact")
+            ->selectRaw('count(*) filter (where not is_made_in_house) as not_made_in_house')
+            ->first();
+
+        return [
+            'artefact' => [
+                'label'    => __('Artefact'),
+                'default'  => 'with_artefact,missing_artefact,not_made_in_house',
+                'elements' => [
+                    'with_artefact'     => [__('With artefact'), $counts->with_artefact],
+                    'missing_artefact'  => [__('Missing artefact'), $counts->missing_artefact],
+                    'not_made_in_house' => [__('Not made in-house'), $counts->not_made_in_house],
+                ],
+                'engine'   => function ($query, $elements) use ($hasArtefact) {
+                    $query->where(function ($query) use ($elements, $hasArtefact) {
+                        if (in_array('with_artefact', $elements)) {
+                            $query->orWhereRaw("org_stocks.is_made_in_house and $hasArtefact");
+                        }
+                        if (in_array('missing_artefact', $elements)) {
+                            $query->orWhereRaw("org_stocks.is_made_in_house and not $hasArtefact");
+                        }
+                        if (in_array('not_made_in_house', $elements)) {
+                            $query->orWhere('org_stocks.is_made_in_house', false);
+                        }
+                    });
+                },
+            ],
         ];
     }
 
@@ -206,8 +273,11 @@ class IndexOrgStocks extends OrgAction
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::DISCONTINUED);
         } elseif ($this->bucket == 'abnormality') {
             $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ABNORMALITY);
-        } elseif (!($parent instanceof Group)) {
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        }
+
+        $elementGroups = in_array($this->bucket, ['current', 'active', 'discontinuing', 'discontinued', 'abnormality']) ? $this->getArtefactElementGroup($parent) : $this->getElementGroups($parent);
+        if (!($parent instanceof Group)) {
+            foreach ($elementGroups as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
@@ -244,6 +314,7 @@ class IndexOrgStocks extends OrgAction
             'org_stock_stats.on_the_way_po_count',
             'org_stock_stats.week_of_cover as woc',
             'org_stock_stats.number_products as product_count',
+            DB::raw('(org_stocks.is_made_in_house and not exists (select 1 from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null)) as is_missing_artefact'),
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -292,6 +363,8 @@ class IndexOrgStocks extends OrgAction
             $allowedSorts[] = 'sales_org_currency_external';
             $allowedSorts[] = 'gross_profit';
             $allowedSorts[] = 'invoices';
+        } else {
+            $allowedSorts[] = 'stock_cover';
         }
 
         return $queryBuilder
@@ -371,15 +444,13 @@ class IndexOrgStocks extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            if ($bucket == 'all') {
-                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                    $table->elementGroup(
-                        key: $key,
-                        label: $elementGroup['label'],
-                        elements: $elementGroup['elements'],
-                        default: $elementGroup['default'] ?? null,
-                    );
-                }
+            foreach ($bucket == 'all' ? $this->getElementGroups($parent) : $this->getArtefactElementGroup($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
+                );
             }
 
             $table
@@ -410,7 +481,7 @@ class IndexOrgStocks extends OrgAction
                     ->column(key: 'stock_value', label: __('Value'), tooltip: __('Stock value — valued with').' '.OrgStockValuationMethodEnum::official()->label().' ('.__('the official valuation').')', tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'potential_sales', label: __('Pot. sales'), tooltip: __('Potential sales'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'on_the_way_po_value', label: __('OTW'), tooltip: __("On the way (submitted purchase orders)"), canBeHidden: false, sortable: true, type: 'currency')
-                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: true, align: 'right');
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), sortable: true, searchable: true, type: 'date');
@@ -536,6 +607,7 @@ class IndexOrgStocks extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stocks, ActionRequest $request): Response
     {
+        $canDiscontinue = $this->parent instanceof Organisation && DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation);
         $title      = __('SKOs');
         $model      = '';
         $icon       = [
@@ -612,14 +684,14 @@ class IndexOrgStocks extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStocksTabsEnum::navigation(),
                 ],
-                'discontinue_preview_route' => $this->parent instanceof Organisation ? [
+                'discontinue_preview_route' => $canDiscontinue ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
                         'warehouse'    => $this->warehouse->slug,
                     ]
                 ] : null,
-                'discontinue_route' => $this->parent instanceof Organisation ? [
+                'discontinue_route' => $canDiscontinue ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue',
                     'parameters' => [
                         'organisation' => $this->organisation->slug,

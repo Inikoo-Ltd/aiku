@@ -11,6 +11,8 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
@@ -148,6 +150,14 @@ class ShowMasterDepartment extends OrgAction
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
                     : Inertia::optional(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
+                MasterDepartmentTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterDepartmentTabsEnum::SALES_ANALYSIS->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+                'sales_analysis_teaser' => $this->tab === MasterDepartmentTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterDepartment)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterDepartment))),
+
                  MasterDepartmentTabsEnum::CONTENT->value => $this->tab == MasterDepartmentTabsEnum::CONTENT->value ?
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
                     : Inertia::optional(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
@@ -155,6 +165,10 @@ class ShowMasterDepartment extends OrgAction
                 MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab === MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
                     fn () => GetRelatedMasterProductCategories::run($masterDepartment)
                     : Inertia::optional(fn () => GetRelatedMasterProductCategories::run($masterDepartment)),
+
+                MasterDepartmentTabsEnum::FAMILIES_ORDER->value => $this->tab === MasterDepartmentTabsEnum::FAMILIES_ORDER->value ?
+                    fn () => GetMasterDepartmentFamiliesOrder::run($masterDepartment)
+                    : Inertia::optional(fn () => GetMasterDepartmentFamiliesOrder::run($masterDepartment)),
 
                 // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                 //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))

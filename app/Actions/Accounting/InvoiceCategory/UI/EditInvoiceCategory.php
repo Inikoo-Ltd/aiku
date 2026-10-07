@@ -14,12 +14,14 @@ use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithAccountingShopAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 
 class EditInvoiceCategory extends OrgAction
 {
+    use WithAccountingShopAuthorisation;
     public function handle(InvoiceCategory $invoiceCategory, ActionRequest $request): Response
     {
         return Inertia::render(

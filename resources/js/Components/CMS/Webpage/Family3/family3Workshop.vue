@@ -125,7 +125,6 @@ onMounted(async () => {
   })
 })
 
-console.log("Family3 Workshop Props:", props)
 </script>
 
 <template>

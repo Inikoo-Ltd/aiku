@@ -46,7 +46,7 @@ const locationHref = computed(() => {
         <div :key="currentLocation?.location_code">
             <span
                 v-if="locations.length > 1"
-                @click="console.log('open modal'), emit('openLocationModal')"
+                @click="emit('openLocationModal')"
                 v-tooltip="`Other ${locations.length - 1} locations`"
                 class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1"
             >

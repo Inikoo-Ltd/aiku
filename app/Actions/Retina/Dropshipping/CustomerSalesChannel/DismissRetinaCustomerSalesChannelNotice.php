@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DismissRetinaCustomerSalesChannelNotice extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
         $settings = $customerSalesChannel->settings;

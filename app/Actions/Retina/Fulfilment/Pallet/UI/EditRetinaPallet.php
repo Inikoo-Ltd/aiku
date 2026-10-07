@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Fulfilment\Pallet\UI;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\Pallet;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditRetinaPallet extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Pallet $pallet, ActionRequest $request): Response
     {
         return Inertia::render(

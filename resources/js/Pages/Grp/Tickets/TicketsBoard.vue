@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { ticketRoute, ticketsRoute } from "@/Composables/useTicketsRoute"
+import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import draggable from "vuedraggable"
@@ -15,26 +16,20 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan } from "@fal"
+import { faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faUserTimes } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
+import { useBoardDropZones } from "@/Composables/useBoardDropZones"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { Dialog } from "primevue"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan)
+library.add(faUserTimes, faLifeRing,faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan)
 
-const kindIcons: Record<string, string> = {
-	bug: "fal fa-bug",
-	feature: "fal fa-lightbulb",
-	escalation: "fal fa-level-up",
-	task: "fal fa-tasks",
-	qa: "fal fa-vial",
-	documentation: "fal fa-books",
-	data_integrity: "fal fa-database",
-	support: "fal fa-search",
-}
+const kindIcons = ticketKindIcons
 
 const cardPeople = (ticket: { assignee?: string | null; assignee_avatar?: any; collaborators?: { id: number; name: string; avatar?: any }[] }) => [
 	...(ticket.assignee ? [{ key: "assignee", name: ticket.assignee, avatar: ticket.assignee_avatar }] : []),
@@ -331,7 +326,6 @@ const canDragTicket = (ticket: { assignee_id: number | null }) =>
 	props.can_assign || (props.can_manage && (ticket.assignee_id === null || (myUserId.value !== null && ticket.assignee_id === myUserId.value)))
 
 const engineerMoves: Record<string, string[]> = {
-	open: ["assigned", "in_progress", "closed"],
 	assigned: ["in_progress", "closed"],
 	in_progress: ["waiting", "closed"],
 	waiting: ["in_progress", "closed"],
@@ -340,6 +334,7 @@ const engineerMoves: Record<string, string[]> = {
 const canDropTicket = (ticket: { assignee_id: number | null }, fromColumn: string, toColumn: string) => {
 	if (fromColumn === toColumn) return true
 	if (!canDragTicket(ticket)) return false
+	if (toColumn === "open") return fromColumn === "assigned" && props.can_assign
 	if (!ticket.assignee_id) return toColumn === "assigned"
 	if (props.can_assign) return true
 	return engineerMoves[fromColumn]?.includes(toColumn) ?? false
@@ -347,6 +342,16 @@ const canDropTicket = (ticket: { assignee_id: number | null }, fromColumn: strin
 
 const onMoveCheck = (event: { draggedContext: { element: any }; from: HTMLElement; to: HTMLElement }) =>
 	canDropTicket(event.draggedContext.element, event.from.dataset.column ?? "", event.to.dataset.column ?? "")
+
+const { startDrag, endDrag, dropZone } = useBoardDropZones(canDropTicket)
+
+let dragOriginColumn = ""
+
+const onDragStart = (column: { key: string; tickets: any[] }, event: { oldIndex: number }) => {
+	dragging.value = true
+	dragOriginColumn = column.key
+	startDrag(column.tickets[event.oldIndex], column.key)
+}
 
 onMounted(() => window.addEventListener("click", onBoardClick, true))
 onBeforeUnmount(() => window.removeEventListener("click", onBoardClick, true))
@@ -388,6 +393,7 @@ const assignPosition = ref({ x: 0, y: 0 })
 
 const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
 	dragging.value = false
+	endDrag()
 	lastDragEndedAt = Date.now()
 	assignPosition.value = {
 		x: Math.max(8, Math.min((event.originalEvent?.clientX ?? 0) - 40, window.innerWidth - 330)),
@@ -408,7 +414,20 @@ const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
 const dropDialogTicket = ref<any | null>(null)
 const isDropAskReporterOpen = ref(false)
 const isDropStatusNoteOpen = ref(false)
+const dropNoteStatus = ref<"resolved" | "cancelled">("resolved")
 let isDropDialogSaved = false
+
+const unassigning = ref<any | null>(null)
+
+const confirmUnassign = () => {
+	patchTicket(unassigning.value.id, { assignee_id: null })
+	unassigning.value = null
+}
+
+const cancelUnassign = () => {
+	unassigning.value = null
+	router.reload({ only: ["columns"] })
+}
 
 const openDropDialog = (ticket: any, dialog: "ask" | "note") => {
 	dropDialogTicket.value = ticket
@@ -427,8 +446,12 @@ const onMoved = (column: { key: string; status: string }, event: { added?: { ele
 	if (!event.added) return
 	const ticket = event.added.element
 
-	if (!canDragTicket(ticket) || (!ticket.assignee_id && column.key !== "assigned")) {
+	if (!canDropTicket(ticket, dragOriginColumn, column.key)) {
 		router.reload({ only: ["columns"] })
+		return
+	}
+	if (column.key === "open") {
+		unassigning.value = ticket
 		return
 	}
 	if (column.key === "assigned" && !ticket.assignee_id) {
@@ -440,6 +463,7 @@ const onMoved = (column: { key: string; status: string }, event: { added?: { ele
 		return
 	}
 	if (column.key === "closed") {
+		dropNoteStatus.value = subFilter.closed === "cancelled" ? "cancelled" : "resolved"
 		openDropDialog(ticket, "note")
 		return
 	}
@@ -596,13 +620,14 @@ const cancelAssign = () => {
 				× {{ ctrans("Clear") }}
 			</button>
 		</div>
-		<div class="-mx-4 overflow-x-auto px-4 pb-2">
+		<div class="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
 		<div class="flex gap-3 min-w-max">
 			<div
 				v-for="column in columns"
 				:key="column.key"
-				class="w-72 rounded-lg p-2 flex flex-col"
-				:class="columnClasses[column.color]">
+				class="w-72 rounded-lg p-2 flex flex-col transition duration-200"
+				:class="[columnClasses[column.color], dropZone(column.key, column.color).class]"
+				:style="dropZone(column.key, column.color).style">
 				<div class="flex items-center gap-1.5 px-1 pb-2 flex-nowrap whitespace-nowrap">
 					<Icon :data="column.icon" />
 					<span class="text-sm font-semibold">{{ column.label }}</span>
@@ -715,13 +740,13 @@ const cancelAssign = () => {
 					:disabled="!can_manage"
 					class="thinScrollbar flex-1 space-y-2 min-h-24 overflow-y-auto pr-1"
 					:class="hasColumnToggle(column.key) ? 'max-h-[70vh]' : 'max-h-[calc(70vh+2.25rem)]'"
-					@start="dragging = true"
+					@start="onDragStart(column, $event)"
 					@end="onDragEnd"
 					@change="onMoved(column, $event)">
 					<template #item="{ element }">
 						<div
 							v-show="matchesFilters(element, column.key)"
-							class="relative bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
+							class="relative select-none bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
 							:aria-busy="savingTicketIds.includes(element.id)"
 							:class="canDragTicket(element) ? 'cursor-grab active:cursor-grabbing' : 'ticket-card-locked cursor-pointer'"
 							:data-ticket-id="element.id"
@@ -738,6 +763,9 @@ const cancelAssign = () => {
 											@click.stop
 											>{{ element.reference }}</Link
 										>
+										<span v-if="element.priority_icon" v-tooltip="{ content: ctrans('Urgency') + ': ' + element.priority_label, delay: 0 }" class="shrink-0">
+											<Icon :data="element.priority_icon" />
+										</span>
 									</span>
 									<span class="flex items-center gap-1.5 text-[11px]">
 										<span class="text-gray-400" v-tooltip="{ content: ctrans('Raised'), delay: 0 }">{{ shortDate(element.created_at) }}</span>
@@ -823,11 +851,20 @@ const cancelAssign = () => {
 	<TicketStatusNoteDialog
 		v-if="dropDialogTicket"
 		v-model:visible="isDropStatusNoteOpen"
-		status="resolved"
+		:status="dropNoteStatus"
 		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
-		:can-wait-for-deployment="dropDialogTicket.status !== 'pending_deploy'"
+		:can-wait-for-deployment="dropNoteStatus === 'resolved' && dropDialogTicket.status !== 'pending_deploy'"
 		:closes-conversation="dropDialogTicket.closes_source"
 		@updated="isDropDialogSaved = true" />
+	<Dialog :visible="unassigning !== null" modal :header="ctrans('Move back to Todo?')" :style="{ width: '28rem' }" @update:visible="(visible) => !visible && cancelUnassign()">
+		<p v-if="unassigning" class="text-sm text-gray-700">
+			{{ ctrans(":reference goes back to Todo and :name is taken off it as assignee.", { reference: unassigning.reference, name: unassigning.assignee || ctrans("the assignee") }) }}
+		</p>
+		<div class="mt-4 flex justify-end gap-x-2">
+			<Button type="tertiary" :label="ctrans('Back')" @click="cancelUnassign" />
+			<Button type="negative" icon="fal fa-user-times" :label="ctrans('Remove assignee')" @click="confirmUnassign" />
+		</div>
+	</Dialog>
 	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>
 

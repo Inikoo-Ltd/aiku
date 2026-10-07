@@ -11,6 +11,7 @@ import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } fro
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
+import DeploymentChangeLog from "@/Components/DevOps/DeploymentChangeLog.vue"
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
 import "@/Composables/Icon/NavigationImportIcon"
@@ -18,23 +19,30 @@ import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
-import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
-import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
+import ChatPane from "@/Layouts/Grp/ChatPane.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import { fetchUnreadCount } from "@/Composables/useNotificationSound"
+import { startOrderAlerts, startWorkAlerts } from "@/Composables/useNotificationSound"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
+import AlertToast from "@/Components/Utils/AlertToast.vue"
+import { useMediaQuery, useWindowSize } from "@vueuse/core"
+import axios from "axios"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBellSlash, faShoppingCart, faLifeRing } from "@fal"
+
+library.add(faBellSlash, faShoppingCart, faLifeRing)
 
 
 import "@/Composables/Icon/ImportGrpFalIcon"
@@ -48,11 +56,46 @@ provide("isMovePallet", true)
 
 initialiseApp()
 
+const MessagingDock = defineAsyncComponent(() => import("@/Components/Messaging/MessagingDock.vue"))
+const PhoneCallDock = defineAsyncComponent(() => import("@/Components/Chat/PhoneCallDock.vue"))
+
 
 const layout = useLayoutStore()
-const isEmbedded = usePage().url.includes("embed=1")
+const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)
+
+const isDesktop = useMediaQuery("(min-width: 1024px)")
+const isTablet = useMediaQuery("(min-width: 768px)")
+const maxAlertPopups = computed(() => isDesktop.value ? 5 : (isTablet.value ? 2 : 3))
+const { width: windowWidth } = useWindowSize()
+const alertPopupsRightPx = computed(() => layout.messagingSidebar.show ? 224 : (layout.messagingSidebar.micro || !isTablet.value ? 24 : 48))
+const alertPopupsWidth = computed(() => Math.min(340, windowWidth.value - alertPopupsRightPx.value - 8))
+const alertPopupsStyle = computed(() => ({ top: "3.5rem", right: `${alertPopupsRightPx.value}px` }))
+
+const orderAmountClass = (orderAlertType: string | undefined) => ({
+    ecom_small: "text-gray-500",
+    ecom_normal: "text-blue-600",
+    ecom_big: "text-emerald-600 font-bold",
+    dropshipping_unpaid: "text-amber-600",
+}[orderAlertType ?? ""] ?? "text-gray-700")
+
+const stopOrderPopups = async (close: () => void) => {
+    close()
+    try {
+        await axios.patch(route("grp.models.profile.update"), { order_alerts_popup: false })
+        if (layout.order_alerts) {
+            layout.order_alerts.popup.show = false
+        }
+        notify({
+            title: ctrans("Order pop-ups turned off"),
+            text: ctrans("You can turn them back on in Personal settings → Alerts."),
+            type: "success",
+        })
+    } catch {
+        notify({ title: ctrans("Something went wrong"), text: ctrans("Order pop-ups are still on. Please try again."), type: "error" })
+    }
+}
 
 // Section: Notification
 watch(
@@ -151,25 +194,13 @@ const checkScreenType = () => {
     else screenType.value = "desktop"
 }
 provide("screenType", screenType)
+provide("isEmbedded", isEmbedded)
 
-const requestNotificationPermission = () => {
-    if (!("Notification" in window)) return
-    if (Notification.permission === "default") {
-        Notification.requestPermission()
-    }
-    if (Notification.permission === "denied") {
-        notify({
-            title: trans("Alert"),
-            text: trans("You must allow notification to get notif from chat"),
-            type: "error"
-        })
-    }
-}
-
-const baseUrl = layout?.appUrl ?? ""
-const myAgentId = layout.user?.id
 onMounted(() => {
-    fetchUnreadCount(baseUrl, "", myAgentId)
+    if (!isEmbedded) {
+        startWorkAlerts(useStaffMessaging())
+        startOrderAlerts()
+    }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
@@ -218,7 +249,7 @@ const safeTheme = computed(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4 md:pr-[calc(1rem_+_var(--chat-pane,0px))]"
             :class="[
 				layout.leftSidebar.show
 					? (layout.messagingSidebar.show
@@ -237,12 +268,12 @@ const safeTheme = computed(() => {
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div
-                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[19] md:hidden"
+                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[23] md:hidden"
                 v-if="sidebarOpen"
                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar
                 class="-left-2/3 z-20 block md:left-[0]"
-                :class="[{ 'left-[0]': sidebarOpen }]"
+                :class="[{ 'left-[0] max-md:z-[24]': sidebarOpen }]"
                 @click="sidebarOpen = !sidebarOpen" />
         </div>
 
@@ -250,17 +281,19 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
+				usePage().component === 'Tickets/Ticket' ? 'pb-0' : ['Tasks/StaffTask', 'SupplyChain/SupplyChainPurchaseOrderJourney', 'Tasks/StaffTasksBoard', 'Tickets/TicketsBoard'].includes(usePage().component) ? 'pb-6' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
-				'mr-4',
-				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
+				'mr-6',
+				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-6' : 'md:mr-12'),
 				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />
         </main>
 
         <MessagingSideBar />
+        <ChatPane />
         <Teleport to="body">
             <MessagingDock />
         </Teleport>
@@ -360,50 +393,50 @@ const safeTheme = computed(() => {
         :closable="false"
         :closeOnEscape="false"
         :showHeader="false"
-        :style="{ width: '32rem' }"
-        :breakpoints="{ '640px': '90vw' }">
-        <div class="pt-8 pb-4">
-            <div class="text-center">
+        :style="{ width: '38rem' }"
+        :breakpoints="{ '640px': '92vw' }">
+        <div class="pt-6 pb-4">
+            <div class="flex items-center justify-between gap-4">
                 <div v-if="deploymentInfo?.semantic_version" class="font-semibold text-2xl">
                     🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
                 </div>
-                <div v-else class="font-semibold text-2xl">
+                <div v-else class="font-semibold text-xl">
                     {{ ctrans("Hey, sorry for your inconvenience.") }}
                 </div>
 
-                <div
-                    v-if="deploymentInfo?.change_log"
-                    class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
-                    {{ deploymentInfo.change_log }}
-                </div>
-
-                <div v-else class="mt-2 text-sm text-gray-500">
-                    {{
-                        ctrans(
-                            "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-                        )
-                    }}
-                </div>
-
-                <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                <div v-if="deploymentInfo?.committers?.length" class="flex shrink-0 items-center -space-x-2">
                     <template v-for="committer in deploymentInfo.committers" :key="committer.email">
                         <img
                             v-if="committer.avatar"
                             :src="committer.avatar"
                             :alt="committer.name"
-                            :title="committer.name"
-                            class="size-7 rounded-full ring-2 ring-white" />
+                            v-tooltip="committer.name"
+                            class="size-8 rounded-full ring-2 ring-white" />
                         <div
                             v-else
-                            :title="committer.name"
-                            class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                            v-tooltip="committer.name"
+                            class="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
                             {{ committer.name.charAt(0).toUpperCase() }}
                         </div>
                     </template>
                 </div>
             </div>
 
-            <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+            <div
+                v-if="deploymentInfo?.change_log"
+                class="mt-4 max-h-72 overflow-y-auto rounded-md bg-gray-50 px-4 pb-3 pt-1 text-left">
+                <DeploymentChangeLog :text="deploymentInfo.change_log" :clamped="false" />
+            </div>
+
+            <div v-else class="mt-3 text-sm text-gray-500">
+                {{
+                    ctrans(
+                        "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                    )
+                }}
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3">
                 <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
                 <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
             </div>
@@ -421,6 +454,48 @@ const safeTheme = computed(() => {
             <Notification :notification="props" />
         </template>
     </notifications>
+
+    <notifications
+        group="alert-popups"
+        position="top right"
+        :max="maxAlertPopups"
+        :width="alertPopupsWidth"
+        :pauseOnHover="true"
+        :style="alertPopupsStyle">
+        <template #body="{ item, close }">
+            <AlertToast
+                v-if="item.data.kind === 'order'"
+                icon="fal fa-shopping-cart"
+                :icon-class="item.data.is_unpaid ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'"
+                :eyebrow="item.title"
+                :heading="`${item.data.reference} · ${item.data.customer}`"
+                :url="item.data.url"
+                @close="close">
+                <div class="text-sm font-semibold tabular-nums" :class="orderAmountClass(item.data.type)">{{ item.data.money }}</div>
+                <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
+                <template #actions>
+                    <button
+                        v-tooltip="ctrans('Stop order pop-ups')"
+                        type="button"
+                        class="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 opacity-0 transition hover:bg-gray-100 hover:text-gray-700 focus:opacity-100 group-hover:opacity-100"
+                        :aria-label="ctrans('Stop order pop-ups')"
+                        @click="stopOrderPopups(close)">
+                        <FontAwesomeIcon icon="fal fa-bell-slash" fixed-width aria-hidden="true" />
+                    </button>
+                </template>
+            </AlertToast>
+            <AlertToast
+                v-else
+                icon="fal fa-life-ring"
+                icon-class="bg-emerald-100 text-emerald-600"
+                :eyebrow="ctrans('Ticket')"
+                :heading="item.title"
+                :url="item.data.url"
+                @close="close">
+                <div class="line-clamp-2 text-xs text-gray-500">{{ item.text }}</div>
+            </AlertToast>
+        </template>
+    </notifications>
     </template>
 </template>
 
@@ -429,15 +504,15 @@ const safeTheme = computed(() => {
 .navigationActive {
     @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
     box-shadow: v-bind(
-        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
+        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.navigation_theme[2]}, 20% white)`"
     ) !important;
-    background-color: v-bind("layout?.app?.theme[2]");
-    color: v-bind("layout?.app?.theme[3]");
+    background-color: v-bind("layout?.app?.navigation_theme[2]");
+    color: v-bind("layout?.app?.navigation_theme[3]");
 }
 
 .navigation {
     @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
-    color: v-bind("layout?.app?.theme[1]");
+    color: v-bind("layout?.app?.navigation_theme[1]");
 }
 
 .subNavActive {

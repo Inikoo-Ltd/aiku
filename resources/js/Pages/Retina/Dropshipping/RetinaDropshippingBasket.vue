@@ -16,7 +16,7 @@ import {useTabChange} from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import {debounce} from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import {trans} from "laravel-vue-i18n"
+import { ctrans } from '@/Composables/useTrans'
 import {routeType} from '@/types/route'
 import {PageHeadingTypes} from '@/types/PageHeading'
 import {UploadPallet} from '@/types/Pallet'
@@ -47,8 +47,10 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import GiftMessagePanel from '@/Components/Order/GiftMessagePanel.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrderProduct.vue'
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
@@ -69,6 +71,9 @@ const props = defineProps<{
             is_premium_dispatch: boolean
             has_extra_packing: boolean
             has_insurance: boolean
+            has_gift_message: boolean
+            gift_message: string | null
+            has_gift_message_pdf: boolean
             id: number
             slug: string
             reference: string
@@ -128,12 +133,14 @@ const props = defineProps<{
     upload_spreadsheet: UploadPallet
     balance: string
     total_to_pay: number
+    pre_orders?: BasketPreOrdersData | null
     address_management: AddressManagement
     total_products: number
     charges: {
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
         insurance?: ChargeResource
+        gift_message?: ChargeResource
     }
     is_forbidden_delivery: boolean
     is_forbidden_billing?: boolean
@@ -231,8 +238,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error",
         })
     }
@@ -276,8 +283,8 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: error.products || undefined,
+                    title: ctrans("Something went wrong."),
+                    text: error.products || error.message,
                     type: "error"
                 })
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
@@ -298,13 +305,12 @@ const isModalUploadSpreadsheet = ref(false)
 
 const onNoStructureUpload = () => {
     notify({
-        title: trans("Something went wrong"),
-        text: trans("Upload structure is not provided. Please contact support."),
+        title: ctrans("Something went wrong"),
+        text: ctrans("Upload structure is not provided. Please contact support."),
         type: "error",
     })
 }
 
-console.log('basket ds', props)
 
 const isLoadingPriorityDispatch = ref(false)
 const onChangePriorityDispatch = async (val: boolean) => {
@@ -322,22 +328,22 @@ const onChangePriorityDispatch = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to priority dispatch!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to priority dispatch!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on priority dispatch."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on priority dispatch."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update priority dispatch, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update priority dispatch, try again."),
                     type: "error"
                 })
             },
@@ -365,22 +371,22 @@ const onChangeExtraPacking = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to extra packing!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to extra packing!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on extra packing."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on extra packing."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update extra packing, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update extra packing, try again."),
                     type: "error"
                 })
             },
@@ -390,6 +396,55 @@ const onChangeExtraPacking = async (val: boolean) => {
         }
     )
 }
+
+// Section: Gift Message
+const isLoadingGiftMessage = ref(false)
+const onChangeGiftMessage = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_gift_message', props.data.data?.id),
+        {
+            has_gift_message: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingGiftMessage.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to gift message!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on gift message."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update gift message, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingGiftMessage.value = false
+            },
+        }
+    )
+}
+
+const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
+const isGiftMessageMissing = computed(() =>
+    !!props.data.data?.has_gift_message && !!giftMessagePanel.value?.isMissing
+)
+const isPreOrderTermsPending = computed(() => !!props.pre_orders?.has_pre_orders && !props.pre_orders.is_accepted)
 
 // Section: Insurance
 const isLoadingInsurance = ref(false)
@@ -408,22 +463,22 @@ const onChangeInsurance = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order has insurance!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order has insurance!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order no longer has insurance."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order no longer has insurance."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update insurance, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update insurance, try again."),
                     type: "error"
                 })
             },
@@ -444,14 +499,14 @@ const onChangeInsurance = async (val: boolean) => {
                 <Button
                     v-if="upload_spreadsheet"
                     @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-                    :label="trans('Upload products')"
+                    :label="ctrans('Upload products')"
                     icon="upload"
                     type="tertiary"
                     class="rounded-none border-0"
                 />
                 <Button
                     @click="() => isModalProductListOpen = true"
-                    :label="trans('Add products')"
+                    :label="ctrans('Add products')"
                     type="tertiary"
                     icon="fas fa-plus"
                     class="rounded-none border-none"
@@ -557,6 +612,43 @@ const onChangeInsurance = async (val: boolean) => {
                     </ToggleSwitch>
                 </div>
             </div>
+
+            <!-- Section: Charge Gift Message -->
+            <div v-if="charges.gift_message" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <InformationIcon :information="charges.gift_message?.description" />
+                    {{ charges.gift_message?.label ?? charges.gift_message?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.gift_message?.currency_code, charges.gift_message?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="data?.data?.has_gift_message"
+                        @update:modelValue="(e) => (onChangeGiftMessage(e))"
+                        xdisabled="isLoadingGiftMessage"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingGiftMessage" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+
+            <!-- Section: Gift Message panel -->
+            <div v-if="data?.data?.has_gift_message" class="my-4 pr-2 md:pr-6">
+                <GiftMessagePanel
+                    ref="giftMessagePanel"
+                    :giftMessage="data?.data?.gift_message"
+                    :hasGiftMessagePdf="data?.data?.has_gift_message_pdf"
+                    :giftMessagePdfName="data?.data?.gift_message_pdf_name"
+                    :textRoute="{ name: 'retina.models.order.update', parameters: props.data.data?.id }"
+                    :pdfRoute="{ name: 'retina.models.order.update_gift_message_pdf', parameters: props.data.data?.id }"
+                    @uploaded="() => router.reload({ only: ['data'] })"
+                />
+            </div>
         </template>
       </div>
 
@@ -585,13 +677,13 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />
-                    {{ trans("Notes from staff") }}
+                    {{ ctrans("Notes from staff") }}
                     :
                 </div>
                 <PureTextarea
                     :modelValue="props.data.data.public_notes || ''"
                     @update:modelValue="() => debounceDeliveryInstructions()"
-                    :placeholder="trans('No notes from staff')"
+                    :placeholder="ctrans('No notes from staff')"
                     rows="4"
                     disabled
                     xloading="isLoadingNote.includes('shipping_notes')"
@@ -621,7 +713,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
-                    {{ trans("Other Instructions") }}:
+                    {{ ctrans("Other Instructions") }}:
                 </div>
                 <PureTextarea
                     v-model="noteToSubmit"
@@ -636,24 +728,36 @@ const onChangeInsurance = async (val: boolean) => {
         </div>
 
 
+        <div v-if="pre_orders?.has_pre_orders" class="pt-5">
+            <BasketPreOrders :pre_orders :orderId="data.data.id" :currencyCode="currency?.code" />
+        </div>
+
         <!-- Button: Continue to checkout, Place Order -->
         <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-full md:w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
-                    :label="trans('Place order')"
+                    :label="ctrans('Place order')"
                     :routeTarget="routes?.pay_with_balance"
                     class="w-full"
                     full
-                    :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                    :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                        || isGiftMessageMissing
+                        || isPreOrderTermsPending"
                 >
                 </ButtonWithLink>
 
+                <div v-if="isPreOrderTermsPending" class="text-xs text-amber-700 mt-2 flex items-start gap-x-1">
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true"/>
+                    <div class="leading-5">
+                        {{ ctrans("Accept the pre-order terms above to place your order.") }}
+                    </div>
+                </div>
                 <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
                     <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true"/>
                     <div class="leading-5">
-                        {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                        {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
                     </div>
                 </div>
             </template>
@@ -662,7 +766,7 @@ const onChangeInsurance = async (val: boolean) => {
             <ButtonWithLink
                 v-else
                 iconRight="fas fa-arrow-right"
-                :label="trans('Continue to Checkout')"
+                :label="ctrans('Continue to Checkout')"
                 :routeTarget="{
                     name: 'retina.dropshipping.checkout.show',
                     parameters: {
@@ -672,23 +776,31 @@ const onChangeInsurance = async (val: boolean) => {
                 class="w-full"
                 full
                 :tooltip="insertsWithoutArtwork.length
-                    ? trans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
-                    : undefined"
+                    ? ctrans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
+                    : (isGiftMessageMissing ? ctrans('Write a gift message or upload a PDF before checking out.') : undefined)"
                 :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
-                    || insertsWithoutArtwork.length > 0"
+                    || insertsWithoutArtwork.length > 0
+                    || isGiftMessageMissing"
             />
 
-            
+
             <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
                 <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
                 <div class="leading-5">
-                    {{ trans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                    {{ ctrans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                </div>
+            </div>
+
+            <div v-if="isGiftMessageMissing" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
+                <div class="leading-5">
+                    {{ ctrans("Write a gift message or upload a PDF before checking out.") }}
                 </div>
             </div>
         </div>
         <div v-else class="w-full md:w-72 pt-5 text-sm">
-            <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
-            <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
+            <div v-if="is_forbidden_billing" class="text-red-500">*{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
+            <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ ctrans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
         </div>
     </div>
 
@@ -703,7 +815,7 @@ const onChangeInsurance = async (val: boolean) => {
             <FontAwesomeIcon :icon="faTimes" fixed-width />
         </button>
 
-        <ProductsSelectorAutoSelect :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
+        <ProductsSelectorAutoSelect :headLabel="ctrans('Add products to Order') + ' #' + props?.data?.data?.reference"
             :routeFetch="props.routes.select_products" :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)" :listLoadingProducts withQuantity />
     </Modal>

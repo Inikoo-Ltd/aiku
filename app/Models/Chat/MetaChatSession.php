@@ -3,6 +3,7 @@
 namespace App\Models\Chat;
 
 use App\Models\Helpers\Ticket;
+use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -124,13 +126,31 @@ class MetaChatSession extends Model
         ]);
     }
 
-    public function getCanSendNonTemplateMessageAttribute(): bool
+    /**
+     * WhatsApp only takes free text within 24 hours of the customer's last message; our own replies do not extend it.
+     */
+    public function getWhatsappWindowClosesAtAttribute(): ?Carbon
     {
         $lastInboundAt = $this->relationLoaded('lastVisitorMessage')
             ? $this->lastVisitorMessage->first()?->created_at
             : $this->lastVisitorMessage()->latest()->first()?->created_at;
 
-        return $lastInboundAt !== null && $lastInboundAt->gt(now()->subDay());
+        return collect([$lastInboundAt, $this->last_visitor_message_at])->filter()->max()?->copy()->addDay();
+    }
+
+    public function getCanSendNonTemplateMessageAttribute(): bool
+    {
+        return $this->whatsapp_window_closes_at?->isFuture() ?? false;
+    }
+
+    /**
+     * Sent as seconds rather than a timestamp so the countdown does not depend on the agent's computer clock.
+     */
+    public function getWhatsappWindowSecondsLeftAttribute(): int
+    {
+        $closesAt = $this->whatsapp_window_closes_at;
+
+        return $closesAt ? max(0, (int) ceil(now()->diffInSeconds($closesAt, false))) : 0;
     }
 
     /**
@@ -139,6 +159,14 @@ class MetaChatSession extends Model
     public function tickets(): MorphMany
     {
         return $this->morphMany(Ticket::class, 'source');
+    }
+
+    /**
+     * Colleagues asked to do something for this conversation, e.g. chase a supplier for a document; the chat waits on the open ones.
+     */
+    public function staffTasks(): MorphMany
+    {
+        return $this->morphMany(StaffTask::class, 'model');
     }
 
     public function assignments(): HasMany

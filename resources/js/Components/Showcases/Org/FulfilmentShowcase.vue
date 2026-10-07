@@ -23,12 +23,13 @@ import {
 	Legend,
 } from "chart.js"
 import { inject } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import { Link } from "@inertiajs/vue3"
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps<{
+	tab?: string
 	data: {
 		dashboard_stats: {}
 		flatTreeMaps: {}
@@ -74,10 +75,8 @@ const dataStats = {
 }
 
 function palletRoute(pallet: any) {
-    console.log(pallet.title);
     
     if (pallet.title == "pallets") {
-        console.log(pallet.title);
 		return route("grp.org.fulfilments.show.operations.pallets.current.index", [
 			route().params.organisation,
 			route().params.fulfilment,
@@ -126,7 +125,7 @@ function palletRoute(pallet: any) {
 			<!-- Section: Scheduled activities -->
 			<div class="bg-slate-50 rounded-lg ring-1 ring-slate-300 py-4">
 				<div class="px-6 pb-3 border-b border-gray-300">
-					<div class="font-semibold text-lg">{{ trans("Pending tasks") }}</div>
+					<div class="font-semibold text-lg">{{ ctrans("Pending tasks") }}</div>
 				</div>
 				<div class="px-6 mt-4 flex flex-col gap-y-4">
 					<div

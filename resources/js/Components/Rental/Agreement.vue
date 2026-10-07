@@ -7,6 +7,7 @@ import ServicesBluprint from './Bluprint/services.js'
 import PhysicalGoodsBluprint from './Bluprint/physicalGoods.js'
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { ctrans } from '@/Composables/useTrans'
 import { cloneDeep } from 'lodash-es'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -170,10 +171,10 @@ const onSavedAgreement = (updateAll: boolean) => {
                             
                             <template #content="{ close: closed }">
                                 <div class="max-w-min">
-                                    <div class="mb-4 w-fit text-xs text-gray-500">{{trans('You can just update the discounts for future bills or apply it to current ones')}}</div>
+                                    <div class="mb-4 w-fit text-xs text-gray-500">{{ctrans('You can just update the discounts for future bills or apply it to current ones')}}</div>
                                     <div class="flex gap-x-2">
-                                        <Button @click="() => (onSavedAgreement(false))" :label="trans('Update')" type="tertiary" />
-                                        <Button @click="() => onSavedAgreement(true)" :label="trans('Update & Change Open Bills')" />
+                                        <Button @click="() => (onSavedAgreement(false))" :label="ctrans('Update')" type="tertiary" />
+                                        <Button @click="() => onSavedAgreement(true)" :label="ctrans('Update & Change Open Bills')" />
                                     </div>
 
                                     <div v-if="form.processing" class="absolute inset-0 bg-black/20 rounded-md flex justify-center items-center">

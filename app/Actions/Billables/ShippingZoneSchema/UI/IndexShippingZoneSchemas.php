@@ -12,7 +12,7 @@ use App\Actions\Billables\ShippingZoneSchema\WithShippingZoneSchemaSubNavigation
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Http\Resources\Catalogue\ShippingZoneSchemasResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\ShippingZoneSchema;
@@ -29,7 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexShippingZoneSchemas extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
     use WithShippingZoneSchemaSubNavigation;
 
     private Group|Shop $parent;

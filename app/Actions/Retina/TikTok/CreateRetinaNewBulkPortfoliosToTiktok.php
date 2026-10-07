@@ -10,6 +10,7 @@ namespace App\Actions\Retina\TikTok;
 
 use App\Actions\Dropshipping\Tiktok\Product\CreateNewBulkPortfoliosToTiktok;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class CreateRetinaNewBulkPortfoliosToTiktok extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

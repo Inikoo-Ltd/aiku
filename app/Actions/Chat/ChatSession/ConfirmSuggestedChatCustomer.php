@@ -17,7 +17,9 @@ use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
+use OwenIt\Auditing\Events\AuditCustom;
 
 /**
  * The agent's answer to "this is probably customer X": yes links the conversation to the
@@ -37,6 +39,7 @@ class ConfirmSuggestedChatCustomer
             $chatSession->update($chatSession instanceof MetaChatSession
                 ? ['customer_id' => $customer->id]
                 : ['web_user_id' => $customer->webUsers()->oldest('id')->value('id')]);
+            self::auditOnCustomer($customer, 'chat_linked', $chatSession, $agent);
         } else {
             $chatSession->update(['suggestion_rejected_at' => now()]);
         }
@@ -56,6 +59,28 @@ class ConfirmSuggestedChatCustomer
         }
 
         return $confirmed ? $customer : null;
+    }
+
+    /**
+     * The chat session's own audit says a web user id changed; the customer's history is where
+     * somebody looks when a conversation shows up on the wrong account, so it is written there too.
+     */
+    public static function auditOnCustomer(Customer $customer, string $event, ChatSession|MetaChatSession $chatSession, ChatAgent $agent): void
+    {
+        $customer->auditEvent     = $event;
+        $customer->isCustomEvent  = true;
+        $customer->auditCustomOld = [];
+        $customer->auditCustomNew = [
+            'chat_session' => $chatSession->ulid,
+            'channel'      => $chatSession instanceof MetaChatSession ? 'whatsapp' : $chatSession->channel?->value,
+            'sender'       => $chatSession instanceof MetaChatSession ? $chatSession->phone_number : data_get($chatSession->metadata, 'email'),
+            'basis'        => $chatSession->suggestion_basis,
+            'agent'        => $agent->user?->contact_name,
+        ];
+        Event::dispatch(new AuditCustom($customer));
+        $customer->isCustomEvent  = false;
+        $customer->auditCustomOld = [];
+        $customer->auditCustomNew = [];
     }
 
     public function asController(ChatSession $chatSession): JsonResponse

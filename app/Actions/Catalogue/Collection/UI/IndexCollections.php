@@ -126,6 +126,7 @@ class IndexCollections extends OrgAction
             'collections.slug',
             'collections.web_images',
             'collections.master_collection_id',
+            'collections.not_follow_master_items',
             'collection_stats.number_families',
             'collection_stats.number_products',
             'collection_stats.number_parents',

@@ -17,6 +17,7 @@ import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
 import { useCopyText } from "@/Composables/useCopyText"
+import FlagWrongButton from "@/Components/Chat/FlagWrongButton.vue"
 
 type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
 type MessageStatus = "sending" | "sent" | "failed"
@@ -25,6 +26,7 @@ type ViewerType = "user" | "agent"
 interface ChatAttachment {
     id: number
     is_image: boolean
+    is_inline?: boolean
     media_url: {
         original: string
         webp?: string
@@ -46,6 +48,7 @@ interface Message {
     sender_type: SenderType
     message_text: string
     html_body?: string | null
+    has_embedded_pictures?: boolean
     created_at: string
     media_url?: {
         original: string
@@ -62,6 +65,9 @@ interface Message {
     } | null
     attachments?: ChatAttachment[]
     is_read?: boolean
+    is_rescued_from_spam?: boolean
+    spam_rescue_kind_label?: string | null
+    is_possible_scam?: boolean
     metadata?: Record<string, any> | null
     replied_to?: {
         id: number
@@ -83,6 +89,7 @@ interface Message {
     retraction_reason?: string | null
     retracted_count?: number
     is_ai_generated?: boolean | null
+    ai_summary_flagged?: boolean
     is_validated?: boolean | null
     is_verifiable_image?: boolean
     ai_verification?: {
@@ -132,12 +139,14 @@ const props = defineProps<{
     translateUrlBase?: string
     disableSlackForward?: boolean
     disableImageVerification?: boolean
+    flagChannel?: "chat" | "whatsapp"
 }>()
 
 const emit = defineEmits<{
     (e: "retract-message", payload: { id: number; reason: string }): void
     (e: "redact-message", payload: { id: number; fragment: string }): void
     (e: "redact-attachment", payload: { id: number }): void
+    (e: "load-pending-attachments", payload: { id: number }): void
     (e: "open-slack-settings"): void
     (e: "reply", message: Message): void
     (e: "jump-to-message", id: number): void
@@ -314,6 +323,17 @@ const senderLabel = computed(() => {
 // so it renders as the same chip the event stream uses.
 const isSystemNotice = computed(() => props.message.sender_type === "system")
 
+const AUTOMATED_METADATA_KEYS = ["automated", "ai_answered_at", "claim_details_asked_at", "out_of_hours_replied_at", "asked_if_customer", "greeted_at", "greeting"]
+
+const flagUrl = computed(() => {
+    const metadata = props.message.metadata ?? {}
+    if (!props.flagChannel || props.viewerType !== "agent" || !props.message.id || !AUTOMATED_METADATA_KEYS.some((key) => metadata[key])) {
+        return null
+    }
+
+    return route("grp.chat.ai.sent.flag", [props.flagChannel, props.message.id])
+})
+
 // To an agent a promotion is a footnote in the conversation, not part of it: it starts folded
 // to one line so the customer's own messages stand out, and opens on click.
 const isPromotionFolded = ref(props.viewerType === "agent" && props.message.sender_type === "system_campaign")
@@ -336,6 +356,10 @@ const quotedLabel = computed(() => {
     return quoted.file_name || ctrans(quoted.message_type === "image" ? "Photo" : "Attachment")
 })
 
+const adReferral = computed(() => props.message.metadata?.wa_referral ?? null)
+const adReferralImage = computed(() => adReferral.value?.thumbnail_url || adReferral.value?.image_url || null)
+const isAdReferralImageBroken = ref(false)
+
 const quotedAuthor = computed(() =>
     props.message.replied_to?.sender_type === "agent"
         ? props.agentName ?? ctrans("Agent")
@@ -347,7 +371,12 @@ const isFile = computed(() => props.message.message_type === "file")
 const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
 
 const attachmentList = computed<ChatAttachment[]>(() => {
-    if (props.message.attachments?.length) return props.message.attachments
+    // A picture the email already shows in its own body is not listed again underneath it,
+    // where it would read as a second, separate photograph. With the body folded away behind a
+    // summary, the list is the only place left to see it.
+    if (props.message.attachments?.length) {
+        return props.message.attachments.filter((attachment) => !(attachment.is_inline && isShowingEmailBody.value))
+    }
 
     if (!props.message.media_url && !props.message.download_route) return []
 
@@ -369,7 +398,7 @@ const isAttachmentRedactable = computed(() =>
     !!props.message.id &&
     !isRetracted.value &&
     props.message.is_attachment_redacted !== true &&
-    attachmentList.value.length > 0
+    (attachmentList.value.length > 0 || !!props.message.attachments?.length || props.message.has_embedded_pictures === true)
 )
 
 const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
@@ -480,7 +509,7 @@ const showTranslation = ref(true)
 // it from a list of every language we support, every time, on every message, was asking a
 // question with one answer.
 const selectedLanguageId = computed(() =>
-    getLanguageIdByCode(selectedLanguage.value) || layout.user?.language_id || null
+    getLanguageIdByCode(selectedLanguage.value) || layout.user?.chat_language_id || layout.user?.language_id || null
 )
 
 const activeMessage = computed<Message>(() => {
@@ -500,6 +529,16 @@ const displayText = computed(() => {
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
+
+const summaryFlagQuestion = ctrans("Why is this summary wrong? We use this to improve the summaries.")
+const summaryFlagPlaceholder = ctrans("e.g. longer than the email itself, or it missed what the customer asked")
+const emailSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
+const showFullEmail = ref(false)
+
+const isShowingEmailBody = computed(() => showEmailBody.value && !(emailSummary.value && !showFullEmail.value))
+
+// Customers put the order reference in the subject line, so it is the first thing read.
+const emailSubject = computed(() => (props.message.metadata?.email_subject || "").trim())
 
 const location = computed(() => {
     if (props.message.metadata?.wa_type !== "location") return null
@@ -611,9 +650,18 @@ const isLongText = computed(() =>
         : false
 )
 
-watch(latestTranslation, () => {
-    showTranslation.value = !isLongText.value
+const isOwnAgentMessage = computed(() => props.viewerType === "agent" && props.message.sender_type === "agent")
+
+const translationDirection = computed(() => {
+    const target = latestTranslation.value?.language_code
+    const source = activeMessage.value.original?.language_code
+
+    return source && target && source !== target ? `${source} → ${target}` : latestTranslation.value?.language_name ?? ""
 })
+
+watch(latestTranslation, () => {
+    showTranslation.value = !isOwnAgentMessage.value && !isLongText.value
+}, { immediate: true })
 
 const translateMessage = async () => {
     if (!props.message.id || !selectedLanguageId.value) return
@@ -841,7 +889,10 @@ watch(selectedLanguage, async (val) => {
 
 <template>
     <div v-if="isSystemNotice" class="w-full flex justify-center">
-        <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+        <div class="flex flex-col items-center gap-1">
+            <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+            <FlagWrongButton v-if="flagUrl" :url="flagUrl" :flagged="!!message.metadata?.flagged_wrong_at" />
+        </div>
     </div>
 
     <div v-else-if="isPromotionFolded" class="w-full flex justify-end">
@@ -859,7 +910,7 @@ watch(selectedLanguage, async (val) => {
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="relative max-w-[70%]">
+        <div class="relative" :class="isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
             <div v-if="showHoverToolbar"
                 class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
                 :class="isFromViewer ? 'right-0' : 'left-0'">
@@ -914,7 +965,7 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm px-3.5 py-2.5 rounded-2xl"
-                :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
+                :class="[bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
             <div v-if="showSenderLabel" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
                 <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" fixed-width />
@@ -930,6 +981,20 @@ watch(selectedLanguage, async (val) => {
                 <div class="font-semibold opacity-70">{{ quotedAuthor }}</div>
                 <div class="opacity-70 line-clamp-2 break-words">{{ quotedLabel }}</div>
             </div>
+
+            <a v-if="adReferral" :href="adReferral.source_url || undefined" target="_blank" rel="noopener noreferrer"
+                class="mb-1 flex w-[260px] max-w-full gap-2 rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1.5 text-[11px] leading-snug transition hover:bg-black/10">
+                <img v-if="adReferralImage && !isAdReferralImageBroken" :src="adReferralImage" alt=""
+                    class="h-12 w-12 shrink-0 rounded object-cover" @error="isAdReferralImageBroken = true" />
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1 font-semibold opacity-70">
+                        <FontAwesomeIcon :icon="faBullhorn" class="text-[10px]" fixed-width />
+                        {{ adReferral.source_type === "post" ? ctrans("From a Facebook or Instagram post") : ctrans("From a Facebook or Instagram ad") }}
+                    </div>
+                    <div v-if="adReferral.headline" class="font-semibold line-clamp-2 break-words">{{ adReferral.headline }}</div>
+                    <div v-if="adReferral.body" class="opacity-70 line-clamp-3 break-words">{{ adReferral.body }}</div>
+                </div>
+            </a>
 
             <div v-if="sharedContacts.length" class="mb-1 flex w-[240px] max-w-full flex-col gap-1.5">
                 <div v-for="contact in sharedContacts" :key="contact.key"
@@ -981,8 +1046,26 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </a>
 
-            <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 text-xs italic text-gray-500">
-                {{ ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+            <div v-if="message.is_rescued_from_spam" class="mb-1 flex items-start gap-1.5 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                <FontAwesomeIcon :icon="faShieldCheck" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                <span>
+                    <span v-if="message.is_possible_scam" class="mr-1 rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">{{ ctrans("Possible scam") }}</span>
+                    <span v-if="message.spam_rescue_kind_label" class="font-semibold">{{ message.spam_rescue_kind_label }}.</span>
+                    {{ ctrans("Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.") }}
+                </span>
+            </div>
+
+            <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                <span class="italic">
+                    {{ message.is_rescued_from_spam
+                        ? ctrans(":count attachment(s) kept in Gmail for safety", { count: message.metadata.gmail_pending_attachments })
+                        : ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+                </span>
+                <button v-if="viewerType === 'agent' && !readonly && message.id" type="button"
+                    class="font-semibold underline hover:text-gray-700"
+                    @click="emit('load-pending-attachments', { id: message.id })">
+                    {{ ctrans("Show attachments") }}
+                </button>
             </div>
 
             <template v-if="attachmentList.length && !(attachmentList.length === 1 && isAudio)">
@@ -1064,8 +1147,30 @@ watch(selectedLanguage, async (val) => {
                 <span>{{ displayText || ctrans("Unsupported message") }}</span>
             </div>
 
+            <div v-else-if="emailSummary && !showFullEmail" class="text-sm">
+                <div v-if="emailSubject"
+                    class="mb-2 pb-1.5 border-b border-gray-200 text-[13px] font-semibold break-words">
+                    {{ emailSubject }}
+                </div>
+                <div class="mb-1 text-[10px] font-medium uppercase tracking-wide text-indigo-500">{{ ctrans("Summary") }}</div>
+                <p class="whitespace-pre-wrap break-words">{{ emailSummary }}</p>
+                <div class="mt-1.5 flex items-start gap-3">
+                    <button type="button" class="text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = true">
+                        {{ ctrans("Show full email") }}
+                    </button>
+                    <FlagWrongButton v-if="viewerType === 'agent' && message.id" :url="route('grp.chat.ai.summaries.message.flag', [message.id])"
+                        :flagged="!!message.ai_summary_flagged" :question="summaryFlagQuestion" :placeholder="summaryFlagPlaceholder" />
+                </div>
+            </div>
+
             <!-- A received email keeps its layout; everything else is text. -->
-            <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
+            <template v-else-if="showEmailBody">
+                <div v-if="emailSubject"
+                    class="mb-2 pb-1.5 border-b border-gray-200 text-[13px] font-semibold break-words">
+                    {{ emailSubject }}
+                </div>
+                <EmailBody :html="message.html_body" />
+            </template>
 
             <p v-else-if="!location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
@@ -1073,6 +1178,10 @@ watch(selectedLanguage, async (val) => {
             <p v-else-if="!location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
+
+            <button v-if="emailSummary && showFullEmail" type="button" class="mt-1 w-fit text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = false">
+                {{ ctrans("Show summary") }}
+            </button>
 
             <div v-if="
                 message?.is_offline_message &&
@@ -1091,28 +1200,22 @@ watch(selectedLanguage, async (val) => {
                 class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
                 <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
                     <LoadingIcon />
-                    <span>Translating…</span>
+                    <span>{{ ctrans("Translating…") }}</span>
                 </div>
 
-                <template v-else>
-                    <div v-if="showTranslation && !shouldHideTranslationBlock">
+                <template v-else-if="!shouldHideTranslationBlock">
+                    <div v-if="showTranslation">
                         {{ latestTranslation!.translated_text }}
                     </div>
 
-                    <span v-else-if="!shouldHideTranslationBlock" class="cursor-pointer underline text-gray-500"
-                        @click="showTranslation = true">
-                        Show translation
-                    </span>
-
-                    <div v-if="showTranslation && !shouldHideTranslationBlock"
-                        class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
+                    <div class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
                             class="w-3 h-3 rounded-sm" loading="lazy" decoding="async" />
                         <FontAwesomeIcon :icon="faLanguage" fixed-width />
-                        <span>{{ latestTranslation!.language_name }}</span>
+                        <span>{{ translationDirection }}</span>
 
-                        <span v-if="isLongText" class="ml-2 cursor-pointer underline" @click="showTranslation = false">
-                            Hide
+                        <span class="ml-2 cursor-pointer underline" @click="showTranslation = !showTranslation">
+                            {{ showTranslation ? ctrans("Hide") : ctrans("Show translation") }}
                         </span>
                     </div>
                 </template>

@@ -8,11 +8,12 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faChartLine } from '@fal'
+import { faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly } from '@fal'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from 'vue'
 import WarehouseShowcase from "@/Components/Warehouse/WarehouseShowcase.vue"
+import OperationsDashboard from "@/Components/DataDisplay/Dashboard/OperationsDashboard.vue"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -23,13 +24,13 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
-library.add(faInventory, faWarehouse, faMapSigns, faChartLine)
+library.add(faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase?: {}
-    tagsList: {
+    tagsList?: {
         data: {}[]
     }
     title: string
@@ -39,6 +40,7 @@ const props = defineProps<{
         data: []
     }
     history?: {}
+    operations?: { route: { name: string }, warehouse: number }
 }>()
 
 
@@ -65,5 +67,6 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :tagsList="tagsList?.data" :link="pageHead"></component>
+    <OperationsDashboard v-if="operations" v-show="currentTab === 'operations'" :fetch-route="operations.route" :warehouse-id="operations.warehouse" :active="currentTab === 'operations'" />
+    <component v-if="currentTab !== 'operations'" :is="component" :tab="currentTab" :data="props[currentTab]" :tagsList="tagsList?.data" :link="pageHead"></component>
 </template>

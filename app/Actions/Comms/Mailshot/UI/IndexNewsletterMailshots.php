@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\NewsletterMailshotsResource;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexNewsletterMailshots extends OrgAction
 {
+    use WithOverviewAuthorisation;
     use HasUIMailshots;
     use WithIndexMailshots;
 
@@ -34,6 +36,10 @@ class IndexNewsletterMailshots extends OrgAction
         return $this->handleMailshot(OutboxCodeEnum::NEWSLETTER, $parent, $prefix);
     }
 
+    public function filterableOutboxCode(): OutboxCodeEnum
+    {
+        return OutboxCodeEnum::NEWSLETTER;
+    }
 
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {

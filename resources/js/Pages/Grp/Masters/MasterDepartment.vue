@@ -12,7 +12,7 @@ import {
     faCameraRetro, faClock,
     faCube, faCubes, faQuoteLeft,
     faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling,
-    faTrashAlt
+    faTrashAlt, faChartLine, faSortAmountDown
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -29,7 +29,7 @@ import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.v
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeadingTypes } from "@/types/PageHeading";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route";
@@ -42,7 +42,9 @@ import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import FamiliesOrder from "@/Components/Catalogue/FamiliesOrder.vue"
 import { Department } from "@/types/department";
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -57,7 +59,7 @@ library.add(
     faDiagramNext,
     faCubes,
     faFolders, faBrowser, faSeedling, faQuoteLeft,
-    faTrashAlt
+    faTrashAlt, faChartLine, faSortAmountDown
 );
 
 
@@ -80,8 +82,11 @@ const props = defineProps<{
     images?:object
     sales?: object
     salesData?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     mini_breadcrumbs?: any[]
     related_product_category? : object
+    families_order?: object
     delete_route?: routeType;
     delete_condition?: {
         can_delete: boolean;
@@ -90,7 +95,8 @@ const props = defineProps<{
 }>();
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? []);
 const component = computed(() => {
     const components: Record<string, any> = {
         showcase: MasterDepartmentShowcase,
@@ -104,7 +110,9 @@ const component = computed(() => {
         images: ImagesManagement,
         content : MasterContentProductCategory,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         related_product_category: RelatedProductCategory,
+        families_order: FamiliesOrder,
     };
     return components[currentTab.value] ?? null;
 });
@@ -112,6 +120,16 @@ const component = computed(() => {
 const currentData = computed(() => {
     return (props as Record<string, any>)[currentTab.value];
 });
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    const params = route().params
+    if (!row.slug || !params.masterDepartment) {
+        return null
+    }
+    return params.masterShop
+        ? route("grp.masters.master_shops.show.master_departments.show.master_families.show", [params.masterShop, params.masterDepartment, row.slug])
+        : route("grp.masters.master_departments.show.master_families.show", [params.masterDepartment, row.slug])
+}
 
 
 function masterDepartmentRoute(department: Department) {
@@ -134,15 +152,15 @@ async function deleteItem() {
         },
         onSuccess: () => {
             notify({
-                title: trans('Success'),
-                text: trans('Successfully deleted Master Department'),
+                title: ctrans('Success'),
+                text: ctrans('Successfully deleted Master Department'),
                 type: 'error'
             })
         },
         onError: () => {
             notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
+                title: ctrans('Error'),
+                text: ctrans('Failed to delete bundle'),
                 type: 'error'
             })
         },
@@ -162,7 +180,7 @@ async function deleteItem() {
           <template #other>
             <ModalConfirmationDelete
                 @onYes="deleteItem"
-                :title="trans('Are you sure you want to delete this Master Department?')"
+                :title="ctrans('Are you sure you want to delete this Master Department?')"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
@@ -180,7 +198,7 @@ async function deleteItem() {
 
         <template #afterTitle2>
             <div class="whitespace-nowrap">
-                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="trans('Go to Master')"
+                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="ctrans('Go to Master')"
                     class="mr-1" :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
                 </Link>
@@ -206,7 +224,7 @@ async function deleteItem() {
         </Breadcrumb>
     </div>
     
-    <component :is="component" :data="currentData" :tab="currentTab" is-master :salesData="salesData"></component>
+    <component :is="component" :data="currentData" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute"></component>
 </template>
 
 <style scoped>

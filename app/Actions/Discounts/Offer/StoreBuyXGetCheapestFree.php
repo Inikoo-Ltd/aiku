@@ -82,7 +82,7 @@ class StoreBuyXGetCheapestFree extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('Buy '.$itemQuantity.' get '.$freeQuantity.' free', $english, $shop->language, 'gpt-5-nano').' '.$triggerModel->code,
+            Translate::run('Buy '.$itemQuantity.' get '.$freeQuantity.' free', $english, $shop->language, 'catalogue').' '.$triggerModel->code,
             false
         );
 
@@ -155,7 +155,7 @@ class StoreBuyXGetCheapestFree extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('Buy '.$itemQuantity.' get '.$freeQuantity.' free', $english, $product->shop->language, 'gpt-5-nano').' '.$product->code.' → '.$freeProduct->code,
+            Translate::run('Buy '.$itemQuantity.' get '.$freeQuantity.' free', $english, $product->shop->language, 'catalogue').' '.$product->code.' → '.$freeProduct->code,
             false
         );
 

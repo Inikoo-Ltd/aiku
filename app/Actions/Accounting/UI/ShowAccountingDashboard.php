@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\UI;
 
 use App\Actions\Accounting\Payment\UI\GetPaymentMethodsSummary;
+use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\Traits\Dashboards\WithMarketingPeriod;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
@@ -66,6 +67,7 @@ class ShowAccountingDashboard extends OrgAction
                     ],
                     'period_label' => $this->periodFrom ? $this->periodLabels()['period_label'] : __('All time'),
                 ],
+                'uncostedStockDeliveries' => GetUncostedStockDeliveriesCard::run($organisation),
                 'intervals' => $this->intervalsProp($request->user()->settings),
                 'settings'  => [],
                 'flatTreeMaps' => [

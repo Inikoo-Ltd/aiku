@@ -10,6 +10,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
@@ -40,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $reference
  * @property ReturnDeliveryNoteStateEnum $state
+ * @property ReturnDeliveryNoteTypeEnum $type
  * @property string|null $customer_notes
  * @property string|null $public_notes
  * @property string|null $internal_notes
@@ -47,12 +49,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property string|null $returning_at
- * @property string|null $returned_at
+ * @property \Illuminate\Support\Carbon|null $returning_at
+ * @property \Illuminate\Support\Carbon|null $returned_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property int|null $handler_id Main handler
  * @property int|null $handler_user_id
- * @property string|null $done_at
+ * @property \Illuminate\Support\Carbon|null $done_at
  * @property int|null $refund_id
  * @property int|null $replacement_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -88,10 +90,10 @@ class ReturnDeliveryNote extends Model implements Auditable
 
     protected $casts = [
         'state'        => ReturnDeliveryNoteStateEnum::class,
-        'queued_at'    => 'datetime',
-        'handling_at'  => 'datetime',
-        'picked_at'    => 'datetime',
-        'received_at'  => 'datetime',
+        'type'         => ReturnDeliveryNoteTypeEnum::class,
+        'returning_at' => 'datetime',
+        'returned_at'  => 'datetime',
+        'done_at'      => 'datetime',
         'cancelled_at' => 'datetime',
     ];
 
@@ -103,11 +105,11 @@ class ReturnDeliveryNote extends Model implements Auditable
 
     protected array $auditInclude = [
         'state',
+        'type',
         'reference',
-        'queued_at',
-        'handling_at',
-        'picked_at',
-        'received_at',
+        'returning_at',
+        'returned_at',
+        'done_at',
         'cancelled_at',
     ];
 

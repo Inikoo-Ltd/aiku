@@ -57,19 +57,27 @@ class StoreProductCategoryWebpage extends OrgAction
                 'model_id'   => $productCategory->id
             ];
 
-            StoreWebpage::make()->action(
-                $productCategory->shop->website,
-                [
-                    'title'        => $productCategory->name,
-                    'code'         => $productCategory->code.'-overview',
-                    'url'          => strtolower($productCategory->code).'-overview',
-                    'sub_type'     => WebpageSubTypeEnum::DEPARTMENT,
-                    'type'         => WebpageTypeEnum::CATALOGUE,
-                    'model_type'   => class_basename($productCategory),
-                    'model_id'     => $productCategory->id,
-                    'layout_style' => 'families-overview'
-                ]
-            );
+            $overviewCode = $productCategory->code.'-overview';
+
+            $overviewExists = $productCategory->shop->website->webpages()
+                ->whereRaw('lower(code) = lower(?)', [$overviewCode])
+                ->exists();
+
+            if (!$overviewExists) {
+                StoreWebpage::make()->action(
+                    $productCategory->shop->website,
+                    [
+                        'title'        => $productCategory->name,
+                        'code'         => $overviewCode,
+                        'url'          => strtolower($overviewCode),
+                        'sub_type'     => WebpageSubTypeEnum::DEPARTMENT,
+                        'type'         => WebpageTypeEnum::CATALOGUE,
+                        'model_type'   => class_basename($productCategory),
+                        'model_id'     => $productCategory->id,
+                        'layout_style' => 'families-overview'
+                    ]
+                );
+            }
         }
 
         $webpage = StoreWebpage::make()->action(

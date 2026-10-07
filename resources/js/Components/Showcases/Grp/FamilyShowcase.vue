@@ -9,8 +9,10 @@ import { faAlbumCollection, faStarfighter } from "@fal";
 import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue';
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans';
 import { faExternalLink } from '@far';
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import FamilyBestSellers from '@/Components/Catalogue/FamilyBestSellers.vue'
@@ -45,6 +47,8 @@ const props = defineProps<{
         webpage_url?: string
     },
     salesData?: object
+    salesAnalysisTeaser?: object
+    breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
     actions?: any
 }>();
 
@@ -106,37 +110,44 @@ function offerRoute(offer: {}) {
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
-                        <span v-if="!data.family?.data.description_title">{{ trans("Description Title is missing")
+                        <span v-if="!data.family?.data.description_title">{{ ctrans("Description Title is missing")
                             }}.</span>
-                        <span v-if="!data.family?.data.description">{{ trans("Description is missing") }}.</span>
-                        <span v-if="!data.family?.data.description_extra">{{ trans("Extra description is missing")
+                        <span v-if="!data.family?.data.description">{{ ctrans("Description is missing") }}.</span>
+                        <span v-if="!data.family?.data.description_extra">{{ ctrans("Extra description is missing")
                             }}.</span>
                     </div>
-                    {{ trans("Please") }}
+                    {{ ctrans("Please") }}
                     <Link
                         @click="navigateTo"
                         class="underline font-bold">
-                    {{ trans("add missing description fields") }}
+                    {{ ctrans("add missing description fields") }}
                     </Link>.
                 </div>
             </Message>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
-            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-1">
                 <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
                     <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
                         class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
                         {{ tag.name }}
                     </span>
                 </dd>
-                <ProductCategoryCard :data="data.family?.data"  />
+                <ProductCategoryCard subtle :data="data.family?.data"  />
             </div>
 
-            <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-1 offer">
+                <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+
+                <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap">
+                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:grow lg:basis-[23rem]" />
+                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" :breakdownRoute="breakdownRoute" class="min-w-[22rem] lg:grow-[2] lg:basis-[22rem]" />
+                </div>
+
                 <template v-if="data.show_gr_vol">
-                    <div class="mb-1">
-                        {{ trans("Active Gold Reward offer") }}:
+                    <div class="mb-1 mt-4">
+                        {{ ctrans("Active Gold Reward offer") }}:
                         <Link :href="offerRoute(data.gr_offer_data)" class="secondaryLink">
                             {{ data.gr_offer_data?.label }}
                         </Link>
@@ -146,7 +157,7 @@ function offerRoute(offer: {}) {
                         <FontAwesomeIcon
                             v-if="data.follow_master_gr === false"
                             :icon="faStarfighter"
-                            v-tooltip="trans('Not following master GR')"
+                            v-tooltip="ctrans('Not following master GR')"
                             class="text-xl text-red-500"
                             fixed-width
                             aria-hidden="true"
@@ -157,10 +168,7 @@ function offerRoute(offer: {}) {
                 <FamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
-            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
-                <!-- Sales Analytics Compact -->
-                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
-
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 2xl:col-span-1 space-y-4">
                 <!-- Product State Stats -->
                 <ProductCategoryStats v-if="data.family?.data.stats" :stats="data.family?.data.stats" />
 

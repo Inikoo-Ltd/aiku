@@ -9,8 +9,10 @@
 namespace App\Actions\Billables\Service\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Http\Resources\History\HistoryResource;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Actions\Fulfilment\UI\Catalogue\Services\GetFulfilmentServiceShowcase;
 use App\Enums\UI\Fulfilment\FulfilmentServiceTabsEnum;
 use App\Http\Resources\Fulfilment\ServicesResource;
@@ -23,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShopService extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Service $service): Service
     {
@@ -79,8 +81,12 @@ class ShowShopService extends OrgAction
                     FulfilmentServiceTabsEnum::SHOWCASE->value => $this->tab == FulfilmentServiceTabsEnum::SHOWCASE->value ?
                         fn () => GetFulfilmentServiceShowcase::run($service)
                         : Inertia::optional(fn () => GetFulfilmentServiceShowcase::run($service)),
+
+                    FulfilmentServiceTabsEnum::HISTORY->value => $this->tab == FulfilmentServiceTabsEnum::HISTORY->value ?
+                        fn () => HistoryResource::collection(IndexHistory::run($service, FulfilmentServiceTabsEnum::HISTORY->value))
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($service, FulfilmentServiceTabsEnum::HISTORY->value))),
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(prefix: FulfilmentServiceTabsEnum::HISTORY->value));
     }
 
 

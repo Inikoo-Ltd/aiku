@@ -261,7 +261,7 @@ const radioValue = ref<string[]>(
 					</div>
 
 					<!-- State Date & End Date -->
-					<div class="pl-1 mt-4 w-80 lg:w-96 grid grid-cols-9 gap-x-3">
+					<div class="pl-1 mt-4 grid grid-cols-9 gap-x-3">
 						<div class="col-span-4 text-sm">
 							<div class="text-gray-400">{{ trans("Start date") }}</div>
 							<div class="font-medium">

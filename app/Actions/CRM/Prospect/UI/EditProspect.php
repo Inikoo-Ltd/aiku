@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Prospect\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
@@ -16,10 +15,12 @@ use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditProspect extends OrgAction
 {
+    use WithCRMAuthorisation;
     public function handle(Prospect $prospect): Prospect
     {
         return $prospect;
@@ -85,7 +86,6 @@ class EditProspect extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($prospect->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                             ]

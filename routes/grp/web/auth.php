@@ -7,6 +7,7 @@
  *  Version 4.0
  */
 
+use App\Actions\Comms\Unsubscribe\UnsubscribeMailshot;
 use App\Actions\Helpers\Redirects\RedirectUnsubscribe;
 use App\Actions\Helpers\Redirects\ShowUnsubscribeError;
 use App\Actions\SysAdmin\UI\Auth\Login;
@@ -20,6 +21,8 @@ use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
 use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
+
+Route::post('redirect-unsubscribe/{encryptedDispatchedEmailID}', UnsubscribeMailshot::class)->name('one_click_unsubscribe');
 
 Route::middleware('guest')->group(function () {
     Route::get('resetpassword', ShowResetPassword::class)->name('reset.password');

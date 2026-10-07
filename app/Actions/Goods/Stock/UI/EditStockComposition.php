@@ -9,6 +9,8 @@ namespace App\Actions\Goods\Stock\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\Stock;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -86,6 +88,7 @@ class EditStockComposition extends OrgAction
                     'trade_units' => [
                         'label'       => __('Trade units'),
                         'type'        => 'trade-units-for-stock',
+                        'hasOther'    => ['name' => 'stock_strategy', 'value' => null],
                         'fetchRoute'  => [
                             'name' => 'grp.json.master_product_category.all_trade_units',
                         ],
@@ -108,6 +111,7 @@ class EditStockComposition extends OrgAction
                          * packed can judge whether the SKU or the product is the wrong one.
                          */
                         'productsContext' => $this->getProductsContext($stock),
+                        'stockLevels'     => $this->getStockLevels($stock),
                     ],
                 ],
             ],
@@ -141,6 +145,36 @@ class EditStockComposition extends OrgAction
                 'quantity'  => (float) $product->quantity,
             ])->values()->all())
             ->toArray();
+    }
+
+    /**
+     * What each warehouse holds now and how it is packed there, so the editor sees what a
+     * pack size change does to every warehouse's count before saving, and can open the
+     * warehouse SKO page to correct a location.
+     *
+     * @return array<int, array{organisation: string, warehouse: string, quantity: float, packing: array<int, float>, route: array}>
+     */
+    public function getStockLevels(Stock $stock): array
+    {
+        return $stock->orgStocks()
+            ->with(['organisation.warehouses', 'tradeUnits'])
+            ->get()
+            ->flatMap(fn (OrgStock $orgStock) => $orgStock->organisation->warehouses->map(fn (Warehouse $warehouse) => [
+                'organisation' => $orgStock->organisation->code,
+                'warehouse'    => $warehouse->name,
+                'quantity'     => (float) $orgStock->locationOrgStocks()->where('warehouse_id', $warehouse->id)->sum('quantity'),
+                'packing'      => $orgStock->tradeUnits->mapWithKeys(fn ($tradeUnit) => [$tradeUnit->id => (float) $tradeUnit->pivot->quantity])->all(),
+                'route'        => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
+                    'parameters' => [
+                        'organisation' => $orgStock->organisation->slug,
+                        'warehouse'    => $warehouse->slug,
+                        'orgStock'     => $orgStock->slug,
+                    ],
+                ],
+            ]))
+            ->values()
+            ->all();
     }
 
     public function getBreadcrumbs(Stock $stock): array

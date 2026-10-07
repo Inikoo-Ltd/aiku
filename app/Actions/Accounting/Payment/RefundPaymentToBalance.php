@@ -22,6 +22,7 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -43,14 +44,6 @@ class RefundPaymentToBalance extends OrgAction
      */
     public function handle(Payment $payment, array $modelData): Payment|array
     {
-        if ($payment->status !== PaymentStatusEnum::SUCCESS) {
-            throw ValidationException::withMessages([
-                'error'   => true,
-                'message' => __('Payment can not be refunded.').'; '.__('Invalid state'),
-                ' '.$payment->state->labels()[$payment->state->value]
-            ]);
-        }
-
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $payment->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
@@ -62,6 +55,8 @@ class RefundPaymentToBalance extends OrgAction
         }
 
         return DB::transaction(function () use ($refundAmount, $payment, $paymentAccountShop, $invoice) {
+            $payment = self::lockForRefund($payment, $invoice, $refundAmount);
+
             $refundPayment = StorePayment::make()->action($payment->customer, $paymentAccountShop->paymentAccount, [
                 'amount'              => $refundAmount,
                 'reference'           => 'ref-bal-'.Str::ulid(),
@@ -84,15 +79,61 @@ class RefundPaymentToBalance extends OrgAction
                 'with_refund'  => true
             ]);
 
-            AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
-            if ($invoice->order) {
-                AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+            if ($invoice) {
+                AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
+                if ($invoice->order) {
+                    AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+                }
             }
 
             return $refundPayment;
         });
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public static function lockForRefund(Payment $payment, ?Invoice $invoice, float $amount): Payment
+    {
+        $amount  = round(abs($amount), 2);
+        $payment = Payment::lockForUpdate()->findOrFail($payment->id);
+
+        if ($payment->type !== PaymentTypeEnum::PAYMENT) {
+            throw ValidationException::withMessages(['amount' => __('Only a payment can be refunded, not a refund')]);
+        }
+
+        if ($payment->status !== PaymentStatusEnum::SUCCESS) {
+            throw ValidationException::withMessages(['amount' => __('Only a successful payment can be refunded, this one is :state', ['state' => PaymentStateEnum::labels()[$payment->state->value] ?? $payment->state->value])]);
+        }
+
+        if ($amount > round((float) $payment->amount - (float) $payment->total_refund, 2)) {
+            throw ValidationException::withMessages(['amount' => __('The amount is more than is left to refund on this payment')]);
+        }
+
+        if (!$invoice) {
+            return $payment;
+        }
+
+        if ((int) $invoice->customer_id !== (int) $payment->customer_id) {
+            throw ValidationException::withMessages(['invoice_id' => __('The invoice belongs to another customer')]);
+        }
+
+        if ($invoice->order_id) {
+            Order::lockForUpdate()->findOrFail($invoice->order_id);
+        }
+
+        AttachPaymentToInvoice::lockRefundToPay($invoice, $amount);
+
+        return $payment;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo([
+            "crm.{$this->payment->shop_id}.edit",
+            "accounting.{$this->payment->organisation_id}.edit",
+        ]);
+    }
 
     public function rules(): array
     {

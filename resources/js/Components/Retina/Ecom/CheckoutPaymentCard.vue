@@ -9,7 +9,7 @@ import { faCopy, faSpinner } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
@@ -66,12 +66,10 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
       }
     );
 
-    console.log("hitWebhookAfterSuccess:", response);
 
     const { status, msg } = response.data;
 
     if (status === 'success') {
-      console.log("Payment successful:", response);
       retryCount.value = 0
       router.post(route('retina.redirect_success_paid_order', {
         order: response.data.order_id,
@@ -81,8 +79,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
       console.warn("Payment error:", msg);
       // ✅ Show modal with specific error message
       notify({
-              title: trans('Something went wrong'),
-              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
+              title: ctrans('Something went wrong'),
+              text: response.data.msg ? response.data.msg : ctrans('Failed to communicate with the payment service.'),
               type: 'error',
           });
 
@@ -91,7 +89,6 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
       }
 
     } else {
-      console.log("Payment still processing:", status);
 
       if (retryCount.value < MAX_RETRIES) {
         retryCount.value++;
@@ -100,8 +97,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
       } else {
         retryCount.value = 0
         notify({
-            title: trans('Payment still processing'),
-            text: trans('Your order will be submitted automatically once the payment is confirmed.'),
+            title: ctrans('Payment still processing'),
+            text: ctrans('Your order will be submitted automatically once the payment is confirmed.'),
             type: 'warn',
             duration: 10000,
         });
@@ -111,8 +108,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
     console.error("Checkout webhook failed:", error);
     retryCount.value = 0
     notify({
-      title: trans('Something went wrong'),
-      text: error.data?.message || error?.message || trans('Failed to communicate with the payment service.'),
+      title: ctrans('Something went wrong'),
+      text: error.data?.message || error?.message || ctrans('Failed to communicate with the payment service.'),
       type: 'error',
     });
   } finally {
@@ -131,7 +128,6 @@ onMounted(async () => {
         return
     }
 
-    console.log('fff', layout?.iris?.website_i18n?.current_language?.code)
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
         paymentSession: props.data?.data,
@@ -139,17 +135,14 @@ onMounted(async () => {
         environment: props.data.environment,
         locale: layout?.iris?.website_i18n?.current_language?.code,
         onReady: () => {
-            console.log("onReady")
         },
     
         onPaymentCompleted: (_component, paymentResponse) => {
-            console.log("Create Payment with PaymentId: ", paymentResponse.id)
             paymentResponseId.value = paymentResponse.id
             hitWebhookAfterSuccess(paymentResponse.id)
         },
     
         onChange: (component) => {
-            console.log( `onChange() -> isValid: "${component.isValid()}" for "${component.type}"`, )
         },
         onError: (component, error) => {
             console.error("onError error:", error)
@@ -181,7 +174,7 @@ const onClickCopy = (textToCopy: string) => {
 <template>
     <div class="relative w-full max-w-xl isolate mx-auto my-4 md:my-8 xoverflow-hidden">
         <div class="mb-2 pl-2">
-            {{ trans("Need to pay") }}: <span class="font-bold">{{ locale.currencyFormat(currencyCode, Number(props.needToPay).toFixed(2)) }}</span>
+            {{ ctrans("Need to pay") }}: <span class="font-bold">{{ locale.currencyFormat(currencyCode, Number(props.needToPay).toFixed(2)) }}</span>
             <Transition name="spin-to-right">
                 <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width
                     aria-hidden="true" />
@@ -202,7 +195,7 @@ const onClickCopy = (textToCopy: string) => {
 
             <div v-else class="h-64 flex flex-col items-center justify-center gap-y-2 bg-gray-100 border border-gray-300 rounded">
                 <FontAwesomeIcon icon="fal fa-check-circle" class="text-3xl ml-1 text-green-500" fixed-width aria-hidden="true" />
-                <div>{{ trans("Payment done. Waiting for confirmation...") }}</div>
+                <div>{{ ctrans("Payment done. Waiting for confirmation...") }}</div>
             </div>
 
             <div v-show="isLoadingAfterSuccess" class="bg-black/70 text-white text-5xl flex justify-center items-center absolute top-0 h-full w-full z-10">
@@ -214,7 +207,7 @@ const onClickCopy = (textToCopy: string) => {
             <div v-if="retryCount > 0"
                 class="absolute inset-0 xmt-4 px-4 py-2 rounded-lg bg-black/10 backdrop-blur-sm border border-black/50 text-yellow-600 text-lg font-medium flex items-center justify-center gap-2 xanimate-pulse">
                 <FontAwesomeIcon :icon="faSpinner" class="animate-spin" fixed-width />
-                {{ trans("Retrying payment... Attempt :retryCount of :max_entries", { retryCount: retryCount, max_entries: MAX_RETRIES }) }}
+                {{ ctrans("Retrying payment... Attempt :retryCount of :max_entries", { retryCount: retryCount, max_entries: MAX_RETRIES }) }}
             </div>
         </Transition>
     </div>

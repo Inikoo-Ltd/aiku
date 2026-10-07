@@ -8,7 +8,14 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
+use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
+use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
+use App\Models\Procurement\OrgPartner;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
+use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -16,16 +23,21 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliv
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexPurchaseOrderTransactions extends OrgAction
 {
@@ -78,9 +90,14 @@ class IndexPurchaseOrderTransactions extends OrgAction
     public function handle(PurchaseOrder $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->whereHas('supplierProduct', function ($query) use ($value) {
-                $query->where('code', 'ILIKE', "%$value%")
-                    ->orWhere('name', 'ILIKE', "%$value%");
+            $query->where(function ($query) use ($value) {
+                $query->whereHas('supplierProduct', function ($query) use ($value) {
+                    $query->where('code', 'ILIKE', "%$value%")
+                        ->orWhere('name', 'ILIKE', "%$value%");
+                })->orWhereHas('orgStock', function ($query) use ($value) {
+                    $query->where('code', 'ILIKE', "%$value%")
+                        ->orWhere('name', 'ILIKE', "%$value%");
+                });
             });
         });
 
@@ -95,6 +112,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
             'orgSupplierProduct.orgSupplier',
             'organisation.currency',
             'orgStock.tradeUnits.image',
+            'orgStock.stats',
+            'orgStock.stock.stockFamily',
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
@@ -109,12 +128,22 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ');
 
         $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'purchase_order_transactions.supplier_product_id')
+            ->leftJoin('org_stocks as os', 'os.id', '=', 'purchase_order_transactions.org_stock_id')
             ->select('purchase_order_transactions.*')
             ->selectSub($weight, 'weight')
-            ->selectRaw('round(sp.cbm * purchase_order_transactions.quantity_ordered / nullif(sp.units_per_carton, 0), 2) as volume');
+            ->selectRaw('round(sp.cbm * purchase_order_transactions.quantity_ordered / nullif(sp.units_per_carton, 0), 2) as volume')
+            ->selectSub(
+                StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction(DB::query())->selectRaw('count(*) > 0'),
+                'is_on_delivery'
+            );
 
         if ($parent instanceof PurchaseOrder) {
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
+        }
+
+        if ($parent->parent instanceof OrgAgent) {
+            $query->leftJoin('suppliers', 'suppliers.id', '=', 'sp.supplier_id')
+                ->orderBy('suppliers.name');
         }
 
         if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
@@ -128,11 +157,69 @@ class IndexPurchaseOrderTransactions extends OrgAction
             }
         }
 
-        return $query->allowedSorts([AllowedSort::field('code', 'sp.code')])
+        $paginator = $query->allowedSorts([
+            AllowedSort::custom('code', new class () implements Sort {
+                public function __invoke(Builder $query, bool $descending, string $property): void
+                {
+                    $query->orderByRaw('coalesce(sp.code, os.code) '.($descending ? 'desc' : 'asc'));
+                }
+            }),
+        ])
             ->defaultSort('purchase_order_transactions.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $orgStockIds     = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
+        $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+        $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
+        $partnerLeadTimeDays = $parent->parent instanceof OrgPartner ? GetPartnerLeadTime::run($parent->parent)['days'] : null;
+        $partnerStocks       = $parent->parent instanceof OrgPartner ? $this->partnerStocks($parent->parent, $orgStockIds) : collect();
+        $paginator->getCollection()->each(
+            fn (PurchaseOrderTransaction $transaction) => $transaction
+                ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
+                ->setAttribute('stock_deliveries', $stockDeliveries->get($transaction->org_stock_id))
+                ->setAttribute('buying_signals', GetOrgStockBuyingSignals::run($transaction->orgStock, $transaction->supplierProduct, $partnerLeadTimeDays))
+                ->setAttribute('partner_stock', $partnerStocks->get($transaction->org_stock_id))
+        );
+        IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent->organisation_id, $parent->id);
+
+        return $paginator;
+    }
+
+    /**
+     * The partner's own stock of each of our SKOs, and the carton the partner buys it in from its
+     * primary supplier. Cartons differ between organisations and are often wrong, so they are a guide only.
+     *
+     * @return Collection<int, object{stock: float|null, units_per_carton: int|null, hub_name: string|null}>
+     */
+    private function partnerStocks(OrgPartner $orgPartner, Collection $orgStockIds): Collection
+    {
+        if ($orgStockIds->isEmpty()) {
+            return collect();
+        }
+
+        $primarySupplierProduct = DB::table('org_stock_has_org_supplier_products as link')
+            ->join('org_supplier_products as osp', 'osp.id', 'link.org_supplier_product_id')
+            ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
+            ->whereColumn('link.org_stock_id', 'seller.id')
+            ->where('link.status', true)
+            ->orderBy('link.local_priority')
+            ->select('sp.units_per_carton')
+            ->limit(1);
+
+        return DB::table('org_stocks as buyer')
+            ->join('org_stocks as seller', function ($join) use ($orgPartner) {
+                $join->on('seller.stock_id', 'buyer.stock_id')
+                    ->where('seller.organisation_id', $orgPartner->partner_id);
+            })
+            ->leftJoinLateral($primarySupplierProduct, 'primary_sp')
+            ->whereIn('buyer.id', $orgStockIds)
+            ->select(['buyer.id as org_stock_id', 'primary_sp.units_per_carton'])
+            ->selectRaw('seller.quantity_in_locations * seller.packed_in / nullif(buyer.packed_in, 0) as stock')
+            ->selectRaw(GetPartnerStockCoverBuckets::hubNameSql('buyer.stock_id').' as hub_name')
+            ->get()
+            ->keyBy('org_stock_id');
     }
 
 
@@ -182,7 +269,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
 
-                if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+                if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
                     $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
                 }
             }

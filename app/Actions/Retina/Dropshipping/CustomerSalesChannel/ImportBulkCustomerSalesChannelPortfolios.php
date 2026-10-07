@@ -13,6 +13,7 @@ use App\Actions\Helpers\Upload\ImportUpload;
 use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithImportModel;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Imports\Dropshipping\CustomerSalesChannelPortfoliosImport;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ImportBulkCustomerSalesChannelPortfolios extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithImportModel;
 
     private Fulfilment $parent;

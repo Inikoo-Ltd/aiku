@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\Hydrators;
 
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -30,6 +31,7 @@ class OrgPartnerHydrateShoppingListItems implements ShouldBeUnique
             'number_shopping_list_items'      => $orgPartner->shoppingListItems()->count(),
             'number_open_shopping_list_items' => $orgPartner->shoppingListItems()
                 ->whereIn('state', [
+                    ShoppingListItemStateEnum::DRAFT,
                     ShoppingListItemStateEnum::OPEN,
                     ShoppingListItemStateEnum::DISMISS_PROPOSED,
                 ])
@@ -37,11 +39,12 @@ class OrgPartnerHydrateShoppingListItems implements ShouldBeUnique
             'open_shopping_list_items_value' => (float) DB::table('partner_shopping_list_items')
                 ->where('org_partner_id', $orgPartner->id)
                 ->whereIn('state', [
+                    ShoppingListItemStateEnum::DRAFT->value,
                     ShoppingListItemStateEnum::OPEN->value,
                     ShoppingListItemStateEnum::DISMISS_PROPOSED->value,
                 ])
                 ->whereNull('deleted_at')
-                ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql().', 0)), 0) as total')
+                ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as total')
                 ->value('total'),
         ]);
     }

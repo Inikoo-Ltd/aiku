@@ -25,6 +25,7 @@ enum EmailOngoingRunCodeEnum: string
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case PRE_ORDER_UPDATE = 'pre_order_update';
     case PASSWORD_REMINDER = 'password_reminder';
 
     case REGISTRATION = 'registration';
@@ -49,6 +50,7 @@ enum EmailOngoingRunCodeEnum: string
     case GOLD_REWARD_REMINDER_1 = 'gold_reward_reminder_1';
     case GOLD_REWARD_REMINDER_2 = 'gold_reward_reminder_2';
     case GOLD_REWARD_REMINDER_3 = 'gold_reward_reminder_3';
+    case DUE_TO_REORDER = 'due_to_reorder';
     case OOS_NOTIFICATION = 'oos_notification';
     case REVIEW_REMINDER = 'review_reminder';
 
@@ -68,6 +70,8 @@ enum EmailOngoingRunCodeEnum: string
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
 
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
+    case BASKET_ON_OFFER = 'basket_on_offer';
+    case FAVOURITES_ON_OFFER = 'favourites_on_offer';
     case PRICE_CHANGE = 'price_change';
 
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
@@ -78,4 +82,5 @@ enum EmailOngoingRunCodeEnum: string
     case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
     case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
     case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
+    case SEND_PURCHASE_ORDER_TO_SUPPLIER = 'send_purchase_order_to_supplier';
 }

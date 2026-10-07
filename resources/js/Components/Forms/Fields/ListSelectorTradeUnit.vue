@@ -13,7 +13,7 @@ import { set, get } from "lodash-es"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue"
 import { watch, ref, computed, onUnmounted } from "vue"
 import { pendingCompositionUnits } from "@/Composables/usePendingCompositionUnits"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSave as fadSave } from "@fad"
 import { faSave as falSave, faInfoCircle } from "@fal"
@@ -98,10 +98,9 @@ const checkValidation = async () => {
         else showValidationDialog.value = true
 
     } catch (error) {
-        console.log(error)
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to get the options list"),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Failed to get the options list"),
             type: "error"
         })
     } finally {
@@ -187,18 +186,18 @@ onUnmounted(() => {
     <!-- Price impact: repackaging scales the price, fixing a wrong composition keeps it -->
     <div v-if="priceImpact" class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
         <div class="font-medium text-amber-800">
-            {{ trans('Units change :old → :new — the price does not change by itself. Which is true?', { old: priceImpact.oldUnits, new: priceImpact.newUnits }) }}
+            {{ ctrans('Units change :old → :new — the price does not change by itself. Which is true?', { old: priceImpact.oldUnits, new: priceImpact.newUnits }) }}
         </div>
         <div class="mt-1 text-gray-700">
-            {{ trans('Repackaging the product: price should become') }}
+            {{ ctrans('Repackaging the product: price should become') }}
             <span class="font-semibold">{{ priceImpact.scaledPrice.toFixed(2) }} {{ priceImpact.currency }}</span>
-            ({{ trans('keeps :per/unit', { per: priceImpact.perUnitNow.toFixed(2) }) }}) —
-            {{ trans('update it in the price field below.') }}
+            ({{ ctrans('keeps :per/unit', { per: priceImpact.perUnitNow.toFixed(2) }) }}) —
+            {{ ctrans('update it in the price field below.') }}
         </div>
         <div class="text-gray-700">
-            {{ trans('Fixing a wrong composition: keep') }}
+            {{ ctrans('Fixing a wrong composition: keep') }}
             <span class="font-semibold">{{ priceImpact.price.toFixed(2) }} {{ priceImpact.currency }}</span>
-            ({{ trans('becomes :per/unit', { per: priceImpact.perUnitIfKept.toFixed(2) }) }}).
+            ({{ ctrans('becomes :per/unit', { per: priceImpact.perUnitIfKept.toFixed(2) }) }}).
         </div>
     </div>
 
@@ -211,13 +210,13 @@ onUnmounted(() => {
         <template #header>
             <div class="flex items-center gap-4 text-[20px]">
                 <FontAwesomeIcon :icon="faExclamationCircle" class="text-orange-500" fixed-width />
-                <span class="font-medium ">{{ trans("Are you sure?") }}</span>
+                <span class="font-medium ">{{ ctrans("Are you sure?") }}</span>
             </div>
         </template>
 
         <div class="text-sm">
             <span>
-                {{ trans("Product quantity will be set to 0 due to no available organization stock") }}
+                {{ ctrans("Product quantity will be set to 0 due to no available organization stock") }}
             </span>
         </div>
 

@@ -6,10 +6,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick, watch, computed } from "vue"
+import { ctrans } from "@/Composables/useTrans"
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     text: string
-}>()
+    clamped?: boolean
+}>(), {
+    clamped: true,
+})
 
 const escapeHtml = (value: string) =>
     value
@@ -71,17 +75,17 @@ watch(() => props.text, () => {
         <p
             ref="textRef"
             class="text-sm text-gray-700 whitespace-pre-line"
-            :class="{ 'line-clamp-4': !expanded }"
+            :class="{ 'line-clamp-4': clamped && !expanded }"
             v-html="formattedText"
         />
 
         <button
-            v-if="isOverflowing || expanded"
+            v-if="clamped && (isOverflowing || expanded)"
             type="button"
             class="mt-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
             @click="expanded = !expanded"
         >
-            {{ expanded ? $t('Show less') : $t('Read more') }}
+            {{ expanded ? ctrans('Show less') : ctrans('Read more') }}
         </button>
     </div>
 </template>

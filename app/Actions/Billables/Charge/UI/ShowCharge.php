@@ -9,9 +9,11 @@
 namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\UI\Catalogue\ChargeTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
@@ -22,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowCharge extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Charge $charge): Charge
     {
@@ -79,8 +81,11 @@ class ShowCharge extends OrgAction
                     fn () => GetChargeShowcase::run($charge)
                     : Inertia::optional(fn () => GetChargeShowcase::run($charge)),
 
+                    ChargeTabsEnum::HISTORY->value => $this->tab == ChargeTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($charge, ChargeTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($charge, ChargeTabsEnum::HISTORY->value))),
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(prefix: ChargeTabsEnum::HISTORY->value));
     }
 
 

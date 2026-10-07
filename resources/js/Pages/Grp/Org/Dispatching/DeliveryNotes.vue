@@ -18,7 +18,7 @@ import HasPickTableDeliveryNote from '@/Components/Tables/Grp/Org/Dispatching/Ha
 import { ref, inject, computed, reactive } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks)
 
@@ -27,9 +27,9 @@ const props = defineProps<{
   title: string
   data?: {}
   todo?: Boolean
-  shopType: string
-  picking_session_route : routeType
-  bucket: string
+  shopType?: string
+  picking_session_route?: routeType
+  bucket?: string
 }>()
 
 const selectedDeliveryNotes = reactive(new Set<number>())
@@ -45,8 +45,8 @@ function createPickingSession() {
 
   if (!props.picking_session_route) {
     notify({
-      title: trans('Something went wrong'),
-      text: trans('Please try again or contact support.'),
+      title: ctrans('Something went wrong'),
+      text: ctrans('Please try again or contact support.'),
       type: 'error',
     })
     return
@@ -63,7 +63,6 @@ function createPickingSession() {
       },
       onError: (errors) => {
         loading.value = false
-        console.log(errors.message)
         if (errors.message) {
           notify({
             title: 'Validation Error',
@@ -90,7 +89,7 @@ const isHidden = computed(() => {
         <Button
         v-if="!isHidden && todo"
         type="create"
-        :label="trans('Picking session') + ' ('+ selectedDeliveryNotes.size + ')'"
+        :label="ctrans('Picking session') + ' ('+ selectedDeliveryNotes.size + ')'"
         :loading="loading"
         :disabled="selectedDeliveryNotes.size <= 0"
         @click="createPickingSession"

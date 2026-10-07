@@ -52,6 +52,7 @@ use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
+use App\Models\Dropshipping\WixUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
@@ -118,6 +119,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string $slug
  * @property string $code
  * @property string $name
+ * @property string|null $short_name
  * @property string|null $company_name
  * @property string|null $contact_name
  * @property string|null $email
@@ -500,6 +502,11 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->belongsTo(self::class, 'seeder_shop_id');
     }
 
+    public function wixUser(): HasOne
+    {
+        return $this->hasOne(WixUser::class, 'external_shop_id');
+    }
+
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
@@ -862,13 +869,45 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(TestEmailRecipient::class);
     }
 
+    /**
+     * HELP-3432 pre-order terms, every one editable per shop in Settings › Pre-orders.
+     * Money thresholds are in the shop currency.
+     */
+    public const array PRE_ORDER_DEFAULTS = [
+        'enabled'                         => false,
+        'deposit_percentage'              => 30,
+        'full_payment_below'              => 500,
+        'default_lead_time_days'          => 60,
+        'dispatch_range_weeks'            => 2,
+        'balance_due_days'                => 7,
+        'balance_first_reminder_day'      => 3,
+        'balance_second_reminder_day'     => 6,
+        'balance_cancel_after_days'       => 14,
+        'free_cancellation_working_days'  => 2,
+        'late_cancellation_days'          => 30,
+        'pallet_weight_kg'                => null,
+        'pallet_longest_side_cm'          => null,
+        'pallet_quote_tolerance_percentage' => 20,
+        'pallet_rates'                    => [],
+    ];
+
+    public function preOrderSetting(string $key): mixed
+    {
+        return Arr::get($this->settings, "pre_orders.$key") ?? self::PRE_ORDER_DEFAULTS[$key];
+    }
+
+    public function hasPreOrders(): bool
+    {
+        return (bool) $this->preOrderSetting('enabled');
+    }
+
     public function hasPackagingAndInserts(): bool
     {
         return $this->type === ShopTypeEnum::DROPSHIPPING
             && (bool) Arr::get($this->settings, 'packaging_and_inserts.enabled', false);
     }
 
-    
+
     public function defaultPackaging(): ?Packaging
     {
         $packagingId = Arr::get($this->settings, 'packaging_and_inserts.default_packaging_id');

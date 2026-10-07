@@ -17,7 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faAbacus } from "@fad"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { faClock, faInfinity, faSkull } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
@@ -89,6 +89,7 @@ function offerRoute(offer: {}, extraParams?: {}) {
                     ...extraParams
                 })
         case "grp.org.shops.show.catalogue.families.show.products.show":
+        case "grp.org.shops.show.catalogue.departments.show.families.show.products.show":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
                 {
@@ -151,7 +152,7 @@ const getFirstErrorMessage = (errors: Record<string, unknown> = {}) => {
     const firstError = Object.values(errors)[0]
     if (Array.isArray(firstError) && firstError.length > 0) return String(firstError[0])
     if (typeof firstError === "string") return firstError
-    return trans("Failed to terminate offer")
+    return ctrans("Failed to terminate offer")
 }
 
 const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
@@ -164,8 +165,8 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
         },
         onSuccess: () => {
             notify({
-                title: trans("Success"),
-                text: trans("Offer :offer has been terminated", {
+                title: ctrans("Success"),
+                text: ctrans("Offer :offer has been terminated", {
                     offer: item.code || item.name || `#${item.id}`
                 }),
                 type: "success"
@@ -173,7 +174,7 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
         },
         onError: (errors) => {
             notify({
-                title: trans("Something went wrong"),
+                title: ctrans("Something went wrong"),
                 text: getFirstErrorMessage(errors),
                 type: "error"
             })

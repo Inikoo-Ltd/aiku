@@ -9,12 +9,14 @@
 namespace App\Actions\Dropshipping\Allegro\Product;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreRetinaNewProductToCurrentAllegro extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     public function handle(Portfolio $portfolio): void

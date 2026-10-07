@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { useLayoutStore } from "@/Stores/layout"
 import { useLiveUsers } from "@/Stores/active-users"
-import { onMounted, ref } from "vue"
+import { defineAsyncComponent, onMounted, ref } from "vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faPencil } from "@fal"
@@ -15,9 +15,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { useTruncate } from "@/Composables/useTruncate"
 import { Link, router } from "@inertiajs/vue3"
 import { useIsFutureIsAPast } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
-import ContactList from "@/Components/Chat/Agent/ContactList.vue"
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+
+const ContactList = defineAsyncComponent(() => import("@/Components/Chat/Agent/ContactList.vue"))
+
 library.add(faTimes, faPencil)
 
 const layout = useLayoutStore()
@@ -52,7 +54,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 			<li v-if="layout.rightSidebar.activeUsers.show" class="" key="1">
 				<div
 					class="pl-2 pr-1.5 bg-slate-300/80 text-slate-700 text-xs font-semibold rounded flex justify-between leading-none">
-					<span class="py-1">{{ trans("Active Users") }}</span>
+					<span class="py-1">{{ ctrans("Active Users") }}</span>
 					<div
 						@click="onClickRemoveBar('activeUsers')"
 						class="flex justify-center items-center cursor-pointer px-1.5 text-slate-400 hover:text-slate-600">
@@ -129,7 +131,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 										:class="user.current_page?.icon_left.class"
 										aria-hidden="true" />
 									<span class="truncate">{{
-										user?.current_page?.label || trans("Unknown")
+										user?.current_page?.label || ctrans("Unknown")
 									}}</span>
 									<FontAwesomeIcon
 										v-if="user.current_page?.icon_right?.icon"
@@ -144,12 +146,12 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 							<span
 								v-if="user.action === 'logout'"
 								class="flex-shrink-0 text-[9px] bg-red-100 text-red-500 rounded px-1 py-0.5 font-medium">
-								{{ trans("logout") }}
+								{{ ctrans("logout") }}
 							</span>
 							<span
 								v-else-if="user.action === 'leave'"
 								class="flex-shrink-0 text-[9px] bg-gray-100 text-gray-400 rounded px-1 py-0.5 font-medium">
-								{{ trans("away") }}
+								{{ ctrans("away") }}
 							</span>
 							<span
 								v-else-if="
@@ -157,7 +159,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 									useIsFutureIsAPast(user?.last_active, 300)
 								"
 								class="flex-shrink-0 text-[9px] bg-yellow-50 text-yellow-500 rounded px-1 py-0.5 font-medium">
-								{{ trans("idle") }}
+								{{ ctrans("idle") }}
 							</span>
 						</Link>
 					</template>

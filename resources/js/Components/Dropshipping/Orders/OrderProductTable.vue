@@ -10,7 +10,6 @@ import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } f
 import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
 import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
@@ -44,6 +43,7 @@ type ProductRow = {
     is_discretionary_offer?: boolean
     quantity_ordered: number
     available_quantity?: number
+    quantity_ordered_fractional: [number, [number, number]]
     product_slug?: string
     updateRoute: routeType
     deleteRoute?: routeType
@@ -55,18 +55,25 @@ const props = defineProps<{
     updateRoute: routeType
     state?: string
     readonly?: boolean
+    locked?: boolean
     modifyRoute?: routeType
     fetchRoute?: routeType
     routesProductsListModification?: routeType
     is_shop_external: boolean
     allow_order_modification: boolean
+    /** Grp order page only: below lg the table keeps a minimum width and scrolls sideways with arrows instead of squashing. Off by default so RetinaOrder, which shares this table, keeps its layout. */
+    scrollOnMobile?: boolean
 }>()
 
 const layout = inject("layout", {})
+const isCustomer = layout?.app?.name === 'retina'
+const isCutView = (proxyItem: { is_cut_view?: boolean }): boolean => !isCustomer && !!proxyItem.is_cut_view
 const locale = inject("locale", {})
+
 const editingIds = ref<Set<number>>(new Set())
 const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
+const refusedQuantityCount = reactive<Record<number, number>>({})
 const isModalProductListOpen = ref(false)
 const loadingsaveModify = ref(false)
 const currentAction = ref(null)
@@ -138,9 +145,10 @@ const onUpdateQuantity = (
         sendData,
         {
             onError: (e: any) => {
+                refusedQuantityCount[idTransaction] = (refusedQuantityCount[idTransaction] ?? 0) + 1
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: e.message,
+                    text: e.message || e.quantity_ordered,
                     type: "error"
                 })
             },
@@ -197,8 +205,6 @@ async function onSave() {
         return
     }
 
-    console.log("🟢 changedItems:", changedItems)
-    console.log("🟡 newProducts:", newProducts)
 
     router.patch(
         route(props.modifyRoute.name, props.modifyRoute.parameters),
@@ -309,15 +315,15 @@ const updateQuantityOrdered = (item: ProductRow, is_cut_view: boolean) => {
         onSuccess: () => {
             editingIds.value.delete(item.id)
             notify({
-                title: trans("Success"),
-                text: trans("Quantity updated, warehouse has been notified"),
+                title: ctrans("Success"),
+                text: ctrans("Quantity updated, warehouse has been notified"),
                 type: "success"
             })
         },
         onError: (errors) => {
             notify({
-                title: trans("Something went wrong"),
-                text: Object.values(errors).join(", ") || trans("Failed to update quantity"),
+                title: ctrans("Something went wrong"),
+                text: Object.values(errors).join(", ") || ctrans("Failed to update quantity"),
                 type: "error"
             })
         }
@@ -407,9 +413,7 @@ const restoreDiscount = (item) => {
 
 const onSubmitEditNetAmount = () => {
 
-    console.log("ccc", selectedItemToEditNetAmount.value)
     if (!selectedItemToEditNetAmount.value) {
-        console.log("No item net amount selected")
         return
     }
 
@@ -465,8 +469,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 set(proxyItem, 'is_transaction_loading', true)
 
             },
-            onError: () => {
-                console.log('eeerr', error)
+            onError: (error: any) => {
                 notify({
                     title: ctrans("Something went wrong"),
                     text: error.message || ctrans("Please try again or contact administrator"),
@@ -483,7 +486,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 const isOffersData = (offersData: any): boolean => {
     if (!offersData) return false
     const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
-    return Object.keys(parsed || {}).length > 0 && parseFloat(offersData.o.p ?? 0)
+    return Object.keys(parsed || {}).length > 0 && parseFloat(parsed?.o?.p ?? 0)
 }
 </script>
 
@@ -495,8 +498,10 @@ const isOffersData = (offersData: any): boolean => {
                     return 'bg-yellow-50'
                 }
                 return ''
-            }" 
+            }"
             :useTopPagination="true"
+            :tableClass="scrollOnMobile ? 'max-lg:min-w-[max(100%,56rem)]' : ''"
+            :withScrollArrows="scrollOnMobile"
         >
 
             <template #cell(image)="{ item }">
@@ -521,6 +526,9 @@ const isOffersData = (offersData: any): boolean => {
                     <div xclass="item.offers_data ? 'text-pink-600' : ''">
                         <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
                         {{ item.asset_name }}
+                        <span v-for="un_number in item.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
+                            {{ un_number.number }}
+                        </span>
                     </div>
                     <div v-if="item.model_type === 'Product' && item.units_changed_to"
                         v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
@@ -564,7 +572,7 @@ const isOffersData = (offersData: any): boolean => {
                     </div>
 
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-else-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
+                    <div v-else-if="(state === 'creating' || (state === 'submitted' && layout?.app?.name !== 'retina')) && !editingIds.has(item.id) && !is_shop_external && !locked"
                         class="w-fit flex gap-x-2">
                        <!--  <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
@@ -578,33 +586,32 @@ const isOffersData = (offersData: any): boolean => {
                                 min: 0,
                                 max: item.available_quantity,
                             }"
-                            :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
+                            :denominator="isCutView(proxyItem) ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
                         <InputNumber 
-                            :model-value="proxyItem.is_cut_view ? (
+                            :model-value="isCutView(proxyItem) ? (
                                 (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
                             ) : item.quantity_ordered" 
-                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, isCutView(proxyItem))"
                             :disabled="loadingsaveModify"
                             inputId="horizontal-buttons" 
                             showButtons 
                             buttonLayout="horizontal"
                             :step="1" 
                             min='0'
-                            :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
                             v-bind="bindToTarget" 
-                            :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
+                            :suffix="isCutView(proxyItem) && Number(item.quantity_ordered_fractional[1][1]) > 1
                                 ? `/${Number(item.quantity_ordered_fractional[1][1])}`
                                 : undefined
                                 " 
                             :inputStyle="{
                                     width: bindToTarget?.fluid
                                         ? undefined
-                                        : quantityInputWidth(item.quantity_ordered, proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1),
+                                        : quantityInputWidth(item.quantity_ordered, isCutView(proxyItem) && Number(item.quantity_ordered_fractional[1][1]) > 1),
                                     textAlign: 'center',
                                 }" 
                             fluid
-                            :key="proxyItem.is_cut_view + item.id"
+                            :key="`${isCutView(proxyItem)}-${item.id}-${refusedQuantityCount[item.id] ?? 0}`"
                         >
                             <template #incrementbuttonicon>
                                 <FontAwesomeIcon :icon="faPlus" fixed-width />
@@ -618,11 +625,11 @@ const isOffersData = (offersData: any): boolean => {
                         <!-- Toggle: is_cut_view -->
                         <span
                             xv-if="layout.app.environment == 'local'"
-                            v-if="Number(item.product_units) !== 1"
+                            v-if="Number(item.product_units) !== 1 && !isCustomer"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                             v-tooltip="ctrans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
-                            :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
+                            :class="isCutView(proxyItem) ? 'text-orange-500' : ''"
                         >
                             <LoadingIcon v-if="proxyItem.is_transaction_loading" class="text-gray-700" />
                             <FontAwesomeIcon v-else icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
@@ -686,14 +693,13 @@ const isOffersData = (offersData: any): boolean => {
                                     (createNewQty[item.id].quantity_ordered_fractional[0] * createNewQty[item.id].quantity_ordered_fractional[1][1]) + createNewQty[item.id].quantity_ordered_fractional[1][0]
                                 ) : createNewQty[item.id].quantity_ordered"
                                 @update:modelValue="(e: number) => {
-                                    createNewQty[item.id].amount_modified = e; console.log(createNewQty[item.id])
+                                    createNewQty[item.id].amount_modified = e
                                 }"
                                 inputId="horizontal-buttons" 
                                 showButtons 
                                 buttonLayout="horizontal"
                                 :step="1" 
                                 min='0'
-                                :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
                                 v-bind="bindToTarget" 
                                 :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
                                     ? `/${Number(item.quantity_ordered_fractional[1][1])}`
@@ -796,7 +802,10 @@ const isOffersData = (offersData: any): boolean => {
                                   class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
-                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift">
+                            <span v-if="Number(item.gross_amount) > Number(item.net_amount) && !isOffersData(item.offers_data)" class="ml-1 text-xs">
+                                -{{ locale.number(Math.round((1 - item.net_amount / item.gross_amount) * 1000) / 10) }}%
+                            </span>
+                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift && !locked">
                                 <Button
                                     @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                     v-tooltip="ctrans('Edit discretionary discount')" type="transparent" size="xs" key="1"
@@ -847,7 +856,7 @@ const isOffersData = (offersData: any): boolean => {
                     </Link>
 
                     <!-- Edit / Cancel -->
-                    <div v-if="state !== 'creating' && allow_order_modification" class="flex gap-2 items-center">
+                    <div v-if="state !== 'creating' && allow_order_modification && !locked" class="flex gap-2 items-center">
                         <button v-if="!editingIds.has(item.id)"
                             class="h-9 align-bottom text-center" 
                             aria-label="Edit Product Order" 

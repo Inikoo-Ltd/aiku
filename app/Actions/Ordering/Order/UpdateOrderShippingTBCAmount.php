@@ -13,6 +13,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -54,12 +55,31 @@ class UpdateOrderShippingTBCAmount extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        if (in_array($this->order->state, [
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::CANCELLED
+        ])) {
+            $validator->errors()->add('shipping_tbc_amount', __('Shipping can not be changed once order is dispatched or finalised.'));
+
+            return;
+        }
+
         $order = UpdateOrderIsShippingTBC::run($this->order);
         if (!$order->is_shipping_tbc) {
             $validator->errors()->add('shipping_tbc_amount', 'Shipping amount change is not allowed for this order');
         }
 
 
+    }
+
+    public function action(Order $order, array $modelData): Order
+    {
+        $this->asAction = true;
+        $this->order    = $order;
+        $this->initialisationFromShop($order->shop, $modelData);
+
+        return $this->handle($order, $this->validatedData);
     }
 
     public function asController(Order $order, ActionRequest $request): Order

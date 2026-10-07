@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -69,6 +70,7 @@ use App\Models\Traits\HasSearch;
  * @property int|null $customer_id exclusive customer offer
  * @property string|null $allowance_type Used for performance, to avoid load offer_allowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferHasCustomer> $customerList
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferAllowance> $offerAllowances
@@ -205,9 +207,36 @@ class Offer extends Model implements Auditable
         return $this->hasMany(OfferAllowance::class);
     }
 
+    public function customerList(): HasMany
+    {
+        return $this->hasMany(OfferHasCustomer::class);
+    }
+
+    public function hasCustomerList(): bool
+    {
+        return (bool) data_get($this->settings, 'has_customer_list', false);
+    }
+
+    public function hasUniqueCustomerCodes(): bool
+    {
+        return (bool) data_get($this->settings, 'unique_customer_codes', false);
+    }
+
     public function targetCollectionIds(): array
     {
         return $this->offerAllowances()->where('target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)->pluck('target_id')->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function triggerCategoryIds(): array
+    {
+        if ($this->trigger_type != 'ProductCategory') {
+            return [];
+        }
+
+        return Arr::get($this->trigger_data, 'category_ids') ?: [$this->trigger_id];
     }
 
     public function hydratesCatalogueOffersData(): bool

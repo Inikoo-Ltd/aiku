@@ -48,7 +48,7 @@ library.add(faCube, faConciergeBell, faPaperclip, faNarwhal, faSpinnerThird, faS
 // import '@/Composables/Icon/PalletStateEnum.ts'
 // import '@/Composables/Icon/PalletDeliveryStateEnum.ts'
 // import '@/Composables/Icon/PalletReturnStateEnum.ts'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { get } from 'lodash-es'
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
@@ -163,7 +163,6 @@ const component = computed(() => {
 const dataServiceList = ref([])
 const onOpenModalAddService = async () => {
     isLoadingData.value = 'addService'
-    console.log('props', props.service_list_route.name)
     try {
         const xxx = await axios.get(
             route(props.service_list_route.name, props.service_list_route.parameters)
@@ -345,10 +344,10 @@ const openModalAddPallet = ref(false)
             
             <Button
                 v-if="currentTab == 'pallets'"
-                :label="trans('Add pallet')"
+                :label="ctrans('Add pallet')"
                 type="secondary"
                 icon="fal fa-plus"
-                :tooltip="trans('Select pallets via modal')"
+                :tooltip="ctrans('Select pallets via modal')"
                 @click="() => openModalAddPallet = true"
                 class="border-none rounded-[4px]"
             />
@@ -405,7 +404,7 @@ const openModalAddPallet = ref(false)
 
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Services') }}: </span>
                             <div class="">
                                 <PureMultiselect
                                     v-model="formAddService.service_id"
@@ -431,10 +430,10 @@ const openModalAddPallet = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddService.quantity"
-                                    :placeholder="trans('Quantity')"
+                                    :placeholder="ctrans('Quantity')"
                                     @keydown.enter="() => onSubmitAddService(action, closed)"
                                 />
                                 <p v-if="get(formAddService, ['errors', 'quantity'])" class="mt-2 text-sm text-red-500">
@@ -482,7 +481,7 @@ const openModalAddPallet = ref(false)
                     
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Physical Goods') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Physical Goods') }}: </span>
                             <div>
                                 <PureMultiselect
                                     v-model="formAddPhysicalGood.outer_id"
@@ -508,10 +507,10 @@ const openModalAddPallet = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddPhysicalGood.quantity"
-                                    :placeholder="trans('Quantity')"
+                                    :placeholder="ctrans('Quantity')"
                                     @keydown.enter="() => onSubmitAddPhysicalGood(action, closed)"
                                 />
                                 <p v-if="get(formAddPhysicalGood, ['errors', 'quantity'])"
@@ -545,7 +544,7 @@ const openModalAddPallet = ref(false)
             <Button
                 v-if="currentTab === 'attachments'"
                 @click="() => isModalUploadFileOpen = true"
-                :label="trans('Attach file')"
+                :label="ctrans('Attach file')"
                 icon="fal fa-upload"
                 type="secondary"
             />
@@ -585,7 +584,7 @@ const openModalAddPallet = ref(false)
             <Button
                 v-if="currentTab === 'attachments'"
                 @click="() => isModalUploadFileOpen = true"
-                :label="trans('Attach file')"
+                :label="ctrans('Attach file')"
                 icon="fal fa-upload"
                 type="secondary"
             />

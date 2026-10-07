@@ -5,7 +5,7 @@ import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     data?: {}
@@ -16,7 +16,6 @@ const props = defineProps<{
     tableKey?: string
 }>()
 
-console.log(props.tab)
 function palletRoute(pallet) {
     switch (route().current()) {
         case 'grp.org.fulfilments.show.crm.customers.show.stored-items.index':

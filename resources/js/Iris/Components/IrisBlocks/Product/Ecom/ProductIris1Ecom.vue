@@ -12,12 +12,12 @@ import InformationSideProduct from "@/Components/CMS/Webpage/Product1/Informatio
 
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { ctrans } from "@/Composables/useTrans"
-import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
+import ButtonOutOfStock from "@/Components/Iris/Products/ButtonOutOfStock.vue"
+import PreOrderInfo from "@/Components/Iris/Products/PreOrderInfo.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
@@ -132,7 +132,7 @@ const product = ref(props.product)
 const layout = inject("layout", {})
 const webpage_id = inject<number | null>("webpage_id", null)
 const isPriceVisible = computed(() =>
-    Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
+    Boolean(layout?.iris?.is_logged_in)
 )
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
@@ -310,20 +310,20 @@ onMounted(async () => {
                         <!-- STOCK SECTION -->
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center">
                             <!-- Stock info -->
-                            <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" />
+                            <LabelComingSoon v-if="product.status === 'coming-soon' && !product.pre_order" :product="product" />
                             <div v-else class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock ? 'text-green-600' : 'text-red-600'" fixed-width />
+                                    :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width />
                                 <span>
                                     {{ product?.stock >= 250
                                         ? ctrans("Unlimited quantity available")
-                                        : (product.stock > 0 ? ctrans("In stock") : useOutOfStockLabel(product))
+                                        : (product.stock > 0 ? ctrans("In stock") : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock")))
                                     }}
                                 </span>
                             </div>
 
                             <!-- REMIND ME -->
-                            <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
+                            <button v-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state == 'active'"
                                 v-tooltip="customerData?.back_in_stock ? ctrans('You will be notify via email when the product back in stock') : ctrans('Click to be notified via email when the product back in stock')"
                                 @click="() => customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                                 class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
@@ -398,7 +398,7 @@ onMounted(async () => {
 
                     
                     <!-- Section: Profit and the popover -->
-                    <div class="flex justify-between items-end">
+                    <div v-if="product.rrp_per_unit > 0" class="flex justify-between items-end">
                         <span @click="_popoverProfit?.toggle">{{ ctrans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
                             {{( layout?.user?.gr_data?.customer_is_gr ||  layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
@@ -430,20 +430,22 @@ onMounted(async () => {
                     @selectQuantity="onSelectStepQuantityDesktop"
                 />
 
+                <PreOrderInfo v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="mt-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
+
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
-                    <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
+                    <div v-if="(product.status !== 'coming-soon' || product.pre_order) && layout?.iris?.is_logged_in" class="w-full">
+                        <EcomAddToBasketv2 v-if="product.stock || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
-                            <Button :label="product.status_label ?? ctrans('Out of stock')" type="tertiary" disabled full />
+                            <ButtonOutOfStock :product="product" :label="product.status_label" />
                         </div>
                     </div>
 
                     <!-- LOGIN BUTTON (only if not coming soon) -->
-                    <LinkIris v-else-if="product.status !== 'coming-soon'" :href="urlLoginWithRedirect()"
+                    <LinkIris v-else-if="product.status !== 'coming-soon' || product.pre_order" :href="urlLoginWithRedirect()"
                         class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ ctrans("Login or Register for Wholesale Prices") }}
@@ -574,7 +576,7 @@ onMounted(async () => {
                 <FontAwesomeIcon
                     :icon="faCircle"
                     class="text-[10px]"
-                    :class="product.stock ? 'text-green-600' : 'text-red-600'" fixed-width
+                    :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width
                 />
                 <span>
                     {{
@@ -582,7 +584,7 @@ onMounted(async () => {
                             ? ctrans("Unlimited quantity available")
                             : product.stock > 0
                                 ? `${ctrans("In stock")} (${product.stock} ${ctrans("available")})`
-                                : useOutOfStockLabel(product)
+                                : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock"))
                     }}
                 </span>
             </div>
@@ -643,7 +645,7 @@ onMounted(async () => {
                 </div>
 
                 <!-- PROFIT -->
-                <div class="flex items-end text-sm">
+                <div v-if="product.rrp_per_unit > 0" class="flex items-end text-sm">
                     <span @click="_popoverProfit?.toggle">
                         {{ ctrans("Profit") }}
                     </span>:
@@ -702,7 +704,7 @@ onMounted(async () => {
 
         <!-- BACK IN STOCK -->
         <button
-            v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
+            v-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state === 'active'"
             class="mt-3 inline-flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm"
             @click="
                 customerData?.back_in_stock
@@ -736,21 +738,20 @@ onMounted(async () => {
         
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
+            <PreOrderInfo v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
+
             <EcomAddToBasketv2
-                v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                v-if="layout?.iris?.is_logged_in && ((product.stock && product.status !== 'coming-soon') || product.pre_order)"
                 ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
             />
 
-            <Button
+            <ButtonOutOfStock
                 v-else-if="layout?.iris?.is_logged_in"
-                :label="product.status_label ?? ctrans('Out of stock')"
-                type="tertiary"
-                disabled
-                full
-            />
+                :product="product"
+                :label="product.status_label" />
 
             <LinkIris
                 v-else

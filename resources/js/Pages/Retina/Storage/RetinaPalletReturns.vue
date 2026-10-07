@@ -65,7 +65,7 @@ const sendWarehouse = async (data: object) => {
         )
         router.visit(route(response.data.route.name, response.data.route.parameters))
     } catch (error) {
-        console.log('error', error)
+        console.error('error', error)
         errorMessage.value = error.response.data.message
     }
 }

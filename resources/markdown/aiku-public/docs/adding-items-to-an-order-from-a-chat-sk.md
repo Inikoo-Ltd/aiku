@@ -4,7 +4,7 @@ summary: Zákazník v chate zabudol niečo pridať. Doplňte to do objednávky, 
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, orders, payments, customer service
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

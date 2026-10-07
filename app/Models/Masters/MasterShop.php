@@ -80,6 +80,16 @@ class MasterShop extends Model implements Auditable
 
     protected $guarded = [];
 
+    public function costPriceRatio(): float
+    {
+        return (float) (data_get($this->data, 'pricing.cost_price_ratio') ?? ($this->type == ShopTypeEnum::DROPSHIPPING ? 3.5 : 2));
+    }
+
+    public function rrpPriceRatio(): float
+    {
+        return (float) (data_get($this->data, 'pricing.rrp_price_ratio') ?? ($this->type == ShopTypeEnum::DROPSHIPPING ? 2 : 2.4));
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -177,4 +187,9 @@ class MasterShop extends Model implements Auditable
     }
 
 
+
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(Competitor::class);
+    }
 }

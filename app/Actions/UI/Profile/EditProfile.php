@@ -149,8 +149,23 @@ class EditProfile
 
     public function htmlResponse(User $user): Response
     {
-        return Inertia::render("EditModel", $this->generateBlueprint($user));
+        return Inertia::render("EditModel", array_merge($this->generateBlueprint($user), [
+            'breadcrumbs' => $this->getBreadcrumbs(),
+        ]));
     }
 
-
+    public function getBreadcrumbs(): array
+    {
+        return array_merge(ShowProfile::make()->getBreadcrumbs(), [
+            [
+                "type"   => "simple",
+                "simple" => [
+                    "route" => [
+                        "name" => "grp.profile.edit",
+                    ],
+                    "label" => __("Personal settings"),
+                ],
+            ],
+        ]);
+    }
 }

@@ -27,7 +27,6 @@
   
   
   function orderRoute(purgedOrder: {}) {
-      console.log(route().current())
       switch (route().current()) {
           case "grp.org.shops.show.ordering.purges.show":
               return route(

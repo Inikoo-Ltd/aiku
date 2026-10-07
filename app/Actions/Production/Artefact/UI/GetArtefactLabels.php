@@ -8,7 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
-use App\Http\Resources\Production\ArtefactLabelResource;
+use App\Actions\Inventory\OrgStock\UI\GetOrgStockLabels;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -16,68 +16,21 @@ class GetArtefactLabels
 {
     use AsObject;
 
-    public function handle(Artefact $artefact): array
-    {
-        return [
-            'route' => [
-                'name'       => 'grp.models.artefact.label_sheet',
-                'parameters' => ['artefact' => $artefact->id]
-            ],
-            'store_route' => [
-                'name'       => 'grp.models.artefact.labels.store',
-                'parameters' => ['artefact' => $artefact->id]
-            ],
-            'update_route' => [
-                'name'       => 'grp.models.artefact.labels.update',
-                'parameters' => ['artefact' => $artefact->id]
-            ],
-            'delete_route' => [
-                'name'       => 'grp.models.artefact.labels.delete',
-                'parameters' => ['artefact' => $artefact->id]
-            ],
-            'publish_route' => [
-                'name'       => 'grp.models.artefact.labels.publish',
-                'parameters' => ['artefact' => $artefact->id]
-            ],
-            'unpublish_route' => [
-                'name'       => 'grp.models.artefact.labels.unpublish',
-                'parameters' => ['artefact' => $artefact->id]
-            ],
-            'batch_code'  => $this->getPlaceholderBatchCode($artefact),
-            'expiry_date' => $this->getPlaceholderExpiryDate(),
-            'barcode'     => $this->getBarcode($artefact),
-            'labels'      => ArtefactLabelResource::collection($artefact->labels()->with('artwork')->get())->resolve(),
-        ];
-    }
-
     /**
-     * The outer CODE 128 printed on the packing, falling back to the unit EAN13 for the org stocks
-     * that only carry that one.
+     * The factory reaches its labels through the artefact, but they belong to its SKO, so an artefact
+     * without one has nothing to show yet.
      */
-    private function getBarcode(Artefact $artefact): string
+    public function handle(Artefact $artefact): ?array
     {
-        $orgStock = $artefact->orgStock;
-
-        if (!$orgStock) {
-            return '';
+        if (!$artefact->orgStock) {
+            return null;
         }
 
-        return $orgStock->barcode ?: ($orgStock->unit_barcode ?: '');
-    }
-
-    /**
-     * Artefacts have no batch code column yet, this is the stand in until the real one is stored.
-     */
-    private function getPlaceholderBatchCode(Artefact $artefact): string
-    {
-        return strtoupper($artefact->code).'-'.now()->format('ymd');
-    }
-
-    /**
-     * Artefacts have no expiry date column yet, this is the stand in until the real one is stored.
-     */
-    private function getPlaceholderExpiryDate(): string
-    {
-        return now()->addYear()->format('d/m/Y');
+        return GetOrgStockLabels::run(
+            $artefact->orgStock,
+            'grp.models.artefact.',
+            ['artefact' => $artefact->id],
+            ['edit' => true, 'publish' => true, 'set_mandatory' => false]
+        );
     }
 }

@@ -85,6 +85,14 @@ class ShowMailshot extends OrgAction
             $mailshotSecondWave = $mailshot->secondWave;
         }
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
+        $canCancelSecondWave = $this->canEdit
+            && $isSecondWaveActive
+            && in_array($mailshot->state, [MailshotStateEnum::SCHEDULED, MailshotStateEnum::SENDING, MailshotStateEnum::SENT, MailshotStateEnum::STOPPED])
+            && $mailshotSecondWave->state === MailshotStateEnum::READY
+            && $mailshotSecondWave->start_sending_at === null;
+        $secondWaveSendsAt = ($isSecondWaveActive && $mailshot->state === MailshotStateEnum::SENT && $mailshot->sent_at)
+            ? $mailshot->sent_at->copy()->addHours($mailshotSecondWave->send_delay_hours)->toIso8601String()
+            : null;
 
         $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
 
@@ -315,6 +323,8 @@ class ShowMailshot extends OrgAction
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
+                'canCancelSecondWave' => $canCancelSecondWave,
+                'secondWaveSendsAt' => $secondWaveSendsAt,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,
                 'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,
                 'isHasParentMailshot' => $isHasParentMailshot,

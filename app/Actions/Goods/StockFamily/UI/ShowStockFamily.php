@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\StockFamily\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -16,6 +18,7 @@ use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\StockFamilyTabsEnum;
 use App\Http\Resources\Goods\StockFamilyResource;
 use App\Http\Resources\Goods\StocksResource;
+use App\Http\Resources\Goods\StockTimeSeriesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
@@ -86,6 +89,12 @@ class ShowStockFamily extends OrgAction
                 StockFamilyTabsEnum::SHOWCASE->value => $this->tab == StockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetStockFamilyShowcase::run($stockFamily)
                     : Inertia::optional(fn () => GetStockFamilyShowcase::run($stockFamily)),
+                'sales_analysis_teaser' => $this->tab == StockFamilyTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily))),
+                StockFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === StockFamilyTabsEnum::SALES_ANALYSIS->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
                 StockFamilyTabsEnum::STOCKS->value    => $this->tab == StockFamilyTabsEnum::STOCKS->value
                     ?
                     fn () => StocksResource::collection(
@@ -102,16 +111,20 @@ class ShowStockFamily extends OrgAction
                             bucket: 'all'
                         )
                     )),
+                StockFamilyTabsEnum::SALES->value => $this->tab == StockFamilyTabsEnum::SALES->value ?
+                    fn () => StockTimeSeriesResource::collection(IndexStockFamilyTimeSeries::run($stockFamily, StockFamilyTabsEnum::SALES->value))
+                    : Inertia::optional(fn () => StockTimeSeriesResource::collection(IndexStockFamilyTimeSeries::run($stockFamily, StockFamilyTabsEnum::SALES->value))),
                 StockFamilyTabsEnum::HISTORY->value  => $this->tab == StockFamilyTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($stockFamily))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockFamily)))
+                    fn () => HistoryResource::collection(IndexHistory::run($stockFamily, StockFamilyTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockFamily, StockFamilyTabsEnum::HISTORY->value)))
             ]
-        ) ->table(
+        )->table(
             IndexStocks::make()->tableStructure(
                 parent: $stockFamily,
                 prefix: StockFamilyTabsEnum::STOCKS->value,
             )
-        );
+        )->table(IndexStockFamilyTimeSeries::make()->tableStructure(prefix: StockFamilyTabsEnum::SALES->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: StockFamilyTabsEnum::HISTORY->value, model: $stockFamily));
     }
 
 

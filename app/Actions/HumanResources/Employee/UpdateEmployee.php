@@ -8,6 +8,7 @@
 
 namespace App\Actions\HumanResources\Employee;
 
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule;
@@ -45,6 +46,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateEmployee extends OrgAction
 {
+    use WithWithheldJobPositions;
     use WithHumanResourcesEditAuthorisation;
     use WithActionUpdate;
     use WithPreparePositionsForValidation;
@@ -101,6 +103,7 @@ class UpdateEmployee extends OrgAction
         if (Arr::has($modelData, 'job_positions')) {
             $jobPositions = Arr::pull($modelData, 'job_positions', []);
             $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
+            $jobPositions = $this->keepWithheldJobPositionsAsTheyWere($jobPositions, $employee->organisation, $this->asAction ? null : request()->user(), $employee);
             SyncEmployeeJobPositions::run($employee, $jobPositions);
         }
 

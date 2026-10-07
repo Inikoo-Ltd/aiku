@@ -8,7 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -16,6 +16,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -23,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DistributeStockDeliveryExtraCost extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
     public const DISTRIBUTION_EQUALLY = 'equally';
     public const DISTRIBUTION_BY_VALUE = 'by_value';
 
@@ -47,6 +48,10 @@ class DistributeStockDeliveryExtraCost extends OrgAction
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDelivery
     {
         self::distribute($stockDelivery, 'cost_extra', (float) $modelData['amount'], $modelData['type']);
+
+        if (Arr::has($stockDelivery->data, 'costing_hand_split.cost_extra')) {
+            $stockDelivery->update(['data' => Arr::except($stockDelivery->data, 'costing_hand_split.cost_extra')]);
+        }
 
         StockDeliveriesHydrateCosts::run($stockDelivery);
 

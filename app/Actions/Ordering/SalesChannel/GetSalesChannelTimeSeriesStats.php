@@ -18,7 +18,7 @@ class GetSalesChannelTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group $group, $from_date = null, $to_date = null): array
+    public function handle(Group $group, $from_date = null, $to_date = null, bool $includePartners = false): array
     {
         $salesChannels = SalesChannel::query()
             ->select(['id', 'slug', 'name', 'group_id'])
@@ -46,11 +46,11 @@ class GetSalesChannelTimeSeriesStats
         if (!empty($timeSeriesIds)) {
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
-                [
+                CalculateTimeSeriesStats::withPartners([
                     'refunds'                     => 'refunds',
                     'invoices'                    => 'invoices',
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
-                ],
+                ], $includePartners),
                 'sales_channel_time_series_records',
                 'sales_channel_time_series_id',
                 $from_date,

@@ -26,7 +26,14 @@ Collections can also contain other collections, with **Add collections to collec
 
 ## Linked to a master, or the shop's own
 
-If the collection was created from a master collection you see a **Go to Master collection** link on it. Members arrive from the master, matched to this shop's own version of each product or family, so the shop copy can be smaller than the master when this shop does not sell everything. You can add shop-only products on top. Anything the master removes disappears from the shop copy as well.
+If the collection was created from a master collection you see a **Go to Master collection** link on it. Members arrive from the master, matched to this shop's own version of each product or family, so the shop copy can be smaller than the master when this shop does not sell everything. Anything the master removes disappears from the shop copy as well. While the collection follows its master you cannot add or remove its families and products in the shop.
+
+To make the shop copy different, press **Edit** on the collection and look at the **Master** section. It has two switches, and each one asks you to confirm before it saves:
+
+- **Do not follow master items.** Turn it on and the families and products are yours: **Attach families** and **Attach products** appear on those tabs, each row gets a remove button, and whatever the master adds or removes later no longer reaches this collection. Turn it off again and the collection is made to match the master exactly: families and products you added in the shop are removed and everything the master has is put back.
+- **Do not follow master content.** Turn it on and the name and descriptions are yours: changes on the master no longer overwrite them, and what you type is no longer sent to the master as its translation for your language. Turn it off again and they are taken from the master once more, using the master's translation for your shop's language when there is one.
+
+The two switches are independent. The collection's code always follows the master, and collections placed inside this collection keep following the master either way.
 
 A collection created in the shop itself has no master and is yours to fill.
 
@@ -54,6 +61,7 @@ Open the **Products** tab and read the list once. Look for products that belong 
 <li><b>Add members:</b> open the collection → <b>Add products to collection</b>, <b>Add families to collection</b>, <b>Add collections to collection</b>.</li>
 <li><b>Website page:</b> open the collection → <b>Create Webpage</b>, later <b>To Webpage</b>.</li>
 <li><b>Its master:</b> open the collection → <b>Go to Master collection</b>, when it has one.</li>
+<li><b>Stop following the master:</b> open the collection → <b>Edit</b> → <b>Master</b> → <b>Do not follow master items</b> or <b>Do not follow master content</b>.</li>
 </ul>
 </aside>
 

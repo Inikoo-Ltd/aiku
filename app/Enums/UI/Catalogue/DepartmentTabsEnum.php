@@ -17,6 +17,7 @@ enum DepartmentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case IMAGES = 'images';
     case SALES = 'sales';
     case OFFERS = 'offers';
@@ -26,6 +27,7 @@ enum DepartmentTabsEnum: string
     // case DATA = 'data';
     case CUSTOMERS = 'customers';
     case RELATED_PRODUCT_CATEGORY    = 'related_product_category';
+    case FAMILIES_ORDER = 'families_order';
 
 
     public function blueprint(): array
@@ -40,6 +42,10 @@ enum DepartmentTabsEnum: string
             DepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            DepartmentTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             DepartmentTabsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
@@ -73,6 +79,10 @@ enum DepartmentTabsEnum: string
             DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY => [
                 'title' => __('Related Product Category'),
                 'icon'  => 'fal fa-folder-tree',
+            ],
+            DepartmentTabsEnum::FAMILIES_ORDER => [
+                'title' => __('Families order in website'),
+                'icon'  => 'fal fa-sort-amount-down',
             ],
         };
     }

@@ -39,10 +39,10 @@ const props = defineProps<{
     title: string
     pageHead: {}
     upload_warehouse_areas: UploadSection
+    canEditPickingPosition?: boolean
 }>();
 
 
-console.log(props)
 
 const dataModal = ref({ isModalOpen: false });
 
@@ -62,7 +62,7 @@ const isModalUploadOpen = ref(false)
             />
         </template>
     </PageHeading>
-    <TableWarehouseAreas :data="data" />
+    <TableWarehouseAreas :data="data" :canEditPickingPosition="canEditPickingPosition" />
 
     
     <UploadExcel

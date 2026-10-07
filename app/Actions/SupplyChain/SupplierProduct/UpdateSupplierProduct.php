@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
@@ -19,6 +20,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
+use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
@@ -45,10 +47,6 @@ class UpdateSupplierProduct extends OrgAction
         'units_per_carton',
     ];
 
-    private const ORG_PROPAGATED_FIELDS = [
-        'state',
-        'is_available',
-    ];
 
     private const STATS_FIELDS = [
         'state',
@@ -79,15 +77,16 @@ class UpdateSupplierProduct extends OrgAction
             ]);
         }
 
-        if ($supplierProduct->wasChanged(self::ORG_PROPAGATED_FIELDS)) {
+        if ($supplierProduct->wasChanged('state')) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
-                UpdateOrgSupplierProduct::run(
-                    $orgSupplierProduct,
-                    [
-                        'state'        => $supplierProduct->state,
-                        'is_available' => $supplierProduct->is_available
-                    ]
-                );
+                UpdateOrgSupplierProduct::run($orgSupplierProduct, ['state' => $supplierProduct->state]);
+            }
+        }
+
+        if ($supplierProduct->wasChanged(['cost', 'extra_costs', 'currency_id'])) {
+            $orgStocks = OrgStock::whereHas('orgSupplierProducts', fn ($query) => $query->where('supplier_product_id', $supplierProduct->id))->get();
+            foreach ($orgStocks as $orgStock) {
+                OrgStockHydrateCurrentSupplierSkuCost::dispatch($orgStock);
             }
         }
 
@@ -124,20 +123,22 @@ class UpdateSupplierProduct extends OrgAction
             'name'             => ['sometimes', 'required', 'string', 'max:255'],
             'state'            => ['sometimes', 'required', Rule::enum(SupplierProductStateEnum::class)],
             'is_available'     => ['sometimes', 'required', 'boolean'],
-            'cost'             => ['sometimes', 'required'],
-            'units_per_pack'   => ['sometimes', 'nullable'],
-            'units_per_carton' => ['sometimes', 'nullable'],
-            'cbm'              => ['sometimes', 'nullable', 'numeric'],
-            'extra_costs'      => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'cost'                     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'units_per_pack'           => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'units_per_carton'         => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'cbm'                      => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'extra_costs'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
         ];
 
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
 
         if (!$this->strict) {
-            $rules['data']     = ['sometimes', 'array'];
-            $rules['settings'] = ['sometimes', 'array'];
-            $rules             = $this->noStrictUpdateRules($rules);
+            $rules['data']             = ['sometimes', 'array'];
+            $rules['settings']         = ['sometimes', 'array'];
+            $rules['units_per_pack']   = ['sometimes', 'nullable'];
+            $rules['units_per_carton'] = ['sometimes', 'nullable'];
+            $rules                     = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

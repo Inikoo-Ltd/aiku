@@ -145,6 +145,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_re recargo de equivalencia
  * @property string|null $post_source_id
  * @property bool $is_credit_customer Sage credit customer flag
+ * @property numeric $credit_limit How far below zero the balance may go when ordering on account
+ * @property int|null $payment_terms_days Agreed days to settle credit, informative only
  * @property string|null $accounting_reference Sage customer number
  * @property string|null $external_id
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
@@ -262,6 +264,7 @@ class Customer extends Model implements HasMedia, Auditable
         'last_fetched_at'             => 'datetime',
         'amount_in_basket'            => 'decimal:2',
         'is_credit_customer'          => 'boolean',
+        'credit_limit'                => 'decimal:2',
     ];
 
 
@@ -354,6 +357,8 @@ class Customer extends Model implements HasMedia, Auditable
         'address_id',
         'delivery_address_id',
         'is_credit_customer',
+        'credit_limit',
+        'payment_terms_days',
     ];
 
     protected array $searchable_columns = [
@@ -424,6 +429,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function clients(): HasMany
     {
         return $this->hasMany(CustomerClient::class);
+    }
+
+    public function spendableBalance(): float
+    {
+        return round((float)$this->balance + (float)$this->credit_limit, 2);
     }
 
     public function stats(): HasOne

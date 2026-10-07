@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Magento\Orders;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\MagentoUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetRetinaOrdersFromMagento extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

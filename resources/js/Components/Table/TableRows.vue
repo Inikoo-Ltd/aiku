@@ -48,7 +48,7 @@ const props = defineProps<{
     <template v-else-if="column.type === 'icon'">
         <Icon v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg"
             :data="item[column.key]" />
-        <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-else-if="item[column.key]" :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
     </template>
     <template v-else>
         {{ item[column.key] }}

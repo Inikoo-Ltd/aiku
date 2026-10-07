@@ -138,8 +138,7 @@ class RepairAuroraPurchaseOrderStates
                     }
 
                     $expectedState = match ($auroraState) {
-                        'InProcess' => AgentSupplierPurchaseOrderStateEnum::IN_PROCESS,
-                        'Submitted' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
+                        'InProcess' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
                         'Cancelled' => AgentSupplierPurchaseOrderStateEnum::CANCELLED,
                         default => AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
                     };

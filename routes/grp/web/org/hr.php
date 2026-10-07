@@ -76,6 +76,8 @@ use App\Actions\HumanResources\Overtime\ApproveOvertimeRequest;
 use App\Actions\HumanResources\Overtime\RejectOvertimeRequest;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
 use App\Actions\HumanResources\Overtime\UI\DashboardOvertime;
+use App\Actions\HumanResources\EmployeeBulkEmail\SendEmployeeBulkEmail;
+use App\Actions\HumanResources\EmployeeBulkEmail\UI\IndexEmployeeBulkEmails;
 use App\Actions\HumanResources\Holiday\UI\IndexHolidays;
 use App\Actions\HumanResources\Holiday\StoreHoliday;
 use App\Actions\HumanResources\Holiday\UpdateHoliday;
@@ -91,6 +93,8 @@ Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
 Route::get('/staff-chat', [IndexStaffChatAnalytics::class, 'inOrganisation'])->name('staff_chat.index');
 Route::get('/staff-chat/{staffConversation}', ShowStaffChatConversation::class)->name('staff_chat.show');
+Route::get('/bulk-emails', IndexEmployeeBulkEmails::class)->name('bulk_emails.index');
+Route::post('/bulk-emails', SendEmployeeBulkEmail::class)->name('bulk_emails.store');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');
@@ -157,7 +161,6 @@ Route::get('/workplaces/{workplace}/edit', EditWorkplace::class)->name('workplac
 
 Route::scopeBindings()->group(function () {
     Route::get('/clocking-machines/{clockingMachine}/clockings', [IndexClockings::class, 'inClockingMachine'])->name('clocking_machines.clockings.index');
-    Route::get('/clocking-machines/{clockingMachine}/clockings/create', [CreateClocking::class, 'inClockingMachine'])->name('clocking_machines.show.clockings.create');
     Route::get('/clocking-machines/{clockingMachine}/clockings/{clocking}', [ShowClocking::class, 'inClockingMachine'])->name('clocking_machines.show.clockings.show');
     Route::get('/clocking-machines/{clockingMachine}/clockings/{clocking}/edit', [EditClocking::class, 'inClockingMachine'])->name('clocking_machines.show.clockings.edit');
 
@@ -172,7 +175,6 @@ Route::scopeBindings()->group(function () {
     Route::get('/workplaces/{workplace}/clocking-machines/{clockingMachine}/clockings/{clocking}', [ShowClocking::class, 'inWorkplaceInClockingMachine'])->name('workplaces.show.clocking_machines.show.clockings.show');
 
     Route::get('/workplaces/{workplace}/clockings', [IndexClockings::class, 'inWorkplace'])->name('workplaces.show.clockings.index');
-    Route::get('/workplaces/{workplace}/clockings/create', [CreateClocking::class, 'inWorkplace'])->name('workplaces.show.clockings.create');
     Route::get('/workplaces/{workplace}/clockings/{clocking}', [ShowClocking::class, 'inWorkplace'])->name('workplaces.show.clockings.show');
     Route::get('/workplaces/{workplace}/clockings/{clocking}/edit', [EditClocking::class, 'inWorkplace'])->name('workplaces.show.clockings.edit');
 });
@@ -185,10 +187,9 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('{clockingMachine}/qr-codes/{clockingMachineQRCode:id}/edit', EditClockingMachineQRCode::class)->name('show.qr_codes.edit');
 });
 
-Route::get('/clocking', IndexClockings::class)->name('clockings.index');
-Route::get('/clocking/create', CreateClocking::class)->name('clockings.create');
-Route::get('/clocking/{clocking}', ShowClocking::class)->name('clockings.show');
-Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.edit');
+Route::get('/clocking', [IndexClockings::class, 'inOrganisation'])->name('clockings.index');
+Route::get('/clocking/{clocking}', [ShowClocking::class, 'inOrganisation'])->name('clockings.show');
+Route::get('/clocking/{clocking}/edit', [EditClocking::class, 'inOrganisation'])->name('clockings.edit');
 
 Route::get('/overtime/dashboard', DashboardOvertime::class)->name('overtime.dashboard');
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');

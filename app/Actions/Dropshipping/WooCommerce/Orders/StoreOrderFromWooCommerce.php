@@ -94,7 +94,7 @@ class StoreOrderFromWooCommerce extends OrgAction
         $customerClientID = DB::table('customer_clients')
             ->select('id')
             ->where('customer_sales_channel_id', $wooCommerceUser->customer_sales_channel_id)
-            ->where('reference', $reference)
+            ->whereRaw('lower(reference) = lower(?)', [$reference])
             ->first();
 
         if (!$customerClientID) {

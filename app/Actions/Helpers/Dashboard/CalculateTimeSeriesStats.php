@@ -15,6 +15,30 @@ class CalculateTimeSeriesStats
 
     protected int $chunkSize = 100;
 
+    private const PARTNER_COLUMNS = [
+        'sales_external'              => 'sales_internal',
+        'sales_org_currency_external' => 'sales_org_currency_internal',
+        'sales_grp_currency_external' => 'sales_grp_currency_internal',
+        'invoices'                    => 'invoices_internal',
+        'refunds'                     => 'refunds_internal',
+    ];
+
+    /**
+     * @param  array<string, string>  $metricsMapping
+     * @return array<string, string>
+     */
+    public static function withPartners(array $metricsMapping, bool $includePartners): array
+    {
+        if (!$includePartners) {
+            return $metricsMapping;
+        }
+
+        return array_map(
+            fn (string $column) => isset(self::PARTNER_COLUMNS[$column]) ? "($column + ".self::PARTNER_COLUMNS[$column].')' : $column,
+            $metricsMapping
+        );
+    }
+
     public function handle(
         array $timeSeriesIds,
         array $metricsMapping,
@@ -49,7 +73,7 @@ class CalculateTimeSeriesStats
 
         foreach ($chunks as $chunk) {
             $chunkResults = $this->processTimeSeriesIds($chunk, $metricsMapping, $tableName, $foreignKey, $from_date, $to_date, $additionalWhere);
-            $results = array_merge($results, $chunkResults);
+            $results = $results + $chunkResults;
 
             unset($chunkResults);
         }
@@ -66,10 +90,6 @@ class CalculateTimeSeriesStats
         $to_date,
         array $additionalWhere
     ): array {
-        $selects = [$foreignKey];
-        $bindings = [];
-        $intervals = DateIntervalEnum::cases();
-        $now = now();
         $cacheHash = $this->buildAggregateCacheHash(
             $timeSeriesIds,
             $metricsMapping,
@@ -84,59 +104,8 @@ class CalculateTimeSeriesStats
             return $cachedResults;
         }
 
-        if ($from_date && $to_date) {
-            $start = Carbon::parse($from_date)->startOfDay();
-            $end = Carbon::parse($to_date)->endOfDay();
+        $mappedResults = $this->aggregateRanges($this->getRanges($from_date, $to_date), $metricsMapping, $tableName, $foreignKey, $timeSeriesIds, $additionalWhere);
 
-            foreach ($metricsMapping as $outputKey => $column) {
-                $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm";
-                $bindings[] = $start;
-                $bindings[] = $end;
-            }
-
-            [$startLy, $endLy] = $this->getComparisonRange(DateIntervalEnum::CUSTOM, $start, $end);
-
-            foreach ($metricsMapping as $outputKey => $column) {
-                $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm_ly";
-                $bindings[] = $startLy;
-                $bindings[] = $endLy;
-            }
-        }
-
-        foreach ($intervals as $interval) {
-            $range = $this->getIntervalRange($interval, $now);
-            if (!$range) {
-                continue;
-            }
-
-            [$start, $end] = $range;
-
-            foreach ($metricsMapping as $outputKey => $column) {
-                $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_{$interval->value}";
-                $bindings[] = $start;
-                $bindings[] = $end;
-            }
-
-            [$startLy, $endLy] = $this->getComparisonRange($interval, $start, $end);
-
-            foreach ($metricsMapping as $outputKey => $column) {
-                $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_{$interval->value}_ly";
-                $bindings[] = $startLy;
-                $bindings[] = $endLy;
-            }
-        }
-
-        $query = DB::table($tableName)
-            ->selectRaw(implode(', ', $selects), $bindings)
-            ->whereIn($foreignKey, $timeSeriesIds);
-
-        foreach ($additionalWhere as $column => $value) {
-            $query->where($column, $value);
-        }
-
-        $results = $query->groupBy($foreignKey)->get();
-
-        $mappedResults = $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
         $this->storeCachedAggregates(
             $cacheHash,
             $timeSeriesIds,
@@ -152,20 +121,49 @@ class CalculateTimeSeriesStats
         return $mappedResults;
     }
 
+    /**
+     * @return array<string, array{0: Carbon, 1: Carbon}> keyed by interval value, with a "{interval}_ly" entry for the year before
+     */
+    public function getRanges($from_date = null, $to_date = null): array
+    {
+        $now    = now();
+        $ranges = [];
+
+        if ($from_date && $to_date) {
+            $start = Carbon::parse($from_date)->startOfDay();
+            $end   = Carbon::parse($to_date)->endOfDay();
+
+            $ranges['ctm']    = [$start, $end];
+            $ranges['ctm_ly'] = $this->getComparisonRange(DateIntervalEnum::CUSTOM, $start, $end);
+        }
+
+        foreach (DateIntervalEnum::cases() as $interval) {
+            $range = $this->getIntervalRange($interval, $now);
+            if (!$range) {
+                continue;
+            }
+
+            $ranges[$interval->value]       = $range;
+            $ranges[$interval->value.'_ly'] = $this->getComparisonRange($interval, $range[0], $range[1]);
+        }
+
+        return $ranges;
+    }
+
     public function format(array $stats, array $metricsMapping, ?string $currencyCode = null): array
     {
         $formattedStats = [];
 
         $intervals = DateIntervalEnum::cases();
 
-        foreach ($metricsMapping as $metricKey => $column) {
+        foreach (array_keys($metricsMapping) as $metricKey) {
             $formattedStats[$metricKey] = [];
             $formattedStats[$metricKey . '_delta'] = [];
 
             foreach ($intervals as $interval) {
                 $intervalValue = $interval->value;
 
-                $currentValueKey = "{$column}_{$intervalValue}";
+                $currentValueKey = "{$metricKey}_{$intervalValue}";
                 $lastYearValueKey = "{$currentValueKey}_ly";
 
                 $currentValue = (float)($stats[$currentValueKey] ?? 0);
@@ -216,6 +214,56 @@ class CalculateTimeSeriesStats
             'formatted_value' => $formattedValue,
             'delta_icon'      => $deltaIcon,
         ];
+    }
+
+    /**
+     * Records are joined to the ranges as rows and grouped by range, so each record is only summed
+     * into the ranges it falls in. One SUM(CASE) column per metric and range made Postgres spend
+     * most of the time planning hundreds of expressions and evaluating each on every record.
+     *
+     * @param  array<string, array{0: Carbon, 1: Carbon}>  $ranges  alias suffix => [start, end]
+     * @return array<int|string, array<string, mixed>> keyed by time series id, "{metric}_{suffix}" columns
+     */
+    private function aggregateRanges(array $ranges, array $metricsMapping, string $tableName, string $foreignKey, array $timeSeriesIds, array $additionalWhere): array
+    {
+        $rangeRows = [];
+        $rangeBindings = [];
+        foreach ($ranges as $suffix => [$start, $end]) {
+            $rangeRows[] = '(?::text, ?::timestamptz, ?::timestamptz)';
+            array_push($rangeBindings, $suffix, $start, $end);
+        }
+
+        $query = DB::table($tableName)
+            ->join(DB::raw('(values '.implode(', ', $rangeRows).') as ranges(suffix, starts_at, ends_at)'), function ($join) {
+                $join->whereRaw('"from" >= ranges.starts_at')->whereRaw('"from" <= ranges.ends_at');
+            })
+            ->addBinding($rangeBindings, 'join')
+            ->select([$foreignKey, 'ranges.suffix'])
+            ->selectRaw(collect($metricsMapping)->map(fn ($column, $outputKey) => "COALESCE(SUM($column), 0) as $outputKey")->implode(', '))
+            ->whereIn($foreignKey, $timeSeriesIds);
+
+        foreach ($additionalWhere as $column => $value) {
+            $query->where($column, $value);
+        }
+
+        $zeros = [];
+        foreach (array_keys($ranges) as $suffix) {
+            foreach (array_keys($metricsMapping) as $outputKey) {
+                $zeros["{$outputKey}_$suffix"] = 0;
+            }
+        }
+
+        $results = [];
+        foreach ($query->groupBy($foreignKey, 'ranges.suffix')->get() as $row) {
+            $row = (array) $row;
+            $timeSeriesId = $row[$foreignKey];
+            $results[$timeSeriesId] ??= [$foreignKey => $timeSeriesId] + $zeros;
+            foreach (array_keys($metricsMapping) as $outputKey) {
+                $results[$timeSeriesId]["{$outputKey}_{$row['suffix']}"] = $row[$outputKey];
+            }
+        }
+
+        return $results;
     }
 
     protected function getComparisonRange(DateIntervalEnum $interval, Carbon $start, Carbon $end): array

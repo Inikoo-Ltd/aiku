@@ -4,6 +4,7 @@ namespace App\Models\Production;
 
 use App\Enums\Production\JobOrderItem\JobOrderItemStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStatusEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
@@ -108,8 +109,33 @@ class JobOrderItem extends Model
         return $this->belongsTo(Artefact::class)->withTrashed();
     }
 
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
+    }
+
+    public function artisanId(): ?int
+    {
+        return $this->employee_id ?? $this->jobOrder->employee_id;
+    }
+
+    public function artisan(): ?Employee
+    {
+        return $this->employee_id ? $this->employee : $this->jobOrder->employee;
+    }
+
+    public function splitFrom(): BelongsTo
+    {
+        return $this->belongsTo(JobOrderItem::class, 'split_from_id');
+    }
+
+    public function splits(): HasMany
+    {
+        return $this->hasMany(JobOrderItem::class, 'split_from_id');
+    }
+
     public function tasks(): HasMany
     {
-        return $this->hasMany(JobOrderItemTask::class)->orderBy('position');
+        return $this->hasMany(JobOrderItemTask::class)->orderBy('position')->orderBy('id');
     }
 }

@@ -8,10 +8,13 @@
 
 namespace App\Actions\DevOps\UI;
 
+use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\OrgAction;
+use App\Models\DevOps\CiRun;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +23,14 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowDevopsDashboard extends OrgAction
 {
     use WithInertia;
+
+    /** @var array<string, array{0: string, 1: string}> */
+    public const array SERVER_ROLES = [
+        'boro'  => ['Production', 'Primary'],
+        'litio' => ['Production', 'Secondary'],
+        'helio' => ['Ops support', 'CI & replica'],
+        'neon'  => ['Ops support', 'Staging'],
+    ];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -51,37 +62,197 @@ class ShowDevopsDashboard extends OrgAction
                 'pageHead'        => [
                     'title' => $title,
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-server'],
+                        'icon'  => ['fal', 'fa-tools'],
                         'title' => $title,
                     ],
                 ],
-                'publicSiteVisits' => $this->getPublicSiteVisits(),
+                'servers'          => $servers = $this->getServerSummaries(),
+                'ciRuns'           => $this->getCiRuns(),
+                'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
+                'telemetry'        => Inertia::optional(fn () => app(GetNightOwlTelemetry::class)->overview(GetNightOwlTelemetry::range($request->query('range')))),
+                'telemetryException' => Inertia::optional(fn () => $request->filled('exception') ? app(GetNightOwlTelemetry::class)->exception((string) $request->query('exception'), $request->integer('occurrence') ?: null, $request->query('occurrence_at')) : null),
+                'telemetryTrace'   => Inertia::optional(fn () => match (true) {
+                    $request->filled(['trace', 'id', 'at'])        => app(GetNightOwlTelemetry::class)->trace((string) $request->query('trace'), (int) $request->query('id'), (string) $request->query('at')),
+                    $request->filled(['trace', 'execution', 'at']) => app(GetNightOwlTelemetry::class)->traceOfExecution((string) $request->query('trace'), (string) $request->query('execution'), (string) $request->query('at')),
+                    default                                        => null,
+                }),
+                'telemetryLogs'    => Inertia::optional(fn () => app(GetNightOwlTelemetry::class)->logs(GetNightOwlTelemetry::range($request->query('range')), $request->query('level'), $request->query('search'))),
 
             ]
         );
     }
 
-    /** @return array{daily: array<int, object>, visitors: int, views: int, top_referrer: string|null} */
-    public function getPublicSiteVisits(): array
+    /** @return Collection<int, object{slug: string, name: string, recorded_at: string|null, cpu_percent: float|null, memory_percent: float|null, swap_percent: float|null, disk_percent: float|null, load_1: float|null, iowait_percent: float|null, inode_percent: float|null, net_rx_mbps: float|null, net_tx_mbps: float|null, disk_read_mbps: float|null, disk_write_mbps: float|null, processes: int|null, tcp_connections: int|null, cpu_cores: int|null, memory_total_mb: int|null, swap_total_mb: int|null, disks: string|null, top_processes: string|null, cpu_24h_max: float|null, memory_24h_max: float|null, group: string, role: string|null}> */
+    public function getServerSummaries(): Collection
     {
-        $visits = fn (int $days) => DB::table('aiku_public_visits')->where('is_bot', false)
-            ->where('created_at', '>', now()->subDays($days))
-            ->where('path', 'not like', '/~search/%');
+        return DB::table('servers')->where('active', true)
+            ->leftJoinLateral(
+                DB::table('server_metrics')->whereColumn('server_metrics.server_id', 'servers.id')->orderByDesc('recorded_at')->limit(1),
+                'latest'
+            )
+            ->leftJoinLateral(
+                DB::table('server_metric_hours')->whereColumn('server_metric_hours.server_id', 'servers.id')->where('hour', '>', now()->subDay())
+                    ->selectRaw('max(cpu_max) as cpu_24h_max, max(memory_max) as memory_24h_max'),
+                'day'
+            )
+            ->select(
+                'servers.slug',
+                'servers.name',
+                'latest.recorded_at',
+                'latest.cpu_percent',
+                'latest.memory_percent',
+                'latest.swap_percent',
+                'latest.disk_percent',
+                'latest.load_1',
+                'latest.iowait_percent',
+                'latest.inode_percent',
+                'latest.net_rx_mbps',
+                'latest.net_tx_mbps',
+                'latest.disk_read_mbps',
+                'latest.disk_write_mbps',
+                'latest.processes',
+                'latest.tcp_connections',
+                'latest.cpu_cores',
+                'latest.memory_total_mb',
+                'latest.swap_total_mb',
+                'latest.disks',
+                'latest.top_processes',
+                'day.cpu_24h_max',
+                'day.memory_24h_max'
+            )
+            ->get()
+            ->map(function (object $server) {
+                $server->group = self::SERVER_ROLES[$server->slug][0] ?? __('Other');
+                $server->role  = self::SERVER_ROLES[$server->slug][1] ?? null;
 
-        $lastWeek = $visits(7)->selectRaw('count(*) as views, count(distinct visitor_hash) as visitors')->first();
+                return $server;
+            })
+            ->sortBy(fn (object $server) => array_search($server->slug, array_keys(self::SERVER_ROLES)) === false ? PHP_INT_MAX : array_search($server->slug, array_keys(self::SERVER_ROLES)))
+            ->values();
+    }
+
+    public const string DEPLOY_WORKFLOW = 'Deploy Aiku';
+
+    public const string TESTS_WORKFLOW = 'Backend Tests';
+
+    /** @var array<string, string> */
+    public const array DEPLOY_HOST_NAMES = ['aiku' => 'boro', 'aiku_litio' => 'litio'];
+
+    /** @return array{deploy: array<string, mixed>|null, tests: array<string, mixed>|null, recent_deploys: array<int, array<string, mixed>>, recent_tests: array<int, array<string, mixed>>, usual_deploy_seconds: int|null, usual_tests_seconds: int|null, test_stats: array<string, mixed>} */
+    public function getCiRuns(): array
+    {
+        $recent = fn (string $workflow) => CiRun::where('workflow', $workflow)->orderByDesc('github_run_id')->limit(6)->get();
+
+        $deploys = $recent(self::DEPLOY_WORKFLOW);
+        $tests   = CiRun::where('workflow', self::TESTS_WORKFLOW)->where('branch', 'main')->orderByDesc('github_run_id')->limit(6)->get();
 
         return [
-            'daily' => $visits(14)
-                ->selectRaw('created_at::date as day, count(*) as views, count(distinct visitor_hash) as visitors')
-                ->groupBy('day')->orderBy('day')->get()->all(),
-            'visitors'     => (int) $lastWeek->visitors,
-            'views'        => (int) $lastWeek->views,
-            'top_referrer' => $visits(7)->whereNotNull('referrer')
-                ->selectRaw('referrer, count(distinct visitor_hash) as visitors')
-                ->groupBy('referrer')->orderByDesc(DB::raw('count(distinct visitor_hash)'))->value('referrer'),
+            'deploy'               => $deploys->first() ? $this->ciRunDetail($deploys->first()) : null,
+            'tests'                => $tests->first() ? $this->ciRunDetail($tests->first()) : null,
+            'recent_deploys'       => $deploys->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
+            'recent_tests'         => $tests->skip(1)->map(fn (CiRun $ciRun) => $this->ciRunSummary($ciRun))->values()->all(),
+            'usual_deploy_seconds' => $this->usualSeconds(self::DEPLOY_WORKFLOW),
+            'usual_tests_seconds'  => $this->usualSeconds(self::TESTS_WORKFLOW, 'main'),
+            'test_stats'           => $this->getTestStats(),
         ];
     }
 
+    /** @return array{days: int, runs: int, runs_per_day: float, pass_rate: float|null, average_seconds: int|null, average_tests: int|null, daily: array<int, array{day: string, passed: int, failed: int}>} */
+    public function getTestStats(int $days = 14): array
+    {
+        $runs = CiRun::where('workflow', self::TESTS_WORKFLOW)->where('branch', 'main')
+            ->where('started_at', '>=', now()->subDays($days)->startOfDay())
+            ->where('status', 'completed')->whereIn('conclusion', ['success', 'failure'])
+            ->get(['started_at', 'completed_at', 'conclusion', 'test_results']);
+
+        $passed = $runs->where('conclusion', 'success');
+        $tests  = $runs->map(fn (CiRun $ciRun) => $ciRun->test_results['tests'] ?? null)->filter();
+
+        return [
+            'days'            => $days,
+            'runs'            => $runs->count(),
+            'runs_per_day'    => round($runs->count() / $days, 1),
+            'pass_rate'       => $runs->isEmpty() ? null : round($passed->count() / $runs->count() * 100, 1),
+            'average_seconds' => $passed->isEmpty() ? null : (int) $passed->avg(fn (CiRun $ciRun) => $ciRun->started_at && $ciRun->completed_at ? $ciRun->started_at->diffInSeconds($ciRun->completed_at) : null),
+            'average_tests'   => $tests->isEmpty() ? null : (int) $tests->avg(),
+            'daily'           => collect(range($days - 1, 0))->map(function (int $daysAgo) use ($runs) {
+                $day     = now()->subDays($daysAgo)->toDateString();
+                $dayRuns = $runs->filter(fn (CiRun $ciRun) => $ciRun->started_at->toDateString() === $day);
+
+                return ['day' => $day, 'passed' => $dayRuns->where('conclusion', 'success')->count(), 'failed' => $dayRuns->where('conclusion', 'failure')->count()];
+            })->all(),
+        ];
+    }
+
+    public function usualSeconds(string $workflow, ?string $branch = null): ?int
+    {
+        $seconds = CiRun::where('workflow', $workflow)->where('conclusion', 'success')
+            ->when($branch, fn ($query) => $query->where('branch', $branch))
+            ->whereNotNull('started_at')->whereNotNull('completed_at')
+            ->orderByDesc('github_run_id')->limit(10)
+            ->selectRaw('extract(epoch from completed_at - started_at) as seconds')->pluck('seconds')
+            ->sort()->values();
+
+        return $seconds->isEmpty() ? null : (int) $seconds[intdiv($seconds->count(), 2)];
+    }
+
+    /** @return array<string, mixed> */
+    public function ciRunSummary(CiRun $ciRun): array
+    {
+        return [
+            'github_run_id' => $ciRun->github_run_id,
+            'workflow'      => $ciRun->workflow,
+            'branch'        => $ciRun->branch,
+            'head_sha'      => $ciRun->head_sha ? substr($ciRun->head_sha, 0, 10) : null,
+            'head_message'  => $ciRun->head_message ? strtok($ciRun->head_message, "\n") : null,
+            'actor'         => $ciRun->actor,
+            'status'        => $ciRun->status,
+            'conclusion'    => $ciRun->conclusion,
+            'html_url'      => $ciRun->html_url,
+            'started_at'    => $ciRun->started_at?->toIso8601String(),
+            'completed_at'  => $ciRun->completed_at?->toIso8601String(),
+            'test_counts'   => $ciRun->test_results && !($ciRun->test_results['missing'] ?? false) ? [
+                'tests'   => $ciRun->test_results['tests'] ?? 0,
+                'failed'  => ($ciRun->test_results['failures'] ?? 0) + ($ciRun->test_results['errors'] ?? 0),
+                'skipped' => $ciRun->test_results['skipped'] ?? 0,
+            ] : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function ciRunDetail(CiRun $ciRun): array
+    {
+        $tasks = [];
+        $total = null;
+        foreach ($ciRun->deploy_tasks as $event) {
+            $task          = $tasks[$event['task']] ?? ['task' => $event['task'], 'state' => 'start', 'started_at' => $event['at'], 'finished_at' => null, 'hosts' => [], 'running' => 0, 'failed' => false];
+            $host          = self::DEPLOY_HOST_NAMES[$event['host'] ?? ''] ?? ($event['host'] ?? null);
+            $task['hosts'] = collect([...$task['hosts'], $host])->filter()->unique()->sort()->values()->all();
+            if ($event['state'] === 'start') {
+                $task['running']++;
+            } else {
+                $task['running']     = max(0, $task['running'] - 1);
+                $task['failed']      = $task['failed'] || $event['state'] === 'failed';
+                $task['finished_at'] = $event['at'];
+            }
+            $task['state']         = $task['failed'] ? 'failed' : ($task['running'] > 0 ? 'start' : 'done');
+            $tasks[$event['task']] = $task;
+            $total                 = $event['total'] ?? $total;
+        }
+        $isFinished = $ciRun->status === 'completed';
+        $tasks      = array_map(fn (array $task) => [...array_diff_key($task, ['running' => true, 'failed' => true]), 'state' => $isFinished && $task['state'] === 'start' ? 'failed' : $task['state']], $tasks);
+
+        $jobs = collect($ciRun->jobs)->sortBy('started_at')->values()->all();
+
+        return [
+            ...$this->ciRunSummary($ciRun),
+            'jobs'         => $jobs,
+            'deploy_tasks' => array_values($tasks),
+            'deploy_total' => $total,
+            'failed_tests' => $ciRun->test_results['failed'] ?? [],
+            'deploy_done'  => count(array_filter($tasks, fn (array $task) => $task['state'] === 'done')),
+        ];
+    }
 
     public function getBreadcrumbs(array $routeParameters): array
     {

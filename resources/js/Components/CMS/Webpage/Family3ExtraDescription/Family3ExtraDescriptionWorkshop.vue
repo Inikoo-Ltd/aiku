@@ -11,7 +11,7 @@ import { getStyles } from "@/Composables/styles"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
   faCube,
@@ -102,7 +102,6 @@ watch(cleanedDescription, checkOverflow)
 
 onMounted(checkOverflow)
 
-console.log("modelValue", props.modelValue)
 </script>
 
 <template>
@@ -179,8 +178,8 @@ console.log("modelValue", props.modelValue)
           >
             {{
               expanded
-                ? trans("Read less")
-                : trans("Read more")
+                ? ctrans("Read less")
+                : ctrans("Read more")
             }}
           </button>
 

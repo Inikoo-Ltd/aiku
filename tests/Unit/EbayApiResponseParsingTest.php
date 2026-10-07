@@ -11,6 +11,8 @@ namespace Tests\Unit;
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\Product\CheckIfProductExistInEbay;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
+use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
+use App\Models\Catalogue\Product;
 
 test('sku search unwraps the offers envelope before checking published status', function () {
     $offer = ['offerId' => '255793398011', 'sku' => 'jcg-05', 'status' => 'PUBLISHED'];
@@ -51,4 +53,31 @@ test('a matched offer is shaped as the single match the retina table and matcher
         'name'   => 'JCG-05',
         'images' => [],
     ]);
+});
+
+test('an item specific eBay only takes its own values for is refilled from its list on the publish retry', function () {
+    $ebayUser = new class () {
+        use WithEbayApiRequest;
+    };
+
+    $refused = ['errors' => [['errorId' => 25018, 'message' => 'The product aspects for this category no longer support custom values for Size. Your listing was not published. Update your request to use our standard values for Size.']]];
+    $missing = ['errors' => [['errorId' => 25002, 'message' => "The item specific\u{a0}Colour is missing. Add Colour to this listing."]]];
+
+    $categoryAspects = ['aspects' => [
+        ['localizedAspectName' => 'Size', 'aspectConstraint' => ['aspectMode' => 'FREE_TEXT', 'aspectRequired' => true], 'aspectValues' => [['localizedValue' => 'XS'], ['localizedValue' => 'S'], ['localizedValue' => 'M']]],
+        ['localizedAspectName' => 'Colour', 'aspectConstraint' => ['aspectMode' => 'FREE_TEXT', 'aspectRequired' => true], 'aspectValues' => [['localizedValue' => 'Beige'], ['localizedValue' => 'Charcoal']]],
+    ]];
+
+    $product = new Product();
+    $product->name = 'Nomad Sari Stonewashed Cotton T-Shirt - Rebel - Charcoal - Small';
+    $product->code = 'SWTS-69';
+
+    $aspects = ['Size' => ['Nomad Sari Stonewashed Cotton T-Shirts']];
+
+    expect($ebayUser->parseStandardValueAspects($refused))->toBe(['Size'])
+        ->and($ebayUser->parseMissingAspects($refused))->toBe(['Size'])
+        ->and($ebayUser->parseStandardValueAspects($missing))->toBe([])
+        ->and($ebayUser->fillMissingAspects($product, $categoryAspects, ['Size'], $aspects))->toBe(['Size' => [$product->name]])
+        ->and($ebayUser->fillMissingAspects($product, $categoryAspects, ['Size'], $aspects, ['Size']))->toBe(['Size' => ['XS']])
+        ->and($ebayUser->fillMissingAspects($product, $categoryAspects, ['Colour'], $aspects, ['Colour']))->toBe(['Size' => ['Nomad Sari Stonewashed Cotton T-Shirts'], 'Colour' => ['Charcoal']]);
 });

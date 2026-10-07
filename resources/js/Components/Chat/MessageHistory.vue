@@ -234,6 +234,7 @@ onMounted(async () => {
 					<BubbleChat
 						:message="message"
 						:viewerType="viewerType"
+						format-markup
 						readonly />
 				</div>
 			</template>

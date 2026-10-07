@@ -39,7 +39,7 @@ import {
     faEraser,
     faShoppingBasket,
     faProjectDiagram,
-    faTrophy
+    faTrophy, faNewspaper, faFolderTree, faFolder, faCube, faAlbumCollection, faGarage, faConciergeBell, faCommentDollar, faSign, faUserPlus, faMoneyCheckAlt, faFileInvoiceDollar, faPiggyBank, faBox, faBoxesAlt, faPeopleArrows, faPersonDolly, faUsersClass, faBuilding, faClipboardListCheck, faChessClock, faStopwatch
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
@@ -89,7 +89,7 @@ library.add(
     faEraser,
     faShoppingBasket,
     faProjectDiagram,
-    faTrophy
+    faTrophy, faNewspaper, faFolderTree, faFolder, faCube, faAlbumCollection, faGarage, faConciergeBell, faCommentDollar, faSign, faUserPlus, faMoneyCheckAlt, faFileInvoiceDollar, faPiggyBank, faBox, faBoxesAlt, faPeopleArrows, faPersonDolly, faUsersClass, faBuilding, faClipboardListCheck, faChessClock, faStopwatch
 );
 
 

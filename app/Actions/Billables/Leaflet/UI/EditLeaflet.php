@@ -10,7 +10,7 @@ namespace App\Actions\Billables\Leaflet\UI;
 
 use App\Actions\Billables\Packaging\UI\ShowPackagings;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Models\Billables\Leaflet;
@@ -25,7 +25,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditLeaflet extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Leaflet $leaflet, ActionRequest $request): Response
     {
@@ -50,11 +50,11 @@ class EditLeaflet extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.billables.packagings.index',
+                                'name'       => 'grp.org.shops.show.billables.leaflets.show',
                                 'parameters' => [
                                     'organisation' => $leaflet->organisation->slug,
                                     'shop'         => $leaflet->shop->slug,
-                                    'tab'          => 'leaflets',
+                                    'leaflet'      => $leaflet->id,
                                 ]
                             ],
                         ]

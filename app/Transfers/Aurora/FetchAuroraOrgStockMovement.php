@@ -13,6 +13,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
+use App\Models\Production\Production;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrgStockMovement extends FetchAurora
@@ -69,6 +70,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
             $type = OrgStockMovementTypeEnum::PURCHASE;
             $note = $this->auroraModelData->{'Note'};
+            $forceFetch = $this->isProductionDeliveryNote($note);
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
             $type = OrgStockMovementTypeEnum::FOUND;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
@@ -240,6 +242,28 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $this->parsedData['orgStockMovement']['quantity']         = $quantity;
             $this->parsedData['orgStockMovement']['audited_quantity'] = null;
         }
+    }
+
+    protected function isProductionDeliveryNote(?string $note): bool
+    {
+        if (!$note || !preg_match('/delivery\/(\d+)/', $note, $matches)) {
+            return false;
+        }
+
+        $auroraDelivery = $this->fetchAuroraDeliveryParent($matches[1]);
+
+        if (!$auroraDelivery || $auroraDelivery->{'Supplier Delivery Parent'} != 'Supplier') {
+            return false;
+        }
+
+        return Production::whereJsonContains('sources->suppliers', $this->organisation->id.':'.$auroraDelivery->{'Supplier Delivery Parent Key'})->exists();
+    }
+
+    protected function fetchAuroraDeliveryParent(string $auroraDeliveryKey): ?object
+    {
+        return DB::connection('aurora')->table('Supplier Delivery Dimension')
+            ->where('Supplier Delivery Key', $auroraDeliveryKey)
+            ->first(['Supplier Delivery Parent', 'Supplier Delivery Parent Key']);
     }
 
     /**

@@ -56,9 +56,9 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $images = [];
             if (app()->isProduction()) {
-                foreach ($product->images as $image) {
+                foreach ($product->orderedImages() as $image) {
                     $images[] = [
-                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
+                        'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg')->resize(1600, 1600))
                     ];
                 }
             }
@@ -190,7 +190,9 @@ class StoreWooCommerceProduct extends RetinaAction
                         'sku' => $portfolio->sku
                     ]);
 
-                    $result = Arr::get($duplicatedProducts, '0');
+                    $result = collect($duplicatedProducts ?? [])
+                        ->first(fn ($duplicatedProduct) => is_array($duplicatedProduct) && strcasecmp((string) Arr::get($duplicatedProduct, 'sku'), (string) $portfolio->sku) === 0)
+                        ?? $result;
                 }
             }
 
@@ -199,7 +201,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'platform_product_variant_id' => Arr::get($result, 'id'),
             ]);
 
-            CheckWooPortfolio::run($portfolio, []);
+            CheckWooPortfolio::run($portfolio, is_array($result) ? $result : null);
 
             $portfolio->refresh();
 

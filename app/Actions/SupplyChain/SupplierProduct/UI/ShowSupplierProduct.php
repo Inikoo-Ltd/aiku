@@ -96,6 +96,17 @@ class ShowSupplierProduct extends InertiaAction
                         'icon'  => ['fal', 'box-usd'],
                         'title' => __('Supplier Product'),
                     ],
+                    'actions' => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

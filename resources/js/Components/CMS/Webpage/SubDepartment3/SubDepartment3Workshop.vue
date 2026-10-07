@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue"
+import { ref, computed, inject, onMounted, watch } from "vue"
 import { routeType } from "@/types/route"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -48,6 +48,8 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 	routeEditSubDepartment?: routeType
 }>()
+
+const layout: any = inject("layout", {})
 
 const loading = ref(false)
 const loadingMore = ref(false)

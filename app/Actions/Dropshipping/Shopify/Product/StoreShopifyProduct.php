@@ -26,6 +26,7 @@ use App\Models\Helpers\Media;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Sentry;
@@ -36,11 +37,29 @@ class StoreShopifyProduct extends RetinaAction
     use WithPortfolioErrorResponse;
     use HasBucketAttachment;
 
+    private const int SKU_LOOKUP_PAGES = 5;
+
     public function handle(Portfolio $portfolio, array $productData = []): array
     {
         if ($portfolio->isShopifyVariantAdopted()) {
             return [false, 'This portfolio is linked to a variant the merchant already had, a product is never created for it'];
         }
+
+        $lock = Cache::lock('shopify-product-upload:'.$portfolio->id, 300);
+
+        if (!$lock->get()) {
+            return [false, 'This product is already being uploaded to Shopify'];
+        }
+
+        try {
+            return $this->upload($portfolio->refresh(), $productData);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function upload(Portfolio $portfolio, array $productData): array
+    {
 
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
@@ -92,15 +111,47 @@ class StoreShopifyProduct extends RetinaAction
             return $this->storeVariant($portfolio, $logs, ['id' => $portfolio->platform_product_id]);
         }
 
+        if (blank($portfolio->sku)) {
+            $errorMessage = 'This product has no sku, so it can not be uploaded to Shopify';
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $errorMessage
+            ]);
+
+            return [false, $errorMessage];
+        }
+
+        $listedWithSku = $this->unlinkedListingCarryingSku($client, $portfolio);
+
+        if ($listedWithSku === false) {
+            return $this->refuseUnverifiedUpload($portfolio, $logs);
+        }
+
+        if ($listedWithSku) {
+            $errorMessage = 'Your Shopify store already has a product with the sku '.$portfolio->sku.' ('.Str::lower($listedWithSku['status']).', '.$listedWithSku['handle'].'). Match this product to it instead of uploading a new one';
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $errorMessage
+            ]);
+
+            return [false, $errorMessage];
+        }
+
         /** @var Product $product */
         $product = $portfolio->item;
 
 
         $media = [];
 
-        foreach ($product->images as $image) {
+        foreach ($product->orderedImages() as $image) {
             $media[] = [
-                'originalSource'   => GetImgProxyUrl::run($image->getImage()->extension('jpg')),
+                'originalSource'   => GetImgProxyUrl::run($image->getImage()->extension('jpg')->resize(2048, 2048)),
                 'mediaContentType' => 'IMAGE'
             ];
         }
@@ -249,9 +300,20 @@ class StoreShopifyProduct extends RetinaAction
             }
 
 
-            UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($createdProduct, 'id'),
-            ]);
+            [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, Arr::get($createdProduct, 'id'));
+
+            if (!$linked) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse($refusal)
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $refusal
+                ]);
+
+                return [false, $refusal];
+            }
 
             return $this->storeVariant($portfolio, $logs, $createdProduct);
         } catch (Exception $e) {
@@ -269,6 +331,101 @@ class StoreShopifyProduct extends RetinaAction
         }
     }
 
+
+    /**
+     * A listing of the shop carrying the sku of the portfolio that no portfolio of the channel is linked to:
+     * uploading would create a second listing with that sku. Listings of other portfolios of the channel
+     * sharing the sku (a bundle carrying the code of its only stock) do not count.
+     *
+     * @return array{handle: string, status: string}|false|null  false when the shop could not be asked
+     */
+    private function unlinkedListingCarryingSku($client, Portfolio $portfolio): array|false|null
+    {
+        $sku = Str::lower(trim((string)$portfolio->sku));
+
+        $query = <<<'QUERY'
+        query productVariantsWithSku($query: String!, $cursor: String) {
+          productVariants(first: 50, after: $cursor, query: $query) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            edges {
+              node {
+                id
+                sku
+                product {
+                  id
+                  handle
+                  status
+                }
+              }
+            }
+          }
+        }
+        QUERY;
+
+        $variables = ['query' => 'sku:'.json_encode(trim((string)$portfolio->sku), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'cursor' => null];
+        $listings  = [];
+
+        for ($page = 0; ; $page++) {
+            if ($page === self::SKU_LOOKUP_PAGES) {
+                return false;
+            }
+
+            try {
+                $response = $client->request($query, $variables);
+            } catch (Exception) {
+                return false;
+            }
+
+            if (!empty($response['errors']) || !isset($response['body'])) {
+                return false;
+            }
+
+            $body = $response['body']->toArray();
+
+            if (Arr::has($body, 'errors')) {
+                return false;
+            }
+
+            foreach (Arr::get($body, 'data.productVariants.edges', []) as $edge) {
+                if (Str::lower(trim((string)Arr::get($edge, 'node.sku'))) === $sku) {
+                    $listings[] = [
+                        'variant_id' => (string)Arr::get($edge, 'node.id'),
+                        'product_id' => (string)Arr::get($edge, 'node.product.id'),
+                        'handle'     => (string)Arr::get($edge, 'node.product.handle'),
+                        'status'     => (string)Arr::get($edge, 'node.product.status'),
+                    ];
+                }
+            }
+
+            if (!Arr::get($body, 'data.productVariants.pageInfo.hasNextPage')) {
+                break;
+            }
+
+            $variables['cursor'] = Arr::get($body, 'data.productVariants.pageInfo.endCursor');
+        }
+
+        $otherPortfolios = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+            ->where('id', '!=', $portfolio->id)
+            ->where('status', true)
+            ->where(fn ($query) => $query->whereIn('platform_product_variant_id', array_column($listings, 'variant_id'))->orWhereIn('platform_product_id', array_column($listings, 'product_id')))
+            ->get(['platform_product_id', 'platform_product_variant_id', 'sku']);
+
+        foreach ($listings as $listing) {
+            $heldByAnotherPortfolio = $otherPortfolios->contains(
+                fn (Portfolio $other) => $other->platform_product_variant_id === $listing['variant_id']
+                    || ($other->platform_product_id === $listing['product_id'] && Str::lower(trim((string)$other->sku)) === $sku)
+            );
+
+            if (!$heldByAnotherPortfolio) {
+                return ['handle' => $listing['handle'], 'status' => $listing['status']];
+            }
+        }
+
+        return null;
+    }
 
     private function refuseUnverifiedUpload(Portfolio $portfolio, PlatformPortfolioLogs $logs): array
     {

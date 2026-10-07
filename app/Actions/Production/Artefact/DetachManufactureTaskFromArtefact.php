@@ -9,7 +9,11 @@
 namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Events\BroadcastManufactureFloorChanged;
 use App\Models\Production\Artefact;
+use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTask;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -20,6 +24,18 @@ class DetachManufactureTaskFromArtefact extends OrgAction
     public function handle(Artefact $artefact, ManufactureTask $manufactureTask): Artefact
     {
         $artefact->manufactureTasks()->detach($manufactureTask->id);
+
+        $removedTasks = JobOrderItemTask::where('manufacture_task_id', $manufactureTask->id)
+            ->where('state', JobOrderItemTaskStateEnum::TODO)
+            ->whereDoesntHave('sessions')
+            ->whereHas('jobOrderItem', fn ($query) => $query->where('artefact_id', $artefact->id)
+                ->whereHas('tasks', fn ($query) => $query->where('manufacture_task_id', '!=', $manufactureTask->id)))
+            ->whereHas('jobOrder', fn ($query) => $query->whereIn('state', JobOrderStateEnum::open()))
+            ->delete();
+
+        if ($removedTasks) {
+            BroadcastManufactureFloorChanged::dispatch($artefact->production_id);
+        }
 
         return $artefact;
     }

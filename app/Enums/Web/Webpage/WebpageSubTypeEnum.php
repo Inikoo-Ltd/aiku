@@ -43,6 +43,7 @@ enum WebpageSubTypeEnum: string
     case PRICING = 'pricing';
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
+    case ADS_TESTING = 'ads_testing';
 
     /** System Sub Type */
     case LOGIN_PAGE = "login_page";
@@ -85,6 +86,7 @@ enum WebpageSubTypeEnum: string
             'mailshot'              => __('Mailshot'),
             'article'               => __('Article'),
             'content'               => __('Content'),
+            'ads_testing'           => __('Ads Testing'),
 
             'blog'                  => __('Blog'),
             'newsletters'           => __('Newsletters'),
@@ -99,6 +101,82 @@ enum WebpageSubTypeEnum: string
             'forgot_password_page'  => __('Forgot Password'),
             'blog_dashboard_page'   => __('Blog Dashboard'),
         ];
+    }
+
+    /**
+     * Sub types a content webpage can be created as by hand, every other sub type being decided by
+     * the catalogue entry or the system page it backs.
+     *
+     * @return array<int, self>
+     */
+    public static function contentSubTypes(): array
+    {
+        return [
+            self::CONTENT,
+            self::ADS_TESTING,
+        ];
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function contentSubTypesWithLabel(): array
+    {
+        $labels = self::labels();
+
+        return array_map(
+            fn (self $subType): array => [
+                'value' => $subType->value,
+                'label' => Arr::get($labels, $subType->value, $subType->value),
+            ],
+            self::contentSubTypes()
+        );
+    }
+
+    /**
+     * Sub types never offered to search engines. A page that only exists to try an advert out is
+     * kept out of the index, its links unfollowed and its url out of the sitemap, and that is not a
+     * per page choice: the webpage settings do not offer the toggles and nothing can turn it back
+     * on, so an advert can never compete with the catalogue in search results.
+     */
+    public function isHiddenFromSearchEngines(): bool
+    {
+        return $this === self::ADS_TESTING;
+    }
+
+    /**
+     * @return array{index_page: bool, follow_link: bool}
+     */
+    public function searchEngineVisibility(): array
+    {
+        $isVisible = !$this->isHiddenFromSearchEngines();
+
+        return [
+            'index_page'  => $isVisible,
+            'follow_link' => $isVisible,
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function hiddenFromSearchEnginesValues(): array
+    {
+        $subTypes = array_filter(
+            self::cases(),
+            fn (self $subType): bool => $subType->isHiddenFromSearchEngines()
+        );
+
+        return array_map(fn (self $subType): string => $subType->value, array_values($subTypes));
+    }
+
+    public static function fromValue(self|string|null $subType): ?self
+    {
+        if ($subType instanceof self || $subType === null) {
+            return $subType;
+        }
+
+        return self::tryFrom($subType);
     }
 
     /**

@@ -81,6 +81,7 @@ export interface OfferResource {
         percentage_off: string
         product_category?: OfferProductCategoryLink | null
     }
+    trigger_categories?: OfferProductCategoryLink[]
     max_percentage_discount?: number
     offer_campaign?: {
         id: number

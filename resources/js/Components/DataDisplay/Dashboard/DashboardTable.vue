@@ -7,11 +7,11 @@ import { ref, computed, inject, watch } from "vue"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
-import { faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight } from "@fal"
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight, faFolderTree, faCopyright } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
@@ -20,7 +20,7 @@ import DashboardCell from "./DashboardCell.vue"
 import { formatInTimeZone } from "date-fns-tz"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
-library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight)
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight, faFolderTree, faCopyright)
 
 interface Column {
 	formatted_value: string  // "€0.00"
@@ -72,6 +72,7 @@ const props = withDefaults(defineProps<{
 			[key: string]: {
 				icon: string
 				title: string
+				shows_sales?: boolean
 			}
 		}
 	}
@@ -86,6 +87,7 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
+const failedTableTab = inject("failedTableTab", ref<string | null>(null))
 
 const layout = inject('layout', layoutStructure)
 
@@ -101,6 +103,10 @@ const utcDayStartInUserTime = computed(() => {
 	return formatInTimeZone(midnightUtc, timezone, 'HH:mm')
 })
 
+const openDashboardSettings = () => {
+	window.dispatchEvent(new CustomEvent("open-dashboard-settings"))
+}
+
 const localCurrentTab = ref(props.tableData.current_tab)
 watch(() => props.tableData.current_tab, (newVal) => {
 	localCurrentTab.value = newVal
@@ -112,6 +118,15 @@ watch(() => props.tableData.current_tab, (newVal) => {
  * reorders parents only and children ride along; every other table keeps PrimeVue's own
  * sorting untouched.
  */
+const orderedTabs = computed(() => {
+	const tabs = Object.entries(props.tableData?.tabs ?? {}).map(([tabSlug, tab]) => ({ tabSlug, tab }))
+
+	return [
+		...tabs.filter(({ tab }) => tab.align !== "right"),
+		...tabs.filter(({ tab }) => tab.align === "right"),
+	]
+})
+
 const hasGroupedRows = computed(() => {
 	const body = props.tableData.tables?.[localCurrentTab.value]?.body
 	return !!body?.some((row: any) => row.parent_slug)
@@ -201,11 +216,18 @@ const debStoreTab = debounce((tab: string) => {
 		// isLoadingOnTable.value = false
 	})
 }, 800)
-const updateTab = (value: string) => {
-	localCurrentTab.value = value
-	emits('onChangeTab', value)
-	debStoreTab(value)
+const updateTab = (value: string | number) => {
+	const tabSlug = String(value)
+	localCurrentTab.value = tabSlug
+	emits('onChangeTab', tabSlug)
+	debStoreTab(tabSlug)
 }
+
+const retryCurrentTab = () => {
+	emits('onChangeTab', localCurrentTab.value)
+}
+
+const showsPartnersNote = computed(() => !!props.settings.partners_type && props.tableData.tabs?.[localCurrentTab.value]?.shows_sales !== false)
 
 
 
@@ -216,15 +238,17 @@ const updateTab = (value: string) => {
 
 		<div class="">
 			<!-- Section: Tabs -->
-			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2">
+			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2" @update:value="updateTab">
 				<TabList>
-					<template v-for="(tab, tabSlug) in tableData.tabs" :key="tabSlug">
+					<template v-for="{ tabSlug, tab } in orderedTabs" :key="tabSlug">
 						<Tab
-							@click="() => updateTab(tabSlug)"
 							:value="tabSlug"
+							:class="[tab.align === 'right' ? '!ml-auto' : '', '!outline-none focus-visible:bg-gray-100']"
+							v-tooltip="tab.type === 'icon' ? tab.title : undefined"
+							:aria-label="tab.title"
 						>
-							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
-							{{ tab.title }}
+							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" :class="tab.type === 'icon' ? '' : 'mr-1.5'" fixed-width aria-hidden="true" />
+							<template v-if="tab.type !== 'icon'">{{ tab.title }}</template>
 						</Tab>
 					</template>
 				</TabList>
@@ -241,8 +265,14 @@ const updateTab = (value: string) => {
 				@sort="onGroupSort"
 			>
 				<template #empty>
-					<div class="flex items-center justify-center h-full text-center">
-						{{ trans("No data available.") }}
+					<div v-if="failedTableTab === localCurrentTab" role="alert" class="flex flex-col items-center justify-center gap-1 h-full text-center">
+						<span class="text-red-700">{{ ctrans("This table could not be loaded.") }}</span>
+						<button type="button" class="min-h-11 px-3 underline text-gray-700 hover:text-gray-900" @click="retryCurrentTab">
+							{{ ctrans("Try again") }}
+						</button>
+					</div>
+					<div v-else class="flex items-center justify-center h-full text-center">
+						{{ ctrans("No data available.") }}
 					</div>
 				</template>
 
@@ -261,7 +291,7 @@ const updateTab = (value: string) => {
 						:style="columnHeader.type === 'icon' ? { width: '1px', whiteSpace: 'nowrap' } : {}"
 					>
 						<template #header>
-							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
+							<div class="px-2 text-xs md:text-sm 2xl:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
 								:class="columnHeader.align === 'left' ? '' : 'justify-end text-right'"
 								v-tooltip="columnHeader.tooltip"
 							>
@@ -299,9 +329,13 @@ const updateTab = (value: string) => {
 				<LoadingIcon />
 			</div>
 
-			<div class="mt-1 text-right text-[10px] text-gray-400">
-				{{ trans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">
-					{{ trans('— that is :time for you', { time: utcDayStartInUserTime }) }}
+			<div class="mt-1 text-right text-[10px] text-gray-500">
+				<template v-if="showsPartnersNote">
+					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Sales to our own companies are included') : ctrans('Sales to our own companies are not included') }}
+					(<button type="button" class="underline hover:text-gray-700" @click="openDashboardSettings">{{ ctrans('change') }}</button>) ·
+				</template>
+				{{ ctrans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">
+					{{ ctrans('(:time for you)', { time: utcDayStartInUserTime }) }}
 				</template>
 			</div>
 

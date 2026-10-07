@@ -10,10 +10,10 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableOutboxes from "@/Components/Tables/TableOutboxes.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes } from "@fal"
+import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes, faChartNetwork } from "@fal"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes)
+library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes, faChartNetwork)
 
 
 defineProps<{

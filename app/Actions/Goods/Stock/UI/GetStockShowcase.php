@@ -8,12 +8,16 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
+use App\Actions\Traits\HasBucketImages;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetStockShowcase
 {
     use AsObject;
+    use HasBucketImages;
 
     public function handle(Stock $stock): array
     {
@@ -27,6 +31,19 @@ class GetStockShowcase
         }
 
         return [
+            'trade_units'   => $stock->tradeUnits->map(fn (TradeUnit $tradeUnit) => [
+                'id'     => $tradeUnit->id,
+                'slug'   => $tradeUnit->slug,
+                'code'   => $tradeUnit->code,
+                'name'   => $tradeUnit->name,
+                'unit'   => $tradeUnit->type,
+                'units'  => trimDecimalZeros($tradeUnit->pivot->quantity),
+                'images' => $this->getImagesData($tradeUnit),
+            ])->all(),
+            'currency_code' => $stock->group->currency->code,
+            'sales_data'    => GetStockTimeSeriesData::run($stock),
+            'org_stocks'    => $this->getOrgStocksData($stock),
+            'barcodes'      => $this->getBarcodes($stock),
              'contactCard' => [
                  'id'                 => $stock->id,
                  'slug'               => $stock->slug,
@@ -64,6 +81,69 @@ class GetStockShowcase
                 'method'    => 'patch',
                 'name'      => 'grp.models.location_org_stock.move',
             ]
+        ];
+    }
+
+    /**
+     * Read only here: barcodes are edited from an organisation's SKO, which writes them back to this stock.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getBarcodes(Stock $stock): array
+    {
+        $card = fn (string $level, string $label, ?string $number, ?float $weight = null) => [
+            'level'      => $level,
+            'label'      => $label,
+            'number'     => $number,
+            'quantity'   => null,
+            'weight'     => $weight,
+            'dimensions' => null,
+            'packs'      => null,
+            'editable'   => false,
+            'warning'    => null,
+        ];
+
+        return [
+            $card('sko', 'SKO (outer packing, CODE 128)', $stock->barcode, $stock->gross_weight),
+            $card('unit', 'Unit EAN13', $stock->unit_barcode),
+            $card('carton', 'Carton (supplier outer box, same in every organisation)', $stock->carton_barcode),
+        ];
+    }
+
+    /**
+     * @return array{summary: array<string, array{icon_state: array{icon: string, tooltip: string}, value: float}>, quantity_in_locations: float, items: array<int, array<string, mixed>>}
+     */
+    private function getOrgStocksData(Stock $stock): array
+    {
+        $orgStocks = $stock->orgStocks()->with('organisation')->get()->sortBy('organisation.code')->values();
+
+        return [
+            'summary'               => [
+                'quantity_in_locations'        => [
+                    'icon_state' => ['icon' => 'fas fa-inventory', 'tooltip' => __('Stock in locations')],
+                    'value'      => (float)$orgStocks->sum('quantity_in_locations'),
+                ],
+                'quantity_in_submitted_orders' => [
+                    'icon_state' => ['icon' => 'fas fa-shopping-cart', 'tooltip' => __('Reserved paid parts in process by customer services')],
+                    'value'      => (float)$orgStocks->sum('quantity_in_submitted_orders'),
+                ],
+                'quantity_to_be_picked'        => [
+                    'icon_state' => ['icon' => 'fas fa-shopping-basket', 'tooltip' => __('Parts been picked')],
+                    'value'      => (float)$orgStocks->sum('quantity_to_be_picked'),
+                ],
+            ],
+            'quantity_in_locations' => (float)$orgStocks->sum('quantity_in_locations'),
+            'items'                 => $orgStocks->map(fn (OrgStock $orgStock) => [
+                'id'                    => $orgStock->id,
+                'code'                  => $orgStock->code,
+                'organisation_code'     => $orgStock->organisation->code,
+                'organisation_name'     => $orgStock->organisation->name,
+                'quantity_in_locations' => (float)$orgStock->quantity_in_locations,
+                'route'                 => [
+                    'name'       => 'grp.majordomo.redirect_org_stock',
+                    'parameters' => [$orgStock->id],
+                ],
+            ])->all(),
         ];
     }
 }

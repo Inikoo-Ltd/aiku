@@ -3,7 +3,8 @@ import Multiselect from "@vueform/multiselect"
 import "@vueform/multiselect/themes/default.css"
 import { lowerCase, snakeCase } from "lodash-es"
 import { ref, watch, computed } from "vue"
-import {useFontFamilyList} from "@/Composables/useFont"
+import { fontsForCurrentShop } from "@/Composables/useFont"
+import FontNotFor from "@/Components/Workshop/Properties/FontNotFor.vue"
 
 const props = defineProps<{
   modelValue: any
@@ -18,12 +19,12 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
-const options = useFontFamilyList
+const options = computed(() => fontsForCurrentShop())
 
 const compOptions = computed(() => {
   return props.fieldData?.options
-    ? options.filter((opt:any) => props.fieldData.options?.includes(opt))
-    : options
+    ? options.value.filter((opt:any) => props.fieldData.options?.includes(opt))
+    : options.value
 })
 
 const value = ref(props.modelValue)
@@ -63,6 +64,7 @@ watch(value, (v) => {
       <template #option="{ option }">
         <span :style="`font-family:${snakeCase(lowerCase(option.value))}`">
           {{ option.label }}
+          <FontNotFor :languages="option.notFor" />
         </span>
       </template>
     </Multiselect>

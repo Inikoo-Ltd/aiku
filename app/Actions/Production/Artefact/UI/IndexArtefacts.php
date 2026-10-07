@@ -80,6 +80,14 @@ class IndexArtefacts extends OrgAction
         return $this->handle(parent: $production, prefix: ArtefactsTabsEnum::ARTEFACTS->value);
     }
 
+    public function inJson(Production $production, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $production;
+        $this->initialisationFromProduction($production, $request);
+
+        return $this->handle($production);
+    }
+
     protected function getElementGroups(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
         $assignmentCounts = $this->getAssignmentCounts($parent);
@@ -245,6 +253,7 @@ class IndexArtefacts extends OrgAction
                     'artefacts.state',
                     'artefacts.recommended_batch_size',
                     'org_stocks.packed_in',
+                    'org_stocks.code as org_stock_code',
                     'artefacts.shelf_life_days',
                     'artefact_departments.name as artefact_department_name',
                     'artefact_departments.slug as artefact_department_slug',
@@ -315,6 +324,20 @@ class IndexArtefacts extends OrgAction
 
         return [
             'set_route' => ['name' => 'grp.models.production.artefacts.set_shelf_life', 'parameters' => [$production->id]],
+        ];
+    }
+
+    public function getSetRecipeProps(Production $production, bool $canEdit): ?array
+    {
+        if (!$canEdit) {
+            return null;
+        }
+
+        return [
+            'set_route'            => ['name' => 'grp.models.production.artefacts.set_recipe', 'parameters' => [$production->id]],
+            'task_options'         => ['name' => 'grp.json.production.manufacture_tasks.index', 'parameters' => ['production' => $production->id]],
+            'raw_material_options' => ['name' => 'grp.json.production.raw_materials.index', 'parameters' => ['production' => $production->id]],
+            'create_task_route'    => ['name' => 'grp.org.productions.show.operations.manufacture_tasks.create', 'parameters' => [$production->organisation->slug, $production->slug]],
         ];
     }
 
@@ -522,6 +545,7 @@ class IndexArtefacts extends OrgAction
                 'set_batch_size'     => $this->parent instanceof Production ? $this->getSetBatchSizeProps($this->parent, $this->canEdit) : null,
                 'set_shelf_life'     => $this->parent instanceof Production ? $this->getSetShelfLifeProps($this->parent, $this->canEdit) : null,
                 'set_state'          => $this->parent instanceof Production ? $this->getSetStateProps($this->parent, $this->canEdit) : null,
+                'set_recipe'         => $this->parent instanceof Production ? $this->getSetRecipeProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),

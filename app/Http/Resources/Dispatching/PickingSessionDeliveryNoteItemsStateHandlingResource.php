@@ -50,9 +50,13 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $delivery_note_has_extra_packing
  * @property mixed $batch_code
  * @property mixed $expiry_date
+ * @property mixed $transaction_id
+ * @property mixed $indivisible_set
  */
 class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
+    use WithOrderedAsset;
+
     public function toArray($request): array
     {
         $packedIn = $this->packed_in;
@@ -177,6 +181,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'warning'                           => $fullWarning,
             'is_handled'                        => $this->is_handled,
             'is_dirty'                          => $this->is_dirty,
+            'indivisible_set'                   => $this->getOrderedAssetIndivisibleSet(),
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_id'                  => $this->delivery_note_id,

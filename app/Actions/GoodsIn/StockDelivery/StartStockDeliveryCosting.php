@@ -8,7 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StartStockDeliveryCosting extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithStockDeliveryCostingEditAuthorisation;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
 
@@ -53,7 +53,11 @@ class StartStockDeliveryCosting extends OrgAction
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
 
-        StockDeliveriesHydrateCosts::run($stockDelivery);
+        if ($stockDelivery->parent_type === 'OrgPartner') {
+            EvaluateStockDeliveryCosting::run($stockDelivery);
+        } else {
+            StockDeliveriesHydrateCosts::run($stockDelivery);
+        }
 
         $this->runStockDeliveryHydrators($stockDelivery);
 

@@ -26,7 +26,7 @@ import { faChevronDown } from "@far"
 import { faPlay, faTriangle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { get } from 'lodash-es'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useGetCurrencySymbol } from "@/Composables/useCurrency"
@@ -49,7 +49,6 @@ const props = defineProps<{
 	dashboard_stats:{}
 }>()
 
-console.log(props.dashboard, "hehe")
 const selectedDateOption = ref<string>("ytd")
 const locale = inject("locale", aikuLocaleStructure)
 const checked = ref(true)
@@ -91,7 +90,7 @@ function ShopDashboard(shop: any) {
 </script>
 
 <template>
-	<Head :title="trans('Dashboard')" />
+	<Head :title="ctrans('Dashboard')" />
 	<div class="grid grid-cols-12 m-3 gap-4">
 		<!-- <pre>{{ props.groupStats.organisations }}</pre> -->
 			<!-- 	<div class="flex justify-between items-center">

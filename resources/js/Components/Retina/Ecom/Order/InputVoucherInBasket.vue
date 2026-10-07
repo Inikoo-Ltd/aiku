@@ -138,7 +138,6 @@ const onApplyVoucher = () => {
                     // isModalVoucherNotFound.value = true
                     // // return
                 }
-                console.log('errrorr', errors.voucher)
                 notify({
                     title: ctrans("Something went wrong"),
                     text: ctrans("Failed to add the voucher, try again."),
@@ -194,8 +193,8 @@ const onRemoveVoucher = () => {
     <div>
         <!-- Voucher: active -->
         <div v-if="hasAttachedVoucher" class="w-full">
-            <div class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'pr-2 md:pr-6'">
-                <div class="" :class="inIris ? 'w-full' : 'w-72'">
+            <div class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'px-3 md:px-6'">
+                <div class="" :class="inIris ? 'w-full' : 'w-full max-w-[16rem] md:w-72'">
                     <PureInput
                         :modelValue="voucherLabel"
                         xisLoading="isLoadingVoucher"
@@ -213,7 +212,7 @@ const onRemoveVoucher = () => {
                             paddingBottom: '5px',
                         }"
                         :classInput="
-                            currentGrossAmount >= currentVoucher.voucher_amount ? '!bg-transparent !text-green-700' : '!bg-transparent !text-gray-700'
+                            currentGrossAmount >= currentVoucher.voucher_amount ? '!bg-transparent !text-green-700' : '!bg-transparent !text-gray-800'
                         "
                     >
                         <template #prefix>
@@ -237,7 +236,7 @@ const onRemoveVoucher = () => {
                     >
                         {{ ctrans('Voucher valid until :voucherUntil', { voucherUntil: useFormatTime(currentVoucher.end_at, { formatTime: 'hm'}) }) }}
                     </div>
-                    <div v-else class="text-xs italic opacity-70 mt-0.5 text-gray-700 pr-1"
+                    <div v-else class="text-xs italic opacity-70 mt-0.5 text-gray-800 pr-1"
                         :class="inIris ? '' : 'text-right'"
                     >
                         {{ ctrans('Add :amountToActive to your basket to activate the voucher.', { amountToActive: locale.currencyFormat(layout.iris?.currency?.code, currentVoucher.voucher_amount - currentGrossAmount) }) }}
@@ -260,8 +259,8 @@ const onRemoveVoucher = () => {
         </div>
         
         <!-- Voucher: not active -->
-        <div v-else class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'pr-2 md:pr-6'">
-            <div class="" :class="inIris ? 'w-full' : 'w-72'">
+        <div v-else class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'px-3 md:px-6'">
+            <div class="" :class="inIris ? 'w-full' : 'w-full max-w-[16rem] md:w-72'">
                 <PureInput
                     v-model="tempVoucherCode"
                     @update:model-value="() => voucherNotFoundMessage = null"
@@ -317,24 +316,24 @@ const onRemoveVoucher = () => {
 
         <!-- <div v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'" class="mt-2 pr-2 md:pr-6">
             <div v-if="!hasAttachedVoucher" class="flex items-center justify-end">
-                <div class="w-full md:w-[540px] border border-dashed border-gray-300 rounded-md px-3 py-2 text-right text-sm text-gray-500">
-                    {{ trans('No voucher attached') }}
+                <div class="w-full md:w-[540px] border border-dashed border-gray-300 rounded-md px-3 py-2 text-right text-sm text-gray-600">
+                    {{ ctrans('No voucher attached') }}
                 </div>
             </div>
             <div v-else-if="isVoucherExpired" class="flex items-center justify-end">
                 <div class="w-full md:w-[540px] border border-red-200 bg-red-50 rounded-md px-3 py-2 text-right text-sm text-red-700">
-                    <span class="font-medium">{{ trans('Voucher expired') }}</span>
+                    <span class="font-medium">{{ ctrans('Voucher expired') }}</span>
                     <span class="ml-1">({{ currentVoucher?.voucher_code }})</span>
-                    <span class="ml-2 text-red-600">{{ trans('Until') }}: {{ voucherUntilLabel }}</span>
+                    <span class="ml-2 text-red-600">{{ ctrans('Until') }}: {{ voucherUntilLabel }}</span>
                 </div>
             </div>
             <div v-else class="flex items-center justify-end">
                 <div class="w-full md:w-[540px] border border-green-200 bg-green-50 rounded-md px-3 py-2 text-right text-sm text-green-700">
-                    <span class="font-medium">{{ trans('Voucher active') }}</span>
+                    <span class="font-medium">{{ ctrans('Voucher active') }}</span>
                     <span class="ml-1">({{ currentVoucher?.voucher_code }})</span>
                     <span class="ml-2">{{ currentVoucher?.name }}</span>
                     <span class="ml-2">{{ currentVoucher?.discount }}</span>
-                    <span class="ml-2 text-green-600">{{ trans('Until') }}: {{ voucherUntilLabel }}</span>
+                    <span class="ml-2 text-green-600">{{ ctrans('Until') }}: {{ voucherUntilLabel }}</span>
                 </div>
             </div>
         </div> -->
@@ -347,8 +346,8 @@ const onRemoveVoucher = () => {
             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
             </div>
-            <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ ctrans("Voucher not found") }}</h3>
-            <p class="mt-2 text-sm text-gray-500">
+            <h3 class="mt-4 text-lg font-semibold text-gray-800">{{ ctrans("Voucher not found") }}</h3>
+            <p class="mt-2 text-sm text-gray-600">
                 {{ voucherNotFoundMessage || ctrans("The voucher code you entered was not found or is no longer available.") }}
             </p>
             <div class="mt-6 flex justify-center">

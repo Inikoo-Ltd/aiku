@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck, faFilePdf, faFileWord } from "@fal"
@@ -10,6 +10,7 @@ import ProgressBar from "primevue/progressbar"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
 import { Link } from "@inertiajs/vue3"
+import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
 
 const props = defineProps<{
     data: {
@@ -19,6 +20,7 @@ const props = defineProps<{
         attachment_category_box: routeType[]
         attachRoute: routeType
         detachRoute: routeType
+        family_documents?: any[]
         attachments: {
             label: string
             type: string
@@ -31,7 +33,6 @@ const props = defineProps<{
     }
 }>()
 
-console.log("AttachmentManagement props:", props)
 
 const editable = ref(props.data.editable ?? true)
 const loadingSubmit = ref<string | null>(null)
@@ -39,9 +40,9 @@ const activeCategory = ref<string | null>(null)
 const uploadProgress = reactive<Record<string, number>>({})
 
 const notifySuccess = (msg: string) =>
-    notify({ title: trans("Success"), text: msg, type: "success" })
+    notify({ title: ctrans("Success"), text: msg, type: "success" })
 const notifyError = (msg: string) =>
-    notify({ title: trans("Error"), text: msg, type: "error" })
+    notify({ title: ctrans("Error"), text: msg, type: "error" })
 
 async function uploadFiles(files: FileList, categoryBox: Record<string, any>) {
     if (!files?.length) return
@@ -67,11 +68,11 @@ async function uploadFiles(files: FileList, categoryBox: Record<string, any>) {
             }
         )
 
-        notifySuccess(trans("File(s) uploaded successfully"))
+        notifySuccess(ctrans("File(s) uploaded successfully"))
         router.reload()
     } catch (err: any) {
         console.error(err)
-        notifyError(err.response?.data?.message || trans("Failed to upload file(s)"))
+        notifyError(err.response?.data?.message || ctrans("Failed to upload file(s)"))
     } finally {
         loadingSubmit.value = null
         uploadProgress[categoryBox.scope] = 0
@@ -111,7 +112,7 @@ async function onDeletefilesInBox(categoryBox: any) {
             payload
         )
 
-        notifySuccess(trans("Attachment deleted successfully"))
+        notifySuccess(ctrans("Attachment deleted successfully"))
 
         // Optional: refresh UI (depending on your Inertia setup)
         if (typeof router !== "undefined" && router.reload) {
@@ -119,7 +120,7 @@ async function onDeletefilesInBox(categoryBox: any) {
         }
     } catch (err: any) {
         console.error(err)
-        notifyError(err.response?.data?.message || trans("Failed to delete attachment"))
+        notifyError(err.response?.data?.message || ctrans("Failed to delete attachment"))
     } finally {
         loadingSubmit.value = null
     }
@@ -160,7 +161,7 @@ const getIcon = (type: string) => {
         <div v-if="props.data.attachment_category_box?.public?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <div class="text-base font-semibold text-gray-700">
                 <h3 class="mb-1">
-                    {{ trans("Attachment Public") }}
+                    {{ ctrans("Attachment Public") }}
                 </h3>
                 <div class="border-b border-gray-300 h-1 mb-4"></div>
             </div>
@@ -199,11 +200,11 @@ const getIcon = (type: string) => {
                                 <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
                                     class="mb-2 text-3xl text-green-500 animate-pulse" fixed-width />
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
-                                    {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
+                                    {{ categoryBox.attachment.name || ctrans("Attachment uploaded") }}
                                 </span>
                                  <a class="text-[11px] text-green-500 mt-1" :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)"
                                     v-if="categoryBox.download_route" target="_blank" method="get">
-                                {{ trans("Click to view") }}
+                                {{ ctrans("Click to view") }}
                                 </a>
                             </a>
                         </template>
@@ -213,7 +214,7 @@ const getIcon = (type: string) => {
                                 class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" fixed-width />
                                 <span class="text-[12px] font-medium">
-                                    {{ trans("Drop or click to upload") }}
+                                    {{ ctrans("Drop or click to upload") }}
                                 </span>
                             </div>
                         </template>
@@ -234,7 +235,7 @@ const getIcon = (type: string) => {
         <div v-if="props.data.attachment_category_box?.private?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <div class="text-base font-semibold text-gray-700">
                 <h3 class="mb-1">
-                    {{ trans("Attachment Private") }}
+                    {{ ctrans("Attachment Private") }}
                 </h3>
                 <div class="border-b border-gray-300 h-1 mb-4"></div>
             </div>
@@ -272,11 +273,11 @@ const getIcon = (type: string) => {
                                 <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
                                     class="mb-2 text-3xl text-green-500 animate-pulse" fixed-width />
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
-                                    {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
+                                    {{ categoryBox.attachment.name || ctrans("Attachment uploaded") }}
                                 </span>
                                 <a class="text-[11px] text-green-500 mt-1"  :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)"
                                     v-if="categoryBox.download_route" target="_blank">
-                                {{ trans("Click to view") }}
+                                {{ ctrans("Click to view") }}
                                 </a>
                             </a>
                         </template>
@@ -286,7 +287,7 @@ const getIcon = (type: string) => {
                                 class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" fixed-width />
                                 <span class="text-[12px] font-medium">
-                                    {{ trans("Drop or click to upload") }}
+                                    {{ ctrans("Drop or click to upload") }}
                                 </span>
                             </div>
                         </template>
@@ -304,6 +305,13 @@ const getIcon = (type: string) => {
             </TransitionGroup>
         </div>
     </div>
+
+    <TradeUnitDocuments
+        v-if="props.data.family_documents?.length"
+        :documents="props.data.family_documents"
+        :title="ctrans('From its trade unit family')"
+        note="These come from the trade unit family and go to the products too. Change them on the trade unit family."
+    />
 </template>
 
 <style scoped>

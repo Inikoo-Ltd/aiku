@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickedBay;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\OrgAction;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ChangePickingBaysDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     /**
      * @throws \Throwable
      */

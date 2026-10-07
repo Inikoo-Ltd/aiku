@@ -55,6 +55,20 @@ trait WithInvoiceCategorySubNavigation
                     'tooltip' => __('Refunds')
                 ]
             ],
+            [
+                "label"    => __('Backlog'),
+                "route"     => [
+                    "name"       => 'grp.org.accounting.invoice-categories.show.backlog.index',
+                    "parameters" => [
+                        'organisation' => $invoiceCategory->organisation->slug,
+                        'invoiceCategory' => $invoiceCategory->slug
+                    ],
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-shopping-cart'],
+                    'tooltip' => __('Orders submitted but not invoiced yet')
+                ]
+            ],
 
             // [
             //     "number"   => $numberUnpaid,

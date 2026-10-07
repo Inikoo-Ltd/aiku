@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue";
 import DatePicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
@@ -102,15 +102,15 @@ const computedEnabled = computed({
           preserveScroll: true,
           onSuccess: () => {
             notify({
-              title: trans("Success"),
-              text: trans("Set the address to selected address."),
+              title: ctrans("Success"),
+              text: ctrans("Set the address to selected address."),
               type: "success"
             });
           },
           onError: () =>
             notify({
-              title: trans("Something went wrong"),
-              text: trans("Failed to submit the address, try again"),
+              title: ctrans("Something went wrong"),
+              text: ctrans("Failed to submit the address, try again"),
               type: "error"
             })
         }
@@ -130,15 +130,15 @@ const computedEnabled = computed({
           }
         );
         notify({
-          title: trans("Success"),
-          text: trans("Set the address to follow collection."),
+          title: ctrans("Success"),
+          text: ctrans("Set the address to follow collection."),
           type: "success"
         });
       } catch (error) {
         console.error("Error disabling collection:", error);
         notify({
-          title: trans("Something went wrong"),
-          text: trans("Failed to disable collection."),
+          title: ctrans("Something went wrong"),
+          text: ctrans("Failed to disable collection."),
           type: "error"
         });
       }
@@ -168,15 +168,15 @@ function updateCollectionType() {
       preserveScroll: true,
       onSuccess: () => {
         notify({
-          title: trans("Success"),
-          text: trans("Collection type updated successfully"),
+          title: ctrans("Success"),
+          text: ctrans("Collection type updated successfully"),
           type: "success"
         });
       },
       onError: () => {
         notify({
-          title: trans("Something went wrong"),
-          text: trans("Failed to update collection type"),
+          title: ctrans("Something went wrong"),
+          text: ctrans("Failed to update collection type"),
           type: "error"
         });
       }
@@ -194,15 +194,15 @@ function updateCollectionNotes() {
       preserveScroll: true,
       onSuccess: () => {
         notify({
-          title: trans("Success"),
-          text: trans("Text updated successfully"),
+          title: ctrans("Success"),
+          text: ctrans("Text updated successfully"),
           type: "success"
         });
       },
       onError: () => {
         notify({
-          title: trans("Something went wrong"),
-          text: trans("Failed to update text"),
+          title: ctrans("Something went wrong"),
+          text: ctrans("Failed to update text"),
           type: "error"
         });
       }
@@ -238,7 +238,6 @@ const onChangeEstimateDate = async (close: Function) => {
       }
     );
   } catch (error) {
-    console.log(error);
     notify({
       title: "Failed",
       text: "Failed to update the Delivery date, try again.",
@@ -266,7 +265,7 @@ const disableBeforeToday = (date: Date) => {
   <div class="h-min grid sm:grid-cols-2 lg:grid-cols-4 border-t border-b border-gray-200 divide-x divide-gray-300">
     <!-- Box: Detail -->
     <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 py-5 px-3"
-                   :tooltip="trans('Detail')" :label="capitalize(data_pallet.state)" icon="fal fa-truck-couch">
+                   :tooltip="ctrans('Detail')" :label="capitalize(data_pallet.state)" icon="fal fa-truck-couch">
       <!-- Field: Reference -->
       <dl as="a" v-if="box_stats.fulfilment_customer.customer.reference"
            class="flex items-center w-fit flex-none gap-x-2">
@@ -309,7 +308,7 @@ const disableBeforeToday = (date: Date) => {
               <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400 group-hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
             <div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
-              {{ trans("Set estimated delivery") }}
+              {{ ctrans("Set estimated delivery") }}
             </div>
           </template>
           <template #content="{ close }">
@@ -323,7 +322,7 @@ const disableBeforeToday = (date: Date) => {
         </Popover>
         <div v-else>
           <dd class="text-sm text-gray-500">
-            {{ data_pallet?.estimated_delivery_date ? useFormatTime(data_pallet?.estimated_delivery_date) : trans("Not Set") }}
+            {{ data_pallet?.estimated_delivery_date ? useFormatTime(data_pallet?.estimated_delivery_date) : ctrans("Not Set") }}
           </dd>
         </div>
       </dl>
@@ -331,7 +330,7 @@ const disableBeforeToday = (date: Date) => {
       <div class="flex flex-col w-full gap-y-2 mb-1">
         <!-- Top Row: Icon dan Switch -->
         <dl class="flex items-center gap-x-2">
-          <dt v-tooltip="trans(`Pallet Return's address`)" class="flex-none">
+          <dt v-tooltip="ctrans(`Pallet Return's address`)" class="flex-none">
             <span class="sr-only">Delivery address</span>
             <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
           </dt>
@@ -346,13 +345,13 @@ const disableBeforeToday = (date: Date) => {
                 class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
             </Switch>
             <SwitchLabel as="span" class="ml-3 text-sm font-medium text-gray-900">
-              {{ trans("Collection") }}
+              {{ ctrans("Collection") }}
             </SwitchLabel>
           </SwitchGroup>
         </dl>
 
         <div v-if="data_pallet.is_collection" class="w-full">
-          <span class="block mb-1">{{ trans("Collection by:") }}</span>
+          <span class="block mb-1">{{ ctrans("Collection by:") }}</span>
           <div class="flex space-x-4">
             <label class="inline-flex items-center">
               <input
@@ -362,7 +361,7 @@ const disableBeforeToday = (date: Date) => {
                 @change="updateCollectionType"
                 class="form-radio"
               />
-              <span class="ml-2">{{ trans("My Self") }}</span>
+              <span class="ml-2">{{ ctrans("My Self") }}</span>
             </label>
             <label class="inline-flex items-center">
               <input
@@ -372,7 +371,7 @@ const disableBeforeToday = (date: Date) => {
                 @change="updateCollectionType"
                 class="form-radio"
               />
-              <span class="ml-2">{{ trans("Third Party") }}</span>
+              <span class="ml-2">{{ ctrans("Third Party") }}</span>
             </label>
           </div>
 
@@ -395,7 +394,7 @@ const disableBeforeToday = (date: Date) => {
             <div
               @click="() => (isDeliveryAddressManagementModal = true)"
               class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-              <span>{{trans('Edit')}}</span>
+              <span>{{ctrans('Edit')}}</span>
             </div>
           </div>
         </div>
@@ -404,7 +403,7 @@ const disableBeforeToday = (date: Date) => {
 
     <!-- Box: Notes -->
     <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 pt-2 px-3"
-                   :tooltip="trans('Notes')" :percentage="0">
+                   :tooltip="ctrans('Notes')" :percentage="0">
       <!-- Customer reference -->
       <div class="mb-1">
         <PalletEditCustomerReference

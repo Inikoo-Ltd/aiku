@@ -12,7 +12,8 @@ import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type BucketItem = {
@@ -28,6 +29,8 @@ type BucketItem = {
     price: number | null
     shopping_list_item_id: number | null
     ordered_quantity: number
+    sent_quantity: number
+    order_quantum: number
 }
 
 const props = defineProps<{
@@ -57,7 +60,8 @@ function setQuantity(item: BucketItem, quantity: number) {
 }
 
 function commitQuantity(item: BucketItem) {
-    const quantity = quantityFor(item)
+    const quantity = snapToBatch(item.ordered_quantity ?? 0, quantityFor(item), item.order_quantum)
+    quantities.value[item.id] = quantity
     if (quantity === (item.ordered_quantity ?? 0)) {
         return
     }
@@ -86,7 +90,7 @@ function commitQuantity(item: BucketItem) {
         }
     } else if (quantity > 0) {
         router.post(
-            route(props.addRoute.name, [...props.addRoute.parameters, item.slug]),
+            route(props.addRoute.name, [...props.addRoute.parameters, item.id]),
             { quantity },
             reloadOptions
         )
@@ -105,7 +109,7 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
             <span>
                 <b class="font-semibold text-gray-800">{{ bucketLabel }}</b>
                 <span v-if="rank"> · {{ rank }}</span>
-                — {{ useLocaleStore().number(items.total) }} {{ trans("items") }}
+                — {{ useLocaleStore().number(items.total) }} {{ ctrans("items") }}
             </span>
             <span v-if="items.from">{{ items.from }}–{{ items.to }} / {{ useLocaleStore().number(items.total) }}</span>
         </div>
@@ -114,10 +118,10 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                     <tr>
-                        <th class="px-4 py-2">{{ trans("Code") }}</th>
-                        <th class="px-4 py-2">{{ trans("Info") }}</th>
-                        <th class="px-4 py-2 text-right">{{ trans("Quantity (SKO)") }}</th>
-                        <th class="px-4 py-2 text-right">{{ trans("Amount") }}</th>
+                        <th class="px-4 py-2">{{ ctrans("Code") }}</th>
+                        <th class="px-4 py-2">{{ ctrans("Info") }}</th>
+                        <th class="px-4 py-2 text-right">{{ ctrans("Quantity (SKO)") }}</th>
+                        <th class="px-4 py-2 text-right">{{ ctrans("Amount") }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -131,14 +135,14 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
                                 <div class="min-w-0 text-xs leading-5">
                                     <div class="truncate text-sm font-medium text-gray-800">{{ item.name }}</div>
                                     <div class="text-gray-500">
-                                        {{ trans("Their stock") }} <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(Math.floor(item.their_stock)) }}</b>
-                                        · {{ trans("our stock") }}
+                                        {{ ctrans("Their stock") }} <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(Math.floor(item.their_stock)) }}</b>
+                                        · {{ ctrans("our stock") }}
                                         <b v-if="item.our_stock !== null" class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(Math.floor(item.our_stock)) }}</b>
-                                        <b v-else class="font-medium text-violet-600">{{ trans("never stocked") }}</b>
+                                        <b v-else class="font-medium text-violet-600">{{ ctrans("never stocked") }}</b>
                                         <template v-if="item.our_days_of_cover !== null">
                                             ·
                                             <span :class="{ 'font-medium text-red-600': item.our_days_of_cover <= 14, 'text-amber-600': item.our_days_of_cover > 14 && item.our_days_of_cover <= 30 }">
-                                                {{ item.our_days_of_cover === 0 ? trans("we run out now") : `${trans("we run out in")} ~${item.our_days_of_cover} ${trans("days")}` }}
+                                                {{ item.our_days_of_cover === 0 ? ctrans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${item.our_days_of_cover} ${ctrans("days")}` }}
                                             </span>
                                         </template>
                                     </div>
@@ -156,15 +160,25 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
                                     noSaveButton
                                     @update:modelValue="(value: number) => setQuantity(item, value)"
                                 />
+                                <span
+                                    v-if="item.sent_quantity > 0"
+                                    v-tooltip="ctrans('Already sent to the partner')"
+                                    class="cursor-help whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500"
+                                >{{ ctrans(':count sent', { count: useLocaleStore().number(item.sent_quantity) }) }}</span>
+                                <span
+                                    v-if="item.order_quantum > 1"
+                                    v-tooltip="ctrans('Made in batches: ordered in multiples of :quantum SKOs', { quantum: item.order_quantum })"
+                                    class="cursor-help text-xs tabular-nums text-gray-400"
+                                >×{{ item.order_quantum }}</span>
                                 <button
                                     type="button"
                                     class="cursor-pointer whitespace-nowrap rounded-md border border-dashed px-2 py-1 text-xs font-medium tabular-nums"
                                     :class="item.recommended_quantity ? 'border-indigo-300 text-indigo-600 hover:bg-indigo-50' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
-                                    :title="trans('Suggested order, click to fill')"
+                                    :title="ctrans('Suggested order, click to fill')"
                                     @click="setQuantity(item, item.recommended_quantity ?? 0)"
                                 >
                                     {{ useLocaleStore().number(item.recommended_quantity ?? 0) }}
-                                    <span class="ml-0.5 font-normal text-gray-400">{{ trans("suggested") }}</span>
+                                    <span class="ml-0.5 font-normal text-gray-400">{{ ctrans("suggested") }}</span>
                                 </button>
                             </div>
                         </td>
@@ -175,14 +189,14 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
                 </tbody>
             </table>
             <p v-if="!items.data.length" class="py-10 text-center text-sm text-gray-400">
-                {{ trans("No items in this bucket") }}
+                {{ ctrans("No items in this bucket") }}
             </p>
         </div>
 
         <div v-if="items.prev_page_url || items.next_page_url" class="mt-3 flex justify-between text-sm">
-            <Link v-if="items.prev_page_url" :href="items.prev_page_url" preserve-scroll class="secondaryLink">{{ trans("Previous") }}</Link>
+            <Link v-if="items.prev_page_url" :href="items.prev_page_url" preserve-scroll class="secondaryLink">{{ ctrans("Previous") }}</Link>
             <span v-else />
-            <Link v-if="items.next_page_url" :href="items.next_page_url" preserve-scroll class="secondaryLink">{{ trans("Next") }}</Link>
+            <Link v-if="items.next_page_url" :href="items.next_page_url" preserve-scroll class="secondaryLink">{{ ctrans("Next") }}</Link>
         </div>
     </div>
 </template>

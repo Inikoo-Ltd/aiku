@@ -32,6 +32,7 @@ const props = defineProps<{
 		placeholder?: string
 	}
 	loadingSubmit?: boolean
+	extraBody?: Record<string, any>
 }>()
 
 const emits = defineEmits<{
@@ -50,6 +51,7 @@ const onClickDelete = () => {
 		selectedMethod !== "delete"
 			? {
 					[props.keyMessage || "delete_comment"]: messageDelete.value,
+					...(props.extraBody ?? {}),
 			  }
 			: undefined
 
@@ -111,8 +113,9 @@ const messageDelete = ref("")
 			:isLoadingdelete>
 		</slot>
 
+		<Teleport to="body">
 		<TransitionRoot as="template" :show="isOpenModal">
-			<Dialog class="relative z-30" @close="isOpenModal = false">
+			<Dialog class="relative z-[9999]" @close="isOpenModal = false">
 				<TransitionChild
 					as="template"
 					enter="ease-out duration-150"
@@ -247,5 +250,6 @@ const messageDelete = ref("")
 				</div>
 			</Dialog>
 		</TransitionRoot>
+		</Teleport>
 	</div>
 </template>

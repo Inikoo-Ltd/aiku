@@ -11,11 +11,12 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Image from "@common/Components/Image.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, sent_quantity: number, order_quantum: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
@@ -90,7 +91,8 @@ function setQuantity(product: ProductCard, quantity: number) {
 }
 
 function commitQuantity(product: ProductCard) {
-    const quantity = quantityFor(product)
+    const quantity = snapToBatch(product.ordered_quantity ?? 0, quantityFor(product), product.order_quantum)
+    quantities.value[product.id] = quantity
     if (quantity === (product.ordered_quantity ?? 0) || !product.org_stock_slug) {
         return
     }
@@ -119,7 +121,7 @@ function commitQuantity(product: ProductCard) {
         }
     } else if (quantity > 0) {
         router.post(
-            route(props.addRoute.name, [...props.addRoute.parameters, product.org_stock_slug]),
+            route(props.addRoute.name, [...props.addRoute.parameters, product.org_stock_id]),
             { quantity },
             reloadOptions
         )
@@ -134,23 +136,23 @@ function commitQuantity(product: ProductCard) {
     <div class="flex items-start gap-6 p-6">
         <div class="min-w-0 flex-1 space-y-6">
         <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">
-            <span><b class="font-semibold text-gray-800 tabular-nums">{{ useLocaleStore().number(browseStats.products) }}</b> {{ trans("products") }}</span>
-            <span><b class="font-semibold text-gray-800 tabular-nums">{{ useLocaleStore().number(browseStats.in_stock) }}</b> {{ trans("in stock") }}</span>
-            <span><b class="font-semibold text-gray-800 tabular-nums">{{ browseStats.departments }}</b> {{ trans("departments") }}</span>
-            <span><b class="font-semibold text-gray-800 tabular-nums">{{ browseStats.collections }}</b> {{ trans("collections") }}</span>
+            <span><b class="font-semibold text-gray-800 tabular-nums">{{ useLocaleStore().number(browseStats.products) }}</b> {{ ctrans("products") }}</span>
+            <span><b class="font-semibold text-gray-800 tabular-nums">{{ useLocaleStore().number(browseStats.in_stock) }}</b> {{ ctrans("in stock") }}</span>
+            <span><b class="font-semibold text-gray-800 tabular-nums">{{ browseStats.departments }}</b> {{ ctrans("departments") }}</span>
+            <span><b class="font-semibold text-gray-800 tabular-nums">{{ browseStats.collections }}</b> {{ ctrans("collections") }}</span>
         </div>
         <div class="max-w-md w-full">
             <input
                 v-model="searchTerm"
                 type="text"
-                :placeholder="trans('Search products')"
+                :placeholder="ctrans('Search products')"
                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
 
         <nav v-if="level !== 'search' && level !== 'cover'" class="flex flex-wrap items-center gap-2 text-sm">
             <button class="rounded-full px-3 py-1" :class="level === 'root' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({})">
-                {{ trans("All") }} · {{ useLocaleStore().number(browseStats.products) }}
+                {{ ctrans("All") }} · {{ useLocaleStore().number(browseStats.products) }}
             </button>
             <template v-if="filters.department">
                 <span class="text-gray-300">/</span>
@@ -181,20 +183,20 @@ function commitQuantity(product: ProductCard) {
                     :class="browseTab === 'categories' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="browseTab = 'categories'"
                 >
-                    {{ level === "root" ? trans("Departments") : trans("Categories") }}
+                    {{ level === "root" ? ctrans("Departments") : ctrans("Categories") }}
                 </button>
                 <button
                     class="border-b-2 px-1 pb-2 font-medium"
                     :class="browseTab === 'collections' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="browseTab = 'collections'"
                 >
-                    {{ trans("Collections") }}
+                    {{ ctrans("Collections") }}
                 </button>
             </nav>
         </div>
 
         <div v-if="collections.length && (!categories.length || browseTab === 'collections')" class="space-y-3">
-            <h3 v-if="!categories.length" class="text-sm font-medium text-gray-500">{{ trans("Collections") }}</h3>
+            <h3 v-if="!categories.length" class="text-sm font-medium text-gray-500">{{ ctrans("Collections") }}</h3>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                 <button
                     v-for="collection in collections"
@@ -213,7 +215,7 @@ function commitQuantity(product: ProductCard) {
         </div>
 
         <div v-if="categories.length && (!collections.length || browseTab === 'categories')" class="space-y-3">
-            <h3 v-if="!collections.length" class="text-sm font-medium text-gray-500">{{ trans("Categories") }}</h3>
+            <h3 v-if="!collections.length" class="text-sm font-medium text-gray-500">{{ ctrans("Categories") }}</h3>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                 <button
                     v-for="category in categories"
@@ -227,7 +229,7 @@ function commitQuantity(product: ProductCard) {
                     <div class="p-2">
                         <p class="truncate text-sm font-medium text-gray-800">{{ category.name }}</p>
                         <p v-if="category.number_current_products !== undefined" class="text-xs text-gray-400">
-                            {{ category.number_current_products }} {{ trans("products") }}
+                            {{ category.number_current_products }} {{ ctrans("products") }}
                         </p>
                     </div>
                 </button>
@@ -235,7 +237,7 @@ function commitQuantity(product: ProductCard) {
         </div>
 
         <div v-if="products" class="space-y-3">
-            <h3 v-if="level === 'search'" class="text-sm font-medium text-gray-500">{{ trans("Search results") }}</h3>
+            <h3 v-if="level === 'search'" class="text-sm font-medium text-gray-500">{{ ctrans("Search results") }}</h3>
             <h3 v-else-if="level === 'cover'" class="text-sm font-medium text-gray-500">{{ coverLabel }}</h3>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                 <div v-for="product in products.data" :key="product.id" class="flex flex-col overflow-hidden rounded-lg border border-gray-200">
@@ -250,33 +252,33 @@ function commitQuantity(product: ProductCard) {
                                 {{ product.price !== null ? useLocaleStore().currencyFormat(orgPartner.currency, product.price) : "-" }}
                             </span>
                             <span class="whitespace-nowrap rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-xs text-gray-500">
-                                {{ trans("Their stock") }}: <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(product.available_quantity) }}</b>
+                                {{ ctrans("Their stock") }}: <b class="font-medium text-gray-700 tabular-nums">{{ useLocaleStore().number(product.available_quantity) }}</b>
                             </span>
                         </div>
                         <div class="grid grid-cols-[auto_1fr] gap-x-3 text-xs leading-5">
                             <template v-if="product.our_stock === null && product.their_daily_usage">
-                                <span class="text-gray-400">{{ trans("They sell") }}</span>
-                                <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.their_daily_usage * 91)) }} / {{ trans("quarter") }}</span>
+                                <span class="text-gray-400">{{ ctrans("They sell") }}</span>
+                                <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.their_daily_usage * 91)) }} / {{ ctrans("quarter") }}</span>
                             </template>
                             <template v-if="product.our_stock === null">
-                                <span class="text-gray-400">{{ trans("Our stock") }}</span>
-                                <span class="text-right font-medium text-violet-600">{{ trans("never stocked") }}</span>
+                                <span class="text-gray-400">{{ ctrans("Our stock") }}</span>
+                                <span class="text-right font-medium text-violet-600">{{ ctrans("never stocked") }}</span>
                             </template>
                             <template v-if="product.our_stock !== null">
-                                <span class="text-gray-400">{{ trans("Our stock") }}</span>
+                                <span class="text-gray-400">{{ ctrans("Our stock") }}</span>
                                 <span class="text-right font-medium tabular-nums">{{ useLocaleStore().number(Math.floor(product.our_stock)) }}</span>
                             </template>
                             <template v-if="product.our_quarterly_usage">
-                                <span class="text-gray-400">{{ trans("Our sales / quarter") }}</span>
+                                <span class="text-gray-400">{{ ctrans("Our sales / quarter") }}</span>
                                 <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.our_quarterly_usage)) }}</span>
                             </template>
                             <template v-if="product.our_days_of_cover !== null">
-                                <span class="text-gray-400">{{ trans("We run out in") }}</span>
+                                <span class="text-gray-400">{{ ctrans("Estimated: Would run out in") }}</span>
                                 <span
                                     class="text-right font-medium tabular-nums"
                                     :class="{ 'text-red-600': product.our_days_of_cover <= 14, 'text-amber-600': product.our_days_of_cover > 14 && product.our_days_of_cover <= 30 }"
                                 >
-                                    {{ product.our_days_of_cover === 0 ? trans("now") : `~${product.our_days_of_cover} ${trans("days")}` }}
+                                    {{ product.our_days_of_cover === 0 ? ctrans("now") : `~${product.our_days_of_cover} ${ctrans("days")}` }}
                                 </span>
                             </template>
                         </div>
@@ -291,15 +293,25 @@ function commitQuantity(product: ProductCard) {
                                 noSaveButton
                                 @update:modelValue="(value: number) => setQuantity(product, value)"
                             />
+<span
+                                v-if="product.sent_quantity > 0"
+                                v-tooltip="ctrans('Already sent to the partner')"
+                                class="cursor-help whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500"
+                            >{{ ctrans(':count sent', { count: useLocaleStore().number(product.sent_quantity) }) }}</span>
+                            <span
+                                v-if="product.order_quantum > 1"
+                                v-tooltip="ctrans('Made in batches: ordered in multiples of :quantum SKOs', { quantum: product.order_quantum })"
+                                class="cursor-help text-xs tabular-nums text-gray-400"
+                            >×{{ product.order_quantum }}</span>
                             <button
                                 type="button"
                                 class="cursor-pointer rounded-md border border-dashed px-2 py-1 text-xs font-medium tabular-nums"
                                 :class="product.recommended_quantity ? 'border-indigo-300 text-indigo-600 hover:bg-indigo-50' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
-                                :title="trans('Suggested order, click to fill')"
+                                :title="ctrans('Suggested order, click to fill')"
                                 @click="setQuantity(product, product.recommended_quantity ?? 0)"
                             >
                                 {{ useLocaleStore().number(product.recommended_quantity ?? 0) }}
-                                <span class="ml-0.5 font-normal text-gray-400">{{ trans("suggested") }}</span>
+                                <span class="ml-0.5 font-normal text-gray-400">{{ ctrans("suggested") }}</span>
                             </button>
                         </div>
                     </div>
@@ -307,7 +319,7 @@ function commitQuantity(product: ProductCard) {
             </div>
 
             <p v-if="!products.data.length" class="py-10 text-center text-sm text-gray-400">
-                {{ trans("No products found") }}
+                {{ ctrans("No products found") }}
             </p>
         </div>
         </div>

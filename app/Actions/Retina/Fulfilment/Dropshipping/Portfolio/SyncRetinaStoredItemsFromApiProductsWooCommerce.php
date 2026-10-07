@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
@@ -23,10 +24,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -125,8 +128,10 @@ class SyncRetinaStoredItemsFromApiProductsWooCommerce extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(CustomerSalesChannel $customerSalesChannel): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
+        abort_unless($this->authorize($request), 403);
+
         /** @var WooCommerceUser $wooCommerce */
         $wooCommerce = $customerSalesChannel->user;
 

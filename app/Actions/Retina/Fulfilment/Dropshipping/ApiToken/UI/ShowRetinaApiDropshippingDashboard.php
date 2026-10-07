@@ -14,6 +14,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiRequests;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
 use App\Http\Resources\Api\ApiTokensRetinaResource;
@@ -33,6 +34,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class ShowRetinaApiDropshippingDashboard extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     private CustomerSalesChannel $customerSalesChannel;
 
@@ -115,6 +117,9 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                     ],
                 ],
                 'is_need_to_add_card' => ($hasNonManualChannels || $hasApiTokens) && ! $hasCreditCards,
+                ApiTokenRetinaTabsEnum::SHOWCASE->value => [
+                    'staging_url' => 'https://canary.'.$this->website->domain.'/app',
+                ],
                 // 'data'       => [
                 //     // 'route_generate' => [
                 //     //     'name' => 'retina.dropshipping.customer_sales_channels.api.show.token',

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
@@ -17,6 +16,7 @@ use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetTicketBadgeData
@@ -24,7 +24,7 @@ class GetTicketBadgeData
     use AsObject;
 
     /**
-     * @return array{mine: array<string, array{label: string, count: int, elements: array<string, string>}>, recent: array<int, array<string, mixed>>, queue: array<string, array{label: string, count: int, elements: array<string, string>}>|null}
+     * @return array{mine: array<string, array{label: string, count: int, elements: array<string, string>}>, recent: array<int, array<string, mixed>>, queue: array<string, array{label: string, count: int, elements: array<string, string>}>|null, queue_recent: array<int, array<string, mixed>>}
      */
     public function handle(User $user): array
     {
@@ -36,30 +36,49 @@ class GetTicketBadgeData
                 'in_progress' => $this->row(__('In progress'), (clone $mine)->whereIn('status', [TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY]), ['mine' => 'reported', 'status' => 'in_progress,answered,pending_deploy']),
                 'waiting'     => $this->row(__('Waiting for my reply'), (clone $mine)->where('status', TicketStatusEnum::WAITING), ['mine' => 'reported', 'status' => 'waiting']),
             ],
-            'recent' => $this->recentUpdates($user),
-            'queue'  => null,
+            'recent'       => $this->recentUpdates($user, clone $mine),
+            'queue'        => null,
+            'queue_recent' => [],
         ];
 
         if (!Ticket::canBeManagedBy($user) && !Ticket::canCheckQa($user)) {
             return $badges;
         }
 
-        $all  = Ticket::where('group_id', $user->group_id)->visibleTo($user);
-        $open = fn () => (clone $all)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::ANSWERED]);
+        $all     = Ticket::where('group_id', $user->group_id)->visibleTo($user);
+        $working = [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS];
+        $notDone = fn (Builder $query) => $query->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED]);
+        $onIt    = fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('assignee_id', $user->id)->orWhereHas('collaborators', fn (Builder $query) => $query->whereKey($user->id)));
 
         $badges['queue'] = [
-            'todo_week'      => $this->row(__('To do, created this week'), (clone $all)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED])->where('created_at', '>=', now()->subWeek())->where(fn (Builder $query) => $query->whereNull('kind')->orWhereNotIn('kind', TicketKindEnum::internalValues())), ['status' => 'open,assigned']),
-            'new_unassigned' => $this->row(__('New, nobody on it'), (clone $all)->where('status', TicketStatusEnum::OPEN), ['status' => 'open']),
-            'overdue'        => $this->row(__('Open for more than 24h'), $open()->where('created_at', '<', now()->subDay()), ['status' => 'open,assigned,in_progress,answered']),
-            'assigned_to_me' => $this->row(__('Assigned to me'), $open()->where('assignee_id', $user->id), ['mine' => 'assigned', 'status' => 'open,assigned,in_progress']),
-            'collaborating'  => $this->row(__('Collaborating on'), $open()->where(fn (Builder $query) => $query->whereNull('assignee_id')->orWhere('assignee_id', '!=', $user->id))->whereHas('collaborators', fn (Builder $query) => $query->whereKey($user->id)), ['mine' => 'collaborating', 'status' => 'open,assigned,in_progress']),
-            'qa_failed'      => $this->row(__('Failed QA'), (clone $all)->where('assignee_id', $user->id)->where('qa_status', TicketQaStatusEnum::FAILED), ['mine' => 'assigned']),
-            'qa_requested'   => $this->row(__('Awaiting QA check'), (clone $all)->where('qa_status', TicketQaStatusEnum::REQUESTED), []),
+            'new_unassigned' => $this->row(__('New, nobody on it'), (clone $all)->where('status', TicketStatusEnum::OPEN), ['status' => 'open'], 'team'),
+            'overdue'        => $this->row(__('Open for more than 24h'), (clone $all)->whereIn('status', [...$working, TicketStatusEnum::ANSWERED])->where('created_at', '<', now()->subDay()), ['status' => 'open,assigned,in_progress,answered'], 'team'),
         ];
 
-        if (!Ticket::canCheckQa($user)) {
-            unset($badges['queue']['qa_requested']);
+        if (Ticket::canBeManagedBy($user)) {
+            $badges['queue'] += [
+                'assigned_to_me' => $this->row(__('Assigned to me'), (clone $all)->whereIn('status', $working)->where('assignee_id', $user->id), ['mine' => 'assigned', 'status' => 'open,assigned,in_progress'], 'mine'),
+                'collaborating'  => $this->row(__('Collaborating on'), (clone $all)->whereIn('status', $working)->where(fn (Builder $query) => $query->whereNull('assignee_id')->orWhere('assignee_id', '!=', $user->id))->whereHas('collaborators', fn (Builder $query) => $query->whereKey($user->id)), ['mine' => 'collaborating', 'status' => 'open,assigned,in_progress'], 'mine'),
+                'waiting'        => $this->row(__('Waiting for the reporter'), $onIt((clone $all)->where('status', TicketStatusEnum::WAITING)), ['mine' => 'assigned,collaborating', 'status' => 'waiting'], 'mine'),
+                'replied'        => $this->row(__('Reporter replied'), $onIt((clone $all)->where('status', TicketStatusEnum::ANSWERED)), ['mine' => 'assigned,collaborating', 'status' => 'answered'], 'mine'),
+                'qa_failed'      => $this->row(__('Failed QA, to fix'), $notDone((clone $all)->where('assignee_id', $user->id)->where('qa_status', TicketQaStatusEnum::FAILED)), ['mine' => 'assigned', 'qa_status' => 'failed'], 'mine'),
+                'qa_passed'      => $this->row(__('Passed QA, ready to close'), $notDone((clone $all)->where('assignee_id', $user->id)->where('qa_status', TicketQaStatusEnum::PASSED)), ['mine' => 'assigned', 'qa_status' => 'passed'], 'mine'),
+            ];
         }
+
+        if (Ticket::canCheckQa($user)) {
+            $badges['queue']['qa_to_check'] = $this->row(
+                __('Waiting for my check'),
+                (clone $all)->whereIn('qa_status', [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING])->where('qa_user_id', $user->id),
+                [],
+                'qa'
+            );
+        }
+
+        $badges['queue_recent'] = $this->recentUpdates($user, Ticket::where('group_id', $user->group_id)->where(fn (Builder $query) => $query
+            ->where('assignee_id', $user->id)
+            ->orWhere('qa_user_id', $user->id)
+            ->orWhereHas('collaborators', fn (Builder $query) => $query->whereKey($user->id))));
 
         return $badges;
     }
@@ -67,20 +86,21 @@ class GetTicketBadgeData
     /**
      * @param array<string, string> $elements
      *
-     * @return array{label: string, count: int, elements: array<string, string>}
+     * @return array{label: string, count: int, elements: array<string, string>, section?: string}
      */
-    private function row(string $label, Builder $query, array $elements): array
+    private function row(string $label, Builder $query, array $elements, ?string $section = null): array
     {
-        return ['label' => $label, 'count' => $query->count(), 'elements' => $elements];
+        return array_filter(['label' => $label, 'count' => $query->count(), 'elements' => $elements, 'section' => $section], fn ($value) => $value !== null);
     }
 
     /**
      * @return array<int, array{id: string, title: string, body: string, route: string, read: bool, created_at: mixed}>
      */
-    public function recentUpdates(User|WebUser $user): array
+    public function recentUpdates(User|WebUser $user, ?Builder $aboutTickets = null): array
     {
         return $user->notifications()
             ->whereRaw("(data::jsonb)->>'type' = 'ticket'")
+            ->when($aboutTickets, fn ($query) => $query->whereIn(DB::raw("((data::jsonb)->>'ticket_id')::bigint"), $aboutTickets->select('tickets.id')))
             ->latest()
             ->limit(8)
             ->get()

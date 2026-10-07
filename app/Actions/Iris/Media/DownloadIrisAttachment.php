@@ -1,0 +1,56 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 25 Sep 2026, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Iris\Media;
+
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
+use App\Models\Helpers\Media;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+class DownloadIrisAttachment
+{
+    use AsAction;
+
+    public function handle(Media $media): BinaryFileResponse
+    {
+        $filename = in_array($media->media_scope, ['labeling_guide', 'webpage']) ? $media->name : $media->file_name;
+
+        return response()->download($media->getPath(), $filename);
+    }
+
+    public function asController(Media $media): BinaryFileResponse
+    {
+        if (!self::isPublic($media)) {
+            abort(404);
+        }
+
+        return $this->handle($media);
+    }
+
+    public static function isPublic(Media $media): bool
+    {
+        return DB::table('model_has_attachments')
+            ->where('media_id', $media->id)
+            ->where(function (Builder $query) {
+                $query->where(function (Builder $query) {
+                    $query->whereIn('model_type', ['Product', 'TradeUnit', 'TradeUnitFamily'])
+                        ->whereIn('scope', TradeAttachmentScopeEnum::publicScopes());
+                })->orWhere(function (Builder $query) {
+                    $query->whereIn('model_type', ['ProductCategory', 'TradeUnitFamily'])
+                        ->where('scope', 'labeling_guide');
+                })->orWhere(function (Builder $query) {
+                    $query->where('model_type', 'Webpage')
+                        ->where('scope', 'webpage');
+                });
+            })
+            ->exists();
+    }
+}

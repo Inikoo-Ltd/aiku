@@ -36,9 +36,15 @@ use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Route;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\SysAdmin\Organisation\UI\EditOrganisation;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use Illuminate\Support\Arr;
+use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use App\Actions\SysAdmin\User\HydrateUser;
+use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
 use App\Actions\SysAdmin\User\SetUserEmployedInOrganisation;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
@@ -76,13 +82,17 @@ use App\Models\SysAdmin\Admin;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Stubs\Migrations\HasSysAdminStats;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
@@ -94,6 +104,8 @@ use Laravel\Sanctum\Sanctum;
 use function Pest\Laravel\{get};
 use function Pest\Laravel\{patch};
 use function Pest\Laravel\{actingAs};
+use function Pest\Laravel\{post};
+use function Pest\Laravel\{delete};
 
 beforeAll(function () {
     loadDB();
@@ -125,7 +137,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(13)
+        ->and($group->roles()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -133,14 +145,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(12)
+    expect($group->jobPositions()->count())->toBe(15)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(12)
+    expect($group->jobPositions()->count())->toBe(15)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -192,8 +204,8 @@ test('create organisation type shop', function (Group $group) {
 
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
-        ->and($organisation->roles()->count())->toBe(8)
-        ->and($group->roles()->count())->toBe(21)
+        ->and($organisation->roles()->count())->toBe(10)
+        ->and($group->roles()->count())->toBe(26)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -229,6 +241,33 @@ test('update organisation name', function (Organisation $organisation) {
         ['name' => 'Test New Organisation 2']
     );
     expect($organisation->name)->toBe('Test New Organisation 2');
+})->depends('create organisation by command');
+
+test('partner shops list saves in order from the edit organisation page and rejects external shops', function (Organisation $organisation) {
+    $agnes    = Shop::factory()->create(['group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+    $aroma    = Shop::factory()->create(['group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+    $external = Shop::factory()->create(['group_id' => $organisation->group_id, 'organisation_id' => $organisation->id, 'type' => ShopTypeEnum::EXTERNAL]);
+
+    $request = ActionRequest::create(route('grp.organisations.edit', $organisation->slug));
+    $request->setRouteResolver(fn () => Route::getRoutes()->match($request));
+    $page         = EditOrganisation::make()->htmlResponse($organisation, $request);
+    $formData     = (fn () => $this->props)->call($page)['formData'];
+    $updateRoute  = $formData['args']['updateRoute'];
+    $shopIdsField = collect($formData['blueprint'])->firstWhere('label', __('Procurement'))['fields']['procurement_shop_ids'];
+
+    expect(Route::has($updateRoute['name']))->toBeTrue()
+        ->and($shopIdsField['type'])->toBe('ordered-select-list')
+        ->and(collect($shopIdsField['options'])->pluck('id')->all())->toContain($agnes->id, $aroma->id)->not->toContain($external->id);
+
+    $organisation = UpdateOrganisation::make()->action($organisation, ['procurement_shop_ids' => [$aroma->id, $agnes->id]]);
+    expect(Arr::get($organisation->settings, 'procurement.shop_ids'))->toBe([$aroma->id, $agnes->id]);
+
+    $organisation = UpdateOrganisation::make()->action($organisation, ['procurement_shop_ids' => [$agnes->id, $aroma->id]]);
+    expect(Arr::get($organisation->settings, 'procurement.shop_ids'))->toBe([$agnes->id, $aroma->id]);
+
+    expect(fn () => UpdateOrganisation::make()->action($organisation, ['procurement_shop_ids' => [$external->id]]))
+        ->toThrow(ValidationException::class);
+    expect(Arr::get($organisation->fresh()->settings, 'procurement.shop_ids'))->toBe([$agnes->id, $aroma->id]);
 })->depends('create organisation by command');
 
 test('picker location choice setting trims the picking locations', function (Organisation $organisation) {
@@ -875,6 +914,10 @@ test('user status change', function (User $user) {
     expect($user->status)->toBeTrue();
     $user = UpdateUserStatus::make()->action($user, false);
     expect($user->status)->toBeFalse();
+
+    actingAs($user);
+    get(route('grp.dashboard.show'))->assertRedirect(route('grp.login.show'));
+    $this->assertGuest();
 })->depends('update user password');
 
 test('delete guest', function (User $user) {
@@ -1246,6 +1289,8 @@ test('UI show organisation setting', function () {
             ->has('breadcrumbs', 2)
             ->has('formData.blueprint.0.fields', 5)
             ->has('formData.blueprint.1.fields', 2)
+            ->where('formData.blueprint.10.fields.box_packing_list.type', 'toggle')
+            ->where('formData.blueprint.10.fields.box_packing_list_destinations.type', 'box_packing_list_destinations')
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
@@ -1512,10 +1557,9 @@ test('UI show goods dashboard group', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Goods/GoodsDashboard')
-            ->has('breadcrumbs', 2)
-            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
-            ->has('flatTreeMaps');
+            ->component('Goods/ProductCommandControl')
+            ->where('pageHead.title', 'Product Command & Control')
+            ->loadDeferredProps('dashboard', fn (AssertableInertia $reload) => $reload->has('kpis')->has('rows'));
     });
 });
 
@@ -2002,6 +2046,29 @@ test('update user group pseudo job positions', function (User $user) {
     expect($groupPseudoCount())->toBe(0);
 })->depends('SetUserAuthorisedModels command');
 
+test('compliance job positions: the worker drafts, the supervisor publishes, only the manager holds everything', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    $expectedPermissions = [
+        'gp-cpl-w' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => false, 'compliance' => false],
+        'gp-cpl-s' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => true, 'compliance' => false],
+        'gp-cpl-m' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => true, 'compliance' => true],
+    ];
+
+    foreach ($expectedPermissions as $code => $permissions) {
+        UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => [$code]]);
+        $user->refresh();
+
+        foreach ($permissions as $permission => $isGranted) {
+            expect($user->authTo($permission))->toBe($isGranted, "$code $permission");
+        }
+    }
+
+    UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
+    expect($user->refresh()->authTo('compliance.view'))->toBeFalse();
+})->depends('SetUserAuthorisedModels command');
+
 test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {
     $this->withoutExceptionHandling();
     config()->set('ui.cache.layout', true);
@@ -2354,12 +2421,12 @@ test('address boxes come in the order the country writes an address', function (
         ->and(array_slice($order('US'), 0, 2))->toBe(['address_line_1', 'address_line_2']);
 });
 
-test('edit profile includes preferences sections', function (Guest $guest) {
+test('edit profile includes the settings sections', function (Guest $guest) {
     $blueprint = \App\Actions\UI\Profile\EditProfile::make()->generateBlueprint($guest->getUser())['formData']['blueprint'];
 
     expect(collect($blueprint)->pluck('label')->all())
-        ->toContain(__('Notifications'), __('Log in'), __('Preferences'), __('Timezone'))
-        ->not->toContain(__('Profile'));
+        ->toContain(__('Notifications'), __('Log in'), __('Language'), __('Appearance'), __('Alerts'), __('Printers'), __('Timezone'))
+        ->not->toContain(__('Profile'), __('Preferences'));
 
     $channels = collect($blueprint)->firstWhere('label', __('Notifications'))['fields']['notifications']['channels'];
     expect(collect($channels)->pluck('value')->all())->toBe(['email', 'slack', 'browser']);
@@ -2398,3 +2465,83 @@ test('a guest with job positions and no phone is stored without a deprecation', 
     expect($guest->phone)->toBeNull()
         ->and($guest->getUser()->username)->toBe('nophone');
 });
+
+test('every audit event has its columns on the audit stats tables', function () {
+    $statsFields = new class () {
+        use HasSysAdminStats;
+    };
+
+    $auditFieldsByTable = [
+        'group_sysadmin_stats' => 'auditFields',
+        'organisation_stats'   => 'auditFields',
+        'user_stats'           => 'auditFieldsForNonSystem',
+        'web_user_stats'       => 'auditFieldsForNonSystem',
+        'supplier_user_stats'  => 'auditFieldsForNonSystem',
+    ];
+
+    foreach ($auditFieldsByTable as $tableName => $auditFields) {
+        $expectedColumns = collect($statsFields->{$auditFields}(new Blueprint(Schema::getConnection(), $tableName))->getColumns())
+            ->map(fn ($column) => $column->name);
+
+        expect($expectedColumns->diff(Schema::getColumnListing($tableName))->values()->all())->toBe([], $tableName);
+    }
+});
+
+test('supervisors borrow another user\'s permissions and give them back', function (Guest $guest) {
+    $group        = $guest->group;
+    $organisation = $guest->getUser()->authorisedOrganisations()->first();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $makeUser = function (string $username) use ($group): User {
+        $guestData = Guest::factory()->definition();
+        data_set($guestData, 'user.username', $username);
+        data_set($guestData, 'user.password', 'secret-password');
+
+        return StoreGuest::make()->action($group, $guestData)->getUser();
+    };
+
+    $groupAdmin = $makeUser('borrower-admin');
+    $groupAdmin->assignRole(RolesEnum::GROUP_ADMIN->value);
+
+    $orgLender = $makeUser('lender-org');
+    $orgLender->assignRole(
+        Role::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)
+            ->where('name', '!=', RolesEnum::ORG_ADMIN->value.'-'.$organisation->id)->first()
+    );
+    SetUserAuthorisedModels::run($orgLender);
+
+    $groupLender = $makeUser('lender-group');
+    $groupLender->assignRole(RolesEnum::SUPPLY_CHAIN->value);
+
+    $orgAdmin = $guest->getUser();
+
+    expect(BorrowUserPermissions::canBorrow($groupAdmin, $groupLender))->toBeTrue()
+        ->and(BorrowUserPermissions::canBorrow($groupAdmin, $groupAdmin))->toBeFalse()
+        ->and(BorrowUserPermissions::canBorrow($groupLender, $groupAdmin))->toBeFalse()
+        ->and(BorrowUserPermissions::canBorrow($orgAdmin, $orgLender))->toBeTrue()
+        ->and(BorrowUserPermissions::canBorrow($orgAdmin, $groupLender))->toBeFalse();
+
+    actingAs($orgAdmin);
+    expect(collect(get(route('grp.profile.borrowable_users.index', ['search' => 'lender']))->json())->pluck('username')->all())
+        ->toBe(['lender-org']);
+
+    actingAs($groupAdmin);
+    get(route('grp.sysadmin.users.index'))->assertOk();
+    expect(collect(get(route('grp.profile.borrowable_users.index', ['search' => 'lender']))->json())->pluck('username')->all())
+        ->toBe(['lender-group', 'lender-org'])
+        ->and(BorrowUserPermissions::canBorrowSomebody($groupLender))->toBeFalse();
+
+    post(route('grp.models.user.borrow_permissions', ['user' => $groupLender->id]))->assertRedirect();
+    expect(session(BorrowUserPermissions::SESSION_KEY))->toBe($groupLender->id);
+
+    get(route('grp.sysadmin.users.index'))->assertForbidden();
+    expect($groupAdmin->permissionsLender()?->id)->toBe($groupLender->id)
+        ->and($groupAdmin->authTo('supply-chain.view'))->toBeTrue();
+
+    delete(route('grp.profile.borrowed_permissions.delete'))->assertRedirect();
+    get(route('grp.sysadmin.users.index'))->assertOk();
+
+    actingAs($groupLender);
+    post(route('grp.models.user.borrow_permissions', ['user' => $groupAdmin->id]))->assertForbidden();
+})->depends('create guest');

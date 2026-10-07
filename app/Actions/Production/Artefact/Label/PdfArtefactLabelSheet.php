@@ -9,6 +9,8 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -23,10 +25,19 @@ use Throwable;
 class PdfArtefactLabelSheet extends OrgAction
 {
     use WithArtefactLabelLayout;
+    use WithArtefactLabelAuthorisation;
 
     private const LINE_HEIGHT = 1.1;
 
     private const TEXT_BOX_HEADROOM = 2.0;
+
+    /**
+     * A wrapped text is given a quarter of a line more than the browser measured, and mPDF shrinks
+     * it to fit the box if its own line breaks still come out longer.
+     */
+    private const WRAPPED_TEXT_HEADROOM = 0.25;
+
+    private const ICON_GAP = 0.15;
 
     private const BARCODE_TYPES = [
         'ean13'   => BarcodeGenerator::TYPE_EAN_13,
@@ -51,7 +62,7 @@ class PdfArtefactLabelSheet extends OrgAction
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Artefact $artefact, array $modelData, ?array $artwork): Response
+    public function handle(Artefact|OrgStock $model, array $modelData, ?array $artwork): Response
     {
         $orientation    = $modelData['orientation'];
         $columns        = (int) $modelData['columns'];
@@ -68,7 +79,7 @@ class PdfArtefactLabelSheet extends OrgAction
             abort(422, __('The grid does not fit on the page, reduce the number of labels, the margin or the gap.'));
         }
 
-        $filename = 'labels-'.$artefact->code.'-'.now()->format('Y-m-d').'.pdf';
+        $filename = 'labels-'.$model->code.'-'.now()->format('Y-m-d').'.pdf';
         $cells    = $this->getCells($columns, $rows, $pageMargin, $gap, $labelWidth, $labelHeight);
         $isVector = Arr::get($artwork, 'mime_type') === 'application/pdf';
 
@@ -182,7 +193,7 @@ class PdfArtefactLabelSheet extends OrgAction
 
     /**
      * @param  array<int, array<string, mixed>>  $fields
-     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int, barcode: array{uri: string, width: float, height: float, show_value: bool}|null}>
+     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int, barcode: array{uri: string, width: float, height: float, show_value: bool}|null, icons: array{sources: array<int, string>, size: float, gap: float, width: float}|null}>
      */
     private function getFields(array $fields, float $labelWidth, float $labelHeight, float $longestPageSide): array
     {
@@ -198,15 +209,35 @@ class PdfArtefactLabelSheet extends OrgAction
             $fontSize   = (float) ($field['font_size'] ?? 8);
             $rotation   = (int) ($field['rotation'] ?? 0);
             $lineHeight = $fontSize * self::LINE_HEIGHT * 25.4 / 72;
-            $isBarcode  = ($field['source'] ?? null) === 'barcode';
-            $barcode    = $isBarcode ? $this->getBarcode($field, $text, $labelWidth, $labelHeight) : null;
-            $textLength = $barcode
-                ? $barcode['width']
-                : (float) ($field['length'] ?? max($labelWidth - (float) $field['x'] * $labelWidth, 1));
-            $boxWidth   = $barcode
-                ? $barcode['width']
-                : min($textLength + self::TEXT_BOX_HEADROOM, $longestPageSide);
-            $blockHeight = $barcode ? $barcode['height'] + ($barcode['show_value'] ? $lineHeight : 0) : $lineHeight;
+            $source     = (string) ($field['source'] ?? '');
+            $isIcon     = (bool) ArtefactLabelInformationEnum::parse($source)[0]?->isIcon();
+            $icons      = $isIcon ? $this->getIcons($field, $text, $labelHeight) : null;
+            $barcode    = $source === 'barcode' ? $this->getBarcode($field, $text, $labelWidth, $labelHeight) : null;
+            $boxWidth   = (float) ($field['box_width'] ?? 0) * $labelWidth;
+
+            if ($isIcon && !$icons) {
+                continue;
+            }
+
+            if ($icons) {
+                $textLength  = $icons['width'];
+                $blockHeight = $icons['size'];
+            } elseif ($barcode) {
+                $textLength  = $barcode['width'];
+                $boxWidth    = $barcode['width'];
+                $blockHeight = $barcode['height'] + ($barcode['show_value'] ? $lineHeight : 0);
+            } elseif ($boxWidth > 0) {
+                $textLength  = $boxWidth;
+                $blockHeight = max((float) ($field['height'] ?? 0), (substr_count($text, "\n") + 1) * $lineHeight) + $lineHeight * self::WRAPPED_TEXT_HEADROOM;
+            } else {
+                $textLength  = (float) ($field['length'] ?? max($labelWidth - (float) $field['x'] * $labelWidth, 1));
+                $boxWidth    = min($textLength + self::TEXT_BOX_HEADROOM, $longestPageSide);
+                $blockHeight = (substr_count($text, "\n") + 1) * $lineHeight;
+            }
+
+            if ($icons) {
+                $boxWidth = $icons['width'] + self::TEXT_BOX_HEADROOM;
+            }
 
             [$left, $top] = $this->getRotatedOrigin(
                 $rotation,
@@ -225,6 +256,7 @@ class PdfArtefactLabelSheet extends OrgAction
                 'height'    => $blockHeight,
                 'font_size' => $fontSize,
                 'barcode'   => $barcode,
+                'icons'     => $icons,
                 'color'     => $field['color'] ?? '#000000',
                 'background_color' => $this->getBackgroundColor($field['background_color'] ?? null),
                 'weight'    => filter_var($field['bold'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'bold' : 'normal',
@@ -299,6 +331,35 @@ class PdfArtefactLabelSheet extends OrgAction
         ];
     }
 
+    /**
+     * The icons sit in a row, each one a square the height the designer gave them. An icon the
+     * product record does not name any more is dropped rather than failing the sheet.
+     *
+     * @param  array<string, mixed>  $field
+     * @return array{sources: array<int, string>, size: float, gap: float, width: float}|null
+     */
+    private function getIcons(array $field, string $text, float $labelHeight): ?array
+    {
+        $sources = array_values(array_filter(array_map(
+            fn (string $icon) => GetArtefactLabelIconSource::run(trim($icon), true),
+            explode(',', $text)
+        )));
+
+        if (!$sources) {
+            return null;
+        }
+
+        $size = max((float) ($field['icon_size'] ?? 0.2) * $labelHeight, 1);
+        $gap  = $size * self::ICON_GAP;
+
+        return [
+            'sources' => $sources,
+            'size'    => $size,
+            'gap'     => $gap,
+            'width'   => count($sources) * $size + (count($sources) - 1) * $gap,
+        ];
+    }
+
     private function getBackgroundColor(mixed $backgroundColor): ?string
     {
         return is_string($backgroundColor) && preg_match('/^#[0-9a-fA-F]{6}$/', $backgroundColor)
@@ -353,6 +414,10 @@ class PdfArtefactLabelSheet extends OrgAction
             return true;
         }
 
+        if (!isset($this->production)) {
+            return $this->canViewLabels($request);
+        }
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
@@ -377,13 +442,27 @@ class PdfArtefactLabelSheet extends OrgAction
     }
 
     /**
+     * @throws \Mpdf\MpdfException
+     */
+    public function inOrgStock(OrgStock $orgStock, ActionRequest $request): Response
+    {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle(
+            $orgStock,
+            $this->validatedData,
+            $this->getArtwork($orgStock, $request->file('background_artwork'), $this->validatedData)
+        );
+    }
+
+    /**
      * A freshly uploaded artwork wins, otherwise a saved label prints against the artwork it was
      * designed with, which is the whole reason that file is kept.
      *
      * @param  array<string, mixed>  $modelData
      * @return array{path: string, mime_type: string|null}|null
      */
-    private function getArtwork(Artefact $artefact, ?UploadedFile $uploaded, array $modelData): ?array
+    private function getArtwork(Artefact|OrgStock $model, ?UploadedFile $uploaded, array $modelData): ?array
     {
         if ($uploaded) {
             return [
@@ -393,7 +472,7 @@ class PdfArtefactLabelSheet extends OrgAction
         }
 
         $label = Arr::get($modelData, 'artefact_label_id')
-            ? $artefact->labels()->find(Arr::get($modelData, 'artefact_label_id'))
+            ? $model->labels()->find(Arr::get($modelData, 'artefact_label_id'))
             : null;
 
         if (!$label?->artwork) {

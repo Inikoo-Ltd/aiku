@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Ordering\PreOrder\HydratePreOrderReservedStock;
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
@@ -21,6 +23,7 @@ use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\ReopenPartnerShoppingListItemsOfTransactions;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
@@ -98,9 +101,14 @@ class CancelOrder extends OrgAction
             $transaction->update($transactionData);
         }
 
-        if ($order->payment_amount > 0) {
+        ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
+
+        /** A cancelled pre-order may keep its deposit (HELP-3432): only the rest goes back */
+        $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);
+
+        if ($refundAmount > 0) {
             StoreCreditTransaction::make()->action($order->customer, [
-                'amount' => $order->payment_amount,
+                'amount' => $refundAmount,
                 'type'   => CreditTransactionTypeEnum::MONEY_BACK,
                 'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
                 'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes, $isRefundToOriginalPayment),
@@ -111,7 +119,7 @@ class CancelOrder extends OrgAction
 
             $paymentData = [
                 'reference'               => 'cu-'.$order->customer->id.'-return-bal-'.Str::random(10),
-                'amount'                  => -$order->payment_amount,
+                'amount'                  => -$refundAmount,
                 'status'                  => PaymentStatusEnum::SUCCESS,
                 'payment_account_shop_id' => $paymentAccountShop->id,
                 'state'                   => PaymentStateEnum::COMPLETED,
@@ -124,6 +132,16 @@ class CancelOrder extends OrgAction
             AttachPaymentToOrder::make()->action($order, $payment, [
                 'amount' => $payment->amount
             ]);
+        }
+
+        /** Cancelled from the order itself rather than its pre-order panel: the goods kept for it go back on sale */
+        $preOrder = $order->preOrder;
+        if ($preOrder && in_array($preOrder->state, PreOrderStateEnum::open())) {
+            $wasHoldingStock = in_array($preOrder->state, PreOrderStateEnum::holdingStock());
+            $preOrder->update(['state' => PreOrderStateEnum::CANCELLED, 'cancelled_at' => $date]);
+            if ($wasHoldingStock) {
+                HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+            }
         }
 
         $deliveryNotes = $order->deliveryNotes;
@@ -221,6 +239,7 @@ class CancelOrder extends OrgAction
             'cancellation_reason' => ['sometimes', 'nullable', Rule::enum(OrderCancellationReasonEnum::class)],
             'cancellation_notes'  => ['sometimes', 'nullable', 'string', 'max:4000'],
             'refund_to_original_payment' => ['sometimes', 'boolean'],
+            ...($this->asAction ? ['refund_amount' => ['sometimes', 'numeric', 'min:0']] : []),
         ];
     }
 

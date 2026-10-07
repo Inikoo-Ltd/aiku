@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
@@ -19,6 +20,13 @@ class PayRetinaOrderWithBalanceAfterSubmitted extends RetinaAction
 {
     public function handle(Order $order): array
     {
+        if ($order->preOrder && !in_array($order->preOrder->state, PreOrderStateEnum::open())) {
+            return [
+                'success' => false,
+                'reason'  => __('This pre-order is :state, it takes no more payments.', ['state' => $order->preOrder->state->label()]),
+            ];
+        }
+
         return PayOrderWithCustomerBalance::run($order);
     }
 

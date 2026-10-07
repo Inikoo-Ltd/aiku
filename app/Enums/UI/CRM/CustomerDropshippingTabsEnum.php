@@ -18,6 +18,7 @@ enum CustomerDropshippingTabsEnum: string
 
     case SHOWCASE            = 'showcase';
     case TIMELINE            = 'timeline';
+    case COMMUNICATIONS = 'communications';
 
     case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
@@ -36,6 +37,10 @@ enum CustomerDropshippingTabsEnum: string
             CustomerDropshippingTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            CustomerDropshippingTabsEnum::COMMUNICATIONS => [
+                'title' => __('Communications'),
+                'icon'  => 'fal fa-comments',
             ],
             CustomerDropshippingTabsEnum::TIMELINE => [
                 'title' => __('Timeline'),

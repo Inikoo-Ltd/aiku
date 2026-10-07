@@ -87,7 +87,7 @@ const scrollToActiveStep = async (withDelay = false) => {
         try {
             swiperInstance.value.slideTo(activeStepIndex, 500) // 500ms animation duration
         } catch (error) {
-            console.log('Error sliding to active step:', error)
+            console.error('Error sliding to active step:', error)
         }
     }
 }

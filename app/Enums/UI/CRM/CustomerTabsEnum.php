@@ -18,7 +18,10 @@ enum CustomerTabsEnum: string
 
     case SHOWCASE            = 'showcase';
     case TIMELINE            = 'timeline';
+    case COMMUNICATIONS = 'communications';
     case JOURNEY             = 'journey';
+    case RETINA_DASHBOARD    = 'retina_dashboard';
+    case REORDERS            = 'reorders';
 
     case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
@@ -38,6 +41,10 @@ enum CustomerTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
+            CustomerTabsEnum::COMMUNICATIONS => [
+                'title' => __('Communications'),
+                'icon'  => 'fal fa-comments',
+            ],
             CustomerTabsEnum::TIMELINE => [
                 'title' => __('Timeline'),
                 'icon'  => 'fal fa-code-branch',
@@ -46,6 +53,11 @@ enum CustomerTabsEnum: string
             CustomerTabsEnum::JOURNEY => [
                 'title' => __('Journey'),
                 'icon'  => 'fal fa-route',
+            ],
+
+            CustomerTabsEnum::RETINA_DASHBOARD => [
+                'title' => __("Customer's dashboard"),
+                'icon'  => 'fal fa-browser',
             ],
 
             CustomerTabsEnum::API_REQUESTS => [
@@ -77,6 +89,10 @@ enum CustomerTabsEnum: string
                 'title' => __('Payments'),
                 'icon'  => 'fal fa-money-bill',
                 'type'  => 'icon',
+            ],
+            CustomerTabsEnum::REORDERS => [
+                'title' => __('Reorders'),
+                'icon'  => 'fal fa-repeat',
             ],
             CustomerTabsEnum::FAVOURITES => [
                 'title' => __('Favourites'),

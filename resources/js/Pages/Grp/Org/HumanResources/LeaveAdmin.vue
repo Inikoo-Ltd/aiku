@@ -16,12 +16,12 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash, faPlus } from "@fal"
+import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash, faPlus, faChartNetwork } from "@fal"
 
-library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash, faPlus)
+library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash, faPlus, faChartNetwork)
 
 const props = defineProps<{
 	title: string
@@ -185,24 +185,24 @@ const approvalProgressPercent = (leave: any): number => {
 
 const approvalStatusLabel = (leave: any): string => {
 	if (leave.status === "approved") {
-		return trans("Completed")
+		return ctrans("Completed")
 	}
 
 	if (leave.status === "rejected") {
-		return trans("Rejected")
+		return ctrans("Rejected")
 	}
 
-	return trans("In Progress")
+	return ctrans("In Progress")
 }
 
 const approvalProgressText = (leave: any): string => {
 	const total = approvalTotalSteps(leave)
 	if (total === 0) {
-		return trans("No steps")
+		return ctrans("No steps")
 	}
 
 	if (leave.status === "approved") {
-		return trans(":steps steps completed", { steps: String(total) })
+		return ctrans(":steps steps completed", { steps: String(total) })
 	}
 
 	const currentStep = Math.min(
@@ -210,7 +210,7 @@ const approvalProgressText = (leave: any): string => {
 		total
 	)
 
-	return trans("Level :current of :total", {
+	return ctrans("Level :current of :total", {
 		current: String(currentStep),
 		total: String(total),
 	})
@@ -338,39 +338,39 @@ const closeRejectModal = () => {
 				v-if="can_record"
 				type="create"
 				:icon="faPlus"
-				:label="trans('Record leave')"
+				:label="ctrans('Record leave')"
 				@click="isRecordModalOpen = true" />
 			<Button
 				type="secondary"
 				:icon="faDownload"
-				:label="trans('Export')"
+				:label="ctrans('Export')"
 				@click="openExportModal" />
 		</template>
 	</PageHeading>
 
 	<Modal :isOpen="isRecordModalOpen" @onClose="isRecordModalOpen = false" width="w-full max-w-lg">
-		<h2 class="mb-1 text-lg font-semibold text-gray-800">{{ trans("Record leave") }}</h2>
-		<p class="mb-4 text-sm text-gray-500">{{ trans("Recorded by HR on behalf of the employee, approved immediately.") }}</p>
+		<h2 class="mb-1 text-lg font-semibold text-gray-800">{{ ctrans("Record leave") }}</h2>
+		<p class="mb-4 text-sm text-gray-500">{{ ctrans("Recorded by HR on behalf of the employee, approved immediately.") }}</p>
 
 		<form @submit.prevent="submitRecord" class="space-y-4">
 			<div>
-				<label class="block text-sm font-medium text-gray-700">{{ trans("Employee") }}</label>
+				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Employee") }}</label>
 				<select
 					v-model="recordForm.employee_id"
 					required
 					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ trans("Select employee") }}</option>
+					<option value="" disabled>{{ ctrans("Select employee") }}</option>
 					<option v-for="(label, value) in parsedEmployeeOptions" :key="value" :value="value">{{ label }}</option>
 				</select>
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700">{{ trans("Leave Type") }}</label>
+				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Leave Type") }}</label>
 				<select
 					v-model="recordForm.type"
 					required
 					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ trans("Select type") }}</option>
+					<option value="" disabled>{{ ctrans("Select type") }}</option>
 					<option v-for="option in parsedTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
 				</select>
 				<p v-if="recordForm.errors.type" class="mt-1 text-sm text-red-600">{{ recordForm.errors.type }}</p>
@@ -378,27 +378,27 @@ const closeRejectModal = () => {
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700">{{ trans("Start Date") }}</label>
+					<label class="block text-sm font-medium text-gray-700">{{ ctrans("Start Date") }}</label>
 					<DatePicker
 						:modelValue="recordForm.start_date ? new Date(recordForm.start_date) : null"
 						@update:modelValue="(date: Date) => (recordForm.start_date = date ? date.toISOString().split('T')[0] : '')"
 						:markers="holidayMarkers"
 						:enableTimePicker="false"
 						:autoApply="true"
-						:placeholder="trans('Select start date')"
+						:placeholder="ctrans('Select start date')"
 						class="mt-1 block w-full"
 						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
 					<p v-if="recordForm.errors.start_date" class="mt-1 text-sm text-red-600">{{ recordForm.errors.start_date }}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700">{{ trans("End Date") }}</label>
+					<label class="block text-sm font-medium text-gray-700">{{ ctrans("End Date") }}</label>
 					<DatePicker
 						:modelValue="recordForm.end_date ? new Date(recordForm.end_date) : null"
 						@update:modelValue="(date: Date) => (recordForm.end_date = date ? date.toISOString().split('T')[0] : '')"
 						:markers="holidayMarkers"
 						:enableTimePicker="false"
 						:autoApply="true"
-						:placeholder="trans('Select end date')"
+						:placeholder="ctrans('Select end date')"
 						class="mt-1 block w-full"
 						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
 					<p v-if="recordForm.errors.end_date" class="mt-1 text-sm text-red-600">{{ recordForm.errors.end_date }}</p>
@@ -406,7 +406,7 @@ const closeRejectModal = () => {
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700">{{ trans("Reason") }}</label>
+				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Reason") }}</label>
 				<textarea
 					v-model="recordForm.reason"
 					rows="2"
@@ -414,8 +414,8 @@ const closeRejectModal = () => {
 			</div>
 
 			<div class="mt-6 flex justify-end gap-2">
-				<Button @click="isRecordModalOpen = false" :label="trans('Cancel')" type="tertiary" />
-				<Button type="save" nativeType="submit" :label="trans('Record')" :loading="recordForm.processing" />
+				<Button @click="isRecordModalOpen = false" :label="ctrans('Cancel')" type="tertiary" />
+				<Button type="save" nativeType="submit" :label="ctrans('Record')" :loading="recordForm.processing" />
 			</div>
 		</form>
 	</Modal>
@@ -524,10 +524,10 @@ const closeRejectModal = () => {
 						type="transparent"
 						size="xs"
 						:icon="faEdit"
-						:label="trans('Edit')"
+						:label="ctrans('Edit')"
 						@click="() => openEditModal(leave)" />
                     <span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
-						{{ trans("Processed") }}
+						{{ ctrans("Processed") }}
 					</span>
 					<ModalConfirmation
 						v-if="leave.status === 'pending' && leave.can_approve_current_user"
@@ -541,7 +541,7 @@ const closeRejectModal = () => {
 								type="positive"
 								size="xs"
 								:icon="faCheck"
-								:label="trans('Approve')"
+								:label="ctrans('Approve')"
 								:loading="isLoadingdelete"
 								@click="changeModel" />
 						</template>
@@ -549,7 +549,7 @@ const closeRejectModal = () => {
 							<Button
 								:loading="isLoadingdelete"
 								@click="clickYes"
-								:label="trans('Yes, approve')"
+								:label="ctrans('Yes, approve')"
 								type="positive" />
 						</template>
 					</ModalConfirmation>
@@ -558,7 +558,7 @@ const closeRejectModal = () => {
 						type="warning"
 						size="xs"
 						:icon="faTimes"
-						:label="trans('Reject')"
+						:label="ctrans('Reject')"
 						@click="() => openRejectModal(leave)" />
 					<ModalConfirmationDelete
 						:routeDelete="{
@@ -570,7 +570,7 @@ const closeRejectModal = () => {
 								type="negative"
 								size="xs"
 								:icon="faTrash"
-								:label="trans('Delete')"
+								:label="ctrans('Delete')"
 								:loading="isLoadingdelete"
 								@click="changeModel" />
 						</template>
@@ -583,7 +583,7 @@ const closeRejectModal = () => {
 
 	<Modal :isOpen="isEditModalOpen" @onClose="closeEditModal" width="w-full max-w-lg">
 		<h2 class="text-lg font-semibold text-gray-800 mb-1">
-			{{ trans("Edit Leave Request") }}
+			{{ ctrans("Edit Leave Request") }}
 		</h2>
 		<p class="text-sm text-gray-500 mb-4">
 			{{ selectedLeave?.employee_name }}
@@ -592,7 +592,7 @@ const closeRejectModal = () => {
 		<form @submit.prevent="submitEdit" class="space-y-4">
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{
-					trans("Leave Type")
+					ctrans("Leave Type")
 				}}</label>
 				<select
 					v-model="editForm.type"
@@ -612,7 +612,7 @@ const closeRejectModal = () => {
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Start Date")
+						ctrans("Start Date")
 					}}</label>
 					<DatePicker
 						:modelValue="editForm.start_date ? new Date(editForm.start_date) : null"
@@ -622,7 +622,7 @@ const closeRejectModal = () => {
 						:enableTimePicker="false"
 						:clearable="true"
 						:autoApply="true"
-						:placeholder="trans('Select start date')"
+						:placeholder="ctrans('Select start date')"
 						class="mt-1 block w-full"
 						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<p v-if="editForm.errors.start_date" class="mt-1 text-sm text-red-600">
@@ -631,7 +631,7 @@ const closeRejectModal = () => {
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("End Date")
+						ctrans("End Date")
 					}}</label>
 					<DatePicker
 						:modelValue="editForm.end_date ? new Date(editForm.end_date) : null"
@@ -641,7 +641,7 @@ const closeRejectModal = () => {
 						:enableTimePicker="false"
 						:clearable="true"
 						:autoApply="true"
-						:placeholder="trans('Select end date')"
+						:placeholder="ctrans('Select end date')"
 						class="mt-1 block w-full"
 						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<p v-if="editForm.errors.end_date" class="mt-1 text-sm text-red-600">
@@ -652,13 +652,13 @@ const closeRejectModal = () => {
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{
-					trans("Reason")
+					ctrans("Reason")
 				}}</label>
 				<textarea
 					v-model="editForm.reason"
 					rows="3"
 					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm resize-none"
-					:placeholder="trans('Enter reason...')" />
+					:placeholder="ctrans('Enter reason...')" />
 				<p v-if="editForm.errors.reason" class="mt-1 text-sm text-red-600">
 					{{ editForm.errors.reason }}
 				</p>
@@ -666,7 +666,7 @@ const closeRejectModal = () => {
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{
-					trans("Attachments")
+					ctrans("Attachments")
 				}}</label>
 				<div
 					v-if="selectedLeave?.attachments?.length"
@@ -694,7 +694,7 @@ const closeRejectModal = () => {
 					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
 					accept=".pdf,.jpg,.jpeg,.png" />
 				<p class="mt-1 text-xs text-gray-500">
-					{{ trans("Uploading new files will replace existing attachments (PDF, JPG, PNG, max 5 files)") }}
+					{{ ctrans("Uploading new files will replace existing attachments (PDF, JPG, PNG, max 5 files)") }}
 				</p>
 				<p v-if="editForm.errors.attachments" class="mt-1 text-sm text-red-600">
 					{{ editForm.errors.attachments }}
@@ -702,11 +702,11 @@ const closeRejectModal = () => {
 			</div>
 
 			<div class="mt-6 flex justify-end gap-2">
-				<Button @click="closeEditModal" :label="trans('Cancel')" type="tertiary" />
+				<Button @click="closeEditModal" :label="ctrans('Cancel')" type="tertiary" />
 				<Button
 					type="save"
 					nativeType="submit"
-					:label="trans('Save')"
+					:label="ctrans('Save')"
 					:loading="isSubmitting" />
 			</div>
 		</form>
@@ -714,17 +714,17 @@ const closeRejectModal = () => {
 
 	<Modal :isOpen="isExportModalOpen" @onClose="closeExportModal" width="w-full max-w-lg">
 		<h2 class="text-lg font-semibold text-gray-800 mb-4">
-			{{ trans("Export Leave Reports") }}
+			{{ ctrans("Export Leave Reports") }}
 		</h2>
 		<p class="text-sm text-gray-600 mb-4">
-			{{ trans("Select filters and export format for your leave report.") }}
+			{{ ctrans("Select filters and export format for your leave report.") }}
 		</p>
 
 		<form @submit.prevent="submitExport" class="space-y-4">
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("From Date")
+						ctrans("From Date")
 					}}</label>
 					<input
 						v-model="exportForm.from"
@@ -733,7 +733,7 @@ const closeRejectModal = () => {
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("To Date")
+						ctrans("To Date")
 					}}</label>
 					<input
 						v-model="exportForm.to"
@@ -745,12 +745,12 @@ const closeRejectModal = () => {
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Leave Type")
+						ctrans("Leave Type")
 					}}</label>
 					<select
 						v-model="exportForm.type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-						<option value="">{{ trans("All Types") }}</option>
+						<option value="">{{ ctrans("All Types") }}</option>
 						<option
 							v-for="option in parsedTypeOptions"
 							:key="option.value"
@@ -761,12 +761,12 @@ const closeRejectModal = () => {
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Status")
+						ctrans("Status")
 					}}</label>
 					<select
 						v-model="exportForm.status"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-						<option value="">{{ trans("All Statuses") }}</option>
+						<option value="">{{ ctrans("All Statuses") }}</option>
 						<option
 							v-for="(label, value) in status_options"
 							:key="value"
@@ -780,12 +780,12 @@ const closeRejectModal = () => {
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Department")
+						ctrans("Department")
 					}}</label>
 					<select
 						v-model="exportForm.department"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-						<option value="">{{ trans("All Departments") }}</option>
+						<option value="">{{ ctrans("All Departments") }}</option>
 						<option
 							v-for="(label, value) in parsedDepartmentOptions"
 							:key="value"
@@ -796,12 +796,12 @@ const closeRejectModal = () => {
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Team")
+						ctrans("Team")
 					}}</label>
 					<select
 						v-model="exportForm.team"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-						<option value="">{{ trans("All Teams") }}</option>
+						<option value="">{{ ctrans("All Teams") }}</option>
 						<option
 							v-for="(label, value) in parsedTeamOptions"
 							:key="value"
@@ -815,12 +815,12 @@ const closeRejectModal = () => {
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Employee")
+						ctrans("Employee")
 					}}</label>
 					<select
 						v-model="exportForm.employee_id"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-						<option value="">{{ trans("All Employees") }}</option>
+						<option value="">{{ ctrans("All Employees") }}</option>
 						<option
 							v-for="(label, value) in parsedEmployeeOptions"
 							:key="value"
@@ -833,7 +833,7 @@ const closeRejectModal = () => {
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{
-					trans("Export Format")
+					ctrans("Export Format")
 				}}</label>
 				<div class="mt-2 flex gap-4">
 					<label class="flex cursor-pointer items-center gap-2">
@@ -843,7 +843,7 @@ const closeRejectModal = () => {
 							value="xlsx"
 							class="text-[--app-accent] focus:ring-[--app-accent]" />
 						<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" fixed-width />
-						<span class="text-sm">{{ trans("Excel (XLSX)") }}</span>
+						<span class="text-sm">{{ ctrans("Excel (XLSX)") }}</span>
 					</label>
 					<label class="flex cursor-pointer items-center gap-2">
 						<input
@@ -852,7 +852,7 @@ const closeRejectModal = () => {
 							value="csv"
 							class="text-[--app-accent] focus:ring-[--app-accent]" />
 						<FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" fixed-width />
-						<span class="text-sm">{{ trans("CSV") }}</span>
+						<span class="text-sm">{{ ctrans("CSV") }}</span>
 					</label>
 				</div>
 			</div>

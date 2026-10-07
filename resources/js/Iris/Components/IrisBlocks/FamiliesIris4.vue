@@ -9,6 +9,7 @@ import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import MobileShowMoreButton from '@/Iris/Components/MobileShowMoreButton.vue'
 import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
+import { useSubDepartmentStructuredData } from "@/Iris/Composables/useSubDepartmentStructuredData"
 
 interface FilterOptions {
 	name: string
@@ -32,14 +33,14 @@ const layout: any = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
 
 const selectedOption = ref<string | null>(null)
-const sortKey = ref('created_at')
+const sortKey = ref('')
 const families = ref(
   Array.isArray(props.fieldValue?.families)
     ? props.fieldValue.families
     : (props.fieldValue?.families?.data ?? [])
 )
 const isAscending = ref(true)
-const orderBy = ref('-created_at')
+const orderBy = ref('')
 
 const sortOptions = computed(() => {
   const baseOptions = [
@@ -94,7 +95,7 @@ const loadFamilies = async (
       {
         params: {
           filter,
-          sort: orderBy.value,
+          ...(orderBy.value ? { sort: orderBy.value } : {}),
           page,
           per_page : 250
         },
@@ -188,15 +189,26 @@ onMounted(() => {
 // Mounted independently here instead of inside the page structured data (useStructuredData),
 // so the sub-departments + collections ItemList lives in its own <script> and is easier to maintain.
 const { mountDepartmentStructuredData, removeStructuredDataScript } = useDepartmentStructuredData()
+const { mountSubDepartmentStructuredData } = useSubDepartmentStructuredData()
 const departmentStructuredDataScript = ref<HTMLScriptElement | null>(null)
 
 onMounted(() => {
-  departmentStructuredDataScript.value = mountDepartmentStructuredData({
-    subDepartments: props.fieldValue.sub_department_list,
-    collections: props.fieldValue.collections_list,
-    webpageData: (props.webpageData ?? injectedWebpageData) as any,
-    listId: props.fieldValue.id ?? props.indexBlock,
-  })
+  const webpageData = (props.webpageData ?? injectedWebpageData) as any
+  const listId = props.fieldValue.id ?? props.indexBlock
+
+  departmentStructuredDataScript.value = webpageData?.sub_type === 'sub_department'
+    ? mountSubDepartmentStructuredData({
+        families: families.value,
+        collections: props.fieldValue.collections_list,
+        webpageData,
+        listId,
+      })
+    : mountDepartmentStructuredData({
+        subDepartments: props.fieldValue.sub_department_list,
+        collections: props.fieldValue.collections_list,
+        webpageData,
+        listId,
+      })
 })
 
 onBeforeUnmount(() => {

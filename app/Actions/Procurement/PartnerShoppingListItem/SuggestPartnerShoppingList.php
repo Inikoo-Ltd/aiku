@@ -9,7 +9,9 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
@@ -22,8 +24,8 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -31,6 +33,7 @@ use Throwable;
 class SuggestPartnerShoppingList extends OrgAction
 {
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -46,7 +49,8 @@ class SuggestPartnerShoppingList extends OrgAction
      */
     public function handle(OrgPartner $orgPartner, float $budget, ?string $instruction = null, ?string $bucket = null, ?string $rank = null): array
     {
-        $candidates = $this->candidates($orgPartner);
+        $sellerStockIsNoLimit = (bool) $orgPartner->partner->is_manufacturing_hub;
+        $candidates           = $this->candidates($orgPartner, $sellerStockIsNoLimit);
 
         if ($bucket) {
             $scopedStockIds = array_flip(GetPartnerStockCoverBuckets::make()->stockIdsInBucket($orgPartner, $bucket, $rank));
@@ -56,12 +60,16 @@ class SuggestPartnerShoppingList extends OrgAction
             ));
         }
 
-        $lines = $instruction && config('services.openai.api_key')
-            ? $this->aiPick($candidates, $budget, $instruction)
+        $lines = $instruction && $this->aiApiKey()
+            ? $this->aiPick($candidates, $budget, $instruction, $sellerStockIsNoLimit)
             : [];
 
+        if (empty($lines) && $sellerStockIsNoLimit && $bucket) {
+            $lines = $this->fillFromRescueLines($orgPartner, $candidates, $budget, $bucket, $rank);
+        }
+
         if (empty($lines)) {
-            $lines = $this->greedyFill($candidates, $budget);
+            $lines = $this->greedyFill($candidates, $budget, $sellerStockIsNoLimit);
         }
 
         $lines    = $this->respectPartnerCap($orgPartner, $candidates, $lines);
@@ -136,12 +144,36 @@ class SuggestPartnerShoppingList extends OrgAction
 
     /**
      * Candidate partner SKOs with price, availability, buyer stock and average quarterly usage.
+     * A manufacturing hub makes to order, so its shelf stock does not limit what can be suggested.
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function candidates(OrgPartner $orgPartner): array
+    protected function candidates(OrgPartner $orgPartner, bool $sellerStockIsNoLimit = false): array
     {
-        $rows = DB::table('org_stocks')
+        $rows = $this->candidatesQuery($orgPartner)
+            ->whereNull('partner_shopping_list_items.id')
+            ->when(!$sellerStockIsNoLimit, fn ($query) => $query->where('org_stocks.quantity_available', '>', 0))
+            ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
+            ->get()
+            ->unique('id')
+            ->values();
+
+        $exchange = $this->exchange($orgPartner);
+
+        return $rows->map(fn ($row) => $this->candidate($row, $exchange))->all();
+    }
+
+    public function exchange(OrgPartner $orgPartner): float
+    {
+        return $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+    }
+
+    /**
+     * Every active SKO the partner sells, with our side of it: stock, forecast and the open list line.
+     */
+    public function candidatesQuery(OrgPartner $orgPartner): Builder
+    {
+        return DB::table('org_stocks')
             ->leftJoin('org_stocks as buyer_org_stocks', function ($join) use ($orgPartner) {
                 $join->on('buyer_org_stocks.stock_id', 'org_stocks.stock_id')
                     ->where('buyer_org_stocks.organisation_id', $orgPartner->organisation_id);
@@ -149,18 +181,20 @@ class SuggestPartnerShoppingList extends OrgAction
             ->join('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', 'org_stocks.id')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
             ->leftJoin('org_stock_stats as buyer_stats', 'buyer_stats.org_stock_id', 'buyer_org_stocks.id')
-            ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
-                $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
-                    ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-                    ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN->value)
-                    ->whereNull('partner_shopping_list_items.deleted_at');
-            })
+            ->leftJoinSub(
+                DB::table('partner_shopping_list_items')
+                    ->where('org_partner_id', $orgPartner->id)
+                    ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+                    ->whereNull('deleted_at')
+                    ->groupBy('stock_id')
+                    ->selectRaw('stock_id, max(id) as id, sum(quantity) as quantity'),
+                'partner_shopping_list_items',
+                'partner_shopping_list_items.stock_id',
+                'org_stocks.stock_id'
+            )
             ->where('org_stocks.organisation_id', $orgPartner->partner_id)
             ->where('org_stocks.state', OrgStockStateEnum::ACTIVE->value)
-            ->whereNull('partner_shopping_list_items.id')
-            ->where('org_stocks.quantity_available', '>', 0)
             ->whereRaw('coalesce(buyer_org_stocks.is_on_demand, false) = false')
-            ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
             ->select([
                 'org_stocks.id',
                 'org_stocks.stock_id',
@@ -178,33 +212,32 @@ class SuggestPartnerShoppingList extends OrgAction
                 'org_stocks.packed_in',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query))
-            ->get()
-            ->unique('id')
-            ->values();
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($orgPartner->partner)));
+    }
 
-        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+    /**
+     * @return array<string, mixed>
+     */
+    public function candidate(object $row, float $exchange): array
+    {
+        $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
 
-        return $rows->map(function ($row) use ($exchange) {
-            $skosPerProductUnit = (float) $row->skos_per_product_unit > 0 ? (float) $row->skos_per_product_unit : 1;
-
-            return [
-                'org_stock_id'      => $row->id,
-                'stock_id'          => (int) $row->stock_id,
-                'code'              => $row->code,
-                'name'              => $row->name,
-                'partner_available' => (float) $row->partner_available,
-                'buyer_available'   => (float) ($row->buyer_available ?? 0),
-                'quarterly_usage'   => round((float) ($row->buyer_daily_usage ?? 0) * 91, 1),
-                'cap_exempt'        => ($row->buyer_org_stock_id && (float) ($row->buyer_available ?? 0) <= 0) || $row->buyer_health_rank === HealthRankEnum::A->value,
-                'health_rank'       => $row->buyer_health_rank,
-                'never_stocked'     => $row->buyer_org_stock_id === null,
-                'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
-                'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
-                'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
-                'order_quantum'     => BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size),
-            ];
-        })->all();
+        return [
+            'org_stock_id'      => $row->id,
+            'stock_id'          => (int) $row->stock_id,
+            'code'              => $row->code,
+            'name'              => $row->name,
+            'partner_available' => (float) $row->partner_available,
+            'buyer_available'   => (float) ($row->buyer_available ?? 0),
+            'quarterly_usage'   => round((float) ($row->buyer_daily_usage ?? 0) * 91, 1),
+            'cap_exempt'        => ($row->buyer_org_stock_id && (float) ($row->buyer_available ?? 0) <= 0) || $row->buyer_health_rank === HealthRankEnum::A->value,
+            'health_rank'       => $row->buyer_health_rank,
+            'never_stocked'     => $row->buyer_org_stock_id === null,
+            'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
+            'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
+            'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
+            'order_quantum'     => BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size),
+        ];
     }
 
     /**
@@ -256,13 +289,63 @@ class SuggestPartnerShoppingList extends OrgAction
     }
 
     /**
-     * Lowest stock cover first, top up to one quarter of usage, until the budget runs out.
+     * A hub bucket is filled with the quantities the order button uses, which cover the partner's real
+     * lead time; the stored recommended quantity assumes a fixed one and is zero for danger SKOs.
+     * Lines are rounded up to whole batches and taken worst first while they fit the budget.
      *
      * @param array<int, array<string, mixed>> $candidates
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function greedyFill(array $candidates, float $budget): array
+    protected function fillFromRescueLines(OrgPartner $orgPartner, array $candidates, float $budget, string $bucket, ?string $rank): array
+    {
+        $rescueLines = GetPartnerStockCoverBuckets::make()->rescueLines($orgPartner, [$bucket], false);
+        if (!$rescueLines) {
+            return [];
+        }
+
+        $buyerStocks = DB::table('org_stocks')
+            ->whereIn('id', array_column($rescueLines, 'org_stock_id'))
+            ->get(['id', 'stock_id', 'health_rank'])
+            ->keyBy('id');
+
+        $quanta       = RoundPartnerQuantityToBatches::quantaByStockId($orgPartner, $buyerStocks->pluck('stock_id')->all());
+        $candidatesBy = collect($candidates)->keyBy('stock_id');
+
+        $lines     = [];
+        $remaining = $budget;
+
+        foreach ($rescueLines as $rescueLine) {
+            $buyerStock = $buyerStocks->get($rescueLine['org_stock_id']);
+            $candidate  = $buyerStock ? $candidatesBy->get($buyerStock->stock_id) : null;
+
+            if (!$candidate || ($rank && $buyerStock->health_rank !== $rank) || $rescueLine['skos'] < 1) {
+                continue;
+            }
+
+            $quantity = RoundPartnerQuantityToBatches::roundUp((float) $rescueLine['skos'], $quanta[$buyerStock->stock_id] ?? 1);
+            $cost     = round($rescueLine['cost'] * $quantity / $rescueLine['skos'], 2);
+
+            if ($quantity < 1 || $cost > $remaining) {
+                continue;
+            }
+
+            $remaining -= $cost;
+            $lines[]    = $this->line($candidate, $quantity, $this->reason($candidate));
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Lowest stock cover first, top up to one quarter of usage, until the budget runs out.
+     * The seller's available stock caps a line unless the seller makes to order.
+     *
+     * @param array<int, array<string, mixed>> $candidates
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function greedyFill(array $candidates, float $budget, bool $sellerStockIsNoLimit = false): array
     {
         $ranked = collect($candidates)
             ->filter(fn ($candidate) => $candidate['quarterly_usage'] > 0 && $candidate['price_per_sko'] > 0)
@@ -281,7 +364,7 @@ class SuggestPartnerShoppingList extends OrgAction
 
             $quantum  = max(1, (int) ($candidate['order_quantum'] ?? 1));
             $target   = ceil($target / $quantum) * $quantum;
-            $quantity = min($target, $candidate['partner_available'], floor($remaining / $candidate['price_per_sko']));
+            $quantity = min($target, $sellerStockIsNoLimit ? PHP_INT_MAX : $candidate['partner_available'], floor($remaining / $candidate['price_per_sko']));
             $quantity = floor($quantity / $quantum) * $quantum;
 
             if ($quantity < 1) {
@@ -317,7 +400,7 @@ class SuggestPartnerShoppingList extends OrgAction
         if ($candidate['days_of_cover'] !== null) {
             $reason .= $candidate['days_of_cover'] <= 0
                 ? ' · we run out now'
-                : sprintf(' · we run out in ~%d days', (int) round($candidate['days_of_cover']));
+                : sprintf(' · Estimated: Would run out in ~%d days', (int) round($candidate['days_of_cover']));
         }
 
         return $reason;
@@ -328,14 +411,14 @@ class SuggestPartnerShoppingList extends OrgAction
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function aiPick(array $candidates, float $budget, string $instruction): array
+    protected function aiPick(array $candidates, float $budget, string $instruction, bool $sellerStockIsNoLimit = false): array
     {
         $catalogue = collect($candidates)->map(fn ($candidate) => [
             'id'                => $candidate['org_stock_id'],
             'code'              => $candidate['code'],
             'name'              => $candidate['name'],
             'price_per_sko'     => $candidate['price_per_sko'],
-            'partner_available' => $candidate['partner_available'],
+            'partner_available' => $sellerStockIsNoLimit ? null : $candidate['partner_available'],
             'you_hold'          => $candidate['buyer_available'],
             'quarterly_usage'   => $candidate['quarterly_usage'],
             'days_until_out_of_stock' => $candidate['days_of_cover'],
@@ -344,7 +427,7 @@ class SuggestPartnerShoppingList extends OrgAction
 
         $prompt = 'You are a purchasing assistant building an inter-company replenishment shopping list.'
             ."\nBudget: {$budget}. Instruction from the purchaser: {$instruction}"
-            ."\nPick lines from this catalogue (quantities are whole SKOs, never exceed partner_available, total cost must stay within budget)."
+            ."\nPick lines from this catalogue (quantities are whole SKOs, ".($sellerStockIsNoLimit ? 'the partner makes to order so partner_available is not a limit' : 'never exceed partner_available').", total cost must stay within budget)."
             ."\nPrefer items with low days_until_out_of_stock and quantities near recommended_order unless the instruction says otherwise."
             ."\nReturn ONLY a JSON array: [{\"id\": <org_stock_id>, \"quantity\": <int>, \"reason\": \"<max 12 words>\"}]"
             ."\n\nCatalogue: ".json_encode($catalogue, JSON_UNESCAPED_UNICODE);
@@ -353,10 +436,10 @@ class SuggestPartnerShoppingList extends OrgAction
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                $response = Http::withToken(config('services.openai.api_key'))
+                $response = $this->aiRequest()
                     ->timeout(300)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model'            => 'gpt-5-nano',
+                    ->post('chat/completions', [
+                        'model'            => $this->aiModel('gpt-5-nano'),
                         'reasoning_effort' => 'low',
                         'messages'         => [['role' => 'user', 'content' => $prompt]],
                     ]);
@@ -386,7 +469,7 @@ class SuggestPartnerShoppingList extends OrgAction
                     $quantum  = max(1, (int) ($candidate['order_quantum'] ?? 1));
                     $quantity = min(
                         ceil((float) ($item['quantity'] ?? 0) / $quantum) * $quantum,
-                        $candidate['partner_available'],
+                        $sellerStockIsNoLimit ? PHP_INT_MAX : $candidate['partner_available'],
                         floor($remaining / max($candidate['price_per_sko'], 0.0001))
                     );
                     $quantity = floor($quantity / $quantum) * $quantum;

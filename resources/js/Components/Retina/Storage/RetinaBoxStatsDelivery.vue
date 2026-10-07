@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import DatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -61,7 +61,6 @@ const onChangeEstimateDate = async (close: Function) => {
                 onFinish: () => isLoadingSetEstimatedDate.value = false,
             })
     } catch (error) {
-        console.log(error)
         notify({
             title: "Failed",
             text: "Failed to update the Delivery date, try again.",
@@ -82,7 +81,7 @@ const disableBeforeToday = (date: Date) => {
     <div class="h-min grid md:grid-cols-4 border-b border-gray-200 divide-y md:divide-y-0 divide-x divide-gray-200">
         <!-- Box: Status -->
         <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class=" pb-2 py-2 px-3"
-            :tooltip="trans('Detail')" :label="data_pallet.state" icon="fal fa-truck-couch">
+            :tooltip="ctrans('Detail')" :label="data_pallet.state" icon="fal fa-truck-couch">
             <div class="flex items-center w-full flex-none gap-x-2 mb-2" :class="box_stats.delivery_state.class">
                 <dt class="flex-none">
                     <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>
@@ -110,7 +109,7 @@ const disableBeforeToday = (date: Date) => {
                         </div>
 
                         <div v-else class="text-sm text-gray-500 hover:text-gray-600 underline">
-                            {{ trans('Set estimated delivery') }}
+                            {{ ctrans('Set estimated delivery') }}
                         </div>
                     </template>
 
@@ -127,7 +126,7 @@ const disableBeforeToday = (date: Date) => {
 
                 <div v-else>
                     <dd class="text-sm text-gray-500">{{ data_pallet.estimated_delivery_date ?
-                        useFormatTime(data_pallet.estimated_delivery_date) : trans('Not Set') }}</dd>
+                        useFormatTime(data_pallet.estimated_delivery_date) : ctrans('Not Set') }}</dd>
                 </div>
 
             </div>
@@ -136,7 +135,7 @@ const disableBeforeToday = (date: Date) => {
 
         <!-- Box: Notes -->
         <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class="pb-2 pt-2 px-3"
-            :tooltip="trans('Notes')" :percentage="0">
+            :tooltip="ctrans('Notes')" :percentage="0">
             <!-- Customer reference -->
             <div class="mb-1">
                 <PalletEditCustomerReference

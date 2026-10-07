@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical, faIdCard } from "@fas"
-import { faMedal } from "@fal"
+import { faMedal, faPencil } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "@inertiajs/vue3";
-import GoldReward from '@/Components/Utils/GoldReward.vue'
+import { Link, Deferred } from "@inertiajs/vue3";
+import B2BDashboardInsights from "@/Components/Retina/Dashboard/B2BDashboardInsights.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
-library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical, faIdCard)
+library.add(faUser, faMedal, faPencil, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical, faIdCard)
 
 const props = defineProps<{
     data: {}
     welcome_message: string
+    insights?: Record<string, any>
 }>()
-
-console.log('RetinaB2BDashboard', props)
 const layout = inject('layout', retinaLayoutStructure)
 
 const showBanner = ref(false);
@@ -36,12 +35,19 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
 </script>
 
 <template>
-    <div class="p-8">
-        <!-- Customer Contact Information -->
-        <div v-if="data?.customer" class="relative mb-8 p-4  rounded-lg border "
+    <div class="px-6 pb-12 pt-10 lg:px-14">
+        <div v-if="welcome_message" class="mb-4" v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
+
+        <div v-if="data?.customer" class="relative mb-8 p-4 rounded-lg border"
             :class="layout.offer_data?.type === 'gr' ? 'bg-yellow-50/30 border-yellow-300' : 'bg-gray-50 border-gray-200'"
         >
-            <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">{{ ctrans("Customer Information") }}</h2>
+                <Link :href="route('retina.sysadmin.settings.edit')" class="text-xs text-gray-500 underline hover:text-gray-700">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="opacity-80" fixed-width aria-hidden="true" />
+                    {{ ctrans("Edit information") }}
+                </Link>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Left Column: Customer Information -->
@@ -50,7 +56,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-user"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Contact Name')" fixed-width
+                            v-tooltip="ctrans('Contact Name')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.contact_name }}</span>
                     </div>
@@ -58,7 +64,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-building"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Company Name')" fixed-width
+                            v-tooltip="ctrans('Company Name')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.company_name }}</span>
                     </div>
@@ -66,7 +72,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-envelope"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Email')" fixed-width
+                            v-tooltip="ctrans('Email')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.email }}</span>
                     </div>
@@ -74,7 +80,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-phone"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Phone')" fixed-width
+                            v-tooltip="ctrans('Phone')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.phone }}</span>
                     </div>
@@ -82,7 +88,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-tags"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Interests')" fixed-width
+                            v-tooltip="ctrans('Interests')" fixed-width
                         />
                         <div class="flex items-center gap-2 w-full">
                             <span
@@ -125,84 +131,38 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
 
                 
 
-               <div v-if="layout.offer_data?.type === 'gr'" class="absolute top-5 right-7 text-4xl hidden lg:block">
-                    <GoldReward>
-                        <template #default>
-                            <div class="flex items-center">
-                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
-                                    aria-hidden="true" />
-
-                                <div
-                                    class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
-                                    <div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
-                                        :class="{ xshimmer: true }" :style="{
-                                            width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
-                                        }" />
-
-                                    <div
-                                        class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
-                                        {{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
-                                        /
-                                        {{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
-                                        days
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                    </GoldReward>
-                </div>
-            </div>
-        </div>
-
-         <div v-if="layout.offer_data?.type === 'gr'" class="lg:hidden mb-8">
-            <div class="flex items-center justify-between gap-3 p-3 rounded-lg border border-yellow-300 bg-yellow-50/30">
-                <span class="text-sm font-medium text-yellow-700">
-                    {{ layout?.offer_data?.label }}
-                </span>
-                <GoldReward>
-                        <template #default>
-                            <div class="flex items-center">
-                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
-                                    aria-hidden="true" />
-
-                                <div
-                                    class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
-                                    <div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
-                                        :class="{ xshimmer: true }" :style="{
-                                            width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
-                                        }" />
-
-                                    <div
-                                        class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
-                                        {{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
-                                        /
-                                        {{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
-                                        days
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                    </GoldReward>
             </div>
         </div>
 
         <!-- <div>
-            <h1 class="text-4xl mb-4">{{ trans("Hello") }}, <span class="font-bold">{{ data?.customer?.contact_name }}</span>!</h1>
+            <h1 class="text-4xl mb-4">{{ ctrans("Hello") }}, <span class="font-bold">{{ data?.customer?.contact_name }}</span>!</h1>
             <p>
-                {{ trans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
+                {{ ctrans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
             </p>
         </div> -->
-        <div v-if="welcome_message" v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
+        <Deferred data="insights">
+            <template #fallback>
+                <div class="space-y-6 animate-pulse" aria-hidden="true">
+                    <div class="h-8 w-1/3 rounded bg-gray-100" />
+                    <div class="h-10 rounded-lg bg-gray-100" />
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        <div class="h-72 rounded-lg bg-gray-100 lg:col-span-2" />
+                        <div class="h-72 rounded-lg bg-gray-100" />
+                    </div>
+                </div>
+            </template>
+            <B2BDashboardInsights v-if="insights" :insights="insights" />
+        </Deferred>
     </div>
 
     <div v-if="showBanner" class="absolute inset-x-0 bottom-0">
         <div class="flex items-center gap-x-6 bg-yellow-600 px-6 py-2.5 sm:px-3.5 sm:before:flex-1 rounded-b-md">
             <p class="truncate text-sm/6 text-white">
                 <Link :href="route('retina.sysadmin.settings.edit', { section: 1 })" class="underline font-semibold">
-                    {{ trans("Help us personalize your experience!") }}
+                    {{ ctrans("Help us personalize your experience!") }}
                 </Link>
                 <span class="mx-2">—</span>
-                {{ trans("Please fill in your interests to get relevant offers and recommendations.") }}
+                {{ ctrans("Please fill in your interests to get relevant offers and recommendations.") }}
             </p>
             <div class="flex flex-1 justify-end">
                 <button type="button" @click="showBanner = false" class="-m-3 p-3 focus-visible:-outline-offset-4">

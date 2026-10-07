@@ -5,12 +5,14 @@ import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link, router } from "@inertiajs/vue3";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
 import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue';
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { routeType } from "@/types/route"
 
@@ -34,6 +36,8 @@ const props = defineProps<{
         shopsData: any
     };
     salesData?: object;
+    salesAnalysisTeaser?: object;
+    breakdownRoute?: (row: { id: number; slug: string | null }) => string | null;
 }>();
 
 const navigateTo = () => {
@@ -63,28 +67,29 @@ const openFamilyModal = () => {
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
-                        <span v-if="!data.department.description_title">{{ trans("Description Title is missing")
+                        <span v-if="!data.department.description_title">{{ ctrans("Description Title is missing")
                         }}.</span>
-                        <span v-if="!data.department.description">{{ trans("Description is missing") }}.</span>
-                        <span v-if="!data.department.description_extra">{{ trans("Extra description is missing")
+                        <span v-if="!data.department.description">{{ ctrans("Description is missing") }}.</span>
+                        <span v-if="!data.department.description_extra">{{ ctrans("Extra description is missing")
                         }}.</span>
                     </div>
-                    {{ trans("Please") }}
+                    {{ ctrans("Please") }}
                     <Link @click="navigateTo()" class="underline font-bold cursor-pointer">
-                    {{ trans("add missing description fields") }}
+                    {{ ctrans("add missing description fields") }}
                     </Link>.
                 </div>
             </Message>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
-            <div class="col-span-1 md:col-span-1 lg:col-span-2">
-                <ProductCategoryCard :data="data.department" />
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-1">
+                <ProductCategoryCard subtle :data="data.department" />
             </div>
-            <div class="col-span-1 md:col-span-2 lg:col-span-4">
-                <!-- Spacing / Content area -->
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-1">
+                <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+                <SalesAnalysisMovers :teaser="salesAnalysisTeaser" :breakdownRoute="breakdownRoute" />
             </div>
-            <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
+            <div class="col-span-1 md:col-span-3 lg:col-span-2 2xl:col-span-1 space-y-4">
                 <!-- Sales Analytics Compact -->
                 <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
 

@@ -52,6 +52,17 @@ class UndispatchDeliveryNote extends OrgAction
         SendUnDispatchedOrderEmailToSubscribers::dispatch($deliveryNote);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction || $request->route()?->getControllerClass() !== static::class) {
+            return true;
+        }
+
+        $deliveryNote = $request->route('deliveryNote');
+
+        return $deliveryNote instanceof DeliveryNote && $deliveryNote->canBeCancelledBy($request->user());
+    }
+
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);

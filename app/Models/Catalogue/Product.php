@@ -197,6 +197,12 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
  * @property bool $not_follow_master_media
  * @property bool $is_golden_product
+ * @property bool $is_indivisible
+ * @property bool $is_back_order Offered for pre-order while out of stock, dispatched when the next delivery arrives
+ * @property bool $is_made_to_order Not stocked, ordered from the supplier when a customer buys it
+ * @property string|null $pre_order_deposit_percentage Deposit taken at checkout on made-to-order lines, null uses the shop default
+ * @property int|null $pre_order_lead_time_days Overrides the supplier's pre-order lead time
+ * @property int|null $max_quantity_per_order
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -258,6 +264,8 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|Product onlyTrashed()
  * @method static Builder<static>|Product query()
  * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product offeredToPartners()
+ * @method static Builder<static>|Product sellableToCustomer(?int $customerId)
  * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereLocale(string $column, string $locale)
@@ -284,8 +292,20 @@ class Product extends Model implements Auditable, HasMedia
             if ($product->wasChanged(['is_for_sale', 'is_variant_leader', 'is_minion_variant', 'webpage_id'])) {
                 HydrateIsInWebsite::run($product);
             }
+
+            if ($product->wasChanged(['code', 'name', 'is_for_sale', 'variant_id', 'is_variant_leader'])) {
+                $product->reindexVariantLeaders();
+            }
         });
     }
+
+    public const array PRE_ORDER_FIELDS = [
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
+    ];
 
     protected $guarded = [];
 
@@ -325,7 +345,12 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_prices'      => 'boolean',
         'not_follow_master_trade_units' => 'boolean',
         'not_follow_master_media'       => 'boolean',
+        'independent_barcode'           => 'boolean',
         'is_golden_product'             => 'boolean',
+        'is_indivisible'                => 'boolean',
+        'is_back_order'                 => 'boolean',
+        'is_made_to_order'              => 'boolean',
+        'pre_order_deposit_percentage'  => 'decimal:2',
     ];
 
     protected $attributes = [
@@ -347,7 +372,12 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_in_website',
                 'is_on_demand',
+                'barcode',
+                'variant_id',
+                'is_variant_leader',
+                'web_images',
                 'created_at'
             ]);
     }
@@ -366,10 +396,44 @@ class Product extends Model implements Auditable, HasMedia
             'is_for_sale'       => $this->is_for_sale,
             'is_in_website'     => (bool) $this->is_in_website,
             'barcode'           => (string) $this->barcode,
+            'variant_codes'     => $this->searchableVariantCodes(),
             'is_on_demand'      => $this->is_on_demand,
             'image'             => json_encode(Arr::get($this->web_images, 'main.gallery')),
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
+    }
+
+    /**
+     * The leader of a variant group carries the codes and names of its other options, so searching
+     * any option's code finds the leader page those options are sold from.
+     */
+    public function reindexVariantLeaders(): void
+    {
+        $variantIds = array_filter(array_unique([$this->variant_id, $this->getOriginal('variant_id')]));
+        if (!$variantIds) {
+            return;
+        }
+
+        Product::whereIn('variant_id', $variantIds)
+            ->where('is_variant_leader', true)
+            ->where('id', '!=', $this->id)
+            ->get()
+            ->searchable();
+    }
+
+    public function searchableVariantCodes(): string
+    {
+        if (!$this->is_variant_leader || !$this->variant_id) {
+            return '';
+        }
+
+        return Product::where('variant_id', $this->variant_id)
+            ->where('id', '!=', $this->id)
+            ->where('is_for_sale', true)
+            ->orderBy('code')
+            ->get(['code', 'name'])
+            ->map(fn (Product $option) => trim($option->code.' '.$option->name))
+            ->implode(' | ');
     }
 
     public function generateTags(): array
@@ -402,9 +466,16 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media',
         'not_follow_master_trade_units',
         'is_golden_product',
+        'is_indivisible',
         'barcode',
+        'independent_barcode',
         'is_for_sale',
         'exclusive_for_customer_id',
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
     ];
 
     public function getRouteKeyName(): string
@@ -591,6 +662,51 @@ class Product extends Model implements Auditable, HasMedia
     }
 
     /**
+     * Products a given customer may be sold: everything on sale, plus the active products sold
+     * exclusively to them. An exclusive product is not for sale because it is not shown on the
+     * website, which says nothing about whether this customer can buy it.
+     */
+    public function scopeSellableToCustomer(Builder $query, ?int $customerId): Builder
+    {
+        return $query->where(function (Builder $query) use ($customerId) {
+            $query->where('products.is_for_sale', true);
+
+            if ($customerId) {
+                $query->orWhere(function (Builder $query) use ($customerId) {
+                    $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+                        ->whereExists(function ($sub) use ($customerId) {
+                            $sub->from('product_has_exclusive_customers')
+                                ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                                ->where('product_has_exclusive_customers.customer_id', $customerId);
+                        });
+                });
+            }
+        });
+    }
+
+    /**
+     * Products staff may put on an order for one of the group's partner companies: everything
+     * active that is not private, plus the ranges private to the partner companies. Another
+     * customer's private label is never offered to them.
+     */
+    public function scopeOfferedToPartners(Builder $query): Builder
+    {
+        return $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+            ->where(function (Builder $query) {
+                $query->whereNotExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+                })->orWhereExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->whereIn('product_has_exclusive_customers.customer_id', function ($partners) {
+                            $partners->from('org_partners')->whereNotNull('customer_id')->select('customer_id');
+                        });
+                });
+            });
+    }
+
+    /**
      * Read from the pivot, never from exclusive_for_customer_id. Aurora rewrites that column on
      * every product fetch from its own single-customer field, and it holds nothing for the ranges
      * sold to the AW group companies, so trusting it would quietly make those products public.
@@ -613,6 +729,16 @@ class Product extends Model implements Auditable, HasMedia
 
         return (bool) $this->exclusive_for_customer_id
             && in_array($this->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
+    }
+
+    /**
+     * isSellableThroughSalesChannels() as SQL over a joined products table, for listings of a
+     * customer's own portfolio: there an exclusive product is theirs, so it is for sale to them.
+     */
+    public static function sellableThroughSalesChannelsSql(string $table = 'products'): string
+    {
+        return "($table.is_for_sale or ($table.exclusive_for_customer_id is not null and $table.state in ('"
+            .ProductStateEnum::ACTIVE->value."', '".ProductStateEnum::DISCONTINUING->value."')))";
     }
 
     public function isExclusiveFor(?int $customerId): bool
@@ -722,6 +848,11 @@ class Product extends Model implements Auditable, HasMedia
     public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class, 'variant_id');
+    }
+
+    public function dropshippingBasePrice(): float
+    {
+        return (float) ($this->rrp > 0 ? $this->rrp : $this->price);
     }
 
     public function bundle(): MorphOne

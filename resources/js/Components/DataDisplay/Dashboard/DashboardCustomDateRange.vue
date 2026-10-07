@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Popover } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { onBeforeMount, ref, computed } from 'vue'
 import VueDatePicker from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -270,7 +271,7 @@ const _popover = ref(null);
                 class="h-7 w-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-700"
                 :class="[
                     intervals.value === 'ctm'
-                        ? 'bg-indigo-500 text-white hover:text-gray-700 font-medium'
+                        ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)] hover:text-gray-700 font-medium'
                         : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
                 ]"
             >
@@ -282,9 +283,9 @@ const _popover = ref(null);
         <!-- Display selected date range when custom interval is active -->
         <transition name="slide-fade">
             <div v-if="intervals.value === 'ctm' && dateFilterValue[0] && dateFilterValue[1]"
-                 class="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 whitespace-nowrap">
+                 class="flex items-center gap-1.5 px-2 py-1 bg-[color-mix(in_srgb,var(--theme-color-4)_10%,white)] border border-[color-mix(in_srgb,var(--theme-color-4)_30%,white)] rounded text-xs text-[color-mix(in_srgb,var(--theme-color-4)_70%,black)] whitespace-nowrap">
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[0], { formatTime: 'mdy' }) }}</span>
-                <span class="text-indigo-400">-</span>
+                <span class="text-[color-mix(in_srgb,var(--theme-color-4)_60%,white)]">-</span>
                 <span class="font-medium">{{ useFormatTime(dateFilterValue[1], { formatTime: 'mdy' }) }}</span>
             </div>
         </transition>
@@ -293,10 +294,10 @@ const _popover = ref(null);
             <div class="border-gray-300 rounded-md right-0 z-10 xmt-3 w-fit transform px-4 pt-4 pb-6">
                 <div class="mb-4">
                     <div class="flex justify-between items-center">
-                        <div class="text-sm text-gray-500 mb-2">{{ trans("Last 4 Quarters") }}</div>
+                        <div class="text-sm text-gray-500 mb-2">{{ ctrans("Last 4 Quarters") }}</div>
                         <div class="flex items-center gap-x-3 mb-4">
                             <div @click="resetDatePicker" class="text-sm text-red-400 hover:text-red-600 cursor-pointer">
-                                {{ trans("Reset filter by dates") }}
+                                {{ ctrans("Reset filter by dates") }}
                             </div>
                         </div>
                     </div>
@@ -308,7 +309,7 @@ const _popover = ref(null);
                             class="px-3 py-2 text-xs rounded-md transition-colors font-medium flex flex-col items-center"
                             :class="[
                                 selectedQuarter === `${quarter}-${year}`
-                                    ? 'bg-indigo-500 text-white shadow-sm'
+                                    ? 'bg-[var(--theme-color-4)] text-[var(--theme-color-5)] shadow-sm'
                                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             ]"
                         >
@@ -330,14 +331,14 @@ const _popover = ref(null);
 
                 <div class="grid grid-cols-2 text-sm mt-3">
                     <div class="text-left px-1.5">
-                        <div class="text-gray-400">{{ trans("Since") }}</div>
+                        <div class="text-gray-400">{{ ctrans("Since") }}</div>
                         <div>
                             {{ useFormatTime(dateFilterValue[0])}}
                         </div>
                     </div>
 
                     <div class="justify-self-end text-right px-1.5">
-                        <div class="text-gray-400">{{ trans("Until") }}</div>
+                        <div class="text-gray-400">{{ ctrans("Until") }}</div>
                         <div>
                             {{ useFormatTime(dateFilterValue[1])}}
                         </div>
@@ -349,6 +350,16 @@ const _popover = ref(null);
 </template>
 
 <style scoped>
+:deep(.dp__theme_light) {
+    --dp-primary-color: var(--theme-color-4);
+    --dp-primary-text-color: var(--theme-color-5);
+    --dp-primary-disabled-color: color-mix(in srgb, var(--theme-color-4) 50%, white);
+    --dp-highlight-color: color-mix(in srgb, var(--theme-color-4) 10%, transparent);
+    --dp-range-between-dates-background-color: color-mix(in srgb, var(--theme-color-4) 12%, white);
+    --dp-range-between-border-color: color-mix(in srgb, var(--theme-color-4) 12%, white);
+    --dp-loader: 5px solid var(--theme-color-4);
+}
+
 /* Slide fade transition for date range display */
 .slide-fade-enter-active {
     transition: all 0.3s ease-out;

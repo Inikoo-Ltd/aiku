@@ -116,6 +116,7 @@ class IndexOfferCampaigns extends OrgAction
             $emptyStateData['description'] = __("There are no offer campaigns in this shop");
 
             $table->withGlobalSearch();
+            $table->betweenDates(['date']);
             $table->withEmptyState($emptyStateData);
             $table->withModelOperations($modelOperations);
 
@@ -129,7 +130,9 @@ class IndexOfferCampaigns extends OrgAction
 
             $table->column(key: 'number_current_offers', label: __('Current Offers'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_customers', label: __('Customers'), tooltip: __('Total number of customers associated with this campaign'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_orders', label: __('Orders'), tooltip: __('Total number of orders associated with this campaign'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->defaultSort('id');
         };
     }

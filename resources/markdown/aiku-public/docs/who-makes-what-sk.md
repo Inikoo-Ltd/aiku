@@ -2,7 +2,7 @@
 title: Kto čo vyrába
 summary: Naučte aiku, ktorí remeselníci zvyčajne vyrábajú ktorú kategóriu alebo artefakt, aby sa zoznam To produce sám roztriedil do hromádok pre jednotlivých ľudí. Odporúčanie, nikdy zámok.
 date: 2026-09-08
-source_date: 2026-09-08
+source_date: 2026-10-05
 tags: production, crafts, hr
 category: production
 help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefacts
@@ -36,6 +36,16 @@ Na každej stránke oddelenia a na každej stránke artefaktu je pod nadpisom ri
 aiku to číta takto. Pri riadku v To produce sa pozrie najprv na artefakt. Ak má artefakt remeselníkov, riadok patrí prvému z nich. Ak nie, pozrie sa na oddelenie artefaktu a vezme prvého remeselníka tam. Ak nemá nikoho ani jedno, riadok sedí pod *Unassigned*, a na Boarde otázka *Kto to vyrobí?* nepríde s navrhnutým menom.
 
 Najlacnejší spôsob, ako nastaviť továreň, je teda: pripojte remeselníkov k oddeleniam a jednotlivé artefakty upravujte len pri výnimkách. Jeden človek vyrába všetko mydlo okrem toho jedného výrobku, ktorý potrebuje iné ruky.
+
+## Zdieľanie jednej zákazky medzi remeselníkov
+
+Veľký riadok sa dá zdieľať. Na zákazke výroby kliknite vedľa množstva riadku na **Split / Assign multiple artisans** (rozdeliť / priradiť viacerých remeselníkov). Pre každý riadok vyberte remeselníka a počet kusov, ktoré vyrobí; **Add artisan** pridá ďalší riadok. Riadky musia dať presne celkové množstvo riadku, rámček sa po dosiahnutí zhody zafarbí na zeleno. Potom **Save assignments**.
+
+- Každý riadok sa stane podzákazkou pomenovanou podľa zákazky výroby s písmenom: JOaroma-0101-A, -B, -C. Všetky majú rovnaký kód šarže, takže sa tovar uloží do skladu ako jedna šarža.
+- Na výrobe každý remeselník vidí ako svoju iba vlastnú časť. Čas, kusy a odmena sa pripíšu tomu, kto session zaznamená, ako vždy.
+- Riadok ukazuje celkový postup všetkých častí a tabuľku podzákaziek s cieľom každého remeselníka, hotovými kusmi, stavom, časom a odmenou.
+- Rovnaké tlačidlo otvorte znova, ak chcete presunúť kusy alebo zmeniť mená. Časť, ktorú už niekto začal, sa nedá odstrániť ani znížiť pod už vyrobené množstvo. Prvý riadok zostáva vždy.
+- Keď bolo čokoľvek z riadku už prijaté do skladu, riadok sa už nedá rozdeliť.
 
 ## Čím to nie je
 

@@ -8,19 +8,23 @@
 
 namespace App\Enums\Dashboards;
 
+use App\Actions\Helpers\Dashboard\AddDashboardBacklogColumns;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardHeaderShopsMailshotsResource;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
 use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardShopMailshotsResource;
 use App\Http\Resources\Dashboards\DashboardShopSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalBrandSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalShopsMailshotsResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopsTimeSeriesSalesResource;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -34,6 +38,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
     case BRANDS = 'brands';
     case INVOICE_CATEGORIES = 'invoice_categories';
     case DS_PLATFORMS = 'ds_platforms';
+    case MAILSHOTS = 'mailshots';
 
     public function blueprint(): array
     {
@@ -45,6 +50,8 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::BRANDS => [
                 'title' => __('Brands'),
                 'icon'  => 'fal fa-copyright',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => [
                 'title' => __('Invoice categories'),
@@ -54,6 +61,11 @@ enum OrganisationDashboardSalesTableTabsEnum: string
                  'title' => __('DS Platforms'),
                  'icon'  => 'fal fa-code-branch',
              ],
+            OrganisationDashboardSalesTableTabsEnum::MAILSHOTS => [
+                'title'       => __('Mailshots sent'),
+                'icon'        => 'fal fa-mail-bulk',
+                'shows_sales' => false,
+            ],
         };
     }
 
@@ -63,12 +75,14 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         $brandTimeSeriesStats = $timeSeriesData['brands'];
         $invoiceCategoryTimeSeriesStats = $timeSeriesData['invoiceCategories'];
         $platformTimeSeriesStats = $timeSeriesData['platforms'];
+        $mailshotStats = $timeSeriesData['mailshots'] ?? [];
 
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS             => self::resourceToArray(DashboardHeaderShopsSalesResource::make($organisation)),
             OrganisationDashboardSalesTableTabsEnum::BRANDS            => self::resourceToArray(DashboardHeaderBrandSalesResource::make($organisation)),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => self::resourceToArray(DashboardHeaderInvoiceCategoriesInOrganisationSalesResource::make($organisation)),
             OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS      => self::resourceToArray(DashboardHeaderPlatformSalesResource::make($organisation)),
+            OrganisationDashboardSalesTableTabsEnum::MAILSHOTS         => self::resourceToArray(DashboardHeaderShopsMailshotsResource::make($organisation)),
         };
 
         $body = match ($this) {
@@ -76,6 +90,7 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::BRANDS            => self::resourceToArray(DashboardBrandSalesResource::collection($brandTimeSeriesStats)),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => self::resourceToArray(DashboardInvoiceCategoriesInOrganisationSalesResource::collection($invoiceCategoryTimeSeriesStats)),
             OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS      => self::resourceToArray(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)),
+            OrganisationDashboardSalesTableTabsEnum::MAILSHOTS         => self::resourceToArray(DashboardShopMailshotsResource::collection($mailshotStats)),
         };
 
         $totals = match ($this) {
@@ -83,12 +98,32 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             OrganisationDashboardSalesTableTabsEnum::BRANDS            => self::resourceToArray(DashboardTotalBrandSalesResource::make($brandTimeSeriesStats)),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => self::resourceToArray(DashboardTotalInvoiceCategoriesSalesResource::make($invoiceCategoryTimeSeriesStats)),
             OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS      => self::resourceToArray(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)),
+            OrganisationDashboardSalesTableTabsEnum::MAILSHOTS         => self::resourceToArray(DashboardTotalShopsMailshotsResource::make($mailshotStats)),
         };
 
-        return [
+        $rows = match ($this) {
+            OrganisationDashboardSalesTableTabsEnum::SHOPS              => $shopTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::BRANDS             => $brandTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => $invoiceCategoryTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::DS_PLATFORMS       => $platformTimeSeriesStats,
+            OrganisationDashboardSalesTableTabsEnum::MAILSHOTS          => $mailshotStats,
+        };
+
+        return AddDashboardBacklogColumns::run([
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
+        ], array_values($rows), false, $this === self::INVOICE_CATEGORIES ? self::invoiceCategoryBacklogRouteTarget(...) : null);
+    }
+
+    private static function invoiceCategoryBacklogRouteTarget(array $row): array
+    {
+        return [
+            'name'       => 'grp.org.accounting.invoice-categories.show.backlog.index',
+            'parameters' => [
+                'organisation'    => $row['organisation_slug'],
+                'invoiceCategory' => $row['slug'],
+            ],
         ];
     }
 

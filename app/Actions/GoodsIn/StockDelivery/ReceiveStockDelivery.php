@@ -2,7 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
@@ -18,7 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReceiveStockDelivery extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     use AsAction;
     use HasStockDeliveryHydrators;
     use WithActionUpdate;
@@ -37,8 +37,14 @@ class ReceiveStockDelivery extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->asAction && $this->stockDelivery->isManagedByPartner() && $this->stockDelivery->state !== StockDeliveryStateEnum::DISPATCHED) {
+            $validator->errors()->add('state', __('This delivery is managed by the partner until they dispatch it'));
+        }
         if (!in_array($this->stockDelivery->state, self::RECEIVABLE_STATES, true)) {
             $validator->errors()->add('state', __('You can not receive this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
+        }
+        if ($this->stockDelivery->hasNoProducts()) {
+            $validator->errors()->add('state', __('This delivery has no products to receive, cancel it instead'));
         }
     }
 

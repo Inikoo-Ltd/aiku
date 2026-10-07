@@ -55,6 +55,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePlatformStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsNotOnline;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithMismatchFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
@@ -133,6 +134,7 @@ class HydrateShops
         ShopHydrateProductsWithMismatchFamily::run($shop);
         ShopHydrateProductsWithNoDescription::run($shop);
         ShopHydrateProductsNotOnline::run($shop);
+        ShopHydrateProductsWithDuplicatedBarcode::run($shop);
         ShopHydratePolls::run($shop);
         ShopHydrateWebUsers::run($shop);
         ShopHydratePlatformStats::run($shop);

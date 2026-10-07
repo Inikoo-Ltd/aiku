@@ -16,6 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class StorePartnerShoppingListItems extends OrgAction
@@ -30,7 +31,7 @@ class StorePartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * @param array<int, array{org_stock_id: int, quantity: float, notes?: string}> $lines
+     * @param array<int, array{org_stock_id: int, quantity: float, notes?: string, break_batch?: bool}> $lines
      *
      * @return array{created: int, skipped: array<int, array{org_stock_id: int, reason: string}>}
      */
@@ -47,13 +48,19 @@ class StorePartnerShoppingListItems extends OrgAction
             try {
                 StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, [
                     'quantity' => $line['quantity'],
-                    'notes'    => $line['notes'] ?? null,
+                    'notes'       => $line['notes'] ?? null,
+                    'break_batch' => (bool) ($line['break_batch'] ?? false),
                 ]);
                 $created++;
             } catch (HttpException $exception) {
                 $skipped[] = [
                     'org_stock_id' => $orgStock->id,
                     'reason'       => $exception->getMessage(),
+                ];
+            } catch (ValidationException $exception) {
+                $skipped[] = [
+                    'org_stock_id' => $orgStock->id,
+                    'reason'       => collect($exception->errors())->flatten()->first(),
                 ];
             }
         }
@@ -72,6 +79,7 @@ class StorePartnerShoppingListItems extends OrgAction
             'lines.*.org_stock_id' => ['required', 'integer', 'exists:org_stocks,id'],
             'lines.*.quantity'     => ['required', 'numeric', 'min:0.001'],
             'lines.*.notes'        => ['sometimes', 'nullable', 'string'],
+            'lines.*.break_batch'  => ['sometimes', 'boolean'],
         ];
     }
 

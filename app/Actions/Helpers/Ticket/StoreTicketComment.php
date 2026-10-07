@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
@@ -22,10 +23,19 @@ use Illuminate\Validation\ValidationException;
 
 class StoreTicketComment extends OrgAction
 {
-    public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
+    /**
+     * @param bool $isStatusNote the comment was written with a status change, which already notifies the reporter, so it only notifies the people it @mentions
+     */
+    public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true, bool $isStatusNote = false): TicketComment
     {
         if (Arr::get($modelData, 'is_internal') && !($author instanceof User && $ticket->canWriteEngineeringNotesBy($author))) {
             throw ValidationException::withMessages(['is_internal' => __('Only engineers and collaborators can write engineering notes.')]);
+        }
+
+        $isPostMortem = Arr::get($modelData, 'type') === TicketCommentTypeEnum::POST_MORTEM->value;
+
+        if ($isPostMortem && !($author instanceof User && $ticket->canWriteEngineeringNotesBy($author))) {
+            throw ValidationException::withMessages(['type' => __('Only engineers and collaborators can write incident post-mortems.')]);
         }
 
         $comment = $ticket->comments()->create([
@@ -33,6 +43,7 @@ class StoreTicketComment extends OrgAction
             'author_id'   => $author->id,
             'body'        => (string) Arr::get($modelData, 'body', ''),
             'is_internal' => (bool) Arr::get($modelData, 'is_internal', false),
+            'type'        => $isPostMortem ? TicketCommentTypeEnum::POST_MORTEM : TicketCommentTypeEnum::COMMENT,
         ]);
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
@@ -43,11 +54,14 @@ class StoreTicketComment extends OrgAction
         }
 
         if ($this->replyReopens($ticket, $author)) {
-            $status = $ticket->status === TicketStatusEnum::WAITING ? TicketStatusEnum::ANSWERED : TicketStatusEnum::OPEN;
-            UpdateTicket::make()->action($ticket, ['status' => $status->value]);
+            UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::ANSWERED->value]);
         }
 
-        if ($author instanceof User && $notifyUsers && !$comment->is_internal) {
+        if ($author instanceof User && $notifyUsers && !$comment->is_internal && $isStatusNote) {
+            NotifyTicketUsers::make()->mentioned($ticket, $author, $comment->body);
+        }
+
+        if ($author instanceof User && $notifyUsers && !$comment->is_internal && !$isStatusNote) {
             NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
 
@@ -60,9 +74,13 @@ class StoreTicketComment extends OrgAction
         return $comment;
     }
 
+    /**
+     * A reply only answers a question that was asked: waiting on the reporter, or cancelled
+     * because they never answered. A ticket someone cancelled stays cancelled.
+     */
     private function replyReopens(Ticket $ticket, User|WebUser $author): bool
     {
-        if (!in_array($ticket->status, [TicketStatusEnum::WAITING, TicketStatusEnum::CANCELLED], true)) {
+        if ($ticket->status !== TicketStatusEnum::WAITING && !$ticket->isCancelledForNoReply()) {
             return false;
         }
 
@@ -74,6 +92,7 @@ class StoreTicketComment extends OrgAction
         return [
             'body'        => ['required_without:images', 'nullable', 'string', 'max:10000'],
             'is_internal' => ['sometimes', 'boolean'],
+            'type'        => ['sometimes', 'in:'.TicketCommentTypeEnum::COMMENT->value.','.TicketCommentTypeEnum::POST_MORTEM->value],
             'images'   => ['sometimes', 'array', 'max:5'],
             'images.*' => Ticket::ticketFileRules(),
         ];
@@ -100,12 +119,12 @@ class StoreTicketComment extends OrgAction
         return $user instanceof User && $request->route('ticket')->isVisibleTo($user);
     }
 
-    public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
+    public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true, bool $isStatusNote = false): TicketComment
     {
         $this->asAction = true;
         $this->initialisationFromGroup($ticket->group, $modelData);
 
-        return $this->handle($ticket, $author, $this->validatedData, $mirrorToSlack);
+        return $this->handle($ticket, $author, $this->validatedData, $mirrorToSlack, $notifyUsers, $isStatusNote);
     }
 
     public function asController(Ticket $ticket, ActionRequest $request): TicketComment

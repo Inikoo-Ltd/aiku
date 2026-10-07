@@ -17,6 +17,7 @@ use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -124,6 +125,52 @@ test('retina api dropshipping store client', function () {
     $response->assertJsonStructure([
         'data' => ['id', 'ulid', 'reference', 'name'],
     ]);
+});
+
+test('retina api store client takes the country as a two or three letter iso code', function (string $code) {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $response = postJson(route('retina.api.dropshipping.clients.create'), [
+        'contact_name' => 'Jane Test',
+        'address'      => [
+            'address_line_1' => '1 Test Street',
+            'locality'       => 'Sheffield',
+            'postal_code'    => 'S9 1XT',
+            'country_code'   => $code,
+            'city'           => 'not one of our fields',
+        ],
+    ]);
+
+    $response->assertCreated();
+    expect($response->json('data.address.country_code'))->toBe('GB')
+        ->and($response->json('data.address.country_id'))->toBe(DB::table('countries')->where('code', 'GB')->value('id'));
+})->with(['GB', 'gb', 'GBR']);
+
+test('retina api store client explains an unknown or missing country', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'address' => ['address_line_1' => '1 Test Street', 'country_code' => 'XX'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['address.country_code' => 'Unknown country code "XX"']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'address' => ['address_line_1' => '1 Test Street'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['address.country_code' => 'The country is required']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), ['contact_name' => 'No Address'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['address' => 'delivery address is required']);
+});
+
+test('retina api store client still takes country_id', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'address' => ['address_line_1' => '1 Test Street', 'country_id' => DB::table('countries')->where('code', 'ES')->value('id')],
+    ])->assertCreated()
+        ->assertJsonPath('data.address.country_code', 'ES');
 });
 
 test('retina api read only token can read but not write', function () {
@@ -317,11 +364,45 @@ test('retina api dropshipping feeds expose product ingredients', function () {
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
     $response->assertOk();
-    expect($response->json('data.0.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+    expect(collect($response->json('data'))->firstWhere('id', $portfolioId)['ingredients'])->toBe('Aqua, Glycerin, Parfum');
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();
     expect($response->json('data.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+});
+
+test('retina api my products shows the customer own exclusive product as for sale to them', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    $original = $this->product->only(['exclusive_for_customer_id', 'is_for_sale', 'status', 'state', 'available_quantity']);
+    $this->product->updateQuietly([
+        'exclusive_for_customer_id' => $this->dropshippingCustomer->id,
+        'is_for_sale'               => false,
+        'status'                    => ProductStatusEnum::NOT_FOR_SALE,
+        'state'                     => ProductStateEnum::ACTIVE,
+        'available_quantity'        => 5,
+    ]);
+
+    $row = collect(getJson(route('retina.api.dropshipping.products.my_product.index'))->assertOk()->json('data'))->firstWhere('id', $portfolioId);
+    expect($row['is_for_sale'])->toBeTrue()
+        ->and($row['is_exclusive'])->toBeTrue()
+        ->and($row['product_status'])->toBe(ProductStatusEnum::FOR_SALE->value);
+
+    expect(collect(getJson(route('retina.api.dropshipping.products.my_product.index', ['is_for_sale' => 'true']))->json('data'))->pluck('id'))->toContain($portfolioId)
+        ->and(collect(getJson(route('retina.api.dropshipping.products.my_product.index', ['is_for_sale' => 'false']))->json('data'))->pluck('id'))->not->toContain($portfolioId);
+
+    $this->product->updateQuietly(['exclusive_for_customer_id' => null]);
+
+    $row = collect(getJson(route('retina.api.dropshipping.products.my_product.index'))->json('data'))->firstWhere('id', $portfolioId);
+    expect($row['is_for_sale'])->toBeFalse()
+        ->and($row['is_exclusive'])->toBeFalse()
+        ->and($row['product_status'])->toBe(ProductStatusEnum::NOT_FOR_SALE->value);
+
+    $this->product->updateQuietly($original);
 });
 
 // ---- Dropshipping: order transactions ----
@@ -357,11 +438,17 @@ test('retina api dropshipping order transactions flow', function () {
         'data' => [['id', 'quantity_ordered']],
     ]);
 
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 10]);
     $response = patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
         'quantity_ordered' => 3,
     ]);
     $response->assertOk();
     expect($response->json('data.quantity_ordered'))->toBe(3);
+
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 0]);
+    patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
+        'quantity_ordered' => 4,
+    ])->assertUnprocessable();
 
     $response = deleteJson(route('retina.api.dropshipping.transaction.delete', $transactionId));
     $response->assertOk();
@@ -562,28 +649,20 @@ test('retina api logs query string arguments', function () {
         ->and($logged->message)->toBe('Product not found');
 });
 
-test('retina api records but allows foreign records while enforcement is off', function () {
-    config()->set('app.enforce_api_ownership', false);
-
-    $otherOrder = StoreOrder::make()->action(
-        $this->fulfilmentCustomer,
-        ['reference' => 'shadow-mode-order']
+test('retina api refuses to create an order for another customers client', function () {
+    $otherClient = StoreCustomerClient::make()->action(
+        $this->fulfilmentChannel,
+        CustomerClient::factory()->definition()
     );
 
     Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
-    getJson(route('retina.api.dropshipping.order.show', $otherOrder->id))->assertOk();
+    postJson(route('retina.api.dropshipping.order.store', $otherClient->id))->assertNotFound();
 
-    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
-        ->orderByDesc('id')->first();
-
-    expect($logged->message)->not->toBeNull()
-        ->and(str_contains($logged->message, 'is not owned by customer'))->toBeTrue();
+    expect(\App\Models\Ordering\Order::where('customer_client_id', $otherClient->id)->exists())->toBeFalse();
 });
 
 test('retina api refuses a media file that belongs to nothing of the customers', function () {
-    config()->set('app.enforce_api_ownership', true);
-
     $foreignMedia = \App\Models\Helpers\Media::create([
         'group_id'   => $this->group->id,
         'ulid'       => \Illuminate\Support\Str::ulid(),
@@ -612,6 +691,43 @@ test('retina api images accept a portfolio id sent as a product', function () {
 
     getJson(route('retina.api.dropshipping.images.index', ['id' => $portfolio->id, 'type' => 'product']))
         ->assertOk();
+});
+
+test('retina api images link to the picture itself, not to its attachment row', function () {
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => $this->group->id,
+        'ulid'                  => \Illuminate\Support\Str::ulid(),
+        'name'                  => 'product picture',
+        'is_animated'           => false,
+        'file_name'             => 'picture.jpg',
+        'disk'                  => 'media',
+        'collection_name'       => 'default',
+        'size'                  => 1,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    DB::table('model_has_media')->insert([
+        'id'              => DB::table('model_has_media')->max('id') + $media->id + 1000,
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->product->organisation_id,
+        'media_id'        => $media->id,
+        'model_type'      => 'Product',
+        'model_id'        => $this->product->id,
+        'scope'           => 'photo',
+        'data'            => '{}',
+    ]);
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
+
+    $image = collect(getJson(route('retina.api.dropshipping.images.index', ['id' => $this->product->id, 'type' => 'product']))
+        ->assertOk()
+        ->json('data'))->firstWhere('id', $media->id);
+
+    expect($image)->not->toBeNull()
+        ->and($image['source'])->toEqual(\App\Actions\Helpers\Images\GetPictureSources::run($media->getImage()));
 });
 
 test('retina api images are scoped to the calling customer', function () {
@@ -744,8 +860,6 @@ test('a paid order that fails to submit raises an alert', function () {
 });
 
 test('retina api refuses route bound records belonging to another customer', function () {
-    config()->set('app.enforce_api_ownership', true);
-
     $otherOrder = StoreOrder::make()->action(
         $this->fulfilmentCustomer,
         ['reference' => 'other-customer-order']
@@ -767,4 +881,35 @@ test('retina api refuses route bound records belonging to another customer', fun
     deleteJson(route('retina.api.dropshipping.products.my_product.delete', $otherPortfolio->id))->assertNotFound();
 
     expect($otherPortfolio->refresh()->customer_product_name)->not->toBe('hijacked');
+});
+
+test('bulk unlink and delete only removes products of the channel in the address', function () {
+    $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($this->fulfilmentChannel, $this->fulfilmentProduct, []);
+    $ownPortfolio   = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio::make()->handle(
+        $this->dropshippingChannel,
+        ['portfolios' => [$otherPortfolio->id, $ownPortfolio->id]]
+    );
+
+    expect(\App\Models\Dropshipping\Portfolio::find($otherPortfolio->id))->not->toBeNull()
+        ->and(\App\Models\Dropshipping\Portfolio::find($ownPortfolio->id))->toBeNull();
+});
+
+test('bulk unlink and delete queues a large selection instead of running past the request limit', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $first = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+    $ids   = [$first->id];
+    foreach (range(1, \App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio::SYNC_LIMIT) as $offset) {
+        $copy          = $first->replicate(['ulid', 'source_id']);
+        $copy->item_id = 900000000 + $offset;
+        $copy->save();
+        $ids[] = $copy->id;
+    }
+
+    $result = \App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio::make()->handle($this->dropshippingChannel, ['portfolios' => $ids]);
+
+    expect($result)->toBe(['deleted' => 0, 'queued' => count($ids)]);
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, count($ids));
 });

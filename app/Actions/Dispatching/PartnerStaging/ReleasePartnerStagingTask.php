@@ -50,7 +50,7 @@ class ReleasePartnerStagingTask extends OrgAction
                 ->lockForUpdate()
                 ->get();
 
-            $staged = (float) LocationOrgStock::where('location_id', $orgPartner->goods_out_location_id)
+            $staged = (float) LocationOrgStock::whereIn('location_id', $orgPartner->bayIds())
                 ->where('org_stock_id', $orgStock->id)
                 ->sum('quantity');
 
@@ -113,7 +113,7 @@ class ReleasePartnerStagingTask extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("dispatching.{$this->organisation->id}.edit");
+        return $request->user()->authTo("dispatching.{$this->warehouse->id}.edit");
     }
 
     /**

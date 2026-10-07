@@ -9,9 +9,8 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\AddToLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
-use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
@@ -60,16 +59,24 @@ class UpdateOrgStockMovement extends OrgAction
             data_set($modelData, 'flow', $flow);
         }
 
-        $orgStockMovement->update($modelData);
+        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $locationOrgStock, $oldQuantity) {
+            if ($locationOrgStock) {
+                LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('id');
+            }
 
-        if ($oldQuantity != $orgStockMovement->quantity && $locationOrgStock) {
-            $currentLocationOrgStockQuantity = GetLocationOrgStockQuantity::run($orgStockMovement->orgStock, $orgStockMovement->location);
-            UpdateLocationOrgStock::run(
+            $orgStockMovement->update($modelData);
+
+            if ($oldQuantity == $orgStockMovement->quantity || !$locationOrgStock) {
+                return null;
+            }
+
+            return AddToLocationOrgStockQuantity::run(
                 $locationOrgStock,
-                [
-                    'quantity' => $currentLocationOrgStockQuantity
-                ]
+                (float)$orgStockMovement->quantity - (float)$oldQuantity
             );
+        });
+
+        if ($currentLocationOrgStockQuantity !== null) {
 
             $runningQuantityOrg = DB::table('location_org_stocks')
                 ->where('org_stock_id', $orgStockMovement->org_stock_id)->sum('quantity');

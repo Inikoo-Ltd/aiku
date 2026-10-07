@@ -10,7 +10,7 @@ namespace App\Actions\Billables\Leaflet\UI;
 
 use App\Actions\Billables\Packaging\UI\ShowPackagings;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
@@ -22,7 +22,7 @@ use Spatie\LaravelOptions\Options;
 
 class CreateLeaflet extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Shop $shop, ActionRequest $request): Response
     {

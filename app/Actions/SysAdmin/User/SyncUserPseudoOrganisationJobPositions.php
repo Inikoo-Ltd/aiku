@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\HumanResources\JobPosition\DropLowerGradeJobPositionScopes;
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
@@ -20,6 +21,7 @@ class SyncUserPseudoOrganisationJobPositions
 
     public function handle(User $user, Organisation $organisation, array $jobPositions): User
     {
+        $jobPositions = DropLowerGradeJobPositionScopes::run($jobPositions);
         setPermissionsTeamId($user->group->id);
         $jobPositionsIds = array_keys($jobPositions);
 

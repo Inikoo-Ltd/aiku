@@ -59,7 +59,8 @@ class StoreVoucherOffers extends OrgAction
             $modelData,
             'settings',
             [
-                'can_customer_reuse' => Arr::pull($modelData, 'can_customer_reuse', false)
+                'can_customer_reuse'         => Arr::pull($modelData, 'can_customer_reuse', false),
+                'show_on_customer_dashboard' => (bool) Arr::pull($modelData, 'show_on_customer_dashboard', false),
             ]
         );
 
@@ -187,6 +188,7 @@ class StoreVoucherOffers extends OrgAction
             'name'               => ['required', 'string', 'max:255'],
             'offer_amount'       => ['nullable', 'required', 'numeric', 'min:0'],
             'can_customer_reuse' => ['required', 'boolean'],
+            'show_on_customer_dashboard' => ['sometimes', 'boolean'],
             'start_at'           => [
                 'required',
                 'date',

@@ -12,7 +12,7 @@ import { get as getLodash } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons"
+import { faGoogle, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
@@ -49,6 +49,7 @@ import {
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFileSignature,
     faFilePdf,
     faTransporter,
     faCode,
@@ -82,7 +83,11 @@ import {
     faNotEqual,
     faCamera,
     faStamp,
-    faChevronDown
+    faChevronDown,
+    faGem,
+    faHashtag,
+    faPrint,
+    faVolumeUp, faComments, faBooks, faCoins, faSignOut
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -93,7 +98,12 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faPrint,
+    faVolumeUp,
+    faWhatsapp,
+    faHashtag,
     faChevronDown,
+    faGem,
     faTemperatureLow,
     faNotEqual,
     faMusic,
@@ -142,6 +152,7 @@ library.add(
     faFlagCheckered,
     faBracketsCurly,
     faFileInvoice,
+    faFileSignature,
     faFilePdf,
     faTransporter,
     faCode,
@@ -168,7 +179,7 @@ library.add(
     faCameraRetro,
     faBalanceScale,
     faCamera,
-    faStamp
+    faStamp, faComments, faBooks, faCoins, faSignOut
 )
 
 const props = defineProps<{
@@ -227,7 +238,10 @@ const props = defineProps<{
     }
 }>()
 
-const paramsSection = route().params['section'] || 0
+const firstSectionWithVisibleFields = Object.keys(props.formData?.blueprint ?? {}).find(
+    (sectionKey) => !Object.values(props.formData.blueprint[sectionKey].fields || {}).every((field: any) => field.hidden)
+)
+const paramsSection = route().params['section'] || firstSectionWithVisibleFields || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(
@@ -377,7 +391,7 @@ const getSeverity = (type?: string) => {
         </Message>
     </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
-    <div :class="embedded ? 'lg:h-full lg:min-h-0' : 'rounded-lg shadow'">
+    <div :class="embedded ? 'lg:h-full lg:min-h-0' : (isMobile ? '' : 'rounded-lg shadow')">
         <div v-if="!isMobile"
             class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x"
             :class="embedded ? 'lg:h-full lg:min-h-0' : ''">
@@ -495,23 +509,30 @@ const getSeverity = (type?: string) => {
         </div>
 
         <!-- Mobile view -->
-        <ul v-else :class="embedded ? 'divide-y divide-gray-200' : 'space-y-8'">
+        <ul v-else class="divide-y divide-gray-200 border-y border-gray-200 bg-gray-50/50" :class="embedded ? 'border-t-0' : 'mb-6'">
             <template v-for="(sectionData, key) in formData.blueprint">
                 <!-- If Section: all fields is not hidden -->
                 <li v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
                     class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
                     <button type="button" @click="toggleMobileSection(key)"
                         :aria-expanded="!isMobileSectionCollapsed(key)"
-                        class="w-full bg-gray-200 py-3 px-5 flex items-center text-left font-medium">
+                        class="w-full px-3 py-3 flex items-center text-left text-sm font-medium"
+                        :class="isMobileSectionCollapsed(key) ? 'navigationSecond' : 'navigationSecondActive'"
+                        :style="isMobileSectionCollapsed(key)
+                            ? { 'border-left': '4px solid transparent' }
+                            : {
+                                'border-left': `4px solid ${layout.app?.theme[2]}`,
+                                'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
+                                color: `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
+                            }">
                         <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true" :icon="sectionData.icon"
-                            class="flex-shrink-0 mr-3 h-5 w-5"
-                            :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']" />
+                            class="flex-shrink-0 -ml-1 mr-2 h-4 w-4 text-gray-400" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
                         <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true"
-                            class="ml-auto h-3 w-3 text-gray-500 transition-transform duration-200"
+                            class="ml-auto h-3 w-3 text-gray-400 transition-transform duration-200"
                             :class="isMobileSectionCollapsed(key) ? '' : 'rotate-180'" />
                     </button>
-                    <div v-show="!isMobileSectionCollapsed(key)" class="px-5">
+                    <div v-show="!isMobileSectionCollapsed(key)" class="bg-white px-4">
                         <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
                             <!-- Field: is not hidden and skip price when TBC -->
                             <div v-if="!fieldData?.hidden && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"

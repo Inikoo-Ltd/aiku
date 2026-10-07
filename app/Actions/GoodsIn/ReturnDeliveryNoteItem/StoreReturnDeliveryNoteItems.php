@@ -10,6 +10,7 @@
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
@@ -30,7 +31,15 @@ class StoreReturnDeliveryNoteItems extends OrgAction
         data_set($modelData, 'stock_id', $deliveryNoteItem->stock_id, false);
         data_set($modelData, 'org_stock_family_id', $deliveryNoteItem->org_stock_family_id, false);
         data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id, false);
-        data_set($modelData, 'total_expected_qty', ($deliveryNoteItem->quantity_dispatched - ($deliveryNoteItem->quantity_returned ?? 0)), 0);
+        /**
+         * A cancellation never dispatched anything, so the goods to put back are the ones taken off
+         * the shelf: quantity_picked. Only a real return can measure itself against what was sent out.
+         */
+        $expectedQty = $returnDeliveryNote->type === ReturnDeliveryNoteTypeEnum::CANCELLATION
+            ? (float)$deliveryNoteItem->quantity_picked
+            : (float)$deliveryNoteItem->quantity_dispatched - (float)($deliveryNoteItem->quantity_returned ?? 0);
+
+        data_set($modelData, 'total_expected_qty', $expectedQty, 0);
 
         data_set($modelData, 'original_transaction_id', $deliveryNoteItem->transaction->id);
 

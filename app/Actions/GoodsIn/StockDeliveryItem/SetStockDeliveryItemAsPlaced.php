@@ -8,7 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Validation\Rule;
@@ -16,10 +16,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemAsPlaced extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    use WithGoodsInBookInAuthorisation;
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
-        $remaining = (float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed;
+        $remaining = ((float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed) / $stockDeliveryItem->unitsPerSko();
 
         data_set($modelData, 'quantity', $remaining);
 
@@ -31,6 +31,7 @@ class SetStockDeliveryItemAsPlaced extends OrgAction
         return [
             'location_org_stock_id' => ['required_without:location_id', Rule::Exists('location_org_stocks', 'id')],
             'location_id'           => ['required_without:location_org_stock_id', Rule::Exists('locations', 'id')],
+            'set_as_picking_location' => ['sometimes', 'boolean'],
         ];
     }
 

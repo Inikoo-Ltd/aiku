@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\EmailBulkRun\UI;
 
+use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Mail\EmailBulkRunsResource;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexEmailBulkRuns extends OrgAction
 {
+    use WithOverviewAuthorisation;
     private Group|Organisation|Shop|Outbox $parent;
 
     public function handle(Group|Organisation|Shop|Outbox $parent, $prefix = null): LengthAwarePaginator

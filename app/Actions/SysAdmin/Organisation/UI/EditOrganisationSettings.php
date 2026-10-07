@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Organisation\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
@@ -16,6 +15,7 @@ use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
@@ -182,7 +182,6 @@ class EditOrganisationSettings extends OrgAction
                                     'label' => __('Address'),
                                     'value' => AddressFormFieldsResource::make($organisation->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                             ],
@@ -374,6 +373,32 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
+                            'label' => __('Packing list by box'),
+                            'icon' => 'fa-light fa-boxes',
+                            'fields' => [
+                                'box_packing_list' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Packing list by box'),
+                                    'information' => __('Master switch. When off, no delivery note needs a packing list by box, whatever the destinations below.'),
+                                    'value'       => (bool)Arr::get($organisation->settings, 'dispatching.box_packing_list', false),
+                                ],
+                                'box_packing_list_destinations' => [
+                                    'full'    => true,
+                                    'type'    => 'box_packing_list_destinations',
+                                    'label'   => __('Packing list by box'),
+                                    'value'   => Arr::get($organisation->settings, 'dispatching.box_packing_list_destinations', []),
+                                    'options' => [
+                                        'shops'     => $organisation->shops()
+                                            ->whereNot('state', ShopStateEnum::CLOSED)
+                                            ->where('type', ShopTypeEnum::B2B)
+                                            ->orderBy('code')
+                                            ->get(['code', 'name']),
+                                        'countries' => GetCountriesOptions::run(),
+                                    ],
+                                ],
+                            ],
+                        ],
+                        [
                             'label' => __('Banned Countries') . ' (' . __('territories') . ')',
                             'icon' => 'fa-light fa-ban',
                             'fields' => [
@@ -414,7 +439,19 @@ class EditOrganisationSettings extends OrgAction
                                     'options' => GetTimezonesOptions::run(),
                                     'label' => __('Timezone'),
                                     'value' => $organisation->timezone_id,
-                                ]
+                                ],
+                                'time_format' => [
+                                    'type'        => 'select',
+                                    'mode'        => 'single',
+                                    'label'       => __('Time format'),
+                                    'information' => __('How times of day are written, e.g. the working hours customers see in the chat.'),
+                                    'options'     => [
+                                        ['value' => '24h', 'label' => __('24-hour · 08:00, 16:04')],
+                                        ['value' => '12h', 'label' => __('12-hour · 8:00 am, 4:04 pm')],
+                                        ['value' => '12h_short', 'label' => __('Short 12-hour · 8am, 4:30pm')],
+                                    ],
+                                    'value'       => Arr::get($organisation->settings, 'time_format', '24h'),
+                                ],
                             ],
                         ],
                         [

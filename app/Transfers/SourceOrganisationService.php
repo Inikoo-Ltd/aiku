@@ -19,8 +19,6 @@ interface SourceOrganisationService
 {
     public function fetchOrganisation(Organisation $organisation);
 
-    public function fetchEmployee($id);
-
     public function fetchShop($id);
 
     public function fetchWebsite($id);
@@ -50,8 +48,6 @@ interface SourceOrganisationService
     public function fetchDeletedInvoice($id);
 
     public function fetchDeletedSupplier($id);
-
-    public function fetchDeletedEmployee($id);
 
     public function fetchDeletedSupplierProduct($id);
 
@@ -130,13 +126,11 @@ interface SourceOrganisationService
 
     public function fetchPurchaseOrder($id);
 
+    public function fetchPurchaseOrderNote($id);
+
     public function fetchAgentSupplierPurchaseOrder($id);
 
     public function fetchStockDelivery($id);
-
-    public function fetchTimesheet($id);
-
-    public function fetchClockingMachine($id);
 
     public function fetchBarcode($id);
 
@@ -161,10 +155,6 @@ interface SourceOrganisationService
     public function fetchOffer($id);
 
     public function fetchOfferComponent($id);
-
-    public function fetchDeletedUser($id);
-
-    public function fetchUser($id);
 
     public function fetchHistory($id);
 
@@ -205,6 +195,5 @@ interface SourceOrganisationService
     public function fetchSubscriptionEvent($id);
 
     public function fetchCollection($id);
-
 
 }

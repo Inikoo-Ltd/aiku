@@ -101,6 +101,16 @@ class CreateWebpage extends OrgAction
                 'value'       => '',
                 'required'    => true,
             ];
+        } elseif (!$this->scope instanceof Fulfilment) {
+            $fields['sub_type'] = [
+                'type'        => 'select',
+                'label'       => __('Page Type'),
+                'information' => __('An ads testing page is created hidden from search engines, so an advert can be tried out without it competing with the catalogue in search results.'),
+                'mode'        => 'single',
+                'options'     => WebpageSubTypeEnum::contentSubTypesWithLabel(),
+                'value'       => WebpageSubTypeEnum::CONTENT->value,
+                'required'    => true,
+            ];
         }
 
         return Inertia::render(

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt } from "@fal"
@@ -12,7 +12,6 @@ import { faSignIn, faSignOut, faTimesCircle } from '@fas'
 import { faChevronCircleDown } from '@fal'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { router } from '@inertiajs/vue3'
@@ -90,7 +89,7 @@ const layout = inject('layout', retinaLayoutStructure)
 const screenType: string = inject('screenType', 'desktop')
 const loadingItemIndex = ref<number | null>(null)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-const onLogout = inject('onLogout', () => console.log('Logout function not injected'))
+const onLogout = inject('onLogout', () => console.warn('Logout function not injected'))
 
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
 const closeSidebar = () => {
@@ -113,7 +112,6 @@ const loadingCustomTopIndex = ref<number | null>(null)
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
     isLoadingProductCategory.value = true
-    console.log('url', url)
     router.visit(url, {
         onFinish: () => {
             isLoadingProductCategory.value = false
@@ -159,7 +157,7 @@ const handleViewAllSubDepartment = (url: string) => {
 
                 <!-- Header -->
                 <!-- <div  v-if="activeSubIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
-                    <h3 class="font-semibold">{{ trans("Families") }}</h3>
+                    <h3 class="font-semibold">{{ ctrans("Families") }}</h3>
                 </div> -->
 
                 <div class="overflow-y-auto">
@@ -188,7 +186,7 @@ const handleViewAllSubDepartment = (url: string) => {
                                 <LinkIris :href="sortedSubDepartments[activeSubIndex].url">
                                     <template #default="{ isLoading } = { isLoading: false }">
                                         <Button
-                                            :label="trans('View all')"
+                                            :label="ctrans('View all')"
                                             :icon="faExternalLink"
                                             :size="screenType === 'mobile' ? 'm' : 'xs'"
                                             :loading="isLoading"
@@ -244,7 +242,7 @@ const handleViewAllSubDepartment = (url: string) => {
                     <!-- Collections: from Sub Department -->
                     <!-- <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
                         <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                            <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                            <h3 class="font-semibold">{{ ctrans("Collections") }}</h3>
                         </div>
                         <div class="">
                             <div>
@@ -268,7 +266,7 @@ const handleViewAllSubDepartment = (url: string) => {
 
                 <!-- Header -->
                 <!-- <div v-if="activeIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
-                    <h3 class="font-semibold">{{ trans("Sub-Departments") }}</h3>
+                    <h3 class="font-semibold">{{ ctrans("Sub-Departments") }}</h3>
                 </div> -->
                 <div class="overflow-y-auto">
                     <!-- Section: Subdepartments (Top) -->
@@ -297,7 +295,7 @@ const handleViewAllSubDepartment = (url: string) => {
                             <LinkIris :href="sortedProductCategories[activeIndex].url">
                                 <template #default="{ isLoading } = { isLoading: false }">
                                     <Button
-                                        :label="trans('View all')"
+                                        :label="ctrans('View all')"
                                         :icon="faExternalLink"
                                         :size="screenType === 'mobile' ? 'm' : 'xs'"
                                         :loading="isLoading"
@@ -366,14 +364,14 @@ const handleViewAllSubDepartment = (url: string) => {
                     <!-- No subdepartments message -->
                     <div v-if="(activeIndex !== null && !sortedSubDepartments?.length) || (activeCustomIndex !== null && !customSubDepartments?.length) || (activeCustomTopIndex !== null && !customTopSubDepartments?.length)"
                         class="px-4 text-gray-400 italic">
-                        {{ trans("No subdepartments available") }}
+                        {{ ctrans("No subdepartments available") }}
                     </div>
                 </div>
 
                 <!-- Collections: from Department -->
                 <!-- <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
                     <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                        <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                        <h3 class="font-semibold">{{ ctrans("Collections") }}</h3>
                     </div>
                     <div class="">
                         
@@ -485,24 +483,11 @@ const handleViewAllSubDepartment = (url: string) => {
                     </LinkIris>
                 </div>
 
-                <!-- Switch Language -->
-                <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="borderTopColorSameAsText px-1 mb-1 flex justify-between items-center text-xs">
-                    <div>{{ trans("Language") }}:</div>
-                    <SwitchLanguage>
-                        <template #default="{ isLoadingChangeLanguage }">
-                            <div class="underline text-xs py-2">
-                                {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
-                                <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" :alt="layout.iris.website_i18n.current_language?.code" title='capitalize(countryName)'  />
-                            </div>
-                        </template>
-                    </SwitchLanguage>
-                </div>
-                
                 <!-- Login / Logout -->
                 <div class="login-section pl-3 pr-5 py-4 borderTopColorSameAsText flex items-center">
                     <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="w-full" type="internal">
                         <Button
-                            :label="trans('Login')"
+                            :label="ctrans('Login')"
                             full
                             :icon="faSignIn"
                         />
@@ -510,7 +495,7 @@ const handleViewAllSubDepartment = (url: string) => {
                     <div v-else @click="onLogout()" class="w-full">
                         <Button
                             type="negative"
-                            :label="trans('Logout')"
+                            :label="ctrans('Logout')"
                             full
                             :icon="faSignOut"
                         />

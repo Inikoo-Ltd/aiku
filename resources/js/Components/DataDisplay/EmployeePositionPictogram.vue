@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faAd, faBullhorn,faCashRegister,faChessQueen,faCube,faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from '@fal'
+import { faAd, faPhone, faEye, faBullhorn,faCashRegister,faChessQueen,faCube,faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from '@fal'
 import { faBoxUsd,faHelmetBattle,faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { get } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 
 
-library.add(faAd, faBoxUsd,faHelmetBattle,faChessQueen,faCube,faStore,faCashRegister,  faBullhorn,faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle,fasCrown)
+library.add(faAd, faPhone, faEye, faBoxUsd,faHelmetBattle,faChessQueen,faCube,faStore,faCashRegister,  faBullhorn,faInfoCircle, faCircle, faCrown, faBars, faAbacus, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle,fasCrown)
 
 interface TypeShop {
     id: number
@@ -93,8 +93,11 @@ const props = defineProps<{
 
 const newForm = reactive(props.form)
 
+const selectableShopStates = ["open", "in_process"]
+const isShopSelectable = (shop: { state: string }) => selectableShopStates.includes(shop.state)
+
 const optionsList = {
-    shops: props.options.shops.data?.filter(shop => shop.state == 'open'),
+    shops: props.options.shops.data?.filter(shop => isShopSelectable(shop)),
     fulfilments: props.options.fulfilments?.data || [],
     warehouses: props.options.warehouses?.data || [],
     positions: props.options.positions?.data || [],
@@ -109,33 +112,60 @@ const productionsLength = optionsList.productions?.length
 const optionsJob = reactive<optionsJob>({
     org_admin: {
         key: 'org_admin',
-        department: trans("Org admin"),
+        department: ctrans("Org admin"),
         icon: 'fal fa-crown',
         subDepartment: [
             {
                 slug: "org-admin",
-                label: trans("Organisation Administrator"),
+                label: ctrans("Organisation Administrator"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'org-admin')?.number_employees || 0,
             }
         ],
     },
 
+    agt: {
+        key: "agt",
+        department: ctrans("Agent"),
+        icon: "fal fa-box-usd",
+        subDepartment: [
+            {
+                slug: "agt-m",
+                grade: "manager",
+                label: ctrans("Manager"),
+                number_employees: props.options.positions.data.find(position => position.code == 'agt-m')?.number_employees || 0
+            },
+            {
+                slug: "agt-c",
+                grade: "clerk",
+                label: ctrans("Clerk"),
+                number_employees: props.options.positions.data.find(position => position.code == 'agt-c')?.number_employees || 0
+            }
+        ],
+        isHide: !props.options.positions.data.some(position => ["agt-m", "agt-c"].includes(position.code))
+    },
+
     hr: {
         key: 'hr',
-        department: trans("Human Resources"),
+        department: ctrans("Human Resources"),
         icon: "fal fa-user-hard-hat",
         subDepartment: [
             {
                 slug: "hr-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'hr-m')?.number_employees || 0,
             },
             {
                 slug: "hr-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'hr-c')?.number_employees || 0,
+            },
+            {
+                slug: "hr-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                number_employees: props.options.positions.data.find(position => position.slug == 'hr-v')?.number_employees || 0
             }
         ],
         // value: null
@@ -143,34 +173,76 @@ const optionsJob = reactive<optionsJob>({
 
     acc: {
         key: 'acc',
-        department: trans("Accounting"),
+        department: ctrans("Accounting"),
         icon: "fal fa-abacus",
         subDepartment: [
             {
                 slug: "acc-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'acc-m')?.number_employees || 0,
             },
             {
                 slug: "acc-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'acc-c')?.number_employees || 0,
+            },
+            {
+                slug: "acc-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                number_employees: props.options.positions.data.find(position => position.slug == 'acc-v')?.number_employees || 0
             }
         ],
         // value: null
     },
 
+    acc_orders: {
+        key: "acc_orders",
+        department: ctrans("Accounting orders"),
+        icon: "fal fa-abacus",
+        scope: "shop",
+        subDepartment: [
+            {
+                slug: "acc-o",
+                grade: "clerk",
+                label: ctrans("Create orders"),
+                optionsType: ["shops"],
+                number_employees: props.options.positions.data.find(position => position.slug == "acc-o")?.number_employees || 0
+            }
+        ],
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
+        isHide: shopsLength < 1
+    },
+
+    shop_viewer: {
+        key: 'shop_viewer',
+        department: ctrans("Viewer"),
+        icon: 'fal fa-eye',
+        scope: 'shop',
+        subDepartment: [
+            {
+                slug: "cus-v",
+                grade: "staff",
+                label: ctrans("Viewer"),
+                optionsType: ['shops'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'cus-v')?.number_employees || 0,
+            }
+        ],
+        isHide: shopsLength < 1,
+    },
+
     shop_admin: {
         key: 'shop_admin',
-        department: trans("Shop admin"),
+        department: ctrans("Shop admin"),
         icon: 'fal fa-chess-queen',
         scope: 'shop',
         subDepartment: [
             {
                 slug: "shop-admin",
-                label: trans("Shop Administrator"),
+                label: ctrans("Shop Administrator"),
                 optionsType: ['shops'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'shop_admin')?.number_employees || 0,
             }
@@ -178,70 +250,57 @@ const optionsJob = reactive<optionsJob>({
         isHide: shopsLength < 1,
         // value: null
     },
+
     shk: {
         key: 'shk',
-        department: trans("Shopkeeping"),
-        icon: 'fal fa-cash-register',
+        department: ctrans("Catalogue/Web"),
+        icon: 'fal fa-store',
         departmentRightIcons: ['fal fa-cube', 'fal fa-globe'],
         scope: 'shop',
         subDepartment: [
             {
                 slug: "shk-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ['shops'],
-                number_employees: props.options.positions.data.find(position => position.slug == 'web-m')?.number_employees || 0,
-            },
-            {
-                slug: "shk-c",
-                grade: "clerk",
-                label: trans("Worker"),
-                optionsType: ['shops'],
-                number_employees: props.options.positions.data.find(position => position.slug == 'web-c')?.number_employees || 0,
+                number_employees: props.options.positions.data.find(position => position.slug == 'shk-m')?.number_employees || 0,
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != 'open'),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == 'open').map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1,
         // value: null
     },
 
     mrk: {
         key: 'mrk',
-        department: trans("Marketing"),
+        department: ctrans("Marketing/Offers"),
         icon: "fal fa-bullhorn",
         scope: 'shop',
         subDepartment: [
             {
                 slug: "mrk-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ['shops'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'mrk-m')?.number_employees || 0,
-            },
-            {
-                slug: "mrk-c",
-                grade: "clerk",
-                label: trans("Worker"),
-                optionsType: ['shops'],
-                number_employees: props.options.positions.data.find(position => position.slug == 'mrk-c')?.number_employees || 0,
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != 'open'),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == 'open').map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1,
         // value: null
     },
     shop_ppc: {
         key: "ppc",
-        department: trans("PPC"),
+        department: ctrans("PPC"),
         icon: "fal fa-ad",
         scope: "shop",
         subDepartment: [
             {
                 slug: "ppc-shop",
                 grade: "clerk",
-                label: trans("PPC"),
+                label: ctrans("PPC"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "shop-ppc")?.number_employees || 0
             }
@@ -251,49 +310,58 @@ const optionsJob = reactive<optionsJob>({
 
     cus: {
         key: 'cus',
-        department: trans("Customer Service"),
+        department: ctrans("CRM/Chat"),
         departmentRightIcons: ['fal fa-user', 'fal fa-route'],
         icon: "fal fa-user",
         scope: 'shop',
         subDepartment: [
             {
-                slug: "cus-m",
-                grade: "manager",
-                label: trans("Supervisor"),
-                optionsType: ['shops'],
-                number_employees: props.options.positions.data.find(position => position.slug == 'cus-m')?.number_employees || 0,
-            },
-            {
                 slug: "cus-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Agent"),
                 optionsType: ['shops'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'cus-c')?.number_employees || 0,
-            },
-            {
-                slug: "cus-v",
-                grade: "staff",
-                label: trans("Viewer"),
-                optionsType: ['shops'],
-                number_employees: props.options.positions.data.find(position => position.slug == 'cus-v')?.number_employees || 0,
             }
         ],
-        optionsClosed: props.options.shops.data?.filter(job => job.state != 'open'),
-        optionsSlug: props.options.shops.data?.filter(job => job.state == 'open').map(job => job.slug),
+        optionsClosed: props.options.shops.data?.filter(job => !isShopSelectable(job)),
+        optionsSlug: props.options.shops.data?.filter(job => isShopSelectable(job)).map(job => job.slug),
         isHide: shopsLength < 1,
         // value: null
     },
 
+    shop_calls: {
+        key: 'shop_calls',
+        department: ctrans("Calls"),
+        icon: 'fal fa-phone',
+        scope: 'shop',
+        subDepartment: [
+            {
+                slug: "cus-call",
+                grade: "calls",
+                label: ctrans("Calls"),
+                optionsType: ['shops'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'cus-call')?.number_employees || 0,
+            }
+        ],
+        isHide: shopsLength < 1,
+    },
+
     buy: {
         key: 'buy',
-        department: trans("Buyer"),
+        department: ctrans("Buyer"),
         icon: "fal fa-box-usd",
         subDepartment: [
             {
                 slug: "buy",
                 grade: "buyer",
-                label: trans("Buyer"),
+                label: ctrans("Buyer"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'buy')?.number_employees || 0,
+            },
+            {
+                slug: "buy-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                number_employees: props.options.positions.data.find(position => position.slug == 'buy-v')?.number_employees || 0
             }
         ],
         // value: null
@@ -301,60 +369,104 @@ const optionsJob = reactive<optionsJob>({
 
     wah: {
         key: 'wah',
-        department: trans("Warehouse"),
+        department: ctrans("Warehouse"),
         icon: "fal fa-inventory",
         subDepartment: [
             {
                 slug: "wah-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ['warehouses'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'wah-m')?.number_employees || 0,
             },
             {
                 slug: "wah-sc",
                 grade: "clerk",
-                label: trans("Stock Controller"),
+                label: ctrans("Stock Controller"),
                 optionsType: ['warehouses'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'wah-sc')?.number_employees || 0,
+            },
+            {
+                slug: "wah-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'wah-v')?.number_employees || 0
             }
         ],
         isHide: warehousesLength < 1,
         // value: null
     },
 
+    gi: {
+        key: 'gi',
+        department: ctrans("Goods in"),
+        icon: "fal fa-arrow-to-bottom",
+        subDepartment: [
+            {
+                slug: "gi-m",
+                grade: "manager",
+                label: ctrans("Supervisor"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'gi-m')?.number_employees || 0,
+            },
+            {
+                slug: "gi-c",
+                grade: "clerk",
+                label: ctrans("Worker"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'gi-c')?.number_employees || 0,
+            },
+            {
+                slug: "gi-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'gi-v')?.number_employees || 0
+            }
+        ],
+        isHide: warehousesLength < 1,
+    },
+
     dist: {
         key: 'dist',
-        department: trans("Goods out"),
+        department: ctrans("Goods out"),
         icon: "fal fa-arrow-from-left",
         subDepartment: [
             {
                 slug: "dist-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ['warehouses'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'dist-m')?.number_employees || 0,
             },
             {
                 slug: "dist-pik",
                 grade: "clerk",
-                label: trans("Picker"),
+                label: ctrans("Picker/Returns"),
                 optionsType: ['warehouses'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'dist-pik')?.number_employees || 0,
             },
             {
                 slug: "dist-excp-pick",
                 grade: "clerk",
-                label: trans("Replenisher"),
+                label: ctrans("Replenisher"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "dist-excp-pick")?.number_employees || 0
             },
             {
                 slug: "dist-pak",
                 grade: "clerk",
-                label: trans("Packer"),
+                label: ctrans("Packer"),
                 optionsType: ['warehouses'],
                 number_employees: props.options.positions.data.find(position => position.slug == 'dist-pak')?.number_employees || 0,
+            },
+            {
+                slug: "dist-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                optionsType: ['warehouses'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'dist-v')?.number_employees || 0
             }
         ],
         isHide: warehousesLength < 1,
@@ -363,32 +475,39 @@ const optionsJob = reactive<optionsJob>({
 
     prod: {
         key: 'prod',
-        department: trans("Production"),
+        department: ctrans("Production"),
         subDepartment: [
             {
                 slug: "prod-m",
                 grade: "manager",
-                label: trans("Floor supervisor"),
+                label: ctrans("Floor supervisor"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'prod-m')?.number_employees || 0,
             },
             {
                 slug: "prod-p",
                 grade: "clerk",
-                label: trans("Mix preparer"),
+                label: ctrans("Mix preparer"),
                 optionsType: ["productions"],
                 number_employees: props.options.positions.data.find(position => position.slug == "prod-p")?.number_employees || 0
             },
             {
                 slug: "prod-d",
                 grade: "clerk",
-                label: trans("Foreman"),
+                label: ctrans("Foreman"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'prod-d')?.number_employees || 0,
             },
             {
                 slug: "prod-c",
                 grade: "clerk",
-                label: trans("Operative"),
+                label: ctrans("Operative"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'prod-c')?.number_employees || 0,
+            },
+            {
+                slug: "prod-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                optionsType: ['productions'],
+                number_employees: props.options.positions.data.find(position => position.slug == 'prod-v')?.number_employees || 0
             }
         ],
         isHide: productionsLength < 1,
@@ -397,13 +516,13 @@ const optionsJob = reactive<optionsJob>({
 
     ful: {
         key: 'ful',
-        department: trans("Fulfilment"),
+        department: ctrans("Fulfilment"),
         icon: "fal fa-hand-holding-box",
         subDepartment: [
             {
                 slug: "ful-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ['fulfilments', 'warehouses'],
                 isHide: (warehousesLength < 1 || fulfilmentsLength < 1),
                 number_employees: props.options.positions.data.find(position => position.slug == 'cus-m')?.number_employees || 0,
@@ -411,7 +530,7 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "ful-wc",
                 grade: "clerk",
-                label: trans("Warehouse Clerk"),
+                label: ctrans("Warehouse Clerk"),
                 optionsType: ['warehouses'],
                 isHide: warehousesLength < 1,
                 number_employees: props.options.positions.data.find(position => position.slug == 'ful-wc')?.number_employees || 0,
@@ -419,10 +538,18 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "ful-c",
                 grade: "clerk",
-                label: trans("Office Clerk"),
+                label: ctrans("Office Clerk"),
                 optionsType: ['fulfilments'],
                 isHide: fulfilmentsLength < 1,
                 number_employees: props.options.positions.data.find(position => position.slug == 'ful-c')?.number_employees || 0,
+            },
+            {
+                slug: "ful-v",
+                grade: "viewer",
+                label: ctrans("Viewer"),
+                optionsType: ['fulfilments'],
+                isHide: fulfilmentsLength < 1,
+                number_employees: props.options.positions.data.find(position => position.slug == 'ful-v')?.number_employees || 0
             }
         ],
         optionsSlug: props.options.warehouses.data.map(job => job.slug),
@@ -514,7 +641,7 @@ watch(() => newForm, () => {
                                                                 <FontAwesomeIcon v-else-if="subDepartment.optionsType?.some((optionType: string) => get(newForm[orgSlug], [subDepartment.slug, optionType], []).some((optionValue: string) => optionsList[optionType].map((list: TypeShop | TypeFulfilment | TypeWarehouse) => list.slug).includes(optionValue)))" icon='fal fa-check-circle' class="text-green-600" fixed-width aria-hidden='true' />
                                                                 <FontAwesomeIcon v-else icon='fas fa-check-circle' class="text-green-500" fixed-width aria-hidden='true' />
                                                             </template>
-                                                            <FontAwesomeIcon v-else v-tooltip="trans('Have no permissions')" icon='fal fa-ban' fixed-width aria-hidden='true' class="text-red-500" />
+                                                            <FontAwesomeIcon v-else v-tooltip="ctrans('Have no permissions')" icon='fal fa-ban' fixed-width aria-hidden='true' class="text-red-500" />
                                                         </div>
             
                                                         <span v-tooltip="subDepartment.number_employees + ' employees on this position'" :class="[
@@ -532,7 +659,7 @@ watch(() => newForm, () => {
                                             <button @click.prevent="() => openFineTune = openFineTune === jobGroup.key ? '' : jobGroup.key"
                                                 class="underline disabled:no-underline whitespace-nowrap  disabled:cursor-auto disabled:text-gray-400"
                                             >
-                                                {{ trans('Shops Fine tuning') }}
+                                                {{ ctrans('Shops Fine tuning') }}
                                             </button>
                                         </div>
                                     </div>
@@ -581,7 +708,7 @@ watch(() => newForm, () => {
                                                                                         <FontAwesomeIcon v-else icon='fas fa-check-circle' class="text-green-500" fixed-width aria-hidden='true' />
                                                                                     </template>
             
-                                                                                    <FontAwesomeIcon v-else v-tooltip="trans('Have no permissions')" icon='fal fa-ban' class="text-red-500" fixed-width aria-hidden='true' />
+                                                                                    <FontAwesomeIcon v-else v-tooltip="ctrans('Have no permissions')" icon='fal fa-ban' class="text-red-500" fixed-width aria-hidden='true' />
                                                                                     
                                                                                 </div>
                                                                             </div>

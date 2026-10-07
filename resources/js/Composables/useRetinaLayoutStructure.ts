@@ -53,7 +53,6 @@ export const retinaLayoutStructure = {
         website_i18n: {
             current_language: {} as Language,
             shop_language: {} as Language,
-            language_options: {} as { [key: string]: Language },
         },
         is_logged_in: false,
     },

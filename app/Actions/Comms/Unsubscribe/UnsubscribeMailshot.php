@@ -20,6 +20,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
@@ -78,7 +79,7 @@ class UnsubscribeMailshot
                     };
 
                     $customerComms = $recipient->comms;
-                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                    UpdateCustomerComms::run($customerComms, $modelData);
                 }
             }
 
@@ -96,7 +97,7 @@ class UnsubscribeMailshot
                         OutboxCodeEnum::BASKET_LOW_STOCK => [
                             'is_subscribed_to_basket_low_stock' => false,
                         ],
-                        OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
+                        OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD, OutboxCodeEnum::DUE_TO_REORDER => [
                             'is_subscribed_to_reorder_reminder' => false,
                         ],
                         OutboxCodeEnum::GOLD_REWARD_REMINDER_1, OutboxCodeEnum::GOLD_REWARD_REMINDER_2, OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => [
@@ -107,7 +108,7 @@ class UnsubscribeMailshot
                     };
 
                     $customerComms = $recipient->comms;
-                    UpdateCustomerComms::run($customerComms, $modelData, false);
+                    UpdateCustomerComms::run($customerComms, $modelData);
                 }
             }
         }
@@ -152,6 +153,11 @@ class UnsubscribeMailshot
         $tag = $request->get('tag');
 
         return $this->handle($dispatchedEmail, $request, $tag);
+    }
+
+    public function htmlResponse(): Response
+    {
+        return response(__('You have been unsubscribed.'));
     }
 
     public function jsonResponse(array $data): array

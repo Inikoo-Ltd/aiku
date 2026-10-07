@@ -8,9 +8,12 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -75,10 +79,30 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static>|StockDeliveryItem query()
  * @mixin Eloquent
  */
-class StockDeliveryItem extends Model
+class StockDeliveryItem extends Model implements Auditable
 {
     use HasFactory;
     use InOrganisation;
+    use HasHistory;
+
+    protected array $auditEvents = [
+        'updated',
+    ];
+
+    protected array $auditInclude = [
+        'cost_items',
+        'cost_extra',
+        'cost_shipping',
+        'cost_duties',
+        'cost_tax',
+    ];
+
+    public function generateTags(): array
+    {
+        return [
+            'procurement'
+        ];
+    }
 
     protected $casts = [
         'state'           => StockDeliveryItemStateEnum::class,
@@ -122,5 +146,43 @@ class StockDeliveryItem extends Model
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class);
+    }
+
+    public function unitsPerSko(): float
+    {
+        return (float) ($this->orgStock?->packed_in ?: 1);
+    }
+
+    /**
+     * A partner delivery is costed the moment its last line is booked in, so a line marked not received by
+     * mistake can still be checked afterwards: doing so takes the delivery back to booking in.
+     */
+    public function canBeReceivedAfterAll(): bool
+    {
+        return $this->state === StockDeliveryItemStateEnum::NOT_RECEIVED
+            && $this->stockDelivery->state === StockDeliveryStateEnum::PLACED
+            && $this->stockDelivery->parent_type === 'OrgPartner';
+    }
+
+    /**
+     * What one SKO put away from this line cost in the organisation's currency: the landed cost
+     * once the delivery is costed, the goods price until then.
+     *
+     * @return array{cost_per_sku: float, cost_status: OrgStockMovementCostStatusEnum}|null
+     */
+    public function orgStockMovementCost(): ?array
+    {
+        $isLanded  = $this->is_costed && $this->cost_total > 0;
+        $orgAmount = $isLanded ? $this->cost_total * ($this->org_exchange ?? 1) : (float) $this->org_net_amount;
+        $skos      = $this->unit_quantity / $this->unitsPerSko();
+
+        if ($orgAmount <= 0 || $skos <= 0) {
+            return null;
+        }
+
+        return [
+            'cost_per_sku' => round($orgAmount / $skos, 6),
+            'cost_status'  => $isLanded ? OrgStockMovementCostStatusEnum::COSTED : OrgStockMovementCostStatusEnum::DELIVERY,
+        ];
     }
 }

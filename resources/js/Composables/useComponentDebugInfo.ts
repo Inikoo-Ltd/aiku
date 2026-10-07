@@ -1,5 +1,5 @@
 /*
- * Exposes window.component in the browser console (local only) with the PHP action
+ * Exposes window.component in the browser console (local only, gated by the server-side phpComponent prop) with the PHP action
  * and the Vue page of the currently rendered Inertia page.
  */
 
@@ -15,14 +15,20 @@ declare global {
 }
 
 export const setComponentDebugInfo = () => {
-    if (import.meta.env.VITE_APP_ENV !== 'local') {
+    if (typeof window === 'undefined') {
         return
     }
 
     const page = usePage()
+    const phpComponent = page.props?.phpComponent as string | null | undefined
+
+    if (!phpComponent) {
+        delete (window as Partial<Window>).component
+        return
+    }
 
     window.component = {
-        php: (page.props?.phpComponent as string) ?? '',
+        php: phpComponent,
         vue: page.component ?? ''
     }
 }

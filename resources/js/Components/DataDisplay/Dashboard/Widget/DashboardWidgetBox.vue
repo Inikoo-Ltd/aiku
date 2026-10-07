@@ -22,7 +22,7 @@ const toggle = () => {
 <template>
     <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
         <div class="flex items-center gap-2 px-4 py-2.5">
-            <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="toggle">
+            <button type="button" class="rounded text-xs text-gray-400 outline-none hover:text-gray-600 focus-visible:bg-gray-100" @click="toggle">
                 <FontAwesomeIcon :icon="collapsed ? 'fal fa-chevron-right' : 'fal fa-chevron-down'" fixed-width aria-hidden="true" />
             </button>
             <slot name="header" :collapsed="collapsed" :toggle="toggle" />

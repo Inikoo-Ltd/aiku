@@ -14,6 +14,8 @@ use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Models\Helpers\Media;
 use Closure;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
 trait HasTicketImages
 {
@@ -121,6 +123,74 @@ trait HasTicketImages
         return $media;
     }
 
+    /**
+     * Removes the model's own files named by ulid and attaches new ones up to the limit, reporting
+     * both by name. Files of other models (a ticket's comments) are never touched.
+     *
+     * @param array<int, string> $removeUlids
+     * @param array<int, UploadedFile> $images
+     *
+     * @return array{removed: array<int, string>, added: array<int, string>}
+     */
+    public function replaceOwnTicketFiles(array $removeUlids, array $images, int $limit = 5): array
+    {
+        $ownFiles = fn () => $this->media()->whereIn('collection_name', ['ticket_images', 'ticket_attachments']);
+
+        $removed      = $ownFiles()->whereIn('ulid', $removeUlids)->get();
+        $removedNames = $removed->pluck('name')->all();
+        $removed->each(fn (Media $media) => $media->delete());
+
+        $existingIds = $ownFiles()->pluck('id');
+        $this->attachTicketImages(array_slice($images, 0, max(0, $limit - $existingIds->count())));
+
+        return [
+            'removed' => $removedNames,
+            'added'   => $ownFiles()->whereNotIn('id', $existingIds)->pluck('name')->all(),
+        ];
+    }
+
+    /**
+     * @param array<int, string> $removed
+     * @param array<int, string> $added
+     */
+    public function recordTicketFilesInHistory(array $removed, array $added): void
+    {
+        if (!$removed && !$added) {
+            return;
+        }
+
+        $this->auditEvent     = 'updated';
+        $this->isCustomEvent  = true;
+        $this->auditCustomOld = ['attachments' => implode(', ', $removed)];
+        $this->auditCustomNew = ['attachments' => implode(', ', $added)];
+        Event::dispatch(new AuditCustom($this));
+        $this->isCustomEvent = false;
+    }
+
+    /**
+     * What a subject or description edit changed, so the history can show it side by side.
+     *
+     * @return array{label: string, from: string, to: string}|null
+     */
+    public static function historyTextChange(string $field, mixed $old, mixed $new): ?array
+    {
+        $label = match ($field) {
+            'subject'     => __('Subject'),
+            'description' => __('Description'),
+            default       => null,
+        };
+
+        return $label ? ['label' => $label, 'from' => (string) ($old ?? ''), 'to' => (string) ($new ?? '')] : null;
+    }
+
+    public static function ticketFilesHistoryText(string $removed, string $added): string
+    {
+        return collect([
+            $removed !== '' ? __('Removed :files', ['files' => $removed]) : null,
+            $added !== '' ? __('Added :files', ['files' => $added]) : null,
+        ])->filter()->implode(' · ');
+    }
+
     public function ticketAttachments(?string $routeName = null): array
     {
         $routeName       ??= request()->routeIs('retina.*') ? 'retina.dropshipping.tickets.attachments.show' : 'grp.tickets.attachments.show';
@@ -128,6 +198,7 @@ trait HasTicketImages
 
         return $this->getMedia('ticket_attachments')
             ->map(fn (Media $media) => [
+                'ulid' => $media->ulid,
                 'name' => $media->name,
                 'url'  => route($routeName, ['ticket' => $ticketReference, 'media' => $media->ulid]),
                 'size' => $media->size,
@@ -139,7 +210,7 @@ trait HasTicketImages
     public function ticketImageSources(): array
     {
         return $this->getMedia('ticket_images')
-            ->map(fn (Media $media) => [...GetPictureSources::run($media->getImage()->resize(0, 0)), 'name' => $media->name])
+            ->map(fn (Media $media) => [...GetPictureSources::run($media->getImage()->resize(0, 0)), 'name' => $media->name, 'ulid' => $media->ulid])
             ->all();
     }
 }

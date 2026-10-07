@@ -8,8 +8,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
-use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -91,6 +91,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ))
             ->addSelect([
                  'un_numbers' => $this->getUnNumbersSubquery(),
+                'indivisible_set' => $this->getIndivisibleSetSubquery(),
                 'location_org_stocks' => DB::table('location_org_stocks')
                     ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
                     ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
@@ -130,6 +131,8 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     ")
             ])
             ->allowedSorts(array_merge($this->getDeliveryNoteItemBaseSorts(), ['picking_position']))
+            ->orderBy('org_stocks.code')
+            ->orderBy('delivery_note_items.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($ignoreParentPagination ? 'deliveryNoteItems' : $prefix, tableName: request()->route()->getName())
             ->withQueryString();

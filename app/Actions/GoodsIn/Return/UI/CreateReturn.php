@@ -9,7 +9,6 @@
 namespace App\Actions\GoodsIn\Return\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
@@ -120,7 +119,6 @@ class CreateReturn extends OrgAction
             'address'     => [
                 'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run(),
                 ],
             ],
             'routes'      => [

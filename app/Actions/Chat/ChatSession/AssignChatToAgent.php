@@ -21,6 +21,7 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Organisation;
 use Exception;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -42,21 +43,25 @@ class AssignChatToAgent
 
         $previousAssignment = $this->getActiveAssignment($chatSession->id);
 
-        if ($isSelfAssign) {
+        if ($isSelfAssign && $previousAssignment?->chat_agent_id === $agentId) {
             return $previousAssignment;
         }
 
         $this->validateAgentAvailability($agent, $previousAssignment);
 
-        $this->updateChatSessionStatus($chatSession);
-
         $previousAgent = $previousAssignment?->chatAgent;
 
+        // The conversation becomes active because somebody now holds it, so the status only
+        // moves once the assignment is written: it used to move first, and a conversation
+        // nobody held was left active and unassigned when the write below found nothing to
+        // update, with every composer refusing to write in it afterwards.
         $chatAssignment = $this->updateOrCreateAssignment($chatSession->id, $agentId);
+
+        $this->updateChatSessionStatus($chatSession);
 
         $this->handleAgentChatCount($agent, $previousAgent);
 
-        $this->logAssignmentEvent($chatSession, $assignedByAgentId, $agentId, $previousAssignment, false, $transferReason);
+        $this->logAssignmentEvent($chatSession, $assignedByAgentId, $agentId, $previousAssignment, $isSelfAssign, $transferReason);
 
         return $chatAssignment;
     }
@@ -83,17 +88,34 @@ class AssignChatToAgent
 
     private function updateChatSessionStatus(ChatSession $chatSession): void
     {
-        $chatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+        $chatSession->update([
+            'status'    => ChatSessionStatusEnum::ACTIVE->value,
+            'closed_at' => null,
+            'closed_by' => null,
+        ]);
     }
 
     /**
+     * A conversation nobody holds — one a customer reopened by writing back, or one that was
+     * never picked up — has no assignment to move, so it gets one.
+     *
      * @throws \Exception
      */
     private function updateOrCreateAssignment(int $sessionId, int $agentId): ChatAssignment
     {
-        ChatAssignment::where('chat_session_id', $sessionId)
+        $updated = ChatAssignment::where('chat_session_id', $sessionId)
             ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
             ->update(['chat_agent_id' => $agentId, 'updated_at' => now()]);
+
+        if (!$updated) {
+            ChatAssignment::create([
+                'chat_session_id' => $sessionId,
+                'chat_agent_id'   => $agentId,
+                'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+                'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+                'assigned_at'     => now(),
+            ]);
+        }
 
         return $this->getActiveAssignment($sessionId)
             ?? throw new Exception('Failed to create assignment');
@@ -290,9 +312,7 @@ class AssignChatToAgent
             ]);
 
             if ($newAssignment) {
-                $chatSession->update([
-                    'status' => ChatSessionStatusEnum::ACTIVE->value
-                ]);
+                $this->updateChatSessionStatus($chatSession);
 
                 ChatAgentHydrateChats::run($agent);
 
@@ -311,6 +331,11 @@ class AssignChatToAgent
                     'action_type'         => 'self_assign',
                 ]
             ]);
+        } catch (UniqueConstraintViolationException) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
+            ], 409);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -353,10 +378,19 @@ class AssignChatToAgent
                     'note'          => 'Taken over by agent',
                     'assigned_at'   => now(),
                 ]);
-
+            } else {
+                // Nothing to take over: the conversation is unheld, so taking it over is
+                // picking it up. Without this it went active with nobody on it.
+                $chatSession->assignments()->create([
+                    'chat_agent_id' => $agent->id,
+                    'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+                    'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+                    'note'          => 'Taken over by agent',
+                    'assigned_at'   => now(),
+                ]);
             }
 
-            $chatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+            $this->updateChatSessionStatus($chatSession);
 
             if ($previousAgent && $previousAgent->id !== $agent->id) {
                 ChatAgentHydrateChats::run($previousAgent);

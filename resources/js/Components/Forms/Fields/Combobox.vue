@@ -23,7 +23,6 @@ const props = defineProps<{
     fieldData: any
     fieldName: string
 }>()
-console.log(props.fieldData)
 const isLoading = ref(true)
 const comboValue = ref('Select Users')
 const optionsResult = ref()
@@ -38,7 +37,7 @@ const fetchApi = async (query: string) => {
                     optionsResult.value = data.data
                 })
             })
-            .catch(err => console.log(err))
+            .catch(err => console.error(err))
     }
     else {
         comboValue.value = 'Select Users'

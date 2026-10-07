@@ -16,7 +16,7 @@ import { Column, DataTable, Tag } from "primevue"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Link } from "@inertiajs/vue3"
 
 library.add(faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
@@ -77,7 +77,6 @@ function organisationRoute(order: Order) {
 
 function customerRoute(order: Order) {
     let routeCurr = route().current()
-    console.log(routeCurr)
     switch (routeCurr) {
         case "grp.overview.ordering.orders.index":
         case "grp.org.overview.orders_in_basket.index":
@@ -115,7 +114,7 @@ function customerRoute(order: Order) {
                         </div>
                     </template>
                     <Column
-                        :header="trans('Date')"
+                        :header="ctrans('Date')"
                         sortable
                         :field="orderGroup.date_key"
                         headerClass="w-64"
@@ -153,7 +152,7 @@ function customerRoute(order: Order) {
                     >
                         <template #header>
                             <div class="w-full text-right font-bold">
-                                {{ trans("Net") }}
+                                {{ ctrans("Net") }}
                             </div>
                         </template>
                         <template #body="slotProps">
@@ -164,7 +163,7 @@ function customerRoute(order: Order) {
                     </Column>
                     <template #empty>
                         <div class="text-center text-gray-500 py-2">
-                            {{ trans("No orders found.") }}
+                            {{ ctrans("No orders found.") }}
                         </div>
                     </template>
                     <!-- <template #footer> In total there are {{ products ? products.length : 0 }} products. </template> -->

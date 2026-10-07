@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\Stock\RepairStocksSkoBarcodes;
@@ -23,6 +24,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -71,6 +73,11 @@ class UpdateOrgStock extends OrgAction
             }
         }
 
+        if (Arr::exists($modelData, 'carton_barcode')) {
+            $orgStock->stock?->update(['carton_barcode' => blank($modelData['carton_barcode']) ? null : trim($modelData['carton_barcode'])]);
+            Arr::forget($modelData, 'carton_barcode');
+        }
+
         if (Arr::exists($modelData, 'unit_barcode')) {
             $modelData['unit_barcode'] = blank($modelData['unit_barcode']) ? null : trim($modelData['unit_barcode']);
         }
@@ -97,6 +104,10 @@ class UpdateOrgStock extends OrgAction
 
             if ($orgStock->orgStockFamily) {
                 OrgStockFamilyHydrateOrgStocks::dispatch($orgStock->orgStockFamily);
+            }
+
+            if ($orgStock->stock_id && in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED], true)) {
+                PartnerShoppingListItem::openRestockRequestsFor($orgStock)->get()->each->delete();
             }
         }
 
@@ -136,11 +147,26 @@ class UpdateOrgStock extends OrgAction
         return $rule->ignore($this->orgStock->id);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($request->has('state') && !DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation)) {
+            return false;
+        }
+
+        return $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation));
+    }
+
     public function rules(): array
     {
         $rules = [
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
             'is_on_demand' => ['sometimes', 'boolean'],
+            'is_fresh'     => ['sometimes', 'boolean'],
+            'is_made_in_house' => ['sometimes', 'boolean'],
             'is_excluded_from_auto_ordering' => ['sometimes', 'boolean'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'name'         => ['sometimes', 'string', 'max:255'],
@@ -158,6 +184,7 @@ class UpdateOrgStock extends OrgAction
                 $this->orgStockBarcodeUniqueRule(),
             ],
             'unit_barcode' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[\x20-\x7E]+$/'],
+            'carton_barcode' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[\x20-\x7E]+$/'],
             'note_to_pickers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'note_to_packers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'consumables'     => [

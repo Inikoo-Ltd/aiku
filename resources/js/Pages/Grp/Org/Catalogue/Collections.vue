@@ -14,6 +14,9 @@ import { routeType } from '@/types/route'
 import { computed, ref } from 'vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faAlbumCollection } from "@fal"
+library.add(faAlbumCollection)
 
 
 const props = defineProps<{
@@ -28,7 +31,7 @@ const props = defineProps<{
     sales?: {}
     formData: {}
     website_domain: string
-    routes: Array<routeType>
+    routes: Record<string, routeType>
 }>()
 
 const currentTab = ref<string>(props?.tabs?.current ?? 0)

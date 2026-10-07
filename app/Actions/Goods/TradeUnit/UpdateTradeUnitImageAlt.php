@@ -9,12 +9,14 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithTradeUnitMediaEditAuthorisation;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnitImageAlt extends OrgAction
 {
+    use WithTradeUnitMediaEditAuthorisation;
     public function handle(TradeUnit $tradeUnit, Media $media, array $modelData): TradeUnit
     {
         $tradeUnit->images()->updateExistingPivot($media->id, [

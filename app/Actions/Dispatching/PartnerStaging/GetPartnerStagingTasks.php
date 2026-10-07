@@ -32,7 +32,7 @@ class GetPartnerStagingTasks
     {
         $partners = OrgPartner::where('organisation_id', $warehouse->organisation_id)
             ->whereNotNull('goods_out_location_id')
-            ->with(['partner', 'goodsOutLocation'])
+            ->with(['partner', 'goodsOutLocation', 'cosmeticGoodsOutLocation'])
             ->get()
             ->keyBy('partner_id');
 
@@ -48,12 +48,13 @@ class GetPartnerStagingTasks
             ->where('items.partner_organisation_id', $warehouse->organisation_id)
             ->whereNull('items.deleted_at')
             ->whereIn('items.organisation_id', $partners->keys())
-            ->groupBy('items.organisation_id', 'items.stock_id', 'stocks.code', 'stocks.name')
+            ->groupBy('items.organisation_id', 'items.stock_id', 'stocks.code', 'stocks.name', 'stocks.is_cosmetic')
             ->select([
                 'items.organisation_id as buyer_id',
                 'items.stock_id',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
+                'stocks.is_cosmetic',
                 DB::raw('sum(items.quantity) as quantity_pre_picked'),
             ])
             ->get();
@@ -70,8 +71,10 @@ class GetPartnerStagingTasks
                 ->where('stock_id', $row->stock_id)
                 ->value('id');
 
+            $bay = $partner->bayFor((bool) $row->is_cosmetic);
+
             $staged = (float) DB::table('location_org_stocks')
-                ->where('location_id', $partner->goods_out_location_id)
+                ->whereIn('location_id', $partner->bayIds())
                 ->where('org_stock_id', $sellerOrgStockId)
                 ->sum('quantity');
 
@@ -85,11 +88,12 @@ class GetPartnerStagingTasks
                 'org_stock_id'    => $sellerOrgStockId,
                 'stock_code'      => $row->stock_code,
                 'stock_name'      => $row->stock_name,
+                'is_cosmetic'     => (bool) $row->is_cosmetic,
                 'partner_code'    => $partner->partner->code,
-                'to_location'     => $partner->goodsOutLocation->code,
+                'to_location'     => $bay->code,
                 'quantity_staged' => $staged,
                 'quantity_to_move' => $toMove,
-                'from_locations'  => $this->sourceLocations($sellerOrgStockId, $partner->goods_out_location_id),
+                'from_locations'  => $this->sourceLocations($sellerOrgStockId, $bay->id),
             ];
         }
 

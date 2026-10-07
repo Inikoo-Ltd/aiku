@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -27,6 +28,43 @@ class IndexTopSoldProducts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $query = filled(request()->input('between')) ? $this->liveQuery($parent) : $this->rankedQuery($parent);
+
+        return $query
+            ->allowedSorts(['total_sold', 'total_amount', 'assets.name', 'assets.slug', 'assets.code'])
+            ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    private function rankedQuery(Group|Shop $parent): QueryBuilder
+    {
+        $totals = DB::table('catalogue_top_sold_products')
+            ->when($parent instanceof Shop, fn ($query) => $query->where('shop_id', $parent->id))
+            ->groupBy('asset_id')
+            ->select(
+                'asset_id',
+                DB::raw('SUM(total_sold) as total_sold'),
+                DB::raw('SUM('.($parent instanceof Group ? 'total_grp_amount' : 'total_amount').') as total_amount')
+            );
+
+        return QueryBuilder::for(Asset::withTrashed())
+            ->joinSub($totals, 'rankings', 'rankings.asset_id', '=', 'assets.id')
+            ->select(
+                'assets.id',
+                'assets.slug',
+                'assets.code',
+                'assets.name',
+                'rankings.total_sold',
+                'rankings.total_amount',
+                DB::raw("'".$parent->currency->code."' as currency_code")
+            )
+            ->orderByDesc('total_sold');
+    }
+
+    private function liveQuery(Group|Shop $parent): QueryBuilder
+    {
         $query = QueryBuilder::for(\App\Models\Accounting\InvoiceTransaction::class)
             ->select(
                 'assets.id',
@@ -38,12 +76,13 @@ class IndexTopSoldProducts extends OrgAction
                 DB::raw("'" . $parent->currency->code . "' as currency_code")
             )
             ->join('assets', function ($join) {
-                $join->on('invoice_transactions.model_id', '=', 'assets.id')
+                $join->on('invoice_transactions.asset_id', '=', 'assets.id')
                     ->where('invoice_transactions.model_type', '=', 'Product');
             })
             ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')
             ->where('assets.type', 'product')
             ->whereNull('invoice_transactions.deleted_at')
+            ->where('invoice_transactions.in_process', false)
             ->groupBy('assets.id', 'assets.slug', 'assets.code', 'assets.name')
             ->orderByDesc('total_sold');
 
@@ -51,12 +90,7 @@ class IndexTopSoldProducts extends OrgAction
             $query->where('invoice_transactions.shop_id', $parent->id);
         }
 
-        return $query
-            ->allowedSorts(['total_sold', 'total_amount', 'assets.name', 'assets.slug', 'assets.code'])
-            ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['date'])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+        return $query;
     }
 
     public function tableStructure(?array $modelOperations = null, ?string $prefix = null): Closure

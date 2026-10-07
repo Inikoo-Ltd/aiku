@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce, get, set } from 'lodash-es'
 import {  Column, DataTable, IconField, InputIcon, InputNumber, InputText } from 'primevue'
 import { inject, onMounted, ref, watch } from 'vue'
@@ -59,8 +59,6 @@ watch(() => props.recentlyUpdatedProduct, (newPorto) => {
         );
 
         if (index !== -1) {
-            console.log('33333', props.portfolios[index])
-            console.log('4444', newPorto)
             props.portfolios[index] = newPorto;
         }
     }
@@ -138,7 +136,7 @@ const debounceUpdateName = debounce((description: string) => {
         <template #header>
             <div class="flex justify-between items-center">
                 <div class="text-xl">
-                    {{ trans("Total") }}: <span class="font-bold">{{ portfolios.length }}</span>
+                    {{ ctrans("Total") }}: <span class="font-bold">{{ portfolios.length }}</span>
                 </div>
                 <IconField>
                     <InputIcon>
@@ -146,8 +144,8 @@ const debounceUpdateName = debounce((description: string) => {
                     </InputIcon>
                     <InputText
                         :modelValue="get(valueTableFilter, 'global.value', '')"
-                        @update:model-value="(e) => (console.log(e), set(valueTableFilter, ['global', 'value'], e))"
-                        :placeholder="trans('Search in table')"
+                        @update:model-value="(e) => set(valueTableFilter, ['global', 'value'], e)"
+                        :placeholder="ctrans('Search in table')"
                     />
                 </IconField>
             </div>
@@ -171,7 +169,7 @@ const debounceUpdateName = debounce((description: string) => {
 
 
 
-        <Column field="name" :header="trans('Name')" sortable removeableSort style="max-width: 250px;">
+        <Column field="name" :header="ctrans('Name')" sortable removeableSort style="max-width: 250px;">
             <template #body="{ data }">
                 <div class="relative pr-2 ">
                     <div
@@ -185,7 +183,7 @@ const debounceUpdateName = debounce((description: string) => {
 <!--                        type="tertiary"-->
 <!--                        icon="fal fa-pencil"-->
 <!--                        size="xs"-->
-<!--                        :label="trans('Click to edit')"-->
+<!--                        :label="ctrans('Click to edit')"-->
 <!--                        @click="() => {-->
 <!--                            isModalName = true-->
 <!--                            selectedDataToEditName = data-->
@@ -209,7 +207,7 @@ const debounceUpdateName = debounce((description: string) => {
             <template #header="{ column }">
                 <div>
                     <div class="font-semibold">
-                        {{ trans("Price") }}
+                        {{ ctrans("Price") }}
                     </div>
                 </div>
             </template>

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -19,10 +18,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditInvoice extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     public function handle(Invoice $invoice): Invoice
     {
         return $invoice;
@@ -100,7 +101,6 @@ class EditInvoice extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                             ]

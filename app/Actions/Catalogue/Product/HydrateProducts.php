@@ -57,10 +57,10 @@ class HydrateProducts
         ProductHydrateMarketingWeightFromTradeUnits::run($product);
         ProductHydrateMarketingDimensionFromTradeUnits::run($product);
         ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
-        ProductHydrateBarcodeFromTradeUnit::run($product);
         ProductHydrateImages::run($product);
         ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
         ModelHydrateSingleTradeUnits::run($product);
+        ProductHydrateBarcodeFromTradeUnit::run($product);
         ProductHydrateBrandsFromTradeUnits::run($product);
         ProductHydrateTagsFromTradeUnits::run($product);
     }

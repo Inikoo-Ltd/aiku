@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ctrans } from "@/Composables/useTrans"
 import { computed, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUsers, faEquals, faFileInvoice } from '@fal'
@@ -170,9 +171,10 @@ const getDeltaIndicator = (delta: number) => {
     <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-fit">
         <!-- Summary Stats as 3-column grid, align center, with tooltip for each column -->
         <div class="p-4 border-b border-gray-200">
+            <div class="mb-1 text-xs text-gray-500">{{ ctrans("All time") }}</div>
             <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                 <!-- Total Sales -->
-                <div class="cursor-pointer whitespace-nowrap" v-tooltip="'Total Sales'">
+                <div class="cursor-pointer whitespace-nowrap" v-tooltip="ctrans('Total sales, all time')">
                     <span class="text-sm font-semibold tabular-nums text-gray-900">{{ formattedTotalSales }}</span>
                 </div>
                 <!-- Total Invoices -->

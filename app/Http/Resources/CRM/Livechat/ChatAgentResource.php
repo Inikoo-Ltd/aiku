@@ -8,7 +8,7 @@ class ChatAgentResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $isDeletedInOrg = (int) ($this->active_shca_count ?? 0) === 0;
+        $isDeletedInOrg = $this->deleted_at !== null;
         $orgSlug        = $this->organisation_slug;
 
         $data = [
@@ -29,22 +29,9 @@ class ChatAgentResource extends JsonResource
             'is_deleted_in_org'    => $isDeletedInOrg,
         ];
 
-        if ($isDeletedInOrg) {
-            $data['route_restore'] = [
-                'name'       => 'grp.org.chat.agents.restore',
-                'parameters' => [$orgSlug, $this->id],
-            ];
-            $data['route_force_delete'] = [
-                'name'       => 'grp.org.chat.agents.force_delete',
-                'parameters' => [$orgSlug, $this->id],
-            ];
-        } else {
+        if (!$isDeletedInOrg) {
             $data['route_edit'] = [
                 'name'       => 'grp.org.chat.agents.edit',
-                'parameters' => [$orgSlug, $this->id],
-            ];
-            $data['route_delete'] = [
-                'name'       => 'grp.org.chat.agents.delete',
                 'parameters' => [$orgSlug, $this->id],
             ];
         }

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ticketRoute } from "@/Composables/useTicketsRoute"
-import { ref, computed } from "vue"
+import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -20,15 +20,25 @@ import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
+import TicketPullRequest from "@/Components/Tickets/TicketPullRequest.vue"
+import HistoryChangeModal from "@/Components/Tickets/HistoryChangeModal.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faForward, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots, faCodeBranch, faBell, faBellSlash } from "@fal"
 
-library.add(faWhatsapp, faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+library.add(faBell, faBellSlash, faCodeBranch,faWhatsapp,faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faForward, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+
+const desktopQuery = window.matchMedia("(min-width: 1024px)")
+const isDesktop = ref(desktopQuery.matches)
+const onBreakpointChange = (event: MediaQueryListEvent) => {
+    isDesktop.value = event.matches
+}
+onMounted(() => desktopQuery.addEventListener("change", onBreakpointChange))
+onBeforeUnmount(() => desktopQuery.removeEventListener("change", onBreakpointChange))
 
 const isLinkCopied = ref(false)
 const copyTicketLink = async () => {
@@ -42,15 +52,20 @@ const props = defineProps<{
     title: string
     ticket: any
     comments: any[]
-    timeline: { at: string; icon: string; text: string; by: string | null }[]
+    timeline: { at: string; icon: string; text: string; by: string | null; change?: { label: string; from: string; to: string } | null }[]
     can_rate: boolean
     can_manage: boolean
     can_assign: boolean
     can_flag_confidential: boolean
     can_qa: boolean
+    can_claim_qa?: boolean
+    qa_held_by_another?: boolean
+    can_request_qa: boolean
     is_reporter: boolean
     can_comment_internally: boolean
+    can_edit_content?: boolean
     can_change_kind_module: boolean
+    can_change_project?: boolean
     can_update: boolean
     can_cancel_as_reporter: boolean
     can_reopen_as_reporter: boolean
@@ -72,12 +87,16 @@ const props = defineProps<{
     }
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
+        content?: { name: string; parameters: Record<string, unknown> }
         comment: { name: string; parameters: Record<string, unknown> }
         rate: { name: string; parameters: Record<string, unknown> }
+        project?: { name: string; parameters: Record<string, unknown> }
+        pull_request: { name: string; parameters: Record<string, unknown> }
+        pull_request_update: { name: string; parameters: Record<string, unknown> }
     }
 }>()
 
-useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "is_reporter", "can_cancel_as_reporter", "can_reopen_as_reporter", "can_comment_internally", "can_change_kind_module", "can_update", "can_contribute", "can_manage_collaborators", "can_preview_attachments", "attachment_gallery"], props.ticket.reference)
+useLiveTickets([], props.ticket.reference, undefined, props.ticket.id)
 
 const saveTicketOrderSetting = (setting: "ticket_comments_newest_first" | "ticket_history_newest_first", isNewestFirst: boolean) => {
     axios.patch(route("grp.models.profile.update"), { [setting]: isNewestFirst })
@@ -111,7 +130,16 @@ const toggleHistoryOrder = () => {
     isHistoryNewestFirst.value = !isHistoryNewestFirst.value
     saveTicketOrderSetting("ticket_history_newest_first", isHistoryNewestFirst.value)
 }
+const mobileTab = ref<"comments" | "history">("comments")
+
+const mobileTabs = computed(() => [
+    { key: "comments" as const, label: ctrans("Comments"), count: props.comments.length },
+    { key: "history" as const, label: ctrans("History"), count: props.timeline.length },
+])
+
 const sortedTimeline = computed(() => (isHistoryNewestFirst.value ? props.timeline : [...props.timeline].reverse()))
+
+const historyChangeEvent = ref<any | null>(null)
 
 
 
@@ -148,19 +176,52 @@ const update = (field: string, value: unknown) => {
             </div>
         </template>
     </PageHeading>
-    <div class="p-4 grid gap-4 lg:grid-cols-3">
-        <div class="lg:col-span-2 space-y-4">
+    <div class="p-4 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+        <div class="min-w-0 lg:col-span-2 space-y-4 pb-[26px] lg:border-r-2 lg:border-gray-300 lg:pr-6">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread :ticket="ticket" :content-route="can_edit_content ? routes.content : null" label-reporter-on-mobile:show-comments="isDesktop || mobileTab === 'comments'" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+                <template #card-header-footer>
+                    <div id="ticket-card-controls" />
+                </template>
+                <template v-if="is_reporter" #subject-actions>
+                    <button
+                        type="button"
+                        v-tooltip="ticket.reporter_muted ? ctrans('Muted: no sound, mini-modal or email for you on this ticket') : ctrans('Mute this ticket for me')"
+                        class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-600"
+                        :class="ticket.reporter_muted && '!text-amber-600'"
+                        :aria-pressed="ticket.reporter_muted"
+                        @click="update('reporter_muted', !ticket.reporter_muted)">
+                        <FontAwesomeIcon :icon="ticket.reporter_muted ? 'fal fa-bell-slash' : 'fal fa-bell'" fixed-width aria-hidden="true" />
+                    </button>
+                </template>
                 <template #after-description>
+                    <div id="ticket-mobile-pull-request" class="lg:hidden" />
                     <TicketChatDropdown v-if="ticket.source?.has_conversation" :ticketId="ticket.id" :source="ticket.source" />
                     <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
                 </template>
+                <template #before-comments>
+                    <div class="flex border-b border-gray-200 lg:hidden" role="tablist">
+                        <button
+                            v-for="tab in mobileTabs"
+                            :key="tab.key"
+                            type="button"
+                            role="tab"
+                            :aria-selected="mobileTab === tab.key"
+                            class="-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition duration-200"
+                            :class="mobileTab === tab.key ? 'border-[--app-accent] text-[--app-accent-strong]' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            @click="mobileTab = tab.key">
+                            {{ tab.label }}
+                            <span class="rounded bg-gray-100 px-1.5 text-[11px] tabular-nums text-gray-600">{{ tab.count }}</span>
+                        </button>
+                    </div>
+                    <div v-show="mobileTab === 'history'" id="ticket-mobile-history" class="lg:hidden" />
+                </template>
             </TicketThread>
         </div>
-        <div class="space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
-        <TicketControlPanel :ticket="ticket" storage-key="ticket_controls_open">
-            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
+        <div class="min-w-0 space-y-4 self-start max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto lg:pb-2.5 [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
+        <Teleport defer to="#ticket-card-controls" :disabled="isDesktop">
+        <TicketControlPanel :ticket="ticket" :storage-key="isDesktop ? 'ticket_controls_open' : 'ticket_controls_open_mobile'" :default-open="isDesktop" :embedded="!isDesktop">
+            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_claim_qa="can_claim_qa" :qa_held_by_another="qa_held_by_another" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_change_project="can_change_project" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ ctrans("Commits") }}</p>
                 <ul class="space-y-1 text-xs">
@@ -179,6 +240,11 @@ const update = (field: string, value: unknown) => {
                 <div v-if="ticket.shop" class="flex justify-between"><dt>{{ ctrans("Shop") }}</dt><dd>{{ ticket.shop }}</dd></div>
             </dl>
         </TicketControlPanel>
+        </Teleport>
+        <Teleport defer to="#ticket-mobile-pull-request" :disabled="isDesktop">
+            <TicketPullRequest :ticket="ticket" :routes="routes" :can-edit="can_contribute" />
+        </Teleport>
+        <Teleport defer to="#ticket-mobile-history" :disabled="isDesktop">
         <div class="bg-white rounded-lg border border-gray-300 text-sm">
             <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleHistory">
                 <span class="font-medium uppercase tracking-wide text-gray-400">{{ ctrans("History") }}</span>
@@ -194,13 +260,16 @@ const update = (field: string, value: unknown) => {
                     <span class="absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200">
                         <FontAwesomeIcon :icon="event.icon" fixed-width class="text-[10px]" />
                     </span>
-                    <p class="text-gray-800">{{ event.text }}</p>
+                    <button v-if="event.change" v-tooltip="ctrans('See what changed')" type="button" class="text-left text-gray-800 underline decoration-gray-300 decoration-dotted underline-offset-2 transition duration-200 hover:text-[--app-accent-strong] hover:decoration-current" @click="historyChangeEvent = event">{{ event.text }}</button>
+                    <p v-else class="text-gray-800">{{ event.text }}</p>
                     <p class="text-xs text-gray-400">
                         {{ useFormatTime(event.at, { formatTime: "hm" }) }}<template v-if="event.by"> · {{ event.by }}</template>
                     </p>
                 </li>
             </ol>
         </div>
+        <HistoryChangeModal :event="historyChangeEvent" @close="historyChangeEvent = null" />
+        </Teleport>
         </div>
     </div>
 </template>

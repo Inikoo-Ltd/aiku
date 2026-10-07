@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Packaging\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
 use App\Http\Resources\Helpers\ImageResource;
@@ -24,7 +24,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditPackaging extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithBillablesAuthorisation;
 
     public function handle(Packaging $packaging, ActionRequest $request): Response
     {
@@ -49,10 +49,11 @@ class EditPackaging extends OrgAction
                             'style' => 'exitEdit',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.billables.packagings.index',
+                                'name'       => 'grp.org.shops.show.billables.packagings.show',
                                 'parameters' => [
                                     $packaging->organisation->slug,
                                     $packaging->shop->slug,
+                                    $packaging->slug,
                                 ]
                             ],
                         ]

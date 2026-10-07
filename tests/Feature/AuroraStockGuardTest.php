@@ -1,7 +1,10 @@
 <?php
 
+use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Transfers\Aurora\WithFetchStock;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Goods\Stock;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Transfers\SourceOrganisationService;
 
@@ -97,15 +100,34 @@ function auroraMovementRow(string $type, string $section = ''): object
     ];
 }
 
-it('lets only production movements through from aurora when the organisation runs stock control in aiku', function (string $type, string $section, bool $reachesParsing) {
+it('lets only production movements through from aurora when the organisation runs stock control in aiku', function (string $type, string $section, bool $reachesParsing, ?string $deliveryParent = null) {
     $organisation = $this->organisation;
     $organisation->update(['is_aiku_stock_control' => true]);
+
+    $note           = null;
+    $auroraDelivery = null;
+    if ($deliveryParent) {
+        $supplierKey = $deliveryParent == 'production' ? 'guard-production-'.uniqid() : 'guard-supplier-'.uniqid();
+        if ($deliveryParent == 'production') {
+            $production = StoreProduction::make()->action($organisation, ['code' => 'G'.substr(uniqid(), -5), 'name' => 'Guard factory']);
+            $production->update(['sources' => ['suppliers' => [$organisation->id.':'.$supplierKey]]]);
+        }
+        $auroraDelivery = (object) ['Supplier Delivery Parent' => 'Supplier', 'Supplier Delivery Parent Key' => $supplierKey];
+        $note           = 'delivery/777';
+    }
 
     $source               = Mockery::mock(SourceOrganisationService::class);
     $source->organisation = $organisation;
 
     $fetcher = new class ($source) extends \App\Transfers\Aurora\FetchAuroraOrgStockMovement {
         public bool $lookedUpOrgStock = false;
+
+        public ?object $auroraDelivery = null;
+
+        protected function fetchAuroraDeliveryParent(string $auroraDeliveryKey): ?object
+        {
+            return $this->auroraDelivery;
+        }
 
         public function feed(object $row): void
         {
@@ -121,13 +143,46 @@ it('lets only production movements through from aurora when the organisation run
         }
     };
 
-    $fetcher->feed(auroraMovementRow($type, $section));
+    $fetcher->auroraDelivery = $auroraDelivery;
+
+    $row       = auroraMovementRow($type, $section);
+    $row->Note = $note;
+    $fetcher->feed($row);
 
     expect($fetcher->lookedUpOrgStock)->toBe($reachesParsing);
 })->with([
     'sale (picking is done in aiku)'         => ['Sale', '', false],
     'in (booking in is done in aiku)'        => ['In', '', false],
+    'in from a production delivery'          => ['In', '', true, 'production'],
+    'in from a supplier delivery'            => ['In', '', false, 'supplier'],
     'restock (returns are sowed in aiku)'    => ['Restock', '', false],
     'production consumption'                 => ['Production', 'Out', true],
     'production return of consumed stock'    => ['Production', 'In', true],
 ]);
+
+it('keeps aurora away from the placement of a delivery that is booked in from aiku', function (string $parentType, bool $placesInAiku) {
+    $organisation = $this->organisation;
+    $organisation->update(['is_aiku_stock_control' => true]);
+
+    $stockDelivery = new StockDelivery(['parent_type' => $parentType]);
+    $stockDelivery->setRelation('organisation', $organisation);
+
+    expect($stockDelivery->placesInAiku())->toBe($placesInAiku);
+})->with([
+    'supplier delivery' => ['OrgSupplier', true],
+    'agent delivery'    => ['OrgAgent', true],
+    'production order'  => ['Production', false],
+]);
+
+it('strips only what aurora knows about placement from a fetched delivery or item', function () {
+    expect(StockDelivery::withoutAuroraPlacement([
+        'reference'             => 'kept',
+        'unit_quantity_checked' => 10,
+        'unit_quantity_placed'  => 10,
+        'placed_at'             => '2026-01-01',
+        'state'                 => StockDeliveryStateEnum::CHECKED,
+    ]))->toBe(['reference' => 'kept', 'unit_quantity_checked' => 10])
+        ->and(StockDelivery::withoutAuroraPlacement(['state' => StockDeliveryStateEnum::PLACED]))->toBe([])
+        ->and(StockDelivery::withoutAuroraPlacement(['state' => StockDeliveryStateEnum::RECEIVED]))->toBe(['state' => StockDeliveryStateEnum::RECEIVED])
+        ->and(StockDelivery::withoutAuroraPlacement(['state' => StockDeliveryStateEnum::CANCELLED]))->toBe(['state' => StockDeliveryStateEnum::CANCELLED]);
+});

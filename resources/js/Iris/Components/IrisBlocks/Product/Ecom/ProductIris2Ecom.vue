@@ -33,7 +33,6 @@ import "swiper/css/navigation"
 import { Navigation } from "swiper/modules"
 
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import Product2Image from "@/Components/CMS/Webpage/Product2/Product2Image.vue"
@@ -42,7 +41,7 @@ import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
-import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
+import ButtonOutOfStock from "@/Components/Iris/Products/ButtonOutOfStock.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
@@ -387,7 +386,7 @@ onMounted(async () => {
                                     {{
                                         product.stock > 0
                                             ? `${ctrans("In stock")}`
-                                            : useOutOfStockLabel(product)
+                                            : ctrans("Out of stock")
                                     }}
                                 </span>
                             </div>
@@ -395,18 +394,18 @@ onMounted(async () => {
                             <!-- REMIND ME -->
                             <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
                                 @click="
-                                    product.is_back_in_stock
+                                    customerData?.back_in_stock
                                         ? onUnselectBackInStock(product)
                                         : onAddBackInStock(product)
                                     "
                                 class="absolute right-0 bottom-2 flex items-center gap-2 px-3 py-1.5 text-sm rounded-full border bg-gray-100 hover:bg-gray-200">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
-                                    :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
+                                    :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                    :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                                 <span>
                                     {{
-                                        product.is_back_in_stock
+                                        customerData?.back_in_stock
                                             ? ctrans("will be notified when in Stock")
                                             : ctrans("Remind me")
                                     }}
@@ -463,8 +462,8 @@ onMounted(async () => {
                             </p>
                         </template>
 
-                        <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
-                        <div class="flex items-baseline justify-end gap-1 text-black">
+                        <p v-if="product.rrp_per_unit > 0" class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
+                        <div v-if="product.rrp_per_unit > 0" class="flex items-baseline justify-end gap-1 text-black">
                             <span class="text-xs font-semibold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                             </span>
@@ -512,7 +511,7 @@ onMounted(async () => {
                 <div class="flex gap-2 mt-4 mb-4">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock > 0" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"  class="button-basket"/>
-                        <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
+                        <ButtonOutOfStock v-else :product="product" />
                     </div>
 
                     <LinkIris v-else :href="urlLoginWithRedirect()"
@@ -731,7 +730,7 @@ onMounted(async () => {
                     {{
                         product.stock > 0
                             ? `${ctrans('In stock')}`
-                            : useOutOfStockLabel(product)
+                            : ctrans("Out of stock")
                     }}
                 </span>
 
@@ -777,8 +776,8 @@ onMounted(async () => {
                         </p>
                     </template>
 
-                    <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
-                    <div class="flex items-baseline justify-end gap-1 text-black">
+                    <p v-if="product.rrp_per_unit > 0" class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
+                    <div v-if="product.rrp_per_unit > 0" class="flex items-baseline justify-end gap-1 text-black">
                         <span class="text-xs font-semibold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                         </span>
@@ -829,15 +828,15 @@ onMounted(async () => {
 
             <!-- REMIND ME -->
             <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'" @click="
-                product.is_back_in_stock
+                customerData?.back_in_stock
                     ? onUnselectBackInStock(product)
                     : onAddBackInStock(product)
                 " class="flex items-center gap-2 px-3 py-2 rounded-full border bg-gray-100 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
+                <FontAwesomeIcon v-else :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
-                        product.is_back_in_stock
+                        customerData?.back_in_stock
                             ? ctrans('will be notified when in Stock')
                             : ctrans('Remind me')
                     }}
@@ -846,7 +845,7 @@ onMounted(async () => {
 
             <!-- ADD TO CART -->
             <EcomAddToBasketv2 v-if="product.stock > 0" ref="_mobileAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" class="w-full button-basket" />
-            <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
+            <ButtonOutOfStock v-else :product="product" />
 
             <!-- DOWNLOAD -->
             <a :href="marketingMaterialUrl"

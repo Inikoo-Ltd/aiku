@@ -69,6 +69,7 @@ class ShowOperationsDashboard extends OrgAction
             'Org/Production/OperationsDashboard',
             [
                 'title'                            => __('Operations'),
+                'server_time'                      => now()->toIso8601ZuluString('millisecond'),
                 'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'                       => [
                     'previous' => $this->getPrevious($production, $request),
@@ -225,12 +226,13 @@ class ShowOperationsDashboard extends OrgAction
                         ]),
                     'queue'       => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
                         ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-                        ->with(['jobOrderItem.artefact', 'jobOrder', 'manufactureTask'])
+                        ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask', 'jobOrder', 'manufactureTask'])
                         ->live()
                         ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
                         ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                         ->orderBy('job_orders.date')
                         ->orderBy('job_order_item_tasks.position')
+                        ->orderBy('job_order_item_tasks.id')
                         ->select('job_order_item_tasks.*')
                         ->limit(20)
                         ->get()
@@ -244,6 +246,7 @@ class ShowOperationsDashboard extends OrgAction
                             'job_order_slug'      => $task->jobOrder->slug,
                             'quantity_made'       => (float)$task->quantity_made,
                             'quantity_required'   => (float)$task->quantity_required,
+                            'blocked_by_step'     => $task->blockingStep($task->jobOrderItem->tasks)?->manufactureTask->name,
                             'start_route'         => [
                                 'name'       => 'grp.models.job-order-item-task.session.store',
                                 'parameters' => ['jobOrderItemTask' => $task->id],

@@ -12,7 +12,7 @@ import { Order } from "@/types/order"
 import type { Links, Meta, Table as TableTS } from "@/types/Table"
 import { routeType } from "@/types/route"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -48,7 +48,6 @@ function deliveryNoteRoute(deliveryNote: Order) {
 
 const isLoading = ref<{[key: string]: boolean}>({})
 const onSubmitPickerPacker = (fetchRoute: routeType, selectedPicker: {}, rowIndex: number, scope: string) => {
-    console.log('dd', selectedPicker)
     try {
         router.patch(route(fetchRoute.name, fetchRoute.parameters), {
             [`${scope}_id`]: selectedPicker.user_id
@@ -85,7 +84,7 @@ const onClickPick = () => {
             onError: (errors) => {
                 isErrorPicker.value = errors.messages
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: isErrorPicker.value,
                     type: "error",
                 })
@@ -116,7 +115,7 @@ const onClickPick = () => {
             <Button
                 @click="() => isModalPick = deliveryNote"
                 type="secondary"
-                :label="trans('Pick')"
+                :label="ctrans('Pick')"
                 size="xs"
             />
         </template>
@@ -129,11 +128,11 @@ const onClickPick = () => {
         <div class="sm:flex sm:items-start w-full">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <DialogTitle as="h3" class="text-base font-semibold">
-                    {{ trans("Item Picking") }}
+                    {{ ctrans("Item Picking") }}
                 </DialogTitle>
                 <div class="mt-2">
                     <div class="text-sm font-medium mb-2">
-                        {{ trans("Select picker") }}
+                        {{ ctrans("Select picker") }}
                     </div>
                     <PureMultiselectInfiniteScroll
                         v-model="selectedPicker"
@@ -142,7 +141,7 @@ const onClickPick = () => {
                         "
                         required
                         :fetchRoute="isModalPick.pickers_list_route"
-                        :placeholder="trans('Select picker')"
+                        :placeholder="ctrans('Select picker')"
                         labelProp="contact_name"
                         valueProp="id"
                         object
@@ -165,14 +164,14 @@ const onClickPick = () => {
                     </PureMultiselectInfiniteScroll>
 
                     <div class="text-sm font-medium my-2">
-                        {{ trans("Select Location") }}
+                        {{ ctrans("Select Location") }}
                     </div>
                     <PureMultiselectInfiniteScroll
                         v-model="selectedLocation"
                     
                         required
                         :fetchRoute="isModalPick.location_list_route"
-                        :placeholder="trans('Select Location')"
+                        :placeholder="ctrans('Select Location')"
                         object
                         clearOnBlur
                         >
@@ -200,7 +199,7 @@ const onClickPick = () => {
                     <Button
                         :loading="isLoadingPick"
                         @click="() => onClickPick()"
-                        :label="trans('save')"
+                        :label="ctrans('save')"
                         full
                         :disabled="true"
                     />
@@ -208,7 +207,7 @@ const onClickPick = () => {
                     <Button
                         type="tertiary"
                         icccon="far fa-arrow-left"
-                        :label="trans('cancel')"
+                        :label="ctrans('cancel')"
                         
                         @click="() => (isModalPick = null)"
                     />

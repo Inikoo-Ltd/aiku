@@ -44,14 +44,8 @@ class StartManufactureTaskSession extends OrgAction
             ]);
         }
 
-        if ($jobOrderItemTask->state == JobOrderItemTaskStateEnum::DONE) {
-            throw ValidationException::withMessages([
-                'job_order_item_task_id' => __('This task is already finished'),
-            ]);
-        }
-
         $employee = GetUserCurrentEmployee::run($user, $jobOrderItemTask->organisation_id);
-        $isMine   = $employee && $jobOrder->employee_id == $employee->id;
+        $isMine   = $employee && ($jobOrderItemTask->jobOrderItem->employee_id ?? $jobOrder->employee_id) == $employee->id;
 
         if (!$isMine && !ShowManufactureFloor::canPickOpenJobs($user, $jobOrderItemTask->production)) {
             throw ValidationException::withMessages([
@@ -64,6 +58,31 @@ class StartManufactureTaskSession extends OrgAction
         } elseif ($jobOrder->state != JobOrderStateEnum::CONFIRMED) {
             throw ValidationException::withMessages([
                 'job_order_item_task_id' => __('This job order has not been released to the floor'),
+            ]);
+        }
+
+        if ($jobOrderItemTask->state == JobOrderItemTaskStateEnum::DONE) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('This task is already finished'),
+            ]);
+        }
+
+        $blockingStep = $jobOrderItemTask->state == JobOrderItemTaskStateEnum::TODO
+            ? $jobOrderItemTask->blockingStep($jobOrderItemTask->jobOrderItem->tasks)
+            : null;
+        if ($blockingStep) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('Finish :step first', ['step' => $blockingStep->manufactureTask->name]),
+            ]);
+        }
+
+        $takenByAnotherUser = ManufactureTaskSession::where('job_order_item_task_id', $jobOrderItemTask->id)
+            ->where('state', ManufactureTaskSessionStateEnum::OPEN)
+            ->where('user_id', '!=', $user->id)
+            ->exists();
+        if ($takenByAnotherUser) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('Someone else is already working on this step'),
             ]);
         }
 

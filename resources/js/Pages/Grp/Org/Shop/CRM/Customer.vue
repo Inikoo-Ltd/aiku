@@ -9,13 +9,16 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, toRef } from "vue"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue"
 import CustomerTimeline from "@/Components/Showcases/Grp/CustomerTimeline.vue"
+import CustomerCommunications from "@/Components/Showcases/Grp/CustomerCommunications.vue"
 import CustomerJourney from "@/Components/Showcases/Grp/CustomerJourney.vue"
+import CustomerRetinaDashboard from "@/Components/Showcases/Grp/CustomerRetinaDashboard.vue"
 import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -23,15 +26,15 @@ import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
 import RetinaTableApiRequests from "@/Components/Tables/Retina/RetinaTableApiRequests.vue"
 import TableCustomerFavourites from "@/Components/Tables/Grp/Org/CRM/TableCustomerFavourites.vue"
+import TableCustomerReorderProducts from "@/Components/Tables/Grp/Org/CRM/TableCustomerReorderProducts.vue"
 import TableCustomerBackInStockReminders from "@/Components/Tables/Grp/Org/CRM/TableCustomerBackInStockReminders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ctrans } from "@/Composables/useTrans"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
@@ -39,7 +42,9 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
@@ -48,7 +53,7 @@ import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser)
 
 
 const props = defineProps<{
@@ -72,16 +77,20 @@ const props = defineProps<{
     can_add_order: boolean
     can_email_customer?: boolean
     emailCustomerRoute?: routeType
+    customer_email?: string | null
     products?: {}
     dispatched_emails?: {}
+    communications?: {}
     api_requests?: {}
     web_users?: {}
     attachments?: {}
     attachmentRoutes?: {}
     favourites?: {}
+    reorders?: {}
     reminders?: {}
     timeline?: {}
     journey?: {}
+    retina_dashboard?: {}
     history?: {}
     credit_transactions?: {}
     payments?: {}
@@ -117,12 +126,25 @@ const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isEmailModalOpen = ref(false)
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
+
 const emailForm = useForm({
+    email: props.customer_email ?? '',
     subject: '',
     message: '',
+    attachments: [] as File[],
 })
+const emailDraftKey = (field: string) => () => `customer-email:${props.shop_data.customer_id}:${field}`
+const clearSubjectDraft = useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
+const clearMessageDraft = useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
 const submitEmail = () => {
-    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters))
+    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters), {
+        onSuccess: () => {
+            clearSubjectDraft()
+            clearMessageDraft()
+            emailForm.reset('subject', 'message', 'attachments')
+        },
+    })
 }
 
 const orderForm = useForm({
@@ -141,7 +163,9 @@ const component = computed(() => {
     const components: Component = {
         showcase: CustomerShowcase,
         timeline: CustomerTimeline,
+        communications: CustomerCommunications,
         journey: CustomerJourney,
+        retina_dashboard: CustomerRetinaDashboard,
         products: TableProducts,
         orders: TableOrders,
         details: ModelDetails,
@@ -150,6 +174,7 @@ const component = computed(() => {
         api_requests: RetinaTableApiRequests,
         web_users: TableWebUsers,
         favourites: TableCustomerFavourites,
+        reorders: TableCustomerReorderProducts,
         reminders: TableCustomerBackInStockReminders,
         attachments: TableAttachments,
         credit_transactions: TableCreditTransactions,
@@ -165,26 +190,15 @@ const layout = inject('layout')
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-delete-customer="{ action }">
-            <ModalConfirmationDelete
-                :routeDelete="action.route"
-                :title="ctrans('Delete this customer?')"
-                :description="ctrans('The customer and their login will be permanently deleted. This can not be undone.')">
-                <template #default="{ changeModel }">
-                    <Button :style="'delete'" :icon="['far', 'fa-trash-alt']" v-tooltip="action.tooltip"
-                        @click="changeModel" />
-                </template>
-            </ModalConfirmationDelete>
-        </template>
         <template #other>
-            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
             <Button v-if="can_email_customer" @click="isEmailModalOpen = true" :label="ctrans('New email')" style="secondary"
                 icon="fal fa-envelope" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
-                icon="plus" />            
+                icon="plus" />
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
         </template>
     </PageHeading>
 
@@ -239,25 +253,35 @@ const layout = inject('layout')
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
 
-    <Modal :show="isEmailModalOpen" @close="isEmailModalOpen = false" width="w-full max-w-2xl">
+    <Modal :isOpen="isEmailModalOpen" @onClose="isEmailModalOpen = false" width="w-full max-w-2xl">
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="emailForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ ctrans('New email to this customer') }}</h2>
             <p class="mt-1 text-sm text-gray-600">{{ ctrans('It opens a conversation in the chat inbox, and their reply comes back to it.') }}</p>
             <div class="mt-4 space-y-3">
+                <div>
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans('To') }}</label>
+                    <PureInput v-model="emailForm.email" type="email" :placeholder="ctrans('Email address')" />
+                </div>
                 <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
-                <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
+                <div>
+                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline class="mb-1" />
+                    <ChatMessageEditor ref="messageEditor" v-model="emailForm.message" :placeholder="ctrans('Message')" allow-underline
+                        class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-40 [&_.ProseMirror]:max-h-80" />
+                </div>
+                <EmailAttachmentPicker v-model="emailForm.attachments" :errors="emailForm.errors" />
+                <p v-if="emailForm.errors.email" class="text-sm text-red-500">{{ emailForm.errors.email }}</p>
                 <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
                 <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>
             </div>
             <div class="mt-4 flex justify-end">
                 <Button :label="ctrans('Send')" style="primary" icon="fal fa-paper-plane" :loading="emailForm.processing"
-                    :disabled="!emailForm.subject || !emailForm.message" @click="submitEmail" />
+                    :disabled="!emailForm.email || !emailForm.subject || !emailForm.message" @click="submitEmail" />
             </div>
         </div>
     </Modal>
 
-    <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false" width="w-full max-w-5xl">
+    <Modal :isOpen="isOrderModalOpen" @onClose="isOrderModalOpen = false; orderForm.clearErrors()" width="w-full max-w-5xl">
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
@@ -265,6 +289,9 @@ const layout = inject('layout')
             <div class="mt-6">
                 <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
                     @update:model-value="(val) => { orderForm.sales_channel_id = val; submitOrder() }" />
+            </div>
+            <div v-if="orderForm.hasErrors" class="mt-4 rounded bg-red-500 p-3 text-sm text-white">
+                <p v-for="message in Object.values(orderForm.errors)" :key="message">{{ message }}</p>
             </div>
         </div>
     </Modal>

@@ -17,6 +17,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePartnerShoppingListItem extends OrgAction
@@ -36,8 +37,12 @@ class UpdatePartnerShoppingListItem extends OrgAction
 
     public function handle(PartnerShoppingListItem $partnerShoppingListItem, array $modelData): PartnerShoppingListItem
     {
-        abort_unless($partnerShoppingListItem->state === ShoppingListItemStateEnum::OPEN, 422, 'Only open items can be updated');
+        abort_unless(in_array($partnerShoppingListItem->state->value, $this->asAction ? ShoppingListItemStateEnum::onPartnerBuyerList() : [ShoppingListItemStateEnum::DRAFT->value], true), 422, 'Only lines on the ongoing PO can be changed, sent lines are the partner\'s to work on');
         abort_if($partnerShoppingListItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be changed');
+
+        if (!Arr::pull($modelData, 'break_batch') && isset($modelData['quantity'])) {
+            $modelData['quantity'] = RoundPartnerQuantityToBatches::run($partnerShoppingListItem->orgPartner, $partnerShoppingListItem->stock_id, (float) $modelData['quantity']);
+        }
 
         $partnerShoppingListItem = $this->update($partnerShoppingListItem, $modelData);
         if ($partnerShoppingListItem->wasChanged('quantity')) {
@@ -54,6 +59,7 @@ class UpdatePartnerShoppingListItem extends OrgAction
             'priority'       => ['sometimes', 'required', Rule::enum(ShoppingListItemPriorityEnum::class)],
             'needed_by'      => ['sometimes', 'nullable', 'date'],
             'notes'          => ['sometimes', 'nullable', 'string'],
+            'break_batch'    => ['sometimes', 'boolean'],
         ];
     }
 

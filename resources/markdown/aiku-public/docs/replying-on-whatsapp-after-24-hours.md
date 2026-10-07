@@ -3,7 +3,7 @@ title: Replying on WhatsApp after 24 hours
 summary: Why the message box locks on a WhatsApp conversation the customer has not written in for a day, how to reopen it with an approved message, and how to write a new approved message yourself.
 date: 2026-09-21
 tags: chat, whatsapp, customer service
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

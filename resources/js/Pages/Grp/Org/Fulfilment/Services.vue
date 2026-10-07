@@ -16,6 +16,9 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faConciergeBell, faBars } from "@fal"
+library.add(faConciergeBell, faBars)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

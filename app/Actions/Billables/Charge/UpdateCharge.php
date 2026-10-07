@@ -8,9 +8,11 @@
 
 namespace App\Actions\Billables\Charge;
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -24,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCharge extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -38,6 +41,8 @@ class UpdateCharge extends OrgAction
             }
             data_set($modelData, 'status', $status);
         }
+
+        $modelData = Arr::except($modelData, ['amount', 'min_order']);
 
         $charge  = $this->update($charge, $modelData);
         $changed = $charge->getChanges();
@@ -60,6 +65,8 @@ class UpdateCharge extends OrgAction
             ],
             $this->hydratorsDelay
         );
+
+        PurgeIrisDocsFromVarnish::forShop($charge->shop);
 
         return $charge;
     }
@@ -107,6 +114,9 @@ class UpdateCharge extends OrgAction
 
             'data'     => ['sometimes', 'array'],
             'settings' => ['sometimes', 'array'],
+
+            'amount'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'min_order' => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
             'state'   => ['sometimes', 'required', Rule::enum(ChargeStateEnum::class)],
             'trigger' => ['sometimes', 'required', Rule::enum(ChargeTriggerEnum::class)],

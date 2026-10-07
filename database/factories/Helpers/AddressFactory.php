@@ -25,7 +25,8 @@ class AddressFactory extends Factory
             'locality'            => fake()->city,
             'dependent_locality'  => '',
             'administrative_area' => fake('en_US')->state() ,
-            'country_id'          => $country->id
+            'country_id'          => $country->id,
+            'country_code'        => $country->code,
         ];
     }
 }

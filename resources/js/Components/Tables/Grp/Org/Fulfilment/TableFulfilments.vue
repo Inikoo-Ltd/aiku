@@ -23,8 +23,6 @@ const props = defineProps<{
 
 function fulfilmentRoute(fulfilment: Fulfilment) {
     switch (route().current()) {
-        case 'grp.overview.billables.services.index':
-            return null
         case 'grp.org.fulfilments.index':
             return route(
                 'grp.org.fulfilments.show.operations.dashboard',

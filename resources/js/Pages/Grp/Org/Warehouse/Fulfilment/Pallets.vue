@@ -14,8 +14,8 @@ import { useForm } from '@inertiajs/vue3'
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-import { faStickyNote, } from '@fal'
-library.add( faStickyNote, )
+import { faStickyNote, faWarehouseAlt, faSignOutAlt } from '@fal'
+library.add( faStickyNote, faWarehouseAlt, faSignOutAlt )
 
 const props = defineProps<{
     data: {}

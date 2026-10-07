@@ -40,6 +40,10 @@ class RequestApiUploadProductAmazon extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
+            if (blank($product->barcode)) {
+                throw new \Exception('Amazon needs an EAN/GTIN and this product has none.');
+            }
+
             $searchProduct = $amazonUser->getProductByEan($product->barcode);
             $product = $amazonUser->createProductFromSearchData($searchProduct);
 

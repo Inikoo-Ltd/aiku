@@ -22,9 +22,11 @@ class ShopPlatformStatsHydratePortfolios implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Shop $shop): string
+    public string $jobQueue = 'hydrators-slave';
+
+    public function getJobUniqueId(Shop $shop, Platform $platform): string
     {
-        return $shop->id;
+        return $shop->id.'-'.$platform->id;
     }
 
     public function handle(Shop $shop, Platform $platform): void

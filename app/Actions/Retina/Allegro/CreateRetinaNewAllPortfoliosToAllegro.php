@@ -11,11 +11,13 @@ namespace App\Actions\Retina\Allegro;
 use App\Actions\Dropshipping\Allegro\Product\CreateNewAllPortfoliosToAllegro;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaNewAllPortfoliosToAllegro extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**

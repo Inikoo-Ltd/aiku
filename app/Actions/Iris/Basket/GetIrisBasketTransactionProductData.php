@@ -24,9 +24,9 @@ class GetIrisBasketTransactionProductData extends IrisAction
         $offerNetAmountPerQuantity = (int)$transaction->quantity_ordered ? ($transaction->net_amount / ((int)$transaction->quantity_ordered ?? null)) : null;
 
         return [
-            'quantity_ordered_new'          => $transaction->quantity_ordered,
+            'quantity_ordered_new'          => (float) $transaction->quantity_ordered,
             'transaction_id'                => $transaction->id,
-            'quantity_ordered'              => $transaction->quantity_ordered,
+            'quantity_ordered'              => (float) $transaction->quantity_ordered,
             'stock'                         => $product->available_quantity,
             'offers_data'                   => $product->offers_data,
             'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,

@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $org_post_room_id
  * @property int $number_outboxes
  * @property int $number_outboxes_type_basket_low_stock
+ * @property int $number_outboxes_type_basket_on_offer
+ * @property int $number_outboxes_type_favourites_on_offer
  * @property int $number_outboxes_type_basket_push
  * @property int $number_outboxes_type_new_customer_push
  * @property int $number_outboxes_type_new_customer
@@ -85,6 +87,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_outboxes_type_gold_reward_reminder_1
  * @property int $number_outboxes_type_gold_reward_reminder_2
  * @property int $number_outboxes_type_gold_reward_reminder_3
+ * @property int $number_outboxes_type_due_to_reorder
  * @property int $number_outboxes_type_oos_in_order_notification
  * @property int $number_outboxes_type_credit_balance_notification_for_customer
  * @property int $number_outboxes_type_credit_balance_notification_for_user

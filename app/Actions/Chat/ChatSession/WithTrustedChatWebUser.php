@@ -32,9 +32,8 @@ trait WithTrustedChatWebUser
             'claimed_web_user_id' => $claimedId,
             'logged_in_as'        => $trustedId,
             'ip'                  => request()->ip(),
-            'enforced'            => (bool) config('app.enforce_chat_identity'),
         ]);
 
-        return config('app.enforce_chat_identity') ? $trustedId : $claimedId;
+        return $trustedId;
     }
 }

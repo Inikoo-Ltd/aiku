@@ -8,9 +8,12 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Catalogue\Shop\External\Wix\UpdateShippingWixOrder;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdSkShipping;
@@ -22,6 +25,8 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiCttEsShipping;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
@@ -93,12 +98,14 @@ class StoreShipment extends OrgAction
         );
 
 
+        $packetaSenderName = Arr::pull($modelData, 'sender_name');
+
         if ($shipper->api_shipper) {
             $shipmentData = match ($shipper->api_shipper) {
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSkShipping::run($parent, $shipper),
                 'gls-es' => CallApiGlsEsShipping::run($parent, $shipper),
-                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
+                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper, $packetaSenderName),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'dpd-sk' => CallApiDpdSkShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
@@ -141,7 +148,11 @@ class StoreShipment extends OrgAction
         if ($parent instanceof DeliveryNote) {
             $order = $parent->orders()->first();
             if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external) {
-                $faireFeedback = UpdateShippingFaireOrder::run($parent);
+                $faireFeedback = match ($order->shop->engine) {
+                    ShopEngineEnum::FAIRE => UpdateShippingFaireOrder::run($parent),
+                    ShopEngineEnum::WIX   => UpdateShippingWixOrder::run($parent),
+                    default               => null,
+                };
             }
         }
 
@@ -151,7 +162,25 @@ class StoreShipment extends OrgAction
             'data' => $shipmentData
         ]);
 
+        if ($parent instanceof DeliveryNote) {
+            $this->dispatchLabelledReplacement($parent->refresh());
+        }
+
         return $shipment;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function dispatchLabelledReplacement(DeliveryNote $deliveryNote): void
+    {
+        if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT
+            || $deliveryNote->state != DeliveryNoteStateEnum::PACKED
+            || $deliveryNote->hasUnprintedLeaflets()) {
+            return;
+        }
+
+        FinaliseAndDispatchDeliveryNote::make()->action($deliveryNote);
     }
 
     /**

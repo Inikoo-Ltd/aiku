@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrderAddressCollection extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     /**
      * @var \App\Models\Ordering\Order
      */

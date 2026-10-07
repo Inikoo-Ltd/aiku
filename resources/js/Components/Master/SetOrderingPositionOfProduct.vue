@@ -5,7 +5,7 @@ import draggable from "vuedraggable"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { faCheck, faTimes } from "@fas";
 import { isEqual } from 'lodash-es'
 import { faTrash } from "@far";
@@ -15,16 +15,32 @@ import PasteProductOrderModal from "@/Components/Master/PasteProductOrderModal.v
 
 library.add(faCopy, faInfoCircle);
 
+interface SortOption {
+    key: string
+    label: string
+    type?: 'string' | 'number' | 'date'
+    defaultDirection?: 'asc' | 'desc'
+}
+
 const props = withDefaults(
     defineProps<{
         data: any
         useDelete?: boolean
         disabled?: boolean
         pasteLookupRoute?: { name: string; parameters?: Record<string, unknown> } | null
+        sortOptions?: SortOption[]
+        listMaxHeight?: string | null
+        dense?: boolean
     }>(),
     {
         disabled : false,
-        useDelete: false
+        useDelete: false,
+        listMaxHeight: null,
+        dense: false,
+        sortOptions: () => [
+            { key: 'name', label: 'Name', type: 'string' },
+            { key: 'code', label: 'Code', type: 'string' },
+        ]
     }
 )
 
@@ -46,11 +62,11 @@ const emits = defineEmits([
 
 
 
-const sortBy = ref<'name' | 'code'>('name')
+const sortBy = ref<string>('manual')
 const sortDirection = ref<'asc' | 'desc'>('asc')
 const history = ref<any[][]>([])
 const future = ref<any[][]>([])
-const clone = (data: any) => JSON.parse(JSON.stringify(data))
+const clone = (data: any[]) => [...data]
 
 const saveHistory = () => {
     history.value.push(clone(items.value))
@@ -81,7 +97,6 @@ const updateOrder = () => {
     }))
 
 
-    console.log("Updated order:", items.value)
     emits("update:data", items.value);
 }
 
@@ -142,26 +157,36 @@ const handleKey = (e: KeyboardEvent) => {
     }
 }
 
-const applySort = (type: 'manual' | 'name' | 'code') => {
-    // toggle direction if same type
-    if (sortBy.value === type) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-    } else {
-        sortBy.value = type
-        sortDirection.value = 'asc'
+const compareOn = (option: SortOption, a: any, b: any) => {
+    if (option.type === 'number') {
+        return (Number(a[option.key]) || 0) - (Number(b[option.key]) || 0)
     }
 
-    if (type === 'manual') return
+    if (option.type === 'date') {
+        return (Date.parse(a[option.key]) || 0) - (Date.parse(b[option.key]) || 0)
+    }
+
+    return (a[option.key] || '').toString().localeCompare((b[option.key] || '').toString())
+}
+
+const applySort = (key: string) => {
+    const option = props.sortOptions.find((candidate) => candidate.key === key)
+
+    // toggle direction if same type
+    if (sortBy.value === key) {
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    } else {
+        sortBy.value = key
+        sortDirection.value = option?.defaultDirection ?? 'asc'
+    }
+
+    if (key === 'manual' || !option) return
 
     saveHistory()
 
     const dir = sortDirection.value === 'asc' ? 1 : -1
 
-    items.value.sort((a, b) => {
-        const aVal = (a[type] || '').toString()
-        const bVal = (b[type] || '').toString()
-        return aVal.localeCompare(bVal) * dir
-    })
+    items.value.sort((a, b) => compareOn(option, a, b) * dir)
 
     updateOrder()
 }
@@ -180,8 +205,8 @@ const applyPastedOrder = (orderedItems: any[]) => {
 
 const getImageSource = (item: any) => item?.image_thumbnail?.main?.thumbnail ?? item?.image_thumbnail
 
-const getArrow = (type: 'name' | 'code') => {
-    if (sortBy.value !== type) return ''
+const getArrow = (key: string) => {
+    if (sortBy.value !== key) return ''
     return sortDirection.value === 'asc' ? '↑' : '↓'
 }
 
@@ -206,24 +231,16 @@ onMounted(() => window.addEventListener("keydown", handleKey))
 onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 </script>
 <template>
-    <div class="p-4">
-        <div class="flex items-center justify-between mb-4">
+    <div :class="dense ? 'p-3' : 'p-4'">
+        <div class="flex items-center justify-between" :class="dense ? 'mb-2' : 'mb-4'">
             <div class="flex items-center gap-4">
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
-                    <button @click="applySort('name')"
-                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === 'name'
+                    <button v-for="option in sortOptions" :key="option.key" @click="applySort(option.key)"
+                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === option.key
                             ? 'bg-white shadow text-gray-900'
                             : 'text-gray-500 hover:text-gray-700'">
-                        Name
-                        <span class="text-[10px]">{{ getArrow('name') }}</span>
-                    </button>
-
-                    <button @click="applySort('code')"
-                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === 'code'
-                            ? 'bg-white shadow text-gray-900'
-                            : 'text-gray-500 hover:text-gray-700'">
-                        Code
-                        <span class="text-[10px]">{{ getArrow('code') }}</span>
+                        {{ option.label }}
+                        <span class="text-[10px]">{{ getArrow(option.key) }}</span>
                     </button>
                 </div>
             </div>
@@ -235,11 +252,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-600 transition duration-200 hover:bg-gray-50 hover:text-gray-800"
                     @click="isPasteOpen = true">
                     <FontAwesomeIcon :icon="faCopy" fixed-width aria-hidden="true" />
-                    {{ trans("Paste order") }}
+                    {{ ctrans("Paste order") }}
                 </button>
                 <span
                     v-if="!disabled"
-                    v-tooltip="trans('Paste one code per line, in the order you want. Numbering like 1. 2) or - is ignored, and nothing is saved until you press Save order.')"
+                    v-tooltip="ctrans('Paste one code per line, in the order you want. Numbering like 1. 2) or - is ignored, and nothing is saved until you press Save order.')"
                     class="text-gray-400 hover:text-gray-600">
                     <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
                 </span>
@@ -268,21 +285,20 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
         <template v-if="!items.length">
             <slot name="empty">
                 <div class="text-center py-10 text-gray-400 border rounded bg-white">
-                    {{ trans('No products found.') }}
+                    {{ ctrans('No products found.') }}
                 </div>
             </slot>
         </template>
 
-        <!-- LIST -->
-
-        <draggable v-else-if="viewMode === 'list'" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle"
-            @end="updateOrder" animation="200" ghost-class="drag-ghost" chosen-class="drag-chosen"
-            drag-class="drag-dragging" class="space-y-2">
+        <div :class="listMaxHeight ? 'overflow-y-auto overscroll-contain pr-1' : ''" :style="listMaxHeight ? { maxHeight: listMaxHeight } : undefined">
+        <draggable v-if="items.length && viewMode === 'list'" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle"
+            @end="updateOrder" animation="150" ghost-class="drag-ghost" chosen-class="drag-chosen"
+            drag-class="drag-dragging" :class="dense ? 'space-y-1' : 'space-y-2'">
             <template #item="{ element, index }">
-                <div class="flex items-center gap-3 p-2 border rounded bg-white hover:bg-gray-50">
+                <div class="flex items-center border rounded bg-white hover:bg-gray-50" :class="dense ? 'gap-2 px-2 py-1' : 'gap-3 p-2'">
                     <div class="drag-handle cursor-move text-gray-400" v-if="!disabled">☰</div>
 
-                    <div class="w-10 text-xs text-gray-400">
+                    <div class="text-xs text-gray-400 tabular-nums" :class="dense ? 'w-8' : 'w-10'">
                         <input v-if="editingId === element.id" v-model.number="tempIndex" type="number" :min="1"
                             :max="items.length" class="index-input w-full border rounded px-1 text-xs"
                             @blur="applyNewIndex(element)" @keyup.enter="applyNewIndex(element)" />
@@ -315,8 +331,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             </template>
         </draggable>
 
-        <!-- CARD -->
-        <draggable v-else :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
+        <draggable v-else-if="items.length" :disabled="disabled" v-model="items" item-key="id" handle=".drag-handle" @end="updateOrder" animation="200"
             ghost-class="drag-ghost" chosen-class="drag-chosen" drag-class="drag-dragging" tag="div"
             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <template #item="{ element, index }">
@@ -361,6 +376,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 </div>
             </template>
         </draggable>
+
+        <slot name="after-list" :view-mode="viewMode" :items-count="items.length"></slot>
+        </div>
     </div>
     <PasteProductOrderModal
         :is-open="isPasteOpen"

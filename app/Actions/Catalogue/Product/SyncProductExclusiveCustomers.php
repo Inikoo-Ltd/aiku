@@ -9,8 +9,11 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\Product;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -22,6 +25,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SyncProductExclusiveCustomers extends OrgAction
 {
     use AsAction;
+    use WithCatalogueEditAuthorisation;
+    use WithProductHydrators;
 
     public function handle(Product $product, array $customerIds): Product
     {
@@ -34,6 +39,10 @@ class SyncProductExclusiveCustomers extends OrgAction
         $product->updateQuietly([
             'exclusive_for_customer_id' => $customerIds[0] ?? null,
         ]);
+
+        if ($product->wasChanged('exclusive_for_customer_id')) {
+            $this->productHydrators($product, hydrateForSale: false);
+        }
 
         // Becoming exclusive has to take the product off the public site, otherwise it stays
         // listed and a customer's private range is visible to everyone.
@@ -57,6 +66,18 @@ class SyncProductExclusiveCustomers extends OrgAction
                 Rule::exists('customers', 'id')->where('shop_id', $this->shop->id),
             ],
         ];
+    }
+
+    public function asController(Product $product, ActionRequest $request): Product
+    {
+        $this->initialisationFromShop($product->shop, $request);
+
+        return $this->handle($product, $this->validatedData['customer_ids']);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function action(Product $product, array $modelData): Product

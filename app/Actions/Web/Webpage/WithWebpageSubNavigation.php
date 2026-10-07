@@ -91,6 +91,18 @@ trait WithWebpageSubNavigation
                 ],
             ],
             [
+                "number"   => $website->webStats->number_webpages_sub_type_ads_testing,
+                "label"    => __("Ads Testing"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.webpages.index.sub_type.ads_testing",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-ad"],
+                    "tooltip" => __("Ads testing pages, hidden from search engines"),
+                ],
+            ],
+            [
                 "number"   => $website->webStats->number_webpages_type_system,
                 "label"    => __("Systems"),
                 "route"    => [

@@ -39,7 +39,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { useForm } from '@inertiajs/vue3'
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(
@@ -81,7 +81,7 @@ const props = defineProps<{
     route_login?: routeType
     route_register?: routeType
     route_forgot_pass?: routeType
-    route_redirects: {
+    route_redirects?: {
         fetch_live_webpages: routeType
         submit: routeType
     }
@@ -118,7 +118,6 @@ const form = useForm({
 })
 const submitForm = () => {
     if (!props?.route_redirects?.submit?.name) {
-        console.log('No submit route')
         return 
     }
     form.post(route(props.route_redirects.submit.name, props.route_redirects.submit.parameters), {
@@ -127,8 +126,8 @@ const submitForm = () => {
             openModal.value = false
             form.reset()
             notify({
-                title: trans("Success!"),
-                text: trans("New redirect created successfully."),
+                title: ctrans("Success!"),
+                text: ctrans("New redirect created successfully."),
                 type: "success",
             })
         }
@@ -187,7 +186,7 @@ const submitForm = () => {
                         <PureMultiselectInfiniteScroll
                             v-model="form.to_url"
                             :fetchRoute="route_redirects.fetch_live_webpages"
-                            :placeholder="trans('Select Redirect')"
+                            :placeholder="ctrans('Select Redirect')"
                             valueProp="id"
                             labelProp="url"
                             :disabled="form.processing"

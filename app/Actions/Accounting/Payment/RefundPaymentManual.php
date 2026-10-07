@@ -20,7 +20,6 @@ use App\Models\Accounting\Payment;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundPaymentManual extends OrgAction
@@ -37,15 +36,6 @@ class RefundPaymentManual extends OrgAction
      */
     public function handle(Payment $payment, array $modelData): Payment|array
     {
-        if ($payment->status !== PaymentStatusEnum::SUCCESS) {
-            throw ValidationException::withMessages([
-                'error'   => true,
-                'message' => __('Payment can not be refunded.').'; '.__('Invalid state'),
-                ' '.$payment->state->labels()[$payment->state->value]
-            ]);
-        }
-
-
         $refundAmount = -Arr::get($modelData, 'amount');
 
         $invoice = null;
@@ -56,6 +46,7 @@ class RefundPaymentManual extends OrgAction
         $reference = Arr::get($modelData, 'reference');
 
         return DB::transaction(function () use ($refundAmount, $reference, $payment, $invoice) {
+            $payment = RefundPaymentToBalance::lockForRefund($payment, $invoice, $refundAmount);
 
             $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
                 'amount'              => $refundAmount,
@@ -72,9 +63,11 @@ class RefundPaymentManual extends OrgAction
                 'with_refund'  => true
             ]);
 
-            AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
-            if ($invoice->order) {
-                AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+            if ($invoice) {
+                AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
+                if ($invoice->order) {
+                    AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+                }
             }
 
             return $refundPayment;
@@ -84,6 +77,14 @@ class RefundPaymentManual extends OrgAction
 
     }
 
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo([
+            "crm.{$this->payment->shop_id}.edit",
+            "accounting.{$this->payment->organisation_id}.edit",
+        ]);
+    }
 
     public function rules(): array
     {

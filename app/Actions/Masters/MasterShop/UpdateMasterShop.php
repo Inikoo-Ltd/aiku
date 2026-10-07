@@ -16,6 +16,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,6 +27,12 @@ class UpdateMasterShop extends OrgAction
 
     public function handle(MasterShop $masterShop, array $modelData): MasterShop
     {
+        foreach (['cost_price_ratio', 'rrp_price_ratio'] as $pricingRatio) {
+            if (array_key_exists($pricingRatio, $modelData)) {
+                data_set($modelData, "data.pricing.$pricingRatio", Arr::pull($modelData, $pricingRatio));
+            }
+        }
+
         $masterShop = $this->update($masterShop, $modelData, ['data']);
         if ($masterShop->wasChanged('status')) {
             GroupHydrateMasterShops::dispatch($masterShop->group)->delay($this->hydratorsDelay);
@@ -54,6 +61,8 @@ class UpdateMasterShop extends OrgAction
             'name'   => ['sometimes', 'max:250', 'string'],
             'status' => ['sometimes', 'required', 'boolean'],
             'gold_reward_eligible' => ['sometimes', 'required', 'boolean', $this->canEditOffersRule()],
+            'cost_price_ratio'     => ['sometimes', 'nullable', 'numeric', 'gt:0', 'max:100', $this->canEditPricesRule()],
+            'rrp_price_ratio'      => ['sometimes', 'nullable', 'numeric', 'gt:0', 'max:100', $this->canEditPricesRule()],
         ];
     }
 

@@ -5,7 +5,6 @@ import { inject, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
-import Blueprint from './Blueprint'
 import CardBlueprint from './SliderBlueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
 
@@ -20,7 +19,6 @@ const props = defineProps<{
 const keySwiper = ref(ulid())
 const layout: any = inject("layout", {})
 
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 const refreshTrigger = ref(0)
@@ -95,7 +93,7 @@ const itemStyle = computed(() => {
 
 const handleClickImage = (index: number) => {
   sendMessageToParent('activeBlock', props.indexBlock)
-  sendMessageToParent('activeChildBlock', bKeys[2])
+  sendMessageToParent('activeChildBlock', 'slider_data-cards')
   sendMessageToParent('activeChildBlockArray', index % cards.value.length)
   sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
 }

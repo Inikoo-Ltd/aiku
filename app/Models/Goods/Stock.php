@@ -13,6 +13,8 @@ use App\Enums\Goods\Stock\StockTradeUnitCompositionEnum;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Media;
 use App\Models\Inventory\OrgStock;
+use App\Models\Production\ArtefactComplianceItem;
+use App\Models\Production\ArtefactLabel;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -50,10 +52,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property StockStateEnum $state
  * @property bool $sellable
  * @property bool $raw_material
+ * @property bool $is_cosmetic
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
  * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
  * @property string|null $unit_barcode the EAN13 of the individual unit
+ * @property string|null $carton_barcode the barcode on the supplier carton, one for every organisation
  * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
@@ -82,6 +86,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Goods\StockStats|null $stats
+ * @property array<array-key, mixed> $label_mandatory_information
+ * @property-read Collection<int, ArtefactLabel> $labels
+ * @property-read Collection<int, ArtefactComplianceItem> $complianceItems
  * @property-read \App\Models\Goods\StockFamily|null $stockFamily
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\Goods\StockTimeSeries> $timeSeries
@@ -115,12 +122,15 @@ class Stock extends Model implements HasMedia, Auditable
         'trade_unit_composition' => StockTradeUnitCompositionEnum::class,
         'fetched_at'             => 'datetime',
         'last_fetched_at'        => 'datetime',
+        'label_mandatory_information' => 'array',
+        'is_cosmetic'                 => 'boolean',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'sources'  => '{}',
+        'data'                        => '{}',
+        'settings'                    => '{}',
+        'sources'                     => '{}',
+        'label_mandatory_information' => '[]',
     ];
 
     protected $guarded = [];
@@ -204,6 +214,16 @@ class Stock extends Model implements HasMedia, Auditable
     public function orgStocks(): HasMany
     {
         return $this->hasMany(OrgStock::class);
+    }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(ArtefactLabel::class)->orderBy('name');
+    }
+
+    public function complianceItems(): HasMany
+    {
+        return $this->hasMany(ArtefactComplianceItem::class);
     }
 
     public function group(): BelongsTo

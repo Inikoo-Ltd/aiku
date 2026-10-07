@@ -92,7 +92,6 @@ export const initialiseIrisVarnish = async (layoutStore) => {
     }
   }
 
-  console.log("Initial Varnish Response:", varnish)
 
   // --- Handle logged-out ---
   if (!varnish.is_logged_in) {

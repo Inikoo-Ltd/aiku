@@ -6,10 +6,10 @@ import "@/../css/iris_styling.css"
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, defineAsyncComponent } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 const ScreenWarning = defineAsyncComponent(() => import('@/Components/Utils/ScreenWarning.vue'))
 const Modal = defineAsyncComponent(() => import('@/Components/Utils/Modal.vue'))
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -21,16 +21,18 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
+import { whenIrisLoggedIn } from '@/Composables/irisAuthFlag'
+import { recordWebVitals } from '@/Composables/recordWebVitals'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-import { isAnnouncementVisible, useAnnouncementClock } from '@/Iris/Composables/useAnnouncementVisibility'
-const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
+import { announcementsAtPosition, useAnnouncementClock, type AnnouncementAudience } from '@/Iris/Composables/useAnnouncementVisibility'
 import axios from 'axios'
 const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
+import { createSidePanel } from '@/Iris/Composables/useSidePanel'
+import SidePanel from '@/Iris/Components/SidePanel.vue'
 
 interface ChatConfig {
     is_online: boolean
@@ -65,13 +67,13 @@ const bundleToggleStyle = computed(() => {
 const announcementNow = useAnnouncementClock()
 
 const announcementAtPosition = (position: string) =>
-    computed(() => {
-        const list = (usePage().props?.announcements ?? []) as any[]
-        return list.find(a =>
-            a?.settings?.position === position
-            && isAnnouncementVisible(a, announcementNow.value, !!layout?.iris?.is_logged_in)
-        ) ?? null
-    })
+    computed(() => announcementsAtPosition((usePage().props?.announcements ?? []) as any[], position, announcementNow.value))
+
+const announcementAudienceClass: Record<AnnouncementAudience, string> = {
+    everyone: '',
+    logged_in: 'hidden [.iris-logged-in_&]:block',
+    logged_out: '[.iris-logged-in_&]:hidden',
+}
 
 const propsAnnouncementsTopbar = announcementAtPosition('top-bar')
 const propsAnnouncementsBottomMenu = announcementAtPosition('bottom-menu')
@@ -79,13 +81,7 @@ const propsAnnouncementsTopFooter = announcementAtPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
-const getInitialScreenType = (): 'mobile' | 'tablet' | 'desktop' => {
-    if (typeof window === 'undefined') return 'desktop'
-    if (window.innerWidth < 640) return 'mobile'
-    if (window.innerWidth < 1024) return 'tablet'
-    return 'desktop'
-}
-const screenType = ref<'mobile' | 'tablet' | 'desktop'>(getInitialScreenType())
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
@@ -199,6 +195,8 @@ const containerPaddingCss = (() => {
 layout.app.webpage_layout = theme
 
 onMounted(() => {
+    initialiseIrisVarnish(useIrisLayoutStore)
+    recordWebVitals((usePage().props?.webpage_id as number | undefined) ?? null)
     checkScreenType()
     setColorStyleRoot(theme?.color)
     window.addEventListener('resize', checkScreenType)
@@ -207,26 +205,12 @@ onMounted(() => {
 
     irisStyleVariables(theme?.color)
 
-    if(layout?.iris?.is_logged_in){
-        fetchHasInBasket()
-    }
-
-    ;(window as any).aikuIris = {
-        // For Search result (app-iris.blade )
-        refreshCustomerData: async () => {
-            layout.reload_handle?.()
-            await fetchHasInBasket()
-        }
-    }
+    whenIrisLoggedIn(layout, fetchHasInBasket)
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
     document.removeEventListener('visibilitychange', handleTabFocus)
-
-    if ((window as any).aikuIris) {
-        delete (window as any).aikuIris
-    }
 })
 
 
@@ -249,22 +233,22 @@ const fetchHasInBasket = async () => {
     }
 };
 
-onBeforeMount(() => {
-    initialiseIrisVarnish(useIrisLayoutStore)
-})
-
 // Watch: open Side Basket if cart has any changes
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
+        set(layout, 'rightbasket.tab', 'basket')
     }
 })
 
-watch(() => layout.iris_variables?.cart_count, (newVal) => {
-    if (newVal <= 0) {
-        set(layout, 'rightbasket.show', false)
-    }
-})
+createSidePanel(layout, screenType, !!useChat)
+
+const syncLoggedInClass = () => document.documentElement.classList.toggle('iris-logged-in', !!layout.iris?.is_logged_in)
+
+onMounted(syncLoggedInClass)
+
+watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
+
 </script>
 
 <template>
@@ -272,7 +256,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
         <component :is="'style'" v-if="containerPaddingCss">{{ containerPaddingCss }}</component>
 
         <ScreenWarning v-if="layout.app.environment === 'staging'">
-            {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+            {{ ctrans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
         </ScreenWarning>
 
         <Modal v-if="layout.app.environment === 'staging'" :isOpen="firstVisit"
@@ -321,8 +305,10 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
             <IrisAnnouncement
-                v-if="propsAnnouncementsTopbar"
-                :data="propsAnnouncementsTopbar"
+                v-for="item in propsAnnouncementsTopbar"
+                :key="item.announcement.ulid"
+                :class="announcementAudienceClass[item.audience]"
+                :data="item.announcement"
             />
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
@@ -336,8 +322,10 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
             />
 
             <IrisAnnouncement
-                v-if="propsAnnouncementsBottomMenu"
-                :data="propsAnnouncementsBottomMenu"
+                v-for="item in propsAnnouncementsBottomMenu"
+                :key="item.announcement.ulid"
+                :class="announcementAudienceClass[item.audience]"
+                :data="item.announcement"
             />
 
             <div class="border-b border-gray-200 ">
@@ -369,18 +357,6 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                     <slot />
                 </div>
 
-                <!-- Layout: SideBasket (right) -->
-                <div
-                    v-if="layout?.iris?.is_logged_in && screenType == 'desktop'"
-                    class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'basket-drawer' : 'border-transparent max-w-0'"
-                >
-                    <IrisRightSideBasket
-                        v-if="layout.iris_variables?.cart_count > 0"
-                        :isOpen="layout.rightbasket?.show"
-                    />  
-                </div>
-
                 <div
                     v-if="bundle.open.value"
                     :class="bundle.open.value
@@ -404,12 +380,15 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                 </div>
             </main>
             <IrisAnnouncement
-                v-if="propsAnnouncementsTopFooter"
-                :data="propsAnnouncementsTopFooter"
+                v-for="item in propsAnnouncementsTopFooter"
+                :key="item.announcement.ulid"
+                :class="announcementAudienceClass[item.audience]"
+                :data="item.announcement"
             />
 
             <Footer :colorThemed="theme" />
         </div>
+
     </div>
 
     <notifications dangerously-set-inner-html :max="3" width="500" classes="custom-style-notification"
@@ -420,7 +399,7 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
     </notifications>
 
 
-    <ChatButton data="null" v-if="useChat" :chatConfig="chatConfig" />
+    <SidePanel :isChatEnabled="!!useChat" :chatConfig="chatConfig" />
 </template>
 
 <style lang="scss">
@@ -457,16 +436,6 @@ html {
     }
 }
 
-.basket-drawer {
-    width: min(92vw, 37%);
-    box-sizing: border-box;
-}
-
-@media (min-width: 1536px) {
-    .basket-drawer {
-        width: 25%;
-    }
-}
 
 // INI-562: live chat
 iframe#launcher {

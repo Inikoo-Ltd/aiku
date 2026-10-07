@@ -77,9 +77,36 @@ const saveEditable = () => {
                 class="text-red-500 -z-10 opacity-40 absolute -bottom-2 -right-5 text-7xl" fixed-width aria-hidden="true" />
         </slot>
 
-        <div class="truncate text-sm font-medium" :class="stat.is_negative ? 'text-red-500' : 'text-gray-400'"
-            xstyle="{ color: stat.is_negative ? stat.color : null }">
-            {{ stat.label }}
+        <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 truncate text-sm font-medium" :class="stat.is_negative ? 'text-red-500' : 'text-gray-400'"
+                xstyle="{ color: stat.is_negative ? stat.color : null }">
+                {{ stat.label }}
+            </div>
+
+            <!-- Meta right -->
+            <component
+                v-if="stat.metaRight"
+                :is="stat.metaRight?.route?.name ? Link : 'div'"
+                :href="stat.metaRight?.route?.name ? route(stat.metaRight?.route.name, stat.metaRight?.route.parameters) : ''"
+                class="text-base rounded group/mr shrink-0 px-2 flex gap-x-0.5 items-center font-normal"
+                :class="[stat.metaRight?.route?.name ? 'cursor-pointer' : 'cursor-default', stat.metaRight.customClass]"
+                @click.prevent="false"
+                :style="{
+                    background: `color-mix(in srgb, white 90%, ${stat.color})`,
+                    border: `1px solid ${stat.color}`,
+                    color: `color-mix(in srgb, black 20%, ${stat.color})`
+                }"
+                v-tooltip="stat.metaRight?.tooltip || stat.metaRight?.icon?.tooltip"
+                @start="isLoadingMetaRight = true"
+                @finish="isLoadingMetaRight = false"
+            >
+                <LoadingIcon v-if="isLoadingMetaRight" />
+                <FontAwesomeIcon v-else-if="typeof stat.metaRight?.icon === 'string'" :icon='stat.metaRight?.icon' fixed-width aria-hidden='true' />
+                <Icon v-else :data="stat.metaRight?.icon" class="opacity-100" />
+                <div class="group-hover/sub:text-gray-700">
+                    {{ locale.number(stat.metaRight?.count ?? 0) }}
+                </div>
+            </component>
         </div>
 
         <dd class="mt-1 text-3xl font-semibold tracking-tight flex gap-x-2 items-center tabular-nums">
@@ -95,30 +122,6 @@ const saveEditable = () => {
 
         <div v-if="stat.subtitle" class="mt-1 text-sm font-medium text-gray-600 truncate">{{ stat.subtitle }}</div>
 
-        <!-- Meta right -->
-        <component
-            v-if="stat.metaRight"
-            :is="stat.metaRight?.route?.name ? Link : 'div'"
-            :href="stat.metaRight?.route?.name ? route(stat.metaRight?.route.name, stat.metaRight?.route.parameters) : ''"
-            class="text-base rounded group/mr absolute top-6 right-5 px-2 flex gap-x-0.5 items-center font-normal"
-            :class="[stat.metaRight?.route?.name ? 'cursor-pointer' : 'cursor-default', stat.metaRight.customClass]"
-            @click.prevent="false"
-            :style="{
-                background: `color-mix(in srgb, white 90%, ${stat.color})`,
-                border: `1px solid ${stat.color}`,
-                color: `color-mix(in srgb, black 20%, ${stat.color})`
-            }"
-            v-tooltip="stat.metaRight?.tooltip || stat.metaRight?.icon?.tooltip"
-            @start="isLoadingMetaRight = true"
-            @finish="isLoadingMetaRight = false"
-        >
-            <LoadingIcon v-if="isLoadingMetaRight" />
-            <FontAwesomeIcon v-else-if="typeof stat.metaRight?.icon === 'string'" :icon='stat.metaRight?.icon' fixed-width aria-hidden='true' />
-            <Icon v-else :data="stat.metaRight?.icon" class="opacity-100" />
-            <div class="group-hover/sub:text-gray-700">
-                {{ locale.number(stat.metaRight?.count ?? 0) }}
-            </div>
-        </component>
 
         <!-- Editable -->
         <div

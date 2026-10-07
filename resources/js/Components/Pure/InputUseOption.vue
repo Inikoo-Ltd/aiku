@@ -67,7 +67,6 @@ onMounted(() => {
     }
 })
 
-console.log(props)
 
 defineExpose({
     _inputRef

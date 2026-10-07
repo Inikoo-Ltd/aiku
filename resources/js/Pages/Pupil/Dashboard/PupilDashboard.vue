@@ -7,7 +7,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import axios from 'axios'
 import { Link, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
@@ -52,14 +52,11 @@ onMounted(async () => {
 
     const xxx = window.Echo.join(`shopify.upload-product.${props.user.id}`).
         listen('.action-progress', (e) => {
-            console.log('xxxxxxxxxxxxxx', e)
 
     })
-    console.log('Websocket:', xxx)
 
 
     setTimeout(async () => {
-        console.log('500 window sessionToken', window.sessionToken)
         try {
             const { data } = await axios.get(route(props.routes.products.name, props.routes.products.parameters),
                 {
@@ -101,16 +98,16 @@ const onSubmitProduct = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Success'),
-                    text: trans('Successfully add') + ` ${selectedProducts.value.length} ` + trans('products'),
+                    title: ctrans('Success'),
+                    text: ctrans('Successfully add') + ` ${selectedProducts.value.length} ` + ctrans('products'),
                     type: 'success',
                 })
                 selectedProducts.value = []
             },
             onError: () => {
                 notify({
-                    title: trans('Failed'),
-                    text: trans('Something went wrong. Try again.'),
+                    title: ctrans('Failed'),
+                    text: ctrans('Something went wrong. Try again.'),
                     type: 'error',
                 })
             },
@@ -126,13 +123,13 @@ const productView = ref('list')
 const optionsView = [
     {
         id: 1,
-        label: trans('Grid'),
+        label: ctrans('Grid'),
         value: 'grid',
         icon: 'fal fa-th-large'
     },
     {
         id: 2,
-        label: trans('List'),
+        label: ctrans('List'),
         value: 'list',
         icon: 'fal fa-list-ul'
     }
@@ -199,7 +196,7 @@ const onClickGetStarted = () => {
     <Modal :isOpen="isModalGetStarted" width="w-[700px]">
         <div class="relative isolate overflow-hidden px-6 py-8 text-center sm:rounded-3xl sm:px-12">
             <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
-                {{ trans(`Let's get started.`) }}
+                {{ ctrans(`Let's get started.`) }}
             </h2>
             <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
                 It's looks like this is the first time you integrate Shopify, let's have a look what you can do.

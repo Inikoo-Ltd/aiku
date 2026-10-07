@@ -11,7 +11,6 @@ namespace App\Http\Resources\CRM;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -35,10 +34,9 @@ class CustomerSalesChannelsResourceTOFIX extends JsonResource
 
     public function toArray($request): array
     {
-        /** @var Platform $platform */
-        $platform = Platform::find($this->platform_id);
-
-        $customerSalesChannels = CustomerSalesChannel::find($this->id);
+        /** @var CustomerSalesChannel $customerSalesChannels */
+        $customerSalesChannels = $this->resource;
+        $platform              = $customerSalesChannels->platform;
         $status                = $this->checkStatus($customerSalesChannels);
 
         return [

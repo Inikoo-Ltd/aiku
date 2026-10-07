@@ -9,10 +9,10 @@
 namespace App\Http\Resources\Procurement;
 
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
-use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 
@@ -25,29 +25,16 @@ class StockDeliveryItemResource extends JsonResource
 
         $supplierProduct = $item->supplierProduct;
 
-        $locations = DB::table('location_org_stocks')
-            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
-            ->leftJoin('warehouses', 'location_org_stocks.warehouse_id', '=', 'warehouses.id')
-            ->where('location_org_stocks.org_stock_id', $item->org_stock_id)
-            ->select([
-                'location_org_stocks.id',
-                'location_org_stocks.quantity',
-                'locations.id as location_id',
-                'locations.code as location_code',
-                'locations.slug as location_slug',
-                'warehouses.slug as warehouse_slug',
-            ])
-            ->orderBy('locations.code')
-            ->get();
+        $locations = $item->relationLoaded('orgStockLocations')
+            ? $item->getRelation('orgStockLocations')
+            : self::locationsQuery()->where('location_org_stocks.org_stock_id', $item->org_stock_id)->get();
 
         $warehouseSlugByLocation = $locations->pluck('warehouse_slug', 'location_id');
-        $warehouse               = $item->organisation?->warehouses()->first();
+        $warehouse               = $item->organisation?->warehouses->first();
 
-        $sowings = $item->sowings()
-            ->where('type', SowingTypeEnum::SOW)
-            ->with('location')
-            ->orderBy('id')
-            ->get()
+        $sowings = ($item->relationLoaded('sowings')
+            ? $item->sowings
+            : $item->sowings()->where('type', SowingTypeEnum::SOW)->with('location')->orderBy('id')->get())
             ->map(fn (Sowing $sowing) => [
                 'id'                => $sowing->id,
                 'type'              => $sowing->type,
@@ -75,33 +62,36 @@ class StockDeliveryItemResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
-        $checked = (float) $item->unit_quantity_checked;
-        $placed  = (float) $item->unit_quantity_placed;
+        $checked     = (float) $item->unit_quantity_checked;
+        $placed      = (float) $item->unit_quantity_placed;
+        $unitsPerSko = $item->unitsPerSko();
 
         $isEditable = $item->state !== StockDeliveryItemStateEnum::CANCELLED
-            && in_array($item->stockDelivery?->state, [
-                StockDeliveryStateEnum::RECEIVED,
-                StockDeliveryStateEnum::CHECKED,
-                StockDeliveryStateEnum::BOOKING_IN,
-            ], true);
+            && $item->stockDelivery?->isInGoodsIn();
+
+        $isManagedByPartner = (bool) $item->stockDelivery?->isManagedByPartner();
 
         $canPlace = $isEditable && $checked >= 1 && $placed < $checked;
         $canCheck = in_array($item->state, [
             StockDeliveryItemStateEnum::RECEIVED,
             StockDeliveryItemStateEnum::CHECKED,
             StockDeliveryItemStateEnum::NOT_RECEIVED,
-        ], true);
+        ], true) || ($isEditable && $item->state === StockDeliveryItemStateEnum::PLACED);
 
         return [
             'id'                    => $item->id,
             'slug'                  => $supplierProduct?->slug,
-            'code'                  => $supplierProduct?->code,
-            'name'                  => $supplierProduct?->name,
-            'units_per_pack'        => $supplierProduct?->units_per_pack,
-            'units_per_carton'      => $supplierProduct?->units_per_carton,
+            'code'                  => $supplierProduct?->code ?? $item->org_stock_code,
+            'name'                  => $supplierProduct?->name ?? $item->org_stock_name,
+            'units_per_pack'        => $supplierProduct?->units_per_pack ?? $unitsPerSko,
+            'units_per_carton'      => $supplierProduct?->units_per_carton ?? $unitsPerSko,
             'unit_quantity'         => $item->unit_quantity,
             'unit_quantity_checked' => $item->unit_quantity_checked,
             'unit_quantity_placed'  => $item->unit_quantity_placed,
+            'units_per_sko'         => $unitsPerSko,
+            'sko_quantity'          => round((float) $item->unit_quantity / $unitsPerSko, 4),
+            'sko_quantity_checked'  => round($checked / $unitsPerSko, 4),
+            'sko_quantity_placed'   => round($placed / $unitsPerSko, 4),
             'net_amount'            => $item->net_amount,
             'net_currency'          => $supplierProduct?->currency?->code,
             'org_net_amount'        => $item->org_net_amount,
@@ -116,12 +106,13 @@ class StockDeliveryItemResource extends JsonResource
             'org_stock_slug'        => $item->org_stock_slug,
             'org_stock_code'        => $item->org_stock_code,
             'org_stock_name'        => $item->org_stock_name,
-            'confirmRoute'          => $item->state === StockDeliveryItemStateEnum::IN_PROCESS ? [
+            'is_new_org_stock'      => $item->org_stock_id && $item->has_been_in_warehouse === false,
+            'confirmRoute'          => !$isManagedByPartner && $item->state === StockDeliveryItemStateEnum::IN_PROCESS ? [
                 'name'       => 'grp.models.stock-delivery-item.confirm',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
-            'readyToShipRoute'      => $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
+            'readyToShipRoute'      => !$isManagedByPartner && $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
                 'name'       => 'grp.models.stock-delivery-item.ready-to-ship',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
@@ -136,13 +127,19 @@ class StockDeliveryItemResource extends JsonResource
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
-            'placement_remaining'   => max(0, $checked - $placed),
+            'receivedAfterAllRoute' => $item->canBeReceivedAfterAll() ? [
+                'name'       => 'grp.models.stock-delivery-item.set-all-checked',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
+            'placement_remaining'   => round(max(0, $checked - $placed) / $unitsPerSko, 4),
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
             'locations'             => $locations,
+            'has_picking_location'  => $locations->contains(fn ($location) => $location->default_wholesale_picking_location || $location->default_dropshipping_picking_location),
             'warehouse_area'        => $warehouseArea,
             'warehouse_slug'        => $locations->first()?->warehouse_slug,
-            'searchLocationsRoute'  => $warehouse ? [
+            'searchLocationsRoute'  => $warehouse && (request()->route('organisation')?->id ?? $item->organisation_id) === $item->organisation_id ? [
                 'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
                 'parameters' => [
                     'organisation' => $item->organisation->slug,
@@ -162,5 +159,26 @@ class StockDeliveryItemResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
         ];
+    }
+
+    public static function locationsQuery(): Builder
+    {
+        return DB::table('location_org_stocks')
+            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+            ->leftJoin('warehouses', 'location_org_stocks.warehouse_id', '=', 'warehouses.id')
+            ->select([
+                'location_org_stocks.id',
+                'location_org_stocks.org_stock_id',
+                'location_org_stocks.quantity',
+                'location_org_stocks.default_wholesale_picking_location',
+                'location_org_stocks.default_dropshipping_picking_location',
+                'locations.id as location_id',
+                'locations.code as location_code',
+                'locations.slug as location_slug',
+                'warehouses.slug as warehouse_slug',
+            ])
+            ->orderByDesc('location_org_stocks.default_wholesale_picking_location')
+            ->orderByDesc('location_org_stocks.default_dropshipping_picking_location')
+            ->orderBy('locations.code');
     }
 }

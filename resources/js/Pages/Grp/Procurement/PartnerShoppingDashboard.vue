@@ -8,10 +8,11 @@
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ref, computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import RescueOrderButton from "@/Components/Procurements/RescueOrderButton.vue"
+import { type Rescuable } from "@/Components/Procurements/PartnerRescuableSummary.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
-import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -31,10 +32,6 @@ import {
     faSeedling,
     faShoppingBasket,
     faClipboardList,
-    faBoxCheck,
-    faShippingFast,
-    faDolly,
-    faTruck,
     faClock,
 } from "@fal"
 import ModalAutoFillShoppingList from "@/Components/Procurement/ModalAutoFillShoppingList.vue"
@@ -54,10 +51,6 @@ library.add(
     faSeedling,
     faShoppingBasket,
     faClipboardList,
-    faBoxCheck,
-    faShippingFast,
-    faDolly,
-    faTruck,
     faClock
 )
 
@@ -71,8 +64,17 @@ type OrderCapacity = {
     warehouse: { total_locations: number, empty_locations: number, free_ratio: number | null, inbound_open_po_lines: number, partner_share_used: number, partner_share_limit: number }
     blocked: { at_capacity: boolean, warehouse_full: boolean }
 }
-type OpenStockDelivery = { id: number, slug: string, reference: string, state: string, items: number, days_in_transit: number | null, date: string, days_old: number }
 type LatePurchaseOrder = { id: number, slug: string, reference: string, state: string, days_late: number, no_eta: boolean }
+
+interface ShoppingListRow {
+    state: "draft" | "open"
+    reference: string
+    state_label: string
+    lines: number
+    value: number
+    date: string | null
+    url: string
+}
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -87,9 +89,10 @@ const props = defineProps<{
     leadTime: { days: number, source: "measured" | "estimate", samples: number }
     leadTimeRoute: routeType
     latePurchaseOrders: LatePurchaseOrder[]
-    openStockDeliveries: OpenStockDelivery[]
-    stockDeliveriesRoute: routeType
     orderCapacity: OrderCapacity
+    rescuable: Rescuable
+    shoppingListRows: Record<string, ShoppingListRow>
+    canPrepareOrder: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -179,31 +182,11 @@ const warehouseSegment = (part: number) => `${(part / Math.max(props.orderCapaci
 const warehouseLegend = computed(() => [
     { label: ctrans("in use"), value: usedLocations.value, dot: "bg-gray-400" },
     { label: ctrans("inbound PO/SD lines"), value: props.orderCapacity.warehouse.inbound_open_po_lines, dot: "bg-indigo-400" },
-    { label: ctrans("this shopping list"), value: props.orderCapacity.list.lines, dot: "bg-violet-400" },
+    { label: ctrans("on the ongoing PO or sent, not arrived"), value: props.orderCapacity.list.lines, dot: "bg-violet-400" },
 ])
-
-const problemThreshold = computed(() => Math.max(props.leadTime.days * 10, 30))
-const agingThreshold = computed(() => Math.max(props.leadTime.days * 3, 14))
-const isProblemOrder = (sd: OpenStockDelivery) => sd.days_old > problemThreshold.value
-const isAgingOrder = (sd: OpenStockDelivery) => sd.days_old > agingThreshold.value
-const ageBadgeClasses = (sd: OpenStockDelivery) => (isProblemOrder(sd) ? "bg-red-100 text-red-700" : isAgingOrder(sd) ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500")
-const deliveryCardClasses = (sd: OpenStockDelivery) => (isProblemOrder(sd) ? "border-red-300 bg-red-50/70" : isAgingOrder(sd) ? "border-amber-300 bg-white" : "border-gray-200 bg-white")
-
-const stockDeliveryColumns = computed(() =>
-    [
-        { key: "being_prepared", label: ctrans("Being prepared"), states: ["in_process", "confirmed"], icon: faClipboardList, iconClasses: "bg-indigo-50 text-indigo-500" },
-        { key: "ready_to_ship", label: ctrans("Ready to ship"), states: ["ready_to_ship"], icon: faBoxCheck, iconClasses: "bg-indigo-100 text-indigo-600" },
-        { key: "in_transit", label: ctrans("In transit"), states: ["dispatched"], icon: faShippingFast, iconClasses: "bg-indigo-500 text-white" },
-        { key: "arrived", label: ctrans("Arrived, booking in"), states: ["received", "checked", "booking_in"], icon: faDolly, iconClasses: "bg-indigo-700 text-white" },
-    ].map((column) => {
-        const deliveries = props.openStockDeliveries.filter((sd) => column.states.includes(sd.state))
-        return { ...column, deliveries, items: deliveries.reduce((sum, sd) => sum + sd.items, 0) }
-    })
-)
 
 const bucketRoute = (bucket: string, rank?: string) => `${route(props.browseRoute.name, props.browseRoute.parameters)}?cover=${bucket}${rank ? `&rank=${rank}` : ""}`
 const bucketItemsRoute = (bucket: string) => `${route("grp.org.procurement.org_partners.show.shopping.items.index", [route().params.organisation, props.orgPartner.id])}?cover=${bucket}`
-const stockDeliveryRoute = (sd: OpenStockDelivery) => route("grp.org.procurement.org_partners.show.stock-deliveries.show", [route().params.organisation, props.orgPartner.id, sd.slug])
 const purchaseOrderRoute = (purchaseOrder: LatePurchaseOrder) => route("grp.org.procurement.org_partners.show.purchase-orders.show", [route().params.organisation, props.orgPartner.id, purchaseOrder.slug])
 
 const dashboardReload = { only: ["coverBuckets", "coverTotal", "orderCapacity", "stats"], preserveScroll: true }
@@ -229,6 +212,16 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
     <PageHeading :data="pageHead" />
 
     <div class="mx-4 mt-4 flex flex-col gap-6 pb-8">
+        <RescueOrderButton
+            v-if="canPrepareOrder"
+            inline
+            :orgPartnerId="orgPartner.id"
+            :partnerName="orgPartner.name"
+            :currencyCode="orgPartner.currency"
+            :buckets="rescuable.buckets"
+            isHub
+            :onList="{ lines: shoppingListRows.draft?.lines ?? 0, cost: shoppingListRows.draft?.value ?? 0 }" />
+
         <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div class="flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <div class="flex items-center justify-between gap-2">
@@ -454,7 +447,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                     <button
                                         v-if="canAutoFill(bucket)"
                                         type="button"
-                                        v-tooltip="ctrans('Auto-fill the shopping list from this bucket')"
+                                        v-tooltip="ctrans('Add to the ongoing PO from this bucket')"
                                         class="ml-auto inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-indigo-500"
                                         @click="openAutoFill(bucket)"
                                     >
@@ -500,7 +493,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                     </Link>
                                     <span
                                         v-if="shouldNotBeOrdered(bucket)"
-                                        v-tooltip="ctrans('On the shopping list but not short of stock')"
+                                        v-tooltip="ctrans('On the ongoing PO but not short of stock')"
                                         class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-700"
                                     >
                                         <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
@@ -512,97 +505,6 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                     </span>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section>
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                        <FontAwesomeIcon :icon="faTruck" class="text-gray-400" fixed-width aria-hidden="true" />
-                        {{ ctrans("Order pipeline") }}
-                    </h3>
-                    <p class="mt-0.5 text-xs text-gray-500">{{ ctrans("From the shopping list to booked-in stock, oldest first") }}</p>
-                </div>
-                <Link :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500">
-                    {{ ctrans("All stock deliveries") }}
-                    <FontAwesomeIcon :icon="faChevronRight" class="text-[10px]" fixed-width aria-hidden="true" />
-                </Link>
-            </div>
-
-            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <div class="flex flex-col rounded-xl border border-gray-200 bg-gray-50">
-                    <div class="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
-                        <span class="flex min-w-0 items-center gap-2 text-xs font-semibold text-gray-700">
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-indigo-500 ring-1 ring-indigo-200">
-                                <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
-                            </span>
-                            <span class="truncate">{{ ctrans("On shopping list") }}</span>
-                        </span>
-                        <span class="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-indigo-600">{{ locale.number(stats.open_items_count) }}</span>
-                    </div>
-                    <div class="p-2">
-                        <Link
-                            :href="route(shoppingListRoute.name, shoppingListRoute.parameters)"
-                            class="block rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm transition hover:border-indigo-300 hover:shadow"
-                        >
-                            <div class="text-sm font-semibold text-gray-900">{{ locale.number(stats.open_items_count) }} {{ ctrans("items") }}</div>
-                            <div class="mt-0.5 text-xs text-gray-500">{{ locale.currencyFormat(orgPartner.currency, stats.estimated_total) }} {{ ctrans("waiting to be ordered") }}</div>
-                            <div v-if="stats.oldest_item_at" class="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400">
-                                <FontAwesomeIcon :icon="faClock" fixed-width aria-hidden="true" />
-                                {{ ctrans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
-                            </div>
-                        </Link>
-                    </div>
-                </div>
-
-                <div v-for="column in stockDeliveryColumns" :key="column.key" class="flex flex-col rounded-xl border border-gray-200 bg-gray-50">
-                    <div class="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
-                        <span class="flex min-w-0 items-center gap-2 text-xs font-semibold text-gray-700">
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" :class="column.iconClasses">
-                                <FontAwesomeIcon :icon="column.icon" fixed-width aria-hidden="true" />
-                            </span>
-                            <span class="truncate">{{ column.label }}</span>
-                        </span>
-                        <span class="flex shrink-0 items-center gap-1">
-                            <span v-tooltip="ctrans('deliveries')" class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-indigo-600">{{ column.deliveries.length }}</span>
-                            <span v-if="column.items" v-tooltip="ctrans('items')" class="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-violet-700">
-                                {{ locale.number(column.items) }}
-                            </span>
-                        </span>
-                    </div>
-                    <div class="flex grow flex-col gap-2 p-2">
-                        <Link
-                            v-for="sd in column.deliveries"
-                            :key="sd.id"
-                            :href="stockDeliveryRoute(sd)"
-                            class="block rounded-lg border p-2.5 shadow-sm transition hover:border-indigo-300 hover:shadow"
-                            :class="deliveryCardClasses(sd)"
-                        >
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="truncate text-sm font-semibold" :class="isProblemOrder(sd) ? 'text-red-700' : 'text-gray-900'">{{ sd.reference }}</span>
-                                <span v-tooltip="ctrans('days since the delivery date')" class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums" :class="ageBadgeClasses(sd)">
-                                    {{ ctrans(":days days", { days: sd.days_old }) }}
-                                </span>
-                            </div>
-                            <div class="mt-1 flex items-center justify-between gap-2 text-xs text-gray-500">
-                                <span class="truncate">{{ sd.items }} {{ ctrans("items") }} · {{ sd.state.replace("_", " ") }}</span>
-                                <span class="shrink-0 tabular-nums">{{ useFormatTime(sd.date, { formatTime: "mdy" }) }}</span>
-                            </div>
-                            <div
-                                v-if="column.key === 'in_transit' && sd.days_in_transit !== null"
-                                class="mt-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums"
-                                :class="sd.days_in_transit > 14 ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-600'"
-                            >
-                                <FontAwesomeIcon :icon="faShippingFast" fixed-width aria-hidden="true" />
-                                {{ sd.days_in_transit }} {{ ctrans("days in transit") }}
-                            </div>
-                        </Link>
-                        <div v-if="!column.deliveries.length" class="rounded-lg border border-dashed border-gray-200 py-4 text-center text-xs text-gray-400">
-                            {{ ctrans("Nothing here") }}
                         </div>
                     </div>
                 </div>

@@ -8,14 +8,17 @@
 
 namespace App\Actions\Retina\Woo;
 
+use App\Models\Catalogue\Product;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaNewAllPortfoliosToWoo extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**
@@ -33,7 +36,7 @@ class CreateRetinaNewAllPortfoliosToWoo extends RetinaAction
                     ->from('products as p')
                     ->whereColumn('p.id', 'portfolios.item_id')
                     ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                    ->where('p.is_for_sale', true);
+                    ->whereRaw(Product::sellableThroughSalesChannelsSql('p'));
             })
             ->pluck('id');
 

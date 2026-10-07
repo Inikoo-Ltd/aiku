@@ -8,8 +8,12 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Models\Goods\TradeUnit;
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitDocuments;
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\Variant\IndexVariant;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -189,9 +193,21 @@ class ShowFamily extends OrgAction
                 fn () => GetProductCategoryShowcase::run($family)
                 : Inertia::optional(fn () => GetProductCategoryShowcase::run($family)),
 
+            FamilyTabsEnum::SALES_ANALYSIS->value => $this->tab == FamilyTabsEnum::SALES_ANALYSIS->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($family), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($family), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+            'sales_analysis_teaser' => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($family)), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($family))),
+
             FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                 : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+
+            FamilyTabsEnum::ATTACHMENTS->value => $this->tab == FamilyTabsEnum::ATTACHMENTS->value ?
+                fn () => ['documents' => GetTradeUnitDocuments::run(TradeUnit::whereHas('products', fn ($query) => $query->where('products.family_id', $family->id))->get())]
+                : Inertia::optional(fn () => ['documents' => GetTradeUnitDocuments::run(TradeUnit::whereHas('products', fn ($query) => $query->where('products.family_id', $family->id))->get())]),
 
             FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))

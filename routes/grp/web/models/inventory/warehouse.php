@@ -18,6 +18,7 @@ use App\Actions\Dispatching\PickingSession\AddDeliveryNotesToPickingSession;
 use App\Actions\Dispatching\PickingSession\RemoveDeliveryNotesFromPickingSession;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
+use App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
@@ -67,6 +68,7 @@ Route::delete('trolleys/{trolley:id}', DeleteTrolley::class)->name('trolleys.del
 
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/start-picking', StartPickPickingSession::class)->name('picking_session.start_picking')->withoutScopedBindings();
+Route::patch('picking-session/{pickingSession:id}/undo-waiting', UndoWaitingPickingSession::class)->name('picking_session.undo_waiting')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/add-delivery-notes', AddDeliveryNotesToPickingSession::class)->name('picking_session.add_delivery_notes')->withoutScopedBindings()->middleware(EnsureNotHandledInAurora::class);
 Route::patch('picking-session/{pickingSession:id}/remove-delivery-notes', RemoveDeliveryNotesFromPickingSession::class)->name('picking_session.remove_delivery_notes')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/add-pallet-returns', AddPalletReturnsToPickingSession::class)->name('picking_session.add_pallet_returns')->withoutScopedBindings();

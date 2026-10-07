@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\MetaChatSession\SendMetaChatGreeting;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatEvent;
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -17,11 +18,13 @@ use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Events\BroadcastMetaChatListEvent;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,11 +38,14 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * views an agent uses and comes back with the same one click, and a conversation is checked a
  * single time. After that, and after anything a person decided, it is never touched again.
  *
- * Rules that cannot be wrong come first and always put aside. The model only sees what the
- * rules could not decide, and until chat.noise.auto_put_aside is switched on it only leaves a
- * hint for the agent. The one rule the model may overrule is the supplier country on WhatsApp:
- * put aside by default, but a first message that says something gets read, because a real
- * buyer there is rare, not impossible. A bare "Hello" from anywhere else is left unchecked
+ * Rules that cannot be wrong come first and always put aside, except the one that knows a
+ * colleague, which keeps them in the queue. The model only sees what the
+ * rules could not decide, and puts aside only what it is at least put_aside_confidence sure of,
+ * never on website chat and never a machine's notification the rules let through: a marketplace
+ * order, a customs form or a payment notice looks automated and still needs somebody. Anything
+ * else only leaves a hint for the agent. The one rule the model
+ * may overrule is the supplier country on WhatsApp: put aside by default, but a first message
+ * that says something gets read, because a real buyer there is rare, not impossible. A bare "Hello" from anywhere else is left unchecked
  * until there is something to read.
  */
 class ClassifyChatSessionNoise
@@ -69,6 +75,11 @@ class ClassifyChatSessionNoise
     ];
 
     /** Addresses reserved by the mail standards for machines. Never a person with a question. */
+    /** Reserved for documentation and testing (RFC 2606, RFC 6761), plus the one scanners use. */
+    private const array TEST_TLDS = ['test', 'tst', 'example', 'invalid', 'localhost'];
+
+    private const array TEST_DOMAINS = ['example.com', 'example.net', 'example.org'];
+
     private const array MACHINE_LOCAL_PARTS = ['postmaster', 'abuse', 'emailabuse', 'mailerdaemon'];
 
     public function handle(ChatSession|MetaChatSession $chatSession): ChatSession|MetaChatSession
@@ -83,7 +94,10 @@ class ClassifyChatSessionNoise
 
         $nothingToRead = !$hasSubstance && (!$rule || $rule['verdict'] === ChatNoiseVerdictEnum::SUPPLIER_CIRCULAR);
 
-        if ($nothingToRead && $chatSession instanceof MetaChatSession && config('chat.noise.greet_bare_hello')) {
+        // Out of hours the closed-now reply has already asked what they want.
+        $closedReplyAsked = config('chat.out_of_hours_reply') && !IsWithinWorkingHours::make()->chatHours()->handle($chatSession->shop, now());
+
+        if ($nothingToRead && $chatSession instanceof MetaChatSession && config('chat.noise.greet_bare_hello') && !$closedReplyAsked) {
             SendMetaChatGreeting::run($chatSession);
         }
 
@@ -129,6 +143,7 @@ class ClassifyChatSessionNoise
 
         $putAside = config('chat.noise.auto_put_aside')
             && !self::isWebsite($chatSession)
+            && $answer['verdict'] !== ChatNoiseVerdictEnum::AUTOMATED_NOTIFICATION
             && $answer['confidence'] >= (int) config('chat.noise.put_aside_confidence');
 
         return $this->record($chatSession, $answer['verdict'], self::SOURCE_AI, $answer['confidence'], $answer['note'], $putAside);
@@ -146,6 +161,10 @@ class ClassifyChatSessionNoise
     public static function isCandidate(ChatSession|MetaChatSession $chatSession): bool
     {
         if (self::isKnownCustomer($chatSession) && !self::isAutoReplyEmail($chatSession)) {
+            return false;
+        }
+
+        if ($chatSession instanceof ChatSession && $chatSession->is_colleague) {
             return false;
         }
 
@@ -254,9 +273,42 @@ class ClassifyChatSessionNoise
      */
     public function verdictByRules(ChatSession|MetaChatSession $chatSession): ?array
     {
-        return $chatSession instanceof MetaChatSession
-            ? $this->whatsappRules($chatSession)
-            : $this->emailRules($chatSession);
+        if ($chatSession instanceof MetaChatSession) {
+            return $this->whatsappRules($chatSession);
+        }
+
+        return $this->testAddressRule($chatSession) ?? (self::isWebsite($chatSession) ? null : $this->emailRules($chatSession));
+    }
+
+    /**
+     * An address on a domain reserved for testing typed into the offline form is nobody we can
+     * answer, whether the form's conversation stays on the website or is answered by email: it
+     * is what vulnerability scanners type, 318 conversations saying "e" in one night (HELP-3467).
+     *
+     * @return array{verdict: ChatNoiseVerdictEnum, note: string}|null
+     */
+    private function testAddressRule(ChatSession $chatSession): ?array
+    {
+        $email = Str::lower(trim((string) data_get($chatSession->metadata, 'email')));
+
+        if (!Str::contains($email, '@')) {
+            return null;
+        }
+
+        $domain = Str::afterLast($email, '@');
+
+        if (!in_array($domain, self::TEST_DOMAINS, true) && !in_array(Str::afterLast($domain, '.'), self::TEST_TLDS, true)) {
+            return null;
+        }
+
+        $typedIntoOfflineForm = $chatSession->messages()
+            ->where('sender_type', ChatSenderTypeEnum::GUEST)
+            ->whereRaw("(metadata->>'is_offline_message')::boolean")
+            ->exists();
+
+        return $typedIntoOfflineForm
+            ? ['verdict' => ChatNoiseVerdictEnum::SPAM, 'note' => 'Test address typed into the offline form: '.$email]
+            : null;
     }
 
     /**
@@ -288,7 +340,29 @@ class ClassifyChatSessionNoise
             return ['verdict' => ChatNoiseVerdictEnum::MARKETING, 'note' => 'Sent to a mailing list'];
         }
 
+        if (self::isStaffEmail($from)) {
+            return ['verdict' => ChatNoiseVerdictEnum::GENUINE, 'note' => 'One of our own staff: '.$from];
+        }
+
         return null;
+    }
+
+    /**
+     * A colleague writing to a shop's mailbox is somebody asking customer service for something:
+     * it stays in the queue without asking the model, and never gets an automatic reply.
+     */
+    public static function isStaffEmail(string $from): bool
+    {
+        $address = Str::lower(trim($from));
+
+        if (!str_contains($address, '@')) {
+            return false;
+        }
+
+        return Employee::where('state', '!=', EmployeeStateEnum::LEFT)
+            ->where(fn ($query) => $query->whereRaw('lower(work_email) = ?', [$address])->orWhereRaw('lower(email) = ?', [$address]))
+            ->exists()
+            || User::where('status', true)->whereRaw('lower(email) = ?', [$address])->exists();
     }
 
     /**
@@ -334,7 +408,8 @@ class ClassifyChatSessionNoise
      */
     private function askModel(ChatSession|MetaChatSession $chatSession, string $text): ?array
     {
-        $response = AskToAi::run($this->prompt($chatSession, mb_substr($text, 0, 6000)), config('chat.summary_model'));
+        $model    = config('chat.noise_model');
+        $response = AskToAi::run($this->prompt($chatSession, mb_substr($text, 0, 6000)), $model);
 
         if (!is_string($response)) {
             return null;
@@ -345,6 +420,8 @@ class ClassifyChatSessionNoise
         if (!is_array($data)) {
             return null;
         }
+
+        SetChatSessionMetadata::run($chatSession, ['noise_model' => $model]);
 
         return [
             'verdict'    => ChatNoiseVerdictEnum::tryFrom((string) Arr::get($data, 'verdict')) ?? ChatNoiseVerdictEnum::GENUINE,
@@ -407,6 +484,15 @@ class ClassifyChatSessionNoise
             'noise_confidence' => $confidence,
             'noise_note'       => $note,
         ]);
+
+        // A stranger's email waits for this verdict before any automatic reply; now it can go.
+        if (!$verdict->isNoise() && $chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL) {
+            $trigger = $chatSession->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
+
+            if ($trigger) {
+                SendOutOfHoursReply::dispatch($chatSession, $trigger);
+            }
+        }
 
         if (!$verdict->isNoise() && $chatSession->is_spam && $chatSession instanceof MetaChatSession) {
             $chatSession->update(['is_spam' => false, 'spam_at' => null]);

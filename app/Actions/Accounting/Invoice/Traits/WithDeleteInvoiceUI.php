@@ -9,6 +9,8 @@
 namespace App\Actions\Accounting\Invoice\Traits;
 
 use App\Models\Accounting\Invoice;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\User;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,11 +19,16 @@ trait WithDeleteInvoiceUI
 {
     public function canDeleteInvoice(ActionRequest $request): bool
     {
-        if ($this->shop->fulfilment) {
-            return $request->user()->authTo("supervisor-fulfilment-shop.{$this->shop->fulfilment->id}");
+        return static::userCanDeleteInvoicesIn($request->user(), $this->shop);
+    }
+
+    public static function userCanDeleteInvoicesIn(User $user, Shop $shop): bool
+    {
+        if ($shop->fulfilment) {
+            return $user->authTo("supervisor-fulfilment-shop.{$shop->fulfilment->id}");
         }
 
-        return $request->user()->authTo("accounting.{$this->shop->organisation_id}.edit");
+        return $user->authTo("accounting.{$shop->organisation_id}.edit");
     }
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice

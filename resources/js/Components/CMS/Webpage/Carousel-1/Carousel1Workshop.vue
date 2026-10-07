@@ -7,7 +7,6 @@ import { inject, ref, watch, computed, nextTick } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
-import Blueprint from './Blueprint'
 import CardBlueprint from './CardBlueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
@@ -44,7 +43,6 @@ const props = defineProps<{
   indexBlock : number
 }>()
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 const keySwiper = ref(ulid())
@@ -159,8 +157,13 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
 
 const idxSlideLoading = ref<number | null>(null)
 
-const onEditorFocus = (key: string) => {
-  sendMessageToParent('activeChildBlock', key)
+const openCardInSideEditor = (index: number, childBlockArrayBlock?: string) => {
+  sendMessageToParent('activeBlock', props.indexBlock)
+  sendMessageToParent('activeChildBlock', 'carousel_data-cards')
+  sendMessageToParent('activeChildBlockArray', index)
+  if (childBlockArrayBlock) {
+    sendMessageToParent('activeChildBlockArrayBlock', childBlockArrayBlock)
+  }
 }
 
 </script>
@@ -186,12 +189,7 @@ const onEditorFocus = (key: string) => {
               <!-- Image -->
               <div class="flex justify-center overflow-visible"
                 :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)"
-                @click.stop="() => {
-                  sendMessageToParent('activeBlock', indexBlock)
-                  sendMessageToParent('activeChildBlock', bKeys[2])
-                  sendMessageToParent('activeChildBlockArray', index)
-                  sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
-                }"
+                @click.stop="() => openCardInSideEditor(index, baKeys[0])"
                 @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
                 <div class="overflow-hidden w-full flex items-center justify-center"
                   :style="{ ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
@@ -210,7 +208,7 @@ const onEditorFocus = (key: string) => {
               <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
                 class="p-4 flex flex-col flex-1 justify-between">
                 <div class="text-center leading-relaxed">
-                  <EditorV2 v-model="data.text" @focus="() => onEditorFocus(bKeys[1])"
+                  <EditorV2 v-model="data.text" @focus="() => openCardInSideEditor(index)"
                     @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                       name: webpageData.images_upload_route.name,
                       parameters: {

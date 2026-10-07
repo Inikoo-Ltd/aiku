@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -89,7 +89,7 @@ const quantityLabel = (step: StepDiscountStep): string => {
         return `${step.min_quantity}+ ${innerUnitLabel.value}`.trim()
     }
 
-    return `${step.min_quantity}+ ${step.min_quantity > 1 ? trans("Outers") : trans("Outer")}`
+    return `${step.min_quantity}+ ${step.min_quantity > 1 ? ctrans("Outers") : ctrans("Outer")}`
 }
 
 const innerQuantityLabel = (step: StepDiscountStep): string =>
@@ -102,7 +102,13 @@ const isActiveStep = (step: StepDiscountStep): boolean =>
     step.min_quantity === activeMinQuantity.value
 
 const onSelectStep = (step: StepDiscountStep) => {
-    if (props.isSubmitting || props.quantity === step.min_quantity) {
+    if (props.isSubmitting) {
+        return
+    }
+
+    if (isActiveStep(step)) {
+        activeMinQuantity.value = null
+        emits("selectQuantity", 0)
         return
     }
 
@@ -115,7 +121,7 @@ const onSelectStep = (step: StepDiscountStep) => {
     <div v-if="steps.length" class="step-discount w-full">
         <div class="step-discount-header flex items-center gap-3 mb-4">
             <span class="header-line" />
-            <span class="header-text">{{ stepDiscount.label || trans("Buy more, save more") }}</span>
+            <span class="header-text">{{ stepDiscount.label || ctrans("Buy more, save more") }}</span>
             <span class="header-line" />
         </div>
 
@@ -137,7 +143,7 @@ const onSelectStep = (step: StepDiscountStep) => {
                 >
                 <span v-if="isPopularStep(step)" class="popular-badge">
                     <FontAwesomeIcon :icon="faFire" fixed-width />
-                    {{ trans("Popular") }}
+                    {{ ctrans("Popular") }}
                 </span>
 
                 <LoadingIcon v-if="isSubmitting && isActiveStep(step)" class="radio-loading" />
@@ -151,17 +157,17 @@ const onSelectStep = (step: StepDiscountStep) => {
                             {{ quantityLabel(step) }}
                         </span>
                         <span v-if="savedAmount(step) > 0" class="save-badge">
-                            {{ trans("Save") }} {{ formatPrice(savedAmount(step)) }}
+                            {{ ctrans("Save") }} {{ formatPrice(savedAmount(step)) }}
                         </span>
                     </div>
                     <div class="text-sm text-gray-500 mt-0.5">
                         <span v-if="isPackedProduct">{{ innerQuantityLabel(step) }}</span>
                         <span v-if="isPackedProduct && step.percentage_off > 0" class="mx-1">·</span>
                         <template v-if="step.percentage_off > 0">
-                            {{ trans("You save") }} {{ step.percentage_off_label }}
+                            {{ ctrans("You save") }} {{ step.percentage_off_label }}
                         </template>
                         <template v-else-if="!isPackedProduct">
-                            {{ trans("Standard price") }}
+                            {{ ctrans("Standard price") }}
                         </template>
                     </div>
                 </div>

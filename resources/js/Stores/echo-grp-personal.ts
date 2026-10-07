@@ -5,11 +5,13 @@
  */
 
 import type { TicketBadges } from '@/types/TicketBadges'
+import type { TaskBadges } from '@/types/TaskBadges'
 import { useMilisecondToTime } from "@/Composables/useFormatTime"
 import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
 import { useLayoutStore } from "@/Stores/layout"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
+import { alertOnce, chosenAlertSound, showTicketPopup } from "@/Composables/useNotificationSound"
 
 interface ProgressBar {
     [key: string]: {
@@ -117,11 +119,28 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 layout.dispatching_waiting_count = eventData.dispatching_waiting_count
                 layout.crm_waiting_count = eventData.crm_waiting_count
             })
-            .listen('.ticket-badges-update', (eventData: { ticket_badges: TicketBadges; notification: { title: string; body: string; route: string } | null }) => {
+            .listen('.task-badges-update', (eventData: { task_badges: TaskBadges }) => {
+                useLayoutStore().task_badges = eventData.task_badges
+            })
+            .listen('.ticket-badges-update', (eventData: { ticket_badges: TicketBadges; notification: { title: string; body: string; route: string; reason?: string } | null }) => {
                 const layout = useLayoutStore()
                 layout.ticket_badges = eventData.ticket_badges
-                if (eventData.notification) {
-                    layout.notifications.unshift({ id: '', read: false, href: '', created_at: new Date(), ...eventData.notification })
+                const notification = eventData.notification
+                if (notification) {
+                    layout.notifications.unshift({ id: '', read: false, href: '', created_at: new Date(), ...notification })
+                }
+                if (notification?.reason === 'resolved') {
+                    if (notification.title) {
+                        showTicketPopup(notification.title, notification.body, notification.route)
+                    }
+                    alertOnce({
+                        key: `ticket-resolved:${notification.route}`,
+                        title: notification.title,
+                        body: notification.body,
+                        tag: `ticket-${notification.route}`,
+                        sound: chosenAlertSound('ticket'),
+                        url: notification.route,
+                    })
                 }
             })
             .listen('.personal-notification', (eventData: { notification: { id: string | null; title: string; body: string; route: string } }) => {
@@ -157,10 +176,13 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 useStaffMessaging().replaceMessage(message)
             })
             .listen('.staff-message-reaction', (message) => {
-                useStaffMessaging().replaceMessage(message)
+                useStaffMessaging().applyReactionBroadcast(message)
             })
             .listen('.staff-conversation-archived', (e: {conversation_ulid: string; user_id: number; user_name: string}) => {
                 useStaffMessaging().handleArchived(e)
+            })
+            .listen('.staff-conversation-read', (e: { conversation_ulid: string; user_id: number; last_read_at: string }) => {
+                useStaffMessaging().handleRead(e)
             })
         },
 

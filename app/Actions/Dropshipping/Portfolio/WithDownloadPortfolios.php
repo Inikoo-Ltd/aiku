@@ -13,6 +13,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Exports\Marketing\DataFeedsMapping;
 use App\Helpers\NaturalLanguage;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,9 @@ trait WithDownloadPortfolios
             array_splice($headers, 2, 0, [$referenceHeader]);
         }
 
-        $csvData[] = $headers;
+        $tempFile = tempnam(sys_get_temp_dir(), 'csv');
+        $file     = fopen($tempFile, 'w');
+        fputcsv($file, $headers, ',', '"', '');
 
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
@@ -53,7 +56,8 @@ trait WithDownloadPortfolios
                 'department.name as department_name',
                 'sub_department.code as subdepartment_code',
                 'sub_department.name as subdepartment_name',
-                'portfolios.reference'
+                'portfolios.reference',
+                DB::raw(Product::sellableThroughSalesChannelsSql().' as is_for_sale')
             )
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->leftJoin('product_categories as department', 'products.department_id', '=', 'department.id')
@@ -70,12 +74,12 @@ trait WithDownloadPortfolios
 
         if (in_array('exclude_not_for_sale', $productAvailability)) {
             $portfolios = $portfolios
-                ->where('products.is_for_sale', true);
+                ->whereRaw(Product::sellableThroughSalesChannelsSql());
         }
 
         if (in_array('only_not_for_sale', $productAvailability)) {
             $portfolios = $portfolios
-                ->where('products.is_for_sale', false);
+                ->whereRaw('not '.Product::sellableThroughSalesChannelsSql());
         }
 
         if (in_array('exclude_out_of_stocks', $productAvailability)) {
@@ -85,25 +89,17 @@ trait WithDownloadPortfolios
 
         $portfolios
             ->orderBy('portfolios.id')
-            ->chunk(100, function ($products) use (&$csvData, $isExtendedProperties, $columns) {
+            ->chunk(500, function ($products) use ($file, $isExtendedProperties, $columns) {
                 foreach ($products as $row) {
                     if ($isExtendedProperties) {
-                        $csvData[] = $this->mapExtendedProperties($row, $columns);
+                        $mappedData = $this->mapExtendedProperties($row, $columns);
                     } else {
                         $mappedData = $this->map($row);
                         array_splice($mappedData, 2, 0, [$row->reference ?? '']);
-                        $csvData[] = $mappedData;
                     }
+                    fputcsv($file, $mappedData, ',', '"', '');
                 }
             });
-
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'csv');
-        $file     = fopen($tempFile, 'w');
-
-        foreach ($csvData as $row) {
-            fputcsv($file, $row, ',', '"', '');
-        }
 
         fclose($file);
 

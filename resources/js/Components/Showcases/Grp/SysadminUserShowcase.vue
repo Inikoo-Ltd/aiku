@@ -253,11 +253,11 @@ const force2FA = async () => {
             <div class="mb-3 w-full">
                 <dt class="text-sm font-medium">{{ trans('Has 2FA') }}: </dt>
                 <dd class="pt-1 inline-grid w-full">
-                    <div v-if="twoFAStatus?.has_2fa" class="w-full">
-                        <span class="border rounded-md border-green-500 px-2 py-1">
+                    <div v-if="twoFAStatus?.has_2fa" class="w-full flex gap-y-2 gap-x-2 h-fit">
+                        <span class="border rounded-md border-green-500 px-2 py-1 whitespace-nowrap">
                             <FontAwesomeIcon :icon="faCheck" class="text-green-500" fixed-width/> {{ trans('Enabled') }}
                         </span>
-                        <span class="border rounded-md border-red-500 hover:border-red-300 active:border-red-700 text-red-500 hover:text-red-300 active:text-red-700 cursor-pointer px-2 py-1 ml-2" @click="disable2FA()">
+                        <span class="border rounded-md border-red-500 hover:border-red-300 active:border-red-700 text-red-500 hover:text-red-300 active:text-red-700 cursor-pointer px-2 py-1" @click="disable2FA()">
                             <LoadingIcon v-if="isLoadingUpdate"/>
                             <FontAwesomeIcon v-else :icon="faSkull" fixed-width/>
                         </span>
@@ -269,7 +269,7 @@ const force2FA = async () => {
                     </div>
                 </dd>
             </div>
-            <div class="mb-4">
+            <div class="mb-4 mt-8">
                 <dt class="text-sm font-medium">{{ trans('Force 2FA') }}: </dt>
                 <dd>
                     <Toggle :model-value="twoFAStatus.is_two_factor_required" @update:model-value="twoFAStatus.is_two_factor_required = !twoFAStatus.is_two_factor_required; force2FA()" :disabled="isLoadingUpdateRequire2FA">

@@ -151,7 +151,7 @@ trait WithDashboardIntervalValuesFromArray
             $dataType = DashboardDataType::PERCENTAGE;
         }
 
-        if (in_array($columnFingerprint, ['sales_external', 'revenue', 'baskets_created', 'baskets_updated'])) {
+        if (in_array($columnFingerprint, ['sales_external', 'backlog', 'revenue', 'baskets_created', 'baskets_updated'])) {
             if ($dataType == DashboardDataType::NUMBER) {
                 $dataType = DashboardDataType::CURRENCY;
             } elseif ($dataType == DashboardDataType::NUMBER_MINIFIED) {

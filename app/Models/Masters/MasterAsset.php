@@ -135,6 +135,11 @@ use App\Models\Traits\HasSearch;
  * @property string|null $marketing_ingredients
  * @property int|null $origin_country_id
  * @property bool|null $is_for_sale
+ * @property bool $is_back_order
+ * @property bool $is_made_to_order
+ * @property string|null $pre_order_deposit_percentage
+ * @property int|null $pre_order_lead_time_days
+ * @property int|null $max_quantity_per_order
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
  * @property array<array-key, mixed>|null $web_images
@@ -151,10 +156,12 @@ use App\Models\Traits\HasSearch;
  * @property array<array-key, mixed> $master_prices
  * @property array<array-key, mixed> $master_rrps
  * @property string|null $units_review
+ * @property string|null $price_review Set when the composition changed and the prices were not saved since
  * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
  * @property string|null $tax_preset Named tax preset this master follows (standard, food, ...); null is a custom map; tax_category holds the expansion the money path reads
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
  * @property bool $is_golden_product
+ * @property bool $is_indivisible
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -232,6 +239,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'has_independent_units'   => 'boolean',
         'variant_is_visible'      => 'boolean',
         'is_golden_product'       => 'boolean',
+        'is_indivisible'          => 'boolean',
         'fetched_at'              => 'datetime',
         'last_fetched_at'         => 'datetime',
         'discontinued_at'         => 'datetime',
@@ -241,6 +249,10 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'is_back_order'           => 'boolean',
+        'is_made_to_order'        => 'boolean',
+        'pre_order_deposit_percentage' => 'decimal:2',
+        'independent_barcode'     => 'boolean',
         'master_prices'           => 'array',
         'master_rrps'             => 'array',
     ];
@@ -275,9 +287,16 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'unit',
         'is_main',
         'barcode',
+        'independent_barcode',
         'is_for_sale',
         'follow_trade_unit_media',
         'is_golden_product',
+        'is_indivisible',
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
     ];
 
     public function getRouteKeyName(): string
@@ -492,4 +511,14 @@ class MasterAsset extends Model implements Auditable, HasMedia
         ];
     }
 
+
+    public function priceTips(): HasMany
+    {
+        return $this->hasMany(MasterAssetPriceTip::class);
+    }
+
+    public function competitorProducts(): HasMany
+    {
+        return $this->hasMany(MasterAssetCompetitorProduct::class);
+    }
 }

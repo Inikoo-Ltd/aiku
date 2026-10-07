@@ -32,17 +32,13 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
 
         $attachments        = [];
         $processedChecksums = [];
-        $tradeUnit          = $product->tradeUnits->first();
+        $tradeUnit          = $product->tradeUnits()->first();
+        if (!$tradeUnit) {
+            return;
+        }
         /** @var \App\Models\Helpers\Media $publicAttachments */
         $publicAttachments = $tradeUnit->attachments()
-            ->wherePivotIn('scope', [
-                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
-                TradeAttachmentScopeEnum::CPSR,
-                TradeAttachmentScopeEnum::DOC,
-                TradeAttachmentScopeEnum::IFRA,
-                TradeAttachmentScopeEnum::SDS,
-                TradeAttachmentScopeEnum::TEST_REPORTS,
-            ])
+            ->wherePivotIn('scope', TradeAttachmentScopeEnum::publicScopes())
             ->get();
 
         foreach ($publicAttachments as $publicAttachment) {
@@ -64,14 +60,7 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         $tradeUnitFamily = $tradeUnit->tradeUnitFamily;
         if ($tradeUnitFamily) {
             /** @var \App\Models\Helpers\Media $familyAttachments */
-            $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', [
-                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
-                TradeAttachmentScopeEnum::CPSR,
-                TradeAttachmentScopeEnum::DOC,
-                TradeAttachmentScopeEnum::IFRA,
-                TradeAttachmentScopeEnum::SDS,
-                TradeAttachmentScopeEnum::TEST_REPORTS,
-            ])
+            $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', TradeAttachmentScopeEnum::publicScopes())
                 ->get();
             foreach ($familyAttachments as $familyAttachment) {
                 if (array_key_exists($familyAttachment->checksum, $processedChecksums)) {

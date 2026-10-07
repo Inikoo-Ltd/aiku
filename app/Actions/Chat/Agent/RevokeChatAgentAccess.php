@@ -8,18 +8,13 @@
 namespace App\Actions\Chat\Agent;
 
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
-use App\Actions\Chat\ChatSession\StoreChatEvent;
-use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Actions\Chat\ChatSession\ReleaseChatSession;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
-use App\Enums\CRM\Livechat\ChatEventTypeEnum;
-use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
-use App\Events\BroadcastChatListEvent;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\SysAdmin\User;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RevokeChatAgentAccess
@@ -36,14 +31,14 @@ class RevokeChatAgentAccess
      * suspended once there is no shop left it may work. Re-granting the position brings the
      * profile back, because it is created on first use.
      *
-     * @return array{released: int, shops_removed: int, suspended: bool}
+     * @return array{released: int, suspended: bool}
      */
     public function handle(ChatAgent $agent, bool $dryRun = false): array
     {
         $user = $agent->user;
 
         if (!$user instanceof User) {
-            return ['released' => 0, 'shops_removed' => 0, 'suspended' => false, 'restored' => false];
+            return ['released' => 0, 'suspended' => false, 'restored' => false];
         }
 
         // Roles are read through spatie's team scope, and nothing binds it outside a
@@ -96,8 +91,7 @@ class RevokeChatAgentAccess
 
         $chatShopIds = $chatShopIds->unique()->values()->all();
 
-        $released     = 0;
-        $shopsRemoved = 0;
+        $released = 0;
 
         $assignments = ChatAssignment::with('chatSession.shop')
             ->where('chat_agent_id', $agent->id)
@@ -118,20 +112,6 @@ class RevokeChatAgentAccess
             $released++;
         }
 
-        foreach ($agent->shopAssignments()->with('shop')->get() as $shopAssignment) {
-            $shop = $shopAssignment->shop;
-
-            if ($shop && in_array($shop->id, $chatShopIds, true)) {
-                continue;
-            }
-
-            if (!$dryRun) {
-                $shopAssignment->delete();
-            }
-
-            $shopsRemoved++;
-        }
-
         // Regaining the permission brings the profile straight back, rather than leaving
         // somebody missing from the agents list until they next open the inbox.
         $restored = false;
@@ -150,11 +130,11 @@ class RevokeChatAgentAccess
             ChatAgentHydrateChats::run($agent);
         }
 
-        return ['released' => $released, 'shops_removed' => $shopsRemoved, 'suspended' => $suspended, 'restored' => $restored];
+        return ['released' => $released, 'suspended' => $suspended, 'restored' => $restored];
     }
 
     /**
-     * @return array{released: int, shops_removed: int, suspended: bool, restored: bool}
+     * @return array{released: int, suspended: bool, restored: bool}
      */
     private function revokeEverything(ChatAgent $agent, bool $dryRun): array
     {
@@ -173,11 +153,7 @@ class RevokeChatAgentAccess
             $released++;
         }
 
-        $shopsRemoved = $agent->shopAssignments()->count();
-
         if (!$dryRun) {
-            $agent->shopAssignments()->delete();
-
             if ($released > 0) {
                 ChatAgentHydrateChats::run($agent);
             }
@@ -187,42 +163,28 @@ class RevokeChatAgentAccess
             }
         }
 
-        return ['released' => $released, 'shops_removed' => $shopsRemoved, 'suspended' => true, 'restored' => false];
+        return ['released' => $released, 'suspended' => true, 'restored' => false];
     }
 
     private function release(ChatAssignment $assignment, ChatAgent $agent): void
     {
-        DB::transaction(function () use ($assignment, $agent) {
+        $chatSession = $assignment->chatSession;
+
+        if (!$chatSession) {
             $assignment->update([
                 'status' => ChatAssignmentStatusEnum::RESOLVED->value,
                 'note'   => 'Released: agent may no longer work chat on this shop',
             ]);
 
-            $chatSession = $assignment->chatSession;
+            return;
+        }
 
-            if (!$chatSession) {
-                return;
-            }
-
-            if ($chatSession->status === ChatSessionStatusEnum::ACTIVE) {
-                $chatSession->update(['status' => ChatSessionStatusEnum::WAITING->value]);
-            }
-
-            StoreChatEvent::make()->handle(
-                chatSession: $chatSession,
-                eventType: ChatEventTypeEnum::RELEASED,
-                actorType: ChatActorTypeEnum::SYSTEM,
-                actorId: null,
-                payload: [
-                    'from_agent_id'   => $agent->id,
-                    'from_agent_name' => $agent->user?->contact_name,
-                    'reason'          => 'permission_revoked',
-                    'timestamp'       => now()->toISOString(),
-                ]
-            );
-
-            BroadcastChatListEvent::dispatch(null, $chatSession);
-        });
+        ReleaseChatSession::make()->handle(
+            $chatSession,
+            $agent,
+            'Released: agent may no longer work chat on this shop',
+            'permission_revoked'
+        );
     }
 
     /**
@@ -268,18 +230,17 @@ class RevokeChatAgentAccess
         foreach (ChatAgent::withTrashed()->with('user')->get() as $agent) {
             $result = $dryRun ? $planned->get($agent->id) : $this->handle($agent);
 
-            if ($result['released'] || $result['shops_removed'] || $result['suspended'] || $result['restored']) {
+            if ($result['released'] || $result['suspended'] || $result['restored']) {
                 $rows[] = [
                     $agent->user?->username ?? $agent->id,
                     $result['released'],
-                    $result['shops_removed'],
                     $result['suspended'] ? 'yes' : 'no',
                     $result['restored'] ? 'yes' : 'no',
                 ];
             }
         }
 
-        $command->table(['Agent', 'Chats released', 'Shop rows removed', 'Suspended', 'Restored'], $rows);
+        $command->table(['Agent', 'Chats released', 'Suspended', 'Restored'], $rows);
         $command->info($dryRun ? 'Dry run, nothing written' : 'Done');
 
         return 0;

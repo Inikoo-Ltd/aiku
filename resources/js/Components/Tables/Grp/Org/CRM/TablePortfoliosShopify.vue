@@ -18,7 +18,7 @@ import { faTrashAlt, faImage, faTools, faTimes, faRecycle } from "@fal"
 import { faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -95,12 +95,10 @@ const isLoadingSubmit = ref(false)
 const querySearchPortfolios = ref("")
 const selectedVariant = ref<number | null>(null)
 const onSubmitVariant = () => {
-    console.log('qqq', selectedPortfolio.value)
-    console.log('www', selectedVariant.value)
 
     if(!selectedPortfolio.value || !selectedVariant.value) {
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: "",
             type: "error",
         })
@@ -123,8 +121,8 @@ const onSubmitVariant = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully match the product"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully match the product"),
                     type: "success"
                 })
 
@@ -137,8 +135,8 @@ const onSubmitVariant = () => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message ?? trans("Failed to match the product to platform"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.message ?? ctrans("Failed to match the product to platform"),
                     type: "error"
                 })
             },
@@ -238,18 +236,15 @@ onMounted(() => {
 
     if (event && action) {
       window.Echo.private(event).listen(action, (eventData) => {
-        console.log('Socket received for portfolio:', portfolio.id, eventData)
         const progress = props.progressToUploadToShopifyAll.data
 
         // Tangani error dari respons event
         if (eventData.errors_response) {
-          console.log("failed to get data")
           return
         }
 
         const pf = eventData.portfolio
         errorBluk.value = [] // Kosongkan error sebelumnya
-        console.log('Data dari event:', pf)
 
         const isSuccess =
           pf.has_valid_platform_product_id &&
@@ -363,12 +358,12 @@ onMounted(() => {
         </template>
 
         <template #cell(platform_status)="{ item: portfolio }">
-            <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="portfolio.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id" v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="portfolio.exist_in_platform" v-tooltip="ctrans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #cell(created_at)="{ item: portfolio }">
@@ -395,7 +390,7 @@ onMounted(() => {
                         <div class="flex flex-col justify-start items-start gap-y-1">
                             <div class="">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</div>
                             <ButtonWithLink
-                                v-tooltip="trans('Match to existing Shopify product')"
+                                v-tooltip="ctrans('Match to existing Shopify product')"
                                 :routeTarget="{
                                     method: 'post',
                                     name: 'grp.models.portfolio.match_to_existing_shopify_product',
@@ -408,7 +403,7 @@ onMounted(() => {
                                     preserveScroll: true,
                                 }"
                                 type="secondary"
-                                :label="trans('Match with this product')"
+                                :label="ctrans('Match with this product')"
                                 size="xxs"
                                 icon="fal fa-tools"
                             />
@@ -417,7 +412,7 @@ onMounted(() => {
 
                     <Button
                         @click="() => {selectedPortfolio = portfolio; if(portfolio.is_for_sale) fetchRoute(); isOpenModalVariant = true}"
-                        :label="portfolio.platform_possible_matches?.number_matches ? trans('Select other product from Shopify') : trans('Match it with an existing product in your shop')"
+                        :label="portfolio.platform_possible_matches?.number_matches ? ctrans('Select other product from Shopify') : ctrans('Match it with an existing product in your shop')"
                         :capitalize="false"
                         size="xxs"
                         type="tertiary"
@@ -440,7 +435,7 @@ onMounted(() => {
 
                     <Button class="mt-2"
                         @click="() => (selectedPortfolio = portfolio, fetchRoute(), isOpenModalVariant = true)"
-                        :label="trans('Connect with other product')"
+                        :label="ctrans('Connect with other product')"
                         :icon="faRecycle"
                         size="xxs"
                         type="tertiary"
@@ -449,7 +444,7 @@ onMounted(() => {
             </template>
 
             <div v-else-if="portfolio.matched_product?.label">
-                <div v-tooltip="trans('Matched product')" class="flex gap-x-2 items-center border-l-2 border-green-500 bg-green-50 py-1 px-2">
+                <div v-tooltip="ctrans('Matched product')" class="flex gap-x-2 items-center border-l-2 border-green-500 bg-green-50 py-1 px-2">
                     <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
                         <img :src="portfolio.matched_product?.img" loading="lazy" decoding="async" />
                     </div>
@@ -471,7 +466,7 @@ onMounted(() => {
         <template #cell(actions)="{ item: portfolio }">
             <div v-if="portfolio.customer_sales_channel_platform_status  && !portfolio.platform_status "  class="flex gap-x-2 items-center">
                 <ButtonWithLink
-                    v-tooltip="portfolio.is_for_sale ? trans('Will create new product in Shopify') : trans('Unable to create new product in Shopify. Product is not for sale')"
+                    v-tooltip="portfolio.is_for_sale ? ctrans('Will create new product in Shopify') : ctrans('Unable to create new product in Shopify. Product is not for sale')"
                     :routeTarget="{
                     method: 'post',
                         name: 'grp.models.portfolio.store_new_shopify_product',
@@ -481,7 +476,7 @@ onMounted(() => {
                     }"
                     isWithError
                     icon=""
-                    :label="trans('Create new product')"
+                    :label="ctrans('Create new product')"
                     size="xxs"
                     type="tertiary"
                     :bindToLink="{
@@ -503,7 +498,7 @@ onMounted(() => {
 
             <div class="mb-2">
                 <strong> 
-                    {{ trans('List of Products under your :_storetype Store', {_storetype: 'Shopify'}) }}
+                    {{ ctrans('List of Products under your :_storetype Store', {_storetype: 'Shopify'}) }}
                 </strong>
             </div>
 
@@ -511,7 +506,7 @@ onMounted(() => {
                 <PureInput
                     v-model="querySearchPortfolios"
                     @update:modelValue="() => debFetchShopifyProduct()"
-                    :placeholder="trans('Search in :platform', { platform: 'Shopify' })"
+                    :placeholder="ctrans('Search in :platform', { platform: 'Shopify' })"
                 />
                 <div v-if="isLoadingFetchShopifyProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
                     <LoadingIcon />
@@ -523,7 +518,7 @@ onMounted(() => {
             <div class="xh-full xmd:h-[570px] text-base font-normal">
                 <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
-                        <!-- <div class="font-semibold text-lg py-1">{{ trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
+                        <!-- <div class="font-semibold text-lg py-1">{{ ctrans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
 
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
@@ -531,7 +526,7 @@ onMounted(() => {
                         <!-- Products list -->
                          <!-- {{ selectedVariant }} -->
                         <div v-if="isLoadingFetchShopifyProduct" class="text-center text-gray-500 col-span-3">
-                            <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: 'Shopify'}) }}
+                            <LoadingIcon class="ml-1"/> {{ ctrans("Fetching your :_storetype product list", {_storetype: 'Shopify'}) }}
                         </div>
                         <div v-else-if="querySearchPortfolios || resultOfFetchShopifyProduct?.length" class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
                             <template v-if="resultOfFetchShopifyProduct?.length">
@@ -555,7 +550,7 @@ onMounted(() => {
                                         <div class="min-h-9 h-auto max-h-12 min-w-12 w-auto max-w-12 flex items-center justify-center border border-gray-300 rounded">
                                             <img v-if="item.images?.[0]?.src" :src="item.images?.[0]?.src" class="shadow" loading="lazy" decoding="async" />
                                             <FontAwesomeIcon v-else
-                                                v-tooltip="trans('No image available')"
+                                                v-tooltip="ctrans('No image available')"
                                                 icon="fal fa-image"
                                                 class="text-gray-400"
                                                 :aria-hidden="true"
@@ -564,35 +559,35 @@ onMounted(() => {
                                         </div>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
-                                                <div v-if="item.title" v-tooltip="trans('Name')" class="w-fit text-sm font-semibold leading-none mb-1">
+                                                <div v-if="item.title" v-tooltip="ctrans('Name')" class="w-fit text-sm font-semibold leading-none mb-1">
                                                     {{ item.title || 'no title' }}
                                                 </div>
-                                                <div v-if="item.name" v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
+                                                <div v-if="item.name" v-tooltip="ctrans('Name')" class="w-fit font-semibold leading-none mb-1">
                                                     {{ item.name || 'no name' }}
                                                 </div>
-                                                <div v-if="item.no_code" v-tooltip="trans('Code')"
+                                                <div v-if="item.no_code" v-tooltip="ctrans('Code')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                     {{ item.code || 'no code' }}
                                                 </div>
-                                                <div v-if="item.reference" v-tooltip="trans('Reference')"
+                                                <div v-if="item.reference" v-tooltip="ctrans('Reference')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                     {{ item.reference || 'no reference' }}
                                                 </div>
-                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
+                                                <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')"
                                                         class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
                                                 </div>
-                                                <div v-if="item.id" v-tooltip="trans('Id')"
+                                                <div v-if="item.id" v-tooltip="ctrans('Id')"
                                                         class="w-fit text-xxs text-gray-400 italic">{{ item.id }}
                                                 </div>
-                                                <div v-if="item.sku_list" v-tooltip="trans('SKO')" class="w-fit text-xxs text-slate-600 italic">
+                                                <div v-if="item.sku_list" v-tooltip="ctrans('SKO')" class="w-fit text-xxs text-slate-600 italic">
                                                         {{ item.sku_list.join('; ') }}
                                                 </div>
                                                 <div v-if="item.variant_to_link" class="w-fit text-xs text-green-700 mt-1">
-                                                    {{ trans("Will link to the existing variant :_sku", {_sku: item.variant_to_link}) }}
+                                                    {{ ctrans("Will link to the existing variant :_sku", {_sku: item.variant_to_link}) }}
                                                 </div>
                                             </div>
                                             <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"
-                                                    v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                    v-tooltip="ctrans('Price')" class="w-fit text-xs text-gray-x500">
                                                 {{
                                                     locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
                                                 }}
@@ -603,7 +598,7 @@ onMounted(() => {
                             </template>
                         </div>
                         <div v-else class="text-center text-gray-500 col-span-3">
-                            {{ trans("No products found") }}
+                            {{ ctrans("No products found") }}
                         </div>
                     </div>
                     <!-- Pagination -->
@@ -621,8 +616,8 @@ onMounted(() => {
                         <Button
                             @click="() => onSubmitVariant()"
                             :disabled="!selectedVariant?.id"
-                            v-tooltip="!selectedVariant?.id ? trans('Select at least one product on your platform') : ''"
-                            :label="selectedPortfolio ? trans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.item_code ?? 'it'}) : trans('Link to selected item on your platform')" type="primary" full icon="fas fa-plus"
+                            v-tooltip="!selectedVariant?.id ? ctrans('Select at least one product on your platform') : ''"
+                            :label="selectedPortfolio ? ctrans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.item_code ?? 'it'}) : ctrans('Link to selected item on your platform')" type="primary" full icon="fas fa-plus"
                             :loading="isLoadingSubmit"/>
                     </div>
                 </div>

@@ -12,11 +12,12 @@ namespace App\Actions\Helpers\AI;
 
 use App\Actions\Helpers\AI\Traits\WithAIBot;
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Actions\OrgAction;
 use Illuminate\Support\Facades\Response;
 use LLPhant\Chat\OpenAIChat;
-use LLPhant\OpenAIConfig;
+use LLPhant\Chat\Enums\OpenAIChatModel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Throwable;
@@ -27,14 +28,14 @@ class AskBot extends OrgAction
     use WithAIBot;
     use WithPromptAI;
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
     public function handle($q)
     {
         if (config('askbot-laravel.ai_provider') == 'r1') {
             return $this->askDeepseek($this->promptLessResponse($q));
         } elseif (config('askbot-laravel.ai_provider') == 'openai') {
-            $config = new OpenAIConfig();
-            $chat = new OpenAIChat($config);
+            $chat = new OpenAIChat($this->aiLLPhantConfig(OpenAIChatModel::Gpt4Turbo->value));
 
             try {
                 $stream = $chat->generateStreamOfText($q);

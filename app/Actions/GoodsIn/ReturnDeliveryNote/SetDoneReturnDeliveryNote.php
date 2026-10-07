@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
@@ -21,6 +22,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
@@ -32,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetDoneReturnDeliveryNote extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use WithActionUpdate;
     use WithHydrateReturnDeliveryNotes;
     use WithReturnDeliveryNoteTransition;
@@ -47,7 +50,18 @@ class SetDoneReturnDeliveryNote extends OrgAction
 
         $this->validateReturnDeliveryNoteState($returnDeliveryNote, ReturnDeliveryNoteStateEnum::RETURNED, 'Return cannot be finished.');
 
-        if (!$originalInvoice) {
+        /**
+         * A cancellation is raised on goods that never left, so the order was never invoiced and
+         * there is nothing to refund or replace. Requiring an invoice here would strand every one
+         * of them in RETURNED with no way to close.
+         */
+        $isCancellation = $returnDeliveryNote->type === ReturnDeliveryNoteTypeEnum::CANCELLATION;
+
+        if ($isCancellation) {
+            Arr::forget($modelData, ['createRefund', 'createReplacement', 'refundedData']);
+        }
+
+        if (!$isCancellation && !$originalInvoice) {
             throw ValidationException::withMessages([
                 'message' => __('Return cannot be finished. Missing invoice detected'),
             ]);
@@ -169,6 +183,25 @@ class SetDoneReturnDeliveryNote extends OrgAction
             'createRefund'                              => ['required', 'boolean'],
             'createReplacement'                         => ['required', 'boolean'],
         ];
+    }
+
+    /**
+     * Finishing a return decides the refund or replacement, which customer services do from the
+     * order's shop, so editing that shop's orders is enough besides the warehouse returns permissions.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $returnDeliveryNote = $request->route('returnDeliveryNote');
+
+        return $request->user()->authTo([
+            "incoming.{$this->warehouse->id}.edit",
+            "returns.{$this->warehouse->id}",
+            "orders.{$returnDeliveryNote->order->shop_id}.edit",
+        ]);
     }
 
     /**

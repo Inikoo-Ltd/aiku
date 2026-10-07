@@ -12,6 +12,7 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInOrder
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInOrders;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
@@ -48,6 +49,10 @@ class UpdateOrder extends OrgAction
     {
         $this->guardCustomerShipperLock($order, $modelData);
 
+        if (Arr::get($modelData, 'collection_address_id') && $order->shop->collection_address_id) {
+            $modelData['collection_address_id'] = $order->shop->collection_address_id;
+        }
+
         $oldPlatform             = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
         $oldShippingZoneId       = $order->shipping_zone_id;
@@ -62,6 +67,18 @@ class UpdateOrder extends OrgAction
 
         if (Arr::has($changes, 'collection_address_id')) {
             OrderHydrateShipments::run($order->id);
+            if (!Arr::has($modelData, 'tax_category_id') && $order->billingAddress && $order->canChangeTaxCategory()) {
+                $taxNumber = $order->customer?->taxNumber;
+                $order->update([
+                    'tax_category_id' => GetTaxCategory::run(
+                        country: $order->organisation->country,
+                        taxNumber: $taxNumber,
+                        billingAddress: $order->billingAddress,
+                        deliveryAddress: $order->taxableDeliveryAddress($taxNumber),
+                        isRe: $order->is_re,
+                    )->id
+                ]);
+            }
             CalculateOrderTotalAmounts::run(
                 order: $order,
                 calculateShipping: true,
@@ -102,7 +119,10 @@ class UpdateOrder extends OrgAction
 
 
         if (count($changes) > 0) {
-            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
+            $deliveryNote = $order->deliveryNotes()
+                ->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)
+                ->orderByRaw('delivery_notes.state = ?, delivery_notes.id desc', [DeliveryNoteStateEnum::CANCELLED->value])
+                ->first();
             if ($deliveryNote) {
                 if (Arr::has($changes, 'collection_address_id') && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
                     $deliveryNote->update(
@@ -232,6 +252,7 @@ class UpdateOrder extends OrgAction
             'company_name'            => ['sometimes', 'nullable', 'string', 'max:256'],
             'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'gift_message'            => ['sometimes', 'nullable', 'string', 'max:500'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],

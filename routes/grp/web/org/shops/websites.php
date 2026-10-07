@@ -106,7 +106,6 @@ Route::name('websites.')->group(function () {
                             Route::get('footer', [IndexSnapshots::class, 'inFooterWorkshop'])->name('.footer');
                             Route::get('header', [IndexSnapshots::class, 'inHeaderWorkshop'])->name('.header');
                             Route::get('menu', [IndexSnapshots::class, 'inMenuWorkshop'])->name('.menu');
-                            Route::get('sidebar', [IndexSnapshots::class, 'inSidebarWorkshop'])->name('.sidebar');
                         });
                 });
         });
@@ -117,7 +116,7 @@ Route::name('redirect')->prefix('{website}/redirect')->group(function () {
     Route::get('/', IndexRedirects::class)->name('.index');
     Route::get('/export', ExportRedirects::class)->name('.export');
     Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
-    Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
+    Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebsite'])->name('.edit');
 });
 
 
@@ -141,6 +140,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/sub-type/family', IndexFamilyWebpages::class)->name('index.sub_type.family');
     Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
     Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
+    Route::get('/sub-type/ads-testing', [IndexWebpages::class, 'adsTesting'])->name('index.sub_type.ads_testing');
 
     Route::get('/{webpage}/redirect-options', [IndexWebpages::class, 'asRedirectOption'])->name('index.redirect-options');
 

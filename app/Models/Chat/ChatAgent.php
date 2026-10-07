@@ -10,18 +10,17 @@ namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
 use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
-use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Language;
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -42,9 +41,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $last_activity_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatAssignment> $assignments
  * @property-read Language|null $language
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Organisation> $organisations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ShopHasChatAgent> $shopAssignments
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read User|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent available()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatAgent newModelQuery()
@@ -131,48 +127,6 @@ class ChatAgent extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(ChatAssignment::class, 'chat_agent_id');
-    }
-
-    public function shopAssignments(): HasMany
-    {
-        return $this->hasMany(ShopHasChatAgent::class);
-    }
-
-    public function isAssignedToShop(?int $shopId, ?int $organisationId): bool
-    {
-        if (!$shopId && !$organisationId) {
-            return false;
-        }
-
-        return $this->shopAssignments()
-            ->whereNull('deleted_at')
-            ->where(function ($query) use ($shopId, $organisationId) {
-                if ($shopId) {
-                    $query->where('shop_id', $shopId);
-                }
-                if ($organisationId) {
-                    $query->orWhere(function ($orgWide) use ($organisationId) {
-                        $orgWide->whereNull('shop_id')->where('organisation_id', $organisationId);
-                    });
-                }
-            })
-            ->exists();
-    }
-
-    public function shops(): BelongsToMany
-    {
-        return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
-            ->withPivot(['organisation_id'])
-            ->wherePivotNull('deleted_at')
-            ->withTimestamps();
-    }
-
-    public function organisations(): BelongsToMany
-    {
-        return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
-            ->withPivot(['shop_id'])
-            ->wherePivotNull('deleted_at')
-            ->withTimestamps();
     }
 
     public function language(): BelongsTo
@@ -308,15 +262,19 @@ class ChatAgent extends Model
         }
 
         if ($shopId) {
-            $organisationId = Shop::where('id', $shopId)->value('organisation_id');
+            $permissionNames = ["chat.{$shopId}"];
 
-            $query->whereHas('shopAssignments', function ($assignment) use ($shopId, $organisationId) {
-                $assignment->where('shop_id', $shopId)
-                    ->orWhere(function ($orgWide) use ($organisationId) {
-                        $orgWide->whereNull('shop_id')
-                            ->where('organisation_id', $organisationId);
-                    });
-            });
+            $fulfilmentId = Fulfilment::where('shop_id', $shopId)->value('id');
+            if ($fulfilmentId) {
+                $permissionNames[] = "fulfilment-chat.{$fulfilmentId}";
+            }
+
+            $query->whereIn('user_id', DB::table('model_has_roles')
+                ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+                ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+                ->where('model_has_roles.model_type', 'User')
+                ->whereIn('permissions.name', $permissionNames)
+                ->select('model_has_roles.model_id'));
         }
 
         return $query->inRandomOrder()->first();

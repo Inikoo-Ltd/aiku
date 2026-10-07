@@ -7,6 +7,8 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTagsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Models\Goods\TradeUnit;
@@ -69,6 +71,11 @@ class MergeDuplicateTradeUnit
 
         foreach ($to->products()->get() as $product) {
             ProductHydrateAvailableQuantity::run(SyncProductOrgStocksFromTradeUnits::run($product));
+            ProductHydrateTagsFromTradeUnits::run($product);
+        }
+
+        foreach ($to->masterAssets()->get() as $masterAsset) {
+            MasterAssetHydrateTagsFromTradeUnits::run($masterAsset);
         }
 
         return $plan;

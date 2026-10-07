@@ -47,7 +47,11 @@ enum ChatEventTypeEnum: string
 
     case REDACT = 'redact';
 
+    case FORWARD = 'forward';
+
     case PHONE_CALL = 'phone_call';
+
+    case MOVED_TO_COURIERS = 'moved_to_couriers';
 
     /**
      * Events shown as chips inside the conversation. Close and reopen are absent on
@@ -66,6 +70,7 @@ enum ChatEventTypeEnum: string
             self::TRASH->value,
             self::RESTORE->value,
             self::REDACT->value,
+            self::FORWARD->value,
             self::PRIORITY->value,
             self::TRANSFER->value,
             self::TRANSFER_ACCEPT->value,
@@ -74,6 +79,7 @@ enum ChatEventTypeEnum: string
             self::ASSIGNMENT_TO_SELF->value,
             self::RELEASED->value,
             self::PHONE_CALL->value,
+            self::MOVED_TO_COURIERS->value,
         ];
     }
 
@@ -104,6 +110,8 @@ enum ChatEventTypeEnum: string
             'phone_call' => __('Phone Call'),
             'reopen' => __('Chat Reopened'),
             'ticket'      => __('Ticket Created'),
+            'forward'     => __('Forwarded to a Colleague'),
+            'moved_to_couriers' => __('Moved to Couriers'),
         ];
     }
 
@@ -194,6 +202,16 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Chat Reopened'),
                 'icon' => 'fas fa-redo',
                 'class' => 'text-green-500',
+            ],
+            'forward' => [
+                'tooltip' => __('Forwarded to a Colleague'),
+                'icon' => 'fas fa-share',
+                'class' => 'text-teal-600',
+            ],
+            'moved_to_couriers' => [
+                'tooltip' => __('Moved to Couriers'),
+                'icon' => 'fas fa-truck',
+                'class' => 'text-gray-600',
             ],
             'ticket' => [
                 'tooltip' => __('Ticket Created'),

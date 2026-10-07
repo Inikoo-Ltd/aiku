@@ -15,10 +15,15 @@ use App\Actions\Comms\Mailshot\Filters\FilterByLocation;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 use App\Actions\Comms\Mailshot\Filters\FilterBySubdepartment;
+use App\Actions\Comms\Mailshot\Filters\FilterByVoucherRecipients;
+use App\Actions\Comms\Mailshot\Filters\FilterDueToReorder;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
+use App\Actions\Comms\Mailshot\Filters\FilterLapsedCustomers;
+use App\Actions\Comms\Mailshot\Filters\FilterOrderedInPeriod;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersCollection;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersInBasket;
 use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
+use App\Actions\Comms\Mailshot\Filters\FilterTopCustomersByRevenue;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -61,6 +66,7 @@ class GetCustomersQueryByRecipe
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);
         (new FilterByFamilyNeverOrdered())->apply($query, $filters);
         (new FilterGoldRewardStatus())->apply($query, $filters);
+        (new FilterDueToReorder())->apply($query, $filters);
         (new FilterOrdersInBasket())->apply($query, $filters);
         (new FilterByOrderValue())->apply($query, $filters);
         (new FilterBySubdepartment())->apply($query, $filters);
@@ -70,6 +76,10 @@ class GetCustomersQueryByRecipe
         (new FilterOrdersCollection())->apply($query, $filters);
         (new FilterByFamily())->apply($query, $filters);
         (new FilterByLocation())->apply($query, $filters);
+        (new FilterOrderedInPeriod())->apply($query, $filters);
+        (new FilterLapsedCustomers())->apply($query, $filters);
+        (new FilterTopCustomersByRevenue($shopId))->apply($query, $filters);
+        (new FilterByVoucherRecipients())->apply($query, $filters);
 
         return $query;
     }

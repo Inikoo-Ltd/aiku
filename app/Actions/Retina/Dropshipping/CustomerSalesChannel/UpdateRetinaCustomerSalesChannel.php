@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerSalesChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
     use SanitizeInputs;
 
@@ -81,8 +83,8 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
             'return_within' => ['sometimes', 'integer'],
             'return_description' => ['nullable', 'string'],
 
-            'pricing_type' => ['sometimes', 'string'],
-            'pricing_value' => ['sometimes', 'numeric']
+            'pricing_type' => ['sometimes', Rule::in(['percent', 'fixed'])],
+            'pricing_value' => ['sometimes', 'numeric', 'gt:-100']
         ];
     }
 

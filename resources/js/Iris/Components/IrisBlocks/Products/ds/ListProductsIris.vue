@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { faFilter } from "@fas"
+import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
+import { faFilter, faSearch } from "@fas"
 import { getStyles } from "@/Composables/styles"
 import { ref, onMounted, watch, computed, toRaw, inject } from "vue"
 import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
@@ -14,10 +15,11 @@ import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
@@ -174,7 +176,6 @@ function buildFilters(): Record<string, any> {
 		filters[`filter[new_arrivals]`] = 3
 	}
 
-	console.log("Filters sent to URL:", filters)
 	return filters
 }
 
@@ -186,7 +187,6 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
 	}
 
 	const filters = buildFilters()
-	console.log("Filters used in API call:", filters)
 	const routes = getRoutes()
 	const useOutOfStock = isFetchingOutOfStock.value
 
@@ -228,7 +228,6 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
 			await fetchProducts(true, true)
 		}
 	} catch (error) {
-		console.log(error)
 		notify({ title: "Error", text: "Failed to load products.", type: "error" })
 	} finally {
 		loadingInitial.value = false
@@ -286,7 +285,7 @@ const sortOptions = computed(() => {
 		baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" })
 	}
 	if (props.fieldValue?.sub_type == "family") {
-		baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+		baseOptions.splice(1, 0, { label: ctrans("Recommended"), value: "recommended" })
 	}
 	return baseOptions
 })
@@ -313,11 +312,11 @@ onMounted(() => {
 		isAscending.value = !sortParam.startsWith("-")
 	}
 
-	if (layout?.iris?.is_logged_in) {
+	whenIrisLoggedIn(layout, () => {
 		firstLoad.value = 1
 		fetchProductHasPortfolio()
-		fetchProducts() // break chace from product dont deleted
-	}
+		fetchProducts()
+	})
 
 	/* debFetchProducts() */
 })
@@ -418,6 +417,8 @@ const placeholder_class = ref(
 const search_class = ref(
 	getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
 )
+
+
 </script>
 
 <template>
@@ -482,20 +483,20 @@ const search_class = ref(
 						<div
 							class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
 							<span class="font-medium">
-								{{ trans("Showing") }}
+								{{ ctrans("Showing") }}
 								<span :class="['font-semibold', `text-[--theme-color-0]`]">
 									{{ products.length }}
 								</span>
-								{{ trans("of") }}
+								{{ ctrans("of") }}
 								<span :class="['font-semibold', `text-[--theme-color-0]`]">
 									{{ totalProducts }}
 								</span>
-								{{ products.length === 1 ? trans("product") : trans("products") }}
+								{{ products.length === 1 ? ctrans("product") : ctrans("products") }}
 							</span>
 						</div>
 						<!-- div class="w-full">
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
-                                :placeholder="trans('Search products') + '...'" :clear="true"
+                                :placeholder="ctrans('Search products') + '...'" :clear="true"
                                 :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }"
                                 class="search-input ring-0">
                                 <template #prefix>
@@ -654,7 +655,7 @@ const search_class = ref(
 						<template v-if="loadingMore">
 							<LoadingText />
 						</template>
-						<template v-else>{{ trans("Load More") }}</template>
+						<template v-else>{{ ctrans("Load More") }}</template>
 					</Button>
 				</div>
 			</main>

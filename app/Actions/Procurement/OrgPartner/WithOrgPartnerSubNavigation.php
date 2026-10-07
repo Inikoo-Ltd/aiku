@@ -28,17 +28,30 @@ trait WithOrgPartnerSubNavigation
                 ],
                 "isAnchor" => true,
             ],
+            ...($parent->partner->is_manufacturing_hub ? [
+                [
+                    "label"    => __("Shopping"),
+                    "route"    => [
+                        "name"       => "grp.org.procurement.org_partners.show.shopping.dashboard",
+                        "parameters" => [$parent->organisation->slug, $parent->id],
+                    ],
+                    "leftIcon" => [
+                        "icon"    => ["fal", "fa-shopping-basket"],
+                        "tooltip" => __("Shopping"),
+                    ],
+                    "number"   => $parent->stats->number_open_shopping_list_items,
+                ],
+            ] : []),
             [
-                "label"    => __("Shopping"),
+                "label"    => $parent->partner->is_manufacturing_hub ? __("To order") : __("Rescue"),
                 "route"    => [
-                    "name"       => "grp.org.procurement.org_partners.show.shopping.dashboard",
+                    "name"       => "grp.org.procurement.org_partners.show.rescue.index",
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-shopping-basket"],
-                    "tooltip" => __("Shopping"),
+                    "icon"    => ["fal", $parent->partner->is_manufacturing_hub ? "fa-clipboard-list" : "fa-life-ring"],
+                    "tooltip" => $parent->partner->is_manufacturing_hub ? __("What to order from them") : __("What they can rescue"),
                 ],
-                "number"   => $parent->stats->number_open_shopping_list_items,
             ],
             [
                 "align"    => "right",

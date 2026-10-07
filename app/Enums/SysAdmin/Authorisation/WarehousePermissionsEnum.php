@@ -28,6 +28,8 @@ enum WarehousePermissionsEnum: string
     case INCOMING_EDIT = 'incoming.edit';
     case INCOMING_VIEW = 'incoming.view';
 
+    case RETURNS = 'returns';
+
     case DISPATCHING = 'dispatching';
     case DISPATCHING_EDIT = 'dispatching.edit';
     case DISPATCHING_VIEW = 'dispatching.view';

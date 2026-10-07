@@ -45,12 +45,16 @@ class PdfTimesheet extends OrgAction
         $query->where('subject_id', $employee->id);
         $query->withFilterPeriod('date');
 
-        return PDF::chunkLoadView('<html-separator/>', 'hr.timesheet', [
+        $pdf = PDF::chunkLoadView('<html-separator/>', 'hr.timesheet', [
             'filename' => $filename,
             'organisation' => $employee->organisation,
             'employee' => $employee,
             'timesheets' => $query->get()
-        ], [], $config)->stream($filename);
+        ], [], $config);
+
+        return response($pdf->output(), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
     }
 
     /**

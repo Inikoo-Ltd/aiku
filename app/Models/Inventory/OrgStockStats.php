@@ -97,6 +97,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property array<array-key, mixed>|null $demand_forecast
+ * @property string|null $projected_lost_revenue
+ * @property \Illuminate\Support\Carbon|null $demand_forecast_hydrated_at
  * @property int $number_org_stock_movements_type_audit
  * @property numeric $stock_value
  * @property numeric $on_the_way_po_value
@@ -119,6 +122,10 @@ class OrgStockStats extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'demand_forecast'             => 'array',
+        'demand_forecast_hydrated_at' => 'datetime',
+    ];
 
     public function orgStock(): BelongsTo
     {

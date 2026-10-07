@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Shipment\UI;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
@@ -19,6 +20,7 @@ use Illuminate\Validation\Rule;
 
 class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     public function handle(DeliveryNote $deliveryNote, array $modelData): Shipment
     {
         $shipper = Shipper::find($modelData['shipper_id']);
@@ -30,9 +32,10 @@ class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
     public function rules(): array
     {
         return [
-            'tracking'   => ['sometimes', 'nullable', 'max:1000', 'string'],
-            'shipper_id' => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
-            'cost'       => ['sometimes', 'nullable', 'numeric'],
+            'tracking'    => ['sometimes', 'nullable', 'max:1000', 'string'],
+            'shipper_id'  => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
+            'cost'        => ['sometimes', 'nullable', 'numeric'],
+            'sender_name' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 

@@ -27,6 +27,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
+use App\Rules\NotReservedIrisPath;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -105,6 +106,10 @@ class UpdateWebpage extends OrgAction
 
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
+
+                if (Arr::get($modelData, 'state_data.state') == WebpageStateEnum::CLOSED->value && $webpage->state != WebpageStateEnum::CLOSED) {
+                    data_set($modelData, 'closed_at', now());
+                }
             }
 
             if (Arr::has($modelData, 'state_data.redirect_webpage_id')) {
@@ -150,6 +155,16 @@ class UpdateWebpage extends OrgAction
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 
+        $subType = Arr::has($modelData, 'sub_type')
+            ? WebpageSubTypeEnum::fromValue(Arr::get($modelData, 'sub_type'))
+            : $webpage->sub_type;
+
+        if ($subType?->isHiddenFromSearchEngines()) {
+            foreach ($subType->searchEngineVisibility() as $field => $isVisible) {
+                data_set($modelData, $field, $isVisible);
+            }
+        }
+
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
         $changes = Arr::except($webpage->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -193,6 +208,7 @@ class UpdateWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
+                new NotReservedIrisPath(),
                 Rule::unique('webpages', 'url')
                     ->where(function ($query) {
                         return $query
@@ -244,7 +260,7 @@ class UpdateWebpage extends OrgAction
             'title'                          => ['sometimes', 'string'],
             'show_in_parent'                 => ['sometimes', 'nullable', 'boolean'],
             'allow_fetch'                    => ['sometimes', 'nullable', 'boolean'],
-            'description'                    => ['sometimes', 'string'],
+            'description'                    => ['sometimes', 'nullable', 'string'],
             'product_name'                   => ['sometimes', 'required', 'max:250', 'string'],
             'product_description'            => ['sometimes', 'required', 'max:1500'],
             'product_description_extra'      => ['sometimes', 'nullable', 'max:65500'],

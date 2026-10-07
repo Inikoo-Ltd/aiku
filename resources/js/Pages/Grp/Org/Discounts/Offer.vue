@@ -6,7 +6,10 @@
 -->
 
 <script setup lang="ts">
-import { Head, Link, usePoll } from '@inertiajs/vue3'
+import { Head, Link, router, usePoll } from '@inertiajs/vue3'
+import Toggle from '@/Components/Pure/Toggle.vue'
+import axios from 'axios'
+import { notify } from '@kyvg/vue3-notification'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -17,7 +20,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { inject, computed, ref, watch } from 'vue'
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
 import { OfferResource, OfferAllowanceResource, OfferSimulation } from '@/types/Catalogue/Offers'
@@ -34,6 +37,8 @@ import PreviewProductDiscount from '@/Components/Offers/PreviewOffer/PreviewProd
 import PreviewFreeItems from '@/Components/Offers/PreviewOffer/PreviewFreeItems.vue'
 import CustomerViewOffer from '@/Components/Offers/PreviewOffer/CustomerViewOffer.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import TableOfferCustomerList from '@/Components/Offers/TableOfferCustomerList.vue'
+import OfferShowcase from '@/Components/Offers/OfferShowcase.vue'
 
 library.add(faFlagCheckered)
 
@@ -49,6 +54,8 @@ const props = defineProps<{
         current: string
         navigation: Record<string, { title: string; icon?: string; type?: string; align?: string }>
     }
+    vouchers?: object
+    showcase?: object
     customers?: object
     orders?: object
     history?: object
@@ -56,6 +63,31 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+
+const isSavingDashboardVisibility = ref(false)
+
+const setShowOnCustomerDashboard = async (value: boolean) => {
+    isSavingDashboardVisibility.value = true
+    try {
+        await axios.patch(
+            route('grp.org.shops.show.discounts.offers.update', {
+                organisation: route().params.organisation,
+                shop: route().params.shop,
+                offer: route().params.offer,
+            }),
+            { show_on_customer_dashboard: value }
+        )
+        router.reload({ only: ['data'] })
+    } catch (error: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Please try again'),
+            type: 'error',
+        })
+    } finally {
+        isSavingDashboardVisibility.value = false
+    }
+}
 
 type ProductCategoryLink = {
     name: string
@@ -139,6 +171,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tabComponent = computed(() => {
     const components: Record<string, unknown> = {
+        vouchers: TableOfferCustomerList,
+        showcase: OfferShowcase,
         customers: TableCustomers,
         orders: TableOrders,
         history: TableHistories
@@ -221,7 +255,7 @@ const irisOffersData = computed(() => {
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <div class="whitespace-nowrap">
-                <Link v-if="url_master?.name" :href="route(url_master.name, url_master.parameters)" v-tooltip="trans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
+                <Link v-if="url_master?.name" :href="route(url_master.name, url_master.parameters)" v-tooltip="ctrans('Go to Master Family section Offer GR/Vol')" class="mr-1 opacity-70 hover:opacity-100">
                     <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
             </div>
@@ -229,32 +263,36 @@ const irisOffersData = computed(() => {
     </PageHeading>
 
     <!-- Section: Preview label -->
-    <div class="p-5 border-b border-gray-300 offer">
-        <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-8 sm:gap-4">
+    <div class="offer border-b border-gray-200 p-4">
+        <div class="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)]">
             <!-- Left: Duration & State -->
-            <div class="flex flex-col gap-3">
-                <div v-if="data.offer.start_at || data.offer.end_at" class="flex flex-col gap-1 text-lg text-gray-600">
-                    <div class="flex items-center gap-2">
-                        <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("Start") }}</span>
-                        <span class="font-medium">{{ useFormatTime(data.offer.start_at ?? undefined, { formatTime: 'hm' }) }}</span>
-                    </div>
-                    <div v-if="data.offer.end_at"  class="flex items-center gap-2">
-                        <span class="w-16 text-xs text-gray-400 uppercase tracking-wide">{{ ctrans("End") }}</span>
-                        <span class="font-medium">{{ useFormatTime(data.offer.end_at, { formatTime: 'hm' }) }}</span>
+            <div class="flex flex-col gap-4 rounded-md border border-gray-200 bg-white p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Validity") }}</span>
+                    <div v-if="state" class="inline-flex w-fit items-center rounded-full px-3 py-0.5 text-xs font-semibold capitalize" :class="stateClass">
+                        {{ isExpired ? ctrans('finished') : state?.replace('_', ' ') }}
                     </div>
                 </div>
 
-                <div v-if="state" class="inline-flex items-center text-sm capitalize rounded-full px-3 py-0.5 font-medium w-fit" :class="stateClass">
-                    {{ (data.offer.end_at && new Date() > new Date(data.offer.end_at)) ? ctrans('finished') : state?.replace('_', ' ') }}
+                <div v-if="data.offer.start_at || data.offer.end_at" class="flex flex-col gap-3">
+                    <div>
+                        <div class="text-xs text-gray-400">{{ ctrans("Start") }}</div>
+                        <div class="text-base font-semibold tabular-nums text-gray-800">{{ useFormatTime(data.offer.start_at ?? undefined, { formatTime: 'hm' }) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">{{ ctrans("End") }}</div>
+                        <div v-if="data.offer.end_at" class="text-base font-semibold tabular-nums text-gray-800">{{ useFormatTime(data.offer.end_at, { formatTime: 'hm' }) }}</div>
+                        <div v-else class="text-base font-medium text-gray-400">{{ ctrans("No expiration") }}</div>
+                    </div>
                 </div>
             </div>
 
             <!-- Center: Type & Preview -->
-            <div class="flex flex-col items-center gap-2">
-                <div class="text-sm text-gray-600 gap-2">
-                    {{ ctrans("Type") }}: <span class="font-bold">{{ data.offer.type }}</span>
+            <div class="flex flex-col items-center justify-center gap-3 rounded-md border border-gray-200 bg-white p-4">
+                <div class="rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-600">
+                    {{ data.offer.type }}
                 </div>
-                
+
                 <FamilyOfferLabelDiscount v-if="data.offer.type == 'Category Quantity Ordered Order Interval'" :offer="data.offer" :offer_allowances="data.offer_allowances" />
                 <BasicDiscount v-else-if="data.offer.type == 'GR Amnesty'"
                     :offers_data="{
@@ -321,12 +359,11 @@ const irisOffersData = computed(() => {
 
             <!-- RIGHT -->
             <div :class="[
-                'grid gap-6',
-                hasTrigger ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'
+                'grid grid-cols-1 content-start gap-4 rounded-md border border-gray-200 bg-white p-4',
             ]">
 
                 <div class="flex flex-col gap-3">
-                    <div class="bg-gray-100 font-semibold text-gray-700 text-center py-1 px-2 rounded">
+                    <div class="border-b border-gray-100 pb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
                         {{ ctrans("Details") }}
                     </div>
 
@@ -348,7 +385,23 @@ const irisOffersData = computed(() => {
                         </div>
 
                         <!-- Product Category -->
-                        <div v-if="data.offer.data_allowance_signature?.product_category" class="flex justify-between gap-4">
+                        <div v-if="data.offer.trigger_categories?.length" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Product categories") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%] flex flex-col items-end">
+                                <Link
+                                    v-for="category in data.offer.trigger_categories"
+                                    :key="category.slug"
+                                    :href="getCategoryLink(category)"
+                                    class="secondaryLink"
+                                >
+                                    {{ category.name }}
+                                </Link>
+                            </dd>
+                        </div>
+
+                        <div v-else-if="data.offer.data_allowance_signature?.product_category" class="flex justify-between gap-4">
                             <dt class="text-gray-500">
                                 {{ ctrans("Product category") }}
                             </dt>
@@ -433,6 +486,19 @@ const irisOffersData = computed(() => {
                             </dd>
                         </div>
 
+                        <div v-if="data.offer.settings?.can_customer_reuse !== undefined" class="flex justify-between items-center gap-4">
+                            <dt class="text-gray-500" v-tooltip="ctrans('Customers see this voucher and its code on their dashboard. Leave off for codes sent only by email, so their use still measures the email.')">
+                                {{ ctrans("Show on customer dashboard") }}
+                            </dt>
+                            <dd>
+                                <Toggle
+                                    :modelValue="!!data.offer.settings?.show_on_customer_dashboard"
+                                    :disabled="isSavingDashboardVisibility"
+                                    @update:modelValue="setShowOnCustomerDashboard"
+                                />
+                            </dd>
+                        </div>
+
                     </div>
                 </div>
 
@@ -440,7 +506,8 @@ const irisOffersData = computed(() => {
                     v-if="hasTrigger"
                     class="flex flex-col gap-3"
                 >
-                    <div class="bg-amber-100 font-semibold text-amber-700 text-center py-1 px-2 rounded">
+                    <div class="flex items-center gap-1.5 border-b border-amber-100 pb-2 text-xs font-medium uppercase tracking-wide text-amber-600">
+                        <span class="h-2 w-2 rounded-full bg-amber-400" />
                         {{ ctrans("Trigger") }}
                     </div>
 
@@ -495,7 +562,7 @@ const irisOffersData = computed(() => {
                     </div>
                 </div>
             </div>
-            
+
         </div>
     </div>
 
@@ -512,8 +579,6 @@ const irisOffersData = computed(() => {
     <!-- Tabs: Customers / Orders -->
     <div class="">
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-        <component :is="tabComponent" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+        <component :is="tabComponent" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :useTopPagination="true" />
     </div>
 </template>
-
-

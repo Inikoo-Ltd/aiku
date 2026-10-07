@@ -70,3 +70,25 @@ export const useColorTheme = [
     // ['#xxxxxx', '#xxxxxx', '#xxxxxx', '#xxxxxx', '#xxxxxx', '#xxxxxx'],
     
 ]
+
+export const useColorThemeChart = [
+    ['#7b83d9', '#e3b341', '#94a3b8'],  // Deep Sea Serenity
+    ['#f7899c', '#c9a0b4', '#a99bbf'],  // Rosewater Blush
+    ['#b07cc6', '#e3b341', '#8a8a8a'],  // Amoled
+    ['#475569', '#94a3b8', '#b4a89a'],  // Black and White (Retina)
+    ['#957A65', '#c9ad8f', '#8fa38f'],  // uk aw distributions
+    ['#c3a6d4', '#957A65', '#8fa9bf'],  // spain distribution
+    ['#5f95ba', '#957A65', '#a8b87a'],  // spain distribution
+    ['#d8bf63', '#957A65', '#8fa38f'],  // spain distribution
+    ['#dcaab8', '#957A65', '#8fa9bf'],  // spain distribution
+    ['#b7c06f', '#957A65', '#c9a27e'],  // spain distribution
+    ['#404040', '#8a8a8a', '#bdbdbd'],  // Pure black and white (a&c)
+]
+
+const themeKey = (themeColors?: string[]) => (themeColors ?? []).slice(0, 8).join().toLowerCase()
+
+export const getThemeChartColors = (themeColors?: string[]): string[] => {
+    const themeIndex = useColorTheme.findIndex((colorTheme) => themeKey(colorTheme) === themeKey(themeColors))
+
+    return useColorThemeChart[themeIndex] ?? ['#94a3b8', '#b4a89a', '#8fa38f']
+}

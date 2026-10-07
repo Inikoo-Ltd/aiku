@@ -146,7 +146,7 @@ onMounted(async () => {
             <article @click.stop="
                 () => {
                   sendMessageToParent('activeBlock', indexBlock)
-                  sendMessageToParent('activeChildBlock', bKeys[3])
+                  sendMessageToParent('activeChildBlock', 'carousel_data-cards')
                   sendMessageToParent('activeChildBlockArray', index)
                   sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
                 }

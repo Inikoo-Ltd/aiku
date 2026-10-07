@@ -8,8 +8,8 @@
 import { Head, router, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt } from "@fal"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt, faChartLine } from "@fal"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Breadcrumb from 'primevue/breadcrumb'
@@ -30,11 +30,12 @@ import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
 import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
-library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt)
+library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faAtomAlt, faChartLine)
 
 const isModalUploadOpen = ref(false)
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string,
@@ -44,6 +45,8 @@ const props = defineProps<{
         navigation: Navigation
     }
     showcase?: object,
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     composition?: object,
     attachments?: {}
     attachmentRoutes?: {}
@@ -59,6 +62,7 @@ const props = defineProps<{
     org_stocks?: {}
     images?: {}
     master_products?: {}
+    history?: {}
     images_category_box?: {
         label: string
         type: string
@@ -74,14 +78,16 @@ const props = defineProps<{
 
 
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 
 const component = computed(() => {
 
     const components = {
         showcase: TradeUnitShowcase,
+        sales_analysis: SalesAnalysis,
         composition: TradeUnitComposition,
-        history: ModelChangelog,
+        history: TableHistories,
         attachments: AttachmentManagement,
         master_products: TableMasterProducts,
         products: TableProducts,
@@ -138,7 +144,7 @@ const visitTradeUnitFamily = () => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes :handleTabUpdate="handleTabUpdate"/>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes :handleTabUpdate="handleTabUpdate" :salesAnalysisTeaser="sales_analysis_teaser"/>
 
     <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

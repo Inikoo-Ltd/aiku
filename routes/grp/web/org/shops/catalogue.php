@@ -30,6 +30,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsNotOnline;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithMismatchedFamily;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoImage;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
@@ -54,6 +55,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
+use App\Actions\Catalogue\Shop\External\Wix\GetWixProducts;
 use App\Actions\Catalogue\Product\UI\IndexExclusiveProducts;
 use App\Actions\Catalogue\Product\UI\IndexExclusiveProductsCustomers;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
@@ -79,6 +81,7 @@ Route::prefix('products')->as('products.')
             Route::get('create', CreateProduct::class)->name('create');
 
             Route::get('faire-products', GetFaireProducts::class)->name('faire_products.index');
+            Route::get('wix-products', GetWixProducts::class)->name('wix_products.index');
 
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');
@@ -201,6 +204,10 @@ Route::prefix('products')->as('products.')
             });
         });
 
+        Route::prefix('duplicated-barcodes')->as('duplicated_barcodes.')->group(function () {
+            Route::get('', IndexProductsWithDuplicatedBarcode::class)->name('index');
+        });
+
         Route::prefix('rrp-violation')->as('rrp_violation_products.')->group(function () {
             Route::get('', IndexRRPViolationProducts::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
@@ -288,10 +295,6 @@ Route::name("departments.")->prefix('departments')
                 Route::prefix('{family}')->group(function () {
                     Route::get('edit', [EditFamily::class, 'inDepartment'])->name('edit');
                     Route::get('', ShowFamily::class)->name('show');
-                    Route::prefix('variant')->as('variants.')->group(function () {
-                        Route::get('/{variant}', [ShowVariant::class,'inDepartment'])->name('show');
-                        Route::get('/{variant}/edit', [EditVariant::class,'inDepartment'])->name('edit');
-                    });
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
                             Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInDepartment'])->name('index');

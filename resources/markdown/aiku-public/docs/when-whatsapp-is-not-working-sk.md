@@ -4,7 +4,7 @@ summary: Príznaky, na ktoré ľudia skutočne narazia — nič neprichádza do 
 date: 2026-09-10
 source_date: 2026-09-10
 tags: marketing, whatsapp, campaigns
-category: marketing
+category: help-desk
 series: WhatsApp
 order: 3
 ---

@@ -24,6 +24,11 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSalesChannels extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function handle(Group $group, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

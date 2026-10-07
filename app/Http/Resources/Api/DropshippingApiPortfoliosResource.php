@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Api;
 
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -32,6 +33,8 @@ use Illuminate\Support\Arr;
  * @property mixed $product_state
  * @property mixed $product_status
  * @property mixed $is_for_sale
+ * @property mixed $is_exclusive
+ * @property mixed $marketing_ingredients
  */
 class DropshippingApiPortfoliosResource extends JsonResource
 {
@@ -44,6 +47,7 @@ class DropshippingApiPortfoliosResource extends JsonResource
             'code'          => $this->product_code,
             'currency_code' => $this->currency_code,
             'name'          => $this->product_name,
+            'ingredients'   => $this->marketing_ingredients,
             'quantity_left' => $this->available_quantity,
             'weight'        => $this->gross_weight,
             'price'         => $this->price,
@@ -53,8 +57,22 @@ class DropshippingApiPortfoliosResource extends JsonResource
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
             'product_state'  => $this->product_state,
-            'product_status' => $this->product_status,
-            'is_for_sale'    => $this->is_for_sale,
+            'product_status' => $this->productStatusForOwner(),
+            'is_for_sale'    => (bool) $this->is_for_sale,
+            'is_exclusive'   => (bool) $this->is_exclusive,
         ];
+    }
+
+    /**
+     * An exclusive product is stored as not-for-sale to keep it off the public site, but to the
+     * customer it belongs to it is for sale, or out of stock.
+     */
+    private function productStatusForOwner(): ?string
+    {
+        if ($this->is_exclusive && $this->is_for_sale && $this->product_status === ProductStatusEnum::NOT_FOR_SALE->value) {
+            return ($this->available_quantity > 0 ? ProductStatusEnum::FOR_SALE : ProductStatusEnum::OUT_OF_STOCK)->value;
+        }
+
+        return $this->product_status;
     }
 }

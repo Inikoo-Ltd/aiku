@@ -38,6 +38,7 @@ class CancelStaleTickets
                     'status'        => TicketStatusEnum::CANCELLED,
                     'closed_at'     => now(),
                     'waiting_until' => null,
+                    'data'          => array_merge($ticket->data ?? [], [Ticket::CANCELLED_FOR_NO_REPLY => true]),
                 ]);
                 $ticket->comments()->create([
                     'body' => __('No reply for :days days', ['days' => $days]),

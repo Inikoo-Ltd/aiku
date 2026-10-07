@@ -32,6 +32,7 @@ import { faCheckCircle } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
+import ChatButton from "@/Components/Chat/Customer/ChatButton.vue"
 
 library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faMoneyBillWave, faSearch, faBell)
 
@@ -59,6 +60,8 @@ const safeTheme = computed(() => {
     const t = layout?.app?.theme
     return (t && t.length >= 8) ? t : fallbackTheme
 })
+
+const chat = computed(() => usePage().props?.layout?.chat)
 </script>
 
 <template>
@@ -110,6 +113,11 @@ const safeTheme = computed(() => {
 
 
     </div>
+
+    <ChatButton
+        v-if="chat?.enabled"
+        :shopId="chat.shop_id"
+        :createSessionUrl="route('pupil.chat.sessions.store')" />
 
     <!-- Global declaration: Notification -->
     <notifications

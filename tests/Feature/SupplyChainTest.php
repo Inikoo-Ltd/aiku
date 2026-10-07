@@ -8,18 +8,28 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
+use App\Actions\Helpers\Redirects\RedirectSupplierLink;
+use App\Models\SysAdmin\User;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductShowcase;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Procurement\GetStockOutsHistory;
+use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\SupplyChain\Agent\DeleteAgent;
 use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Agent\UpdateAgent;
+use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Models\Procurement\PurchaseOrder;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\User\StoreUser;
@@ -35,6 +45,8 @@ use Illuminate\Support\Str;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Imports\SupplyChain\SupplierProductImport;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\StockFamily;
@@ -46,6 +58,8 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierStats;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\Helpers\Currency;
+use Illuminate\Validation\ValidationException;
 use App\Models\SupplyChain\SupplierProduct;
 use Inertia\Testing\AssertableInertia;
 
@@ -146,6 +160,7 @@ test('update agent', function (Agent $agent) {
         'delivery_time' => 45,
         'payment_terms' => '50% upfront',
         'image'         => \Illuminate\Http\UploadedFile::fake()->image('agent.jpg', 200, 200),
+        'journey_days_production' => 40,
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -157,6 +172,7 @@ test('update agent', function (Agent $agent) {
         ->and(Arr::get($updatedAgent->data, 'delivery_type'))->toBe('parcel')
         ->and(Arr::get($updatedAgent->data, 'delivery_time'))->toBe(45)
         ->and(Arr::get($updatedAgent->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and(Arr::get($updatedAgent->settings, 'journey_stage_days.production'))->toBe(40)
         ->and($updatedAgent->image_id)->not->toBeNull();
 
     return $updatedAgent;
@@ -333,9 +349,136 @@ test('import supplier product row creates trade unit and stock family', function
 
     expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->count())->toBe(1)
         ->and(StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->count())->toBe(1)
-        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1);
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1)
+        ->and($tradeUnit->barcode)->toBe('5000000000001');
+
+    $autoBarcodeRow = $row->merge(['suppliers_product_code' => 'IMP-SUP-002', 'part_reference' => 'IMP-TU-002', 'unit_barcode_ean_13_for_website' => 'auto']);
+    $import->storeModel($autoBarcodeRow, $upload->records()->create(['values' => $autoBarcodeRow->all(), 'row_number' => 4]));
+
+    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-002')->value('barcode'))->toBeNull();
 })->depends('create supplier in agent');
 
+test('supplier product sheet with mistakes creates nothing and lists every mistake by row', function ($supplier) {
+    $dressFamily = StoreStockFamily::make()->action($this->group, ['code' => 'CHK-DRESS', 'name' => 'Dresses'], strict: false);
+    StoreStock::make()->action($dressFamily, ['code' => 'CHKD-01', 'name' => 'Dress'], strict: false);
+
+    $headings = ['Id: Supplier Part Key', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'Unit cost', 'Unit label', 'Unit barcode (EAN-13, for website)', 'Units per SKO', 'SKOs per carton'];
+    $sheetFile = function (array $rows) use ($headings) {
+        $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getActiveSheet()->fromArray([$headings, ...$rows]);
+        $spreadsheet->getActiveSheet()->setCellValue('A20', null);
+        $spreadsheet->createSheet()->setTitle('Country codes')->fromArray([['Nepal', 'NPL'], ['Spain', 'ESP']]);
+        $path = sys_get_temp_dir().'/supplier_products_'.uniqid().'.xlsx';
+        (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+        return $path;
+    };
+    $import = function (string $path) use ($supplier) {
+        $upload = Upload::create([
+            'group_id'          => $this->group->id,
+            'organisation_id'   => $this->organisation->id,
+            'model'             => 'SupplierProduct',
+            'parent_type'       => $supplier->getMorphClass(),
+            'parent_id'         => $supplier->id,
+            'original_filename' => 'trousers.xlsx',
+            'filename'          => 'trousers.xlsx',
+            'filesize'          => 0,
+        ]);
+        Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
+
+        return $upload->refresh();
+    };
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+        ['new', 'CHK-DRESS', 'CHKT-02', 'CHKT-02', 'Trousers L/XL', 825, 'Trousers', 'auto', 1, 30],
+        ['new', 'CHK-DRESS', 'CHKT-03', 'CHKT-02', 'Trousers S/M', 'Rs', 'Trousers', '12345', 1, 30],
+    ]));
+
+    $errors = $upload->records()->whereNotNull('row_number')->orderBy('row_number')->get()->mapWithKeys(fn ($record) => [$record->row_number => $record->errors]);
+    expect($upload->number_rows)->toBe(3)
+        ->and($upload->number_fails)->toBe(3)
+        ->and($upload->number_success)->toBe(0)
+        ->and($errors->keys()->all())->toBe([2, 3, 4])
+        ->and($errors[2])->toBe(['CHKT products have different families in this sheet: CHK-TROUSER (rows 2), CHK-DRESS (rows 3-4). Use one family.'])
+        ->and($errors[4])->toContain('Unit cost must be a number above zero, found "Rs".')
+        ->and($errors[4])->toContain('Unit barcode "12345" is not a barcode (8 to 14 digits).')
+        ->and($errors[4])->toContain("Supplier's product code CHKT-02 appears in rows 3-4.")
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'like', 'CHKT-%')->exists())->toBeFalse()
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'like', 'CHKT-%')->exists())->toBeFalse();
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-DRESS', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+    ]));
+    expect($upload->records()->first()->errors)->toBe(['Family CHK-DRESS holds CHKD products, CHKT does not look like it belongs there.'])
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'CHKT-01')->exists())->toBeFalse();
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+        ['new', 'CHK-TROUSER', 'CHKT-02', 'CHKT-02', 'Trousers L/XL', 825, 'Trousers', 'auto', 1, 30],
+    ]));
+    expect($upload->number_success)->toBe(2)
+        ->and($upload->number_fails)->toBe(0)
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'like', 'CHKT-%')->count())->toBe(2)
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'CHKT-01')->value('barcode'))->toBeNull();
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+    ]));
+    expect($upload->records()->first()->errors)->toBe(['CHKT-01 already exists for this supplier, use its Id instead of "new".']);
+})->depends('create supplier in agent');
+
+
+test('v7 supplier product sheet with notes above the headings saves SKO description, barcodes, weights and sizes', function ($supplier) {
+    $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->fromArray([
+        ['AW new supplier parts - upload template v7'],
+        ['AW', 'Supplier'],
+        ['Id: Supplier Part Key', 'Supplier', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'SKO description (picking aid)', 'Unit label', 'Units per SKO', 'SKOs per carton', 'Unit cost (Sup Cur)', 'Unit Est True Extra costs %', 'Unit recommended price (£)', 'Unit recommended price (€)', 'SKO Barcode', 'Carton barcode', 'Unit weight (kg)', 'Unit net weight (kg)', 'SKO weight (kg)', 'SKO dimensions (l x w x h) in cm', 'Expected Duty rate'],
+        ['NEW', 'UCS', 'V7-BAG', 'V7B-01', 'V7B-01', 'Forest Bag', 'Pack of 2 Forest Bags', 'bag', 2, 40, 520, 0.4, 8.5, 10.2, 'V7B-01-SKO', 'V7B-01-CTN', 0.25, 0.21, 0.5, '28x17x8', 0.03],
+        ['NEW', 'UCS', 'V7-BAG', 'V7B-02', 'V7B-02', 'Mini Backpack', null, 'bag', 1, 40, 560, 0.4, 11, 13.2, 'auto', null, 0.285, null, null, null, null],
+    ]);
+    $path = sys_get_temp_dir().'/supplier_products_v7_'.uniqid().'.xlsx';
+    (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+    $upload = Upload::create([
+        'group_id'          => $this->group->id,
+        'organisation_id'   => $this->organisation->id,
+        'model'             => 'SupplierProduct',
+        'parent_type'       => $supplier->getMorphClass(),
+        'parent_id'         => $supplier->id,
+        'original_filename' => 'nepal.xlsx',
+        'filename'          => 'nepal.xlsx',
+        'filesize'          => 0,
+    ]);
+    Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
+    $upload->refresh();
+
+    expect($upload->number_success)->toBe(2)
+        ->and($upload->number_fails)->toBe(0)
+        ->and($upload->records()->orderBy('row_number')->pluck('row_number')->all())->toBe([4, 5]);
+
+    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'V7B-01')->first();
+    expect((float)$supplierProduct->cost)->toBe(520.0)
+        ->and((float)$supplierProduct->extra_costs)->toBe(0.4)
+        ->and($supplierProduct->units_per_carton)->toBe(80);
+
+    $tradeUnit = TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-01')->first();
+    expect($tradeUnit->gross_weight)->toBe(250)
+        ->and($tradeUnit->net_weight)->toBe(210);
+
+    $stock = $tradeUnit->stocks()->first();
+    expect($stock->name)->toBe('Pack of 2 Forest Bags')
+        ->and($stock->barcode)->toBe('V7B-01-SKO')
+        ->and($stock->carton_barcode)->toBe('V7B-01-CTN')
+        ->and($stock->gross_weight)->toBe(500)
+        ->and($stock->data['dimensions'])->toEqual(['l' => 28, 'w' => 17, 'h' => 8]);
+
+    $secondStock = TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-02')->first()->stocks()->first();
+    expect($secondStock->name)->toBe('bag')
+        ->and($secondStock->barcode)->toBeNull()
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'V7B-02')->value('net_weight'))->toBe(285);
+})->depends('create supplier in agent');
 
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
     $this->withoutExceptionHandling();
@@ -349,6 +492,7 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
             ->component('SupplyChain/SupplierProduct')
             ->has('title')
             ->has('pageHead')
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.supplier_products.edit')
             ->has('tabs')
             ->has('breadcrumbs', 4);
     });
@@ -543,6 +687,21 @@ test('majordomo redirect supplier link', function () {
         ->assertRedirect(route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $agentSupplier->slug]));
 });
 
+test('majordomo redirect supplier link sends users without supply chain access to their organisation procurement', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+
+    $procurementUser = Mockery::mock(User::class)->makePartial();
+    $procurementUser->shouldReceive('authTo')->with('supply-chain.view')->andReturnFalse();
+    $procurementUser->shouldReceive('authTo')->andReturnUsing(fn (string $permission) => $permission === "procurement.{$this->organisation->id}.view");
+
+    expect(RedirectSupplierLink::run($supplier, $procurementUser)->getTargetUrl())
+        ->toBe(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug]));
+});
+
 test('majordomo redirect supplier product link', function () {
     $freeSupplier = StoreSupplier::make()->action(
         parent: $this->group,
@@ -573,14 +732,16 @@ test('majordomo redirect supplier product link', function () {
 
 test('UI create supplier', function () {
     $this->withoutExceptionHandling();
+    $supplier = Supplier::first();
     $response = $this->get(route('grp.supply-chain.suppliers.create'));
 
-    $response->assertInertia(function (AssertableInertia $page) {
+    $response->assertInertia(function (AssertableInertia $page) use ($supplier) {
         $page
             ->component('CreateModel')
             ->has('title')
             ->has('pageHead')
             ->has('formData')
+            ->where('formData.blueprint.2.fields.code.takenValues.'.strtolower($supplier->code), $supplier->name ?: $supplier->code)
             ->has('breadcrumbs', 4);
     });
 });
@@ -631,9 +792,9 @@ test('UI Index supplier products in agents', function () {
     });
 });
 
-test('UI supply chain dashboard', function () {
+test('UI supply chain overview', function () {
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.dashboard'));
+    $response = $this->get(route('grp.supply-chain.overview'));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -650,17 +811,56 @@ test('UI supply chain dashboard', function () {
             ->where('dashboardCards.3.route.name', 'grp.supply-chain.agent_supplier_purchase_orders.index')
             ->where('dashboardCards.4.route.name', 'grp.supply-chain.control.dashboard')
             ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
+            ->missing('staleOrders')
             ->missing('search_demand')
-            ->has('breadcrumbs', 2);
+            ->missing('poJourney')
+            ->missing('stockOuts')
+            ->has('breadcrumbs', 3)
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->where('stockOuts.period', '1y')
+                ->has('stockOuts.series')
+                ->has('stockOuts.organisations')
+                ->has('stockLevelsByOrganisation.0.levels', 8)
+                ->where('stockLevelsByOrganisation.0.levels.0.bucket', 'out')
+                ->where('stockLevelsByOrganisation.0.levels.0.route.name', 'grp.org.procurement.stock_cover.index')
+                ->where('poJourney.route.name', 'grp.supply-chain.dashboard')
+                ->has('poJourney.summary.open')
+                ->has('poJourney.summary.overdue')
+                ->has('poJourney.blockages'));
     });
+});
+
+test('UI supply chain overview stock levels match the stock cover buckets and pipeline for every source', function () {
+    $this->withoutExceptionHandling();
+    $organisations = GetStockOutsHistory::make()->organisations(group());
+
+    foreach ([null, ...array_keys(GetOrganisationStockCoverBuckets::SOURCES)] as $source) {
+        $this->get(route('grp.supply-chain.overview', ['source' => $source]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->loadDeferredProps(function (AssertableInertia $reload) use ($organisations, $source) {
+                $reload->has('stockLevelsByOrganisation', $organisations->count());
+
+                foreach ($organisations->values() as $index => $organisation) {
+                    $pipeline = GetStockOutsPipeline::run($organisation, $source);
+                    $reload->where("stockLevelsByOrganisation.$index.slug", $organisation->slug);
+
+                    foreach (GetOrganisationStockCoverBuckets::run($organisation, null, $source) as $bucketIndex => $bucket) {
+                        $reload->where("stockLevelsByOrganisation.$index.levels.$bucketIndex.count", $bucket['count'])
+                            ->where("stockLevelsByOrganisation.$index.levels.$bucketIndex.in_transit", $pipeline[$bucket['bucket']]['in_transit'] ?? 0);
+                    }
+                }
+            }));
+    }
 });
 
 test('supply chain navigation separates agent suppliers from free suppliers', function () {
     $navigation = GetGroupNavigation::run($this->adminGuest->getUser());
 
-    expect(data_get($navigation, 'supply-chain.topMenu.subSections.2.route'))->toBe([
+    expect(data_get($navigation, 'supply-chain.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.dashboard')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
         'name' => 'grp.supply-chain.agent_suppliers.index',
-    ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
+    ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.4.route'))->toBe([
         'name'       => 'grp.supply-chain.suppliers.index',
         'parameters' => [
             '_query' => [
@@ -687,19 +887,50 @@ test('UI supply chain control', function () {
     });
 });
 
-test('UI supply chain PO journey', function () {
+test('UI supply chain PO journey', function (Supplier $supplier) {
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+    StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $this->stocks[1]->id]));
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
+    expect($purchaseOrder->buyer_id)->toBe($this->adminGuest->getUser()->id);
+
+    $this->get(route('grp.supply-chain.dashboard', ['journey' => 'supplier']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('SupplyChain/SupplyChainPurchaseOrderJourney')
-            ->has('title')
-            ->has('pageHead')
-            ->has('ribbons')
-            ->has('summary');
-    });
-});
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->has('filters.buyer')
+                ->has('blockages')
+                ->has('quickStats')
+                ->where('active.journey', 'supplier')
+                ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
+                    fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'po_created'
+                ))));
+
+    $this->patch(route('grp.models.purchase-order.journey_stage', ['purchaseOrder' => $purchaseOrder->id]), [
+        'stage' => 'production',
+        'date'  => now()->toDateString(),
+    ])->assertRedirect();
+
+    expect($purchaseOrder->fresh()->produced_at)->not->toBeNull();
+
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('ribbons.0.reference', $purchaseOrder->reference)
+                ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done')));
+
+    $partial = $this->withHeaders([
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => \Illuminate\Support\Facades\Vite::manifestHash('grp'),
+        'X-Inertia-Partial-Component' => 'SupplyChain/SupplyChainPurchaseOrderJourney',
+        'X-Inertia-Partial-Data'      => 'filters,active,summary,blockages,quickStats,ribbons,pagination',
+    ])->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference, 'page' => 1]));
+
+    $partial->assertOk();
+    expect($partial->json('props'))->toHaveKeys(['filters', 'active', 'summary', 'blockages', 'quickStats', 'ribbons', 'pagination'])
+        ->and($partial->json('deferredProps'))->toBeNull();
+})->depends('create independent supplier 2');
 
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
@@ -763,7 +994,7 @@ test('UI show free supplier has direct procurement navigation', function () {
     });
 });
 
-test('UI show agent supplier has agent supplier purchase order navigation', function () {
+test('UI show agent supplier lists its purchase orders and its agent purchase orders', function () {
     $agent = StoreAgent::make()->action(
         group: $this->group,
         modelData: Agent::factory()->definition(),
@@ -775,8 +1006,18 @@ test('UI show agent supplier has agent supplier purchase order navigation', func
 
     $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
-            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+            ->where('pageHead.subNavigation.4.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+            ->etc());
+
+    StoreOrgSupplier::make()->action($this->organisation, $supplier);
+
+    $this->get(route('grp.supply-chain.suppliers.purchase_orders.index', [$supplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrders')
+            ->has('pageHead.actions', 1)
+            ->where('pageHead.actions.0.route.name', 'grp.models.org-supplier.purchase-order.store')
             ->etc());
 });
 
@@ -897,6 +1138,82 @@ test('UI edit supplier', function () {
     });
 });
 
+test('UI assignable suppliers list free and other agents suppliers, not the agent own', function () {
+    $this->withoutExceptionHandling();
+
+    $agent      = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $otherAgent = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+
+    $makeSupplier = fn (string $code, Agent|\App\Models\SysAdmin\Group $parent) => StoreSupplier::make()->action(
+        parent: $parent,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => $code, 'name' => $code.' name'])
+    );
+
+    $free    = $makeSupplier('ASSIGNFREE', $this->group);
+    $stolen  = $makeSupplier('ASSIGNSTEAL', $otherAgent);
+    $ownOne  = $makeSupplier('ASSIGNOWN', $agent);
+
+    $url = route('grp.supply-chain.agents.show.suppliers.assignable', [$agent->slug]);
+
+    $response = $this->get($url);
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('SupplyChain/AssignableSuppliers')
+        ->where('agent.id', $agent->id)
+        ->has('data'));
+
+    $rows = collect($response->viewData('page')['props']['data']['data'])->keyBy('code');
+
+    expect($rows->keys())->toContain('ASSIGNFREE', 'ASSIGNSTEAL')
+        ->and($rows->keys())->not->toContain('ASSIGNOWN')
+        ->and($rows['ASSIGNFREE']['agent_code'])->toBeNull()
+        ->and($rows['ASSIGNSTEAL']['agent_code'])->toBe($otherAgent->code);
+
+    $expectedJoining = \App\Models\Procurement\OrgSupplier::query()
+        ->where('supplier_id', $free->id)
+        ->where('status', true)
+        ->whereNotIn('organisation_id', $agent->orgAgents()->pluck('organisation_id'))
+        ->with('organisation')
+        ->get()
+        ->pluck('organisation.name')
+        ->sort()
+        ->implode(', ');
+
+    expect($rows['ASSIGNFREE']['organisations_joining_agent'])->toBe($expectedJoining ?: null);
+
+    $country       = $free->refresh()->location[0];
+    $filteredCodes = collect(
+        $this->get($url.'?filter[country]='.$country)->viewData('page')['props']['data']['data']
+    )->pluck('code');
+
+    expect($filteredCodes)->toContain('ASSIGNFREE')
+        ->and($filteredCodes->every(fn ($code) => Supplier::where('code', $code)->first()->location[0] === $country))->toBeTrue();
+
+    expect($ownOne->refresh()->agent_id)->toBe($agent->id)
+        ->and($stolen->refresh()->agent_id)->toBe($otherAgent->id);
+});
+
+test('UI add supplier moves free and other agents suppliers to the agent', function () {
+    $this->withoutExceptionHandling();
+
+    $agent      = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $otherAgent = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+
+    $free   = StoreSupplier::make()->action(parent: $this->group, modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHFREE']));
+    $stolen = StoreSupplier::make()->action(parent: $otherAgent, modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHSTEAL']));
+
+    foreach ([$free, $stolen] as $supplier) {
+        $this->patch(route('grp.models.supplier.update', $supplier->id), ['agent_id' => $agent->id])
+            ->assertSessionHasNoErrors();
+
+        expect($supplier->refresh()->agent_id)->toBe($agent->id)
+            ->and($supplier->supplierProducts()->where('agent_id', '!=', $agent->id)->count())->toBe(0);
+    }
+
+    $this->get(route('grp.supply-chain.agents.show.suppliers.index', [$agent->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.show.suppliers.assignable'));
+});
+
 test('UI edit supplier product', function () {
     $supplierProduct = SupplierProduct::first();
     $this->withoutExceptionHandling();
@@ -998,7 +1315,258 @@ test('UI get section route group supply chain index', function () {
 test('housekeep purchase orders flags legacy open orders and undo removes the flag', function () {
     $flagged = \App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0);
     expect($flagged)->toBeGreaterThanOrEqual(0);
-    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+    $response = $this->get(route('grp.supply-chain.dashboard'));
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
     expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
+});
+
+test('agents and suppliers keep documents in an attachments tab', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('agent-contract.pdf', 10, 'application/pdf')],
+        'scope'       => 'Contract',
+    ])->assertSessionHasNoErrors();
+
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('scan-0042.pdf', 12, 'application/pdf')],
+        'scope'       => 'Other',
+        'caption'     => 'Factory audit 2026',
+    ])->assertSessionHasNoErrors();
+
+    expect($agent->attachments()->wherePivot('scope', 'Contract')->first()->pivot->caption)->toBe('agent-contract')
+        ->and($supplier->attachments()->wherePivot('scope', 'Other')->first()->pivot->caption)->toBe('Factory audit 2026');
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Agent')
+            ->has('attachments.data', 1)
+            ->where('attachmentRoutes.attachRoute.name', 'grp.models.agent.attachment.attach')
+            ->has('attachmentScopes', 8));
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Supplier')
+            ->has('attachments.data', 1));
+
+    $orgAgent    = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $orgAgent->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/OrgAgent')
+            ->has('attachments.data', 1)
+            ->where('attachmentRoutes.detachRoute.parameters.agent', $agent->id));
+
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/OrgSupplier')
+            ->has('attachments.data', 1));
+
+    $this->delete(route('grp.models.agent.attachment.detach', ['agent' => $agent->id, 'attachment' => $agent->attachments()->first()->id]));
+
+    expect($agent->attachments()->count())->toBe(0);
+});
+
+test('UI edit independent supplier shows the agent field', function () {
+    $supplier = Supplier::whereNull('agent_id')->first();
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.supply-chain.suppliers.show', $supplier->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.edit'));
+    $blueprint = $this->get(route('grp.supply-chain.suppliers.edit', $supplier->slug))->viewData('page')['props']['formData']['blueprint'];
+    expect(collect($blueprint)->pluck('fields.agent_id.type')->filter()->values()->all())->toBe(['select']);
+});
+
+test('move independent supplier to an agent and free it again', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    expect($supplier->agent_id)->toBe($agent->id)
+        ->and($supplierProduct->refresh()->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->org_agent_id)->toBe($orgAgent->id)
+        ->and($orgSupplier->orgSupplierProducts()->whereNull('org_agent_id')->count())->toBe(0)
+        ->and($supplier->orgSuppliers()->whereNull('org_agent_id')->where('status', true)->count())->toBe(0);
+
+    $supplier    = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => null]);
+    $orgSupplier->refresh();
+
+    expect($supplier->agent_id)->toBeNull()
+        ->and($supplierProduct->refresh()->agent_id)->toBeNull()
+        ->and($orgSupplier->agent_id)->toBeNull()
+        ->and($orgSupplier->org_agent_id)->toBeNull()
+        ->and($orgSupplier->status)->toBeTrue()
+        ->and($orgSupplier->orgSupplierProducts()->whereNotNull('org_agent_id')->count())->toBe(0);
+});
+
+test('a supplier with products must say what happens to their costs when its currency changes', function () {
+    $supplier            = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct  = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+    $originalCurrency = $supplier->currency;
+    $otherCurrency    = Currency::where('id', '!=', $originalCurrency->id)->first();
+    $originalCost     = (float) $supplierProduct->cost;
+
+    expect(fn () => UpdateSupplier::make()->action($supplier, ['currency_id' => $otherCurrency->id]))
+        ->toThrow(ValidationException::class);
+
+    UpdateSupplier::make()->action($supplier->refresh(), ['currency_id' => $otherCurrency->id, 'products_currency' => 'relabel']);
+    $supplierProduct->refresh();
+    expect($supplierProduct->currency_id)->toBe($otherCurrency->id)
+        ->and((float) $supplierProduct->cost)->toBe($originalCost);
+
+    GetCurrencyExchange::shouldRun()
+        ->once()
+        ->with(Mockery::on(fn ($from) => $from->id === $otherCurrency->id), Mockery::on(fn ($to) => $to->id === $originalCurrency->id))
+        ->andReturn(2.0);
+    UpdateSupplier::make()->action($supplier->refresh(), ['currency_id' => $originalCurrency->id, 'products_currency' => 'convert']);
+    $supplierProduct->refresh();
+    expect($supplierProduct->currency_id)->toBe($originalCurrency->id)
+        ->and((float) $supplierProduct->cost)->toBe(round($originalCost * 2, 4));
+});
+
+test('organisations buying from a supplier follow it onto an agent they did not trade with yet', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $organisationIds = $supplier->orgSuppliers()->where('status', true)->pluck('organisation_id');
+    expect($organisationIds)->not->toBeEmpty()
+        ->and($agent->orgAgents()->count())->toBe(0);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    expect($agent->orgAgents()->pluck('organisation_id')->sort()->values()->all())->toBe($organisationIds->sort()->values()->all())
+        ->and($supplier->orgSuppliers()->whereIn('organisation_id', $organisationIds)->where('status', true)->whereNotNull('org_agent_id')->count())->toBe($organisationIds->count());
+});
+
+test('supplier product sheet with an ORDER tab creates the products and a draft purchase order, or nothing when the order has mistakes', function () {
+    $supplier     = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $organisation = $this->organisation->code;
+
+    $sheetFile = function (array $products, array $order) {
+        $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getActiveSheet()->fromArray([['Id: Supplier Part Key', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'Unit cost', 'Unit label', 'Units per SKO', 'SKOs per carton'], ...$products]);
+        $spreadsheet->createSheet()->setTitle('ORDER')->fromArray($order);
+        $path = sys_get_temp_dir().'/opening_order_'.uniqid().'.xlsx';
+        (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+        return $path;
+    };
+    $import = function (string $path) use ($supplier) {
+        $upload = Upload::create([
+            'group_id'          => $this->group->id,
+            'organisation_id'   => $this->organisation->id,
+            'model'             => 'SupplierProduct',
+            'parent_type'       => $supplier->getMorphClass(),
+            'parent_id'         => $supplier->id,
+            'original_filename' => 'opening_order.xlsx',
+            'filename'          => 'opening_order.xlsx',
+            'filesize'          => 0,
+        ]);
+        Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
+
+        return $upload->refresh();
+    };
+
+    $upload = $import($sheetFile(
+        [
+            ['new', 'OPN-FAM', 'OPN-01', 'OPN-01', 'Trousers S/M', 825, 'Trousers', 1, 30],
+            ['new', 'OPN-FAM', 'OPN-02', 'OPN-02', 'Trousers L/XL', 825, 'Trousers', 1, 30],
+        ],
+        [
+            ['Product Code', 'Description', 'Unit Cost', 'Carton', $organisation, 'ZZ', 'Total value', $organisation],
+            ['=Worksheet!D2', 'Trousers S/M', 825, 30, 5, 1, '=C2*D2*E2', 999999],
+            ['=Worksheet!D3', 'Trousers L/XL', 825, 30, 2, null, '=C3*D3*E3', 999999],
+            [],
+            [null, 'Total', null, null, '=SUM(E2:E3)'],
+        ]
+    ));
+
+    $purchaseOrder = PurchaseOrder::where('organisation_id', $this->organisation->id)
+        ->where('parent_type', 'OrgSupplier')
+        ->where('parent_id', $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->value('id'))
+        ->firstOrFail();
+    $quantities = $purchaseOrder->purchaseOrderTransactions()->with('supplierProduct')->get()->mapWithKeys(fn ($transaction) => [$transaction->supplierProduct->code => (float)$transaction->quantity_ordered]);
+
+    expect($upload->number_fails)->toBe(0)
+        ->and($upload->number_success)->toBe(3)
+        ->and($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->currency_id)->toBe($supplier->currency_id)
+        ->and($quantities->all())->toBe(['OPN-01' => 150.0, 'OPN-02' => 60.0])
+        ->and($upload->records()->whereNull('row_number')->first()->values)->toMatchArray(['purchase_order' => $purchaseOrder->reference, 'lines' => 2]);
+
+    $upload = $import($sheetFile(
+        [
+            ['new', 'OPN-FAM', 'OPN-03', 'OPN-03', 'Trousers XXL', 825, 'Trousers', 1, 30],
+        ],
+        [
+            ['Product Code', 'Unit Cost', 'Carton', $organisation],
+            ['OPN-03', 900, 24, 4],
+            ['OPN-99', 825, 30, 'five'],
+            [null, 'Total', null, 30],
+        ]
+    ));
+
+    expect($upload->number_success)->toBe(0)
+        ->and($upload->records()->whereNull('row_number')->pluck('errors')->flatten()->all())->toBe([
+            'ORDER tab row 2: unit cost is 900, but products tab row 2 says 825.',
+            'ORDER tab row 2: 24 pieces per carton, but products tab row 2 says 30.',
+            'ORDER tab row 3: OPN-99 is not in the products tab and is not a product of this supplier.',
+            'ORDER tab row 4: the '.$organisation.' total is 30 cartons, but the lines add up to 4.',
+        ])
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'OPN-03')->exists())->toBeFalse()
+        ->and($purchaseOrder->purchaseOrderTransactions()->count())->toBe(2);
+});
+
+test('only supply chain editors attach and detach agent and supplier documents', function () {
+    setPermissionsTeamId($this->group->id);
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $newUser  = fn (array $permissions) => tap(
+        \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser()
+    )->givePermissionTo($permissions);
+    $pdf = fn () => ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('contract.pdf', 10, 'application/pdf')], 'scope' => 'Contract'];
+
+    actingAs($newUser(['supply-chain.view']));
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), $pdf())->assertForbidden();
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), $pdf())->assertForbidden();
+
+    actingAs($newUser(["procurement.{$supplier->orgSuppliers()->first()->organisation_id}.edit"]));
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), $pdf())->assertForbidden();
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), $pdf())->assertSessionHasNoErrors();
+
+    actingAs($newUser(['supply-chain.edit']));
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), $pdf())->assertSessionHasNoErrors();
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), $pdf())->assertSessionHasNoErrors();
+    $attachment = $agent->attachments()->first();
+
+    actingAs($newUser(['supply-chain.view']));
+    $this->delete(route('grp.models.agent.attachment.detach', [$agent->id, $attachment->id]))->assertForbidden();
+
+    actingAs($newUser(['supply-chain.edit']));
+    $this->delete(route('grp.models.agent.attachment.detach', [$agent->id, $attachment->id]))->assertSuccessful();
+
+    expect($agent->attachments()->count())->toBe(0)
+        ->and($supplier->attachments()->count())->toBeGreaterThan(0);
+});
+
+test('purchase order journey rows query runs for both views', function () {
+    $journey = \App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney::make();
+    $group   = $this->group;
+
+    $rows = fn (bool $splitAgentOrders) => (function () use ($group, $splitAgentOrders) {
+        $this->group = $group;
+
+        return $this->rows($splitAgentOrders);
+    })->call($journey);
+
+    expect($rows(true))->toBeArray()
+        ->and($rows(false))->toBeArray();
 });

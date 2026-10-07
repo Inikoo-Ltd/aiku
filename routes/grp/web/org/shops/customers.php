@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Accounting\Payment\UI\ShowPayment;
 use App\Actions\Accounting\Payment\UI\ShowRefundPayment;
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\CRM\Customer\UI\CreateCustomer;
 use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
@@ -50,6 +51,7 @@ Route::post('sync-to-google-ads', SyncShopCustomersToGoogleAds::class)->name('sy
 Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
+    Route::get('/letter-of-authorisation', PdfCustomerLetterOfAuthorisation::class)->name('.letter_of_authorisation.pdf');
 
     Route::get('/payments/{payment}', [ShowPayment::class, 'inCustomer'])->name('.payments.show');
     Route::get('/refunds/{payment}', [ShowRefundPayment::class, 'inCustomer'])->name('.refunds.show');
@@ -71,7 +73,6 @@ Route::prefix('{customer}')->as('show')->group(function () {
 
     Route::prefix('/invoices')->as('.invoices.')->group(function () {
         Route::get('/', [IndexInvoices::class, 'inCustomer'])->name('index');
-        Route::get('/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('show');
     });
 
     Route::prefix('upcoming-transactions')->name('.upcoming_transactions.')->group(function () {
@@ -122,10 +123,6 @@ Route::prefix('{customer}')->as('show')->group(function () {
                     Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.delivery-note.show');
                 });
 
-
-                Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
-                    Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');
-                });
             });
 
             Route::prefix('/orders')->as('.orders')->group(function () {

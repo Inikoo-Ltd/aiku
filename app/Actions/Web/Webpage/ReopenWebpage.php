@@ -43,6 +43,7 @@ class ReopenWebpage extends OrgAction
 
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
+        BreakWebpageCache::run($webpage);
 
         return $webpage;
     }

@@ -10,7 +10,8 @@ import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, onMounted, ref, computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import Tag from "@/Components/Tag.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
@@ -148,7 +149,6 @@ onMounted(() => {
 			const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
 				selectSocketiBasedPlatform(porto)?.action,
 				(eventData) => {
-					console.log("socket in: ", porto.id, eventData)
 					if (eventData.errors_response) {
 						set(props.progressToUploadToShopify, [porto.id], "error")
 						setTimeout(() => {
@@ -161,7 +161,6 @@ onMounted(() => {
 				}
 			)
 
-			console.log(`Subscription porto id: ${porto.id}`, xxx)
 		}
 	})
 })
@@ -229,7 +228,6 @@ const compTableFilterForSale = computed(() => {
 		xxdisabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
 		@onChecked="
 			(item) => {
-				console.log('onChecked', item)
 				props.selectedData.products.push(item.id)
 			}
 		"
@@ -249,8 +247,8 @@ const compTableFilterForSale = computed(() => {
 		<template #add-on-button>
 			<Button
 				@click="onClickFilterForSale('true')"
-				v-tooltip="trans('Only show products that are for sale')"
-				:label="trans('Only For Sale')"
+				v-tooltip="ctrans('Only show products that are for sale')"
+				:label="ctrans('Only For Sale')"
 				size="xs"
 				class="whitespace-nowrap"
 				:key="compTableFilterForSale"
@@ -260,8 +258,8 @@ const compTableFilterForSale = computed(() => {
 				:loading="isLoadingTable == 'is_for_sale'" />
             <Button
                 @click="onClickFilterForSale('false')"
-                v-tooltip="trans('Only show products that are not for sale')"
-                :label="trans('Not For Sale')"
+                v-tooltip="ctrans('Only show products that are not for sale')"
+                :label="ctrans('Not For Sale')"
                 size="xs"
                 class="whitespace-nowrap"
                 :key="compTableFilterForSale + 'not'"
@@ -272,7 +270,7 @@ const compTableFilterForSale = computed(() => {
             />
 			<Button
 				@click="onClickFilterOutOfStock('discontinued')"
-				v-tooltip="trans('Filter the product that discontinued')"
+				v-tooltip="ctrans('Filter the product that discontinued')"
 				label="Discontinued"
 				size="xs"
 				class="whitespace-nowrap"
@@ -283,7 +281,7 @@ const compTableFilterForSale = computed(() => {
 				:loading="isLoadingTable == 'discontinued'" />
 			<Button
 				@click="onClickFilterOutOfStock('out-of-stock')"
-				v-tooltip="trans('Filter the product that out of stock')"
+				v-tooltip="ctrans('Filter the product that out of stock')"
 				label="Out of stock"
 				size="xs"
 				class="whitespace-nowrap"
@@ -318,21 +316,22 @@ const compTableFilterForSale = computed(() => {
 			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
 				{{ product["code"] }}
 			</Link>
+			<Tag v-if="product.is_exclusive" :label="ctrans('Exclusive to you')" v-tooltip="ctrans('Only you can see and order this product')" :theme="5" noHoverColor class="ml-1" />
 			<div class="text-base font-semibold">
 				{{ product["name"] }}
 			</div>
 			<div class="text-sm text-gray-500 italic flex gap-x-6 gap-y-2">
-				<div>{{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
-				<div>{{ trans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg</div>
+				<div>{{ ctrans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
+				<div>{{ ctrans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg</div>
 			</div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div>
-					{{ trans("Price:") }}
+					{{ ctrans("Price:") }}
 					{{ locale.currencyFormat(product.currency_code, product.price) }}
 				</div>
 				<div>
-					{{ trans("RRP:") }}
+					{{ ctrans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
 			</div>
@@ -345,13 +344,13 @@ const compTableFilterForSale = computed(() => {
 					fixed-width
 					aria-hidden="true" />
 				<span class="pr-2">{{
-					trans(
+					ctrans(
 						"We found same product in your shop, do you want to create new or use existing?"
 					)
 				}}</span>
 				<Button
 					v-tooltip="
-						trans('Will create new product in :platform', {
+						ctrans('Will create new product in :platform', {
 							platform: props.platform_data.name,
 						})
 					"
@@ -362,7 +361,7 @@ const compTableFilterForSale = computed(() => {
 				<span class="px-2 text-gray-500">or</span>
 				<Button
 					v-tooltip="
-						trans('Will sync the product and prioritize our product', {
+						ctrans('Will sync the product and prioritize our product', {
 							platform: props.platform_data.name,
 						})
 					"
@@ -385,7 +384,7 @@ const compTableFilterForSale = computed(() => {
 				<FontAwesomeLayers
 					v-if="item.product_state == 'discontinued'"
 					v-tooltip="
-						trans('This product line has been discontinued. Please remove this item')
+						ctrans('This product line has been discontinued. Please remove this item')
 					"
 					class="flex h-full w-full">
 					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
@@ -393,7 +392,7 @@ const compTableFilterForSale = computed(() => {
 				</FontAwesomeLayers>
 				<FontAwesomeLayers
 					v-else
-					v-tooltip="trans('This product line is currently not for sale')"
+					v-tooltip="ctrans('This product line is currently not for sale')"
 					class="flex h-full w-full">
 					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
 					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" fixed-width />
@@ -406,7 +405,7 @@ const compTableFilterForSale = computed(() => {
 		<template #cell(actions)="{ item }" v-if="!disabled">
 			<div class="mx-auto flex flex-wrap justify-center gap-2">
 				<ButtonWithLink
-					v-tooltip="trans('Remove product from list')"
+					v-tooltip="ctrans('Remove product from list')"
 					type="negative"
 					icon="fal fa-times"
 					:routeTarget="item.update_portfolio"

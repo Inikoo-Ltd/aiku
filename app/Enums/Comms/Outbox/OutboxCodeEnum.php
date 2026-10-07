@@ -11,6 +11,7 @@ namespace App\Enums\Comms\Outbox;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunTypeEnum;
 use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Enums\EnumHelperTrait;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 enum OutboxCodeEnum: string
 {
@@ -41,12 +42,14 @@ enum OutboxCodeEnum: string
     case GOLD_REWARD_REMINDER_1 = 'gold_reward_reminder_1';
     case GOLD_REWARD_REMINDER_2 = 'gold_reward_reminder_2';
     case GOLD_REWARD_REMINDER_3 = 'gold_reward_reminder_3';
+    case DUE_TO_REORDER = 'due_to_reorder';
     case MARKETING = 'marketing';
     case NEWSLETTER = 'newsletter';
     case OOS_NOTIFICATION = 'oos_notification';
     case OOS_IN_ORDER_NOTIFICATION = 'oos_in_order_notification';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case PRE_ORDER_UPDATE = 'pre_order_update';
     case PASSWORD_REMINDER = 'password_reminder';
     case REGISTRATION = 'registration';
     case REGISTRATION_APPROVED = 'registration_approved';
@@ -65,6 +68,8 @@ enum OutboxCodeEnum: string
     case CREDIT_BALANCE_NOTIFICATION_FOR_USER = 'credit_balance_notification_for_user';
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
+    case BASKET_ON_OFFER = 'basket_on_offer';
+    case FAVOURITES_ON_OFFER = 'favourites_on_offer';
     case PRICE_CHANGE = 'price_change';
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case INVOICE_PAID = 'invoice_paid';
@@ -74,6 +79,7 @@ enum OutboxCodeEnum: string
     case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
     case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
     case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
+    case SEND_PURCHASE_ORDER_TO_SUPPLIER = 'send_purchase_order_to_supplier';
 
 
     public function type(): OutboxTypeEnum
@@ -97,10 +103,12 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
@@ -110,7 +118,8 @@ enum OutboxCodeEnum: string
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
-
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
 
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
@@ -140,6 +149,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::DUE_TO_REORDER,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,
             OutboxCodeEnum::PROSPECT_CONVERTION_3,
@@ -176,12 +186,14 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1 => '1st Gold reward reminder',
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2 => '2nd Gold reward reminder',
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => '3rd Gold reward reminder',
+            OutboxCodeEnum::DUE_TO_REORDER => 'Due to reorder reminder',
             OutboxCodeEnum::MARKETING => 'Marketing',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::PRE_ORDER_UPDATE => 'Pre-order update',
             OutboxCodeEnum::PASSWORD_REMINDER => 'Password reminder',
             OutboxCodeEnum::REGISTRATION => 'Registration',
             OutboxCodeEnum::REGISTRATION_APPROVED => 'Registration approved',
@@ -192,6 +204,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => 'Pallet return dispatched',
             OutboxCodeEnum::INVITE => 'Invite',
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => 'Send invoice to customer',
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => 'Purchase order to supplier',
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER => 'New pallet return from customer',
             OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER => 'New pallet delivery from customer',
             OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
@@ -201,6 +214,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER => 'Credit balance notification for customer',
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
+            OutboxCodeEnum::BASKET_ON_OFFER => 'Basket on offer',
+            OutboxCodeEnum::FAVOURITES_ON_OFFER => 'Favourites on offer',
             OutboxCodeEnum::PRICE_CHANGE => 'Price change',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::INVOICE_PAID => 'COD Payment Confirmation', //Noted: Now only for COD, later can be used for other payment methods
@@ -239,12 +254,14 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1 => '1st Gold reward reminder',
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2 => '2nd Gold reward reminder',
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => '3rd Gold reward reminder',
+            OutboxCodeEnum::DUE_TO_REORDER => 'Due to reorder reminder',
             OutboxCodeEnum::MARKETING => 'Deals',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::PRE_ORDER_UPDATE => 'Pre-order update',
             OutboxCodeEnum::PASSWORD_REMINDER => 'Password reminder',
             OutboxCodeEnum::REGISTRATION => 'Registration',
             OutboxCodeEnum::REGISTRATION_APPROVED => 'Registration approved',
@@ -255,6 +272,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => 'Pallet return dispatched',
             OutboxCodeEnum::INVITE => 'Invite',
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => 'Send invoice to customer',
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => 'Purchase order to supplier',
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER => 'New pallet return from customer',
             OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER => 'New pallet delivery from customer',
             OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
@@ -264,6 +282,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER => 'Credit balance notification for user',
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
+            OutboxCodeEnum::BASKET_ON_OFFER => 'Offer in basket',
+            OutboxCodeEnum::FAVOURITES_ON_OFFER => 'Favourites on offer',
             OutboxCodeEnum::PRICE_CHANGE => 'Price change',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::INVOICE_PAID => 'Invoice paid',
@@ -279,7 +299,7 @@ enum OutboxCodeEnum: string
     public function scope(): array
     {
         return match ($this) {
-            OutboxCodeEnum::TEST => ['Organisation'],
+            OutboxCodeEnum::TEST, OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => ['Organisation'],
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::BASKET_PUSH,
@@ -295,7 +315,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::REGISTRATION_REJECTED,
-            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER
             => ['Website'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::INVOICE_DELETED,
@@ -323,10 +345,24 @@ enum OutboxCodeEnum: string
         };
     }
 
+    /**
+     * Agents run no shops, so of the organisation outboxes they only get the one they use to
+     * send purchase orders to their own suppliers.
+     *
+     * @return array<int, OrganisationTypeEnum>
+     */
+    public function organisationTypes(): array
+    {
+        return match ($this) {
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => [OrganisationTypeEnum::SHOP, OrganisationTypeEnum::DIGITAL_AGENCY, OrganisationTypeEnum::AGENT],
+            default => [OrganisationTypeEnum::SHOP, OrganisationTypeEnum::DIGITAL_AGENCY],
+        };
+    }
+
     public function shopTypes(): array
     {
         return match ($this) {
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => ['fulfilment'],
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -355,6 +391,9 @@ enum OutboxCodeEnum: string
             /** Only a shop whose orders arrive from a platform can have an order the customer never
              * saw us fail to charge. Anywhere else they are standing at the checkout. */
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => ['dropshipping'],
+
+            /** Balance requests, reminders, new dispatch dates and cancellations of pre-orders (HELP-3432) */
+            OutboxCodeEnum::PRE_ORDER_UPDATE => ['b2b', 'dropshipping'],
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
@@ -373,9 +412,12 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::DUE_TO_REORDER,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER
             => ['b2b'],
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
             => ['dropshipping'],
@@ -392,6 +434,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::TEST,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::FINISH_OFFER,
@@ -421,7 +464,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::PRICE_CHANGE,
-            OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD
+            OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => OutboxBuilderEnum::BLADE,
             default => null
         };
@@ -445,6 +490,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
@@ -461,12 +507,15 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::DUE_TO_REORDER,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
@@ -480,7 +529,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,
-            OutboxCodeEnum::PROSPECT_CONVERTION_3
+            OutboxCodeEnum::PROSPECT_CONVERTION_3,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -510,6 +560,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
@@ -524,7 +575,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::NEW_REVIEW,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -532,6 +584,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
@@ -544,6 +598,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::DUE_TO_REORDER,
             OutboxCodeEnum::PRICE_CHANGE
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
@@ -575,6 +630,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
@@ -582,8 +638,11 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 
@@ -616,6 +675,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::DUE_TO_REORDER,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
@@ -637,6 +697,7 @@ enum OutboxCodeEnum: string
             self::GOLD_REWARD_REMINDER_1,
             self::GOLD_REWARD_REMINDER_2,
             self::GOLD_REWARD_REMINDER_3,
+            self::DUE_TO_REORDER,
             self::BASKET_LOW_STOCK,
             self::ABANDONED_CART,
             self::ABANDONED_CART_REMINDER_1,

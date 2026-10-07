@@ -119,7 +119,8 @@ class IndexPurchaseOrders extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('purchase_orders.reference', $value);
+                $query->whereAnyWordStartWith('purchase_orders.reference', $value)
+                    ->orWhereAnyWordStartWith('purchase_orders.parent_name', $value);
             });
         });
 
@@ -367,7 +368,7 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $actions       = [
+            $actions       = $this->parent->partner->is_manufacturing_hub ? [] : [
                 [
                     'label' => __('Purchase Order'),
                     'type'  => 'button',
@@ -400,6 +401,13 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getSupplierNavigation($this->parent);
+            $actions       = $this->parent->orgSuppliers()->with('organisation')->get()
+                ->filter(fn (OrgSupplier $orgSupplier) => $request->user()->authTo("procurement.$orgSupplier->organisation_id.edit"))
+                ->map(fn (OrgSupplier $orgSupplier) => array_merge($this->getOrgSupplierPurchaseOrderAction($orgSupplier), [
+                    'label' => __('Purchase order').' '.$orgSupplier->organisation->code,
+                ]))
+                ->values()
+                ->all();
         }
 
         return Inertia::render(

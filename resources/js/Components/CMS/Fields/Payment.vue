@@ -175,15 +175,15 @@ const togglePopover = (event: Event, popoverRef: any) => {
       </div>
 
       <Popover :ref="el => _editop[index] = el">
-        <div class="grid grid-cols-5 gap-4 p-4">
+        <div class="payment-picker grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 p-3">
           <div
             v-for="icon in payments"
             :key="icon.value"
             @click="() => updatePayment(index, icon)"
-            class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200"
+            class="flex min-w-0 flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-2 cursor-pointer bg-gray-200"
           >
-            <img class="h-20 w-20 object-contain mb-2" :src="icon.image" loading="lazy" decoding="async" />
-            <div class="text-center text-sm font-medium truncate">{{ icon.name }}</div>
+            <img class="h-12 w-12 object-contain mb-1" :src="icon.image" loading="lazy" decoding="async" />
+            <div class="w-full text-center text-xs font-medium truncate" :title="icon.name">{{ icon.name }}</div>
           </div>
         </div>
       </Popover>
@@ -200,15 +200,15 @@ const togglePopover = (event: Event, popoverRef: any) => {
     />
 
     <Popover ref="_addop">
-      <div class="grid grid-cols-5 gap-4 p-4">
+      <div class="payment-picker grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 p-3">
         <div
           v-for="icon in payments"
           :key="icon.value"
           @click="() => addPayment(icon)"
-          class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200"
+          class="flex min-w-0 flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-2 cursor-pointer bg-gray-200"
         >
-          <img class="h-20 w-20 object-contain mb-2" :src="icon.image" loading="lazy" decoding="async" />
-          <div class="text-center text-sm font-medium truncate">{{ icon.name }}</div>
+          <img class="h-12 w-12 object-contain mb-1" :src="icon.image" loading="lazy" decoding="async" />
+          <div class="w-full text-center text-xs font-medium truncate" :title="icon.name">{{ icon.name }}</div>
         </div>
       </div>
     </Popover>
@@ -221,5 +221,11 @@ img {
 }
 img:hover {
   transform: scale(1.1);
+}
+
+.payment-picker {
+  width: min(90vw, 640px);
+  max-height: 60vh;
+  overflow-y: auto;
 }
 </style>

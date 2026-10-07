@@ -272,7 +272,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 
 						  
                         <div class="mt-auto ml-auto text-[11px] text-gray-400 w-fit">
-                            <AddressLocation :data="item['location']" :use_flag="item?.location[1] != layout?.iris?.shop?.location[1]" />
+                            <AddressLocation :data="item?.location" :use_flag="item?.location?.[1] != layout?.iris?.shop?.location?.[1]" />
                         </div>
 					</div>
 

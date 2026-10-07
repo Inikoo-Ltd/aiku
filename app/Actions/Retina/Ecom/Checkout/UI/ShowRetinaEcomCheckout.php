@@ -10,6 +10,9 @@
 
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
+use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -85,6 +88,8 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'balance'        => null,
             ];
         } else {
+            CaptureOrderGoogleAnalyticsClient::run($order, $request);
+
             return $this->handle($this->customer);
         }
     }
@@ -98,9 +103,12 @@ class ShowRetinaEcomCheckout extends RetinaAction
             return Redirect::route('retina.ecom.basket.show');
         }
 
+        $amountToPayNow    = GetOrderAmountToPayNow::run($order);
+        $isPlacedOnAccount = $this->customer->credit_limit > 0 && $this->customer->spendableBalance() >= $amountToPayNow;
+
         $paymentAmounts = $this->calculatePaymentWithBalance(
-            $order->total_amount,
-            $this->customer->balance
+            $amountToPayNow,
+            $isPlacedOnAccount ? $this->customer->spendableBalance() : $this->customer->balance
         );
 
         $toPay          = $paymentAmounts['total'];
@@ -122,9 +130,14 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $this->getOrderBoxStats($order),
                 'stock_issues'   => $this->getBasketStockIssues($order),
+                'pre_orders'     => GetBasketPreOrders::run($order),
+                'is_gift_message_missing' => $order->isGiftMessageMissing(),
                 'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
+                'on_account'     => $isPlacedOnAccount ? [
+                    'available_credit' => $this->customer->spendableBalance(),
+                ] : null,
                 'total_amount'   => $order->total_amount,
                 'currency_code'  => $order->currency->code,
                 'to_pay_data'    => [
@@ -132,15 +145,6 @@ class ShowRetinaEcomCheckout extends RetinaAction
                     'by_balance' => $toPayByBalance,
                     'by_other'   => $toPayByOther
 
-                ],
-                'whatsapp_newsletter' => [
-                    'is_subscribed' => (bool) $this->customer->comms?->is_subscribed_to_whatsapp_newsletter,
-                    'label'         => Arr::get($this->shop->settings, 'registration.whatsapp_newsletter_label')
-                        ?? __('Opt in to receive our newsletter and offers via WhatsApp.'),
-                    'update_route'  => [
-                        'name'       => 'retina.models.customer_comms.update',
-                        'parameters' => ['customerComms' => $this->customer->comms?->id],
-                    ],
                 ],
                 'routes'         => [
                     'pay_with_balance' => [

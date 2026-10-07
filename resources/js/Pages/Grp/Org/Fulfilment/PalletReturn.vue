@@ -25,7 +25,7 @@ import BoxStatsPalletReturn from "@/Pages/Grp/Org/Fulfilment/Return/BoxStatsPall
 import ScanToPickPalletReturn from "@/Components/Fulfilment/ScanToPickPalletReturn.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TableStoredItemReturnStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemReturnStoredItems.vue"
 import { get } from 'lodash-es'
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -262,10 +262,10 @@ const isTiktokShipment = computed(() => {
 	return props.shipments?.submit_route?.name === "grp.models.pallet-return.shipment_from_tiktok.store"
 })
 const shipmentButtonLabel = computed(() => {
-	return props.shipments?.button_label ?? (isTiktokShipment.value ? trans("Get shipment from Tiktok") : trans("Shipment"))
+	return props.shipments?.button_label ?? (isTiktokShipment.value ? ctrans("Get shipment from Tiktok") : ctrans("Shipment"))
 })
 const shipmentButtonTooltip = computed(() => {
-	return props.box_stats.parcels?.length ? "" : trans("Please add at least one parcel")
+	return props.box_stats.parcels?.length ? "" : ctrans("Please add at least one parcel")
 })
 const onGetShipmentFromTiktok = () => {
 	isLoadingButton.value = "getShipmentFromTiktok"
@@ -276,8 +276,8 @@ const onGetShipmentFromTiktok = () => {
 			preserveScroll: true,
 			onError: () => {
 				notify({
-					title: trans("Something went wrong."),
-					text: trans("Failed to get Shipment from Tiktok. Please try again."),
+					title: ctrans("Something went wrong."),
+					text: ctrans("Failed to get Shipment from Tiktok. Please try again."),
 					type: "error",
 				})
 			},
@@ -314,8 +314,8 @@ const onOpenModalTrackingNumber = async () => {
 	} catch (error) {
 		console.error(error)
 		notify({
-			title: trans("Something went wrong."),
-			text: trans("Failed to retrieve shipper list"),
+			title: ctrans("Something went wrong."),
+			text: ctrans("Failed to retrieve shipper list"),
 			type: "error",
 		})
 	}
@@ -345,8 +345,8 @@ const onSubmitShipment = () => {
 				// TODO: Make condition if the error related to delivery address then set to true
 				// set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
 				notify({
-					title: trans("Something went wrong."),
-					text: trans("Failed to add Shipment. Please try again."),
+					title: ctrans("Something went wrong."),
+					text: ctrans("Failed to add Shipment. Please try again."),
 					type: "error",
 				})
 			},
@@ -494,13 +494,13 @@ provide("listError", listError.value)
 
 				<template #content="{ close: closed }">
 					<div class="w-[350px]">
-						<span class="text-xs px-1 my-2">{{ trans("Services") }}: </span>
+						<span class="text-xs px-1 my-2">{{ ctrans("Services") }}: </span>
 						<div class="">
 							<PureMultiselectInfiniteScroll
 								v-model="formAddService.service_id"
 								@selectedObject="(option) => formAddService.historic_asset_id = option?.historic_asset_id ?? null"
 								:fetchRoute="props.service_list_route"
-								:placeholder="trans('Select Services')"
+								:placeholder="ctrans('Select Services')"
 								valueProp="id">
 								<template #singlelabel="{ value }">
 									<div class="w-full text-left pl-4">
@@ -538,10 +538,10 @@ provide("listError", listError.value)
 							</p>
 						</div>
 						<div class="mt-3">
-							<span class="text-xs px-1 my-2">{{ trans("Quantity") }}: </span>
+							<span class="text-xs px-1 my-2">{{ ctrans("Quantity") }}: </span>
 							<PureInput
 								v-model="formAddService.quantity"
-								:placeholder="trans('Quantity')"
+								:placeholder="ctrans('Quantity')"
 								@keydown.enter="() => onSubmitAddService(action, closed)" />
 							<p
 								v-if="get(formAddService, ['errors', 'quantity'])"
@@ -580,13 +580,13 @@ provide("listError", listError.value)
 
 					<template #content="{ close: closed }">
 						<div class="w-[350px]">
-							<span class="text-xs px-1 my-2">{{ trans("Physical Goods") }}: </span>
+							<span class="text-xs px-1 my-2">{{ ctrans("Physical Goods") }}: </span>
 							<div>
 								<PureMultiselectInfiniteScroll
 									v-model="formAddPhysicalGood.outer_id"
 									@selectedObject="(option) => formAddPhysicalGood.historic_asset_id = option?.historic_asset_id ?? null"
 									:fetchRoute="physical_good_list_route"
-									:placeholder="trans('Select Physical Goods')"
+									:placeholder="ctrans('Select Physical Goods')"
 									valueProp="id" />
 
 								<p
@@ -596,10 +596,10 @@ provide("listError", listError.value)
 								</p>
 							</div>
 							<div class="mt-3">
-								<span class="text-xs px-1 my-2">{{ trans("Quantity") }}: </span>
+								<span class="text-xs px-1 my-2">{{ ctrans("Quantity") }}: </span>
 								<PureInput
 									v-model="formAddPhysicalGood.quantity"
-									:placeholder="trans('Quantity')"
+									:placeholder="ctrans('Quantity')"
 									@keydown.enter="
 										() => onSubmitAddPhysicalGood(action, closed)
 									" />
@@ -630,7 +630,7 @@ provide("listError", listError.value)
 		<template #button-submit-stored-items="{ action }">
 			<ButtonWithLink
 				:routeTarget="action.route"
-				:label="`${trans('Submit')} (${parsed_stored_items_count})`"
+				:label="`${ctrans('Submit')} (${parsed_stored_items_count})`"
 				:icon="action.icon"
 				:iconRight="action.iconRight"
 				:style="action.style"
@@ -644,7 +644,7 @@ provide("listError", listError.value)
 			<Button
 				v-if="currentTab === 'attachments'"
 				@click="() => (isModalUploadFileOpen = true)"
-				:label="trans('Attach file')"
+				:label="ctrans('Attach file')"
 				icon="fal fa-upload"
 				type="secondary" />
 		</template>
@@ -721,12 +721,12 @@ provide("listError", listError.value)
 		:route_checkmark="currentTab == 'pallets' ? routeStorePallet : route_check_stored_items"
 		:palletReturn="data?.data"
 		:detachRoute="attachmentRoutes?.detachRoute"
-		@isStoredItemAdded="(e: boolean) => (console.log(e), e ? parsed_stored_items_count++ : parsed_stored_items_count--)">
+		@isStoredItemAdded="(e: boolean) => e ? parsed_stored_items_count++ : parsed_stored_items_count--">
 		<template #button-empty-state-attachments="{ action }">
 			<Button
 				v-if="currentTab === 'attachments'"
 				@click="() => (isModalUploadFileOpen = true)"
-				:label="trans('Attach file')"
+				:label="ctrans('Attach file')"
 				icon="fal fa-upload"
 				type="secondary" />
 		</template>
@@ -765,11 +765,11 @@ provide("listError", listError.value)
 		width="w-full max-w-2xl"
 	>
 		<div class="text-center font-bold mb-4">
-			{{ trans('Add shipment') }}
+			{{ ctrans('Add shipment') }}
 		</div>
 
 		<div class="w-full mt-3">
-			<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+			<span class="text-xs px-1 my-2">{{ ctrans("Shipping options") }}: </span>
 
 			<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
 				<div v-if="isLoadingData === 'addTrackingNumber'"
@@ -795,7 +795,7 @@ provide("listError", listError.value)
 					<div class="text-xs text-gray-500 italic">
 						{{ shipment.tracking_url }}
 					</div>
-					<FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-tooltip="ctrans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
 				</div>
 
 			</div>
@@ -805,7 +805,7 @@ provide("listError", listError.value)
 					v-model="formTrackingNumber.shipping_id"
 					:fetchRoute="shipments.fetch_route"
 					required
-					:placeholder="trans('Select shipping')"
+					:placeholder="ctrans('Select shipping')"
 					object
 					@optionsList="(e) => optionShippingList = e"
 				>
@@ -833,7 +833,7 @@ provide("listError", listError.value)
 
 			<!-- Tracking number -->
 			<div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
-				<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+				<span class="text-xs px-1 my-2">{{ ctrans("Tracking number") }}: </span>
 				<PureInput
 					v-model="formTrackingNumber.tracking_number"
 					placeholder="ABC-DE-1234567"

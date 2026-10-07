@@ -5,19 +5,27 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 import { usePage, router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt } from "@fal"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffConversation, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
+import { useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useStaffTaskMembers } from "@/Composables/useStaffTaskMembers"
+import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import { Drawer, Popover } from "primevue"
+import StaffTaskSubtaskProgress from "@/Components/Tasks/StaffTaskSubtaskProgress.vue"
+import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
 
-library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt)
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink)
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
@@ -26,20 +34,89 @@ const StaffTaskDialog = defineAsyncComponent(() => import("@/Components/Tasks/St
 const props = defineProps<{
     conversation: StaffConversation
     fullScreen?: boolean
+    embedded?: boolean
 }>()
 
 const emit = defineEmits<{
     close: []
     minimise: []
+    back: []
 }>()
 
 const store = useStaffMessaging()
+
+const isDescriptionOpen = ref(false)
+
+const isListedWorkChat = computed(() => !!props.conversation?.context_type && store.conversations.some((listed) => listed.ulid === props.conversation?.ulid))
+const canToggleWatch = computed(() => !props.embedded && isListedWorkChat.value)
+const listedConversation = computed(() => store.conversations.find((listed) => listed.ulid === props.conversation?.ulid))
 const myId = computed(() => usePage().props?.auth?.user?.id)
 const myLanguageId = computed(() => usePage().props?.auth?.user?.language_id ?? null)
 
 const participants = computed<StaffParticipant[]>(() => props.conversation?.participants ?? [])
 
 const messages = computed(() => store.messagesByUlid[props.conversation.ulid] ?? [])
+
+const isGroupChat = computed(() => props.conversation.type === "group")
+
+const isLoadingFirstMessages = computed(() => !messages.value.length && (store.loadingMessages[props.conversation.ulid] || store.messagesByUlid[props.conversation.ulid] === undefined))
+const hasNoMessages = computed(() => !messages.value.length && !isLoadingFirstMessages.value)
+const RUN_GAP_MS = 5 * 60 * 1000
+
+const isSameRun = (previous: StaffMessage | undefined, message: StaffMessage | undefined) =>
+    !!previous && !!message && previous.user_id === message.user_id
+    && new Date(message.created_at).getTime() - new Date(previous.created_at).getTime() < RUN_GAP_MS
+
+const startsRun = (index: number) => !isSameRun(messages.value[index - 1], messages.value[index])
+const endsRun = (index: number) => !isSameRun(messages.value[index], messages.value[index + 1])
+
+const participantById = computed(() => new Map(participants.value.map((participant) => [participant.id, participant])))
+const senderAvatar = (message: StaffMessage) => participantById.value.get(message.user_id)?.avatar ?? null
+
+const SENDER_NAME_COLOURS = ["text-teal-700", "text-violet-700", "text-orange-700", "text-sky-700", "text-rose-700", "text-emerald-700", "text-fuchsia-700", "text-amber-700"]
+const senderNameClass = (userId: number) => SENDER_NAME_COLOURS[userId % SENDER_NAME_COLOURS.length]
+
+const isMine = (message: StaffMessage) => message.user_id === myId.value
+
+const readersOf = (message: StaffMessage) => {
+    const sentAt = Date.parse(message.created_at)
+    return otherParticipants.value.filter((participant) => participant.last_read_at && Date.parse(participant.last_read_at) >= sentAt)
+}
+
+const isReadByEveryone = (message: StaffMessage) => otherParticipants.value.length > 0 && readersOf(message).length === otherParticipants.value.length
+
+const showsMessageMeta = (message: StaffMessage, index: number) => !isGroupChat.value || endsRun(index) || !!message.client_status
+
+const ticksTooltip = (message: StaffMessage) => {
+    if (!isGroupChat.value) return isReadByEveryone(message) ? ctrans("Read") : ctrans("Sent")
+    if (isReadByEveryone(message)) return ctrans("Read by everyone · click to see")
+    return ctrans(":read of :total read · click to see who", { read: String(readersOf(message).length), total: String(otherParticipants.value.length) })
+}
+
+const readInfoPopover = ref()
+const readInfoMessage = ref<StaffMessage | null>(null)
+
+const openReadInfo = (event: Event, message: StaffMessage) => {
+    if (!isGroupChat.value) return
+    readInfoMessage.value = message
+    readInfoPopover.value?.toggle(event)
+}
+
+const readInfo = computed(() => {
+    if (!readInfoMessage.value) return { read: [], unread: [] }
+    const readers = readersOf(readInfoMessage.value)
+    const readerIds = new Set(readers.map((participant) => participant.id))
+
+    return {
+        read: [...readers].sort((a, b) => Date.parse(a.last_read_at!) - Date.parse(b.last_read_at!)),
+        unread: otherParticipants.value.filter((participant) => !readerIds.has(participant.id)),
+    }
+})
+
+const shortSenderName = (name: string) => {
+    const [firstName, ...otherNames] = name.trim().split(/\s+/)
+    return otherNames.length ? `${firstName} ${otherNames.map((part) => `${part.charAt(0).toUpperCase()}.`).join("")}` : firstName
+}
 const isOnline = computed(() =>
     participants.value.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
 )
@@ -49,6 +126,53 @@ const otherParticipants = computed(() => participants.value.filter((p) => p.id !
 const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
 const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
 const lastSeenAt = computed(() => props.conversation.type === "dm" && otherParticipants.value[0]?.last_seen_at ? otherParticipants.value[0].last_seen_at : null)
+
+const freshTaskInfo = ref<StaffConversationTask | null>(null)
+const taskInfo = computed(() => freshTaskInfo.value ?? props.conversation.task ?? null)
+watch(() => props.conversation.ulid, () => (freshTaskInfo.value = null))
+
+const refreshTaskInfo = async () => {
+    if (!taskInfo.value) return
+    const { data } = await axios.get(route("grp.tasks.conversation", taskInfo.value.reference))
+    freshTaskInfo.value = data.data.task ?? null
+    store.mergeConversation(data.data)
+}
+
+const leftAt = computed(() => props.conversation.my_left_at ?? null)
+
+const isTaskClosed = computed(() => !!taskInfo.value && !taskInfo.value.is_open)
+const isEndingChat = ref(false)
+
+// A task that is done no longer needs its chat in everybody's list (INI-045): ending it clears it from mine, the
+// thread itself stays on the task page.
+const endChat = async () => {
+    isEndingChat.value = true
+    try {
+        await refreshTaskInfo()
+    } catch {
+        // The archive call checks the task again on the server.
+    }
+    store.closeConversation(props.conversation.ulid)
+    isEndingChat.value = false
+    if (props.embedded) {
+        notify({ title: ctrans("Chat ended"), text: ctrans("It is cleared from your chats and stays here on the task."), type: "success" })
+    }
+}
+
+useLiveStaffTasks(refreshTaskInfo, (event) => !props.embedded && event.reference === taskInfo.value?.reference)
+
+const reactsOnHover = computed(() => !props.fullScreen || (props.embedded && window.matchMedia("(hover: hover)").matches))
+
+const isTaskMembersOpen = ref(false)
+
+const { members: taskMembers, onlineCount: taskOnlineCount } = useStaffTaskMembers(
+    () => participants.value,
+    () => ({
+        requesterId: taskInfo.value?.requester_id ?? null,
+        assigneeId: taskInfo.value?.assignee_id ?? null,
+        collaboratorIds: taskInfo.value?.collaborator_ids ?? [],
+    })
+)
 
 const newMessage = ref("")
 const mentionQuery = ref<string | null>(null)
@@ -123,10 +247,23 @@ const renderBody = (message: StaffMessage, text: string) => {
         participants.value.map((p) => p.handle).filter((h): h is string => !!h)
     )
     const own = message.user_id === myId.value
-    const cls = own ? "text-yellow-200" : "text-indigo-600"
-    return escapeHtml(text).replace(/@([\p{L}\p{N}._-]+)/gu, (full, handle) =>
+    const cls = own ? "text-yellow-200" : "text-[--app-accent-strong]"
+    const linkCls = own
+        ? "text-sky-200 underline decoration-sky-200/60 underline-offset-2 hover:text-sky-100 hover:decoration-sky-100"
+        : "text-sky-600 underline decoration-sky-600/50 underline-offset-2 hover:text-sky-700"
+    const withMentions = (segment: string) => segment.replace(/@([\p{L}\p{N}._-]+)/gu, (full, handle) =>
         handles.has(handle) ? `<span class="font-medium ${cls}">@${escapeHtml(handle)}</span>` : full
     )
+
+    return escapeHtml(text)
+        .split(/(https?:\/\/[^\s<>"']+)/g)
+        .map((segment, index) => {
+            if (index % 2 === 0) return withMentions(segment)
+            const trailing = segment.match(/[.,;:!?)\]]+$/)?.[0] ?? ""
+            const url = trailing ? segment.slice(0, -trailing.length) : segment
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="break-all ${linkCls}">${url}</a>${trailing}`
+        })
+        .join("")
 }
 const pendingImage = ref<File | null>(null)
 const pendingImagePreview = ref<string | null>(null)
@@ -139,15 +276,16 @@ const activeReactionFor = ref<number | null>(null)
 const showGifPicker = ref(false)
 const showEmojiPicker = ref(false)
 const REACTION_EMOJIS = ["👍", "✅", "❌", "👀", "🙏", "🔥"]
+const gifState = reactive<Record<string, "loaded" | "failed">>({})
 
 const quickReplies = computed(
     () =>
         usePage().props?.layout?.staff_chat?.quick_replies ?? [
-            trans("Done"),
-            trans("Help!"),
-            trans("Call me"),
-            trans("OK"),
-            trans("Thanks"),
+            ctrans("Done"),
+            ctrans("Help!"),
+            ctrans("Call me"),
+            ctrans("OK"),
+            ctrans("Thanks"),
         ]
 )
 
@@ -301,10 +439,11 @@ const sendCurrent = async () => {
     if (!body && !pendingImage.value) return
     newMessage.value = ""
     const image = pendingImage.value
+    const parentId = parentMessage.value?.id ?? null
     clearPendingImage()
-    nextTick(autoResize)
-    await store.send(props.conversation.ulid, body, parentMessage.value?.id ?? null, image)
     parentMessage.value = null
+    nextTick(autoResize)
+    await store.send(props.conversation.ulid, body, parentId, image)
 }
 
 const pickGif = async (url: string) => {
@@ -325,8 +464,9 @@ const pickEmoji = (emoji: string) => {
 }
 
 const sendQuickReply = async (text: string) => {
-    await store.send(props.conversation.ulid, text, parentMessage.value?.id ?? null)
+    const parentId = parentMessage.value?.id ?? null
     parentMessage.value = null
+    await store.send(props.conversation.ulid, text, parentId)
 }
 
 const onEnter = (event: KeyboardEvent) => {
@@ -342,7 +482,7 @@ const onTextareaKeydown = (event: KeyboardEvent) => {
 
 const toggleReaction = async (message: StaffMessage, emoji: string) => {
     activeReactionFor.value = null
-    await store.toggleReaction(message.id, emoji)
+    await store.toggleReaction(message, emoji, myId.value)
 }
 
 const taskDialogOpen = ref(false)
@@ -361,7 +501,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
     <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
         <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
-            <button v-if="fullScreen" class="p-2 -ml-2 text-gray-600" @click="emit('close')">
+            <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2 text-gray-600" @click="emit('back')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
             <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[var(--chat-line)]'">
@@ -372,28 +512,146 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[var(--chat-text)]'">{{ displayName }}</div>
                 <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
-                    <span v-if="typingUser">{{ typingUser }} {{ trans('is typing…') }}</span>
-                    <span v-else-if="lastSeenAt && !isOnline">{{ trans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
-                    <a v-else-if="conversation.context_url" :href="conversation.context_url" :class="fullScreen ? 'text-indigo-600 hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
+                    <span v-if="typingUser">{{ typingUser }} {{ ctrans('is typing…') }}</span>
+                    <span v-else-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
+                    <span v-else-if="conversation.context_url" class="flex min-w-0 items-center gap-1.5">
+                        <a :href="conversation.context_url" class="truncate" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
+                        <span v-if="taskInfo?.status_label" class="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap">
+                            <FontAwesomeIcon v-if="taskInfo.status_icon" :icon="taskInfo.status_icon.icon" :class="taskInfo.status_icon.class" fixed-width aria-hidden="true" />
+                            {{ taskInfo.status_label }}
+                        </span>
+                    </span>
                 </div>
             </div>
-            <button v-if="!fullScreen" v-tooltip="trans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
+            <button
+                v-if="embedded && isTaskClosed"
+                type="button"
+                v-tooltip="ctrans('Clear this chat from your chats. It stays here on the task.')"
+                class="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition duration-200 hover:bg-gray-50 active:!bg-gray-100 disabled:opacity-50"
+                :disabled="isEndingChat"
+                @click="endChat">
+                <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                {{ ctrans("End chat") }}
+            </button>
+            <button
+                v-if="embedded && isListedWorkChat"
+                type="button"
+                v-tooltip="listedConversation?.is_watching ? ctrans('Watching: always in your chat list. Click to stop watching') : ctrans('Not watching: only listed when hidden chats are shown. Click to watch')"
+                :aria-pressed="!!listedConversation?.is_watching"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 hover:bg-gray-100"
+                :class="listedConversation?.is_watching ? 'text-[--app-accent-strong]' : 'text-gray-400'"
+                @click="store.toggleWatch(conversation.ulid)">
+                <FontAwesomeIcon :icon="listedConversation?.is_watching ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+            </button>
+            <slot name="header-actions" />
+            <button
+                v-if="taskInfo && !embedded"
+                type="button"
+                v-tooltip="ctrans('Who is in this chat')"
+                class="flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ring-1 transition duration-200"
+                :class="fullScreen ? 'bg-white text-gray-600 ring-gray-200 hover:bg-gray-50' : 'text-[var(--chat-muted)] ring-[var(--chat-line)] hover:text-[var(--chat-text)]'"
+                @click="isTaskMembersOpen = true">
+                <span class="h-2 w-2 rounded-full" :class="taskOnlineCount ? 'bg-green-500' : 'bg-gray-300'" />
+                {{ fullScreen ? ctrans(":online of :total online", { online: taskOnlineCount, total: taskMembers.length }) : `${taskOnlineCount}/${taskMembers.length}` }}
+            </button>
+            <button v-if="!fullScreen" v-tooltip="ctrans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
-            <button v-if="!fullScreen" v-tooltip="trans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
+            <button v-if="!fullScreen" v-tooltip="ctrans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
-            <button v-tooltip="conversation.type === 'dm' ? trans('Done talking to :name', { name: displayName }) : trans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
+            <button v-if="!embedded" v-tooltip="conversation.type === 'dm' ? ctrans('Done talking to :name', { name: displayName }) : ctrans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </div>
 
+        <div
+            v-if="canToggleWatch"
+            class="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-1 text-xs"
+            :class="fullScreen ? 'border-gray-200 bg-white text-gray-500' : 'border-[var(--chat-line)] bg-[var(--chat-bg)] text-[var(--chat-muted)]'">
+            <span class="truncate">
+                {{ conversation.is_watching ? ctrans("Watching: always in your chat list") : ctrans("Not watching: only listed when hidden chats are shown") }}
+            </span>
+            <button
+                type="button"
+                class="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 ring-1 transition duration-200"
+                :class="conversation.is_watching
+                    ? (fullScreen ? 'bg-[--app-accent] text-[--app-accent-text] ring-transparent' : 'bg-[var(--chat-accent)] text-white ring-transparent')
+                    : (fullScreen ? 'ring-gray-200 hover:bg-gray-50' : 'ring-[var(--chat-line)] hover:text-[var(--chat-text)]')"
+                @click="store.toggleWatch(conversation.ulid)">
+                <FontAwesomeIcon :icon="conversation.is_watching ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
+                {{ conversation.is_watching ? ctrans("Watching") : ctrans("Watch") }}
+            </button>
+        </div>
+
+        <div
+            v-if="taskInfo && !embedded && (taskInfo.description || taskInfo.model_label)"
+            class="shrink-0 border-b text-xs"
+            :class="fullScreen ? 'border-gray-200 bg-white text-gray-600' : 'border-[var(--chat-line)] bg-[var(--chat-bg)] text-[var(--chat-muted)]'">
+            <button
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-1 text-left"
+                :aria-expanded="isDescriptionOpen"
+                @click="isDescriptionOpen = !isDescriptionOpen">
+                <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width class="shrink-0 text-[10px] transition-transform" :class="isDescriptionOpen && 'rotate-90'" aria-hidden="true" />
+                <span class="shrink-0 font-medium" :class="fullScreen ? 'text-gray-700' : 'text-[var(--chat-text)]'">{{ ctrans("Description") }}</span>
+                <span v-if="!isDescriptionOpen" class="min-w-0 truncate opacity-80">{{ taskInfo.description || taskInfo.model_label }}</span>
+            </button>
+            <div v-if="isDescriptionOpen" class="max-h-40 overflow-y-auto px-3 pb-2 pl-8 [scrollbar-width:thin]">
+                <p v-if="taskInfo.description" class="whitespace-pre-line break-words" :class="fullScreen ? 'text-gray-700' : 'text-[var(--chat-text)]'">{{ taskInfo.description }}</p>
+                <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <a v-if="taskInfo.model_label" :href="taskInfo.model_url ?? undefined" class="inline-flex items-center gap-1" :class="taskInfo.model_url ? (fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline') : ''">
+                        <FontAwesomeIcon icon="fal fa-link" fixed-width aria-hidden="true" />{{ taskInfo.model_label }}
+                    </a>
+                    <a v-if="conversation.context_url" :href="conversation.context_url" class="inline-flex items-center gap-1" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">
+                        <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />{{ ctrans("Open :reference", { reference: taskInfo.reference }) }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="isTaskClosed && !embedded" class="flex shrink-0 items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600">
+            <FontAwesomeIcon v-if="taskInfo?.status_icon" :icon="taskInfo.status_icon.icon" :class="taskInfo.status_icon.class" fixed-width aria-hidden="true" />
+            <span class="min-w-0 flex-1 truncate">{{ ctrans(":reference is :status", { reference: taskInfo!.reference, status: (taskInfo!.status_label ?? ctrans("closed")).toLowerCase() }) }}</span>
+            <button type="button" class="shrink-0 rounded-md bg-white px-2 py-0.5 font-medium text-gray-700 ring-1 ring-gray-300 transition duration-200 hover:bg-gray-100 disabled:opacity-50" :disabled="isEndingChat" @click="endChat">
+                {{ ctrans("End chat") }}
+            </button>
+        </div>
+
+        <StaffTaskSubtaskProgress v-if="taskInfo?.subtasks.length && !embedded" :subtasks="taskInfo.subtasks" @opened="refreshTaskInfo" />
+
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-2" @scroll="onScroll">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2" @scroll="onScroll">
+            <div v-if="isLoadingFirstMessages" class="space-y-3 py-2" :aria-label="ctrans('Loading…')" aria-busy="true">
+                <div v-for="(side, row) in ['left', 'right', 'left', 'right']" :key="'message-skeleton-' + row" class="flex items-end gap-2" :class="side === 'right' ? 'justify-end' : 'justify-start'">
+                    <span v-if="side === 'left' && isGroupChat" class="h-7 w-7 shrink-0 animate-pulse rounded-full bg-gray-200" />
+                    <span class="h-9 animate-pulse rounded-lg" :class="[side === 'right' ? 'bg-[--app-accent-soft]' : 'bg-gray-100', row % 2 ? 'w-32' : 'w-48']" />
+                </div>
+            </div>
+            <div v-else-if="hasNoMessages" class="flex h-full flex-col items-center justify-center gap-1 text-center text-sm text-gray-400">
+                <FontAwesomeIcon icon="fal fa-comments" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
+                {{ ctrans("No messages yet") }}
+                <span class="text-xs">{{ ctrans("Say hello, or tap a quick reply below") }}</span>
+            </div>
             <div
-                v-for="message in messages"
+                v-for="(message, messageIndex) in messages"
                 :key="message.id"
-                class="group flex flex-col"
+                class="flex"
+                :class="[
+                    message.user_id === myId ? 'justify-end' : 'justify-start',
+                    messageIndex === 0 ? '' : isGroupChat && !startsRun(messageIndex) ? 'mt-0.5' : 'mt-2.5',
+                ]"
+            >
+            <div v-if="isGroupChat && message.user_id !== myId" class="mr-1.5 w-7 shrink-0">
+                <TicketUserAvatar
+                    v-if="startsRun(messageIndex)"
+                    v-tooltip="message.user_name"
+                    :name="message.user_name"
+                    :avatar="senderAvatar(message)"
+                    size="md" />
+            </div>
+            <div
+                class="group flex min-w-0 flex-1 flex-col"
                 :class="message.user_id === myId ? 'items-end' : 'items-start'"
             >
                 <div v-if="parentById(message.parent_id)" class="max-w-[80%] mb-0.5 px-2 py-1 rounded bg-gray-100 text-xxs text-gray-500 border-l-2 border-gray-300">
@@ -401,56 +659,108 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     {{ parentById(message.parent_id)?.body }}
                 </div>
 
-                <div class="flex items-end gap-x-1" :class="message.user_id === myId ? 'flex-row-reverse' : ''">
+                <div class="flex w-full items-end gap-x-1" :class="message.user_id === myId ? 'flex-row-reverse' : ''">
                     <div
                         class="relative max-w-[80%] rounded-lg text-sm"
-                        :class="[message.gif_url ? 'p-1' : 'px-3 py-2', message.user_id === myId ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900']"
-                        @mouseenter="!fullScreen && (activeReactionFor = message.id)"
-                        @mouseleave="!fullScreen && (activeReactionFor = null)"
-                        @click="fullScreen && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
+                        :class="[
+                            message.gif_url ? 'p-1' : 'px-3 py-2',
+                            message.user_id === myId ? 'bg-[--app-accent] text-[--app-accent-text]' : 'bg-gray-100 text-gray-900',
+                            message.client_status === 'failed' && 'opacity-60 ring-1 ring-red-400',
+                            isGroupChat && startsRun(messageIndex) && (message.user_id === myId ? 'rounded-tr-sm' : 'rounded-tl-sm'),
+                        ]"
+                        v-tooltip="isGroupChat && !endsRun(messageIndex) ? { content: useFormatTime(message.created_at, { formatTime: 'hm' }), placement: message.user_id === myId ? 'left' : 'right' } : undefined"
+                        @mouseenter="reactsOnHover && !message.client_status && (activeReactionFor = message.id)"
+                        @mouseleave="reactsOnHover && (activeReactionFor = null)"
+                        @click="!reactsOnHover && !message.client_status && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
                     >
-                        <div v-if="conversation.type === 'group' && message.user_id !== myId" class="text-xxs opacity-70 mb-0.5">
-                            {{ message.user_name }}
+                        <div v-if="isGroupChat && message.user_id !== myId && startsRun(messageIndex)" class="mb-0.5 text-xs font-medium whitespace-nowrap" :class="senderNameClass(message.user_id)">
+                            <span v-tooltip="message.user_name" class="cursor-default">{{ shortSenderName(message.user_name) }}</span>
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
-                        <img v-if="message.gif_url" :src="message.gif_url" loading="lazy" class="max-w-full rounded max-h-[240px]" />
+                        <div v-if="message.gif_url" class="relative">
+                            <div
+                                v-if="gifState[message.gif_url] !== 'loaded'"
+                                class="flex h-[150px] w-[200px] max-w-full items-center justify-center rounded text-xs"
+                                :class="[gifState[message.gif_url] === 'failed' ? 'bg-black/5' : 'animate-pulse', message.user_id === myId ? 'bg-white/20' : 'bg-gray-200']">
+                                <span v-if="gifState[message.gif_url] === 'failed'" class="opacity-70">{{ ctrans("GIF unavailable") }}</span>
+                            </div>
+                            <img
+                                v-if="gifState[message.gif_url] !== 'failed'"
+                                :src="message.gif_url"
+                                alt="GIF"
+                                class="max-w-full rounded max-h-[240px]"
+                                :class="gifState[message.gif_url] !== 'loaded' && 'pointer-events-none absolute inset-0 opacity-0'"
+                                @load="gifState[message.gif_url] = 'loaded'"
+                                @error="gifState[message.gif_url] = 'failed'" />
+                        </div>
                         <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words" v-html="renderBody(message, messageText(message))" />
                         <button
                             v-if="!message.gif_url && hasTranslation(message)"
                             class="text-xxs underline opacity-70 mt-1"
-                            :class="message.user_id === myId ? 'text-indigo-100' : 'text-gray-500'"
+                            :class="message.user_id === myId ? 'text-[--app-accent-text] opacity-80' : 'text-gray-500'"
                             @click="showOriginal[message.id] = !showOriginal[message.id]"
                         >
-                            {{ showOriginal[message.id] ? trans('translated') : trans('original') }}
+                            {{ showOriginal[message.id] ? ctrans('translated') : ctrans('original') }}
                         </button>
 
-                        <div v-if="activeReactionFor === message.id" class="absolute -top-9 flex gap-x-1 bg-white border border-gray-200 rounded-full shadow px-2 py-1 z-10" :class="message.user_id === myId ? 'right-0' : 'left-0'">
-                            <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
-                                {{ emoji }}
-                            </button>
+                        <div v-if="activeReactionFor === message.id" class="absolute z-10" :class="[message.user_id === myId ? 'right-0' : 'left-0', messageIndex === 0 ? 'top-full pt-1.5' : 'bottom-full pb-1.5']">
+                            <div class="flex gap-x-1 rounded-full border border-gray-200 bg-white px-2 py-1 shadow">
+                                <button v-for="emoji in REACTION_EMOJIS" :key="emoji" class="text-base leading-none p-1" @click="toggleReaction(message, emoji)">
+                                    {{ emoji }}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <button class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
-                        {{ trans('reply') }}
+                    <button v-if="!message.client_status" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
+                        {{ ctrans('reply') }}
                     </button>
-                    <button v-if="!message.gif_url && messageText(message)" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
-                        {{ trans('task') }}
+                    <button v-if="!message.client_status && !message.gif_url && messageText(message) && conversation.context_type !== 'StaffTask'" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
+                        {{ ctrans('task') }}
                     </button>
                 </div>
 
-                <div v-if="reactionEntries(message).length" class="flex gap-x-1 mt-0.5">
-                    <span
+                <TransitionGroup tag="div" name="reaction-pop" class="flex gap-x-1 mt-0.5 empty:hidden">
+                    <button
                         v-for="[emoji, userIds] in reactionEntries(message)"
                         :key="emoji"
-                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5"
-                        :class="hasMyReaction(message, emoji) ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50 border-gray-200'"
+                        type="button"
+                        class="text-xxs px-1.5 py-0.5 rounded-full border flex items-center gap-x-0.5 transition hover:border-[--app-accent]"
+                        :class="hasMyReaction(message, emoji) ? 'bg-[--app-accent-soft] border-[--app-accent]' : 'bg-gray-50 border-gray-200'"
+                        :title="hasMyReaction(message, emoji) ? ctrans('Remove reaction') : ctrans('React with :emoji', { emoji })"
+                        @click="toggleReaction(message, emoji)"
                     >
                         {{ emoji }} {{ (userIds as number[]).length }}
-                    </span>
-                </div>
+                    </button>
+                </TransitionGroup>
 
-                <div class="text-xxs text-gray-400 mt-0.5">{{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</div>
+                <div v-if="showsMessageMeta(message, messageIndex)" class="mt-0.5 flex items-center gap-1 text-xxs text-gray-400">
+                    <template v-if="message.client_status === 'failed'">
+                        <span class="flex items-center gap-1 font-medium text-red-600">
+                            <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
+                            {{ ctrans("Not sent") }}
+                        </span>
+                        <button type="button" class="rounded px-1 font-medium text-red-600 underline hover:text-red-700" @click="store.retrySend(message)">{{ ctrans("Retry") }}</button>
+                        <button type="button" class="rounded px-1 text-gray-400 hover:text-gray-600" @click="store.discardFailed(message)">{{ ctrans("Discard") }}</button>
+                    </template>
+                    <template v-else>
+                        <span>{{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</span>
+                        <template v-if="isMine(message)">
+                            <FontAwesomeIcon v-if="message.client_status === 'sending'" v-tooltip="ctrans('Sending')" icon="fal fa-check" class="text-gray-400" fixed-width :aria-label="ctrans('Sending')" />
+                            <button
+                                v-else
+                                type="button"
+                                v-tooltip="ticksTooltip(message)"
+                                :aria-label="ticksTooltip(message)"
+                                class="rounded leading-none transition duration-200"
+                                :class="[isReadByEveryone(message) ? 'text-[--app-accent]' : 'text-gray-400', isGroupChat ? 'cursor-pointer hover:bg-gray-100 active:!bg-gray-200' : 'cursor-default']"
+                                @click.stop="openReadInfo($event, message)">
+                                <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
+                            </button>
+                        </template>
+                    </template>
+                </div>
+            </div>
             </div>
 
             <div
@@ -462,10 +772,45 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             </div>
         </div>
 
+        <Popover ref="readInfoPopover" @hide="readInfoMessage = null">
+            <div class="w-60 text-sm">
+                <p class="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[--app-accent-strong]">
+                    <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
+                    {{ ctrans("Read by") }}
+                </p>
+                <ul v-if="readInfo.read.length" class="mb-3 space-y-1.5">
+                    <li v-for="participant in readInfo.read" :key="participant.id" class="flex items-center gap-2">
+                        <TicketUserAvatar :name="participant.name" :avatar="participant.avatar" size="sm" />
+                        <span class="min-w-0 flex-1 truncate text-gray-800" :title="participant.name">{{ participant.name }}</span>
+                        <span class="shrink-0 text-xxs text-gray-400">{{ useFormatTime(participant.last_read_at!, { formatTime: 'hm' }) }}</span>
+                    </li>
+                </ul>
+                <p v-else class="mb-3 text-xs text-gray-400">{{ ctrans("Nobody yet") }}</p>
+
+                <template v-if="readInfo.unread.length">
+                    <p class="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+                        {{ ctrans("Not read yet") }}
+                    </p>
+                    <ul class="space-y-1.5">
+                        <li v-for="participant in readInfo.unread" :key="participant.id" class="flex items-center gap-2 opacity-70">
+                            <TicketUserAvatar :name="participant.name" :avatar="participant.avatar" size="sm" />
+                            <span class="min-w-0 flex-1 truncate text-gray-700" :title="participant.name">{{ participant.name }}</span>
+                        </li>
+                    </ul>
+                </template>
+            </div>
+        </Popover>
+
+        <div v-if="leftAt" class="shrink-0 border-t border-gray-200 bg-gray-50 px-3 py-3 text-center text-xs text-gray-500" :style="fullScreen ? { paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' } : {}">
+            <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
+            {{ ctrans("You were taken off this on :date. You can read the chat up to then; you will see everything again if you are added back.", { date: useFormatTime(leftAt, { formatTime: 'hm' }) }) }}
+        </div>
+
         <!-- Composer -->
-        <div class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
+        <div v-else class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
             <div v-if="parentMessage" class="flex items-center justify-between px-2 py-1 mb-1 rounded bg-gray-100 text-xs text-gray-600">
-                <span class="truncate">{{ trans('Replying to') }}: {{ parentMessage.body }}</span>
+                <span class="truncate">{{ ctrans('Replying to') }}: {{ parentMessage.body }}</span>
                 <button class="ml-2 shrink-0" @click="clearReply">
                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                 </button>
@@ -486,7 +831,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="flex items-center gap-x-1 shrink-0">
                     <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                     <button
-                        v-tooltip="trans('Send a GIF')"
+                        v-tooltip="ctrans('Send a GIF')"
                         class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
                         :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click.stop="showGifPicker = !showGifPicker; showEmojiPicker = false"
@@ -494,7 +839,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         <span :class="fullScreen ? 'text-xs' : 'text-xxs'" class="font-medium">GIF</span>
                     </button>
                     <button
-                        v-tooltip="trans('Emoji')"
+                        v-tooltip="ctrans('Emoji')"
                         class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
                         :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
                         @click.stop="showEmojiPicker = !showEmojiPicker; showGifPicker = false"
@@ -530,7 +875,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         v-for="(participant, index) in mentionMatches"
                         :key="participant.id"
                         class="w-full flex items-center gap-x-2 px-2 py-1 text-left text-sm"
-                        :class="index === mentionActiveIndex ? 'bg-indigo-50' : 'hover:bg-gray-50'"
+                        :class="index === mentionActiveIndex ? 'bg-[--app-accent-soft]' : 'hover:bg-gray-50'"
                         @mousedown.prevent="selectMention(participant)"
                     >
                         <div class="h-5 w-5 rounded-full overflow-hidden bg-gray-200 shrink-0">
@@ -543,15 +888,15 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     ref="textarea"
                     v-model="newMessage"
                     rows="1"
-                    class="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    class="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
                     :class="fullScreen ? 'min-h-[44px] text-base' : 'text-sm'"
-                    :placeholder="trans('Write a message…')"
+                    :placeholder="ctrans('Write a message…')"
                     @input="handleTypingInput"
                     @keydown="onTextareaKeydown"
                     @paste="onPaste"
                 />
                 <button
-                    class="shrink-0 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40"
+                    class="shrink-0 rounded-full bg-[--app-accent] text-[--app-accent-text] flex items-center justify-center hover:bg-[--app-accent-strong] disabled:opacity-40"
                     :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
                     :disabled="!newMessage.trim() && !pendingImage"
                     @click="sendCurrent"
@@ -566,5 +911,36 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             :subject="taskSource ? messageText(taskSource).slice(0, 255) : ''"
             :source-message-id="taskSource?.id ?? null"
             @close="taskDialogOpen = false" />
+
+        <Drawer v-if="taskInfo && !embedded" v-model:visible="isTaskMembersOpen" position="right" :header="ctrans('In this chat')" class="!w-80 !max-w-[85vw]" :pt="{ content: { class: '!p-0' } }">
+            <p class="border-b border-gray-200 px-3 pb-2 text-xs text-gray-500">{{ ctrans(":online of :total online", { online: taskOnlineCount, total: taskMembers.length }) }}</p>
+            <StaffTaskChatMembers :members="taskMembers" :my-id="myId ?? null" />
+        </Drawer>
     </div>
 </template>
+
+<style scoped>
+.reaction-pop-enter-active {
+    animation: reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reaction-pop-leave-active {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.reaction-pop-leave-to {
+    opacity: 0;
+    transform: scale(0.6);
+}
+
+@keyframes reaction-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+</style>

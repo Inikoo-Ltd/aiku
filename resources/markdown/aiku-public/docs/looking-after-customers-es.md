@@ -1,8 +1,8 @@
 ---
 title: Cuidar de los clientes
 summary: Encuentra tu camino por la lista de clientes de una tienda, añade un cliente nuevo, lee la página de un cliente y entiende los estados, logins y prospectos que la rodean.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-29
+source_date: 2026-09-29
 tags: crm, customers
 category: crm
 ---
@@ -13,9 +13,32 @@ Cada tienda tiene su propia lista de <b>Customers</b>, a la que se llega desde l
 
 ## La lista de clientes
 
-Abre una tienda y ve a **CRM → Customers**. La lista muestra todos los clientes de esa tienda, con columnas para su **Ref**, **Name**, la fecha en que se añadieron (**Since**), la fecha de su **Last Invoice**, el número de **Invoices** y **Sales**. Puedes buscar en la lista y ordenar por cualquiera de estas columnas.
+Abre una tienda y ve a **CRM → Customers**. La lista muestra todos los clientes de esa tienda, con columnas para su **Ref**, **Name**, la fecha en que se añadieron (**Since**), la fecha de su **Last Invoice**, la fecha estimada de su **Next order** (próximo pedido), el número de **Invoices** y **Sales**. Puedes buscar en la lista y ordenar por cualquiera de estas columnas.
 
-Puedes filtrar la lista con un cuadro de búsqueda global (busca por nombres, y por códigos postales si escribes uno), por **Tag**, por **Country**, y por si un cliente ha hecho alguna vez un pedido o no.
+Puedes filtrar la lista con un cuadro de búsqueda global (busca por nombres, y por códigos postales si escribes uno), por **Tag**, por **Country**, y por si un cliente ha hecho alguna vez un pedido o no. El panel de filtros situado encima de la lista añade más opciones, incluyendo **Due to Reorder** (pendientes de reponer).
+
+## Clientes pendientes de reponer
+
+Para cada cliente con al menos dos pedidos facturados en el último año, aiku calcula cuántos días suele dejar entre pedidos: los días desde su primera factura hasta la última, divididos entre el número de intervalos entre ellas. Varias facturas el mismo día cuentan como un solo pedido, y las devoluciones no son pedidos.
+
+Su **Next order** estimado es la fecha de su última factura más ese intervalo habitual. Se muestra en la lista de clientes y en el **Overview** del cliente, y se recalcula cada noche y cada vez que se le factura.
+
+Un cliente está **pendiente de reponer** cuando esa fecha cae dentro de los próximos 7 días, o ya ha pasado por menos de uno de sus intervalos habituales. Un cliente que se ha retrasado más que eso se está alejando, no está pendiente de reponer. Un cliente con un pedido ya enviado y en camino por el almacén ya ha repuesto, así que no está pendiente. Añade el filtro **Due to Reorder** en la lista de clientes para verlos, ordena por **Next order** para ver quién es el primero, o usa el mismo filtro para elegir los destinatarios de un mailshot.
+
+## Correos de recordatorio de reposición
+
+Una tienda también puede enviar automáticamente un correo a los clientes cuando están pendientes de reponer. En la sección **Comms** de la tienda, abre **Push** y luego el outbox **Due to reorder reminder**. Diseña el correo ahí y actívalo. Se envía una vez al día, por la tarde.
+
+En el correo, **[Products]** muestra hasta cinco de los propios productos recurrentes del cliente, los que está pendiente de reponer antes. Cada uno tiene una imagen, un enlace a su página en la web, la cantidad que suele pedir y el precio. **[Last Invoice Date]** es la fecha de su última factura. **Days before the expected next order** determina con cuánta antelación se envía el correo. Si se deja vacío, se envía 7 días antes del **Next order** estimado del cliente.
+
+Para evitar enviar al mismo cliente varios correos parecidos:
+
+- Un cliente recibe este correo solo una vez entre dos de sus facturas. Cuando vuelve a pedir y se le factura, el siguiente recordatorio espera hasta que vuelva a estar pendiente.
+- Un cliente con un pedido ya en camino por el almacén no está pendiente, así que no se le envía.
+- Los correos de **Gold reward reminder** también se envían a los clientes después de su último pedido. Un cliente que ha recibido uno de ellos en los últimos 7 días, o que tiene uno pendiente en los próximos 7 días, se omite por ahora. Si sigue sin haber repuesto cuando terminan los Gold reward reminders, entonces recibe el recordatorio de reposición.
+- Los clientes que se dan de baja del correo, o cuya suscripción **Reorder Reminders** está desactivada en **Subscriptions** dentro de su **Overview**, no lo vuelven a recibir. Los clientes también pueden desactivarla ellos mismos en su cuenta en la web.
+
+El outbox muestra cada envío, con los correos enviados, abiertos y clicados. Los pedidos realizados después de que un cliente haga clic en un enlace del correo se atribuyen a él en los informes de marketing.
 
 ## Añadir un cliente
 
@@ -41,6 +64,7 @@ Al abrir un cliente desde la lista llegas a su página, organizada en pestañas:
 - **Attachments** — archivos adjuntos al cliente.
 - **Payments**
 - **Credit transactions**
+- **Reorders** — los productos que el cliente ha comprado en dos o más días distintos: cuántas veces, la cantidad media, los días medios entre pedidos de ese producto, cuándo lo pidió por última vez y cuándo es probable que vuelva a pedirlo. Los productos pendientes de reponer llevan una marca **Due**.
 - **Favourites** — productos que el cliente ha marcado como favoritos.
 - **Reminders**
 - **Dispatched emails** — correos que aiku le ha enviado.

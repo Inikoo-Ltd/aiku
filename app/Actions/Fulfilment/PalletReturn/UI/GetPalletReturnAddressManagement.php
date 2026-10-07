@@ -71,9 +71,7 @@ class GetPalletReturnAddressManagement
             'addresses'            => [
                 'isCannotSelect'                 => true,
                 'address_list'                   => $addressCollection,
-                'options'                        => [
-                    'countriesAddressData' => GetAddressData::run()
-                ],
+                'options'                        => $forRetina ? ['countriesAddressData' => GetAddressData::run()] : [],
                 'pinned_address_id'              => $palletReturn->fulfilmentCustomer->customer->delivery_address_id,
                 'home_address_id'                => $palletReturn->fulfilmentCustomer->customer->address_id,
                 'current_selected_address_id'    => $palletReturn->delivery_address_id,
@@ -119,14 +117,10 @@ class GetPalletReturnAddressManagement
         return [
             'address' => [
                 'value'            => $palletReturn->is_collection ? null : AddressResource::make($palletReturn->deliveryAddress),
-                'options'          => [
-                    'countriesAddressData' => GetAddressData::run()
-                ],
+                'options'          => $forRetina ? ['countriesAddressData' => GetAddressData::run()] : [],
                 'address_customer' => [
                     'value'   => AddressResource::make($palletReturn->fulfilmentCustomer->customer->address),
-                    'options' => [
-                        'countriesAddressData' => GetAddressData::run()
-                    ],
+                    'options' => $forRetina ? ['countriesAddressData' => GetAddressData::run()] : [],
                 ],
                 'routes_address'   => $forRetina
                     ? [

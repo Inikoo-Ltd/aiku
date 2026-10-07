@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle, faAsterisk, faChevronDown } from '@fas'
 import { faAddressBook, faFileSignature, faPhone, faSave, faTruck, faShip, faCog, faClock, faCreditCard, faFileInvoiceDollar } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { isArray } from 'lodash-es'
 
 import { ref, onMounted } from 'vue'
@@ -49,7 +49,6 @@ const props = defineProps<{
     }
 }>()
 
-console.log(props)
 let fields: any = {}
 Object.entries(props.formData.blueprint).forEach(([, val]) => {
     Object.entries(val.fields).forEach(([fieldName, fieldData]: any) => {
@@ -196,7 +195,6 @@ const onSelectSubmitChange = (value) => {
     ButtonActive.value = value
 }
 
-console.log("formdata create", props.formData)
 </script>
 
 <template>

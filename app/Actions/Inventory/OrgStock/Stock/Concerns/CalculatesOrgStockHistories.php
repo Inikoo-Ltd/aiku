@@ -115,7 +115,7 @@ trait CalculatesOrgStockHistories
         $state = $this->initValuationState($orgStock, $wacStartDate);
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
-            ->select(['type', 'quantity', 'cost_per_sku', 'org_amount', 'date'])
+            ->select(['type', 'quantity', 'cost_per_sku', 'org_amount', 'date', 'source_id'])
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
@@ -167,6 +167,7 @@ trait CalculatesOrgStockHistories
         $onHand = (float)OrgStockMovement::on('aiku_no_sticky')
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '<', $valuationStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
+            ->whereNot(fn ($query) => $query->where('type', OrgStockMovementTypeEnum::AUDIT->value)->whereNotNull('source_id'))
             ->sum('quantity');
 
         $openingCost = $onHand > 0 ? $this->getLppPerSku($orgStock, $valuationStartDate) : null;
@@ -178,8 +179,16 @@ trait CalculatesOrgStockHistories
         ];
     }
 
+    /**
+     * An Aurora audit carries the counted level, not a change: Aurora booked the difference as
+     * its own adjustment rows, so counting the audit too inflates the stock and strands old layers.
+     */
     protected function applyMovementToValuation(array &$state, object $movement, OrgStock $orgStock): void
     {
+        if ($movement->type == OrgStockMovementTypeEnum::AUDIT && $movement->source_id !== null) {
+            return;
+        }
+
         $quantity = (float)$movement->quantity;
         if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
             $cost = $movement->cost_per_sku;
@@ -382,7 +391,7 @@ trait CalculatesOrgStockHistories
         );
 
 
-        $organisationStockHistory = OrganisationStockHistory::updateOrCreate(
+        $organisationStockHistory = OrganisationStockHistory::firstOrCreate(
             [
 
                 'organisation_id' => $orgStock->organisation_id,

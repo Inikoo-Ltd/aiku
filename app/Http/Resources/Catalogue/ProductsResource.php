@@ -60,6 +60,7 @@ use Carbon\Carbon;
  * @property mixed $is_for_sale
  * @property mixed $discontinued_at
  * @property mixed $health_rank
+ * @property mixed $barcode
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -154,6 +155,7 @@ class ProductsResource extends JsonResource
             'grp_currency_code'                 => $this->grp_currency_code ?? null,
             'stock'                             => $this->available_quantity,
             'image_thumbnail'                   => Arr::get($this->web_images, 'main.thumbnail'),
+            'barcode'                           => $this->barcode ?? null,
             'master_product_id'                 => $this->master_product_id,
             'variant_slug'                      => $this->variant_slug,
             'is_variant_leader'                 => $this->is_variant_leader,

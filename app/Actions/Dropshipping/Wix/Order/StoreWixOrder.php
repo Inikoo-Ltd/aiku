@@ -105,7 +105,7 @@ class StoreWixOrder extends RetinaAction
         $customerClientID = DB::table('customer_clients')
             ->select('id')
             ->where('customer_sales_channel_id', $wixUser->customer_sales_channel_id)
-            ->where('reference', $reference)
+            ->whereRaw('lower(reference) = lower(?)', [$reference])
             ->first();
 
         if (!$customerClientID) {

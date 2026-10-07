@@ -99,7 +99,6 @@ const sendSetting = ({settingForm = {} , loading = false, close = ()=>null }) =>
         })
 }
 
-console.log(props.data)
 
 </script>
 

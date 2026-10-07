@@ -10,16 +10,16 @@ import { faChevronDown } from "@far"
 import { faPlay, faSortDown, faSortUp } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faSitemap, faTriangle } from "@fal"
 import axios from "axios"
 import { set } from "lodash-es"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
-import DashboardWidget from "@/Components/DataDisplay/Dashboard/DashboardWidget.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
+import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
@@ -30,6 +30,9 @@ const props = defineProps<{
 
 const isLoadingOnTable = ref(false)
 provide('isLoadingOnTable', isLoadingOnTable)
+
+const failedTableTab = ref<string | null>(null)
+provide('failedTableTab', failedTableTab)
 
 const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 	const block = props.dashboard?.super_blocks?.[0]?.blocks?.[0]
@@ -43,6 +46,7 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 	}
 
 	isLoadingOnTable.value = true
+	failedTableTab.value = null
 	try {
 		const { data } = await axios.get(route(fetchRoute.name, fetchRoute.parameters ?? {}), {
 			params: {
@@ -53,6 +57,8 @@ const fetchDashboardTabData = async (tabSlug: string): Promise<void> => {
 		if (data?.tab && data?.table) {
 			set(props, `dashboard.super_blocks[0].blocks[0].tables.${data.tab}`, data.table)
 		}
+	} catch {
+		failedTableTab.value = tabSlug
 	} finally {
 		isLoadingOnTable.value = false
 	}
@@ -65,11 +71,16 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 </script>
 
 <template>
-	<Head :title="trans('Dashboard')" />
+	<Head :title="ctrans('Dashboard')" />
 	<div>
 		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
+		<ShopMonthTarget
+			v-if="props.dashboard?.super_blocks?.[0]?.month_target"
+			:month-target="props.dashboard.super_blocks[0].month_target"
+			:year-target="props.dashboard.super_blocks[0].year_target"
+		/>
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
-			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
+			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
 		</KeepAlive>
 
 		<DashboardSettings
@@ -88,13 +99,6 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
-		/>
-
-		<DashboardWidget
-			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
-			class="mt-12"
-			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
-			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>
 	</div>
 </template>

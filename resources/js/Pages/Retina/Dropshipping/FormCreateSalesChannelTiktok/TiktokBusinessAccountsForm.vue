@@ -9,13 +9,13 @@ import { inject, ref, watch, onMounted, provide, onUnmounted } from "vue"
 import { router, useForm } from "@inertiajs/vue3"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 
 const goNext = inject("goNext")
-const closeCreateTiktokModal = inject("closeCreateTiktokModal")
+const cancelCreateTiktokModal = inject("cancelCreateTiktokModal")
 const tiktokUserId = inject("tiktokUserId")
 
 const tiktokShopData = ref([])
@@ -39,10 +39,9 @@ onMounted(async () => {
 
 		tiktokShopData.value = response.data?.data?.authorized_shop
 	} catch (error) {
-		console.log(error)
 		notify({
 			type: "error",
-			text: trans("Failed to save Tiktok user data"),
+			text: ctrans("Failed to save Tiktok user data"),
 		})
 	}
 })
@@ -52,7 +51,7 @@ const submitForm = async () => {
 
 	if(!tiktokInput.tiktok_shop_id && !tiktokInput.tiktok_shop_chiper) {
 		errors.value = {
-			message: trans('Please select at least one shop.')
+			message: ctrans('Please select at least one shop.')
 		}
 
 		isLoadingStep.value = false
@@ -77,7 +76,7 @@ const submitForm = async () => {
 
 <template>
 	<form @submit.prevent="submitForm" class="flex flex-col gap-6">
-		<div class="flex flex-col gap-2 w-full md:w-80">{{ trans('Select your shop:') }}</div>
+		<div class="flex flex-col gap-2 w-full md:w-80">{{ ctrans('Select your shop:') }}</div>
 
 		<hr class="w-full border-t" />
 		<div v-for="tiktok in tiktokShopData">
@@ -98,11 +97,11 @@ const submitForm = async () => {
 		</div>
 
 		<div class="flex md:justify-end gap-4">
-			<Button type="secondary" size="sm" @click="closeCreateTiktokModal">{{
-				trans("Cancel")
+			<Button type="secondary" size="sm" @click="cancelCreateTiktokModal">{{
+				ctrans("Cancel")
 			}}</Button>
 			<Button size="sm" :loading="isLoadingStep" @click="submitForm">{{
-				trans("Next")
+				ctrans("Next")
 			}}</Button>
 		</div>
 	</form>

@@ -10,7 +10,7 @@ import Dialog from 'primevue/dialog';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
 import "@vueform/multiselect/themes/default.css"
@@ -64,8 +64,8 @@ const sendTestToServer = () => {
         { ...temporaryData.value, email: email.value }
     ).then((response) => {
         notify({
-            title: trans('Success!'),
-            text: trans('Test email sent successfully'),
+            title: ctrans('Success!'),
+            text: ctrans('Test email sent successfully'),
             type: 'success',
         });
         email.value = '';
@@ -107,8 +107,8 @@ const saveTemplate = async (data: any) => {
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
             notify({
-                title: trans('Success!'),
-                text: trans('Success to save template'),
+                title: ctrans('Success!'),
+                text: ctrans('Success to save template'),
                 type: 'success',
             })
         })
@@ -141,7 +141,6 @@ const onSave = async (data: any) => {
             });
         }
     } catch (error) {
-        console.log(error)
         const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
         notify({
             title: "Something went wrong.",
@@ -173,13 +172,12 @@ const handleDelete = async () => {
     await axios.delete(route(props.deleteTemplateRoute.name, props.deleteTemplateRoute.parameters))
         .then((response) => {
             notify({
-                title: trans('Success!'),
-                text: trans('Template deleted successfully'),
+                title: ctrans('Success!'),
+                text: ctrans('Template deleted successfully'),
                 type: 'success',
             })
         })
         .catch((error) => {
-            console.log(error);
             if (error.response) {
                 notify({
                     title: 'Error',
@@ -215,14 +213,14 @@ const handleDelete = async () => {
 
         </template>
         <template #other>
-            <ModalConfirmation :title="trans('Are you sure you want to delete this template?')"
-                :description="trans('This action cannot be undone. This will permanently delete this template')"
+            <ModalConfirmation :title="ctrans('Are you sure you want to delete this template?')"
+                :description="ctrans('This action cannot be undone. This will permanently delete this template')"
                 isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">
                     <Button :disabled="inProgress" :icon="faTrashAlt" type="negative" @click="changeModel" />
                 </template>
                 <template #btn-yes>
-                    <Button :label="trans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
+                    <Button :label="ctrans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
                         type="negative" :icon="faTrashAlt" />
                 </template>
             </ModalConfirmation>

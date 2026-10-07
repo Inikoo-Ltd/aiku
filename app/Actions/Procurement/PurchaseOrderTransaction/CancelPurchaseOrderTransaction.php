@@ -5,12 +5,16 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelPurchaseOrderTransaction extends OrgAction
@@ -20,18 +24,45 @@ class CancelPurchaseOrderTransaction extends OrgAction
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransaction
     {
-        if ($purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
-            abort(422, __('Only submitted items can be cancelled'));
-        }
+        $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
-        $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, [
-            'state'          => PurchaseOrderTransactionStateEnum::CANCELLED,
-            'net_amount'     => 0,
-            'grp_net_amount' => 0,
-            'org_net_amount' => 0,
-        ]);
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction) {
+            $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
+            $purchaseOrderTransaction->refresh();
 
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
+            if ($purchaseOrderTransaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED) {
+                $isAwaitingDelivery = StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($purchaseOrder)
+                    ->whereKey($purchaseOrderTransaction->id)
+                    ->exists();
+
+                if (!$isAwaitingDelivery) {
+                    abort(422, __('This item is on a stock delivery, deal with it there'));
+                }
+            } elseif ($purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
+                abort(422, __('Only submitted or confirmed items can be cancelled'));
+            }
+
+            $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, [
+                'state'          => PurchaseOrderTransactionStateEnum::CANCELLED,
+                'net_amount'     => 0,
+                'grp_net_amount' => 0,
+                'org_net_amount' => 0,
+            ]);
+
+            CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
+
+            if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+                && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()
+                && !$purchaseOrder->purchaseOrderTransactions()->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)->exists()) {
+                $purchaseOrder->update([
+                    'state'      => PurchaseOrderStateEnum::SETTLED,
+                    'settled_at' => now(),
+                ]);
+            }
+
+            return $purchaseOrderTransaction;
+        });
+
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
 
         return $purchaseOrderTransaction;

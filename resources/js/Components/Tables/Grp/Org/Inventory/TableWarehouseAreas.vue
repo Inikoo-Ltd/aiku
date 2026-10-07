@@ -14,11 +14,12 @@ import { ref } from "vue"
 import { InputNumber } from "primevue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
     data: object,
     tab?: string
+    canEditPickingPosition?: boolean
 }>();
 
 const routeParams = route().params
@@ -83,7 +84,6 @@ const submitOrderPosition = async () => {
     if (!selectedWarehouseArea.value) return;
 
     try {
-        console.log('222')
         isLoadingSubmit.value = true
         const xxx = await axios.patch(route("grp.models.warehouse_area.update", {
             warehouseArea: selectedWarehouseArea.value?.id
@@ -94,14 +94,12 @@ const submitOrderPosition = async () => {
         // console.log('111 Update response:', selectedWarehouseArea.value.picking_position)
 
         const qqq = props.data.data.find((item => item.id === selectedWarehouseArea.value?.id))
-        console.log('qqq:', qqq);
         if (qqq) {
             qqq.picking_position = xxx.data.data.picking_position
         }
     } catch (error) {
-        console.log('Error updating picking position:', error);
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: "Failed to update picking position.",
             type: "error",
         })
@@ -127,6 +125,7 @@ const submitOrderPosition = async () => {
         <template #cell(picking_position)="{ item, proxyItem: warehouseArea }">
             <div class="mx-auto">
                 <Button
+                    v-if="canEditPickingPosition"
                     @click="() => {
                         selectedWarehouseArea = item
                         isOpenModal = true
@@ -135,8 +134,9 @@ const submitOrderPosition = async () => {
                     :key="`set-order-position-${item.id}${item.picking_position}`"
                     :type="item.picking_position ? 'tertiary' : 'secondary'"
                     :icon="item.picking_position ? 'fal fa-pencil' : ''"
-                    :label="item.picking_position ? `${item.picking_position}` : trans('Set order position')"
+                    :label="item.picking_position ? `${item.picking_position}` : ctrans('Set order position')"
                 />
+                <span v-else-if="item.picking_position">{{ item.picking_position }}</span>
             </div>
         </template>
 
@@ -149,7 +149,7 @@ const submitOrderPosition = async () => {
     </Table>
     
     <!-- Modal: Picking Position -->
-    <Modal :isOpen="isOpenModal" width="w-full max-w-lg" @close="isOpenModal = false">
+    <Modal v-if="canEditPickingPosition" :isOpen="isOpenModal" width="w-full max-w-lg" @close="isOpenModal = false">
         <div class="text-center font-semibold text-xl mb-4">
             {{ selectedWarehouseArea?.name }}
         </div>
@@ -164,7 +164,7 @@ const submitOrderPosition = async () => {
             xbuttonLayout="'horizontal'"
             :min="0"
             :max="999"
-            :placeholder="trans('Enter a number')"
+            :placeholder="ctrans('Enter a number')"
             inputId="picking_position"
             class="w-full"
             mode="decimal"

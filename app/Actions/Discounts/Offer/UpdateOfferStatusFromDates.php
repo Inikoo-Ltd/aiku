@@ -146,10 +146,7 @@ class UpdateOfferStatusFromDates extends OrgAction
             })->orWhere(function (Builder $query) {
                 $query->where('state', OfferStateEnum::IN_PROCESS)
                     ->whereNotNull('start_at')
-                    ->where('start_at', '<=', now())
-                    ->where(function (Builder $query) {
-                        $query->whereNull('end_at')->orWhere('end_at', '>', now());
-                    });
+                    ->where('start_at', '<=', now());
             });
         });
     }

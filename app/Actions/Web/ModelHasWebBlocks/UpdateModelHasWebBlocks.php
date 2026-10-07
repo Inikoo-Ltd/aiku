@@ -23,7 +23,6 @@ class UpdateModelHasWebBlocks extends OrgAction
     use WithWebEditAuthorisation;
     use WithActionUpdate;
 
-
     public function handle(ModelHasWebBlocks $modelHasWebBlocks, array $modelData): ModelHasWebBlocks
     {
         $this->update($modelHasWebBlocks, Arr::only($modelData, ['show', 'show_logged_in', 'show_logged_out']));

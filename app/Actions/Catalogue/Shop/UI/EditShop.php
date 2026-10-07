@@ -8,13 +8,17 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
-use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\Ordering\PreOrder\GetPreOrderText;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\OrgAction;
+use Illuminate\Support\Carbon;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
@@ -64,6 +68,9 @@ class EditShop extends OrgAction
     {
         $mergedBannedCountryRegions = $shop->banned_country_regions;
 
+        $signature  = PdfCustomerLetterOfAuthorisation::media($shop, 'signature');
+        $letterLogo = PdfCustomerLetterOfAuthorisation::media($shop, 'logo');
+
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
@@ -99,6 +106,9 @@ class EditShop extends OrgAction
 
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
+        $isWixConnected = $shop->engine === ShopEngineEnum::WIX && $shop->wixUser()->exists();
+        $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
+
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
         $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
@@ -125,7 +135,8 @@ class EditShop extends OrgAction
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
-            __('Wix Keys'),
+            __('Wix Settings'),
+            __('Chat widget'),
         ];
         $salesChannels          = SalesChannel::orderBy('id')->get();
         $salesChannelFields     = [];
@@ -159,6 +170,12 @@ class EditShop extends OrgAction
                             'label'    => __('Name'),
                             'value'    => $shop->name,
                             'required' => true,
+                        ],
+                        'short_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Short name'),
+                            'information' => __('Shown where space is tight, like the permissions grid'),
+                            'value'       => $shop->short_name,
                         ],
                         "image" => [
                             "type"  => "avatar",
@@ -194,7 +211,6 @@ class EditShop extends OrgAction
                             'label'   => __('Address'),
                             'value'   => AddressFormFieldsResource::make($shop->address)->getArray(),
                             'options' => [
-                                'countriesAddressData' => GetAddressData::run()
                             ]
                         ],
                         'collection_address'  => [
@@ -202,7 +218,6 @@ class EditShop extends OrgAction
                             'label'   => __('Collection address'),
                             'value'   => AddressFormFieldsResource::make($shop->collectionAddress)->getArray(),
                             'options' => [
-                                'countriesAddressData' => GetAddressData::run()
                             ]
                         ],
                         'registration_number' => [
@@ -317,11 +332,28 @@ class EditShop extends OrgAction
                             'information' => __('This would force all Products under this shop to follow any updates done on master'),
                             'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'shopkeeper_in_charge_id'                  => [
+                            'type'        => 'select',
+                            'label'       => __('Shopkeeper in charge'),
+                            'information' => __('Gets the tasks to update this shop\'s products when the master changes something the shop keeps its own copy of, such as the unit. Empty sends them to the products department.'),
+                            'options'     => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp'   => 'name',
+                            'valueProp'   => 'id',
+                            'searchable'  => true,
+                            'value'       => data_get($shop->settings, 'catalog.shopkeeper_in_charge_id'),
+                        ],
                         'family_indexing_follow_master'            => [
                             'label'       => __('Family Page Product Index Follow Master'),
                             'type'        => 'toggle',
                             'value'       => data_get($shop->settings, 'catalog.family_indexing_follow_master', true),
                             'information' => __('This would force all Products under this shop to follow the family indexing updates done on master'),
+                            'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'family_order_follow_master'               => [
+                            'label'       => __('Family Order In Website Follow Master'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.family_order_follow_master', true),
+                            'information' => __('This would force the order the families are listed in on the department, sub department and collection pages of this shop to follow the order set on master'),
                             'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
                         'related_product_follow_master'            => [
@@ -539,6 +571,61 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
+                ...(PdfCustomerLetterOfAuthorisation::isOffered($shop) ? [[
+                    'label'       => __('Letter of authorisation'),
+                    'icon'        => 'fal fa-file-signature',
+                    'information' => PdfCustomerLetterOfAuthorisation::isSigned($shop)
+                        ? __('Customers download this letter from their account settings to show marketplaces they are an authorised reseller. Staff can download it from the customer page.')
+                        : __('Draft: customers cannot download this letter until an organisation or group admin uploads the signature, even when switched on.'),
+                    'fields'      => array_filter([
+                        'letter_of_authorisation_enabled'      => [
+                            'type'  => 'toggle',
+                            'label' => __('Customers can download it'),
+                            'value' => PdfCustomerLetterOfAuthorisation::isEnabled($shop),
+                        ],
+                        'letter_of_authorisation_logo'         => [
+                            'type'        => 'file_upload',
+                            'label'       => __('Letterhead logo'),
+                            'information' => __('Without one the shop logo is used.'),
+                            'accept'      => 'image/png,image/jpeg',
+                            'value'       => $letterLogo?->name,
+                            'media_ulid'  => $letterLogo?->ulid,
+                        ],
+                        'letter_of_authorisation_company_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Company name on the letter'),
+                            'placeholder' => $shop->organisation->name,
+                            'value'       => Arr::get($shop->settings, 'letter_of_authorisation.company_name', ''),
+                        ],
+                        'letter_of_authorisation_body'         => [
+                            'type'        => 'textEditor',
+                            'label'       => __('Text'),
+                            'information' => __('These are replaced with the account details: :placeholders', ['placeholders' => implode(' ', PdfCustomerLetterOfAuthorisation::PLACEHOLDERS)]),
+                            'full'        => true,
+                            'value'       => Arr::get($shop->settings, 'letter_of_authorisation.body') ?: PdfCustomerLetterOfAuthorisation::defaultBody($shop),
+                        ],
+                        'letter_of_authorisation_footer'       => [
+                            'type'  => 'textEditor',
+                            'label' => __('Footer'),
+                            'full'  => true,
+                            'value' => Arr::get($shop->settings, 'letter_of_authorisation.footer') ?: PdfCustomerLetterOfAuthorisation::defaultFooter($shop),
+                        ],
+                        'letter_of_authorisation_signatory'    => [
+                            'type'        => 'input',
+                            'label'       => __('Signed by'),
+                            'placeholder' => __('Name, position'),
+                            'value'       => Arr::get($shop->settings, 'letter_of_authorisation.signatory', ''),
+                        ],
+                        'letter_of_authorisation_signature'    => PdfCustomerLetterOfAuthorisation::canSign($request->user(), $shop) ? [
+                            'type'       => 'file_upload',
+                            'label'      => __('Signature'),
+                            'required'   => true,
+                            'accept'     => 'image/png,image/jpeg',
+                            'value'      => $signature?->name,
+                            'media_ulid' => $signature?->ulid,
+                        ] : null,
+                    ]),
+                ]] : []),
                 [
                     'label'       => __('Bank Transfer Instructions for Email'),
                     'icon'        => 'fa-light fa-envelope',
@@ -623,6 +710,10 @@ class EditShop extends OrgAction
                     ],
                 ],
 
+                in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderSettingsFields($shop) : [],
+
+                in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderTextFields($shop) : [],
+
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Packaging & Inserts'),
                     'icon'   => 'fa-light fa-box-open',
@@ -701,14 +792,46 @@ class EditShop extends OrgAction
                             ],
                         ],
                         ShopEngineEnum::WIX => [
-                            'label'  => __('Wix Keys'),
+                            'label'  => __('Wix Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'wix_access_token' => [
+                                'wix_site_url'        => [
+                                    'type'         => 'input_with_warning',
+                                    'readonly'     => true,
+                                    'label'        => __('Wix Site Url'),
+                                    'value'        => Arr::get($shop->settings, 'wix.site_url', ''),
+                                    'showWarning'  => !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle' => __('We are having troubles connecting to the platform'),
+                                    'warningBody'  => __('Error Message').": ".$shop->external_shop_connection_error
+                                ],
+                                'wix_install_url'     => [
+                                    'type'        => 'input',
+                                    'disabled'    => true,
+                                    'label'       => __('Wix connect link'),
+                                    'value'       => $wixInstallUrl,
+                                    'information' => __('Open this link to connect or reconnect a Wix site to this shop. It is valid for 2 hours.'),
+                                ],
+                                'wix__connect'        => [
+                                    'type'        => 'action',
+                                    'label'       => __('Wix site'),
+                                    'information' => $isWixConnected
+                                        ? __('Connected to :site.', ['site' => Arr::get($shop->settings, 'wix.site_url', '')])
+                                        : __('Not connected yet.'),
+                                    'action'      => [
+                                        'type'  => 'button',
+                                        'style' => $isWixConnected ? 'tertiary' : 'save',
+                                        'label' => $isWixConnected ? __('Reconnect Wix site') : __('Connect Wix site'),
+                                        'route' => [
+                                            'url'       => $wixInstallUrl,
+                                            'openBlank' => true,
+                                        ],
+                                    ],
+                                ],
+                                'wix_order_from_days' => [
                                     'type'  => 'input',
-                                    'label' => __('Wix Access Token'),
-                                    'value' => Arr::get($shop->settings, 'wix.access_token', ''),
-                                ]
+                                    'label' => __('Wix Order From Days'),
+                                    'value' => Arr::get($shop->settings, 'wix.order_from_days', '30')
+                                ],
                             ],
                         ],
                         ShopEngineEnum::SHOPIFY => [
@@ -725,6 +848,38 @@ class EditShop extends OrgAction
                         ],
                         default => []
                     } : [],
+                /*
+                 * An external shop's customers usually write on the marketplace rather than to us,
+                 * so chat is off by type. A shop running our widget on its own storefront turns it
+                 * on here, which is also what creates the chat permissions its agents need.
+                 */
+                $shop->type === ShopTypeEnum::EXTERNAL ? [
+                    'label'  => __('Chat widget'),
+                    'icon'   => 'fa-light fa-comments',
+                    'fields' => [
+                        'chat_enabled'    => [
+                            'type'        => 'toggle',
+                            'label'       => __('Enable chat on this shop'),
+                            'value'       => (bool) Arr::get($shop->settings, 'chat.enabled', false),
+                            'information' => __('Lets this shop be worked in the chat inbox and serves the widget to its storefront.'),
+                        ],
+                        'chat_widget_key' => [
+                            'type'        => 'input',
+                            'disabled'    => true,
+                            'label'       => __('Widget key'),
+                            'value'       => Arr::get($shop->settings, 'chat.widget_key', ''),
+                            'information' => __('Paste this key into the storefront embed. It is created when chat is enabled.'),
+                        ],
+                        ...Arr::get($shop->settings, 'chat.enabled', false) ? [
+                            'chat_email_offline_replies' => [
+                                'type'        => 'toggle',
+                                'label'       => __('Answer offline messages by email'),
+                                'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
+                                'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
+                            ],
+                        ] : [],
+                    ],
+                ] : [],
                 [
                     'label'  => __('AWS-SES configuration'),
                     'icon'   => 'fa-light fa-key',
@@ -743,6 +898,24 @@ class EditShop extends OrgAction
                             'label'       => __('Enable Chat Feature'),
                             'value'       => Arr::get($shop->settings, 'chat.enable_chat', false),
                         ],
+                        'chat_hours_start'    => [
+                            'type'        => 'select',
+                            'mode'        => 'single',
+                            'label'       => __('Chat opens at'),
+                            'placeholder' => __('When work starts'),
+                            'information' => __('Leave empty to open the chat when the working hours start.'),
+                            'options'     => $this->chatTimeOptions($shop),
+                            'value'       => Arr::get($shop->settings, 'chat.hours.start'),
+                        ],
+                        'chat_hours_end'      => [
+                            'type'        => 'select',
+                            'mode'        => 'single',
+                            'label'       => __('Chat closes at'),
+                            'placeholder' => __(':minutes minutes before work ends', ['minutes' => IsWithinWorkingHours::CHAT_CLOSES_EARLY_MINUTES]),
+                            'information' => __('Leave empty to close the chat :minutes minutes before the working hours end, so the team can sign off for the day.', ['minutes' => IsWithinWorkingHours::CHAT_CLOSES_EARLY_MINUTES]),
+                            'options'     => $this->chatTimeOptions($shop),
+                            'value'       => Arr::get($shop->settings, 'chat.hours.end'),
+                        ],
                         'chat_slack_token'    => [
                             'type'        => 'input',
                             'label'       => __('Slack Bot Token'),
@@ -756,6 +929,16 @@ class EditShop extends OrgAction
                             'placeholder' => '#general',
                             'information' => __('Slack channels where chat conversations will be shared. Press Enter to add each channel.'),
                             'value'       => Arr::get($shop->settings, 'chat.slack_channels') ?? [],
+                        ],
+                        'gmail_showroom_senders' => [
+                            'type'        => 'tags',
+                            'label'       => __('Showroom booking senders'),
+                            'placeholder' => '@calendly.com',
+                            'information' => __('Emails from these addresses, or from a whole domain written as @domain, are filed unread under the Gmail "aiku/showroom" label and never become a chat, even if the sender was once marked as spam. Press Enter to add each one.'),
+                            'value'       => array_keys(array_filter(
+                                Arr::get($shop->settings, 'gmail.labeled_senders') ?? [],
+                                fn ($label) => $label === 'aiku/showroom'
+                            )),
                         ],
                         'view_contact_options_panel' => [
                             'type'        => 'toggle',
@@ -946,6 +1129,12 @@ class EditShop extends OrgAction
                                 'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
                             ],
                         ],
+                        'mailbox_sender_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Sender name'),
+                            'placeholder' => $shop->name,
+                            'value'       => Arr::get($shop->settings, 'gmail.sender_name', ''),
+                        ],
                     ],
                 ],
                 [
@@ -1095,6 +1284,10 @@ class EditShop extends OrgAction
                 $formData['blueprint'] = [];
             }
 
+            if (Arr::get($shop->settings, 'chat.enabled', false)) {
+                $allowedBlueprintLabels[] = __('Customer mailbox');
+            }
+
             $filteredBlueprint = [];
 
             foreach ($formData['blueprint'] as $section) {
@@ -1139,6 +1332,21 @@ class EditShop extends OrgAction
 
             ]
         );
+    }
+
+    /**
+     * Every quarter of an hour, written the way the shop's organisation writes times.
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function chatTimeOptions(Shop $shop): array
+    {
+        $midnight = Carbon::today();
+
+        return collect(range(0, 95))
+            ->map(fn (int $quarter) => $midnight->copy()->addMinutes($quarter * 15))
+            ->map(fn (Carbon $time) => ['value' => $time->format('H:i'), 'label' => $shop->organisation->formatClockTime($time)])
+            ->all();
     }
 
     private function loadReviewRatingLabels(Shop $shop): array
@@ -1217,5 +1425,183 @@ class EditShop extends OrgAction
             ),
             default => []
         };
+    }
+
+    /**
+     * Every pre-order text customers read, per shop language. Empty uses the default shown greyed
+     * out (HELP-3678).
+     *
+     * @return array<string, mixed>
+     */
+    private function preOrderTextFields(Shop $shop): array
+    {
+        $texts   = GetPreOrderText::make();
+        $locales = $texts->locales($shop);
+        $fields  = [];
+
+        foreach ($locales as $locale) {
+            foreach (GetPreOrderText::TEXTS as $key => [$label, $default]) {
+                $fields["pre_order_text__{$locale}__$key"] = [
+                    'type'        => 'textarea',
+                    'label'       => __($label).(count($locales) > 1 ? ' ('.$locale.')' : ''),
+                    'placeholder' => $texts->default($key, $locale),
+                    'rows'        => substr_count($default, "\n") + max(2, (int) ceil(strlen($default) / 90)),
+                    'value'       => (string) Arr::get($shop->settings, "pre_orders.texts.$locale.$key", ''),
+                    'information' => $this->preOrderTextInformation($default),
+                ];
+            }
+        }
+
+        return [
+            'label'  => __('Pre-order texts'),
+            'icon'   => 'fa-light fa-language',
+            'fields' => $fields,
+        ];
+    }
+
+    private function preOrderTextInformation(string $default): string
+    {
+        $information = __('Leave empty to use the default shown in grey. Orders already placed keep the terms they accepted.');
+        if (str_contains($default, "\n")) {
+            $information .= ' '.__('Separate paragraphs with an empty line.');
+        }
+
+        preg_match_all('/\{\w+\}/', $default, $placeholders);
+        if ($placeholders[0]) {
+            $information .= ' '.__('Filled in automatically: :placeholders', ['placeholders' => implode(' ', array_unique($placeholders[0]))]);
+        }
+
+        return $information;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function preOrderSettingsFields(Shop $shop): array
+    {
+        $currency = $shop->currency->code;
+        $integer  = fn (int $min) => ['step' => '1', 'maxFractionDigits' => 0, 'min' => $min];
+        $isTrade  = $shop->type === ShopTypeEnum::B2B;
+
+        return [
+            'label'  => __('Pre-orders'),
+            'icon'   => 'fa-light fa-hourglass-half',
+            'fields' => array_filter([
+                'pre_order_enabled'                           => [
+                    'type'        => 'toggle',
+                    'label'       => __('Enable pre-orders'),
+                    'value'       => $shop->hasPreOrders(),
+                    'information' => __('While off, products marked back-order or made-to-order behave like any other product: out of stock means they cannot be bought.'),
+                ],
+                'pre_order_default_lead_time_days'            => [
+                    'type'        => 'input_number',
+                    'bind'        => $integer(1),
+                    'label'       => __('Default lead time (days)'),
+                    'information' => __('Used when neither the product nor its supplier has a pre-order lead time.'),
+                    'value'       => $shop->preOrderSetting('default_lead_time_days'),
+                ],
+                'pre_order_dispatch_range_weeks'              => [
+                    'type'        => 'input_number',
+                    'bind'        => $integer(0),
+                    'label'       => __('Dispatch estimate range (weeks)'),
+                    'information' => __('The website shows a range, e.g. a 12 week lead time with a range of 2 shows "estimated dispatch 12–14 weeks".'),
+                    'value'       => $shop->preOrderSetting('dispatch_range_weeks'),
+                ],
+                'pre_order_deposit_percentage'                => $isTrade ? [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '1', 'maxFractionDigits' => 2, 'min' => 0, 'max' => 100],
+                    'label'       => __('Made-to-order deposit (%)'),
+                    'information' => __('Paid at checkout on made-to-order items. A product can set its own. Back-orders and dropshipping always pay in full.'),
+                    'value'       => $shop->preOrderSetting('deposit_percentage'),
+                ] : null,
+                'pre_order_full_payment_below'                => $isTrade ? [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '1', 'maxFractionDigits' => 2, 'min' => 0],
+                    'label'       => __('Pay in full below (:currency)', ['currency' => $currency]),
+                    'information' => __('Made-to-order items worth less than this in an order are paid in full, no deposit.'),
+                    'value'       => $shop->preOrderSetting('full_payment_below'),
+                ] : null,
+                'pre_order_balance_due_days'                  => $isTrade ? [
+                    'type'        => 'input_number',
+                    'bind'        => $integer(1),
+                    'label'       => __('Balance due within (days)'),
+                    'information' => __('The balance is requested by email with a payment link when the goods reach our warehouse.'),
+                    'value'       => $shop->preOrderSetting('balance_due_days'),
+                ] : null,
+                'pre_order_balance_first_reminder_day'        => $isTrade ? [
+                    'type'  => 'input_number',
+                    'bind'  => $integer(1),
+                    'label' => __('First balance reminder (day)'),
+                    'value' => $shop->preOrderSetting('balance_first_reminder_day'),
+                ] : null,
+                'pre_order_balance_second_reminder_day'       => $isTrade ? [
+                    'type'  => 'input_number',
+                    'bind'  => $integer(1),
+                    'label' => __('Second balance reminder (day)'),
+                    'value' => $shop->preOrderSetting('balance_second_reminder_day'),
+                ] : null,
+                'pre_order_balance_cancel_after_days'         => $isTrade ? [
+                    'type'        => 'input_number',
+                    'bind'        => $integer(1),
+                    'label'       => __('Cancel unpaid balance after (days)'),
+                    'information' => __('The order is cancelled, the deposit is kept and the goods go back into stock.'),
+                    'value'       => $shop->preOrderSetting('balance_cancel_after_days'),
+                ] : null,
+                'pre_order_free_cancellation_working_days'    => $isTrade ? [
+                    'type'        => 'input_number',
+                    'bind'        => $integer(0),
+                    'label'       => __('Free cancellation of made-to-order (working days)'),
+                    'information' => __('Until the supplier order is placed. After that the deposit is not refunded.'),
+                    'value'       => $shop->preOrderSetting('free_cancellation_working_days'),
+                ] : null,
+                'pre_order_late_cancellation_days'            => [
+                    'type'        => 'input_number',
+                    'bind'        => $integer(1),
+                    'label'       => __('Full refund when late by (days)'),
+                    'information' => __('If we are this late past the promised date, or the supplier cannot supply, the customer can cancel for a full refund.'),
+                    'value'       => $shop->preOrderSetting('late_cancellation_days'),
+                ],
+                'pre_order_pallet_weight_kg'                  => [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '1', 'maxFractionDigits' => 1, 'min' => 0],
+                    'label'       => __('Pallet delivery above weight (kg)'),
+                    'information' => __('Products heavier than this are marked pallet delivery. Leave empty to not use weight.'),
+                    'value'       => $shop->preOrderSetting('pallet_weight_kg'),
+                ],
+                'pre_order_pallet_longest_side_cm'            => [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '1', 'maxFractionDigits' => 1, 'min' => 0],
+                    'label'       => __('Pallet delivery above longest side (cm)'),
+                    'information' => __('Products with a longer side than this are marked pallet delivery. Leave empty to not use size.'),
+                    'value'       => $shop->preOrderSetting('pallet_longest_side_cm'),
+                ],
+                'pre_order_pallet_quote_tolerance_percentage' => $isTrade ? [
+                    'type'        => 'input_number',
+                    'bind'        => ['step' => '1', 'maxFractionDigits' => 0, 'min' => 0, 'max' => 100],
+                    'label'       => __('Pallet quote tolerance (%)'),
+                    'information' => __('If the final pallet quote is more than this above the estimate, the customer can cancel and get the deposit back.'),
+                    'value'       => $shop->preOrderSetting('pallet_quote_tolerance_percentage'),
+                ] : null,
+                'pre_order_pallet_rates'                      => [
+                    'type'     => 'dynamic_list',
+                    'full'     => true,
+                    'label'    => __('Pallet rate per country (:currency)', ['currency' => $currency]),
+                    'value'    => $shop->preOrderSetting('pallet_rates'),
+                    'fields'   => [
+                        [
+                            'key'         => 'country_code',
+                            'label'       => __('Country'),
+                            'placeholder' => __('Select country'),
+                            'options'     => collect(GetCountriesOptions::run())->map(fn ($option) => [
+                                'value' => $option['code'],
+                                'label' => $option['label'],
+                            ])->values()->all(),
+                        ],
+                        ['key' => 'amount', 'label' => __('Approx. rate'), 'placeholder' => __('Amount')],
+                    ],
+                    'addLabel' => __('Add country'),
+                ],
+            ]),
+        ];
     }
 }

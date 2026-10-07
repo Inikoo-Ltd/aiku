@@ -25,11 +25,13 @@ class ShowProfileIndexHistory extends OrgAction
     use WithInertia;
     use WithActionButtons;
 
+    public const int RECORDS_PER_PAGE = 10;
+
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
-        return IndexHistory::run($request->user(), ProfileTabsEnum::HISTORY->value);
+        return IndexHistory::run($request->user(), ProfileTabsEnum::HISTORY->value, perPage: self::RECORDS_PER_PAGE);
     }
 
     public function jsonResponse(LengthAwarePaginator $histories): AnonymousResourceCollection

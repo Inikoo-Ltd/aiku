@@ -46,6 +46,14 @@ class IndexWebpages extends OrgAction
     private string $stateFilter = 'all';
     private Webpage|null $excludeWebpage = null;
 
+    /**
+     * Whether the options this returns are offered as the destination of a link from another
+     * webpage, which a sub type kept out of the index must never be. A redirect option is where a
+     * closed page sends its visitors instead, not a link another page carries, so that entry point
+     * turns this off and keeps offering every webpage.
+     */
+    private bool $offeredAsLinkTarget = true;
+
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
@@ -103,6 +111,7 @@ class IndexWebpages extends OrgAction
         $this->bucket = 'all';
         $this->parent = $website;
         $this->excludeWebpage = $webpage;
+        $this->offeredAsLinkTarget = false;
         $this->stateFilter = WebsiteStateEnum::LIVE->value;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -191,6 +200,18 @@ class IndexWebpages extends OrgAction
     {
         $this->bucket = 'blog';
         $this->parent = $website;
+        $this->initialisationFromShop($website->shop, $request);
+
+
+        return $this->handle(parent: $this->parent, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function adsTesting(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'ads_testing';
+        $this->parent = $website;
+        $this->offeredAsLinkTarget = false;
         $this->initialisationFromShop($website->shop, $request);
 
 
@@ -346,6 +367,8 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
         } elseif ($bucket == 'system') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::SYSTEM_PAGE);
+        } elseif ($bucket == 'ads_testing') {
+            $queryBuilder->where('webpages.sub_type', WebpageSubTypeEnum::ADS_TESTING);
         } else {
             $queryBuilder->whereNot('webpages.type', WebpageTypeEnum::BLOG);
         }
@@ -360,7 +383,14 @@ class IndexWebpages extends OrgAction
                 ->whereNot('webpages.id', $this->excludeWebpage->id);
         }
 
-        if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
+        $isOptionsRequest = (isset(request()->query()['json']) && request()->query()['json'] === 'true')
+            || (function_exists('request') && request() && request()->expectsJson());
+
+        if ($isOptionsRequest) {
+            if ($this->offeredAsLinkTarget) {
+                $queryBuilder->whereNotIn('webpages.sub_type', WebpageSubTypeEnum::hiddenFromSearchEnginesValues());
+            }
+
             $queryBuilder->orderByRaw(
                 "CASE
             WHEN webpages.sub_type = 'storefront' THEN 1
@@ -530,11 +560,15 @@ class IndexWebpages extends OrgAction
                 'title'       => __('Webpages'),
                 'pageHead'    => [
                     'model'         => __('Webpages'),
-                    'title'         => ucfirst($this->bucket),
+                    'title'         => match ($this->bucket) {
+                        'ads_testing' => __('Ads Testing'),
+                        default       => ucfirst($this->bucket),
+                    },
                     'color'         => match($this->bucket) {
-                        'content'   =>  '#b45309', 
-                        'system'    => '#90b400',
-                        default     => null,
+                        'content'     =>  '#b45309',
+                        'system'      => '#90b400',
+                        'ads_testing' => '#db2777',
+                        default       => null,
                     },
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
@@ -663,6 +697,24 @@ class IndexWebpages extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         trim('('.__('Content').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.sub_type.ads_testing':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.ads_testing',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Ads Testing').') '.$suffix)
                     )
                 );
             case 'grp.org.shops.show.web.webpages.index.type.info':

@@ -18,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateArtefactComplianceItem extends OrgAction
 {
+    use WithArtefactComplianceItemAuthorisation;
+
     public function handle(ArtefactComplianceItem $artefactComplianceItem, array $modelData): ArtefactComplianceItem
     {
         $artefactComplianceItem->update($modelData);
@@ -43,25 +45,20 @@ class UpdateArtefactComplianceItem extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
-            'org-supervisor.'.$this->organisation->id,
-            'productions-view.'.$this->organisation->id,
-            "productions_operations.{$this->production->id}.view",
-            "productions_operations.{$this->production->id}.orchestrate",
-        ]);
+        return $this->canEditComplianceItems($request);
     }
 
     public function action(ArtefactComplianceItem $artefactComplianceItem, array $modelData): ArtefactComplianceItem
     {
         $this->asAction = true;
-        $this->initialisation($artefactComplianceItem->artefact->organisation, $modelData);
+        $this->initialisation($artefactComplianceItem->organisation, $modelData);
 
         return $this->handle($artefactComplianceItem, $this->validatedData);
     }
 
     public function asController(ArtefactComplianceItem $artefactComplianceItem, ActionRequest $request): ArtefactComplianceItem
     {
-        $this->initialisationFromProduction($artefactComplianceItem->artefact->production, $request);
+        $this->initialisationFromComplianceItem($artefactComplianceItem, $request);
 
         return $this->handle($artefactComplianceItem, $this->validatedData);
     }

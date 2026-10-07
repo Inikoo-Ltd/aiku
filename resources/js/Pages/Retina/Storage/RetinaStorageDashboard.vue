@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Pie } from 'vue-chartjs'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
 import { useLocaleStore } from "@/Stores/locale"
 import { PalletCustomer, FulfilmentCustomerStats } from '@/types/Pallet'
@@ -86,7 +86,6 @@ const options = {
 }
 
 function routePallet(storageData: any, key: string) {
-    console.log(storageData, key , 'this key');
     
     if (storageData[key].route) {
         return route(storageData[key].route.name)
@@ -112,7 +111,7 @@ function routePallet(storageData: any, key: string) {
                     class="h-fit bg-slate-50 border border-slate-200 text-retina-600 p-6 flex flex-col justify-between rounded-lg shadow overflow-hidden">
                     <div class="w-full">
                         <h2 v-if="customer?.name" class="text-3xl font-bold"> {{ customer?.name }}</h2>
-                        <h2 v-else class="text-3xl font-light italic brightness-75">{{ trans('No name') }}</h2>
+                        <h2 v-else class="text-3xl font-light italic brightness-75">{{ ctrans('No name') }}</h2>
                         <div class="text-lg">
                             {{ customer?.shop }} -->
                             <!-- <span class="text-gray-400">
@@ -142,16 +141,16 @@ function routePallet(storageData: any, key: string) {
                         </div>
                         
                         <div class="border-l-2 border-slate-500 pl-4">
-                            <h3 class="font-light">{{ trans('Billing Cycle') }}</h3>
+                            <h3 class="font-light">{{ ctrans('Billing Cycle') }}</h3>
                             <address class="text-base font-medium not-italic text-gray-600 capitalize">
                                 <p>{{ rental_agreement.billing_cycle }}</p>
                             </address>
                         </div>
                         
                         <div class="border-l-2 border-slate-500 pl-4">
-                            <h3 class="font-light">{{ trans('Pallet Limit') }}</h3>
+                            <h3 class="font-light">{{ ctrans('Pallet Limit') }}</h3>
                             <address class="text-base font-medium not-italic text-gray-600">
-                                <p>{{ rental_agreement.pallets_limit || `(${trans('No limit')})` }}</p>
+                                <p>{{ rental_agreement.pallets_limit || `(${ctrans('No limit')})` }}</p>
                             </address>
                         </div>
 
@@ -293,7 +292,7 @@ function routePallet(storageData: any, key: string) {
           <!--   <div class="h-fit grid md:grid-cols-2 gap-y-3 gap-x-2 text-gray-600">
                 <div class="w-full md:col-span-2">
                     <div class="text-2xl font-semibold text-gray-600">
-                        {{ trans("Discounts") }}🎉
+                        {{ ctrans("Discounts") }}🎉
                     </div>
 
                     <DataTable :value="discounts" stripedRows removableSort paginator :rows="10"
@@ -310,7 +309,7 @@ function routePallet(storageData: any, key: string) {
                         <Column field="price" sortable headerClass="flex justify-end">
                             <template #header>
                                 <div class="flex justify-end items-end">
-                                    <span class="font-bold text-right">{{ trans("Discounts") }}</span>
+                                    <span class="font-bold text-right">{{ ctrans("Discounts") }}</span>
                                 </div>
                             </template>
 

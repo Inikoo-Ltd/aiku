@@ -1,9 +1,9 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faStickyNote, faTrash, faLock } from '@fas'
-import { faTimes, faSyncAlt } from '@fal'
+import { faTimes, faSyncAlt, faFilePdf } from '@fal'
 import { faExclamationTriangle } from '@fad'
 import { faPlus } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -19,7 +19,7 @@ import { PDRNotes } from '@/types/Pallet'
 import { useBasicColor } from '@/Composables/useColors'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt, faExclamationTriangle)
+library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt, faExclamationTriangle, faFilePdf)
 
 // const layout = inject('layout', layoutStructure)
 
@@ -109,6 +109,8 @@ const fallbackBgColor = '#f9fafb'  // Background
 const fallbackColor = '#374151'  // Color
 
 
+const isPdfPreviewOpen = ref(false)
+
 const openModal = () => {
     isModalOpen.value = true;
     emits('click');
@@ -144,10 +146,10 @@ const openModal = () => {
                     <!-- Button: fetch notes from Order -->
                     <!-- <span 
                         v-if="props.fetchRoute?.name"
-                        v-tooltip="trans('Duplicate note from Order (only :field)', { field: noteData.label })"
+                        v-tooltip="ctrans('Duplicate note from Order (only :field)', { field: noteData.label })"
                         @click="() => onFetchNotes()"
                         class="ml-2 cursor-pointer text-xxs text-gray-500 hover:text-gray-700 underline">
-                        {{ trans('Click to sync from order') }}
+                        {{ ctrans('Click to sync from order') }}
                         <span>
                             <LoadingIcon v-if="isSubmitNoteLoading" />
                             <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
@@ -171,7 +173,7 @@ const openModal = () => {
                 <!-- Section: Actions -->
                 <template v-if="noteData.editable">
                     <!-- Icon: pencil (edit) -->
-                    <div v-if="noteData.note" @click="openModal()" v-tooltip="trans('Edit note')" class="group px-0.5 cursor-pointer w-fit h-5 flex items-center">
+                    <div v-if="noteData.note" @click="openModal()" v-tooltip="ctrans('Edit note')" class="group px-0.5 cursor-pointer w-fit h-5 flex items-center">
                         <FontAwesomeIcon icon='fas fa-pencil' size="xs" class='group-hover:text-gray-100'
                             fixed-width aria-hidden='true'
                             :style="{
@@ -182,7 +184,7 @@ const openModal = () => {
 
                     <!-- Icon: Plus (add note) -->
                     <div v-else="!noteData.note" @click="openModal()" class="h-5 aspect-square flex items-center justify-center cursor-pointer">
-                        <FontAwesomeIcon v-tooltip="trans('Add note')" icon='far fa-plus' class='' fixed-width aria-hidden='true'
+                        <FontAwesomeIcon v-tooltip="ctrans('Add note')" icon='far fa-plus' class='' fixed-width aria-hidden='true'
                         :style="{
                             color: noteData.textColor || fallbackColor
                         }"
@@ -191,7 +193,7 @@ const openModal = () => {
                 </template>
 
                 <!-- Icon: Lock -->
-                <div v-else v-tooltip="noteData.lockMessage || trans('This note is not editable')" class="h-5 flex items-center cursor-not-allowed">
+                <div v-else v-tooltip="noteData.lockMessage || ctrans('This note is not editable')" class="h-5 flex items-center cursor-not-allowed">
                     <FontAwesomeIcon icon='fas fa-lock' class='text-black/50' fixed-width aria-hidden='true' />
                 </div>
             </div>
@@ -199,18 +201,28 @@ const openModal = () => {
 
         <!-- Section: Note -->
         <p @dblclick="noteData.editable ? openModal() : false"
-            v-tooltip="noteData.editable ? trans('Double click to edit') : false"
+            v-tooltip="noteData.editable ? ctrans('Double click to edit') : false"
             class="h-full max-h-32 mx-auto items-center px-4 pt-2 pb-2 text-xxs break-words"
             :class="noteData.editable ? 'cursor-pointer' : ''"
             
         >
+            <div v-if="noteData.pdf_preview" class="mb-2">
+                <Button
+                    :label="ctrans('View PDF')"
+                    icon="fal fa-file-pdf"
+                    size="xxs"
+                    type="tertiary"
+                    @click="() => isPdfPreviewOpen = true"
+                />
+            </div>
+
             <template v-if="noteData.note">{{ noteData.note }}</template>
             <span v-else class="italic select-none"
                 :style="{
                     color: fallbackColor + '55'
                 }"
             >
-                {{ trans('No note added') }}
+                {{ ctrans('No note added') }}
             </span>
         </p>
     </div>
@@ -221,19 +233,35 @@ const openModal = () => {
     >
         <slot name="buttonClick">
             <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" fixed-width />
-            {{ trans("Add Note") }}
+            {{ ctrans("Add Note") }}
         </slot>
     </button>
+
+    <Modal v-if="noteData.pdf_preview" :isOpen="isPdfPreviewOpen" @onClose="() => isPdfPreviewOpen = false" width="w-full max-w-5xl">
+        <div class="flex flex-col gap-y-2">
+            <div class="flex items-center justify-between gap-x-4">
+                <div class="text-lg font-semibold truncate">{{ noteData.pdf_preview.label }}</div>
+                <a :href="route(noteData.pdf_preview.route.name, noteData.pdf_preview.route.parameters)" target="_blank" rel="noopener" class="text-sm text-gray-500 hover:text-gray-700 underline whitespace-nowrap">
+                    {{ ctrans('Open in new tab') }}
+                </a>
+            </div>
+            <iframe
+                :src="route(noteData.pdf_preview.route.name, noteData.pdf_preview.route.parameters)"
+                :title="noteData.pdf_preview.label"
+                class="w-full h-[75vh] rounded border border-gray-200"
+            />
+        </div>
+    </Modal>
 
     <Modal v-if="!disableModal" :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)" width="w-[600px]">
 		<div class="min-h-64 max-h-96 px-2 overflow-auto flex flex-col justify-between">
             <div>
                 <div class="text-xl font-semibold mb-2">
-                    {{ noteData.label }} {{ trans("note") }}
+                    {{ noteData.label }} {{ ctrans("note") }}
                 </div>
                 <div class="relative isolate">
                     <div v-if="noteModalValue" @click="() => noteModalValue = ''" class="z-10 absolute top-1 right-1 text-red-400 hover:text-red-600 text-xxs cursor-pointer">
-                        {{ trans("Clear") }}
+                        {{ ctrans("Clear") }}
                     </div>
                     <PureTextarea v-model="noteModalValue" counter :rows="6" @keydown.ctrl.enter="() => onSubmitNote()" maxLength="5000" />
                 </div>

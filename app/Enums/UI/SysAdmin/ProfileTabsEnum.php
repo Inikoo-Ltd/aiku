@@ -17,7 +17,6 @@ enum ProfileTabsEnum: string
     use HasTabs;
 
 
-    case DASHBOARD = 'dashboard';
     case NOTIFICATIONS = 'notifications';
     case TIMESHEETS = 'timesheets';
 
@@ -30,11 +29,6 @@ enum ProfileTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            ProfileTabsEnum::DASHBOARD => [
-                'title' => __('Dashboard'),
-                'icon'  => 'fal fa-clipboard-list-check',
-            ],
-
             ProfileTabsEnum::KPI => [
                 'title'   => __('KPIs'),
                 'tooltip' => __('Key Performance Indicator'),

@@ -10,11 +10,13 @@ namespace App\Actions\Traits\Dashboards;
 
 use App\Actions\Traits\Dashboards\Settings\WithDashboardDataDisplayTypeSettings;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardModelStateTypeSettings;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardTopCustomersLimitSettings;
 
 trait WithDashboardSettings
 {
     use WithDashboardModelStateTypeSettings;
+    use WithDashboardPartnersTypeSettings;
     use WithDashboardDataDisplayTypeSettings;
     use WithDashboardTopCustomersLimitSettings;
 }

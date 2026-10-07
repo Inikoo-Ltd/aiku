@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # Weekly staging refresh: pull a trimmed production dump + media from boro,
-# restore into aiku_staging on neon, migrate, SANITIZE, reindex, restart.
-# Runs on neon as root (cron, Sunday 03:00 UTC).
+# restore into aiku_staging on helio, migrate, SANITIZE, reindex, restart.
+# Runs on helio as root (cron, Sunday 03:00 UTC).
 #
 # Source is the PRODUCTION PRIMARY (boro) by deliberate choice: the helio
 # replica cancels long dumps with recovery conflicts. The dump is trimmed

@@ -730,6 +730,24 @@ describe('recalculating attribution', function () {
         expect($trafficSources->first()->type)->toBe('google-ads');
     });
 
+    it('attaches one merged row when several touches resolve to the same source without a campaign', function () {
+        createTrafficSource($this->shop, 'newsletter', 'Newsletter');
+        $this->customer->update(['traffic_sources' => '1700000000pmailshot-901|1700000100pmailshot-902|1700000200pmailshot-903']);
+
+        RecalculateTrafficSourceAttribution::run($this->customer->fresh(), ProcessTrafficSourceShare::ATTRIBUTION_LINEAR);
+
+        $pivot = DB::table('model_has_traffic_sources')
+            ->where('model_type', $this->customer->getMorphClass())
+            ->where('model_id', $this->customer->id)
+            ->get();
+
+        expect($pivot)->toHaveCount(1)
+            ->and($pivot->first()->traffic_source_campaign_id)->toBeNull()
+            ->and((float) $pivot->first()->share)->toBe(1.0)
+            ->and(\Carbon\Carbon::parse($pivot->first()->first_touch_at)->timestamp)->toBe(1700000000)
+            ->and(\Carbon\Carbon::parse($pivot->first()->last_touch_at)->timestamp)->toBe(1700000200);
+    });
+
     it('detaches everything and does nothing else when there is no touch history', function () {
         RecalculateTrafficSourceAttribution::run($this->customer->fresh(), ProcessTrafficSourceShare::ATTRIBUTION_LINEAR);
 
@@ -1407,7 +1425,7 @@ describe('referral traffic sources', function () {
 
         /* Two ChatGPT arrivals from one browser and one from another, all filed under Referral on the
            day, plus the day's Referral visit row that counted them. */
-        $day = now()->subDay();
+        $day = now()->subDay()->startOfDay();
         foreach ([['203.0.113.7', 0], ['203.0.113.7', 2], ['198.51.100.9', 1]] as [$ip, $hours]) {
             DB::table('traffic_source_clicks')->insert([
                 'shop_id'      => $this->shop->id,
@@ -2117,10 +2135,12 @@ describe('traffic source costs', function () {
         ]);
 
         $testRequest = \Illuminate\Http\Request::create('/'.$this->organisation->slug.'/'.$this->shop->slug.'/'.$campaign->slug);
+        $adminUser   = createAdminGuest($this->organisation->group)->getUser();
         $route = (new Route('GET', '/{organisation}/{shop}/{trafficSourceCampaign}', []))->name('test.traffic_sources.show');
         $route->bind($testRequest);
         $testRequest->setRouteResolver(fn () => $route);
         $actionRequest = \Lorisleiva\Actions\ActionRequest::createFrom($testRequest);
+        request()->setUserResolver(fn () => $adminUser);
 
         $action          = ShowGoogleAdsCampaign::make();
         $model           = $action->asController($this->organisation, $this->shop, $campaign, $actionRequest);
@@ -4643,4 +4663,56 @@ describe('traffic source clicks', function () {
                 && $job->getParameters()[0]['country_code'] === 'PL'
         );
     });
+});
+
+describe('mailshot link address', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+
+        list($this->organisation, $this->user, $this->shop) = createOwnShop('mailshot link address');
+        $this->outbox = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    });
+
+    it('changes a link everywhere in the email and keeps its tracking', function () {
+        $mailshot = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+        $old      = 'https://awgifts.test/old-page?a=1&b=2';
+        $new      = 'https://awgifts.test/new-page';
+        $other    = 'https://awgifts.test/other';
+
+        $mailshot->email->unpublishedSnapshot->update(['layout' => [
+            'rows' => [
+                ['button' => ['href' => $old, 'label' => 'Shop now']],
+                ['text' => '<p><a href="https://awgifts.test/old-page?a=1&amp;b=2">here</a> and <a href="'.$other.'">there</a></p>'],
+            ],
+        ]]);
+        $live = $mailshot->email->unpublishedSnapshot->replicate();
+        $live->fill(['compiled_layout' => '<a href="https://awgifts.test/old-page?a=1&amp;b=2">x</a><a href="'.$other.'">y</a>'])->save();
+        $mailshot->email->update(['live_snapshot_id' => $live->id]);
+
+        App\Actions\Comms\Mailshot\UpdateMailshotUrlUtm::make()->action($mailshot, ['url' => $old, 'new_url' => $new, 'utm_source' => 'spring']);
+
+        $mailshot->refresh();
+        $layout = $mailshot->email->unpublishedSnapshot->refresh()->layout;
+        expect($layout['rows'][0]['button']['href'])->toBe($new)
+            ->and($layout['rows'][1]['text'])->toBe('<p><a href="'.$new.'">here</a> and <a href="'.$other.'">there</a></p>')
+            ->and($live->refresh()->compiled_layout)->toBe('<a href="'.$new.'">x</a><a href="'.$other.'">y</a>')
+            ->and($mailshot->data['utm_links'])->toBe([['url' => $new, 'utm' => ['utm_source' => 'spring']]])
+            ->and($mailshot->data['replaced_links'])->toEqual([['from' => $old, 'to' => $new]]);
+
+        App\Actions\Comms\Mailshot\UpdateWorkshopMailShot::make()->handle($mailshot, ['layout' => ['rows' => [['button' => ['href' => $old]]]]]);
+        expect($mailshot->email->unpublishedSnapshot->refresh()->layout['rows'][0]['button']['href'])->toBe($new);
+
+        App\Actions\Comms\Mailshot\PublishMailShot::make()->handle($mailshot->refresh(), [
+            'layout'          => ['rows' => [['button' => ['href' => $old]]]],
+            'compiled_layout' => '<a href="https://awgifts.test/old-page?a=1&amp;b=2">x</a>',
+        ]);
+        expect($mailshot->email->refresh()->liveSnapshot->compiled_layout)->toBe('<a href="'.$new.'">x</a>');
+    });
+
+    it('does not change the links of an email that has gone out', function () {
+        $mailshot = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+        $mailshot->updateQuietly(['state' => App\Enums\Comms\Mailshot\MailshotStateEnum::SENT]);
+
+        App\Actions\Comms\Mailshot\UpdateMailshotUrlUtm::make()->action($mailshot, ['url' => 'https://awgifts.test/a', 'new_url' => 'https://awgifts.test/b']);
+    })->throws(Illuminate\Validation\ValidationException::class);
 });

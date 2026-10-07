@@ -5,7 +5,7 @@ import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { ref } from "vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from '@/Composables/useTrans'
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { faCheckCircle as faCheckCircleSolid } from "@fas"
 import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle } from "@fal"
@@ -38,8 +38,8 @@ const isSubmitAddressLoading = ref<boolean>(false)
 const onSubmitEditAddress = (address: Address) => {
     if (!props.updateRoute) {
         notify({
-            title: trans("Failed to update the address"),
-            text: trans("Please contact the administrator to fix."),
+            title: ctrans("Failed to update the address"),
+            text: ctrans("Please contact the administrator to fix."),
             type: "error",
         })
 
@@ -68,14 +68,14 @@ const onSubmitEditAddress = (address: Address) => {
                 selectedAddress.value = cloneDeep(props.address)
                 emits("submitted")
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully update the address."),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully update the address."),
                     type: "success"
                 })
             },
             onError: () => notify({
-                title: trans("Failed"),
-                text: trans("Failed to update the address, try again."),
+                title: ctrans("Failed"),
+                text: ctrans("Failed to update the address, try again."),
                 type: "error"
             })
         }
@@ -88,7 +88,7 @@ const onSubmitEditAddress = (address: Address) => {
 <template>
     <div class="px-2 py-1 ">
         <div class="font-semibold text-xl mb-5 text-center gap-2">
-            {{ title ?? trans("Edit delivery address") }}
+            {{ title ?? ctrans("Edit delivery address") }}
         </div>
 
         <div v-if="copyAddress" @click="selectedAddress = {...copyAddress}" class="ml-2 border-b border-dashed border-gray-300 flex w-full pb-1.5 mb-2">
@@ -102,12 +102,12 @@ const onSubmitEditAddress = (address: Address) => {
 
             <div class="mt-4 flex items-center">
                 <Checkbox v-model="isChangeTheParent" inputId="is_change_the_parent" name="is_change_the_parent" binary />
-                <label for="is_change_the_parent" class="ml-1.5 text-sm cursor-pointer select-none">{{ trans('Update the parent address') }}</label>
-                <InformationIcon :information="trans('If not checked, the changes will only apply to this order.')" class="ml-1 text-sm" />
+                <label for="is_change_the_parent" class="ml-1.5 text-sm cursor-pointer select-none">{{ ctrans('Also save as the default delivery address') }}</label>
+                <InformationIcon :information="ctrans('If not ticked, the change only applies to this order.')" class="ml-1 text-sm" />
             </div>
 
             <div class="mt-9 flex justify-center">
-                <Button @click="() => onSubmitEditAddress(selectedAddress)" :label="trans('Save')" :loading="isSubmitAddressLoading" full />
+                <Button @click="() => onSubmitEditAddress(selectedAddress)" :label="ctrans('Save')" :loading="isSubmitAddressLoading" full />
             </div>
         </div>
     </div>

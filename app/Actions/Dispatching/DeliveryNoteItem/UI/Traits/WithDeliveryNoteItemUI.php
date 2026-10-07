@@ -5,6 +5,8 @@ namespace App\Actions\Dispatching\DeliveryNoteItem\UI\Traits;
 use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Database\Query\Builder;
@@ -44,6 +46,31 @@ trait WithDeliveryNoteItemUI
             )");
     }
 
+    protected function getIndivisibleSetSubquery(): Builder
+    {
+        return DB::table('transactions')
+            ->join('products', 'products.id', '=', 'transactions.model_id')
+            ->whereColumn('transactions.id', 'delivery_note_items.transaction_id')
+            ->where('transactions.model_type', 'Product')
+            ->where('products.is_indivisible', true)
+            ->selectRaw("jsonb_build_object(
+                'product_code', products.code,
+                'product_name', products.name,
+                'sets_ordered', transactions.quantity_ordered + COALESCE(transactions.quantity_bonus, 0),
+                'parts', (
+                    SELECT jsonb_agg(DISTINCT jsonb_build_object(
+                        'code', trade_units.code,
+                        'name', trade_units.name,
+                        'quantity', model_has_trade_units.quantity
+                    ))
+                    FROM model_has_trade_units
+                    JOIN trade_units ON trade_units.id = model_has_trade_units.trade_unit_id
+                    WHERE model_has_trade_units.model_type = 'Product'
+                    AND model_has_trade_units.model_id = products.id
+                )
+            )");
+    }
+
     protected function getPickingsSubquery(): Builder
     {
         return DB::table('pickings')
@@ -64,6 +91,30 @@ trait WithDeliveryNoteItemUI
                             )
                         )
                     ");
+    }
+
+    /**
+     * A cancellation return holds the picked goods off the shelf until someone walks them back.
+     * Once it reaches returned the ledger pair is closed, so the pickings are history and undoing
+     * one would credit the stock back a second time.
+     */
+    protected function getIsReturnedToLocationSubquery(): Builder
+    {
+        return DB::table('return_delivery_note_items')
+            ->join(
+                'return_delivery_notes',
+                'return_delivery_notes.id',
+                '=',
+                'return_delivery_note_items.return_delivery_note_id'
+            )
+            ->whereColumn('return_delivery_note_items.delivery_note_items_id', 'delivery_note_items.id')
+            ->where('return_delivery_notes.type', ReturnDeliveryNoteTypeEnum::CANCELLATION->value)
+            ->whereIn('return_delivery_notes.state', [
+                ReturnDeliveryNoteStateEnum::RETURNED->value,
+                ReturnDeliveryNoteStateEnum::DONE->value,
+            ])
+            ->whereNull('return_delivery_notes.deleted_at')
+            ->selectRaw('count(*) > 0');
     }
 
     protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool
@@ -141,6 +192,7 @@ trait WithDeliveryNoteItemUI
             'delivery_note_items.quantity_packed',
             'delivery_note_items.quantity_dispatched',
             'delivery_note_items.quantity_not_picked',
+            'delivery_note_items.boxes',
             'delivery_note_items.is_handled',
             'delivery_note_items.is_dirty',
             'delivery_note_items.batch_code_id',

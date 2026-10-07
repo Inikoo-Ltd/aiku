@@ -10,6 +10,7 @@ namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\Production\Artefact\GetArtefactComplianceStatus;
 use App\Enums\Production\Artefact\ArtefactComplianceTypeEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -17,16 +18,15 @@ class GetArtefactCompliance
 {
     use AsObject;
 
-    public function handle(Artefact $artefact): array
+    public function handle(Artefact|OrgStock $model): array
     {
-        $status = GetArtefactComplianceStatus::run($artefact);
+        $status = GetArtefactComplianceStatus::run($model);
 
         return [
-            'artefact_id'  => $artefact->id,
             'status'       => $status['status'],
             'status_label' => $status['label'],
             'problems'     => $status['problems'],
-            'items'        => $artefact->complianceItems->map(fn ($item) => [
+            'items'        => $model->complianceItems->map(fn ($item) => [
                 'id'              => $item->id,
                 'type'            => $item->type,
                 'type_label'      => $item->type->labels()[$item->type->value],
@@ -42,10 +42,15 @@ class GetArtefactCompliance
                 ->map(fn ($label, $value) => ['value' => $value, 'label' => $label])
                 ->values(),
             'routes'       => [
-                'store'  => [
-                    'name'       => 'grp.models.artefact.compliance-item.store',
-                    'parameters' => ['artefact' => $artefact->id],
-                ],
+                'store'  => $model instanceof OrgStock
+                    ? [
+                        'name'       => 'grp.models.org_stock.compliance-item.store',
+                        'parameters' => ['orgStock' => $model->id],
+                    ]
+                    : [
+                        'name'       => 'grp.models.artefact.compliance-item.store',
+                        'parameters' => ['artefact' => $model->id],
+                    ],
                 'update' => [
                     'name' => 'grp.models.artefact.compliance-item.update',
                 ],

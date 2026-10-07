@@ -2,6 +2,7 @@
 
 namespace App\Actions\Iris\Catalogue;
 
+use App\Actions\Catalogue\ProductCategory\WithFamiliesFromParentCollections;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -18,6 +19,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class FetchFamilyListCustomSorted extends IrisAction
 {
+    use WithFamiliesFromParentCollections;
+
     private Webpage $webpage;
 
     public function handle(ProductCategory $productCategory, array $modelData)
@@ -35,16 +38,7 @@ class FetchFamilyListCustomSorted extends IrisAction
                 ->where(function ($query) {
                     if ($this->webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
                         $query->where('product_categories.department_id', $this->webpage->model_id)
-                            ->orWhereIn('product_categories.id', function ($sub) {
-                                $sub->select('chm.model_id')
-                                    ->from('collection_has_models as chm')
-                                    ->where('chm.model_type', 'ProductCategory')
-                                    ->whereIn('chm.collection_id', function ($sub2) {
-                                        $sub2->select('mhc.collection_id')
-                                            ->from('model_has_collections as mhc')
-                                            ->where('mhc.model_id', $this->webpage->model_id);
-                                    });
-                            });
+                            ->orWhereIn('product_categories.id', $this->familyIdsFromParentCollections($this->webpage->model_id));
                     } else {
                         $query->where('product_categories.sub_department_id', $this->webpage->model_id);
                     }
@@ -58,6 +52,7 @@ class FetchFamilyListCustomSorted extends IrisAction
                 ->whereNull('webpages.deleted_at');
 
         return $families
+            ->defaultSort('-product_categories.created_at')
             ->allowedSorts([ 'code', 'product_categories.created_at', 'name'])
             ->allowedFilters([$globalSearch])
             ->paginate(request('per_page', 100))

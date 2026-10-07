@@ -239,21 +239,6 @@ return [
             'sslmode'        => 'prefer',
         ],
 
-        'wowsbar' => [
-            'driver'         => 'pgsql',
-            'url'            => null,
-            'host'           => env('WOWSBAR_DB_HOST', '127.0.0.1'),
-            'port'           => env('WOWSBAR_DB_PORT', '5432'),
-            'database'       => env('WOWSBAR_DB_DATABASE'),
-            'username'       => env('WOWSBAR_DB_USERNAME'),
-            'password'       => env('WOWSBAR_DB_PASSWORD'),
-            'charset'        => 'utf8',
-            'prefix'         => '',
-            'prefix_indexes' => true,
-            'search_path'    => env('WOWSBAR_DB_SEARCH_PATH', 'public'),
-            'sslmode'        => 'prefer',
-        ],
-
     ],
 
     /*
@@ -312,6 +297,14 @@ return [
             'password' => env('REDIS_CACHE_PASSWORD'),
             'port'     => env('REDIS_CACHE_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
+        ],
+        'devops' => [
+            'url'      => env('REDIS_DEVOPS_URL'),
+            'host'     => env('REDIS_DEVOPS_HOST', env('REDIS_CACHE_HOST', '127.0.0.1')),
+            'username' => env('REDIS_DEVOPS_USERNAME'),
+            'password' => env('REDIS_DEVOPS_PASSWORD', env('REDIS_CACHE_PASSWORD')),
+            'port'     => env('REDIS_DEVOPS_PORT', env('REDIS_CACHE_PORT', '6379')),
+            'database' => env('REDIS_DEVOPS_DB', env('REDIS_CACHE_DB', '1')),
         ],
         'sessions' => [
             'url'      => env('REDIS_SESSIONS_URL'),

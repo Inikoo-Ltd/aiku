@@ -53,6 +53,12 @@ class ShowOrgChatInbox extends OrgAction
     {
         $user = $request->user();
 
+        $selectedSessionShop = $this->selectedSession?->shop;
+
+        if ($this->selectedSession && !($selectedSessionShop && $this->userCanViewChatOnShop($user, $selectedSessionShop))) {
+            return false;
+        }
+
         if (isset($this->shop)) {
             return $this->userCanViewChatOnShop($user, $this->shop)
                 || $user->authTo(["accounting.{$this->shop->organisation_id}.view"]);
@@ -252,6 +258,7 @@ class ShowOrgChatInbox extends OrgAction
             'webUser',
             'shop',
             'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ]);
 
         return (new ChatSessionListResource($this->selectedSession))->resolve();
@@ -318,6 +325,9 @@ class ShowOrgChatInbox extends OrgAction
                 // Writing is decided shop by shop, never once for the page: the same person is
                 // an agent on one shop and only oversees another.
                 'is_read_only' => !$this->userCanActOnChatOnShop($user, $shop),
+                // A shop with no mailbox connected can send nothing, so the inbox does not offer
+                // to write from it. The customer still has to have an address of their own.
+                'can_start_email' => filled(Arr::get($shop->settings, 'gmail.email')),
             ];
         })->values()->all();
     }
@@ -417,6 +427,8 @@ class ShowOrgChatInbox extends OrgAction
             // Put aside keeps its status, so it has to be left out by name: the one active
             // email the rail promised was an ignored one the list rightly would not show.
             ->where('is_rubbish', false)
+            ->where('is_carrier', false)
+            ->where('is_colleague', false)
             ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'), 'by_me', 'by_colleague')
             ->get([
                 'shop_id',
@@ -483,9 +495,16 @@ class ShowOrgChatInbox extends OrgAction
             ." and a.status = case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
             ." then '".ChatAssignmentStatusEnum::RESOLVED->value."' else '".ChatAssignmentStatusEnum::ACTIVE->value."' end";
 
+        // Closed and not mine is the colleagues' column, whoever closed it: a conversation
+        // nobody ever picked up is still the shop's history, and counted in neither it sat
+        // in no column at all while its list showed it.
+        $colleague = "case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
+            ." then not exists ({$assigned} and a.chat_agent_id = {$agentId})"
+            ." else exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) end";
+
         return [
             DB::raw("exists ({$assigned} and a.chat_agent_id = {$agentId}) as by_me"),
-            DB::raw("exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) as by_colleague"),
+            DB::raw("({$colleague}) as by_colleague"),
         ];
     }
 

@@ -9,6 +9,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
@@ -179,8 +180,10 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'state',
         'cost_total',
         'cost_items',
+        'cost_extra',
         'cost_shipping',
         'cost_duties',
+        'is_costed',
     ];
 
     public function searchIndexShouldBeUpdated(): bool
@@ -212,6 +215,65 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function purchaseOrders(): BelongsToMany
     {
         return $this->belongsToMany(PurchaseOrder::class);
+    }
+
+    /**
+     * Supplier and agent deliveries are booked in to locations from aiku; Aurora still creates,
+     * dispatches, receives and checks them. Production job orders are fully Aurora's.
+     */
+    public function placesInAiku(): bool
+    {
+        return $this->organisation->is_aiku_stock_control && $this->parent_type !== 'Production';
+    }
+
+    /**
+     * A partner delivery mirrors the seller's delivery note, and the seller owns it until the
+     * buyer receives the goods.
+     */
+    public function isInGoodsIn(): bool
+    {
+        return in_array($this->state, [
+            StockDeliveryStateEnum::RECEIVED,
+            StockDeliveryStateEnum::CHECKED,
+            StockDeliveryStateEnum::BOOKING_IN,
+        ], true);
+    }
+
+    public function hasNoProducts(): bool
+    {
+        return !$this->items()->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)->exists();
+    }
+
+    public function isManagedByPartner(): bool
+    {
+        return $this->delivery_note_id !== null && in_array($this->state, [
+            StockDeliveryStateEnum::IN_PROCESS,
+            StockDeliveryStateEnum::CONFIRMED,
+            StockDeliveryStateEnum::READY_TO_SHIP,
+            StockDeliveryStateEnum::DISPATCHED,
+        ], true);
+    }
+
+    /**
+     * Strips what Aurora knows about placement from a fetched delivery or item payload, so a
+     * re-fetch can never regress what aiku booked in. The state is dropped from checked onwards
+     * because aiku derives it from its own sowings.
+     *
+     * @param  array<string, mixed>  $modelData
+     * @return array<string, mixed>
+     */
+    public static function withoutAuroraPlacement(array $modelData): array
+    {
+        $state = $modelData['state'] ?? null;
+        if ($state instanceof \BackedEnum) {
+            $state = $state->value;
+        }
+        if (in_array($state, ['checked', 'placed'], true)) {
+            unset($modelData['state']);
+        }
+        unset($modelData['placed_at'], $modelData['unit_quantity_placed']);
+
+        return $modelData;
     }
 
     public function items(): HasMany

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, IframeHTMLAttributes, onMounted, provide, inject } from 'vue'
+import { ref, watch, computed, IframeHTMLAttributes, onMounted, provide, inject, nextTick } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { Switch } from '@headlessui/vue'
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import Modal from '@/Components/Utils/Modal.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue';
@@ -15,10 +14,12 @@ import Publish from '@/Components/Publish.vue'
 import ScreenView from "@/Components/ScreenView.vue"
 import Image from "@common/Components/Image.vue"
 import HeaderListModal from '@/Components/CMS/Fields/ListModal.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
+import { getFieldKey } from '@/Composables/SideEditorHelper'
+import Icon from '@/Components/Icon.vue'
 import { setIframeView } from "@/Composables/Workshop"
-import ProgressSpinner from 'primevue/progressspinner';
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Drawer from 'primevue/drawer';
 import { getTranslationComponent } from '@/Composables/getWorkshopComponents'
@@ -29,12 +30,12 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIcons, faMoneyBill, faUpload, faThLarge } from '@fas';
 import { faLineColumns, faLowVision } from '@far';
-import { faExternalLink, faLanguage, faTimes } from '@fal';
+import { faExternalLink, faLanguage, faTimes, faPencil, faChevronDoubleLeft, faChevronDoubleRight } from '@fal';
 import { faEye } from '@fad';
 import { library } from '@fortawesome/fontawesome-svg-core'
 
 
-library.add(faExternalLink, faTimes, faLineColumns, faIcons, faMoneyBill, faUpload, faThLarge, faLowVision)
+library.add(faExternalLink, faTimes, faLineColumns, faIcons, faMoneyBill, faUpload, faThLarge, faLowVision, faPencil)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -53,6 +54,7 @@ const previewMode = ref(false)
 const isModalOpen = ref(false)
 const usedTemplates = ref(isArray(props.data.data) ? null : props.data.data)
 const isLoading = ref(false)
+const isSaving = ref(false)
 const comment = ref('')
 const iframeClass = ref('w-full h-full')
 const saveCancelToken = ref<Function | null>(null)
@@ -106,7 +108,11 @@ const autoSave = async (data: Object) => {
         route(props.autosaveRoute.name, props.autosaveRoute.parameters),
         { layout: data },
         {
+            onStart: () => {
+                isSaving.value = true
+            },
             onFinish: () => {
+                isSaving.value = false
                 saveCancelToken.value = null
                 sendToIframe({ key: 'reload', value: {} })
                 if (isIframeLoading.value) {
@@ -118,12 +124,10 @@ const autoSave = async (data: Object) => {
                 saveCancelToken.value = cancelToken.cancel
             },
             onCancel: () => {
-                console.log('The saving progress canceled.')
             },
             onError: (error) => {
-                console.log('Error during saving:', error)
                 notify({
-                    title: trans('Something went wrong.'),
+                    title: ctrans('Something went wrong.'),
                     text: error.message,
                     type: 'error',
                 })
@@ -151,9 +155,19 @@ watch(previewMode, (newVal) => {
 }, { deep: true })
 
 
+const viewModes = [
+    { key: 'edit', label: ctrans('Edit'), icon: faPencil, isPreview: false, tooltip: ctrans('Edit the footer directly in the preview') },
+    { key: 'preview', label: ctrans('Preview'), icon: faEye, isPreview: true, tooltip: ctrans('See the footer exactly as on the website') },
+]
+
 const _iframe = ref<IframeHTMLAttributes | null>(null)
 const sendToIframe = (data: any) => {
     _iframe.value?.contentWindow.postMessage(data, '*')
+}
+
+const onIframeLoad = () => {
+    isIframeLoading.value = false
+    sendToIframe({ key: 'isPreviewMode', value: previewMode.value })
 }
 
 const openWebsite = () => {
@@ -161,6 +175,41 @@ const openWebsite = () => {
 }
 
 const panelOpen = ref()
+const _sideEditor = ref<HTMLElement | null>(null)
+const sideEditorStorageKey = 'footer-workshop-side-editor-open'
+const readSideEditorOpen = (): boolean => {
+    try {
+        return localStorage.getItem(sideEditorStorageKey) !== 'false'
+    } catch {
+        return true
+    }
+}
+const isSideEditorOpen = ref(readSideEditorOpen())
+watch(isSideEditorOpen, (isOpen) => {
+    try {
+        localStorage.setItem(sideEditorStorageKey, String(isOpen))
+    } catch {
+    }
+})
+
+const sideEditorSections = computed(() =>
+    (usedTemplates.value ? getBlueprint(usedTemplates.value.code) : [])
+        .filter((section) => section.name && section.type != 'hidden')
+        .map((section) => ({
+            name: section.name,
+            icon: section.icon,
+            panelKey: section.accordion_key ?? getFieldKey(section.key, section.name),
+        }))
+)
+
+const openSidePanel = async (panel: string) => {
+    isSideEditorOpen.value = true
+    panelOpen.value = null
+    await nextTick()
+    panelOpen.value = panel
+    await nextTick()
+    _sideEditor.value?.querySelector('.p-accordionpanel-active')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 const handleIframeMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
     const { data } = event;
@@ -169,7 +218,7 @@ const handleIframeMessage = (event: MessageEvent) => {
         if (saveCancelToken.value) saveCancelToken.value()
         usedTemplates.value = data.value
     } if (data.key === 'panelOpen') {
-        panelOpen.value = data.value
+        openSidePanel(data.value)
     }
 };
 
@@ -203,136 +252,131 @@ watch(selectedLang, (val) => {
     sendToIframe({ key: 'active_language', value: val })
 })
 
-console.log(props)
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #mainIcon v-if="isSaving">
+            <LoadingIcon size="sm" />
+        </template>
         <template #button-publish="{ action }">
-            <Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
-                @onPublish="(popover) => onPublish(action.route, popover)">
-                <!-- Move this to Advanced Setting later -->
-                <!-- <template #form-extend>
-                    <div class="flex items-center gap-2 mb-3">
-                    <div class="items-start leading-none flex-shrink-0">
-                        <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
-                        <span class="capitalize">{{ trans('Status') }} :</span>
-                    </div>
-                    <div class="flex items-center gap-4 w-full">
-                        <div class="flex overflow-hidden border-2 cursor-pointer w-full sm:w-auto"
-                            :class="status ? 'border-green-500' : 'border-red-500'" @click="()=>status=!status">
-                        <div class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
-                                :class="status ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'">
-                            Active
-                        </div>
-
-                        <div class="flex-1 text-center py-1 px-1 sm:px-2 text-xs font-semibold transition-all duration-200 ease-in-out"
-                                :class="!status ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'">
-                            Inactive
-                        </div>
-                        </div>
-                    </div>
-                    </div>
-                </template> -->
-            </Publish>
+            <Publish :isLoading="isLoading || isSaving" :is_dirty="true" v-model="comment"
+                @onPublish="(popover) => onPublish(action.route, popover)" />
         </template>
         <template #other>
-            <div class=" px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite">
+            <div class="px-2 cursor-pointer" v-tooltip="ctrans('Go to website')" @click="openWebsite">
                 <FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" size="xl" />
             </div>
         </template>
     </PageHeading>
 
-    <div class="h-[84vh] grid grid-flow-row-dense grid-cols-4">
-        <div v-if="usedTemplates" class="col-span-1 bg-[#F9F9F9] flex flex-col h-full border-r border-gray-300">
-            <div class="h-full">
-                <div class="w-full overflow-y-auto">
-                    <div
-                        class="px-3 py-0.5 sticky top-0 bg-gray-50 z-20 text-lg font-semibold flex items-center justify-end gap-3 border-b border-gray-300">
-                        <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"
-                            @click="isModalOpen = true">
-                            <FontAwesomeIcon :icon="faThLarge" fixed-width aria-hidden='true' />
-                        </div>
-                    </div>
-                    <div class="">
-                        <SideEditor v-model="usedTemplates.data.fieldValue"
-                            :blueprint="getBlueprint(usedTemplates.code)" :panel-open="panelOpen"
-                            :uploadImageRoute="uploadImageRoute"
-                            @update:model-value="e => usedTemplates.data.fieldValue = e" />
-                    </div>
+    <div class="h-[84vh] flex">
+        <aside v-if="usedTemplates && isSideEditorOpen" class="w-80 shrink-0 bg-[#F9F9F9] flex flex-col border-r border-gray-300">
+            <div class="pl-3 pr-1.5 h-9 bg-gray-50 flex items-center justify-between gap-2 border-b border-gray-300 text-sm">
+                <div class="flex items-center gap-2 font-semibold">
+                    <FontAwesomeIcon :icon="faLineColumns" fixed-width aria-hidden="true" />
+                    {{ ctrans("Footer") }}
+                </div>
+                <div class="flex items-center gap-1">
+                    <Button type="tertiary" size="xxs" :icon="faThLarge" :label="ctrans('Template')"
+                        @click="isModalOpen = true" />
+                    <button type="button" class="h-7 w-7 rounded text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                        v-tooltip="ctrans('Collapse editor')" @click="isSideEditorOpen = false">
+                        <FontAwesomeIcon :icon="faChevronDoubleLeft" fixed-width aria-hidden="true" />
+                    </button>
                 </div>
             </div>
-        </div>
+            <div ref="_sideEditor" class="compact-side-editor flex-1 overflow-y-auto">
+                <SideEditor v-model="usedTemplates.data.fieldValue"
+                    :blueprint="getBlueprint(usedTemplates.code)" :panel-open="panelOpen"
+                    :uploadImageRoute="uploadImageRoute"
+                    @update:model-value="e => usedTemplates.data.fieldValue = e" />
+            </div>
+        </aside>
 
-        <div class="bg-gray-100 h-full" :class="usedTemplates?.data ? 'col-span-3' : 'col-span-4'">
-            <div class="h-full w-full bg-white">
-                <div v-if="usedTemplates?.data" class="w-full h-full">
-                    <div class="flex justify-between bg-slate-200 border border-b-gray-300">
-                        <div class="flex">
-                            <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-                            <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
-                                v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
-                                <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
-                            </div>
-                            <div v-if="selectedLang" class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
-                                v-tooltip="trans('open translation')" @click="darwerRight = !darwerRight">
-                                <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
-                            </div>
+        <aside v-else-if="usedTemplates" class="w-10 shrink-0 bg-[#F9F9F9] flex flex-col items-center border-r border-gray-300">
+            <button type="button" class="h-9 w-full border-b border-gray-300 bg-gray-50 text-gray-500 hover:text-gray-700"
+                v-tooltip="ctrans('Expand editor')" @click="isSideEditorOpen = true">
+                <FontAwesomeIcon :icon="faChevronDoubleRight" fixed-width aria-hidden="true" />
+            </button>
+            <div class="flex flex-col items-center gap-0.5 py-1.5">
+                <button v-for="section in sideEditorSections" :key="section.panelKey" type="button"
+                    class="h-8 w-8 rounded text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                    v-tooltip="{ value: section.name, showDelay: 100 }" @click="openSidePanel(section.panelKey)">
+                    <Icon v-if="section.icon" :data="{ ...section.icon, tooltip: undefined }" />
+                    <span v-else class="text-xs font-semibold">{{ section.name.charAt(0) }}</span>
+                </button>
+            </div>
+            <button type="button" class="mt-auto mb-1.5 h-8 w-8 rounded text-gray-600 hover:bg-gray-200"
+                v-tooltip="ctrans('Change template')" @click="isModalOpen = true">
+                <FontAwesomeIcon :icon="faThLarge" fixed-width aria-hidden="true" />
+            </button>
+        </aside>
+
+        <section class="flex-1 min-w-0 bg-gray-100">
+            <div v-if="usedTemplates?.data" class="h-full flex flex-col">
+                <div class="flex items-center justify-between gap-3 bg-slate-200 border-b border-gray-300 pr-3">
+                    <div class="flex items-center">
+                        <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
+                        <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
+                            v-tooltip="ctrans('Open preview in new tab')" @click="openFullScreenPreview">
+                            <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
                         </div>
-                        <div class="flex items-center gap-2">
-                            <div class="border-r border-gray-300 pr-2">
-                              <!--   <select v-model="selectedLang"
-                                    class="border border-gray-300 rounded px-2 py-1 text-xs focus:ring focus:ring-indigo-200 focus:border-indigo-400">
-                                    <option :value="null">{{ trans('Master') }}</option>
-                                    <option v-for="lang in langOptions" :key="lang.code" :value="lang.code">
-                                        {{ lang.name }}
-                                    </option>
-                                </select> -->
-
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="text-xs" :class="[
-                                    previewMode ? 'text-slate-600' : 'text-slate-300'
-                                ]">Preview</div>
-                                <Switch @click="previewMode = !previewMode"
-                                    :class="[previewMode ? 'bg-slate-600' : 'bg-slate-300']"
-                                    :disabled="selectedLang !== null"
-                                    class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-                                    <span aria-hidden="true" :class="previewMode ? 'translate-x-3' : 'translate-x-0'"
-                                        class="pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out">
-                                    </span>
-                                </Switch>
-
-                            </div>
+                        <div v-if="selectedLang" class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
+                            v-tooltip="ctrans('Open translation')" @click="darwerRight = !darwerRight">
+                            <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                         </div>
                     </div>
 
-                    <div v-if="isIframeLoading" class="loading-overlay">
-                        <ProgressSpinner />
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="text-gray-500 tabular-nums">
+                            {{ isSaving ? ctrans("Saving…") : ctrans("All changes saved") }}
+                        </span>
+                        <div class="inline-flex rounded-md bg-white p-0.5 ring-1 ring-gray-300">
+                            <button v-for="mode in viewModes" :key="mode.key" type="button"
+                                :disabled="selectedLang !== null"
+                                class="flex items-center gap-1.5 rounded px-2.5 py-1 font-medium transition-colors disabled:cursor-not-allowed"
+                                :class="previewMode === mode.isPreview ? 'bg-slate-700 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                                v-tooltip="mode.tooltip"
+                                @click="previewMode = mode.isPreview">
+                                <FontAwesomeIcon :icon="mode.icon" fixed-width aria-hidden="true" />
+                                {{ mode.label }}
+                            </button>
+                        </div>
                     </div>
-                    <iframe :src="iframeSrc" :title="props.title"
-                        :class="[iframeClass, isIframeLoading ? 'hidden' : '']" @error="handleIframeError"
-                        @load="isIframeLoading = false" ref="_iframe" />
                 </div>
-                <div v-else>
-                    <EmptyState
-                        :data="{ description: 'You need pick a template from list', title: 'Pick Footer Templates' }">
-                        <template #button-empty-state>
-                            <div class="mt-4 block">
-                                <Button type="secondary" label="Templates" icon="fas fa-th-large"
-                                    @click="isModalOpen = true"></Button>
-                            </div>
-                        </template>
-                    </EmptyState>
+
+                <div class="relative flex-1 min-h-0 overflow-hidden"
+                    :class="currentView === 'desktop' ? '' : 'py-4'">
+                    <div v-if="isIframeLoading"
+                        class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/80">
+                        <LoadingIcon class="text-4xl" />
+                        <span class="text-sm text-gray-500">{{ ctrans("Loading preview") }}</span>
+                    </div>
+                    <iframe :src="iframeSrc" :title="props.title" ref="_iframe"
+                        class="bg-white transition-all" :class="[iframeClass, currentView === 'desktop' ? '' : 'shadow-lg']"
+                        @error="handleIframeError" @load="onIframeLoad" />
                 </div>
             </div>
-        </div>
+
+            <div v-else class="h-full flex items-center justify-center bg-white">
+                <EmptyState
+                    :data="{ description: ctrans('Pick a footer template to start editing'), title: ctrans('Pick footer template') }">
+                    <template #button-empty-state>
+                        <div class="mt-4 block">
+                            <Button type="secondary" :label="ctrans('Templates')" :icon="faThLarge"
+                                @click="isModalOpen = true" />
+                        </div>
+                    </template>
+                </EmptyState>
+            </div>
+        </section>
     </div>
 
     <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false">
-        <HeaderListModal :onSelectBlock="onPickTemplate" 
+        <HeaderListModal :onSelectBlock="onPickTemplate"
             :webBlockTypes="webBlockTypes.data.filter((item) => item.component == 'footer')"
             :currentTopbar="usedTemplates">
             <template #image="{ block }">
@@ -357,35 +401,19 @@ console.log(props)
 
 
 <style scoped lang="scss">
-:deep(.loading-overlay) {
-    position: block;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.8);
-    z-index: 1000;
-}
-
-:deep(.spinner) {
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 4px solid #3498db;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
+.compact-side-editor {
+    :deep(.p-accordionheader) {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
     }
 
-    100% {
-        transform: rotate(360deg);
+    :deep(.p-accordionpanel) {
+        border-width: 0 0 1px 0;
+    }
+
+    :deep(.p-accordioncontent-content) {
+        padding: 0.625rem 0.75rem !important;
+        font-size: 0.8125rem;
     }
 }
 </style>

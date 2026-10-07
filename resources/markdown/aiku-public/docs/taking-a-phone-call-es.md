@@ -4,7 +4,7 @@ summary: Aiku no marca a nadie, pero cuando descuelgas el teléfono, díselo. Tu
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, phone, crm
-category: crm
+category: help-desk
 ---
 
 <aside class="tldr">

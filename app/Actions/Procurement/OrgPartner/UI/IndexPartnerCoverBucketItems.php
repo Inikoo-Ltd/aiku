@@ -8,8 +8,11 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
+use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -64,7 +67,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $products = DB::table('product_has_org_stocks')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
             ->whereIn('product_has_org_stocks.org_stock_id', $sellerOrgStockIds)
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query))
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($this->orgPartner->partner)))
             ->select([
                 'product_has_org_stocks.org_stock_id',
                 'products.web_images',
@@ -82,14 +85,26 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->keyBy('stock_id');
 
         $openItems = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
-            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->where('state', ShoppingListItemStateEnum::DRAFT)
             ->whereIn('stock_id', $stockIds)
             ->get()
             ->keyBy('stock_id');
 
-        $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
+        $sentQuantities = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $this->orgPartner->id)
+            ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+            ->whereNull('deleted_at')
+            ->whereIn('stock_id', $stockIds)
+            ->groupBy('stock_id')
+            ->selectRaw('stock_id, sum(quantity) as total')
+            ->pluck('total', 'stock_id');
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $priceFactor) {
+        $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
+        $landedCosts = GetPartnerLandedCost::appliesTo($this->orgPartner) ? GetPartnerLandedCost::run($sellerOrgStockIds->all()) : [];
+        $quanta      = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStockIds->all());
+
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $sentQuantities, $priceFactor, $landedCosts, $quanta) {
+            $quantum       = $quanta[$orgStock->id] ?? 1;
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
             $buyerOrgStock = $buyerOrgStocks->get($orgStock->stock_id);
@@ -108,13 +123,17 @@ class IndexPartnerCoverBucketItems extends OrgAction
                     ? (int) $buyerOrgStock->stats->days_of_cover
                     : null,
                 'recommended_quantity'  => $buyerOrgStock?->stats?->recommended_order_quantity !== null
-                    ? (int) ceil((float) $buyerOrgStock->stats->recommended_order_quantity)
+                    ? (int) RoundPartnerQuantityToBatches::roundUp(ceil((float) $buyerOrgStock->stats->recommended_order_quantity), $quantum)
                     : null,
-                'price'                 => $product && $product->price !== null && $unitsPerSko
+                'order_quantum'         => $quantum,
+                'price'                 => isset($landedCosts[$orgStock->id]) && (float) $orgStock->packed_in > 0
+                    ? round($landedCosts[$orgStock->id] * $this->orgPartner->exchangeToOrgCurrency() / (float) $orgStock->packed_in, 4)
+                    : ($product && $product->price !== null && $unitsPerSko
                     ? round((float) $product->price * $priceFactor * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
-                    : null,
+                    : null),
                 'shopping_list_item_id' => $openItem?->id,
                 'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
+                'sent_quantity'         => (float) ($sentQuantities[$orgStock->stock_id] ?? 0),
             ];
         });
 

@@ -4,12 +4,22 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMapMarkerAlt } from "@fas"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { getStyles } from "@/Composables/styles"
-import { hasRichTextContent } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
+import {
+	demoteHeadingOne,
+	hasProductAppointment,
+	hasRichTextContent,
+} from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 
-const props = defineProps<{
-	fieldValue: any
-	screenType: "mobile" | "tablet" | "desktop"
-}>()
+const props = withDefaults(
+	defineProps<{
+		fieldValue: any
+		screenType: "mobile" | "tablet" | "desktop"
+		hideAppointment?: boolean
+	}>(),
+	{
+		hideAppointment: false,
+	}
+)
 
 const layout = inject("layout", {}) as any
 
@@ -17,12 +27,9 @@ const containerStyle = computed(() => getStyles(props.fieldValue?.about?.contain
 
 const product = computed(() => props.fieldValue?.product ?? {})
 
-const withoutHeadingOne = (html: unknown) =>
-	String(html ?? "").replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+const description = computed(() => demoteHeadingOne(props.fieldValue?.tabs?.description))
 
-const description = computed(() => withoutHeadingOne(props.fieldValue?.tabs?.description))
-
-const descriptionExtra = computed(() => withoutHeadingOne(product.value?.description_extra))
+const descriptionExtra = computed(() => demoteHeadingOne(product.value?.description_extra))
 
 const hasDescription = computed(() => hasRichTextContent(description.value))
 
@@ -32,12 +39,8 @@ const appointment = computed(() => props.fieldValue?.appointment_data ?? {})
 
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in ?? true)
 
-const hasAppointment = computed(() =>
-	Boolean(
-		isLoggedIn.value &&
-			props.fieldValue?.setting?.appointment &&
-			appointment.value?.link?.href
-	)
+const hasAppointment = computed(
+	() => !props.hideAppointment && hasProductAppointment(props.fieldValue, isLoggedIn.value)
 )
 
 const hasExtraSection = computed(() => hasDescriptionExtra.value || hasAppointment.value)
@@ -53,9 +56,10 @@ const richTextClass = "text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] 
 			<div v-if="hasDescriptionExtra" :class="richTextClass" v-html="descriptionExtra" />
 
 			<LinkIris
-				v-if="hasAppointment"
+				v-if="hasAppointment "
 				:href="appointment?.link?.href"
-				:type="appointment?.link?.type">
+				:type="appointment?.link?.type"
+				:target="appointment?.link?.target ?? '_self'">
 				<div
 					class="group flex w-fit items-center gap-3 rounded-lg border bg-[#F4F4F4] px-4 py-2 transition hover:border-gray-300 hover:bg-gray-100"
 					:class="{ 'mt-6': hasDescriptionExtra }">

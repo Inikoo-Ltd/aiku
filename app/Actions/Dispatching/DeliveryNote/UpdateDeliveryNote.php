@@ -34,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithNoStrictRules;
@@ -46,6 +47,11 @@ class UpdateDeliveryNote extends OrgAction
         $oldState           = $deliveryNote->state;
         $oldPickerUserId    = $deliveryNote->picker_user_id;
         $oldPackerUserId    = $deliveryNote->packer_user_id;
+
+        if (Arr::get($modelData, 'collection_address_id') && $deliveryNote->shop->collection_address_id) {
+            $modelData['collection_address_id'] = $deliveryNote->shop->collection_address_id;
+        }
+
         $deliveryNote       = $this->update($deliveryNote, $modelData, ['data']);
         $changes            = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 

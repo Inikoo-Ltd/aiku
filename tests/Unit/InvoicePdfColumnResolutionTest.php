@@ -86,3 +86,8 @@ test('the invoice prints a delivery address whose street was typed into the town
     $deliveryNote->setRelation('deliveryAddress', $placeholder);
     expect(\App\Actions\Accounting\Invoice\PdfInvoice::make()->invoicePdfDeliveryAddress($invoice, $deliveryNote, false))->toBeNull();
 });
+
+test('the English language override is accepted but never stored as a sticky pdf column', function () {
+    expect(\App\Actions\Accounting\Invoice\PdfInvoice::make()->rules())->toHaveKey('lang')
+        ->and(\App\Actions\Accounting\Invoice\GetInvoicePdfColumns::COLUMNS)->not->toHaveKey('lang');
+});

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\UI\IndexCatalogueOnItsWay;
 use App\Actions\Catalogue\UI\IndexTopListedFamilies;
 use App\Actions\Catalogue\UI\IndexTopListedProducts;
 use App\Actions\Catalogue\UI\IndexTopSoldProducts;
@@ -84,7 +85,13 @@ class ShowCatalogue extends OrgAction
                     $this->tab == CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value
                         ? fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))
                         : Inertia::optional(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
+                CatalogueTabsEnum::ON_ITS_WAY->value =>
+                    $this->tab == CatalogueTabsEnum::ON_ITS_WAY->value
+                        ? fn () => IndexCatalogueOnItsWay::run($shop, CatalogueTabsEnum::ON_ITS_WAY->value)
+                        : Inertia::optional(fn () => IndexCatalogueOnItsWay::run($shop, CatalogueTabsEnum::ON_ITS_WAY->value)),
             ]
+        )->table(
+            IndexCatalogueOnItsWay::make()->tableStructure($shop, CatalogueTabsEnum::ON_ITS_WAY->value)
         )->table(
             IndexTopListedFamilies::make()->tableStructure(
                 prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value,

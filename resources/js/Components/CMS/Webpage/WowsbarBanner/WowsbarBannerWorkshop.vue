@@ -2,7 +2,7 @@
 import { ref, onMounted, inject, watch, computed } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
@@ -137,7 +137,6 @@ onMounted(() => {
 	}
 })
 
-console.log('banner', props)
 </script>
 
 <template>
@@ -170,8 +169,8 @@ console.log('banner', props)
 
 		<div v-else>
 			<EmptyState :data="{
-				title: trans('You do not have slides to show'),
-				description: trans('Create new slides in the workshop to get started')
+				title: ctrans('You do not have slides to show'),
+				description: ctrans('Create new slides in the workshop to get started')
 			}" />
 		</div>
 	</div>

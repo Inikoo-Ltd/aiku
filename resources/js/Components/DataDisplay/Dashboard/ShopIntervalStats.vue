@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, computed } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 interface IntervalDataItem {
     raw_value?: number | string
@@ -35,46 +35,6 @@ const props = defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 
-const getExpectedSales = computed(() => {
-    const currentMonthSales = props.shopBlocks?.interval_data?.sales_org_currency_external?.mtd?.raw_value
-    const lastMonthSales = props.shopBlocks?.interval_data?.sales_org_currency_external?.lm?.raw_value
-    const currentMonthOrders = props.shopBlocks?.interval_data?.orders?.mtd?.raw_value
-    const lastMonthOrders = props.shopBlocks?.interval_data?.orders?.lm?.raw_value
-
-    if (!currentMonthSales || !lastMonthSales || !currentMonthOrders || !lastMonthOrders) {
-        return locale.currencyFormat(
-            props.shopBlocks?.currency_code,
-            0
-        )
-    }
-
-    const now = new Date()
-    const currentDay = now.getDate()
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-    const remainingDays = daysInMonth - currentDay
-
-    const currentAOV = parseFloat(String(currentMonthSales)) / Number(currentMonthOrders)
-    const lastMonthAOV = parseFloat(String(lastMonthSales)) / Number(lastMonthOrders)
-
-    const projectedAOV = (currentAOV * 0.6) + (lastMonthAOV * 0.4)
-
-    const lastMonthDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate()
-    const avgOrdersPerDay = Number(lastMonthOrders) / lastMonthDays
-
-    const currentOrderRate = Number(currentMonthOrders) / currentDay
-
-    const projectedOrderRate = (currentOrderRate * 0.7) + (avgOrdersPerDay * 0.3)
-
-    const projectedTotalOrders = Number(currentMonthOrders) + (projectedOrderRate * remainingDays)
-
-    const expectedSales = projectedTotalOrders * projectedAOV
-
-    return locale.currencyFormat(
-        props.shopBlocks?.currency_code,
-        expectedSales
-    )
-})
-
 const getAverageCLV = computed(() => {
     const clv = props.shopBlocks?.average_clv
     if (!clv || clv === '0') {
@@ -102,36 +62,25 @@ const getHistoricCLV = computed(() => {
 
 <template>
     <div v-if="props.shopBlocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 py-4">
-        <!-- Expected Sales -->
-        <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
-            <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">{{ trans('Expected Sales') }}</p>
-                <span class="text-2xl font-bold">
-                    {{ getExpectedSales }}
-                </span>
-                <p class="text-xs text-gray-500 mt-1">{{trans('Projected this month')}}</p>
-            </div>
-        </div>
-
         <!-- Average CLV -->
         <div v-if="getAverageCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">{{ trans('Average CLV') }}</p>
+                <p class="text-lg font-bold mb-1">{{ ctrans('Average CLV') }}</p>
                 <span class="text-2xl font-bold">
                     {{ getAverageCLV }}
                 </span>
-                <p class="text-xs text-gray-500 mt-1">{{trans('Customer Lifetime Value')}}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ctrans('Customer Lifetime Value')}}</p>
             </div>
         </div>
 
         <!-- Historic CLV -->
         <div v-if="getHistoricCLV !== null" class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
             <div class="text-sm w-full">
-                <p class="text-lg font-bold mb-1">{{ trans('Historic CLV')}}</p>
+                <p class="text-lg font-bold mb-1">{{ ctrans('Historic CLV')}}</p>
                 <span class="text-2xl font-bold">
                     {{ getHistoricCLV }}
                 </span>
-                <p class="text-xs text-gray-500 mt-1">{{trans('Actual revenue per customer')}}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ctrans('Actual revenue per customer')}}</p>
             </div>
         </div>
     </div>

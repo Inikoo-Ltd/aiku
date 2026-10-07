@@ -45,12 +45,14 @@ class BroadcastRealtimeMetaChat implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        $metaChatSession = $this->message->metaChatSession;
+        $metaChatSession   = $this->message->metaChatSession;
+        $windowSecondsLeft = $metaChatSession->whatsapp_window_seconds_left;
 
         return [
             'message'                       => new MetaChatMessageResource($this->message),
             'session_status'                => $metaChatSession->status->value,
-            'can_send_non_template_message' => $metaChatSession->can_send_non_template_message,
+            'can_send_non_template_message' => $windowSecondsLeft > 0,
+            'whatsapp_window_seconds_left'  => $windowSecondsLeft,
         ];
     }
 }

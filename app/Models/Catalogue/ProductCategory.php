@@ -78,6 +78,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $source_family_id
  * @property bool $follow_master
  * @property bool $show_in_website
+ * @property int|null $website_position
  * @property int|null $webpage_id
  * @property string|null $url
  * @property array<array-key, mixed> $web_images

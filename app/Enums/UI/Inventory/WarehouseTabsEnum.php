@@ -16,6 +16,7 @@ enum WarehouseTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
+    case OPERATIONS      = 'operations';
     case SHOWCASE        = 'showcase';
     case DASHBOARD       = 'dashboard';
     case HISTORY         = 'history';
@@ -25,6 +26,10 @@ enum WarehouseTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
+            WarehouseTabsEnum::OPERATIONS => [
+                'title' => __('Operations (In/Out)'),
+                'icon'  => 'fal fa-dolly',
+            ],
             WarehouseTabsEnum::DASHBOARD => [
                 'title' => __('Stats'),
                 'icon'  => 'fal fa-chart-line',

@@ -15,6 +15,7 @@ use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
+use App\Http\Resources\Traits\HasProductOfferPrices;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,12 +25,15 @@ use Illuminate\Support\Arr;
  * @property mixed $units
  * @property mixed $rrp
  * @property mixed $id
+ * @property mixed $price
+ * @property mixed $step_discount_data
  */
 class ProductOfVariantResource extends JsonResource
 {
     use HasSelfCall;
     use HasBucketImages;
     use HasPriceMetrics;
+    use HasProductOfferPrices;
 
 
     public function toArray($request): array
@@ -118,7 +122,7 @@ class ProductOfVariantResource extends JsonResource
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
-            'is_back_in_stock'  => $product->backInStockReminders,
+            'is_back_in_stock'  => $back_in_stock,
             'back_in_stock'     => $back_in_stock,
 
 
@@ -128,6 +132,12 @@ class ProductOfVariantResource extends JsonResource
             'discounted_profit_per_unit' => $profitPerUnitDiscounted,
             'discounted_margin'          => $marginDiscounted,
             'discounted_percentage'      => percentage($bestPercentageOff, 1),
+            'family_id'                  => $product->family_id,
+            'is_golden_product'          => (bool)$product->is_golden_product,
+            'offers_data'                => $productOffersData,
+            'step_discount'              => $this->getStepDiscount(),
+            'variant_axis_label'         => $product->variant_axis_label,
+            'variant_title'              => $product->variant_title,
 
 
         ];

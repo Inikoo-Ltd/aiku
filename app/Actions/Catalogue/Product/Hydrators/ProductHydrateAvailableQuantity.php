@@ -24,6 +24,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    /** Storefronts read a stock of 250 or more as "Unlimited quantity available". */
+    public const int ON_DEMAND_QUANTITY = 250;
+
     public function getJobUniqueId(Product $product): string
     {
         return $product->id;
@@ -45,11 +48,11 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         }
 
 
-        $currentQuantity   = $product->available_quantity;
-        $availableQuantity = 0;
+        $currentQuantity = $product->available_quantity;
 
         $numberOrgStocksChecked                 = 0;
         $numberOrgStocksHasNeverBeenInWarehouse = 0;
+        $quantitiesFromStockedOrgStocks         = [];
 
         $isNotOnDemand = false;
         foreach ($product->orgStocks as $orgStock) {
@@ -61,35 +64,25 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
                 $numberOrgStocksHasNeverBeenInWarehouse++;
             }
 
-            if ($orgStock->is_on_demand) {
-                $quantityInStock = 250;
-            } else {
-                $quantityInStock = $orgStock->quantity_available;
-            }
-
-
             $productToOrgStockRatio = $orgStock->pivot->quantity;
             if (!$productToOrgStockRatio || $productToOrgStockRatio == 0) {
                 continue;
             }
 
-            $availableQuantityFromThisOrgStock = floor($quantityInStock / $productToOrgStockRatio);
-
-            if ($numberOrgStocksChecked == 0) {
-                $availableQuantity = $availableQuantityFromThisOrgStock;
-            } else {
-                $availableQuantity = min($availableQuantityFromThisOrgStock, $availableQuantity);
-            }
-
             $numberOrgStocksChecked++;
+
+            if (!$orgStock->is_on_demand) {
+                $quantitiesFromStockedOrgStocks[] = floor($orgStock->quantity_available / $productToOrgStockRatio);
+            }
         }
 
-        $onDemand = false;
-        if ($numberOrgStocksChecked > 0 && !$isNotOnDemand) {
-            $onDemand = true;
-        }
+        $onDemand = $numberOrgStocksChecked > 0 && !$isNotOnDemand;
 
-        if ($availableQuantity < 0) {
+        if ($quantitiesFromStockedOrgStocks) {
+            $availableQuantity = max(0, min($quantitiesFromStockedOrgStocks));
+        } elseif ($onDemand) {
+            $availableQuantity = self::ON_DEMAND_QUANTITY;
+        } else {
             $availableQuantity = 0;
         }
 
@@ -101,6 +94,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
         if ($currentQuantity == 0 && $availableQuantity > 0) {
             $dataToUpdate['back_in_stock_since'] = now();
+            if ($product->status === ProductStatusEnum::COMING_SOON) {
+                $dataToUpdate['first_in_stock_at'] = now();
+            }
         }
 
         if (in_array($product->status, [

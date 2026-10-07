@@ -33,7 +33,7 @@ class UpdateShopifyInventory
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
-                BulkUpdateShopifyPortfolio::dispatch($customerSalesChannel->id)
+                BulkUpdateShopifyPortfolio::dispatch($customerSalesChannel->id, null, true)
                     ->delay(now()->addSeconds(rand(0, 21600)));
             }
         }

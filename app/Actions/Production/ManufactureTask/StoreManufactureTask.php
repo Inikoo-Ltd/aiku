@@ -31,6 +31,15 @@ class StoreManufactureTask extends OrgAction
     {
         data_set($modelData, 'group_id', $production->group_id);
         data_set($modelData, 'organisation_id', $production->organisation_id);
+        $modelData = array_merge([
+            'task_materials_cost'     => 0,
+            'task_energy_cost'        => 0,
+            'task_other_cost'         => 0,
+            'task_work_cost'          => 0,
+            'task_lower_target'       => 0,
+            'task_upper_target'       => 0,
+            'operative_reward_amount' => 0,
+        ], $modelData);
 
         /** @var ManufactureTask $manufactureTask */
         $manufactureTask = $production->manufactureTasks()->create($modelData);
@@ -75,15 +84,17 @@ class StoreManufactureTask extends OrgAction
                 ),
             ],
             'name'                              => ['required', 'string', 'max:255'],
-            'task_materials_cost'               => ['required', 'numeric', 'min:0'],
-            'task_energy_cost'                  => ['required', 'numeric', 'min:0'],
-            'task_other_cost'                   => ['required', 'numeric', 'min:0'],
-            'task_work_cost'                    => ['required', 'numeric', 'min:0'],
-            'task_lower_target'                 => ['required', 'numeric', 'min:0'],
-            'task_upper_target'                 => ['required', 'numeric', 'min:0'],
-            'operative_reward_terms'            => ['required', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
-            'operative_reward_allowance_type'   => ['required', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
-            'operative_reward_amount'           => ['required', 'numeric', 'min:0'],
+            'task_materials_cost'               => ['sometimes', 'numeric', 'min:0'],
+            'task_energy_cost'                  => ['sometimes', 'numeric', 'min:0'],
+            'task_other_cost'                   => ['sometimes', 'numeric', 'min:0'],
+            'task_work_cost'                    => ['sometimes', 'numeric', 'min:0'],
+            'task_lower_target'                 => ['sometimes', 'numeric', 'min:0'],
+            'task_upper_target'                 => ['sometimes', 'numeric', 'min:0'],
+            'operative_reward_terms'            => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardTermsEnum::class)],
+            'operative_reward_allowance_type'   => ['sometimes', Rule::enum(ManufactureTaskOperativeRewardAllowanceTypeEnum::class)],
+            'operative_reward_amount'           => ['sometimes', 'numeric', 'min:0'],
+            'description'                       => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'status'                            => ['sometimes', 'boolean'],
             'is_piece_rate'                     => ['sometimes', 'boolean'],
         ];
     }

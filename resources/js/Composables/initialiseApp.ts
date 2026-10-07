@@ -10,6 +10,7 @@ import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 import { applyChatTheme } from '@/Composables/useChatThemes'
 import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
+import { buildNavigationTheme } from '@/Composables/useNavigationTheme'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -115,14 +116,6 @@ export const initialiseApp = () => {
                 }
             }
 
-            if (usePage().props?.environment === 'local') {
-                console.log(
-                    '%cusePage().props',
-                    'background: yellow; color: black; font-size: 16px; font-weight: bold; padding: 3px 2px;',
-                    usePage().props
-                )
-            }
-
             const dataActiveUser = {
                 ...usePage().props.auth.user,
                 last_active: new Date(),
@@ -154,6 +147,11 @@ export const initialiseApp = () => {
         loadLanguageAsync(usePage().props.localeData.language.code)
     }
 
+    // Compared by identity so a colour the user has just picked in their profile is not immediately
+    // overwritten by the props of the page load they picked it on
+    let appliedOrganisationColours: { [key: string]: string } | undefined
+
+
     watchEffect(() => {
         // Aiku
 
@@ -174,6 +172,25 @@ export const initialiseApp = () => {
         if (usePage().props.layout?.app_theme) {
             layout.app.theme = usePage().props.layout?.app_theme
         }
+
+        /*
+         * Kept in the store rather than read straight from the props: layout is a first load only
+         * prop, so after an Inertia visit to another organisation the map is gone and the left
+         * navigation would fall back to the app theme, which is the confusion this is here to end.
+         */
+        const propOrganisationColours = usePage().props.layout?.org_themes as { [key: string]: string } | undefined
+
+        if (propOrganisationColours && propOrganisationColours !== appliedOrganisationColours) {
+            appliedOrganisationColours = propOrganisationColours
+            layout.app.organisation_colours = propOrganisationColours
+        }
+
+        // Left navigation follows the colour the user gave the organisation they are in, so they
+        // can tell at a glance which one that is, and the app theme when they gave it none
+        const currentOrganisation = layout.currentParams?.organisation
+        const organisationColour = currentOrganisation ? layout.app.organisation_colours?.[currentOrganisation] : null
+
+        layout.app.navigation_theme = buildNavigationTheme(organisationColour) ?? layout.app.theme
 
         // Set Chat theme
         if (usePage().props.layout?.chat_theme) {
@@ -244,8 +261,16 @@ export const initialiseApp = () => {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
 
+        if (usePage().props.order_alerts !== undefined) {
+            layout.order_alerts = usePage().props.order_alerts as any
+        }
+
         if (usePage().props.ticket_badges !== undefined) {
             layout.ticket_badges = usePage().props.ticket_badges as any
+        }
+
+        if (usePage().props.task_badges !== undefined) {
+            layout.task_badges = usePage().props.task_badges as any
         }
 
         if (usePage().props.dispatching_waiting_count !== undefined) {
@@ -258,6 +283,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.crm_return_count !== undefined) {
             layout.crm_return_count = usePage().props.crm_return_count as number
+        }
+
+        if (usePage().props.products_need_review_count !== undefined) {
+            layout.products_need_review_count = usePage().props.products_need_review_count as number
         }
 
         if (usePage().props.master_updated_count !== undefined) {

@@ -9,6 +9,7 @@
 
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
@@ -20,10 +21,12 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Models\Accounting\Invoice;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -38,6 +41,7 @@ use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -47,6 +51,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Ordering\Order;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -456,6 +461,56 @@ test('the tax faire charged survives invoicing and later recalculations', functi
 
 
     $invoice->delete();
+});
+
+/** HELP-3394: setting shipping manually on a Faire order must re-pull Faire's tax, which by then includes shipping VAT. */
+test('manual shipping on a faire order refreshes the faire tax snapshot', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+    $order->update(['external_id' => 'faire-123']);
+
+    $this->shop->updateQuietly(['type' => ShopTypeEnum::EXTERNAL, 'engine' => ShopEngineEnum::FAIRE]);
+
+    try {
+        UpdateFaireOrder::shouldRun()->once();
+
+        UpdateOrderShippingEngineAsManual::make()->handle($order->refresh(), ['shipping_amount' => 4.95]);
+
+        expect((float)$order->refresh()->shipping_amount)->toBe(4.95);
+    } finally {
+        $this->shop->updateQuietly(['type' => ShopTypeEnum::B2B, 'engine' => ShopEngineEnum::AIKU]);
+    }
+});
+
+test('manual shipping on a non-faire order does not touch faire', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+
+    UpdateFaireOrder::shouldNotRun();
+
+    UpdateOrderShippingEngineAsManual::make()->handle($order->refresh(), ['shipping_amount' => 4.95]);
+
+    expect((float)$order->refresh()->shipping_amount)->toBe(4.95);
+});
+
+/** HELP-3670: deleting the invoice of a finalised order makes its shipping editable again. */
+test('manual shipping is locked on an invoiced finalised order and unlocked once the invoice is deleted', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+    UpdateOrderShippingEngineAsManual::make()->handle($order->refresh(), ['shipping_amount' => 4.49]);
+
+    $order->refresh()->updateQuietly(['state' => OrderStateEnum::FINALISED]);
+    $invoice = GenerateInvoiceFromOrder::make()->handle($order->refresh());
+
+    patch(route('grp.models.order.set_shipping_engine_manual', $order->id), ['shipping_amount' => 0])
+        ->assertSessionHasErrors('message');
+    expect((float)$order->refresh()->shipping_amount)->toBe(4.49);
+
+    $invoice->delete();
+
+    patch(route('grp.models.order.set_shipping_engine_manual', $order->id), ['shipping_amount' => 0])
+        ->assertSessionHasNoErrors();
+    expect((float)$order->refresh()->shipping_amount)->toBe(0.0);
 });
 
 /** HELP-2967: a validity flip re-rates open orders, but never touches an invoiced one. */

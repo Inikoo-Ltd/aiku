@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Variant;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\VariantTabsEnum;
+use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -104,8 +105,7 @@ class EditVariant extends OrgAction
                         'type'  => 'toggle',
                         'label' => __('Enable Variant under this shop'),
                         'value' => $variant->status,
-
-                    ]
+                    ],
                 ],
             ],
         ];
@@ -115,6 +115,18 @@ class EditVariant extends OrgAction
                 'label'   => __('Variants'),
                 'icon'    => 'fa-light fa-shapes',
                 'fields'  => [
+                    'label'     => [
+                        'type'          => 'input_translation',
+                        'label'         => __('Label'),
+                        'language_from' => 'en',
+                        'full'          => true,
+                        'main'          => $variant->masterVariant?->label,
+                        'languages'     => [$variant->shop->language_id => LanguageResource::make($variant->shop->language)->resolve()],
+                        'mode'          => 'single',
+                        'value'         => $variant->label,
+                        'reviewed'      => $variant->is_label_reviewed,
+                        'information'   => __('Shown as the product title on the website product cards. When empty, the leader product name is used.'),
+                    ],
                     'variants' => [
                         'type'               => 'variant_field',
                         'label'              => __('Variants'),

@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebpagesForWorkshopSelectResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
@@ -47,6 +48,7 @@ class GetWebpagesForWorkshopSelect extends OrgAction
         $queryBuilder = QueryBuilder::for(Webpage::class);
 
         $queryBuilder->where('webpages.website_id', $website->id);
+        $queryBuilder->whereNotIn('webpages.sub_type', WebpageSubTypeEnum::hiddenFromSearchEnginesValues());
 
 
         $queryBuilder->orderByRaw(

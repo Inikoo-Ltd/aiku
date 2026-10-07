@@ -45,7 +45,9 @@ trait WithPrintDeliveryNoteLeaflet
             $bytes = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
 
             if ($media->mime_type && str_starts_with($media->mime_type, 'image/')) {
-                $pdf       = PDF::loadHTML('<img src="data:'.$media->mime_type.';base64,'.base64_encode($bytes).'" style="width:100%">');
+                $pdf       = PDF::loadHTML('<img src="data:'.$media->mime_type.';base64,'.base64_encode($bytes).'" style="max-width:100%;height:auto;margin:0;padding:0">');
+                $pdf->SetPageSize('A6');
+                $pdf->SetMargins(0, 0, 0);
                 $pdfBase64 = base64_encode($pdf->output());
             } else {
                 $pdfBase64 = base64_encode($bytes);

@@ -44,6 +44,47 @@ class IndexStoredItems extends OrgAction
 
     private Group|FulfilmentCustomer $parent;
 
+    protected function getElementGroups(FulfilmentCustomer $fulfilmentCustomer): array
+    {
+        $countByState = $fulfilmentCustomer->storedItems()
+            ->selectRaw('state, count(*) as number')
+            ->groupBy('state')
+            ->pluck('number', 'state');
+
+        $elements = [];
+        foreach (StoredItemStateEnum::labels() as $state => $label) {
+            $elements[$state] = [$label, $countByState[$state] ?? 0];
+        }
+
+        $numberWithStock = $fulfilmentCustomer->storedItems()->where('total_quantity', '>', 0)->count();
+
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => $elements,
+                'default'  => implode(',', StoredItemStateEnum::valuesExcept([StoredItemStateEnum::DISCONTINUED])),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('stored_items.state', $elements);
+                }
+            ],
+            'stock' => [
+                'label'    => __('Stock'),
+                'elements' => [
+                    'with_stock' => [__('With stock'), $numberWithStock],
+                    'no_stock'   => [__('No stock'), $countByState->sum() - $numberWithStock],
+                ],
+                'default'  => null,
+                'engine'   => function ($query, $elements) {
+                    if ($elements == ['with_stock']) {
+                        $query->where('stored_items.total_quantity', '>', 0);
+                    } else {
+                        $query->where(fn ($query) => $query->where('stored_items.total_quantity', '<=', 0)->orWhereNull('stored_items.total_quantity'));
+                    }
+                }
+            ],
+        ];
+    }
+
     public function handle(Group|FulfilmentCustomer|Pallet $parent, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
@@ -66,7 +107,21 @@ class IndexStoredItems extends OrgAction
             }
         });
 
-        return QueryBuilder::for(StoredItem::class)
+        $query = QueryBuilder::for(StoredItem::class);
+
+        if ($parent instanceof FulfilmentCustomer) {
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $query->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix,
+                    default: $elementGroup['default']
+                );
+            }
+        }
+
+        return $query
             ->select(
                 'stored_items.id',
                 'stored_items.slug',
@@ -103,6 +158,17 @@ class IndexStoredItems extends OrgAction
                     ->pageName($prefix . 'Page');
             }
 
+
+            if ($parent instanceof FulfilmentCustomer) {
+                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements'],
+                        default: $elementGroup['default']
+                    );
+                }
+            }
 
             $table
                 ->withGlobalSearch()

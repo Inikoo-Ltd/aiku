@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Events\UploadProductToShopifyProgressEvent;
@@ -25,13 +26,25 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
 
         if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
+            $refusal = LinkShopifyPortfolio::refusal($portfolio->customerSalesChannel, $shopifyProductId, null, $portfolio);
+
+            if ($refusal === null) {
+                $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
+                $refusal              = $replacedVariantOwner === null ? null : StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false);
+            }
+
+            if ($refusal !== null) {
+                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => $refusal]]);
+                UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio->refresh());
+
+                return;
+            }
+
             if ($portfolio->isShopifyVariantAdopted()) {
                 UnlinkRetinaPortfolio::run($portfolio);
             }
 
-            $portfolio->update([
-                'platform_product_id' => $shopifyProductId,
-            ]);
+            LinkShopifyPortfolio::run($portfolio, $shopifyProductId);
 
             $portfolio->refresh();
             StoreShopifyProductVariant::run($portfolio, 0);

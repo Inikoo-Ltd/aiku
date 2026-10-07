@@ -59,7 +59,7 @@ class StoreProductDiscount extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('Product Discount', $english, $product->shop->language, 'gpt-5-nano').' '.$product->code,
+            Translate::run('Product Discount', $english, $product->shop->language, 'catalogue').' '.$product->code,
             false
         );
 

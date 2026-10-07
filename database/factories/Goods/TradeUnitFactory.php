@@ -8,6 +8,7 @@
 
 namespace Database\Factories\Goods;
 
+use App\Models\Goods\TradeUnit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,5 +30,10 @@ class TradeUnitFactory extends Factory
             'net_weight'   => fake()->numberBetween(10, 100),
             'description'  => fake()->sentence,
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(fn (TradeUnit $tradeUnit) => $tradeUnit->stats()->create());
     }
 }

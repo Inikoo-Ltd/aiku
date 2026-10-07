@@ -32,6 +32,7 @@ use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreProductDiscount;
 use App\Actions\Discounts\Offer\StoreProductStepDiscount;
+use App\Actions\Discounts\Offer\StoreProductsStepDiscount;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
 use App\Actions\Discounts\Offer\SuspendOffer;
@@ -69,6 +70,7 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -80,6 +82,8 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -197,6 +201,25 @@ test('create offer', function () {
     return $offer;
 });
 
+test('offer orders table has a state filter', function (Offer $offer) {
+    $tableStructure = new \App\InertiaTable\InertiaTable(request());
+    \App\Actions\Ordering\Order\UI\IndexOrders::make()->tableStructure(parent: $offer, prefix: 'orders', bucket: 'offer')($tableStructure);
+
+    $elementGroups = (fn () => $this->elementGroups)->call($tableStructure);
+
+    expect($elementGroups->has('state'))->toBeTrue();
+})->depends('create offer');
+
+test('offer showcase data', function (Offer $offer) {
+    $showcase = \App\Actions\Discounts\Offer\UI\GetOfferShowcaseData::make()->forOffer($offer);
+
+    expect($showcase['totals']['redemptions'])->toBe(0)
+        ->and($showcase['totals']['return_on_discount'])->toEqual(0)
+        ->and($showcase['first_used_at'])->toBeNull()
+        ->and($showcase['benchmark']['offer_type'])->toBe($offer->type)
+        ->and($showcase['trend'])->toBe([]);
+})->depends('create offer');
+
 test('update offer', function ($offer) {
     $offer = UpdateOffer::make()->action($offer, ['name' => 'New Name A']);
     expect($offer->name)->toBe('New Name A');
@@ -244,19 +267,6 @@ test('set offer as permanent', function (Offer $offer) {
         ->and($offerAllowance->state)->toBe(OfferAllowanceStateEnum::ACTIVE)
         ->and($offerAllowance->status)->toBeTrue();
 })->depends('create offer');
-
-test('UI Discount Dashboard', function () {
-    $response = get(route('grp.org.shops.show.discounts.dashboard', [$this->organisation->slug, $this->shop->slug]));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Org/Discounts/DiscountsDashboard')
-            ->has('title')
-            ->has('pageHead')
-            ->has('tabs')
-            ->has('breadcrumbs', 3);
-    });
-});
 
 test('UI Index offer campaigns', function () {
     $response = get(route('grp.org.shops.show.discounts.campaigns.index', [$this->organisation->slug, $this->shop->slug]));
@@ -401,6 +411,24 @@ test('an offer whose end date has passed is swept off, keeping its end date', fu
         ->and($offer->state)->toBe(OfferStateEnum::FINISHED)
         ->and($offer->end_at->toDateTimeString())->toBe($endAt->toDateTimeString());
     $this->travelBack();
+});
+
+test('the sweep finishes an offer whose whole window passed while it sat in process', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update([
+        'state'    => OfferStateEnum::IN_PROCESS,
+        'status'   => false,
+        'start_at' => now()->subMonth(),
+        'end_at'   => now()->subWeek(),
+    ]);
+
+    $this->artisan('offer:update_status_from_dates')->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->status)->toBeFalse();
 });
 
 test('the sweep never resurrects a finished offer', function () {
@@ -742,6 +770,21 @@ test('store gifts offers', function () {
 
     return $offer;
 });
+
+test('a discounts clerk can open the gift offer edit page', function (Offer $offer) {
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::DISCOUNTS_CLERK->value, $this->shop));
+    actingAs($clerk);
+
+    $response = get(route('grp.org.shops.show.discounts.campaigns.gift.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $offer->offerCampaign->slug,
+        $offer->slug,
+    ]));
+    $response->assertOk();
+})->depends('store gifts offers');
 
 test('store product offers no-op', function () {
     StoreProductOffers::make()->handle([]);
@@ -3684,4 +3727,130 @@ test('a line added by staff through the order page can never be flagged as a gif
     expect($transaction)->not->toBeNull()
         ->and($transaction->is_gift)->toBeFalse()
         ->and((float)$transaction->net_amount)->toBeGreaterThan(0);
+});
+
+test('store step discount for multiple products creates one offer per product', function () {
+    if (!$this->shop->offerCampaigns()->exists()) {
+        SeedShopOfferCampaigns::run($this->shop);
+    }
+
+    $products = collect(['STEP-MULTI-1', 'STEP-MULTI-2'])->map(fn (string $code) => StoreProduct::make()->action(
+        $this->product->family,
+        array_merge(
+            Product::factory()->definition(),
+            [
+                'code'        => $code,
+                'price'       => 50,
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                        'quantity' => 1
+                    ]
+                ],
+            ]
+        )
+    ));
+
+    $this->postJson(route('grp.models.products_step_discount.store', ['shop' => $this->shop->id]), [
+        'product_ids' => $products->pluck('id')->all(),
+        'name'        => 'Family step discount',
+        'steps'       => [
+            ['min_quantity' => 1, 'percentage_off' => 0.10, 'is_popular' => false],
+            ['min_quantity' => 10, 'percentage_off' => 0.20, 'is_popular' => true],
+        ],
+        'duration'    => 'permanent',
+        'start_at'    => now()->toDateString(),
+    ])->assertOk()->assertJsonPath('number_offers', 2);
+
+    $offers = Offer::where('trigger_type', 'Product')
+        ->whereIn('trigger_id', $products->pluck('id'))
+        ->get();
+
+    expect($offers)->toHaveCount(2)
+        ->and($offers->pluck('name')->unique()->all())->toBe(['Family step discount'])
+        ->and($offers->every(fn (Offer $offer) => $offer->offerCampaign->type === OfferCampaignTypeEnum::STEP_OFFERS))->toBeTrue()
+        ->and(Arr::get($offers->first()->offerAllowances->first()->data, 'steps.1.min_quantity'))->toBe(10)
+        ->and(Arr::get($offers->first()->offerAllowances->first()->data, 'steps.1.is_popular'))->toBeTrue();
+
+    expect(fn () => StoreProductsStepDiscount::make()->action($this->shop, [
+        'product_ids' => [$products->first()->id],
+        'steps'       => [['min_quantity' => 1, 'percentage_off' => 0.10]],
+        'duration'    => 'permanent',
+        'start_at'    => now(),
+    ]))->toThrow(ValidationException::class, 'STEP-MULTI-1');
+
+    $offers->each(fn (Offer $offer) => SuspendOffer::run($offer));
+
+    $replacementOffers = StoreProductsStepDiscount::make()->action($this->shop, [
+        'product_ids' => $products->pluck('id')->all(),
+        'steps'       => [['min_quantity' => 5, 'percentage_off' => 0.05]],
+        'duration'    => 'permanent',
+        'start_at'    => now(),
+    ]);
+
+    expect($replacementOffers)->toHaveCount(2)
+        ->and($replacementOffers->every(fn (Offer $offer) => $offer->state === OfferStateEnum::ACTIVE))->toBeTrue()
+        ->and($offers->every(fn (Offer $offer) => $offer->refresh()->state === OfferStateEnum::FINISHED))->toBeTrue();
+
+    $replacementOffers->each(fn (Offer $offer) => SuspendOffer::run($offer));
+});
+
+test('a combined category offer counts the spend across all its families together', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::CATEGORY_OFFERS)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $familyInOrder = $this->product->family;
+    /** @var ProductCategory $familyNotInOrder */
+    $familyNotInOrder = ProductCategory::factory()->create([
+        'shop_id'         => $shop->id,
+        'organisation_id' => $shop->organisation_id,
+        'group_id'        => $shop->group_id,
+        'code'            => 'CAT-COMB',
+        'type'            => ProductCategoryTypeEnum::FAMILY->value,
+    ]);
+
+    $storeCombinedOffer = fn (float $itemAmount) => Arr::first(StoreProductCategoryDiscount::make()->handleMultiple([
+        'name'                     => 'Combined '.$itemAmount,
+        'code'                     => 'comb-'.(int)$itemAmount,
+        'type'                     => 'amount',
+        'combine'                  => true,
+        'product_category_ids'     => [$familyNotInOrder->id, $familyInOrder->id],
+        'trigger_data_item_amount' => $itemAmount,
+        'percentage_off'           => 0.95,
+        'duration'                 => 'permanent',
+        'start_at'                 => now()->subDay()->toDateTimeString(),
+    ])['offers']);
+
+    $orderSpend      = 2 * (float)$this->product->price;
+    $reachedOffer    = $storeCombinedOffer($orderSpend);
+    $notReachedOffer = $storeCombinedOffer($orderSpend + 1);
+
+    expect($reachedOffer->trigger_id)->toBe($familyNotInOrder->id)
+        ->and($reachedOffer->triggerCategoryIds())->toBe([$familyNotInOrder->id, $familyInOrder->id])
+        ->and($reachedOffer->offerAllowances->first()->data['category_ids'])->toBe([$familyNotInOrder->id, $familyInOrder->id])
+        ->and($reachedOffer->allowance_signature)->toEndWith('@'.$familyNotInOrder->id.','.$familyInOrder->id);
+
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, ['quantity_ordered' => 2]);
+    OrderHydrateCategoriesData::run($order->refresh());
+    CalculateOrderDiscounts::run($order->refresh());
+
+    $appliedOfferIds = DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->pluck('offer_id');
+    expect($appliedOfferIds)->toContain($reachedOffer->id)
+        ->and($appliedOfferIds)->not->toContain($notReachedOffer->id);
+
+    OrderHydrateCategoriesData::run($order->refresh());
+    CalculateOrderDiscounts::run($order->refresh());
+
+    expect(DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->pluck('offer_id'))->toContain($reachedOffer->id);
+
+    $reachedOffer = UpdateOffer::make()->action($reachedOffer, [
+        'edit_offer_trigger' => ['trigger_item_quantity' => 3],
+    ]);
+    expect($reachedOffer->triggerCategoryIds())->toBe([$familyNotInOrder->id, $familyInOrder->id]);
+
+    SuspendOffer::run($reachedOffer);
+    SuspendOffer::run($notReachedOffer);
 });

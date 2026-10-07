@@ -76,7 +76,7 @@ class UpdateMasterCollection extends OrgAction
         // dd($changed);
 
         if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra'])) {
-            foreach ($masterCollection->childrenCollections as $collections) {
+            foreach ($masterCollection->childrenCollections()->get() as $collections) {
                 $dataToBeUpdated = [];
                 $childShop = $collections->shop;
 
@@ -84,7 +84,7 @@ class UpdateMasterCollection extends OrgAction
                     $dataToBeUpdated['code'] = $masterCollection->code;
                 }
 
-                if (data_get($childShop->settings, 'catalog.collection_follow_master', false)) {
+                if (!$collections->not_follow_master_content && data_get($childShop->settings, 'catalog.collection_follow_master', false)) {
                     if (Arr::has($changed, 'name')) {
                         $dataToBeUpdated['name'] = $masterCollection->name;
                     }
@@ -102,7 +102,9 @@ class UpdateMasterCollection extends OrgAction
                     }
                 }
 
-                UpdateCollection::make()->action($collections, $dataToBeUpdated);
+                if ($dataToBeUpdated) {
+                    UpdateCollection::make()->action($collections, $dataToBeUpdated);
+                }
             }
         }
 

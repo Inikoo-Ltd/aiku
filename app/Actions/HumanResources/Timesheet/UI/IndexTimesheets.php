@@ -14,7 +14,7 @@ use App\Actions\HumanResources\Timesheet\ResolveTimesheetDateRange;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\Traits\WithTabsBox; // Trait Tabs
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -48,7 +48,7 @@ use Illuminate\Support\Carbon;
 class IndexTimesheets extends OrgAction
 {
     use WithEmployeeSubNavigation;
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesSectionAuthorisation;
     use WithTabsBox;
 
     private Group|Employee|Organisation|Guest $parent;
@@ -99,6 +99,11 @@ class IndexTimesheets extends OrgAction
         }
 
         $query->leftjoin('organisations', 'timesheets.organisation_id', '=', 'organisations.id');
+
+        if ($this->isRestrictedToSection()) {
+            $query->where('timesheets.subject_type', 'Employee');
+            $this->restrictToSectionEmployees($query, 'timesheets.subject_id');
+        }
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -178,6 +183,8 @@ class IndexTimesheets extends OrgAction
                 $query->where('employees.state', $selectedState);
             }
         }
+
+        $this->restrictToSectionEmployees($query, 'employees.id');
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -373,6 +380,7 @@ class IndexTimesheets extends OrgAction
             $invalidQuery = QrScanLog::where('organisation_id', $organisationId)
                 ->where('status', 'failed')
                 ->whereNotNull('employee_id');
+            $this->restrictToSectionEmployees($invalidQuery, 'employee_id');
 
             if ($from && $to) {
                 $invalidQuery->whereBetween('scanned_at', [
@@ -743,7 +751,7 @@ class IndexTimesheets extends OrgAction
                 'pageHead'    => [
                     'title'         => __('Timesheets'),
                     'icon'          => ['title' => __('Timesheets'), 'icon'  => 'fal fa-stopwatch'],
-                    'actions'       => ($this->parent instanceof Organisation || $this->parent instanceof Employee) ? [
+                    'actions'       => (!$this->isRestrictedToSection() && ($this->parent instanceof Organisation || $this->parent instanceof Employee)) ? [
                         [
                             'type'  => 'button',
                             'style' => 'secondary',
@@ -810,6 +818,8 @@ class IndexTimesheets extends OrgAction
     {
         $this->parent = $employee;
         $this->initialisation($organisation, $request)->withTab(TimesheetsTabsEnum::values());
+        abort_unless($this->canSeeEmployee($employee->id), 403);
+
         return $employee;
     }
 

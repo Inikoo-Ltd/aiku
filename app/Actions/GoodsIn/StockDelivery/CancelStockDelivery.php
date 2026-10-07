@@ -14,6 +14,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,14 +36,43 @@ class CancelStockDelivery extends OrgAction
         StockDeliveryStateEnum::CHECKED,
     ];
 
+    private const CANCELLABLE_WHEN_EMPTY_STATES = [
+        StockDeliveryStateEnum::IN_PROCESS,
+        StockDeliveryStateEnum::CONFIRMED,
+        StockDeliveryStateEnum::READY_TO_SHIP,
+        StockDeliveryStateEnum::DISPATCHED,
+        StockDeliveryStateEnum::BOOKING_IN,
+        StockDeliveryStateEnum::BOOKED_IN,
+    ];
+
     public function afterValidator(Validator $validator): void
     {
-        if (!in_array($this->stockDelivery->state, self::CANCELLABLE_STATES, true)) {
+        if (!$this->asAction && $this->stockDelivery->isManagedByPartner()) {
+            $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
+        }
+        if (!self::canBeCancelled($this->stockDelivery)) {
             $validator->errors()->add('state', __('You can not cancel this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
+        }
+        if ($this->stockDelivery->items()->where('unit_quantity_placed', '>', 0)->exists()) {
+            $validator->errors()->add('state', __('Some stock of this delivery is already in locations, undo those put-aways before cancelling'));
         }
     }
 
+    public static function canBeCancelled(StockDelivery $stockDelivery): bool
+    {
+        if (in_array($stockDelivery->state, self::CANCELLABLE_STATES, true)) {
+            return true;
+        }
+
+        return in_array($stockDelivery->state, self::CANCELLABLE_WHEN_EMPTY_STATES, true) && $stockDelivery->hasNoProducts();
+    }
+
     public function handle(StockDelivery $stockDelivery): StockDelivery
+    {
+        return DB::transaction(fn () => $this->cancel($stockDelivery));
+    }
+
+    private function cancel(StockDelivery $stockDelivery): StockDelivery
     {
         $stockDelivery->items()
             ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)

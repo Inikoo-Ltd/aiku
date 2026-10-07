@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Helpers\Ticket;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -106,6 +107,7 @@ class GetGroupNavigation
                     ['label' => __('My tasks'), 'icon' => ['fal', 'fa-tasks'], 'root' => 'grp.tasks.index', 'route' => ['name' => 'grp.tasks.index']],
                     ['label' => __('All'), 'icon' => ['fal', 'fa-list'], 'root' => 'grp.tasks.list_all', 'route' => ['name' => 'grp.tasks.list_all']],
                     ['label' => __('Board'), 'icon' => ['fal', 'fa-columns'], 'root' => 'grp.tasks.board', 'route' => ['name' => 'grp.tasks.board']],
+                    ['label' => __('ETA map'), 'icon' => ['fal', 'fa-calendar-alt'], 'root' => 'grp.tasks.eta_map', 'route' => ['name' => 'grp.tasks.eta_map']],
                     ['label' => __('Reports'), 'icon' => ['fal', 'fa-chart-line'], 'root' => 'grp.tasks.reports', 'route' => ['name' => 'grp.tasks.reports']],
                 ],
             ],
@@ -116,7 +118,7 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-life-ring'],
             'root'    => 'grp.tickets.',
             'route'   => [
-                'name' => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.tickets.board' : 'grp.tickets.index',
+                'name' => $user->hasRole(RolesEnum::HELP_DESK_SUPERVISOR->value) ? 'grp.tickets.board' : 'grp.tickets.index',
             ],
             'topMenu' => [
                 'subSections' => [
@@ -129,13 +131,21 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label' => __('List'),
+                        'label' => __('Ticket List'),
                         'icon'  => ['fal', 'fa-list'],
                         'root'  => 'grp.tickets.list',
                         'route' => [
                             'name' => 'grp.tickets.list',
                         ],
                     ],
+                    ...(Ticket::canCheckQa($user) ? [[
+                        'label' => __('QA List'),
+                        'icon'  => ['fal', 'fa-vial'],
+                        'root'  => 'grp.tickets.qa_list',
+                        'route' => [
+                            'name' => 'grp.tickets.qa_list',
+                        ],
+                    ]] : []),
                     [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],
@@ -152,6 +162,20 @@ class GetGroupNavigation
                             'name' => 'grp.tickets.reports',
                         ],
                     ],
+                ],
+            ],
+        ];
+
+        $groupNavigation['projects'] = [
+            'label'   => __('Projects'),
+            'icon'    => ['fal', 'fa-project-diagram'],
+            'root'    => 'grp.projects.',
+            'route'   => [
+                'name' => 'grp.projects.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    ['label' => __('Projects'), 'icon' => ['fal', 'fa-project-diagram'], 'root' => 'grp.projects.', 'route' => ['name' => 'grp.projects.index']],
                 ],
             ],
         ];
@@ -185,12 +209,12 @@ class GetGroupNavigation
                         ],
                     ],
                     ...($user->hasGroupAccess() ? [[
-                        'label'   => __('Phone calls'),
-                        'tooltip' => __('Phone calls'),
-                        'icon'    => ['fal', 'fa-phone'],
-                        'root'    => 'grp.chat.phone_calls.',
+                        'label'   => __('AI assist'),
+                        'tooltip' => __('AI assist'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.chat.ai.',
                         'route'   => [
-                            'name' => 'grp.chat.phone_calls.index',
+                            'name' => 'grp.chat.ai.dashboard',
                         ],
                     ]] : []),
                     [
@@ -215,6 +239,19 @@ class GetGroupNavigation
             ],
         ];
 
+        $groupNavigation['ai'] = [
+            'label'   => __('AI'),
+            'tooltip' => __('AI spend and usage'),
+            'icon'    => ['fal', 'fa-robot'],
+            'root'    => 'grp.ai.',
+            'route'   => [
+                'name' => 'grp.ai.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [],
+            ],
+        ];
+
         $groupNavigation['devops'] = [
             'label'   => __('Devops'),
             'tooltip' => __('Application Performance Monitoring'),
@@ -236,7 +273,9 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            return Arr::only($groupNavigation, ['tickets']);
+            $modules = $user->worksOnlyForAgents() ? ['tickets'] : ['tickets', 'projects'];
+
+            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', ...$modules] : $modules);
         }
 
         return $groupNavigation;
@@ -400,13 +439,21 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-box-usd'],
             'root'    => 'grp.supply-chain.',
             'route'   => [
-                'name' => 'grp.supply-chain.dashboard'
+                'name' => 'grp.supply-chain.overview'
             ],
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Dashboard'),
+                        'label' => __('Overview'),
                         'icon'  => ['fal', 'fa-chart-network'],
+                        'root'  => 'grp.supply-chain.overview',
+                        'route' => [
+                            'name' => 'grp.supply-chain.overview',
+                        ]
+                    ],
+                    [
+                        'label' => __('PO journey'),
+                        'icon'  => ['fal', 'fa-route'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [
                             'name' => 'grp.supply-chain.dashboard',

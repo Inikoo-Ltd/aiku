@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterVariant;
 
+use App\Actions\Catalogue\Variant\TranslateVariantLabel;
 use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
@@ -15,6 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Masters\MasterVariant;
 use App\Models\Masters\MasterAsset;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,6 +28,16 @@ class UpdateMasterVariant extends OrgAction
 
     public function handle(MasterVariant $masterVariant, array $modelData): MasterVariant
     {
+        if (Arr::has($modelData, 'label')) {
+            $masterVariant = $this->updateLabel($masterVariant, Arr::pull($modelData, 'label'));
+        }
+
+        if (!Arr::has($modelData, 'data')) {
+            $masterVariant->update($modelData);
+
+            return $masterVariant;
+        }
+
         return DB::transaction(function () use ($modelData, $masterVariant) {
 
             $masterVariant->update($modelData);
@@ -91,8 +103,31 @@ class UpdateMasterVariant extends OrgAction
         });
     }
 
+    private function updateLabel(MasterVariant $masterVariant, ?string $label): MasterVariant
+    {
+        $masterVariant->update(['label' => $label]);
+
+        if (!$masterVariant->wasChanged('label')) {
+            return $masterVariant;
+        }
+
+        foreach ($masterVariant->variants as $variant) {
+            if (!$variant->shop || $variant->shop->state == ShopStateEnum::CLOSED) {
+                continue;
+            }
+
+            TranslateVariantLabel::dispatch($variant, $label);
+        }
+
+        return $masterVariant;
+    }
+
     public function prepareForValidation(ActionRequest $request): void
     {
+        if (!$this->has('variant')) {
+            return;
+        }
+
         $this->number_minions = array_reduce(data_get($this->variant['variants'], '*.options'), function ($carry, $item) {
             return $carry * count($item);
         }, 1) - 1; // Minus one to exclude the leader product
@@ -108,7 +143,8 @@ class UpdateMasterVariant extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                     => ['required', 'exists:master_assets,id'],
+            'label'                         => ['sometimes', 'nullable', 'string', 'max:255'],
+            'leader_id'                     => ['required_with:data', 'exists:master_assets,id'],
             'number_minions'                => ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
             'number_dimensions'             =>  ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag
             'number_used_slots'             => ['sometimes', 'numeric'], // It's calculated in prepareForValidation, I'm using sometimes to ignore errorbag

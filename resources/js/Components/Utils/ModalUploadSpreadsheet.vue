@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -80,7 +80,7 @@ const onUploadFile = async (fileUploaded: File) => {
         };
         reader.readAsArrayBuffer(fileUploaded)
 	} else {
-		errorMessage.value = trans("File extension is not one of these:")
+		errorMessage.value = ctrans("File extension is not one of these:")
 	}
 }
 
@@ -144,7 +144,6 @@ const closeModal = () => {
 	/*    useEchoGrpPersonal().isShowProgress = false */
 	useEchoGrpPersonal().isShowProgress = false
 	model.value = false
-	console.log("model")
 }
 </script>
 
@@ -208,17 +207,17 @@ const closeModal = () => {
 								<div
 									v-if="isDraggedFile"
 									class="text-2xl text-gray-500 h-full flex justify-center items-center">
-									{{ trans("Drop your file here") }}
+									{{ ctrans("Drop your file here") }}
 								</div>
 							</label>
 
 							<div v-if="!isDraggedFile" class="text-center text-gray-500">
 								<div class="flex justify-center text-sm font-medium leading-6">
-									{{ trans("Upload file") }}
+									{{ ctrans("Upload file") }}
 								</div>
 								<div class="flex w-fit mx-auto text-xs leading-6">
 									<p class="">
-										{{ trans("Drag and drop, or browse your files") }}
+										{{ ctrans("Drag and drop, or browse your files") }}
 									</p>
 								</div>
 							</div>

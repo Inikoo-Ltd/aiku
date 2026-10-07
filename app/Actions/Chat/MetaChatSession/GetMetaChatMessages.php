@@ -25,8 +25,9 @@ class GetMetaChatMessages
     public function rules(): array
     {
         return [
-            'limit'  => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'cursor' => ['sometimes', 'date'],
+            'limit'   => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'cursor'  => ['sometimes', 'date'],
+            'preview' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -56,7 +57,9 @@ class GetMetaChatMessages
     {
         $validated = $request->validated();
 
-        MarkMetaChatMessagesAsRead::run($metaChatSession);
+        if (!($validated['preview'] ?? false)) {
+            MarkMetaChatMessagesAsRead::run($metaChatSession);
+        }
 
         $messages = $this->handle($metaChatSession, $validated);
 
@@ -118,13 +121,16 @@ class GetMetaChatMessages
             }
         }
 
+        $windowSecondsLeft = $session->whatsapp_window_seconds_left;
+
         return response()->json([
             'success' => true,
             'message' => 'Chat messages retrieved successfully',
             'data'    => [
                 'session_ulid'   => $session->ulid,
                 'session_status' => $status->value,
-                'can_send_non_template_message' => $session->can_send_non_template_message,
+                'can_send_non_template_message' => $windowSecondsLeft > 0,
+                'whatsapp_window_seconds_left'  => $windowSecondsLeft,
                 'messages'       => MetaChatMessageResource::collection($result['messages']),
                 'events'         => ChatTimelineEventResource::collection($result['events']),
                 'pagination'     => $result['pagination'],

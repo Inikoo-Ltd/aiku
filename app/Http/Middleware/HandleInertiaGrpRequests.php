@@ -12,14 +12,22 @@ namespace App\Http\Middleware;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\Grp\GetFirstLoadProps;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Vite;
 use Inertia\Middleware;
 
 class HandleInertiaGrpRequests extends Middleware
 {
     protected $rootView = 'app-grp';
+
+    public function version(Request $request): ?string
+    {
+        return Vite::manifestHash('grp');
+    }
 
     /**
      * JSON endpoints outside grp.json.* polled from every open tab: the full layout is never read from their response.
@@ -67,6 +75,16 @@ class HandleInertiaGrpRequests extends Middleware
         };
     }
 
+    private function canMoveStockInRouteWarehouse(Request $request, ?User $user): ?bool
+    {
+        $warehouse = $request->route('warehouse');
+        if (!$user || !$warehouse instanceof Warehouse) {
+            return null;
+        }
+
+        return $user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation));
+    }
+
     public function share(Request $request): array
     {
         $routeName = $request->route()->getName();
@@ -102,6 +120,7 @@ class HandleInertiaGrpRequests extends Middleware
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
                 'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
+                'can_move_stock' => fn () => $this->canMoveStockInRouteWarehouse($request, $user),
                 'ziggy' => [
                     'location' => $request->url(),
                 ],

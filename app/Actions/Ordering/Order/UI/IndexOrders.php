@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
@@ -22,6 +23,8 @@ use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Billables\Leaflet;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
@@ -37,6 +40,7 @@ use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -49,10 +53,10 @@ class IndexOrders extends OrgAction
     use WithCustomerSubNavigation;
     use WithOrdersSubNavigation;
 
-    private Group|Organisation|Shop|Customer|CustomerClient|Offer $parent;
+    private Group|Organisation|Shop|Customer|CustomerClient|Offer|Packaging|Leaflet $parent;
     private CustomerSalesChannel $customerSalesChannel;
 
-    private string $bucket;
+    private ?string $bucket = null;
 
     protected function getElementGroups(Group|Organisation|Shop|Customer|CustomerClient $parent): array
     {
@@ -76,19 +80,55 @@ class IndexOrders extends OrgAction
                     'partner' => [__('Partner'), null],
                 ],
 
-                'engine' => function ($query, $elements) {
-                    if (in_array('partner', $elements)) {
-                        $query->where('sales_channels.code', 'intercompany');
-                    } else {
-                        $query->whereRaw("coalesce(sales_channels.code, '') != 'intercompany'");
-                    }
-                }
+                'engine' => $this->channelEngine(...)
             ],
 
         ];
     }
 
-    public function handle(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    /**
+     * Offers keep no per-state order stats, so the state split is counted live from the orders that used the offer.
+     */
+    protected function getOfferElementGroups(Offer $offer): array
+    {
+        $countsByState = $this->baseQuery($offer)->toBase()
+            ->selectRaw('orders.state, count(*) as count')
+            ->groupBy('orders.state')
+            ->pluck('count', 'state')
+            ->all();
+
+        $stateCounts = [];
+        foreach (OrderStateEnum::cases() as $state) {
+            $stateCounts[$state->value] = (int) ($countsByState[$state->value] ?? 0);
+        }
+
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(OrderStateEnum::labels(), $stateCounts),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('orders.state', $elements);
+                }
+            ],
+        ];
+    }
+
+    /**
+     * A partner order comes from a sister organisation's customer account, whatever channel it was placed through,
+     * or through the intercompany channel used when a partner purchase order is sent to the seller.
+     */
+    protected const string PARTNER_ORDER_SQL = "(customers.as_organisation_id is not null or coalesce(sales_channels.code, '') = 'intercompany')";
+
+    protected function channelEngine($query, array $elements): void
+    {
+        if (in_array('partner', $elements)) {
+            $query->whereRaw(self::PARTNER_ORDER_SQL);
+        } else {
+            $query->whereRaw('not '.self::PARTNER_ORDER_SQL);
+        }
+    }
+
+    public function handle(Group|Organisation|Shop|Customer|CustomerClient|Offer|Packaging|Leaflet $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -114,6 +154,12 @@ class IndexOrders extends OrgAction
                 key: 'scope',
                 allowedElements: ['domestic', 'export'],
                 engine: fn ($query, $elements) => $query->where('orders.is_export', in_array('export', $elements)),
+                prefix: $prefix
+            );
+            $query->whereElementGroup(
+                key: 'channel',
+                allowedElements: ['direct', 'partner'],
+                engine: $this->channelEngine(...),
                 prefix: $prefix
             );
         }
@@ -154,10 +200,12 @@ class IndexOrders extends OrgAction
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
                 'customers.is_vip as is_customer_vip',
+                'customers.as_organisation_id as customer_as_organisation_id',
                 'orders.customer_notes',
                 'orders.internal_notes',
                 'orders.public_notes',
                 'orders.shipping_notes',
+                'orders.private_warehouse_note',
                 'orders.to_be_paid_by',
                 'orders.tracking_number',
                 'orders.shipping_data',
@@ -166,6 +214,7 @@ class IndexOrders extends OrgAction
                 'sales_channels.type as sales_channel_type',
                 'sales_channels.name as sales_channel_name',
                 'sales_channels.code as sales_channel_code',
+                DB::raw('exists(select 1 from pre_orders where pre_orders.order_id = orders.id) as is_pre_order'),
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
@@ -175,7 +224,7 @@ class IndexOrders extends OrgAction
             ->withQueryString();
     }
 
-    protected function baseQuery(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent): QueryBuilder
+    protected function baseQuery(Group|Organisation|Shop|Customer|CustomerClient|Offer|Packaging|Leaflet $parent): QueryBuilder
     {
         $query = QueryBuilder::for(Order::class);
 
@@ -197,6 +246,15 @@ class IndexOrders extends OrgAction
                     ->whereNull('transactions.deleted_at')
                     ->distinct();
             });
+        } elseif ($parent instanceof Packaging) {
+            $query->where('orders.packaging_id', $parent->id);
+        } elseif ($parent instanceof Leaflet) {
+            $query->whereIn('orders.id', function ($subQuery) use ($parent) {
+                $subQuery->select('model_has_leaflets.model_id')
+                    ->from('model_has_leaflets')
+                    ->where('model_has_leaflets.model_type', 'Order')
+                    ->where('model_has_leaflets.leaflet_id', $parent->id);
+            });
         } else {
             $query->where('orders.customer_client_id', $parent->id);
         }
@@ -212,7 +270,7 @@ class IndexOrders extends OrgAction
         return $query;
     }
 
-    protected function applyBucket(QueryBuilder $query, Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, ?string $prefix): void
+    protected function applyBucket(QueryBuilder $query, Group|Organisation|Shop|Customer|CustomerClient|Offer|Packaging|Leaflet $parent, ?string $prefix): void
     {
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);
@@ -268,23 +326,50 @@ class IndexOrders extends OrgAction
                     prefix: $prefix
                 );
             }
+        } elseif ($this->bucket == 'offer' && $parent instanceof Offer) {
+            foreach ($this->getOfferElementGroups($parent) as $key => $elementGroup) {
+                $query->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
     }
 
     /**
-     * Live domestic/export split of the bucket, one indexed aggregate per page load instead of a hydrated stat
+     * Live destination and channel split of the bucket, one indexed aggregate per page load instead of a hydrated stat.
+     * Each split follows the selection of the other one, so the numbers match the list the user would get by clicking.
      *
-     * @return array{domestic: int, export: int}
+     * @return array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}}
      */
-    public function scopeCounts(Group|Organisation|Shop $parent, string $bucket): array
+    public function backlogFilterCounts(Group|Organisation|Shop $parent, string $bucket, ?string $currentScope = null, ?string $currentChannel = null): array
     {
         $this->bucket = $bucket;
         $query        = $this->baseQuery($parent);
         $this->applyBucket($query, $parent, null);
 
-        $counts = ['domestic' => 0, 'export' => 0];
-        foreach ($query->toBase()->selectRaw('orders.is_export, count(*) as count')->groupBy('orders.is_export')->get() as $row) {
-            $counts[$row->is_export ? 'export' : 'domestic'] = (int) $row->count;
+        $counts = [
+            'scope'   => ['domestic' => 0, 'export' => 0],
+            'channel' => ['direct' => 0, 'partner' => 0],
+        ];
+
+        $rows = $query->toBase()
+            ->selectRaw('orders.is_export, '.self::PARTNER_ORDER_SQL.' as is_partner, count(*) as count')
+            ->groupByRaw('orders.is_export, '.self::PARTNER_ORDER_SQL)
+            ->get();
+
+        foreach ($rows as $row) {
+            $scope   = $row->is_export ? 'export' : 'domestic';
+            $channel = $row->is_partner ? 'partner' : 'direct';
+
+            if (!$currentChannel || $currentChannel === $channel) {
+                $counts['scope'][$scope] += (int) $row->count;
+            }
+            if (!$currentScope || $currentScope === $scope) {
+                $counts['channel'][$channel] += (int) $row->count;
+            }
         }
 
         return $counts;
@@ -303,7 +388,7 @@ class IndexOrders extends OrgAction
         return 'submitted_at';
     }
 
-    public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient|Offer $parent, $prefix = null, $bucket = null): Closure
+    public function tableStructure(Group|Organisation|Shop|Customer|CustomerClient|Offer|Packaging|Leaflet $parent, $prefix = null, $bucket = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix, $bucket) {
             if ($prefix) {
@@ -333,6 +418,12 @@ class IndexOrders extends OrgAction
             } elseif ($parent instanceof Offer) {
                 $stats     = $parent->stats;
                 $noResults = __("No orders used this offer");
+            } elseif ($parent instanceof Packaging) {
+                $stats     = null;
+                $noResults = __("No orders used this packaging");
+            } elseif ($parent instanceof Leaflet) {
+                $stats     = null;
+                $noResults = __("No orders included this leaflet");
             } else {
                 $stats = $parent->orderingStats;
             }
@@ -351,6 +442,14 @@ class IndexOrders extends OrgAction
 
             if ($bucket == 'all') {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
+            } elseif ($bucket == 'offer' && $parent instanceof Offer) {
+                foreach ($this->getOfferElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],
@@ -494,7 +593,7 @@ class IndexOrders extends OrgAction
                 ),
                 'title'          => __('orders'),
                 'sales_channels' => GetSalesChannelOptions::make()->getOptions($shop),
-                'can_add_order'  => $shop?->type == ShopTypeEnum::B2B,
+                'can_add_order'  => $shop?->type == ShopTypeEnum::B2B && !($this->parent instanceof Customer && StoreOrder::isPartnerBuyingFromHub($this->parent, $shop)),
                 'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue";
-import { defineAsyncComponent, inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed, onMounted } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
 import { faHeart as fasHeart } from '@fas'
@@ -20,6 +20,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import ChipExpectedBackInStock from '@/Components/Iris/Products/ChipExpectedBackInStock.vue'
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 import { routeType } from '@/types/route'
 
@@ -28,6 +29,11 @@ const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
+const isHydrated = ref(false)
+onMounted(() => {
+    isHydrated.value = true
+})
+const isLoggedInPriceVisible = computed(() => isHydrated.value && Boolean(layout?.iris?.is_logged_in))
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
@@ -42,6 +48,7 @@ const props = withDefaults(defineProps<{
     isLoadingFavourite?: boolean
     isLoadingRemindBackInStock?: boolean
     screenType?: string
+    imageSizes?: string
     hideLogin?:boolean
     routeGettransactionProductData? : routeType
 }>(), {
@@ -99,7 +106,7 @@ const onClickVariant = (product: ProductResource, event: Event) => {
 
 
 const idxSlideLoading = ref(false)
-const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+const typeOfLink = layout?.app?.name === 'iris' ? 'internal' : 'external'
 const images = computed(() => {
     if (!props.product?.web_images) return []
 
@@ -143,7 +150,7 @@ defineExpose({
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
+            <BestsellerBadge v-if="product?.top_seller && (product.stock > 0 || product.is_coming_soon)" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
@@ -172,7 +179,7 @@ defineExpose({
                                     class="w-full h-full flex-shrink-0 snap-start"
                                 >
 
-                                    <Image :src="img" :alt="product.name"
+                                    <Image :src="img" :alt="product.name" :sizes="imageSizes"
                                         class="w-full h-full select-none pointer-events-none"
                                         :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
@@ -180,7 +187,7 @@ defineExpose({
 
                             <!-- SINGLE IMAGE -->
                             <div v-else class="w-full h-full">
-                                <Image :src="images[0]" :alt="product.name" class="w-full h-full"
+                                <Image :src="images[0]" :alt="product.name" :sizes="imageSizes" class="w-full h-full"
                                     :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
@@ -202,7 +209,7 @@ defineExpose({
                                 :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''">
                                 <!-- FIRST IMAGE -->
                                 <div class="w-full h-full flex-shrink-0 relative">
-                                    <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    <Image :src="images[0]" :alt="product.name" :sizes="imageSizes" class="absolute inset-0 w-full h-full"
                                         :style="{
                                             objectFit: 'contain',
                                             objectPosition: 'center'
@@ -211,7 +218,7 @@ defineExpose({
 
                                 <!-- SECOND IMAGE -->
                                 <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
-                                    <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    <Image :src="images[1]" :alt="product.name" :sizes="imageSizes" class="absolute inset-0 w-full h-full"
                                         :style="{
                                             objectFit: 'contain',
                                             objectPosition: 'center'
@@ -254,27 +261,30 @@ defineExpose({
                     </template>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
-                    <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute left-2 right-2 bottom-2 flex items-center justify-end gap-1.5">
+                    <NewAddToCartButton v-if="((product.stock && !product.is_coming_soon) || product.pre_order) && basketButton" :hasInBasket
                         ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :routeGettransactionProductData
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle" />
-                    <button
-                        v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
-                        @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                        class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
-                        <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                            fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-                    </button>
+                    <template v-else-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant">
+                        <ChipExpectedBackInStock :product="product"
+                            @toggle="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)" />
+                        <button
+                            @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                            class="shrink-0 rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
+                            <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                            <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                        </button>
+                    </template>
                 </div>
 
                 <div v-if="layout?.iris?.is_logged_in && product.variant"
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
-                        <Button :label="trans('Choose variants')" size="xs"
+                        <Button :label="product.variant_axis_label ? ctrans('Choose :axis', { axis: product.variant_axis_label }) : ctrans('Choose variants')" size="xs"
                             @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" />
                     </div>
                 </div>
@@ -288,13 +298,17 @@ defineExpose({
                     <template #default>
                         <p class="inline-block leading-4">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
-                            {{ product.name }}
+                            {{ product.variant_title || product.name }}
                         </p>
                     </template>
                 </LinkIris>
 
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.variant_title || product.name }}
+                </div>
+
+                <div v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="text-xs text-amber-800">
+                    <span class="font-semibold">{{ product.pre_order.available_label }}</span> · {{ product.pre_order.dispatch_label }}
                 </div>
 
                 <!-- Product Code -->
@@ -307,7 +321,7 @@ defineExpose({
                     class="text-xs text-gray-600 xmb-1 w-full flex justify-between gap-x-2 items-center">
                     <div class="flex items-center w-full">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center " />
-                        <div v-else v-tooltip="trans('Available product stocks')"
+                        <div v-else v-tooltip="ctrans('Available product stocks')"
                             class="flex items-center gap-1 py-1 font-medium w-fit break-words leading-snug"
                             :class="(product.stock > 0) ? 'xbg-green-50 xtext-green-700' : 'bg-red-50 text-red-600'">
                             <FontAwesomeIcon :icon="faCircle" class="xtext-[6px] shrink-0" fixed-width
@@ -315,7 +329,7 @@ defineExpose({
                             <span>
                                 ({{
                                     product?.stock >= 250
-                                        ? trans("Unlimited quantity")
+                                        ? ctrans("Unlimited quantity")
                                         : (product.stock > 0
                                             ? product.stock
                                             : '0')
@@ -329,11 +343,11 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket
+            <Prices4 v-if="isLoggedInPriceVisible" :key="`price-visible-${product?.id}`" :product="product" :currency="currency" :basketButton :hasInBasket
                 :orderQuantity="onOrderStepQuantity" />
-            <div v-else-if="!hideLogin"  class="mt-2">
+            <div v-else-if="!hideLogin" :key="`price-hidden-${product?.id}`" class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
-                    <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full
+                    <Button :label="ctrans('Login or Register for Wholesale Prices')" class="rounded-none" full
                         :injectStyle="buttonStyleLogin" />
                 </a>
             </div>

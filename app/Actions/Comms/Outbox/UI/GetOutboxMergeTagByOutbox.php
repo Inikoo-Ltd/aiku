@@ -35,6 +35,13 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                     OutboxMergeTagsEnum::GOLD_REWARD_DEADLINE,
                     OutboxMergeTagsEnum::UNSUBSCRIBE
                 ]);
+            case OutboxCodeEnum::DUE_TO_REORDER:
+                return OutboxMergeTagsEnum::filterTags([
+                    OutboxMergeTagsEnum::CUSTOMER_NAME,
+                    OutboxMergeTagsEnum::PRODUCTS,
+                    OutboxMergeTagsEnum::LAST_INVOICE_DATE,
+                    OutboxMergeTagsEnum::UNSUBSCRIBE
+                ]);
             case OutboxCodeEnum::ORDER_CONFIRMATION:
                 return OutboxMergeTagsEnum::filterTags([
                     OutboxMergeTagsEnum::CUSTOMER_NAME,
@@ -64,6 +71,16 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                 return OutboxMergeTagsEnum::filterTags([
                         OutboxMergeTagsEnum::CUSTOMER_NAME,
                         OutboxMergeTagsEnum::ABANDONED_CART_ITEMS,
+                    ]);
+            case OutboxCodeEnum::BASKET_ON_OFFER:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::BASKET_ON_OFFER_ITEMS
+                    ]);
+            case OutboxCodeEnum::FAVOURITES_ON_OFFER:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::FAVOURITES_ON_OFFER_ITEMS
                     ]);
             case OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER:
                 return OutboxMergeTagsEnum::filterTags([

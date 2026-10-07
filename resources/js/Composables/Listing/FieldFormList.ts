@@ -24,6 +24,10 @@ import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
+import AlertSounds from '@/Components/Forms/Fields/AlertSounds.vue'
+import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
+import OrderAlerts from '@/Components/Forms/Fields/OrderAlerts.vue'
+import AlertPopupPreviews from '@/Components/Forms/Fields/AlertPopupPreviews.vue'
 import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import MailboxConnect from '@/Components/Forms/Fields/MailboxConnect.vue'
@@ -65,6 +69,7 @@ const PricingPolicy = defineAsyncComponent(() => import('@/Components/Forms/Fiel
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import ToggleStateSystemPage from '@/Components/Forms/Fields/ToggleStateSystemPage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
+import DeleteCustomer from '@/Components/Forms/Fields/DeleteCustomer.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
@@ -73,9 +78,12 @@ import PricingZoneMode from '@/Components/Forms/Fields/PricingZoneMode.vue'
 import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import PreferredShippingModal from '@/Components/Forms/Fields/PreferredShippingModal.vue'
+import BoxPackingListDestinations from '@/Components/Forms/Fields/BoxPackingListDestinations.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
+import OrderedSelectList from '@/Components/Forms/Fields/OrderedSelectList.vue'
+import BarcodeChoice from '@/Components/Forms/Fields/BarcodeChoice.vue'
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
@@ -153,6 +161,7 @@ export const componentsList: { [key: string]: Component } = {
     'select_billing_cycle': SelectBillingCycle,
     'select_printer': SelectPrinter,
     'preferred_shipping': PreferredShippingModal,
+    'box_packing_list_destinations': BoxPackingListDestinations,
 
     'action': Action,
     'mailbox_connect': MailboxConnect,
@@ -165,6 +174,10 @@ export const componentsList: { [key: string]: Component } = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
+    'alert_sounds': AlertSounds,
+    'org_themes': OrgThemes,
+    'order_alerts': OrderAlerts,
+    'alert_popup_previews': AlertPopupPreviews,
     'notification_channels': NotificationChannels,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
@@ -177,6 +190,7 @@ export const componentsList: { [key: string]: Component } = {
     'toggle_state_webpage': ToggleStateWebpage,
     'toggle_state_system_page': ToggleStateSystemPage,
     'delete_webpage': DeleteWebpage,
+    'delete_customer': DeleteCustomer,
     'button': ButtonForm,
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
@@ -195,6 +209,7 @@ export const componentsList: { [key: string]: Component } = {
     'select-improved': SelectImproved,
     'brands-trade-unit': BrandsTradeUnit,
     'multiselect-tags': MultiselectTagsInfiniteScroll,
+    'ordered-select-list': OrderedSelectList,
     'input-dimension': InputDimensions,
     'invoice_serial_references': invoiceSerialReferences,
     'tags-customer': TagsCustomer,
@@ -234,7 +249,8 @@ export const componentsList: { [key: string]: Component } = {
     'master_shop_price_exchanges' : MasterShopPriceExchanges,
     'contact_options_panel' : ContactOptionsPanel,
     'whatsapp_phone_status' : WhatsappPhoneStatus,
-    'category-comparison' : CategoryComparison
+    'category-comparison' : CategoryComparison,
+    'barcode_choice' : BarcodeChoice
 }
 
 export const getComponent = (componentName: string) => {

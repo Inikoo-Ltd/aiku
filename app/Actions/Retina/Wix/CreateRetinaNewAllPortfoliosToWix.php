@@ -9,6 +9,7 @@ namespace App\Actions\Retina\Wix;
 use App\Actions\Dropshipping\Wix\Product\CreateNewAllPortfoliosToWix;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class CreateRetinaNewAllPortfoliosToWix extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

@@ -24,6 +24,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 
 import { faPlus } from "@fas"
+import { faHatCowboy } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
@@ -47,6 +48,8 @@ const props = defineProps<{
         collections: { dataList: routeType, submitAttach: routeType, detach: routeType }
     }
     url_master: routeType | null
+    can_edit_items?: boolean
+    not_follow_master_items?: boolean
     salesData?: object
 }>()
 
@@ -137,6 +140,25 @@ const onSubmitAttach = async ({
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
+            <!-- Only a collection that does not follow its master items is edited in the shop -->
+            <section v-if="can_edit_items && currentTab == 'families'">
+                <Button
+                    type="secondary"
+                    :label="trans('Attach families')"
+                    icon="fal fa-plus"
+                    @click="isModalOpen.families.value = true"
+                    :tooltip="trans('Attach families to this collection')"
+                />
+            </section>
+            <section v-if="can_edit_items && currentTab == 'products'">
+                <Button
+                    type="secondary"
+                    :label="trans('Attach products')"
+                    icon="fal fa-plus"
+                    @click="isModalOpen.products.value = true"
+                    :tooltip="trans('Attach products to this collection')"
+                />
+            </section>
           <!--   <section v-if="currentTab == 'families'">
                 <Button
                     type="secondary"
@@ -167,7 +189,7 @@ const onSubmitAttach = async ({
         </template>
 
         <template #afterTitle2>
-            <div v-if="url_master" class="whitespace-nowrap">
+            <div v-if="url_master" class="flex items-center gap-1 whitespace-nowrap">
                 <Link
                     :href="route(url_master.name, url_master.parameters)"
                     v-tooltip="trans('Go to Master collection')"
@@ -179,6 +201,13 @@ const onSubmitAttach = async ({
                         fixed-width
                     />
                 </Link>
+                <FontAwesomeIcon
+                    v-if="not_follow_master_items"
+                    v-tooltip="trans('Does not follow master items (families and products)')"
+                    :icon="faHatCowboy"
+                    class="text-red-500"
+                    fixed-width
+                />
             </div>
         </template>
     </PageHeading>

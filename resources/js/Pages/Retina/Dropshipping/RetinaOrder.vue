@@ -18,7 +18,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { debounce } from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from '@/types/route'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { UploadPallet } from '@/types/Pallet'
@@ -153,10 +153,9 @@ const fetchPaymentMethod = async () => {
         const { data } = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
         listPaymentMethod.value = data.data
     } catch (error) {
-        console.log('erropr', error)
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to fetch payment method list'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Failed to fetch payment method list'),
             type: 'error',
         })
     }
@@ -193,8 +192,8 @@ const onSubmitPayment = () => {
                     isLoadingPayment.value = false,
                         isOpenModalPayment.value = false,
                         notify({
-                            title: trans('Success'),
-                            text: trans('Successfully add payment invoice'),
+                            title: ctrans('Success'),
+                            text: ctrans('Successfully add payment invoice'),
                             type: 'success',
                         })
                 },
@@ -236,8 +235,8 @@ const onSubmitNote = async () => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error",
         })
     }
@@ -275,8 +274,8 @@ const onAddProducts = async (products: number[]) => {
         onSuccess: () => {
             router.reload({only: ['data']})
             notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                title: ctrans("Success!"),
+                text: ctrans("Successfully added portfolios"),
                 type: "success"
             })
             isModalProductListOpen.value = false
@@ -289,8 +288,8 @@ const isModalUploadSpreadsheet = ref(false)
 
 const onNoStructureUpload = () => {
     notify({
-        title: trans("Something went wrong"),
-        text: trans("Upload structure is not provided. Please contact support."),
+        title: ctrans("Something went wrong"),
+        text: ctrans("Upload structure is not provided. Please contact support."),
         type: "error",
     })
 }
@@ -306,7 +305,7 @@ const isModalConfirmationOrder = ref(false)
         <template #button-group-upload-add>
             <Button
                 @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-                :label="trans('Upload products')"
+                :label="ctrans('Upload products')"
                 icon="upload"
                 type="tertiary"
             />
@@ -316,12 +315,12 @@ const isModalConfirmationOrder = ref(false)
             <Button
                 v-if="currentTab === 'attachments'"
                 @click="() => isModalUploadOpen = true"
-                :label="trans('Attach')"
+                :label="ctrans('Attach')"
                 icon="upload" />
             <Button
                 v-if="is_in_basket"
                 @click="() => isModalProductListOpen = true"
-                :label="trans('Add products')"
+                :label="ctrans('Add products')"
                 icon="plus"
                 type="secondary"
             />
@@ -337,7 +336,7 @@ const isModalConfirmationOrder = ref(false)
     <div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
             <!-- Field: Reference Number -->
-            <Link as="a" v-if="box_stats?.customer.reference" v-tooltip="trans('Reference')"
+            <Link as="a" v-if="box_stats?.customer.reference" v-tooltip="ctrans('Reference')"
                 :href="'route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)'"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
             <dt class="flex-none">
@@ -347,7 +346,7 @@ const isModalConfirmationOrder = ref(false)
             </Link>
 
             <!-- Field: Contact name -->
-            <div v-if="box_stats?.customer.contact_name" v-tooltip="trans('Contact name')"
+            <div v-if="box_stats?.customer.contact_name" v-tooltip="ctrans('Contact name')"
                 class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -356,7 +355,7 @@ const isModalConfirmationOrder = ref(false)
             </div>
 
             <!-- Field: Company name -->
-            <div v-if="box_stats?.customer.company_name" v-tooltip="trans('Company name')"
+            <div v-if="box_stats?.customer.company_name" v-tooltip="ctrans('Company name')"
                 class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -366,7 +365,7 @@ const isModalConfirmationOrder = ref(false)
 
             <!-- Field: Email -->
             <div v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Email')" class="flex-none">
+                <dt v-tooltip="ctrans('Email')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
                 <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
@@ -375,7 +374,7 @@ const isModalConfirmationOrder = ref(false)
 
             <!-- Field: Phone -->
             <div v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Phone')" class="flex-none">
+                <dt v-tooltip="ctrans('Phone')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
                 <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
@@ -384,7 +383,7 @@ const isModalConfirmationOrder = ref(false)
 
             <!-- Field: Billing Address -->
             <div v-if="box_stats?.customer?.addresses?.billing?.formatted_address !== box_stats?.customer?.addresses?.delivery?.formatted_address"
-                class="pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Billing address')">
+                class="pl-1 flex items w-full flex-none gap-x-2" v-tooltip="ctrans('Billing address')">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-dollar-sign' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
@@ -395,7 +394,7 @@ const isModalConfirmationOrder = ref(false)
 
             <!-- Field: Shipping Address -->
             <div v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address"
-                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address')">
+                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="ctrans('Shipping address')">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
@@ -405,7 +404,7 @@ const isModalConfirmationOrder = ref(false)
             </div>
 
             <div v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address"
-                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address and Billing address')">
+                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="ctrans('Shipping address and Billing address')">
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
                 </dt>
@@ -413,7 +412,7 @@ const isModalConfirmationOrder = ref(false)
                     <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
                     <div @click="() => isModalAddress = true"
                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                        <span>{{ trans('Edit') }}</span>
+                        <span>{{ ctrans('Edit') }}</span>
                     </div>
                 </dd>
             </div>
@@ -440,7 +439,7 @@ const isModalConfirmationOrder = ref(false)
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-500" />
                 </dt>
-                <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
+                <dd class="text-gray-500 sep" v-tooltip="ctrans('Estimated weight of all products')">
                     {{ box_stats?.products.estimated_weight || 0 }} kilograms
                 </dd>
             </div>
@@ -453,7 +452,7 @@ const isModalConfirmationOrder = ref(false)
                 <dt class="flex-none">
                     <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true' class="text-gray-500" />
                 </dt>
-                <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
+                <dd class="text-gray-500 " v-tooltip="ctrans('Delivery Note')">
                     {{ delivery_note?.reference }}
                 </dd>
                 </Link>
@@ -499,7 +498,7 @@ const isModalConfirmationOrder = ref(false)
             <PureTextarea
                 v-model="noteToSubmit"
                 @update:modelValue="() => debounceSubmitNote()"
-                :placeholder="trans('Special instructions if needed')"
+                :placeholder="ctrans('Special instructions if needed')"
                 xkeydown.enter="() => onSubmitNote(closed)"
                 rows="4"
                 :disabled="!is_in_basket"
@@ -514,7 +513,7 @@ const isModalConfirmationOrder = ref(false)
                 v-if="is_in_basket && 'products more than 0'"
                 @click="() => isModalConfirmationOrder = true"
                 iconRight="fas fa-arrow-right"
-                :label="trans('Submit order')"
+                :label="ctrans('Submit order')"
                 class="w-full"
                 full
             />
@@ -530,7 +529,7 @@ const isModalConfirmationOrder = ref(false)
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
         <ProductsSelector
-            :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
+            :headLabel="ctrans('Add products to Order') + ' #' + props?.data?.data?.reference"
             :routeFetch="{
                 name: 'retina.dropshipping.portfolios.index',
             }"
@@ -554,16 +553,16 @@ const isModalConfirmationOrder = ref(false)
     <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Invoice Payment') }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ ctrans('Invoice Payment') }}</h2>
                 <p class="text-xs leading-5 text-gray-400">
-                    {{ trans('Information about payment from customer') }}
+                    {{ ctrans('Information about payment from customer') }}
                 </p>
             </div>
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label for="first-name" class="block text-sm font-medium leading-6">
-                        <span class="text-red-500">*</span> {{ trans('Select payment method') }}
+                        <span class="text-red-500">*</span> {{ ctrans('Select payment method') }}
                     </label>
                     <div class="mt-1">
                         <PureMultiselect v-model="paymentData.payment_method" :options="listPaymentMethod"
@@ -573,13 +572,13 @@ const isModalConfirmationOrder = ref(false)
 
                 <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">
-                        {{ trans('Payment amount') }}
+                        {{ ctrans('Payment amount') }}
                     </label>
                     <div class="mt-1">
                         <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
                     <div class="space-x-1">
-                        <span class="text-xxs text-gray-500">{{ trans('Need to pay') }}: {{
+                        <span class="text-xxs text-gray-500">{{ ctrans('Need to pay') }}: {{
                             locale.currencyFormat(box_stats.currency.code || 'usd',
                                 box_stats.products.payment.pay_amount) }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
@@ -589,7 +588,7 @@ const isModalConfirmationOrder = ref(false)
                 </div>
 
                 <div class="col-span-2">
-                    <label for="last-name" class="block text-sm font-medium leading-6">{{ trans('Reference') }}</label>
+                    <label for="last-name" class="block text-sm font-medium leading-6">{{ ctrans('Reference') }}</label>
                     <div class="mt-1">
                         <PureInput v-model="paymentData.payment_reference" placeholder="#000000" />
                     </div>

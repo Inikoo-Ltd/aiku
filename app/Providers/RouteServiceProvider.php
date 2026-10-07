@@ -13,6 +13,9 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\PersonalAccessToken;
+use App\Actions\Helpers\Images\RedirectImageShortUrl;
+use App\Actions\Helpers\Images\ServeWebsiteShortImage;
 use App\Models\HumanResources\Leave;
 
 class RouteServiceProvider extends ServiceProvider
@@ -88,6 +91,15 @@ class RouteServiceProvider extends ServiceProvider
         ->name('grp.api.')
         ->group(base_path('routes/api/grp/grp_api.php'));
 
+        Route::domain(config('app.domain'))
+            ->get('i/{code}', RedirectImageShortUrl::class)
+            ->where('code', '[0-9A-Za-z]+(\.[a-z0-9]{2,4})?')
+            ->name('image_short_url');
+
+        Route::get('i/{id}/{signature}/{optionsAndExtension?}', ServeWebsiteShortImage::class)
+            ->where(['id' => '[0-9a-z]+', 'signature' => '[A-Za-z0-9_-]{8}(\.[a-z0-9]{2,4})?', 'optionsAndExtension' => '(rs:[0-9a-z:]*|[0-9]*x[0-9]*)(\.[a-z0-9]{2,4})?'])
+            ->name('website_short_image');
+
         Route::middleware('analytics')
             ->name('analytics.')
             ->group(base_path('routes/analytics/analytics.php'));
@@ -108,7 +120,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('retina-api', function (Request $request) {
             $token = $request->user()?->currentAccessToken();
 
-            return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
+            return Limit::perMinute(120)->by($token instanceof PersonalAccessToken ? 'token:'.$token->id : 'ip:'.$request->ip());
         });
 
         RateLimiter::for('kiosk', function (Request $request) {
@@ -129,6 +141,22 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('iris-search', function (Request $request) {
             return Limit::perMinute(6000)->by($request->ip());
+        });
+
+        /*
+         * Opening a chat or leaving an out of hours message needs no login, and each one lands in
+         * an agent's queue. A vulnerability scanner posted about six thousand offline messages from
+         * one address in an hour, filling the Slovak inbox with 318 conversations saying "e" (HELP-3467).
+         */
+        RateLimiter::for('chat-guest', function (Request $request) {
+            return [
+                Limit::perMinute(10)->by('chat-guest-minute:'.$request->ip()),
+                Limit::perHour(40)->by('chat-guest-hour:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('web-vitals', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
         });
 
         /*

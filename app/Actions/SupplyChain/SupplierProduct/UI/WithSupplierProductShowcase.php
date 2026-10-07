@@ -8,6 +8,7 @@
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
@@ -19,6 +20,14 @@ use App\Models\SupplyChain\SupplierProduct;
 
 trait WithSupplierProductShowcase
 {
+    /**
+     * Staff of an agent only work inside their own organisation, so links to group pages are left out for them.
+     */
+    private function groupRoute(array $route): ?array
+    {
+        return request()->route('organisation')?->type === OrganisationTypeEnum::AGENT ? null : $route;
+    }
+
     protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false, ?int $organisationId = null): array
     {
         $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks']);
@@ -53,10 +62,10 @@ trait WithSupplierProductShowcase
                 'name'       => $tradeUnit->name,
                 'slug'       => $tradeUnit->slug,
                 'quantity'   => (float) $tradeUnit->pivot->quantity,
-                'route'      => [
+                'route'      => $this->groupRoute([
                     'name'       => 'grp.goods.trade-units.show',
                     'parameters' => ['tradeUnit' => $tradeUnit->slug],
-                ],
+                ]),
                 'org_stocks' => $orgStocks->map(fn (OrgStock $orgStock) => [
                     'code'         => $orgStock->code,
                     'slug'         => $orgStock->slug,
@@ -65,10 +74,10 @@ trait WithSupplierProductShowcase
                         'code' => $orgStock->organisation->code,
                         'slug' => $orgStock->organisation->slug,
                     ],
-                    'route'        => [
+                    'route'        => $this->groupRoute([
                         'name'       => 'grp.majordomo.redirect_org_stock',
                         'parameters' => ['orgStock' => $orgStock->id],
-                    ],
+                    ]),
                 ])->all(),
             ];
         })->all();
@@ -87,7 +96,7 @@ trait WithSupplierProductShowcase
             ],
             'is_available' => $supplierProduct->is_available,
             'composition'  => $supplierProduct->trade_unit_composition?->value,
-            'route'        => $withSupplyChainLink && $supplierProduct->supplier ? [
+            'route'        => $withSupplyChainLink && $supplierProduct->supplier && $this->groupRoute([]) !== null ? [
                 'name'       => 'grp.supply-chain.suppliers.supplier_products.show',
                 'parameters' => [
                     'supplier'        => $supplierProduct->supplier->slug,
@@ -132,10 +141,10 @@ trait WithSupplierProductShowcase
                 'unit'  => $tradeUnit->type,
                 'units' => trimDecimalZeros($tradeUnit->pivot->quantity),
                 'image' => $tradeUnit->imageSources(),
-                'route' => [
+                'route' => $this->groupRoute([
                     'name'       => 'grp.trade_units.units.show',
                     'parameters' => ['tradeUnit' => $tradeUnit->slug],
-                ],
+                ]),
             ];
         })->all();
     }
@@ -147,10 +156,10 @@ trait WithSupplierProductShowcase
                 'slug'  => $stock->slug,
                 'code'  => $stock->code,
                 'name'  => $stock->name,
-                'route' => [
+                'route' => $this->groupRoute([
                     'name'       => 'grp.goods.stocks.show',
                     'parameters' => ['stock' => $stock->slug],
-                ],
+                ]),
             ];
         })->all();
     }
@@ -167,10 +176,10 @@ trait WithSupplierProductShowcase
             'name'  => $supplier->name,
             'code'  => $supplier->code,
             'image' => $supplier->imageSources(),
-            'route' => [
+            'route' => $this->groupRoute([
                 'name'       => 'grp.supply-chain.suppliers.show',
                 'parameters' => ['supplier' => $supplier->slug],
-            ],
+            ]),
         ];
     }
 
@@ -186,10 +195,10 @@ trait WithSupplierProductShowcase
             'name'  => $agent->organisation->name,
             'code'  => $agent->organisation->code,
             'image' => $agent->imageSources(),
-            'route' => [
+            'route' => $this->groupRoute([
                 'name'       => 'grp.supply-chain.agents.show',
                 'parameters' => ['agent' => $agent->slug],
-            ],
+            ]),
         ];
     }
 
@@ -208,7 +217,7 @@ trait WithSupplierProductShowcase
             'route' => [
                 'name'       => 'grp.org.procurement.org_suppliers.show',
                 'parameters' => [
-                    'organisation' => $orgSupplier->organisation->slug,
+                    'organisation' => (request()->route('organisation') ?? $orgSupplier->organisation)->slug,
                     'orgSupplier'  => $orgSupplier->slug,
                 ],
             ],
@@ -230,7 +239,7 @@ trait WithSupplierProductShowcase
             'route' => [
                 'name'       => 'grp.org.procurement.org_agents.show',
                 'parameters' => [
-                    'organisation' => $orgAgent->organisation->slug,
+                    'organisation' => (request()->route('organisation') ?? $orgAgent->organisation)->slug,
                     'orgAgent'     => $orgAgent->slug,
                 ],
             ],

@@ -18,6 +18,11 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('sysadmin.edit');
+    }
+
     public function handle(?Command $command = null): array
     {
         $result = Process::timeout(1800)->run('./restart_varnish.sh');

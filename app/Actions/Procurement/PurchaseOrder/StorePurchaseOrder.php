@@ -8,8 +8,8 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
-use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydratePurchaseOrders;
@@ -24,13 +24,18 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use App\Models\Helpers\Currency;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -38,6 +43,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrder extends OrgAction
 {
+    use WithProcurementSerialReferences;
     use WithProcurementEditAuthorisation;
     use WithPrepareDeliveryStoreFields;
     use WithNoStrictRules;
@@ -58,21 +64,22 @@ class StorePurchaseOrder extends OrgAction
         }
 
         if (!Arr::get($modelData, 'reference')) {
-            data_set(
-                $modelData,
-                'reference',
-                GetSerialReference::run(
-                    container: $parent->organisation,
-                    modelType: SerialReferenceModelEnum::PURCHASE_ORDER
-                )
-            );
+            data_set($modelData, 'reference', $this->newProcurementReference($parent, SerialReferenceModelEnum::PURCHASE_ORDER));
         }
         if (!Arr::get($modelData, 'date')) {
             data_set($modelData, 'date', now());
         }
         if (!Arr::get($modelData, 'currency_id')) {
-            data_set($modelData, 'currency_id', $parent->organisation->currency_id);
+            data_set($modelData, 'currency_id', $parent instanceof OrgPartner ? $parent->partner->currency_id : $parent->organisation->currency_id);
         }
+        if (!array_key_exists('buyer_id', $modelData) && auth()->user() instanceof User) {
+            data_set($modelData, 'buyer_id', auth()->id());
+        }
+
+        $currency = Currency::find($modelData['currency_id']);
+        $date     = Carbon::parse($modelData['date'])->startOfDay();
+        data_set($modelData, 'org_exchange', GetHistoricCurrencyExchange::run($currency, $parent->organisation->currency, $date), overwrite: false);
+        data_set($modelData, 'grp_exchange', GetHistoricCurrencyExchange::run($currency, $parent->organisation->group->currency, $date), overwrite: false);
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = $parent->purchaseOrders()->create($modelData);
         $purchaseOrder->refresh();
@@ -99,7 +106,7 @@ class StorePurchaseOrder extends OrgAction
             'reference'      => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string'
+                $this->strict ? 'alpha_dash:ascii' : 'string'
             ],
             'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
             'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
@@ -108,6 +115,7 @@ class StorePurchaseOrder extends OrgAction
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'date'           => ['sometimes', 'required'],
             'currency_id'    => ['sometimes', 'required'],
+            'buyer_id'       => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
         ];
 
         if ($this->strict) {
@@ -135,15 +143,27 @@ class StorePurchaseOrder extends OrgAction
             return;
         }
 
-        if ($this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->exists()) {
-            $validator->errors()->add('purchase_order', __('Are you sure want to create new purchase order?'));
+        $openPurchaseOrder = $this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first();
+        if ($openPurchaseOrder) {
+            $validator->errors()->add(
+                'purchase_order',
+                __('There is already an open purchase order (:reference). Add the products to it, or submit or delete it before creating a new one.', ['reference' => $openPurchaseOrder->reference])
+            );
         }
 
         if ($this->parent instanceof OrgPartner) {
+            if ($this->parent->partner->is_manufacturing_hub) {
+                $validator->errors()->add('purchase_order', __('Buy from :partner with the shopping list', ['partner' => $this->parent->partner->name]));
+            }
+
             return;
         }
 
-        if ($this->parent->orgSupplierProducts()->where('is_available', true)->doesntExist()) {
+        if ($this->parent->orgSupplierProducts()
+            ->where('state', OrgSupplierProductStateEnum::ACTIVE)
+            ->where('is_available', true)
+            ->whereHas('supplierProduct', fn ($query) => $query->where('is_available', true))
+            ->doesntExist()) {
             $message = $this->parent instanceof OrgAgent
                 ? __("Agent don't have any product")
                 : __("Supplier don't have any product");
@@ -183,9 +203,20 @@ class StorePurchaseOrder extends OrgAction
         return $this->handle($orgSupplier, $this->validatedData);
     }
 
+    /**
+     * Only one purchase order to a partner is in process at a time: asking for a new one while one is
+     * being prepared opens that one.
+     */
     public function inOrgPartner(OrgPartner $orgPartner, ActionRequest $request): PurchaseOrder
     {
         $this->parent = $orgPartner;
+
+        /** @var PurchaseOrder|null $openPurchaseOrder */
+        $openPurchaseOrder = $orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->first();
+        if ($openPurchaseOrder && !$orgPartner->partner->is_manufacturing_hub) {
+            return $openPurchaseOrder;
+        }
+
         $this->initialisation($orgPartner->organisation, $request);
 
         return $this->handle($orgPartner, $this->validatedData);
@@ -198,7 +229,7 @@ class StorePurchaseOrder extends OrgAction
         } elseif ($this->parent instanceof OrgSupplier) {
             return Redirect::route('grp.org.procurement.org_suppliers.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
         } else {
-            return Redirect::route('grp.org.procurement.org_partners.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
+            return Redirect::route('grp.org.procurement.org_partners.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->id, $purchaseOrder->slug]);
         }
     }
 }

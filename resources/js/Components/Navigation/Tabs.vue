@@ -45,7 +45,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import type { Navigation } from "@/types/Tabs"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 library.add(
 	faListUl,
 	faShapes,
@@ -156,10 +156,28 @@ const tabIconClass = function (
 	extraIconClass: string
 ) {
 	// console.log(isCurrent, type, align, extraIconClass)
-	let iconClass = "-ml-0.5 h-5 w-5   " + extraIconClass
+	let iconClass = "-ml-0.5 h-5 w-5 " + extraIconClass + " "
 	// iconClass += isCurrent ? 'text-indigo-500 ' : 'text-gray-400 group-hover:text-gray-500 ';
 	iconClass += type == "icon" && align == "right" ? "ml-2 " : "mr-2 "
 	return iconClass
+}
+
+const mobileTabsElement = ref<HTMLElement | null>(null)
+const mobileTabOptionsPlacement = ref({ upwards: false, maxHeight: 240 })
+
+const placeMobileTabOptions = () => {
+	const rect = mobileTabsElement.value?.getBoundingClientRect()
+	if (!rect) return
+
+	const preferredHeight = 240
+	const spaceBelow = window.innerHeight - rect.bottom - 48
+	const spaceAbove = rect.top - 8
+	const upwards = spaceBelow < preferredHeight && spaceAbove > spaceBelow
+
+	mobileTabOptionsPlacement.value = {
+		upwards,
+		maxHeight: Math.max(120, Math.min(preferredHeight, upwards ? spaceAbove : spaceBelow)),
+	}
 }
 </script>
 
@@ -168,9 +186,11 @@ const tabIconClass = function (
 		<!-- Tabs: Mobile view -->
 		<div v-if="Object.keys(navigation ?? {})?.length > 1" class="sm:hidden px-3 pt-2">
 			<Listbox :model-value="currentTab" @update:modelValue="onChangeTab">
-				<div class="relative">
+				<div ref="mobileTabsElement" class="relative">
 					<!-- Button -->
 					<ListboxButton
+						@click="placeMobileTabOptions"
+						@keydown="placeMobileTabOptions"
 						:class="tabColorScheme(navigation[currentTab] ?? {})?.soft || 'bg-white'"
 						class="relative w-full cursor-pointer rounded-md border border-gray-300 py-2 pl-3 pr-10 text-left shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 sm:text-sm">
 						<span class="flex items-center">
@@ -195,7 +215,9 @@ const tabIconClass = function (
 
 					<!-- Options -->
 					<ListboxOptions
-						class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+						:class="mobileTabOptionsPlacement.upwards ? 'bottom-full mb-1' : 'mt-1'"
+						:style="{ maxHeight: `${mobileTabOptionsPlacement.maxHeight}px` }"
+						class="absolute z-20 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
 						<ListboxOption
 							v-for="(tab, tabSlug) in navigation"
 							:key="tabSlug"
@@ -281,7 +303,7 @@ const tabIconClass = function (
 										bg-red-500 text-white font-semibold tracking-wide
 										whitespace-nowrap scale-90 origin-left impulse"
 								>
-									{{trans('BETA VERSION')}}
+									{{ctrans('BETA VERSION')}}
 								</span>
 							</span>
 

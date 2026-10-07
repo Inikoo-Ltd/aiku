@@ -58,6 +58,7 @@ function onSuccessUpload(value: any) {
       @submitSelectedImages="onPick"
       @onSuccessUpload="onSuccessUpload"
       :uploadRoute="uploadImageRoute"
+      :tabs="uploadImageRoute ? undefined : ['images_uploaded', 'stock_images']"
     />
   </Dialog>
 </template>

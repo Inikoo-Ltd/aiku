@@ -11,11 +11,11 @@ namespace App\Actions\Helpers\Country\UI;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetAddressData
 {
-    use AsObject;
+    use AsAction;
 
     public function handle(?Shop $shop = null, bool $ignoreForbiddenDispatchCountries = false): array
     {
@@ -80,5 +80,10 @@ class GetAddressData
         }
 
         return $selectOptions;
+    }
+
+    public function asController(): array
+    {
+        return $this->handle();
     }
 }

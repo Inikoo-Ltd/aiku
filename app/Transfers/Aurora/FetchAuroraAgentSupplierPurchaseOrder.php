@@ -44,8 +44,7 @@ class FetchAuroraAgentSupplierPurchaseOrder extends FetchAurora
         $estimatedReceivedAt = $this->parseDatetime($this->auroraModelData->{'Agent Supplier Purchase Order Estimated Receiving Date'});
 
         $state = match ($this->auroraModelData->{'Agent Supplier Purchase Order State'}) {
-            'InProcess' => AgentSupplierPurchaseOrderStateEnum::IN_PROCESS,
-            'Submitted' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
+            'InProcess' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
             'Cancelled' => AgentSupplierPurchaseOrderStateEnum::CANCELLED,
             default => AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
         };
@@ -65,6 +64,7 @@ class FetchAuroraAgentSupplierPurchaseOrder extends FetchAurora
             'state'           => $state,
             'delivery_state'  => $deliveryState,
             'date'            => $date,
+            'submitted_at'    => $createdAt,
             'confirmed_at'    => $confirmedAt,
             'cancelled_at'    => $cancelledAt,
             'estimated_received_at' => $estimatedReceivedAt,

@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import JsBarcode from 'jsbarcode'
 import { Link } from '@inertiajs/vue3'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import PureTimeline from '@/Components/Pure/PureTimeline.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
@@ -55,7 +55,6 @@ const props = defineProps<{
 }>()
 
 
-console.log('www', props.data.data)
 
 // Blueprint: data
 const blueprint = {
@@ -156,13 +155,13 @@ const generateRouteEditBarcode = () => {
         <dl class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 sm:gap-y-8 lg:gap-x-8">
             <div :class="[blueprint.note.value && 'border-t border-gray-200', 'pt-4']">
                 <dt class="font-medium">
-                    {{ trans("Pallet Reference") }}
+                    {{ ctrans("Pallet Reference") }}
                 </dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">{{ blueprint.reference.value }}</dd>
             </div>
 
             <div :class="[blueprint.note.value && 'border-t border-gray-200', 'pt-4']">
-                <dt class="font-medium">{{ trans("Customer") }}</dt>
+                <dt class="font-medium">{{ ctrans("Customer") }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
                     <Link :href="route(blueprint.customer.value.route.name, blueprint.customer.value.route.parameters)"
                         class="primaryLink">
@@ -193,7 +192,7 @@ const generateRouteEditBarcode = () => {
                             </template>
                         </Tag>
                     </div>
-                    <span v-else class="text-gray-400 italic">{{ trans("No items in this pallet.") }}</span>
+                    <span v-else class="text-gray-400 italic">{{ ctrans("No items in this pallet.") }}</span>
                 </dd>
             </div>
 
@@ -221,11 +220,11 @@ const generateRouteEditBarcode = () => {
 
             <!-- Info -->
             <div class="border-t border-gray-200 pt-4">
-                <dt class="font-medium">{{ trans("Info") }}</dt>
-                <dd class="mt-2 text-sm text-gray-500 text-justify">{{ trans("State") }}:
+                <dt class="font-medium">{{ ctrans("Info") }}</dt>
+                <dd class="mt-2 text-sm text-gray-500 text-justify">{{ ctrans("State") }}:
                     <Tag :label="data.data.state" ></Tag>
                 </dd>
-                <dd class="mt-2 text-sm text-gray-500 text-justify">{{ trans("Status") }} :
+                <dd class="mt-2 text-sm text-gray-500 text-justify">{{ ctrans("Status") }} :
                     <Tag :label="data.data.status"
                         :xxstyle="{ backgroundColor: data.data.status_icon?.color }"
                         stringToColor
@@ -246,7 +245,7 @@ const generateRouteEditBarcode = () => {
             <!-- Pallet Delivery -->
             <div class="border-t border-gray-200 pt-4">
                 <dt class="font-medium">
-                    {{ trans("Pallet Delivery") }}
+                    {{ ctrans("Pallet Delivery") }}
                     <FontAwesomeIcon icon="fal fa-truck-couch" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
                 </dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
@@ -264,7 +263,7 @@ const generateRouteEditBarcode = () => {
             <!-- Pallet Return -->
             <div class="border-t border-gray-200 pt-4">
                 <dt class="font-medium">
-                    {{ trans("Pallet Return") }}
+                    {{ ctrans("Pallet Return") }}
                     <FontAwesomeIcon icon="fal fa-sign-out" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
                 </dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
@@ -284,7 +283,7 @@ const generateRouteEditBarcode = () => {
                 <dt class="font-medium">{{ blueprint.note.label }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">
                     <PureTextarea :modelValue="blueprint.note.value" :rows="5"
-                        :placeholder="trans('No note for this pallet')" disabled />
+                        :placeholder="ctrans('No note for this pallet')" disabled />
                 </dd>
             </div>
 
@@ -297,14 +296,14 @@ const generateRouteEditBarcode = () => {
         <div class="flex flex-col items-center gap-6">
           <!-- Pallet Code -->
           <div class="relative w-full border rounded-lg p-4 shadow-sm bg-gray-50 group">
-            <div class="text-sm font-medium text-center mb-2">{{ trans("Barcode") }}</div>
+            <div class="text-sm font-medium text-center mb-2">{{ ctrans("Barcode") }}</div>
             <div class="relative">
               <div v-if="props.data.data.slug" class="relative hover:bg-black/30 rounded-lg p-2">
                 <svg id="palletBarcode" class="mx-auto group-hover:fill-black"></svg>
               </div>
               <div v-else
                 class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
-                <div>{{ trans("No customer reference barcode") }}</div>
+                <div>{{ ctrans("No customer reference barcode") }}</div>
                 <div>
                   <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                 </div>

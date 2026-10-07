@@ -8,12 +8,15 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInTradeUnit;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
 use App\Actions\OrgAction;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
@@ -22,6 +25,7 @@ use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
@@ -99,7 +103,21 @@ class ShowTradeUnit extends OrgAction
                         'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
                     ],
                     'actions'    => [
-                        $this->canEdit ? [
+                        ($this->canEdit || $this->canEditCompliance) && blank($tradeUnit->barcode) ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => 'fal fa-barcode',
+                            'label'   => __('Assign barcode'),
+                            'tooltip' => __('Takes the next free barcode of the pool'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.trade-unit.assign_next_barcode',
+                                'parameters' => [
+                                    'tradeUnit' => $tradeUnit->id,
+                                ],
+                            ],
+                        ] : false,
+                        $this->canEdit || $this->canEditCompliance ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
@@ -117,6 +135,14 @@ class ShowTradeUnit extends OrgAction
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
                     : Inertia::optional(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+
+                TradeUnitTabsEnum::SALES_ANALYSIS->value => $this->tab === TradeUnitTabsEnum::SALES_ANALYSIS->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnit($tradeUnit), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnit($tradeUnit), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+                'sales_analysis_teaser' => $this->tab === TradeUnitTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit))),
 
                 TradeUnitTabsEnum::COMPOSITION->value => $this->tab == TradeUnitTabsEnum::COMPOSITION->value ?
                     fn () => GetTradeUnitComposition::run($tradeUnit)
@@ -146,6 +172,10 @@ class ShowTradeUnit extends OrgAction
                     fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))
                     : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
 
+                TradeUnitTabsEnum::HISTORY->value => $this->tab == TradeUnitTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($tradeUnit, TradeUnitTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($tradeUnit, TradeUnitTabsEnum::HISTORY->value))),
+
             ]
         )
         ->table(IndexMasterProductsInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::MASTER_PRODUCTS->value))
@@ -153,7 +183,8 @@ class ShowTradeUnit extends OrgAction
         ->table(IndexStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::STOCKS->value))
         ->table(IndexOrgStocksInTradeUnit::make()->tableStructure(prefix: TradeUnitTabsEnum::ORG_STOCKS->value))
         ->table(IndexAttachments::make()->tableStructure(TradeUnitTabsEnum::ATTACHMENTS->value))
-        ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value));
+        ->table(IndexTradeUnitImages::make()->tableStructure($tradeUnit, TradeUnitTabsEnum::IMAGES->value))
+        ->table(IndexHistory::make()->tableStructure(prefix: TradeUnitTabsEnum::HISTORY->value, model: $tradeUnit));
     }
 
 

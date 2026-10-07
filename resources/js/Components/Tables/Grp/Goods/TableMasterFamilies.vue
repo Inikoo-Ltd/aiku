@@ -9,7 +9,7 @@ import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { RouteParams } from "@/types/route-params";
 import { MasterFamily } from "@/types/master-family";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
 import { ref, inject } from "vue";
 import { faFolderTree, faChevronRight, faChevronDown } from "@fal";
 import { useFormatTime } from "@/Composables/useFormatTime";
@@ -51,7 +51,6 @@ const routeCurrent = route().current()
 const routeParams = route().routeParams
 
 function familyRoute(masterFamily: MasterFamily) {
-    console.log(routeCurrent);
     if (routeCurrent == "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show",
@@ -68,7 +67,11 @@ function familyRoute(masterFamily: MasterFamily) {
     } else if (
         routeCurrent == "grp.masters.master_shops.show.master_gr.index" ||
         routeCurrent == "grp.masters.master_shops.show.master_families.vol_gr_reward.index" ||
-        routeCurrent == 'grp.masters.master_shops.show.master_collections.show'
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.show' || 
+        routeCurrent == 'grp.masters.master_departments.show.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_departments.show.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_sub_departments.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.families'
     ) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
@@ -263,7 +266,7 @@ const offerRoute = (offer: { organisation_slug: string, shop_slug: string, offer
 
 const offerDate = (date?: string | null) => date
     ? useFormatTime(date, { localeCode: locale.language.code, formatTime: 'dd MMM yy' })
-    : trans('No date')
+    : ctrans('No date')
 
 const chevronClass = (masterFamily: MasterFamily) =>
     masterFamily.offers_freshness?.text_class ?? 'text-gray-400'
@@ -279,7 +282,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
             <div class="flex justify-center items-center">
                 <Image v-if="collection['image_thumbnail']" :src="collection['image_thumbnail']" imageCover
                     class="object-contain w-10 aspect-square rounded-md flex justify-center items-center overflow-hidden shadow" />
-                <div v-else v-tooltip="trans('No image available')"
+                <div v-else v-tooltip="ctrans('No image available')"
                     class="flex items-center justify-center border border-gray-300 w-10 aspect-square rounded-md">
                     <FontAwesomeIcon icon="fal fa-image" class="opacity-50 text-sm" fixed-width aria-hidden="true" />
                 </div>
@@ -356,7 +359,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
             <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
                 {{ family["code"] }}
             </Link>
-            <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')" fixed-width/>
+            <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="ctrans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')" fixed-width/>
         </template>
 
         <template #cell(last_offers)="{ item: family }">
@@ -366,8 +369,8 @@ const chevronClass = (masterFamily: MasterFamily) =>
                     class="mt-0.5 cursor-pointer hover:opacity-100"
                     :class="expandedOffers[family.id] ? 'text-gray-400' : chevronClass(family)"
                     v-tooltip="expandedOffers[family.id]
-                        ? trans('Hide the other shops')
-                        : `${trans(':number more shops', { number: family.last_offers.length - 1 })} · ${family.offers_freshness?.tooltip}`"
+                        ? ctrans('Hide the other shops')
+                        : `${ctrans(':number more shops', { number: family.last_offers.length - 1 })} · ${family.offers_freshness?.tooltip}`"
                     fixed-width @click="toggleOffers(family.id)" />
                 <div class="flex flex-col gap-y-0.5">
                     <div v-for="offer in visibleOffers(family)" :key="offer.shop_slug"
@@ -380,10 +383,10 @@ const chevronClass = (masterFamily: MasterFamily) =>
                             {{ offer.offer_slug }}
                         </Link>
                         <span class="text-gray-400 mx-1">·</span>
-                        <span v-tooltip="trans('Offer date')">{{ offerDate(offer.start_at) }}</span>
+                        <span v-tooltip="ctrans('Offer date')">{{ offerDate(offer.start_at) }}</span>
                         <span class="text-gray-400 mx-1">→</span>
-                        <span v-tooltip="trans('Expiration date')">
-                            {{ offer.end_at ? offerDate(offer.end_at) : trans('No expiration') }}
+                        <span v-tooltip="ctrans('Expiration date')">
+                            {{ offer.end_at ? offerDate(offer.end_at) : ctrans('No expiration') }}
                         </span>
                     </div>
                 </div>
@@ -391,7 +394,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
             <div v-else class="flex items-center whitespace-nowrap text-xs">
                 <span v-if="family.offers_freshness" v-tooltip="family.offers_freshness.tooltip"
                     class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offers_freshness.class" />
-                <span class="text-gray-400 italic">{{ trans('Never') }}</span>
+                <span class="text-gray-400 italic">{{ ctrans('Never') }}</span>
             </div>
         </template>
 
@@ -404,9 +407,9 @@ const chevronClass = (masterFamily: MasterFamily) =>
         <template #cell(gr_detail)="{ item: family }">
             <div v-if="family.gr_detail && (family.gr_detail.percentage || family.gr_detail.quantity)"
                 class="whitespace-nowrap tabular-nums">
-                <span v-tooltip="trans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
+                <span v-tooltip="ctrans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
                 <span class="text-gray-400 mx-1">·</span>
-                <span v-tooltip="trans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
+                <span v-tooltip="ctrans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
             </div>
             <span v-else class="text-gray-400 italic">-</span>
         </template>

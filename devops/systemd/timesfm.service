@@ -1,0 +1,19 @@
+[Unit]
+Description=TimesFM forecast service for aiku
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=inikoo
+WorkingDirectory=/home/inikoo/timesfm
+EnvironmentFile=/home/inikoo/timesfm/timesfm.env
+ExecStart=/home/inikoo/timesfm/.venv/bin/python -u server.py
+Restart=always
+RestartSec=10
+Nice=10
+CPUWeight=50
+MemoryMax=8G
+MemorySwapMax=0
+
+[Install]
+WantedBy=multi-user.target

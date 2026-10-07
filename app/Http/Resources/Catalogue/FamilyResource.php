@@ -13,6 +13,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class FamilyResource extends JsonResource
 {
+    private bool $withProducts = true;
+
+    public function withoutProducts(): static
+    {
+        $this->withProducts = false;
+
+        return $this;
+    }
+
     public function toArray($request): array
     {
         /** @var ProductCategory $family */
@@ -57,7 +66,7 @@ class FamilyResource extends JsonResource
             'is_description_title_reviewed' => $family->is_description_title_reviewed,
             'is_description_reviewed'       => $family->is_description_reviewed,
             'is_description_extra_reviewed' => $family->is_description_extra_reviewed,
-            'products'                      => ProductResource::collection($family->getProducts())->toArray(request()),
+            'products'                      => $this->when($this->withProducts, fn () => ProductResource::collection($family->getProducts())->toArray(request())),
             'stats'                         => $family->stats
         ];
     }

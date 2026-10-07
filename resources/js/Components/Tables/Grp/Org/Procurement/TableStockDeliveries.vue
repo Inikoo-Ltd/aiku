@@ -9,6 +9,7 @@ import { Link } from '@inertiajs/vue3';
 import Icon from '@/Components/Icon.vue';
 import Table from '@/Components/Table/Table.vue';
 import { useFormatTime } from '@/Composables/useFormatTime';
+import { ctrans } from '@/Composables/useTrans';
 
 defineProps<{
     data: object,
@@ -17,6 +18,22 @@ defineProps<{
 
 function amountFormat(amount: number) {
     return Number(amount).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const parentRouteNames: Record<string, string> = {
+    OrgSupplier: 'grp.org.procurement.org_suppliers.show',
+    OrgAgent: 'grp.org.procurement.org_agents.show',
+    OrgPartner: 'grp.org.procurement.org_partners.show',
+}
+
+function parentRoute(stockDelivery: { parent_type?: string, parent_route_key?: string | null, organisation_slug?: string }) {
+    const organisation = route().params['organisation'] ?? stockDelivery.organisation_slug
+    const routeName = parentRouteNames[stockDelivery.parent_type ?? '']
+    if (!organisation || !routeName || !stockDelivery.parent_route_key) {
+        return null
+    }
+
+    return route(routeName, [organisation, stockDelivery.parent_route_key])
 }
 
 function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: string }) {
@@ -45,10 +62,26 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
                 {{ stockDelivery['reference'] }}
             </Link>
             <span v-else>{{ stockDelivery['reference'] }}</span>
+            <span v-if="stockDelivery.number_new_org_stocks > 0"
+                v-tooltip="ctrans('Items that have never been in stock')"
+                class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                {{ ctrans(':count new', { count: stockDelivery.number_new_org_stocks }) }}
+            </span>
+        </template>
+
+        <template #cell(parent_name)="{ item: stockDelivery }">
+            <Link v-if="parentRoute(stockDelivery)" :href="parentRoute(stockDelivery)!" class="primaryLink">
+                {{ stockDelivery['parent_name'] }}
+            </Link>
+            <span v-else>{{ stockDelivery['parent_name'] }}</span>
         </template>
 
         <template #cell(date)="{ item }">
             {{ useFormatTime(item.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
+        </template>
+
+        <template #cell(estimated_receiving_date)="{ item }">
+            {{ item.estimated_receiving_date ? useFormatTime(item.estimated_receiving_date, { formatTime: "EEE, do MMM yy" }) : '-' }}
         </template>
 
         <template #cell(items)="{ item }">

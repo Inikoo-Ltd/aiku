@@ -4,17 +4,15 @@ import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import AgentsTable from "@/Components/Chat/AgentsTable.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faHeadset } from "@fal"
+library.add(faHeadset)
 
 defineProps<{
     title: string
     pageHeading: object
     data: any
     organisationSlug?: string
-    routes?: {
-        delete?: string
-        restore?: string
-        force_delete?: string
-    }
 }>()
 
 const waitEchoReady = (callback: Function) => {

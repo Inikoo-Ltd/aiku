@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Ordering;
 
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
@@ -21,11 +22,17 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateRetinaTransaction extends RetinaAction
 {
     use WithActionUpdate;
+    use WithCustomerPurchasableProduct;
 
     private Order $order;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
+        $this->ensureCustomerCanChangeLine($transaction, Arr::get($modelData, 'quantity_ordered'));
+
         $transaction->order->update([
             'updated_by_customer_at' => now()
         ]);
@@ -64,7 +71,7 @@ class UpdateRetinaTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity_ordered' => ['required', 'numeric', 'min:0'],
+            'quantity_ordered' => ['required', 'integer', 'min:0'],
         ];
     }
 

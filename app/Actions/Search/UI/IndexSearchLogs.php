@@ -75,6 +75,11 @@ class IndexSearchLogs extends OrgAction
         ];
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('sysadmin.view');
+    }
+
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

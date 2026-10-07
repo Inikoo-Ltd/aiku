@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -46,6 +46,25 @@ const props = defineProps<{
 }>()
 
 const model = defineModel()
+
+const normaliseHeader = (header: unknown) =>
+    String(header ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")
+
+const fieldForHeader = (header: unknown): string | null => {
+    const normalised = normaliseHeader(header)
+    if (props.upload_spreadsheet?.required_fields?.includes(normalised)) return normalised
+    const aliases = props.upload_spreadsheet?.column_aliases ?? {}
+    return Object.keys(aliases).find((field) => aliases[field].includes(normalised)) ?? null
+}
+
+const headerTooltip = (header: unknown) => {
+    const field = fieldForHeader(header)
+    if (field) {
+        return normaliseHeader(header) === field ? ctrans("Correct column") : ctrans("Read as :field", { field })
+    }
+    const fields = props.upload_spreadsheet?.required_fields ?? []
+    return ctrans("This column is not match, will not be processed.") + (fields.length ? " " + ctrans("Must be one of these:") + " " + fields.join(", ") : "")
+}
 
 const selectedEchopersonal = inject('selectedEchopersonal', {})
 
@@ -99,7 +118,7 @@ const onUploadFile = async (fileUploaded: File) => {
         };
         reader.readAsArrayBuffer(fileUploaded);
     } else {
-        errorMessage.value = trans('File extension is not one of these:') + ' .csv, .xlsx, .xls';
+        errorMessage.value = ctrans('File extension is not one of these:') + ' .csv, .xlsx, .xls';
     }
 }
 
@@ -170,7 +189,6 @@ watch(model, async (newVal) => {
     if (props.upload_spreadsheet?.route?.history?.name) {
         isLoadingHistory.value = true
         if(newVal && !dataHistoryFileUpload.value.length) {  // to prevent fetch every modal appear
-            console.log(props.upload_spreadsheet?.route)
             try {
                 const data = await axios.get(route(props.upload_spreadsheet?.route?.history?.name, props.upload_spreadsheet?.route?.history?.parameters))
                 dataHistoryFileUpload.value = data.data.data
@@ -193,8 +211,8 @@ watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) 
                 only: props.propsRefreshAfterFinish ?? ['pallets','goods'],
                 onSuccess: () => {
                     notify({
-                        title: trans('Upload finish'),
-                        text: trans('Data in table has reloaded.'),
+                        title: ctrans('Upload finish'),
+                        text: ctrans('Data in table has reloaded.'),
                         type: 'success',
                     })
                     model.value = false
@@ -241,15 +259,6 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                     <div class="w-full">
                         <div class="flex gap-x-0.5 justify-center items-center">
                             <span class="text-lg font-bold">{{ title?.label }}</span>
-                            <VTooltip v-if="title?.information" class="w-fit">
-                                <FontAwesomeIcon icon='fad fa-info-circle' size="xs" class='text-gray-500' fixed-width
-                                    aria-hidden='true' />
-                                <template #popper>
-                                    <div class="min-w-20 w-fit max-w-52 text-xs">
-                                        {{ title?.information }}
-                                    </div>
-                                </template>
-                            </VTooltip>
                         </div>
 
                         <!-- Preview: excel -->
@@ -289,7 +298,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                 class="group text-xs text-gray-600 cursor-pointer px-2 -mr-1.5 w-fit" download>
                                 <span class="text-xs text-gray-400 group-hover:text-gray-600">
                                     <FontAwesomeIcon icon='fas fa-file-download' class='text-gray-400 group-hover:text-gray-600' fixed-width aria-hidden='true' />
-                                    {{ upload_spreadsheet?.template?.label || trans(`Download template .xlsx`) }}
+                                    {{ upload_spreadsheet?.template?.label || ctrans(`Download template .xlsx`) }}
                                 </span>
                             </a>
                         </div>
@@ -330,10 +339,10 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
 
                             <div v-if="!isDraggedFile" class="text-center text-gray-500">
                                 <div class="flex justify-center text-sm font-medium leading-6 ">
-                                    {{ trans("Upload file") }}
+                                    {{ ctrans("Upload file") }}
                                 </div>
                                 <div class="flex w-fit mx-auto text-xs leading-6 ">
-                                    <p class="">{{ trans("Drag and drop, or browse your files") }} (.csv, .xlx, .xlsx)</p>
+                                    <p class="">{{ ctrans("Drag and drop, or browse your files") }} (.csv, .xlx, .xlsx)</p>
                                 </div>
                             </div>
                         </div>
@@ -354,7 +363,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                     <Transition name="headlessui">
                         <div v-if="csvData?.length" class="text-xxs mt-3 max-w-3xl overflow-x-hidden">
                             <div class="text-sm py-1 flex justify-between">
-                                <div>{{ trans('Preview your data') }}</div>
+                                <div>{{ ctrans('Preview your data') }}</div>
 
                                 <!-- Hide for now -->
                                 <!-- <div v-if="additionalDataToSend?.includes('stored_items')" class="text-xxs flex items-center gap-x-1 text-gray-500 hover:text-gray-600 italic">
@@ -364,6 +373,11 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                 </div> -->
                             </div>
 
+                            <p v-if="title?.information" class="mb-2 flex items-start gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs text-blue-800">
+                                <FontAwesomeIcon icon="fad fa-info-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                                <span>{{ title.information }}</span>
+                            </p>
+
                             <div class="w-full border border-gray-300 rounded-md overflow-x-auto">
                                 <table class="w-full">
                                     <thead class="">
@@ -372,11 +386,11 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                                 <Transition name="slide-to-up">
                                                     <th v-if="index != compIndexStoredItemInPreview || isIncludeStoreItems" :key="index"
                                                         class="whitespace-nowrap overflow-ellipsis pl-3 pr-1"
-                                                        :class="upload_spreadsheet?.required_fields?.length ? upload_spreadsheet?.required_fields.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? 'bg-green-100' : 'bg-red-100 hover:bg-red-200' : 'bg-gray-100'"
-                                                        v-tooltip="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? trans('Correct column') : trans('This column is not match, will not be processed.') + (upload_spreadsheet?.required_fields?.length > 0 ? (' Must be one of these:') + ' ' + upload_spreadsheet?.required_fields?.join(', ') : null)"
+                                                        :class="upload_spreadsheet?.required_fields?.length ? fieldForHeader(header) ? 'bg-green-100' : 'bg-red-100 hover:bg-red-200' : 'bg-gray-100'"
+                                                        v-tooltip="headerTooltip(header)"
                                                     >
                                                         {{ header }}
-                                                        <FontAwesomeIcon v-if="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase())" icon='fas fa-check-circle' class='text-green-600' fixed-width aria-hidden='true' />
+                                                        <FontAwesomeIcon v-if="fieldForHeader(header)" icon='fas fa-check-circle' class='text-green-600' fixed-width aria-hidden='true' />
                                                         <FontAwesomeIcon v-else icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
                                                     </th>
                                                 </Transition>
@@ -394,7 +408,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                     </tbody>
                                 </table>
                                 <div v-if="csvData?.length > 6" class="py-1 text-center bg-gray-100">
-                                    {{ trans('and') }} {{ csvData.length-6 }} {{ trans('more') }}
+                                    {{ ctrans('and') }} {{ csvData.length-6 }} {{ ctrans('more') }}
                                 </div>
                             </div>
                             <div class="flex justify-end mt-3 w-full">
@@ -410,10 +424,10 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
             <!-- Section: failed records -->
             <Transition name="headlessui">
                 <div v-if="failedRecords.length" class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-                    <p class="text-xs font-semibold text-red-600 mb-1">{{ trans('Upload errors') }} ({{ failedRecords.length }})</p>
+                    <p class="text-xs font-semibold text-red-600 mb-1">{{ ctrans('Upload errors') }} ({{ failedRecords.length }})</p>
                     <ul class="space-y-0.5 max-h-40 overflow-y-auto">
                         <li v-for="(record, i) in failedRecords" :key="i" class="text-xs text-red-700 flex gap-x-2">
-                            <span v-if="record.row_number" class="shrink-0 text-red-400">{{ trans('Row') }} {{ record.row_number }}:</span>
+                            <span v-if="record.row_number" class="shrink-0 text-red-400">{{ ctrans('Row') }} {{ record.row_number }}:</span>
                             <span>{{ Array.isArray(record.errors) ? record.errors.join(', ') : record.errors }}</span>
                         </li>
                     </ul>
@@ -422,7 +436,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
 
             <!-- Section: table history -->
             <div class="flex items-start gap-x-2 gap-y-2 flex-col mt-4">
-                <span class="primaryLink  "> {{ trans('Previous uploads') }}  </span>
+                <span class="primaryLink  "> {{ ctrans('Previous uploads') }}  </span>
                 <div v-if="!isLoadingHistory" class="flex flex-wrap gap-x-2 gap-y-2">
                     <template v-if="compHistoryList.length">
                         <TransitionGroup name="list" tag="div" class="flex flex-wrap gap-x-2 gap-y-2">
@@ -468,7 +482,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                         </TransitionGroup>
                     </template>
                     <div v-else class="text-gray-500 text-xs">
-                        {{ trans("No previous uploads") }}
+                        {{ ctrans("No previous uploads") }}
                     </div>
                 </div>
 

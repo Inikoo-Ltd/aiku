@@ -61,7 +61,6 @@ const closeModal = () => {
 
 const isLoading = ref(false)
 const onSubmitIncrease = () => {
-    console.log(amount.value, privateNote.value, increaseReason.value,)
     router[props.routeSubmit.method || 'patch'](
         route(props.routeSubmit.name, props.routeSubmit.parameters),
         {

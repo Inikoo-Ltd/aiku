@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $shop_id
  * @property int $number_outboxes
  * @property int $number_outboxes_type_basket_low_stock
+ * @property int $number_outboxes_type_basket_on_offer
+ * @property int $number_outboxes_type_favourites_on_offer
  * @property int $number_outboxes_type_basket_push
  * @property int $number_outboxes_type_new_customer_push
  * @property int $number_outboxes_type_new_customer
@@ -105,6 +107,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_gold_reward_reminder_1
  * @property int $number_outboxes_type_gold_reward_reminder_2
  * @property int $number_outboxes_type_gold_reward_reminder_3
+ * @property int $number_outboxes_type_due_to_reorder
  * @property int $number_outboxes_type_price_change
  * @property int $number_outboxes_type_prospect_convertion_1
  * @property int $number_outboxes_type_prospect_convertion_2

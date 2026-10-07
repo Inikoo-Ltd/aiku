@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use App\Events\BroadcastRealtimeChat;
 use App\Http\Resources\CRM\Livechat\ChatMessageResource;
@@ -20,7 +21,6 @@ use Illuminate\Validation\ValidationException;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Vision\ImageSource;
 use LLPhant\Chat\Vision\VisionMessage;
-use LLPhant\OpenAIConfig;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -29,6 +29,7 @@ class VerifyChatImageMessage
     use AsAction;
     use WithPromptAI;
     use WithAICreditErrorHandler;
+    use WithAIGateway;
 
 
     private const int NOT_AI_GENERATED_CONFIDENCE_THRESHOLD = 70;
@@ -76,9 +77,7 @@ class VerifyChatImageMessage
      */
     protected function askIsImageAiGenerated(string $base64Image): array
     {
-        $config = new OpenAIConfig(apiKey: config('auto-translations.drivers.gpt-5-nano.api_key'));
-        $config->model = 'gpt-5';
-        $chat = new OpenAIChat($config);
+        $chat = new OpenAIChat($this->aiLLPhantConfig('gpt-5'));
 
         $chat->setSystemMessage(
             'You are an image forensics assistant. Analyse the given image and judge whether AI tooling ' .

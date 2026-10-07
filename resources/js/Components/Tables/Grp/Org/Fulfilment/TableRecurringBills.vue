@@ -22,7 +22,6 @@ const props = defineProps<{
 }>()
 
 function recurringBillRoute(bill) {
-	console.log(route().current())
 	switch (route().current()) {
 		case "grp.org.fulfilments.show.crm.customers.show.recurring_bills.index":
 			return route("grp.org.fulfilments.show.crm.customers.show.recurring_bills.show", [

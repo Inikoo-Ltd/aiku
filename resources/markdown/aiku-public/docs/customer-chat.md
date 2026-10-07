@@ -1,10 +1,12 @@
 ---
 title: Talking to customers in Chat
 summary: One inbox for the website chat, WhatsApp and the shop's email - take a conversation, answer with the customer's orders at your side, log a phone call, raise a ticket, and see how the desk is doing.
-date: 2026-09-21
+date: 2026-10-01
 tags: crm, chat
-category: crm
+category: help-desk
 help_routes: grp.org.shops.show.chat
+series: Chat
+order: 1
 ---
 
 <aside class="tldr">
@@ -16,7 +18,7 @@ help_routes: grp.org.shops.show.chat
 Open <b>Chat</b> in the menu of your shop or your organisation. What you see depends on your job position, not on a list somebody keeps by hand:
 
 - <b>Customer Inbox</b> - the working screen. You have it if your position is customer service on that shop; that makes you an agent on its website chat, WhatsApp and email at once.
-- <b>Supervision</b> - the same screen for whoever oversees chat: every conversation on the shops they run, whoever is holding it, and the agents down the side with whether they are there and how much they hold. Supervisors and administrators can take over, write in and close any conversation without being routed one.
+- <b>Supervision</b> - the same screen for whoever oversees chat, with the power to take over, write in and close any conversation without being routed one. See <a href="/docs/overseeing-chat">Overseeing chat</a>.
 - <b>Phone calls</b> - the notes of every call logged on the shops you work.
 - <b>Reports</b> - the figures, for a shop, an organisation or the whole group.
 - <b>Settings</b> - working hours, the mailbox and the channels.
@@ -27,19 +29,17 @@ When somebody changes position or leaves, their access follows on its own and th
 
 The rail on the left lists your shops with what is <b>waiting</b> and <b>active</b> on each channel. Whoever oversees chat can switch several shops on at once and read them as one list.
 
-- <b>Website</b> - the customer types into the bubble on the site. Outside working hours the widget says when you are back and takes a name, an email and a message instead.
-- <b>WhatsApp</b> - messages to the shop's number. See <a href="/docs/connecting-whatsapp-to-your-shop">Connecting WhatsApp to your shop</a>. Our own promotions do not fill the Waiting list.
-- <b>Email</b> - the shop's Gmail mailbox, connected once in the shop's settings; see <a href="/docs/connecting-an-email-mailbox-to-your-shop">Connecting an email mailbox to your shop</a>. An incoming mail opens a conversation and brings the rest of its thread with it, so you read the whole exchange. Your reply leaves from that mailbox, in the same thread, with your signature and your attachments.
+- <b>Website</b> - the customer types into the bubble on the site, or leaves a message outside working hours. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
+- <b>WhatsApp</b> - messages to the shop's number. See <a href="/docs/whatsapp-in-chat">WhatsApp in Chat</a>.
+- <b>Email</b> - the shop's Gmail mailbox, connected once in the shop's settings. See <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a>.
 
 ## Taking a conversation
 
 The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues' Chats</b>, the ones somebody else is holding on a shop you also work. Within them, <b>Waiting</b> is what nobody has picked up, <b>Active</b> is in hand and <b>Closed</b> is what was closed today. <b>Assign to me</b> makes a waiting conversation yours; <b>Take Over</b> takes one from a colleague who has gone to lunch.
 
-Then it works like any messenger: type and send, add an emoji, attach as many images or documents as you need. <b>Translate</b> lets you read the customer in your language and answer in theirs.
+Then it works like any messenger: type and send, add an emoji, attach images and documents, up to 30 files at a time (see <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a> for which files). <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
 A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
-
-<b>&#8942;</b> &rarr; <b>Email notification</b> says <b>On</b> or <b>Off</b>. On, what you send also goes to the customer by email, for the customer who asked a question on the website and closed the tab. It is offered only in a conversation you are holding, where there is an address to write to, and never on an email conversation, which is already an email.
 
 ## The customer at your side
 
@@ -54,6 +54,12 @@ Many guests are customers who are simply not logged in. Every guest message is c
 It is a suggestion and you decide. Anybody can type somebody else's email, and a linked conversation puts that customer's orders in front of you. <b>Confirm</b> links the conversation; <b>Not them</b> removes the suggestion for good. A customer of a sister shop, or somebody on the same company domain, is shown as a hint that cannot be confirmed.
 
 When nothing identifies a guest who writes like an existing customer, they are asked once, automatically, for the email on their account or an order number. This happens on the website and WhatsApp, never by email.
+
+## Automatic replies
+
+Some messages go out without anybody writing them, and they show in the conversation as grey notes. When the shop is closed, the customer is told when it opens again. If they are reporting a problem with goods, they are also asked for the details you will need, such as the order number, photos, and the products and quantities. Outside working hours, an AI answer can also go out on its own for a question the AI has learned to answer well.
+
+These replies are not turned off when one goes wrong: they are how we learn what works. Under each note is <b>Wrong?</b>. Click it, write why it was wrong (for example, "the customer had already given the products and quantities") and press <b>Mark as wrong</b>. The reason is required, because it is what we use to correct the replies. A wrong AI answer also stops AI answers on that kind of question for the shop going out on their own for a while. Marking a closing-time reply or a request for details as wrong does not stop it: it goes on being sent until it is corrected.
 
 ## Noise
 

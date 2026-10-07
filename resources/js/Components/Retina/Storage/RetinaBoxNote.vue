@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faStickyNote, faTrash, faLock } from '@fas'
@@ -36,7 +36,6 @@ const onSubmitNote = async () => {
         })
         props.noteData.note = noteModalValue.value
     } catch (error) {
-        console.log(error)
         notify({
 			title: "Failed",
 			text: "Failed to update the note, try again.",
@@ -62,7 +61,7 @@ const onSubmitNote = async () => {
             <!-- Section: Actions -->
             <template v-if="noteData.editable">
                 <!-- Icon: pencil (edit) -->
-                <div v-if="noteData.note" @click="isModalOpen = true" v-tooltip="trans('Edit note')" class="group px-0.5 cursor-pointer w-fit h-5 flex items-center">
+                <div v-if="noteData.note" @click="isModalOpen = true" v-tooltip="ctrans('Edit note')" class="group px-0.5 cursor-pointer w-fit h-5 flex items-center">
                     <FontAwesomeIcon icon='fas fa-pencil' size="xs" class='text-gray-500 group-hover:text-gray-700'
                         fixed-width aria-hidden='true'
                     />
@@ -70,26 +69,26 @@ const onSubmitNote = async () => {
 
                 <!-- Icon: Plus (add note) -->
                 <div v-else="!noteData.note" @click="isModalOpen = true" class="h-5 aspect-square flex items-center justify-center cursor-pointer">
-                    <FontAwesomeIcon v-tooltip="trans('Add note')" icon='far fa-plus' class='' fixed-width aria-hidden='true'
+                    <FontAwesomeIcon v-tooltip="ctrans('Add note')" icon='far fa-plus' class='' fixed-width aria-hidden='true'
                     />
                 </div>
             </template>
 
             <!-- Icon: Lock -->
-            <div v-else v-tooltip="noteData.lockMessage || trans('This note is not editable')" class="h-5 flex items-center cursor-not-allowed">
+            <div v-else v-tooltip="noteData.lockMessage || ctrans('This note is not editable')" class="h-5 flex items-center cursor-not-allowed">
                 <FontAwesomeIcon icon='fas fa-lock' class='text-gray-400' fixed-width aria-hidden='true' />
             </div>
         </div>
 
         <!-- Section: Note -->
         <p @dblclick="noteData.editable ? isModalOpen = true : false"
-            v-tooltip="noteData.editable ? trans('Double click to edit') : false"
+            v-tooltip="noteData.editable ? ctrans('Double click to edit') : false"
             class="h-36 text-justify mx-auto items-center px-3 rounded-md py-2 ring-1 ring-gray-300  break-words"
             :class="noteData.editable ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50 text-gray-500'"
         >
             <template v-if="noteData.note">{{ useTruncate(noteData.note, 200) }}</template>
           <!--   <span v-else class="italic select-none text-gray-400">
-                {{ trans('No note added') }}
+                {{ ctrans('No note added') }}
             </span> -->
         </p>
     </div>

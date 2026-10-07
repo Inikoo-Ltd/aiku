@@ -78,6 +78,7 @@ class TradeUnitsResource extends JsonResource
             'status'                            => $tradeUnit->status,
             'status_icon'                       => $tradeUnit->status ? $tradeUnit->status->icon()[$tradeUnit->status->value] : null,
             'media'                             => null,
+            'image_thumbnail'                   => $tradeUnit->imageSources(64, 64),
             'grp_currency'                      => $tradeUnit->grp_currency_code,
             'sales_grp_currency_external'       => $tradeUnit->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly'    => $tradeUnit->sales_grp_currency_external_ly ?? 0,

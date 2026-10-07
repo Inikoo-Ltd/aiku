@@ -2,11 +2,12 @@
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
@@ -21,7 +22,6 @@ import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaym
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Select } from "primevue"
 import CheckoutPaymentPastpay from "@/Components/Retina/Ecom/CheckoutPaymentPastpay.vue"
-import WhatsAppNewsletterOptIn from "@/Components/Retina/Ecom/WhatsAppNewsletterOptIn.vue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -38,6 +38,7 @@ const props = defineProps<{
         charges_amount: string
     }
     balance: string
+    on_account?: { available_credit: number } | null
     total_amount: string
     routes: {
         back_to_basket: routeType
@@ -49,12 +50,9 @@ const props = defineProps<{
     },
     currency_code: string
     stock_issues?: StockIssues
+    pre_orders?: BasketPreOrdersData
+    is_gift_message_missing?: boolean
     earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
-    whatsapp_newsletter?: {
-        is_subscribed: boolean
-        label: string
-        update_route: routeType
-    }
 }>()
 
 const currentTab = ref({
@@ -120,8 +118,12 @@ const locale = inject("locale", aikuLocaleStructure)
 
     <div v-else class="w-full px-4 xmt-8">
 
-        <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="md:px-4 mb-4 space-y-3">
-            <BasketStockIssues :stock_issues />
+        <div v-if="stock_issues?.out_of_stock?.length" class="md:px-4 mb-4 space-y-3">
+            <BasketStockIssues :stock_issues="{ ...stock_issues, low_stock: [] }" />
+        </div>
+
+        <div v-if="pre_orders?.has_pre_orders && pre_orders.is_accepted" class="md:px-4 mb-4 mt-4">
+            <BasketPreOrders :pre_orders :orderId="(order as any)?.id" :currencyCode="currency_code" isInCheckout />
         </div>
 
         <EcomCheckoutSummary
@@ -135,14 +137,24 @@ const locale = inject("locale", aikuLocaleStructure)
             class="md:px-4 !px-0"
         />
 
-        <WhatsAppNewsletterOptIn
-            v-if="whatsapp_newsletter && !whatsapp_newsletter.is_subscribed && whatsapp_newsletter.update_route.parameters.customerComms"
-            :label="whatsapp_newsletter.label"
-            :updateRoute="whatsapp_newsletter.update_route"
-        />
+        <div v-if="is_gift_message_missing" class="mt-10 md:mx-10 flex flex-col items-center gap-y-3 border border-amber-300 bg-amber-50 text-amber-700 rounded px-4 py-5 text-center">
+            <div class="flex items-start gap-x-2">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-1" fixed-width aria-hidden="true" />
+                <span>{{ trans("Write a gift message or upload a PDF before placing the order.") }}</span>
+            </div>
+            <ButtonWithLink
+                :icon="faArrowLeft"
+                :label="trans('Back to basket')"
+                :routeTarget="routes.back_to_basket"
+            />
+        </div>
+
+        <div v-else-if="pre_orders?.has_pre_orders && !pre_orders.is_accepted" class="mt-10 md:mx-10">
+            <BasketPreOrders :pre_orders :orderId="(order as any)?.id" :currencyCode="currency_code" isInCheckout />
+        </div>
 
         <!-- If 'Total' is 0 or less -->
-        <div v-if="to_pay_data.total <= 0">
+        <div v-else-if="to_pay_data.total <= 0">
             <EmptyState
                 :data="{
                     title: trans('No item to checkout')
@@ -170,9 +182,7 @@ const locale = inject("locale", aikuLocaleStructure)
                         <Select
                             v-model="currentTab.key"
                             @update:modelValue="(val) => {
-                                console.log('val', val)
                                 const idx = paymentMethods.findIndex(pm => pm.key === val)
-                                console.log('idx', idx)
                                 if (idx !== -1) currentTab.index = idx
                             }"
                             :options="paymentMethods"
@@ -217,7 +227,7 @@ const locale = inject("locale", aikuLocaleStructure)
             <div class="w-64">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
-                    :label="trans('Place order')"
+                    :label="on_account ? trans('Place order on account') : trans('Place order')"
                     :routeTarget="routes?.pay_with_balance"
                     full
                 >
@@ -227,7 +237,12 @@ const locale = inject("locale", aikuLocaleStructure)
             <div class="text-xs text-gray-500 xmt-2 italic text-center gap-x-1 w-80 justify-center">
                 <FontAwesomeIcon icon="fal fa-info-circle" xclass="mt-[4px]" fixed-width aria-hidden="true" />
                 <div class="leading-5 text-center inline">
-                    {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                    <template v-if="on_account">
+                        {{ trans("This is your final confirmation. The order will be charged to your account, available credit :amount.", { amount: locale?.currencyFormat(currency_code, on_account.available_credit) }) }}
+                    </template>
+                    <template v-else>
+                        {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                    </template>
                 </div>
             </div>
         </div>

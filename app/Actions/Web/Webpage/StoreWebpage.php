@@ -34,10 +34,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Redirect;
 use App\Models\Web\Website;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
+use App\Rules\NotReservedIrisPath;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +74,12 @@ class StoreWebpage extends OrgAction
             $modelData['sub_type'] = WebpageSubTypeEnum::CONTENT;
         }
 
+        $subType = WebpageSubTypeEnum::fromValue($modelData['sub_type']);
+
+        foreach ($subType?->searchEngineVisibility() ?? [] as $field => $isVisible) {
+            data_set($modelData, $field, $isVisible, overwrite: $subType->isHiddenFromSearchEngines());
+        }
+
         if (Arr::exists($modelData, 'seo_structure_type')) {
             $modelData['data'] = [
                 'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type')
@@ -79,12 +87,13 @@ class StoreWebpage extends OrgAction
         }
 
         $isFromCSV = Arr::pull($modelData, 'fromCSV', false); // unset basically, safer this way. keep it be
+        $author    = $this->getBlogAuthor(Arr::pull($modelData, 'author_id'));
 
         if (
             ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) && Arr::exists($modelData, 'fieldValue')
         ) {
             $newBlogModelData['fieldValue'] = Arr::pull($modelData, 'fieldValue');
-
+            data_set($newBlogModelData, 'fieldValue.author', $author, overwrite: false);
         }
 
         data_set($modelData, 'url', '', overwrite: false);
@@ -101,7 +110,7 @@ class StoreWebpage extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV) {
+        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV, $author) {
             /** @var Webpage $webpage */
             $webpage = $parent->webpages()->create($modelData);
             $webpage->stats()->create();
@@ -217,7 +226,7 @@ class StoreWebpage extends OrgAction
                     if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) {
                         $this->createWebBlock($webpage, 'blog', $newBlogModelData);
                     } else {
-                        $this->createWebBlock($webpage, 'blog', $webpage);
+                        $this->createWebBlock($webpage, 'blog', ['fieldValue' => ['author' => $author]]);
                     }
                 }
 
@@ -242,6 +251,23 @@ class StoreWebpage extends OrgAction
         $this->dispatchWebpageHydrators($webpage);
 
         return $webpage;
+    }
+
+    /**
+     * @return array{id: int, name: string}|null
+     */
+    private function getBlogAuthor(?int $userId): ?array
+    {
+        $user = $userId ? User::find($userId) : null;
+
+        if (!$user) {
+            return null;
+        }
+
+        return [
+            'id'   => $user->id,
+            'name' => $user->contact_name ?: $user->username,
+        ];
     }
 
     public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response
@@ -293,6 +319,7 @@ class StoreWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
+                new NotReservedIrisPath(),
                 new IUnique(
                     table: 'webpages',
                     extraConditions: [
@@ -330,9 +357,12 @@ class StoreWebpage extends OrgAction
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
             'seo_data'           => ['sometimes', 'array'],
+            'index_page'         => ['sometimes', 'boolean'],
+            'follow_link'        => ['sometimes', 'boolean'],
             'layout_style'       => ['sometimes', 'string'],
             'fieldValue'         => ['sometimes', 'array'],
-            'fromCSV'            => ['sometimes', 'boolean']
+            'fromCSV'            => ['sometimes', 'boolean'],
+            'author_id'          => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
         ];
 
         if ($this->parent instanceof Webpage) {
@@ -342,6 +372,7 @@ class StoreWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
+                new NotReservedIrisPath(),
                 new IUnique(
                     table: 'webpages',
                     extraConditions: [
@@ -349,6 +380,9 @@ class StoreWebpage extends OrgAction
                             'column' => 'website_id',
                             'value'  => $this->website->id
                         ],
+
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+
                     ]
                 ),
             ];
@@ -394,6 +428,7 @@ class StoreWebpage extends OrgAction
         $this->parent  = $website;
         $this->website = $website;
         $this->set('type', WebpageTypeEnum::BLOG);
+        $this->set('author_id', $request->user()->id);
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($website, $this->validatedData);

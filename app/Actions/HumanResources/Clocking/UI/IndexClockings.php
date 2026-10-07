@@ -11,7 +11,7 @@ namespace App\Actions\HumanResources\Clocking\UI;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\ClockingsResource;
 use App\Models\HumanResources\Clocking;
@@ -30,7 +30,7 @@ use App\Services\QueryBuilder;
 
 class IndexClockings extends OrgAction
 {
-    use WithHumanResourcesAuthorisation;
+    use WithHumanResourcesSectionAuthorisation;
 
     private Organisation|Workplace|ClockingMachine|Timesheet $parent;
 
@@ -56,6 +56,11 @@ class IndexClockings extends OrgAction
                 break;
             default:
                 abort(404, 'Not Found');
+        }
+
+        if ($this->isRestrictedToSection()) {
+            $queryBuilder->where('clockings.subject_type', 'Employee');
+            $this->restrictToSectionEmployees($queryBuilder, 'clockings.subject_id');
         }
 
         $qrCodeId = request()->input('clocking_machine_qr_code_id');
@@ -189,25 +194,15 @@ class IndexClockings extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Clockings'),
                     'actions' => [
-                        $this->canEdit
-                        && (
-                            $request->route()->getName() == 'grp.org.hr.workplaces.show.clockings.index' || $request->route()->getName() == 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index'
-                        )
+                        $this->canEdit && $request->route()->getName() == 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index'
                             ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Clockings'),
-                            'route' =>
-                                match ($request->route()->getName()) {
-                                    'grp.org.hr.workplaces.show.clockings.index' => [
-                                        'name'       => 'grp.org.hr.workplaces.show.clockings.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ],
-                                    default => [
-                                        'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.create',
-                                        'parameters' => $request->route()->originalParameters()
-                                    ]
-                                }
+                            'route' => [
+                                'name'       => 'grp.org.hr.workplaces.show.clocking_machines.show.clockings.create',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
                         ] : false
                     ]
                 ],

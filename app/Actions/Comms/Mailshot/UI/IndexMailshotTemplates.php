@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Traits\WithCommsSubNavigation;
 use App\Actions\OrgAction;
 use App\Http\Resources\Comms\MailshotTemplatesInDashboardResource;
 use App\InertiaTable\InertiaTable;
@@ -25,10 +26,11 @@ use App\Services\QueryBuilder;
 class IndexMailshotTemplates extends OrgAction
 {
     use HasUIMailshots;
+    use WithCommsSubNavigation;
 
     public Shop $parent;
 
-    public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $parent, $prefix = null, bool $isCommonOutbox = false): LengthAwarePaginator
     {
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -42,7 +44,8 @@ class IndexMailshotTemplates extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(EmailTemplate::class)
-            ->where('shop_id', $parent->id);
+            ->where('shop_id', $parent->id)
+            ->commonOutbox($isCommonOutbox);
 
 
         return $queryBuilder
@@ -54,8 +57,9 @@ class IndexMailshotTemplates extends OrgAction
                 'email_templates.state',
                 'email_templates.created_at',
                 'email_templates.updated_at',
-                'email_templates.compiled_layout'
+                'email_templates.compiled_layout',
             ])
+            ->selectRaw("coalesce(email_templates.data->>'dynamic_block', 'false') = 'true' as is_dynamic_block")
             ->allowedSorts(['state', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -89,7 +93,9 @@ class IndexMailshotTemplates extends OrgAction
                     'style' => 'create',
                     'label' => __('New Template'),
                     'route' => [
-                        'name'       => 'grp.org.shops.show.marketing.templates.create',
+                        'name'       => $this->isInComms($request)
+                            ? 'grp.org.shops.show.dashboard.comms.templates.create'
+                            : 'grp.org.shops.show.marketing.templates.create',
                         'parameters' => array_values($request->route()->originalParameters())
                     ]
                 ]
@@ -111,6 +117,9 @@ class IndexMailshotTemplates extends OrgAction
                     'title'   => $title,
                     'icon'    => ['fal', 'fa-layer-group'],
                     'actions' => $actions,
+                    'subNavigation' => $this->isInComms($request)
+                        ? $this->getCommsNavigation($this->parent)
+                        : null,
                 ]),
                 'data'        => MailshotTemplatesInDashboardResource::collection($mailshots),
             ]
@@ -122,6 +131,12 @@ class IndexMailshotTemplates extends OrgAction
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop);
+        return $this->handle($shop, isCommonOutbox: $this->isInComms($request));
     }
+
+    private function isInComms(ActionRequest $request): bool
+    {
+        return $request->route()->getName() === 'grp.org.shops.show.dashboard.comms.templates.index';
+    }
+
 }

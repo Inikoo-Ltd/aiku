@@ -9,9 +9,9 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\AddToLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
-use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
@@ -103,28 +103,29 @@ class StoreOrgStockMovement extends OrgAction
             }
         }
 
-        /** @var OrgStockMovement $orgStockMovement */
-        $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
+        $runningQuantity    = null;
+        $runningQuantityOrg = null;
 
+        [$orgStockMovement, $locationOrgStock] = DB::transaction(function () use ($orgStock, $location, $modelData, &$runningQuantity, &$runningQuantityOrg) {
+            $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->lockForUpdate()->first();
 
-        $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->first();
+            /** @var OrgStockMovement $orgStockMovement */
+            $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
+
+            if ($locationOrgStock) {
+                if ($this->strict) {
+                    $runningQuantity    = AddToLocationOrgStockQuantity::run($locationOrgStock, (float)$orgStockMovement->quantity);
+                    $runningQuantityOrg = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
+                } else {
+                    SyncLocationOrgStockQuantityFromMovements::run($locationOrgStock);
+                }
+            }
+
+            return [$orgStockMovement, $locationOrgStock];
+        });
 
         if ($locationOrgStock) {
             if ($this->strict) {
-                $runningQuantity = $locationOrgStock->quantity + $orgStockMovement->quantity;
-
-                UpdateLocationOrgStock::run(
-                    $locationOrgStock,
-                    [
-                        'quantity' => $runningQuantity,
-                    ]
-                );
-                //here we need to do this:
-
-                $runningQuantityOrg = DB::table('location_org_stocks')
-                    ->where('org_stock_id', $orgStock->id)->sum('quantity');
-
-
                 $lppPerSku = $this->getLppPerSku($orgStock, now());
 
                 if ($valuationState !== null) {
@@ -144,14 +145,6 @@ class StoreOrgStockMovement extends OrgAction
 
 
                 BroadcastStockMovement::dispatch($locationOrgStock);
-            } else {
-                $stock = GetLocationOrgStockQuantity::run($orgStock, $location);
-                UpdateLocationOrgStock::run(
-                    $locationOrgStock,
-                    [
-                        'quantity' => $stock
-                    ]
-                );
             }
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
