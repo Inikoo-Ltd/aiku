@@ -11,6 +11,7 @@ interface QuarterUsage {
 	period: string
 	sales: number
 	days_out_of_stock: number
+	top_customer?: { id: number; name: string; sales: number } | null
 }
 
 const props = defineProps<{
@@ -207,6 +208,32 @@ const lastQuarters = computed(() => quarters.value.filter((record) => record.per
 const salesPerQuarter = computed(() =>
 	lastQuarters.value.length ? lastQuarters.value.reduce((total, record) => total + (Number(record.sales) || 0), 0) / lastQuarters.value.length : null
 )
+const isCurrentQuarter = (record: QuarterUsage) => record.period === currentQuarter
+const isSingleCustomerQuarter = (record: QuarterUsage) => customerShare(record) >= 50
+
+const customerShare = (record: QuarterUsage) =>
+	record.top_customer && Number(record.sales) > 0 ? Math.round((record.top_customer.sales / Number(record.sales)) * 100) : 0
+
+const dominantCustomer = computed(() => {
+	const totalSales = lastQuarters.value.reduce((total, record) => total + (Number(record.sales) || 0), 0)
+	if (totalSales <= 0) {
+		return null
+	}
+	const salesByCustomer = new Map<number, { name: string; sales: number }>()
+	lastQuarters.value.forEach((record) => {
+		if (!record.top_customer) {
+			return
+		}
+		const entry = salesByCustomer.get(record.top_customer.id) ?? { name: record.top_customer.name, sales: 0 }
+		entry.sales += record.top_customer.sales
+		salesByCustomer.set(record.top_customer.id, entry)
+	})
+	const top = [...salesByCustomer.values()].sort((a, b) => b.sales - a.sales)[0]
+	const share = top ? Math.round((top.sales / totalSales) * 100) : 0
+
+	return share >= 50 ? { name: top.name, share } : null
+})
+
 const daysOutOfStock = computed(() => lastQuarters.value.reduce((total, record) => total + (Number(record.days_out_of_stock) || 0), 0))
 
 const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 })
@@ -315,48 +342,83 @@ function purchaseOrderRoute(slug: string) {
 				@mouseleave="hideQuarterChart">
 				<div v-for="record in quarters" :key="record.period" class="flex w-4 flex-col items-center">
 					<span class="text-[8px] leading-none text-gray-500">{{ formatCompact(record.sales) }}</span>
-					<div class="relative mt-0.5 flex h-5 w-2.5 items-end ">
+					<div class="relative mt-0.5 flex h-5 w-2.5 items-end">
 						<div
-							class="w-full rounded-sm"
-							:class="record.period === currentQuarter ? 'bg-gray-300' : 'bg-gray-500'"
-							:style="{ height: quarterBarHeight(record) + '%' }" />
-						<span v-if="record.days_out_of_stock" class="absolute left-1/2 -translate-x-1/2 top-0 h-1 w-1 rounded-full bg-red-500 ring-1 ring-white" />
+							class="flex w-full flex-col overflow-hidden rounded-sm"
+							:class="isCurrentQuarter(record) ? 'bg-gray-300' : 'bg-gray-500'"
+							:style="{ height: quarterBarHeight(record) + '%' }">
+							<div v-if="isSingleCustomerQuarter(record)" :class="isCurrentQuarter(record) ? 'bg-amber-300' : 'bg-amber-500'" :style="{ height: customerShare(record) + '%' }" />
+						</div>
+						<span v-if="record.days_out_of_stock" class="absolute left-1/2 top-0 h-1 w-1 -translate-x-1/2 rounded-full bg-red-500 ring-1 ring-white" />
 					</div>
 				</div>
 			</div>
 			<Popover v-if="isQuarterChartMounted" ref="quarterChartPopover" class="pointer-events-none">
-				<div class="w-80 text-xs">
-					<div class="mb-2 font-semibold text-gray-800">{{ ctrans("Sales per quarter") }}</div>
-					<div class="flex h-36 items-end gap-2 border-b border-gray-200 pb-1">
+				<div class="w-96 p-1 text-xs text-gray-600">
+					<div class="mb-3 flex items-baseline justify-between">
+						<span class="text-sm font-semibold text-gray-800">{{ ctrans("Sales per quarter") }}</span>
+						<span v-if="salesPerQuarter !== null" class="text-gray-500">
+							{{ ctrans("avg :quantity SKOs", { quantity: formatNumber(salesPerQuarter) }) }}
+						</span>
+					</div>
+
+					<div class="flex h-36 items-end gap-3 border-b border-gray-200 px-1">
 						<div v-for="record in quarters" :key="record.period" class="flex h-full flex-1 flex-col items-center justify-end">
-							<span class="mb-0.5 font-semibold text-gray-700">{{ formatNumber(record.sales) }}</span>
+							<span class="mb-1 font-semibold tabular-nums text-gray-700">{{ formatNumber(record.sales) }}</span>
 							<div
-								class="relative w-full max-w-[2.5rem] rounded-t"
-								:class="record.period === currentQuarter ? 'bg-gray-300' : 'bg-gray-500'"
+								class="relative flex w-full max-w-[2.75rem] flex-col rounded-t-md"
+								:class="isCurrentQuarter(record) ? 'bg-gray-200' : 'bg-gray-400'"
 								:style="{ height: quarterBarHeight(record) * 0.8 + '%' }">
+								<div
+									v-if="isSingleCustomerQuarter(record)"
+									class="flex items-start justify-center rounded-t-md pt-0.5 text-[10px] font-semibold text-white"
+									:class="isCurrentQuarter(record) ? 'bg-amber-300' : 'bg-amber-500'"
+									:style="{ height: customerShare(record) + '%' }">
+									<span v-if="customerShare(record) >= 30">{{ customerShare(record) }}%</span>
+								</div>
 								<span v-if="record.days_out_of_stock" class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-red-500 ring-2 ring-white" />
 							</div>
 						</div>
 					</div>
-					<div class="mt-1 flex gap-2">
+					<div class="mt-1.5 flex gap-3 px-1">
 						<div v-for="record in quarters" :key="record.period" class="flex-1 text-center leading-tight">
-							<div class="text-gray-600">{{ quarterShortLabel(record.period) }}</div>
-							<div v-if="record.period === currentQuarter" class="text-[10px] text-gray-400">{{ ctrans("so far") }}</div>
+							<div class="font-medium text-gray-700">{{ quarterShortLabel(record.period) }}</div>
+							<div v-if="isCurrentQuarter(record)" class="text-[10px] text-gray-400">{{ ctrans("so far") }}</div>
 							<div v-if="record.days_out_of_stock" class="text-[10px] text-red-600">{{ ctrans(":days d out", { days: String(record.days_out_of_stock) }) }}</div>
 						</div>
 					</div>
-					<div class="mt-3 space-y-1 border-t border-gray-100 pt-2 text-gray-500">
-						<div v-if="salesPerQuarter !== null">
-							{{ ctrans("Average: :quantity SKOs per quarter (last :count completed quarters)", { quantity: formatNumber(salesPerQuarter), count: String(lastQuarters.length) }) }}
+
+					<div v-if="quarters.some((record) => record.top_customer)" class="mt-3 rounded-md bg-gray-50 px-2.5 py-2">
+						<div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("Biggest customer") }}</div>
+						<template v-for="record in quarters" :key="record.period">
+							<div v-if="record.top_customer" class="flex items-center gap-2 py-0.5">
+								<span class="w-11 shrink-0 text-gray-400">{{ quarterShortLabel(record.period) }}</span>
+								<span
+									class="h-2 w-2 shrink-0 rounded-full"
+									:class="isSingleCustomerQuarter(record) ? 'bg-amber-500' : 'bg-gray-300'" />
+								<span class="truncate" :class="isSingleCustomerQuarter(record) ? 'font-medium text-gray-800' : ''">{{ record.top_customer.name }}</span>
+								<span class="ml-auto shrink-0 tabular-nums text-gray-500">
+									{{ formatNumber(record.top_customer.sales) }}
+									<span :class="isSingleCustomerQuarter(record) ? 'font-semibold text-amber-700' : ''">· {{ customerShare(record) }}%</span>
+								</span>
+							</div>
+						</template>
+					</div>
+
+					<div v-if="dominantCustomer || daysOutOfStock" class="mt-2 space-y-1.5">
+						<div v-if="dominantCustomer" class="rounded-md bg-amber-50 px-2.5 py-1.5 text-amber-800">
+							⚠ {{ ctrans(":percent% of these sales went to one customer (:customer). Ordering for this demand is risky if they stop buying.", { percent: String(dominantCustomer.share), customer: dominantCustomer.name }) }}
 						</div>
-						<div v-if="daysOutOfStock" class="text-red-600">
+						<div v-if="daysOutOfStock" class="rounded-md bg-red-50 px-2.5 py-1.5 text-red-700">
 							⚠ {{ ctrans("Out of stock for :days days in the last :count quarters. Sales were lost on those days, so real demand is likely higher than shown.", { days: String(daysOutOfStock), count: String(lastQuarters.length) }) }}
 						</div>
-						<div class="mt-2 pt-2 border-t border-dashed border-gray-400 flex flex-wrap gap-x-3">
-							<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-gray-500" />{{ ctrans("Completed quarter") }}</span>
-							<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-gray-300" />{{ ctrans("Current quarter") }}</span>
-							<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500" />{{ ctrans("Ran out of stock") }}</span>
-						</div>
+					</div>
+
+					<div class="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-gray-100 pt-2 text-[10px] text-gray-500">
+						<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-gray-400" />{{ ctrans("Completed quarter") }}</span>
+						<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-gray-200" />{{ ctrans("Current quarter") }}</span>
+						<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-amber-500" />{{ ctrans("One customer, half or more") }}</span>
+						<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-500" />{{ ctrans("Ran out of stock") }}</span>
 					</div>
 				</div>
 			</Popover>
