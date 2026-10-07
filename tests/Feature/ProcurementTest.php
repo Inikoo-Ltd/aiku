@@ -2841,12 +2841,54 @@ test('a rescue line orders at least a month of sales, never more than the partne
     $buckets  = GetPartnerStockCoverBuckets::make();
     $quantity = fn (string $spare) => DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
-        from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os,
+        from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available, 1 as packed_in) os,
             (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
     )->quantity;
 
     expect((int) $quantity('500'))->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
         ->and((int) $quantity('12'))->toBe(12);
+});
+
+test('a rescue line to a sister company is rounded up to the partner\'s carton while it can spare it and it lasts under a year', function () {
+    $stock       = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $sellerStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->partner, $stock);
+    $linkId      = DB::table('org_stock_has_org_supplier_products')->insertGetId([
+        'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $stock->id, 'supplier_product_id' => $this->orgSupplierProduct->supplier_product_id]),
+        'org_stock_id'            => $sellerStock->id,
+        'org_supplier_product_id' => $this->orgSupplierProduct->id,
+        'status'                  => true,
+        'local_priority'          => 1,
+        'created_at'              => now(),
+        'updated_at'              => now(),
+    ]);
+    $supplierProduct = $this->orgSupplierProduct->supplierProduct;
+    $unitsPerCarton  = $supplierProduct->units_per_carton;
+    $supplierProduct->updateQuietly(['units_per_carton' => 24]);
+
+    $buckets  = GetPartnerStockCoverBuckets::make();
+    $quantity = fn (string $spare, float $usage) => (int) DB::selectOne(
+        'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
+        from (select '.$usage.' as predicted_daily_usage) s, (select 3 as quantity_available, 2 as packed_in) os,
+            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, '.$sellerStock->id.' as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
+    )->quantity;
+
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    try {
+        $partner->is_manufacturing_hub = false;
+        $rounded   = $quantity('500', 0.1);
+        $unsold    = $quantity('500', 0.01);
+        $tooScarce = $quantity('10', 0.1);
+    } finally {
+        $partner->is_manufacturing_hub = $wasHub;
+    }
+
+    $supplierProduct->updateQuietly(['units_per_carton' => $unitsPerCarton]);
+    DB::table('org_stock_has_org_supplier_products')->where('id', $linkId)->delete();
+
+    expect($rounded)->toBe(12)
+        ->and($unsold)->toBe(1)
+        ->and($tooScarce)->toBe(3);
 });
 
 test('a sku on a rescue being prepared for another sister company is not offered again', function () {
