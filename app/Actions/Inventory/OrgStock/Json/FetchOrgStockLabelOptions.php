@@ -58,6 +58,12 @@ class FetchOrgStockLabelOptions extends OrgAction
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
+        abort_unless(
+            $orgStock->organisation_id === $warehouse->organisation_id
+            && $request->user()->authorisedOrganisations()->where('organisations.id', $warehouse->organisation_id)->exists(),
+            403
+        );
+
         return $this->handle($warehouse, $orgStock);
     }
 }
