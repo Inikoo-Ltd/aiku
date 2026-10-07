@@ -3132,6 +3132,28 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 });
 
+test('assigning a line to an artisan refreshes the manufacture floor tablets', function () {
+    $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $artisan                      = StoreEmployee::make()->action($this->organisation, $modelData);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $line     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 100]);
+
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastManufactureFloorChanged::class]);
+
+    actingAs($this->guest->getUser());
+    patch(route('grp.models.job-order-item.split', ['jobOrderItem' => $line->id]), ['assignments' => [
+        ['id' => $line->id, 'employee_id' => $artisan->id, 'quantity' => 100],
+    ]])->assertSessionHasNoErrors();
+
+    \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastManufactureFloorChanged::class, fn ($event) => $event->productionId == $this->production->id);
+});
+
 test('to produce board lists each artisan and their share of a split job order', function () {
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
