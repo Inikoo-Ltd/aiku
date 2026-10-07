@@ -6170,6 +6170,11 @@ describe('partner shopping list', function () {
             ->toBe([[15.0, 'Picked from stock'], [75.0, 'Queued to be made']]);
         expect(collect($rows->first()['progress_parts'][1]['details'])->pluck('label')->all())->toBe(['Requested', 'Sent to production']);
 
+        $rest->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $orderedIds = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]).'?'.http_build_query(['filter' => ['state' => 'ordered']]))
+            ->assertOk()->viewData('page')['props']['data']['data'])->pluck('id');
+        expect($orderedIds)->toContain($item->id);
+
         $sentCount = fn () => collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
             ->viewData('page')['props']['pageHead']['subNavigation'])->firstWhere('label', 'Sent')['number'];
         $withPiece = $sentCount();

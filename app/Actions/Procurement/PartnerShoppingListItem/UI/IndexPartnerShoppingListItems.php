@@ -87,7 +87,20 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->whereNull('partner_shopping_list_items.deleted_at')
             ->when($this->isSentView, fn ($query) => PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView()));
 
-        $stateCounts = $items()->selectRaw('state, count(*) as total')->groupBy('state')->pluck('total', 'state');
+        $stateOfLineOrPiece = fn ($query, array $values) => $query->where(function ($query) use ($values) {
+            $placeholders = implode(', ', array_fill(0, count($values), '?'));
+            $query->whereIn('partner_shopping_list_items.state', $values)
+                ->orWhereRaw("exists (with recursive pieces as (
+                        select id, state from partner_shopping_list_items as piece
+                        where piece.parent_id = partner_shopping_list_items.id and piece.deleted_at is null
+                        union all
+                        select piece.id, piece.state from partner_shopping_list_items as piece
+                        join pieces on piece.parent_id = pieces.id
+                        where piece.deleted_at is null
+                    ) select 1 from pieces where pieces.state in ($placeholders))", $values);
+        });
+        $stateCounts = collect([ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+            ->mapWithKeys(fn ($state) => [$state => $this->isSentView ? $stateOfLineOrPiece($items(), [$state])->count() : 0]);
         $rankCounts  = $items()
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->selectRaw('org_stocks.health_rank as rank, count(*) as total')
@@ -112,7 +125,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     $option(ShoppingListItemStateEnum::OPEN->value, __('Waiting for the partner'), $stateCounts[ShoppingListItemStateEnum::OPEN->value] ?? 0),
                     $option(ShoppingListItemStateEnum::ORDERED->value, __('Ordered'), $stateCounts[ShoppingListItemStateEnum::ORDERED->value] ?? 0),
                 ])),
-                'engine'  => fn ($query, array $values) => $query->whereIn('partner_shopping_list_items.state', $values),
+                'engine'  => $stateOfLineOrPiece,
             ]] : []),
             'category' => [
                 'label'   => __('Category'),
@@ -144,6 +157,8 @@ class IndexPartnerShoppingListItems extends OrgAction
      */
     public function handle(OrgPartner $orgPartner): LengthAwarePaginator
     {
+        $this->productionSteps = collect();
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('org_stocks.code', $value)
@@ -301,7 +316,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
         $leadTimeDays    = GetPartnerLeadTime::run($orgPartner)['days'];
 
-        if (!isset($this->productionSteps)) {
+        if ($this->productionSteps->isEmpty()) {
             $this->loadProductionSteps($paginator->getCollection());
         }
 
