@@ -464,6 +464,7 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
         ->and((int)$stock->packed_in)->toBe(2)
         ->and($stock->gross_weight)->toBe(550)
         ->and($stock->dimensions)->toEqual(['l' => 30, 'w' => 20, 'h' => 10])
+        ->and($stock->orgStocks()->pluck('unit_barcode')->unique()->all())->toBe(['4006381333931'])
         ->and((float)$supplierProduct->cost)->toBe(1.5)
         ->and($supplierProduct->units_per_carton)->toBe(80)
         ->and($supplierProduct->carton_weight)->toBe(23000)
