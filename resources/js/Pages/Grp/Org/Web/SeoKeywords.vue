@@ -8,14 +8,13 @@ import { computed, ref } from "vue"
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import SeoKeywordResearch from "@/Components/Seo/SeoKeywordResearch.vue"
 import TableSeoTrackedKeywords from "@/Components/Tables/Grp/Org/Web/TableSeoTrackedKeywords.vue"
 import SeoCompetitors from "@/Components/Seo/SeoCompetitors.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Navigation } from "@/types/Tabs"
-import type { SeoKeywordOptions, SeoKeywordRoutes, SeoResearchQuery } from "@/Components/Seo/types"
+import type { SeoKeywordDefaults, SeoKeywordOptions, SeoKeywordRoutes } from "@/Components/Seo/types"
 
 const props = defineProps<{
     title: string
@@ -24,8 +23,7 @@ const props = defineProps<{
     canEdit: boolean
     routes: SeoKeywordRoutes
     options: SeoKeywordOptions
-    query: SeoResearchQuery
-    research?: object | null
+    defaults: SeoKeywordDefaults
     tracked_keywords?: object
     competitors?: object[]
 }>()
@@ -34,7 +32,6 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tabComponent = computed(() => ({
-    research: SeoKeywordResearch,
     tracked_keywords: TableSeoTrackedKeywords,
     competitors: SeoCompetitors,
 })[currentTab.value])
@@ -53,5 +50,5 @@ const tabComponent = computed(() => ({
         :canEdit="canEdit"
         :routes="routes"
         :options="options"
-        :query="query" />
+        :defaults="defaults" />
 </template>

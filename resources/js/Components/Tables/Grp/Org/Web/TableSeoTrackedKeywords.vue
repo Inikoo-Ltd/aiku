@@ -11,9 +11,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
-import type { SeoKeywordOptions, SeoKeywordRoutes, SeoResearchQuery } from "@/Components/Seo/types"
+import type { SeoKeywordDefaults, SeoKeywordOptions, SeoKeywordRoutes } from "@/Components/Seo/types"
 
 type TrackedKeywordRow = {
     id: number
@@ -23,7 +22,6 @@ type TrackedKeywordRow = {
     device: string
     frequency: string
     is_active: boolean
-    avg_monthly_searches: number | null
     update_route: routeType & { method: string }
     delete_route: routeType & { method: string }
 }
@@ -34,15 +32,13 @@ const props = defineProps<{
     canEdit: boolean
     routes: SeoKeywordRoutes
     options: SeoKeywordOptions
-    query: SeoResearchQuery
+    defaults: SeoKeywordDefaults
 }>()
-
-const locale = useLocaleStore()
 
 const form = useForm({
     keyword: "",
-    country_code: props.query.country_code,
-    language_code: props.query.language_code,
+    country_code: props.defaults.country_code,
+    language_code: props.defaults.language_code,
     device: "mobile",
     frequency: "weekly",
 })
@@ -139,10 +135,6 @@ const labelOf = (options: { value: string, label: string }[], value: string) => 
                     <option v-for="option in options.frequencies" :key="option.value" :value="option.value">{{ option.label }}</option>
                 </select>
                 <span v-else>{{ labelOf(options.frequencies, trackedKeyword.frequency) }}</span>
-            </template>
-
-            <template #cell(avg_monthly_searches)="{ item: trackedKeyword }: { item: TrackedKeywordRow }">
-                <span class="tabular-nums">{{ trackedKeyword.avg_monthly_searches === null ? "-" : locale.number(trackedKeyword.avg_monthly_searches) }}</span>
             </template>
 
             <template #cell(is_active)="{ item: trackedKeyword }: { item: TrackedKeywordRow }">

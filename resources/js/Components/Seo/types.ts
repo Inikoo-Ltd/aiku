@@ -19,9 +19,7 @@ export type SeoKeywordRoutes = {
     add_competitor: routeType & { method: string }
 }
 
-export type SeoResearchQuery = {
-    seed: string
-    url: string
-    country_code: string
-    language_code: string
+export type SeoKeywordDefaults = {
+    country_code: string | null
+    language_code: string | null
 }

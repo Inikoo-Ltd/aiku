@@ -16,18 +16,12 @@ enum SeoKeywordsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case RESEARCH         = 'research';
     case TRACKED_KEYWORDS = 'tracked_keywords';
     case COMPETITORS      = 'competitors';
 
     public function blueprint(): array
     {
         return match ($this) {
-            SeoKeywordsTabsEnum::RESEARCH => [
-                'title'   => __('Research'),
-                'icon'    => 'fal fa-search',
-                'tooltip' => __('Search volumes and related keywords from Google Ads Keyword Planner, plus the matching queries this website already gets from Google Search Console.'),
-            ],
             SeoKeywordsTabsEnum::TRACKED_KEYWORDS => [
                 'title'   => __('Tracked keywords'),
                 'icon'    => 'fal fa-key',

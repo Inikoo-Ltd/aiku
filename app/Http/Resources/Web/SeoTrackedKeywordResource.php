@@ -21,7 +21,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property SeoKeywordDeviceEnum $device
  * @property SeoKeywordFrequencyEnum $frequency
  * @property bool $is_active
- * @property int|null $avg_monthly_searches
  * @property string|null $target_webpage_code
  */
 class SeoTrackedKeywordResource extends JsonResource
@@ -38,7 +37,6 @@ class SeoTrackedKeywordResource extends JsonResource
             'device'               => $this->device->value,
             'frequency'            => $this->frequency->value,
             'is_active'            => $this->is_active,
-            'avg_monthly_searches' => $this->avg_monthly_searches !== null ? (int) $this->avg_monthly_searches : null,
             'target_webpage_code'  => $this->target_webpage_code,
             'update_route'         => [
                 'name'       => 'grp.models.seo_tracked_keyword.update',

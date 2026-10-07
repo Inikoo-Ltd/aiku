@@ -32,12 +32,6 @@ class IndexSeoTrackedKeywords extends OrgAction
 
         return QueryBuilder::for(SeoTrackedKeyword::class)
             ->where('seo_tracked_keywords.shop_id', $shop->id)
-            ->leftJoin('seo_keywords', function ($join) {
-                $join->on('seo_keywords.shop_id', '=', 'seo_tracked_keywords.shop_id')
-                    ->on('seo_keywords.keyword', '=', 'seo_tracked_keywords.keyword')
-                    ->on('seo_keywords.country_code', '=', 'seo_tracked_keywords.country_code')
-                    ->on('seo_keywords.language_code', '=', 'seo_tracked_keywords.language_code');
-            })
             ->leftJoin('webpages', 'webpages.id', '=', 'seo_tracked_keywords.target_webpage_id')
             ->defaultSort('seo_tracked_keywords.keyword')
             ->select([
@@ -49,13 +43,11 @@ class IndexSeoTrackedKeywords extends OrgAction
                 'seo_tracked_keywords.frequency',
                 'seo_tracked_keywords.is_active',
                 'seo_tracked_keywords.created_at',
-                'seo_keywords.avg_monthly_searches',
                 'webpages.code as target_webpage_code',
             ])
             ->allowedSorts([
                 AllowedSort::field('keyword', 'seo_tracked_keywords.keyword'),
                 AllowedSort::field('country_code', 'seo_tracked_keywords.country_code'),
-                AllowedSort::field('avg_monthly_searches', 'seo_keywords.avg_monthly_searches'),
                 AllowedSort::field('created_at', 'seo_tracked_keywords.created_at'),
             ])
             ->allowedFilters([$globalSearch])
@@ -77,14 +69,13 @@ class IndexSeoTrackedKeywords extends OrgAction
                 ->withLabelRecord([__('keyword'), __('keywords')])
                 ->withEmptyState([
                     'title'       => __('No keywords tracked yet'),
-                    'description' => __('Add a keyword above, or use Track on a result in the Research tab.'),
+                    'description' => __('Add the keywords the team wants to rank for. Positions are checked once rank tracking is switched on.'),
                 ])
                 ->column(key: 'keyword', label: __('Keyword'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'country_code', label: __('Country'), sortable: true)
                 ->column(key: 'language_code', label: __('Language'))
                 ->column(key: 'device', label: __('Device'))
                 ->column(key: 'frequency', label: __('Check'), tooltip: __('How often the Google position is checked once rank tracking is switched on'), tooltipIcon: true)
-                ->column(key: 'avg_monthly_searches', label: __('Monthly searches'), tooltip: __('Average monthly Google searches from Google Ads Keyword Planner, for the country and language. Empty until the keyword has been researched'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'is_active', label: __('Active'))
                 ->column(key: 'actions', label: '', canBeHidden: false)
                 ->defaultSort('keyword');
