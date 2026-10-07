@@ -4,11 +4,12 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject } from "vue"
+import { computed, inject, nextTick, onMounted, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
+    faBarcode,
     faBoxOpen,
     faChair,
     faCube,
@@ -20,7 +21,9 @@ import {
     faPallet,
     faPeopleArrows,
     faPersonDolly,
+    faRulerCombined,
     faSeedling,
+    faWeightHanging,
 } from "@fal"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
@@ -28,8 +31,13 @@ import Image from "@common/Components/Image.vue"
 import Icon from "@/Components/Icon.vue"
 import BoxDisplay from "@/Components/DataDisplay/BoxDisplay.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
+import JsBarcode from "jsbarcode"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(
+    faBarcode,
     faBoxOpen,
     faChair,
     faCube,
@@ -41,7 +49,9 @@ library.add(
     faPallet,
     faPeopleArrows,
     faPersonDolly,
+    faRulerCombined,
     faSeedling,
+    faWeightHanging,
 )
 
 const props = defineProps<{
@@ -131,6 +141,26 @@ const props = defineProps<{
             description?: string
             full?: boolean
         }[]
+        barcodes?: {
+            level: string
+            label: string
+            number: string | null
+            weight: number | null
+            dimensions: {
+                h?: number
+                l?: number
+                w?: number
+                type?: string
+                units?: string
+            } | null
+            warning?: string | null
+        }[]
+        label_org_stocks?: {
+            id: number
+            code: string
+            organisation_code: string
+            warehouse_slug: string
+        }[]
     }
 }>()
 
@@ -202,6 +232,90 @@ const supplyingRows = computed(() => {
         },
     ].filter((row) => row.value)
 })
+
+const barcodeLevelLabels = computed<Record<string, string>>(() => ({
+    sko: ctrans("SKO"),
+    unit: ctrans("Unit"),
+    carton: ctrans("Carton"),
+}))
+
+const formatWeight = (grams: number | null) => {
+    if (!grams || grams <= 0) {
+        return null
+    }
+
+    return grams >= 1000 ? `${locale.number(grams / 1000)} kg` : `${locale.number(grams)} g`
+}
+
+const formatDimensions = (dimensions: { h?: number; l?: number; w?: number; units?: string } | null) => {
+    if (!dimensions || (!dimensions.l && !dimensions.w && !dimensions.h)) {
+        return null
+    }
+
+    const sides = [dimensions.l, dimensions.w, dimensions.h].map((side) => (side ? locale.number(side) : "-"))
+
+    return `${sides.join(" × ")} ${dimensions.units ?? ""}`.trim()
+}
+
+const renderBarcodes = () => {
+    props.data.barcodes?.forEach((barcode) => {
+        if (!barcode.number) {
+            return
+        }
+
+        JsBarcode("#supplier-product-barcode-" + barcode.level, barcode.number, {
+            format: /^\d{13}$/.test(barcode.number) ? "EAN13" : "CODE128",
+            lineColor: "#000",
+            width: 2,
+            height: 50,
+            displayValue: true,
+        })
+    })
+}
+
+onMounted(() => nextTick(renderBarcodes))
+
+const labelOrgStocks = computed(() => props.data.label_org_stocks ?? [])
+const selectedLabelOrgStockId = ref<number | null>(labelOrgStocks.value[0]?.id ?? null)
+
+const isPrintable = (barcode: { level: string; number: string | null }) =>
+    !!barcode.number && barcode.level !== "carton" && selectedLabelOrgStockId.value !== null
+
+const isLabelModalOpen = ref(false)
+const isLoadingLabelOptions = ref(false)
+const labelLevel = ref("unit")
+const labelOptions = ref<any>(null)
+const labelRoute = ref<routeType | null>(null)
+
+const openLabelModal = async (level: string) => {
+    const orgStock = labelOrgStocks.value.find((item) => item.id === selectedLabelOrgStockId.value)
+
+    if (!orgStock || isLoadingLabelOptions.value) {
+        return
+    }
+
+    isLoadingLabelOptions.value = true
+
+    try {
+        const { data } = await axios.get(route("grp.json.warehouse.org_stock.label_options", {
+            warehouse: orgStock.warehouse_slug,
+            orgStock: orgStock.id,
+        }))
+
+        labelOptions.value = data.options
+        labelRoute.value = data.label_route
+        labelLevel.value = level
+        isLabelModalOpen.value = true
+    } catch (error) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Could not load the label options"),
+            type: "error",
+        })
+    } finally {
+        isLoadingLabelOptions.value = false
+    }
+}
 
 const availabilityBadge = (isAvailable: boolean) =>
     isAvailable
@@ -323,6 +437,72 @@ const availabilityBadge = (isAvailable: boolean) =>
             </template>
         </section>
 
+        <section v-if="data.barcodes?.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div class="mb-3 flex flex-wrap items-center gap-2">
+                <h3 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <Icon :data="{ icon: 'fal fa-barcode' }" />
+                    {{ ctrans("Barcodes") }}
+                </h3>
+                <div v-if="labelOrgStocks.length > 1" class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
+                    <span class="text-gray-400">{{ ctrans("Print label for") }}</span>
+                    <button v-for="orgStock in labelOrgStocks" :key="orgStock.id" type="button"
+                        v-tooltip="orgStock.code"
+                        class="rounded-full px-2 py-0.5 font-medium ring-1 ring-inset transition"
+                        :class="selectedLabelOrgStockId === orgStock.id
+                            ? 'bg-[--app-accent] text-white ring-[--app-accent]'
+                            : 'bg-white text-gray-600 ring-gray-300 hover:ring-[--app-accent]'"
+                        @click="selectedLabelOrgStockId = orgStock.id">
+                        {{ orgStock.organisation_code }}
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-3 xl:grid-cols-[auto_auto_auto_1fr] xl:items-center xl:gap-x-4 xl:gap-y-3">
+                <template v-for="barcode in data.barcodes" :key="barcode.level">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
+                        <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
+                            v-tooltip="ctrans(barcode.label)">
+                            {{ barcodeLevelLabels[barcode.level] }}
+                        </div>
+
+                        <button v-if="isPrintable(barcode)"
+                            type="button"
+                            v-tooltip="ctrans('Print PDF label')"
+                            class="min-w-0 max-w-full justify-self-start transition hover:opacity-60 disabled:cursor-wait"
+                            :disabled="isLoadingLabelOptions"
+                            @click="openLabelModal(barcode.level)">
+                            <svg :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full"></svg>
+                        </button>
+                        <svg v-else-if="barcode.number" :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
+                        <div v-else class="flex h-14 items-center text-sm italic text-gray-400">{{ ctrans("No barcode") }}</div>
+
+                        <span v-if="formatWeight(barcode.weight)"
+                            class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-700">
+                            <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
+                            <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
+                        </span>
+                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+
+                        <span v-if="formatDimensions(barcode.dimensions)"
+                            v-tooltip="ctrans('Dimensions (L × W × H)')"
+                            class="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
+                            <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
+                            <span class="whitespace-nowrap font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
+                            <span v-if="barcode.dimensions?.type"
+                                class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
+                                {{ barcode.dimensions.type }}
+                            </span>
+                        </span>
+                        <span v-else-if="barcode.warning"
+                            class="inline-flex min-w-0 items-start gap-2 text-xs leading-snug text-amber-700">
+                            <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="mt-0.5 w-4 shrink-0 text-amber-500" />
+                            <span>{{ barcode.warning }}</span>
+                        </span>
+                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                    </div>
+                </template>
+            </div>
+        </section>
+
         <section v-if="data.trade_units.length" class="md:col-span-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 <Icon :data="{ icon: 'fal fa-cubes' }" />
@@ -389,5 +569,13 @@ const availabilityBadge = (isAvailable: boolean) =>
             </h3>
             <BoxDisplay :data="data.stats" />
         </section>
+
+        <OrgStockLabelModal
+            v-if="labelOptions && labelRoute"
+            :isOpen="isLabelModalOpen"
+            :level="labelLevel"
+            :labelRoute="labelRoute"
+            :options="labelOptions"
+            @onClose="isLabelModalOpen = false" />
     </div>
 </template>
