@@ -114,7 +114,10 @@ class IndexWebsiteVisitors extends OrgAction
                 $query->whereStartWith('website_visitors.session_id', $value)
                     ->orWhereStartWith('website_visitors.ip_hash', $value)
                     ->orWhereStartWith('website_visitors.country_code', $value)
-                    ->orWhereStartWith('website_visitors.city', $value);
+                    ->orWhereStartWith('website_visitors.city', $value)
+                    ->orWhereStartWith('web_users.username', $value)
+                    ->orWhereAnyWordStartWith('web_users.contact_name', $value)
+                    ->orWhereAnyWordStartWith('customers.contact_name', $value);
             });
         });
 
@@ -137,10 +140,15 @@ class IndexWebsiteVisitors extends OrgAction
         }
 
         return $queryBuilder
+            ->leftJoin('web_users', 'web_users.id', '=', 'website_visitors.web_user_id')
+            ->leftJoin('customers', 'customers.id', '=', 'web_users.customer_id')
             ->defaultSort('-first_seen_at')
             ->select([
-                'website_visitors.*'
+                'website_visitors.*',
+                'web_users.slug as web_user_slug',
+                'customers.slug as customer_slug',
             ])
+            ->selectRaw("COALESCE(NULLIF(web_users.contact_name, ''), NULLIF(customers.contact_name, ''), web_users.username) as web_user_contact_name")
             ->allowedSorts(['first_seen_at', 'last_seen_at', 'page_views', 'duration_seconds', 'device_type', 'country_code', 'traffic_source_type'])
             ->allowedFilters([$globalSearch, 'device_type', 'browser', 'os', 'country_code', 'is_bounce', 'is_new_visitor'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -167,6 +175,7 @@ class IndexWebsiteVisitors extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->column(key: 'session_id', label: __('Session ID'), canBeHidden: false, searchable: true)
+                ->column(key: 'web_user', label: __('Web user'), tooltip: __('The account the visitor was logged in to when the visit started'), canBeHidden: false, tooltipIcon: true)
                 ->column(key: 'device_type', label: __('Device'), canBeHidden: false, sortable: true)
                 ->column(key: 'browser', label: __('Browser'), canBeHidden: false)
                 ->column(key: 'os', label: __('OS'), canBeHidden: false)
