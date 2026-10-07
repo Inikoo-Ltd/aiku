@@ -422,6 +422,18 @@ trait WithTabsBox
                         'type'        => 'number',
                     ],
                 ],
+                'children'      => $children->map(fn ($child) => [
+                    'label'         => $child->name,
+                    'slug'          => $child->slug,
+                    'currency_code' => $child->currency?->code ?? $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug' => 'returned',
+                            'value'    => ($child instanceof Shop ? $child->stats : $child->procurementStats)?->number_return_delivery_notes_state_returned ?? 0,
+                            'type'     => 'number',
+                        ],
+                    ]
+                ])->values()->toArray(),
             ]
         ];
     }

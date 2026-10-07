@@ -1526,7 +1526,9 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
         ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth) + 5000, 0.05);
 
     get(route('grp.org.dashboard.show', $this->organisation->slug))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target')
+            ->where('dashboard.super_blocks.0.tabs_box.navigation', fn ($boxes) => collect(collect($boxes)->firstWhere('tabs.0.tab_slug', 'returned')['children'] ?? [])
+                ->isNotEmpty() && collect(collect($boxes)->firstWhere('tabs.0.tab_slug', 'returned')['children'])->every(fn ($child) => is_int($child['tabs'][0]['value']))));
 
     $secondShop->update(['state' => ShopStateEnum::CLOSED]);
 });
@@ -2043,7 +2045,7 @@ test('catalogue top listed and top sold tabs read the hourly rankings with the s
     $everything = '20000101-20991231';
     foreach (
         [
-            route('grp.catalogue.show'),
+            route('grp.dashboard.catalogue.show'),
             route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $this->shop->slug]),
         ] as $url
     ) {
@@ -2062,7 +2064,7 @@ test('catalogue top listed and top sold tabs read the hourly rankings with the s
         }
     }
 
-    $listedFamilies = $rows(route('grp.catalogue.show').'?tab=top_listed_families', 'top_listed_families', ['id', 'total_listed', 'total_customers']);
+    $listedFamilies = $rows(route('grp.dashboard.catalogue.show').'?tab=top_listed_families', 'top_listed_families', ['id', 'total_listed', 'total_customers']);
     expect(collect($listedFamilies)->firstWhere('id', (float) $this->family->id))->toMatchArray(['total_listed' => 2.0, 'total_customers' => (float) collect($customers)->unique('id')->count()]);
 });
 

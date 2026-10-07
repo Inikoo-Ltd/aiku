@@ -99,7 +99,7 @@ class ShowCatalogueInGroup extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.catalogue.show',
+                            'name'       => 'grp.dashboard.catalogue.show',
                             'parameters' => []
                         ],
                         'label' => __('Catalogue'),

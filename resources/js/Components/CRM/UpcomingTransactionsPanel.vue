@@ -6,7 +6,7 @@ import { faGift, faRepeat, faPencil, faTrash, faPlus, faCubes, faCalendarPlus } 
 import { faFloppyDisk } from '@fortawesome/free-solid-svg-icons'
 import { faStickyNote } from "@fas"
 import { faSpinnerThird } from "@fad"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -47,8 +47,8 @@ const fetchTransactions = async () => {
         total.value = response.data?.meta?.total ?? transactions.value.length
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to load upcoming transactions"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Failed to load upcoming transactions"),
             type: "error",
         })
     } finally {
@@ -111,8 +111,8 @@ const deleteTransaction = async (transaction: UpcomingTransaction) => {
         await axios.delete(route(transaction.delete.name, transaction.delete.parameters))
 
         notify({
-            title: trans("Success"),
-            text: trans("Upcoming transaction deleted"),
+            title: ctrans("Success"),
+            text: ctrans("Upcoming transaction deleted"),
             type: "success",
         })
 
@@ -120,8 +120,8 @@ const deleteTransaction = async (transaction: UpcomingTransaction) => {
         await fetchTransactions()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to delete, please try again"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Failed to delete, please try again"),
             type: "error",
         })
     } finally {
@@ -172,16 +172,16 @@ const submitNote =  () => {
                 @click="openListModal"
                 class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
             >
-                <FontAwesomeIcon icon="fal fa-calendar-plus" class="text-xs text-indigo-500" fixed-width />
-                {{ trans("Upcoming Transactions") }}
+                <FontAwesomeIcon icon="fal fa-calendar-plus" class="text-xs text-[--app-accent]" fixed-width />
+                {{ ctrans("Upcoming Transactions") }}
                 <FontAwesomeIcon v-if="isLoading" icon="fad fa-spinner-third" class="animate-spin text-xs text-gray-400" fixed-width />
                 <span
                     v-else-if="total"
-                    class="rounded-full bg-indigo-50 px-1.5 py-0.5 text-xs font-semibold text-indigo-600 tabular-nums"
+                    class="rounded-full bg-[--app-accent-soft] px-1.5 py-0.5 text-xs font-semibold text-[--app-accent-strong] tabular-nums"
                 >
                     {{ total }}
                 </span>
-                <span class="text-xs font-medium text-indigo-600">{{ trans("View list") }}</span>
+                <span class="text-xs font-medium text-[--app-accent-strong] hover:underline">{{ ctrans("View list") }}</span>
             </button>
         </slot>
 
@@ -200,7 +200,7 @@ const submitNote =  () => {
                 <div class="mb-4 flex items-start justify-between gap-3">
                     <div>
                         <h2 class="flex items-center gap-2 text-xl font-bold text-gray-900">
-                            {{ trans("Upcoming Transactions") }}
+                            {{ ctrans("Upcoming Transactions") }}
                             <span
                                 v-if="total"
                                 class="rounded-full bg-indigo-50 px-2 py-0.5 text-sm font-semibold text-indigo-600 tabular-nums"
@@ -209,12 +209,12 @@ const submitNote =  () => {
                             </span>
                         </h2>
                         <p class="mt-1 text-sm text-gray-500">
-                            {{ trans("Products reserved as a gift or queued for the customer's next order.") }}
+                            {{ ctrans("Products reserved as a gift or queued for the customer's next order.") }}
                         </p>
                     </div>
 
                     <Button
-                        :label="trans('Add')"
+                        :label="ctrans('Add')"
                         icon="plus"
                         style="create"
                         size="s"
@@ -260,7 +260,7 @@ const submitNote =  () => {
                                     :class="upcomingTransactionTypeMeta[transaction.type].badgeClass"
                                 >
                                     <FontAwesomeIcon :icon="upcomingTransactionTypeMeta[transaction.type].icon" class="text-xs" fixed-width />
-                                    {{ trans(upcomingTransactionTypeMeta[transaction.type].label) }}
+                                    {{ ctrans(upcomingTransactionTypeMeta[transaction.type].label) }}
                                 </span>
                             </div>
 
@@ -269,10 +269,10 @@ const submitNote =  () => {
                             </div>
 
                             <p v-if="transaction.public_notes" class="mt-1 text-xs italic text-gray-500">
-                                {{trans('Public Notes')}}: {{ transaction.public_notes }}
+                                {{ctrans('Public Notes')}}: {{ transaction.public_notes }}
                             </p>
                             <p v-if="transaction.private_notes" class="mt-1 text-xs italic text-gray-500">
-                                {{trans('Private Notes')}}: {{ transaction.private_notes }}
+                                {{ctrans('Private Notes')}}: {{ transaction.private_notes }}
                             </p>
                         </div>
 
@@ -280,15 +280,15 @@ const submitNote =  () => {
                             v-if="confirmingDeleteId === transaction.id"
                             class="flex flex-shrink-0 items-center gap-2"
                         >
-                            <span class="text-xs text-gray-600">{{ trans("Delete?") }}</span>
+                            <span class="text-xs text-gray-600">{{ ctrans("Delete?") }}</span>
                             <Button
-                                :label="trans('Cancel')"
+                                :label="ctrans('Cancel')"
                                 :style="'tertiary'"
                                 size="xs"
                                 @click="() => (confirmingDeleteId = null)"
                             />
                             <Button
-                                :label="trans('Delete')"
+                                :label="ctrans('Delete')"
                                 :style="'red'"
                                 size="xs"
                                 :loading="deletingId === transaction.id"
@@ -301,7 +301,7 @@ const submitNote =  () => {
                             <button
                                 type="button"
                                 @click="() => openEditForm(transaction)"
-                                v-tooltip="trans('Edit')"
+                                v-tooltip="ctrans('Edit')"
                                 class="rounded p-1.5 text-gray-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600"
                             >
                                 <FontAwesomeIcon icon="fal fa-pencil" class="text-xs" fixed-width />
@@ -309,7 +309,7 @@ const submitNote =  () => {
                             <button
                                 type="button"
                                 @click="() => (confirmingDeleteId = transaction.id)"
-                                v-tooltip="trans('Delete')"
+                                v-tooltip="ctrans('Delete')"
                                 class="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                             >
                                 <FontAwesomeIcon icon="fal fa-trash" class="text-xs" fixed-width />
@@ -325,8 +325,8 @@ const submitNote =  () => {
                     class="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-8 text-center transition-colors hover:border-indigo-300 hover:bg-gray-50"
                 >
                     <FontAwesomeIcon icon="fal fa-cubes" class="text-2xl text-gray-300" fixed-width />
-                    <span class="text-sm text-gray-500">{{ trans("No upcoming transactions yet") }}</span>
-                    <span class="text-sm font-medium text-indigo-600">{{ trans("Add the first one") }}</span>
+                    <span class="text-sm text-gray-500">{{ ctrans("No upcoming transactions yet") }}</span>
+                    <span class="text-sm font-medium text-indigo-600">{{ ctrans("Add the first one") }}</span>
                 </button>
 
                 <div v-if="temporaryNote?.field" class="pt-3 mt-3">
@@ -363,7 +363,7 @@ const submitNote =  () => {
                 </div>
 
                 <div class="mt-5 flex justify-end">
-                    <Button :label="trans('Close')" :style="'tertiary'" @click="closeModal" />
+                    <Button :label="ctrans('Close')" :style="'tertiary'" @click="closeModal" />
                 </div>
             </div>
         </Modal>
