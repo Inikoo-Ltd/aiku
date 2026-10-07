@@ -8,7 +8,7 @@ import {
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard,
+    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -34,7 +34,7 @@ library.add(
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard,
+    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide,
 )
 
 const props = withDefaults(defineProps<{
@@ -545,6 +545,37 @@ const saveDraftNow = () => {
 }
 
 const isShortcutsDialogVisible = ref(false)
+const isFullScreen = ref(false)
+
+const enterFullScreen = async () => {
+    isFullScreen.value = true
+    try {
+        if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen()
+        }
+    } catch {
+        return
+    }
+}
+
+const exitFullScreen = async () => {
+    isFullScreen.value = false
+    try {
+        if (document.fullscreenElement) {
+            await document.exitFullscreen()
+        }
+    } catch {
+        return
+    }
+}
+
+const toggleFullScreen = () => isFullScreen.value ? exitFullScreen() : enterFullScreen()
+
+const onFullScreenChange = () => {
+    if (!document.fullscreenElement) {
+        isFullScreen.value = false
+    }
+}
 
 const moveSelectedModule = (direction: -1 | 1) => {
     const location = findModuleLocation(selectedModuleUuid.value)
@@ -590,12 +621,16 @@ const shortcuts: WorkshopShortcut[] = [
         run: () => moveSelectedModule(1), isAvailable: () => !!selectedModule.value,
     },
     {
-        id: 'deselect', group: 'Blocks', label: 'Deselect', combos: [['Escape']],
-        run: () => clearSelection(), isAvailable: hasSelection,
+        id: 'deselect', group: 'Blocks', label: 'Deselect or exit full screen', combos: [['Escape']],
+        run: () => hasSelection() ? clearSelection() : exitFullScreen(), isAvailable: () => hasSelection() || isFullScreen.value,
     },
     {
         id: 'device', group: 'View', label: 'Switch between desktop and mobile', combos: [['Mod', 'Shift', 'M']],
         run: () => device.value = device.value === 'desktop' ? 'mobile' : 'desktop',
+    },
+    {
+        id: 'full-screen', group: 'View', label: 'Full screen', combos: [['F11']],
+        run: toggleFullScreen, allowWhileTyping: true,
     },
     {
         id: 'structure', group: 'View', label: 'Show or hide structure', combos: [['Mod', 'Shift', 'O']],
@@ -669,7 +704,7 @@ watch(
 
 const wrapperRef = ref<HTMLElement | null>(null)
 const wrapperTop = ref(177)
-const wrapperHeight = computed(() => wrapperTop.value < window.innerHeight / 2 ? `calc(100vh - ${wrapperTop.value}px)` : '100vh')
+const wrapperHeight = computed(() => isFullScreen.value ? '100vh' : wrapperTop.value < window.innerHeight / 2 ? `calc(100vh - ${wrapperTop.value}px)` : '100vh')
 
 onMounted(async () => {
     await nextTick()
@@ -680,6 +715,7 @@ onMounted(async () => {
     }
     listenForShortcuts(window)
     window.addEventListener('beforeunload', onBeforeUnload)
+    document.addEventListener('fullscreenchange', onFullScreenChange)
     emits('ready', true)
 })
 
@@ -695,6 +731,10 @@ onBeforeUnmount(() => {
         clearTimeout(videoThumbnailTimer)
     }
     window.removeEventListener('beforeunload', onBeforeUnload)
+    document.removeEventListener('fullscreenchange', onFullScreenChange)
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => undefined)
+    }
 })
 
 defineExpose({
@@ -706,7 +746,7 @@ defineExpose({
 
 <template>
     <div>
-        <div ref="wrapperRef" class="flex flex-col border-t border-gray-200 bg-white" :style="{ height: wrapperHeight }">
+        <div ref="wrapperRef" class="flex flex-col border-t border-gray-200 bg-white" :class="isFullScreen ? 'fixed inset-0 z-[45]' : ''" :style="{ height: wrapperHeight }">
             <div class="flex h-12 shrink-0 items-center justify-between gap-x-3 border-b border-gray-200 bg-white px-3">
                 <div class="flex items-center gap-x-1">
                     <button type="button" class="h-8 w-8 rounded text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
@@ -763,6 +803,13 @@ defineExpose({
                      <button type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-600 hover:bg-gray-100"
                         v-tooltip="`${ctrans('Keyboard shortcuts')} (?)`" :aria-label="ctrans('Keyboard shortcuts')" @click="isShortcutsDialogVisible = true">
                         <FontAwesomeIcon icon="fal fa-keyboard" fixed-width aria-hidden="true" />
+                    </button>
+                    <button type="button" class="flex h-8 items-center gap-x-1.5 rounded transition-colors"
+                        :class="isFullScreen ? 'bg-gray-900 px-2.5 text-[13px] text-white hover:bg-gray-700' : 'w-8 justify-center text-gray-600 hover:bg-gray-100'"
+                        v-tooltip="isFullScreen ? '' : `${ctrans('Full screen')} (F11)`" :aria-label="isFullScreen ? ctrans('Exit full screen') : ctrans('Full screen')"
+                        :aria-pressed="isFullScreen" @click="toggleFullScreen">
+                        <FontAwesomeIcon :icon="isFullScreen ? 'fal fa-compress-wide' : 'fal fa-expand-wide'" fixed-width aria-hidden="true" />
+                        <span v-if="isFullScreen">{{ ctrans('Exit full screen') }}</span>
                     </button>
                     <span class="mx-1 h-5 w-px bg-gray-200" />
                     <slot name="toolbar" />
