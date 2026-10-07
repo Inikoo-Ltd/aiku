@@ -6,7 +6,9 @@ use App\Actions\Catalogue\Shop\Traits\WithShopifyExternalShopApi;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -20,6 +22,10 @@ class GetShopifyOrdersInShop extends OrgAction
     public const int DEFAULT_ORDER_FROM_DAYS = 30;
 
     public const int CANCELLED_LOOKBACK_DAYS = 2;
+
+    public const string FULFILLMENT_REQUESTED = 'FULFILLMENT_REQUESTED';
+
+    public const string CANCELLATION_REQUESTED = 'CANCELLATION_REQUESTED';
 
     public string $commandSignature = 'external_shop:shopify_orders {shop}';
 
@@ -42,19 +48,24 @@ class GetShopifyOrdersInShop extends OrgAction
             return $summary;
         }
 
-        $orderFromDays = max((int) Arr::get($shop->settings, 'shopify.order_from_days', self::DEFAULT_ORDER_FROM_DAYS), 1);
+        if ($this->isShopifyExternalShopFulfilmentService($shop)) {
+            $summary = $this->importFulfillmentRequests($shop, $shopifyUser, $command);
+            $summary = $this->answerCancellationRequests($shop, $shopifyUser, $summary, $command);
+        } else {
+            $orderFromDays = max((int) Arr::get($shop->settings, 'shopify.order_from_days', self::DEFAULT_ORDER_FROM_DAYS), 1);
 
-        $newOrders = $this->getAllShopifyExternalShopOrders($shopifyUser, $this->getNewOrdersSearch($orderFromDays));
+            $newOrders = $this->getAllShopifyExternalShopOrders($shopifyUser, $this->getNewOrdersSearch($orderFromDays));
 
-        if ($message = Arr::get($newOrders, 'message')) {
-            $command?->error('Shopify orders read incomplete: '.$message);
-            Sentry::captureMessage("Shopify orders read incomplete ($shop->slug): $message");
-        }
+            if ($message = Arr::get($newOrders, 'message')) {
+                $command?->error('Shopify orders read incomplete: '.$message);
+                Sentry::captureMessage("Shopify orders read incomplete ($shop->slug): $message");
+            }
 
-        foreach ($newOrders['orders'] as $shopifyOrder) {
-            $status = $this->importOrder($shop, $shopifyOrder, $command);
+            foreach ($newOrders['orders'] as $shopifyOrder) {
+                $status = $this->importOrder($shop, $shopifyOrder, $command);
 
-            $summary[$status] = ($summary[$status] ?? 0) + 1;
+                $summary[$status] = ($summary[$status] ?? 0) + 1;
+            }
         }
 
         $cancelledOrders = $this->getAllShopifyExternalShopOrders($shopifyUser, $this->getCancelledOrdersSearch());
@@ -68,6 +79,132 @@ class GetShopifyOrdersInShop extends OrgAction
                 $command?->info('Order '.$order->reference.' cancelled');
                 $summary['cancelled'] = ($summary['cancelled'] ?? 0) + 1;
             }
+        }
+
+        return $summary;
+    }
+
+    /**
+     * With a fulfilment service Shopify asks us to fulfil each order sent to our location: the order is imported
+     * and only then accepted, so a request we cannot take yet waits in Shopify and is tried again on the next run.
+     *
+     * @return array<string, int>
+     */
+    private function importFulfillmentRequests(Shop $shop, ShopifyUser $shopifyUser, ?Command $command): array
+    {
+        $summary  = [];
+        $requests = $this->getShopifyExternalShopAssignedFulfillmentOrders($shopifyUser, self::FULFILLMENT_REQUESTED);
+
+        if ($message = Arr::get($requests, 'message')) {
+            $command?->error('Shopify fulfilment requests read incomplete: '.$message);
+            Sentry::captureMessage("Shopify fulfilment requests read incomplete ($shop->slug): $message");
+        }
+
+        foreach ($requests['fulfillment_orders'] as $fulfillmentOrder) {
+            $status = $this->importFulfillmentRequest($shop, $shopifyUser, $fulfillmentOrder, $command);
+
+            $summary[$status] = ($summary[$status] ?? 0) + 1;
+        }
+
+        return $summary;
+    }
+
+    private function importFulfillmentRequest(Shop $shop, ShopifyUser $shopifyUser, array $fulfillmentOrder, ?Command $command): string
+    {
+        $fulfillmentOrderId = (string) Arr::get($fulfillmentOrder, 'id');
+
+        if (Arr::get($fulfillmentOrder, 'lineItems.pageInfo.hasNextPage')) {
+            $command?->error("Shopify fulfilment request $fulfillmentOrderId has too many lines to read");
+            Sentry::captureMessage("Shopify fulfilment request $fulfillmentOrderId has too many lines to read ($shop->slug)");
+
+            return 'skipped';
+        }
+
+        $status = $this->importOrder($shop, $this->getShopifyOrderFromFulfillmentOrder($fulfillmentOrder), $command);
+
+        if ($status === 'exists') {
+            $order = Order::where('shop_id', $shop->id)->where('marketplace_id', Arr::get($fulfillmentOrder, 'order.id'))->first();
+
+            if (!in_array($fulfillmentOrderId, Arr::get($order?->data, 'shopify_fulfillment_order_ids', []), true)) {
+                Sentry::captureMessage("Shopify fulfilment request $fulfillmentOrderId is for an order already imported with other lines ($shop->slug)");
+
+                return 'needs_review';
+            }
+        }
+
+        if (!in_array($status, ['created', 'exists'])) {
+            return $status;
+        }
+
+        if ($message = Arr::get($this->acceptShopifyExternalShopFulfillmentRequest($shopifyUser, $fulfillmentOrderId), 'message')) {
+            $command?->error("Shopify fulfilment request $fulfillmentOrderId not accepted: $message");
+            Sentry::captureMessage("Shopify fulfilment request $fulfillmentOrderId not accepted ($shop->slug): $message");
+
+            return 'not_accepted';
+        }
+
+        return $status === 'created' ? 'created' : 'accepted';
+    }
+
+    /**
+     * Only the lines Shopify sent to our location are ours to ship, so the order is read from the fulfilment order.
+     */
+    public function getShopifyOrderFromFulfillmentOrder(array $fulfillmentOrder): array
+    {
+        $shopifyOrder = Arr::get($fulfillmentOrder, 'order', []);
+
+        $shopifyOrder['fulfillmentOrders'] = ['nodes' => [['id' => Arr::get($fulfillmentOrder, 'id')]]];
+        $shopifyOrder['lineItems']         = [
+            'nodes' => collect(Arr::get($fulfillmentOrder, 'lineItems.nodes', []))
+                ->map(fn (array $fulfillmentOrderLineItem) => [
+                    ...Arr::get($fulfillmentOrderLineItem, 'lineItem', []),
+                    'currentQuantity'     => (int) Arr::get($fulfillmentOrderLineItem, 'remainingQuantity', 0),
+                    'unfulfilledQuantity' => (int) Arr::get($fulfillmentOrderLineItem, 'remainingQuantity', 0),
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        return $shopifyOrder;
+    }
+
+    /**
+     * An order still being prepared is cancelled and the request accepted; one already on its way is refused.
+     * A request for an order dropshipping took before the switch is left for a person to decide.
+     *
+     * @param array<string, int> $summary
+     * @return array<string, int>
+     */
+    private function answerCancellationRequests(Shop $shop, ShopifyUser $shopifyUser, array $summary, ?Command $command): array
+    {
+        $requests = $this->getShopifyExternalShopAssignedFulfillmentOrders($shopifyUser, self::CANCELLATION_REQUESTED);
+
+        foreach ($requests['fulfillment_orders'] as $fulfillmentOrder) {
+            $fulfillmentOrderId = (string) Arr::get($fulfillmentOrder, 'id');
+
+            $order = Order::where('shop_id', $shop->id)->where('marketplace_id', Arr::get($fulfillmentOrder, 'order.id'))->first();
+
+            if (!$order) {
+                if (Order::where('platform_order_id', $fulfillmentOrderId)->exists()) {
+                    Sentry::captureMessage("Shopify cancellation request $fulfillmentOrderId is for a dropshipping order, answer it by hand ($shop->slug)");
+                    $summary['cancellation_needs_review'] = ($summary['cancellation_needs_review'] ?? 0) + 1;
+
+                    continue;
+                }
+
+                $result = $this->acceptShopifyExternalShopCancellationRequest($shopifyUser, $fulfillmentOrderId);
+            } elseif ($order->state === OrderStateEnum::CANCELLED || CancelOrderFromShopifyExternalShop::run($order)) {
+                $result = $this->acceptShopifyExternalShopCancellationRequest($shopifyUser, $fulfillmentOrderId);
+                $command?->info('Order '.$order->reference.' cancelled');
+            } else {
+                $result = $this->rejectShopifyExternalShopCancellationRequest($shopifyUser, $fulfillmentOrderId, __('The order has already been dispatched.'));
+            }
+
+            if ($message = Arr::get($result, 'message')) {
+                Sentry::captureMessage("Shopify cancellation request $fulfillmentOrderId not answered ($shop->slug): $message");
+            }
+
+            $summary['cancellation_answered'] = ($summary['cancellation_answered'] ?? 0) + 1;
         }
 
         return $summary;

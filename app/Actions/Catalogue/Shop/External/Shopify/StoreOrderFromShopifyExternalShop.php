@@ -122,6 +122,7 @@ class StoreOrderFromShopifyExternalShop extends OrgAction
                     'totalShippingPriceSet',
                     'totalDiscountsSet',
                 ]),
+                'shopify_fulfillment_order_ids' => $this->getFulfillmentOrderIds($shopifyOrder),
                 'platform_milestones' => [
                     'draft_created_at' => Arr::get($shopifyOrder, 'createdAt'),
                     'placed_at'        => Arr::get($shopifyOrder, 'processedAt'),
@@ -178,9 +179,17 @@ class StoreOrderFromShopifyExternalShop extends OrgAction
      * While a store moves from dropshipping to an external shop, an order the dropshipping channel already
      * took (it keeps the Shopify fulfilment order id) must not be imported a second time.
      */
+    /**
+     * @return array<int, string>
+     */
+    public function getFulfillmentOrderIds(array $shopifyOrder): array
+    {
+        return collect(Arr::get($shopifyOrder, 'fulfillmentOrders.nodes', []))->pluck('id')->filter()->values()->all();
+    }
+
     private function isTakenByDropshipping(array $shopifyOrder): bool
     {
-        $fulfillmentOrderIds = collect(Arr::get($shopifyOrder, 'fulfillmentOrders.nodes', []))->pluck('id')->filter()->values()->all();
+        $fulfillmentOrderIds = $this->getFulfillmentOrderIds($shopifyOrder);
 
         if (empty($fulfillmentOrderIds)) {
             return false;

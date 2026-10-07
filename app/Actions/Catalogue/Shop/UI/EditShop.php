@@ -114,6 +114,7 @@ class EditShop extends OrgAction
         $isShopifyDropshipping = (bool) $externalShopifyUser?->customer_id;
         $isShopifyConnected    = $externalShopifyUser && !$isShopifyDropshipping && str_starts_with((string) $externalShopifyUser->password, ConnectShopifyExternalShop::SHOPIFY_ACCESS_TOKEN_PREFIX);
         $shopifyAuthUrl        = $externalShopifyUser && !$isShopifyDropshipping ? ConnectShopifyExternalShop::make()->getAuthUrl($externalShopifyUser) : null;
+        $shopifyBlockedReason  = $externalShopifyUser ? ConnectShopifyExternalShop::make()->getShopifyExternalShopBlockedReason($externalShopifyUser) : null;
         $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
@@ -859,13 +860,11 @@ class EditShop extends OrgAction
                                         ],
                                     ],
                                     'revisit_after_save' => true,
-                                    'showWarning'        => $isShopifyDropshipping || !is_null($shop->external_shop_connection_failed_at),
-                                    'warningTitle'       => $isShopifyDropshipping
-                                        ? __('This store is still a dropshipping channel')
+                                    'showWarning'        => $shopifyBlockedReason || !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle'       => $shopifyBlockedReason
+                                        ? __('Orders, stock and shipping are not synced')
                                         : __('We are having troubles connecting to the platform'),
-                                    'warningBody'        => $isShopifyDropshipping
-                                        ? __('Orders, stock and shipping are not synced while the store is an open dropshipping channel. Close that channel, then save the store here to connect it to this shop.')
-                                        : __('Error Message').": ".$shop->external_shop_connection_error
+                                    'warningBody'        => $shopifyBlockedReason ?: __('Error Message').": ".$shop->external_shop_connection_error
                                 ],
                                 ...($shopifyAuthUrl ? [
                                     'shopify__connect' => [

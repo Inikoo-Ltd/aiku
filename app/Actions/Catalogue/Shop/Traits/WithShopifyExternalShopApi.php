@@ -67,7 +67,186 @@ trait WithShopifyExternalShopApi
             return __('This Shopify store is still an open dropshipping channel, close that channel before using it as an external shop');
         }
 
+        if ($shopifyUser->customer_id && $shopifyUser->shopify_fulfilment_service_id
+            && Arr::get($shopifyUser->externalShop?->settings, 'shopify.fulfilment_service_id') !== $shopifyUser->shopify_fulfilment_service_id) {
+            return __('The fulfilment location of this Shopify store still sends its orders to dropshipping; take it over with external_shop:shopify_take_over_fulfilment_service');
+        }
+
         return null;
+    }
+
+    public function isShopifyExternalShopFulfilmentService(Shop $shop): bool
+    {
+        return (bool) Arr::get($shop->settings, 'shopify.fulfilment_service_id');
+    }
+
+    public function getShopifyExternalShopFulfilmentServiceCallbackUrl(ShopifyUser $shopifyUser): string
+    {
+        return 'https://'.config('app.domain').'/webhooks/shopify-external-shop/'.$shopifyUser->id;
+    }
+
+    /**
+     * @return array{id?: string, callbackUrl?: string, location?: array{id: string, name: string}, message?: string}
+     */
+    public function getShopifyExternalShopFulfilmentService(ShopifyUser $shopifyUser, string $fulfilmentServiceId): array
+    {
+        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            query ($id: ID!) {
+                fulfillmentService(id: $id) {
+                    id
+                    callbackUrl
+                    inventoryManagement
+                    location { id name }
+                }
+            }
+        ', ['id' => $fulfilmentServiceId]);
+
+        if (Arr::has($response, 'message')) {
+            return $response;
+        }
+
+        return Arr::get($response, 'fulfillmentService') ?? ['message' => __('Fulfilment service not found in Shopify')];
+    }
+
+    public function updateShopifyExternalShopFulfilmentServiceCallback(ShopifyUser $shopifyUser, string $fulfilmentServiceId, string $callbackUrl): array
+    {
+        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            mutation ($id: ID!, $callbackUrl: URL) {
+                fulfillmentServiceUpdate(id: $id, callbackUrl: $callbackUrl) {
+                    fulfillmentService { id callbackUrl }
+                    userErrors { field message }
+                }
+            }
+        ', [
+            'id'          => $fulfilmentServiceId,
+            'callbackUrl' => $callbackUrl,
+        ]);
+
+        if ($userErrors = Arr::get($response, 'fulfillmentServiceUpdate.userErrors')) {
+            return ['message' => $this->getShopifyExternalShopUserErrorMessage($userErrors)];
+        }
+
+        return $response;
+    }
+
+    /**
+     * Fulfilment orders Shopify assigned to our fulfilment service location, with the whole order they belong to.
+     *
+     * @return array{fulfillment_orders: array<int, array<string, mixed>>, complete: bool, message?: string}
+     */
+    public function getShopifyExternalShopAssignedFulfillmentOrders(ShopifyUser $shopifyUser, string $assignmentStatus): array
+    {
+        $fulfillmentOrders = [];
+        $cursor            = null;
+
+        for ($page = 0; $page < $this->shopifyMaxPages; $page++) {
+            $response = $this->shopifyExternalShopRequest($shopifyUser, '
+                query ($first: Int!, $after: String, $assignmentStatus: FulfillmentOrderAssignmentStatus!, $lineItems: Int!) {
+                    shop {
+                        assignedFulfillmentOrders(first: $first, after: $after, assignmentStatus: $assignmentStatus) {
+                            nodes {
+                                id
+                                status
+                                requestStatus
+                                lineItems(first: $lineItems) {
+                                    nodes {
+                                        id
+                                        remainingQuantity
+                                        lineItem { '.$this->getShopifyExternalShopLineItemFields().' }
+                                    }
+                                    pageInfo { hasNextPage }
+                                }
+                                order {
+                                    id
+                                    name
+                                    createdAt
+                                    processedAt
+                                    cancelledAt
+                                    displayFinancialStatus
+                                    displayFulfillmentStatus
+                                    email
+                                    phone
+                                    note
+                                    taxesIncluded
+                                    currencyCode
+                                    totalPriceSet { shopMoney { amount currencyCode } }
+                                    subtotalPriceSet { shopMoney { amount currencyCode } }
+                                    totalTaxSet { shopMoney { amount currencyCode } }
+                                    totalShippingPriceSet { shopMoney { amount currencyCode } }
+                                    totalDiscountsSet { shopMoney { amount currencyCode } }
+                                    customer {
+                                        id
+                                        email
+                                        firstName
+                                        lastName
+                                        phone
+                                        defaultAddress { '.$this->shopifyAddressFields.' }
+                                    }
+                                    shippingAddress { '.$this->shopifyAddressFields.' }
+                                    billingAddress { '.$this->shopifyAddressFields.' }
+                                }
+                            }
+                            pageInfo { hasNextPage endCursor }
+                        }
+                    }
+                }
+            ', [
+                'first'            => $this->shopifyOrderPageSize,
+                'after'            => $cursor,
+                'assignmentStatus' => $assignmentStatus,
+                'lineItems'        => $this->shopifyOrderLineItemPageSize,
+            ]);
+
+            if (Arr::has($response, 'message')) {
+                return ['fulfillment_orders' => $fulfillmentOrders, 'complete' => false, 'message' => Arr::get($response, 'message')];
+            }
+
+            array_push($fulfillmentOrders, ...Arr::get($response, 'shop.assignedFulfillmentOrders.nodes', []));
+
+            $cursor = Arr::get($response, 'shop.assignedFulfillmentOrders.pageInfo.endCursor');
+
+            if (!Arr::get($response, 'shop.assignedFulfillmentOrders.pageInfo.hasNextPage') || !$cursor) {
+                return ['fulfillment_orders' => $fulfillmentOrders, 'complete' => true];
+            }
+        }
+
+        return ['fulfillment_orders' => $fulfillmentOrders, 'complete' => false, 'message' => __('Too many Shopify fulfilment requests to read in one go')];
+    }
+
+    public function acceptShopifyExternalShopFulfillmentRequest(ShopifyUser $shopifyUser, string $fulfillmentOrderId): array
+    {
+        return $this->answerShopifyExternalShopRequest($shopifyUser, 'fulfillmentOrderAcceptFulfillmentRequest', $fulfillmentOrderId, __('Accepted, the order is being prepared in our warehouse.'));
+    }
+
+    public function acceptShopifyExternalShopCancellationRequest(ShopifyUser $shopifyUser, string $fulfillmentOrderId): array
+    {
+        return $this->answerShopifyExternalShopRequest($shopifyUser, 'fulfillmentOrderAcceptCancellationRequest', $fulfillmentOrderId, __('Cancellation accepted.'));
+    }
+
+    public function rejectShopifyExternalShopCancellationRequest(ShopifyUser $shopifyUser, string $fulfillmentOrderId, string $message): array
+    {
+        return $this->answerShopifyExternalShopRequest($shopifyUser, 'fulfillmentOrderRejectCancellationRequest', $fulfillmentOrderId, $message);
+    }
+
+    protected function answerShopifyExternalShopRequest(ShopifyUser $shopifyUser, string $mutation, string $fulfillmentOrderId, string $message): array
+    {
+        $response = $this->shopifyExternalShopRequest($shopifyUser, '
+            mutation ($id: ID!, $message: String) {
+                '.$mutation.'(id: $id, message: $message) {
+                    fulfillmentOrder { id status requestStatus }
+                    userErrors { field message }
+                }
+            }
+        ', [
+            'id'      => $fulfillmentOrderId,
+            'message' => $message,
+        ]);
+
+        if ($userErrors = Arr::get($response, $mutation.'.userErrors')) {
+            return ['message' => $this->getShopifyExternalShopUserErrorMessage($userErrors)];
+        }
+
+        return $response;
     }
 
     /**
