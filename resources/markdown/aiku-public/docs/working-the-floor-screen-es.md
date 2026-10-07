@@ -56,6 +56,17 @@ Escribe el número real y pulsa <b>DONE</b>. La fila de entrada se sustituye por
 
 En cualquier caso, el trabajo que tenías abierto se cierra y se paga por lo que hiciste. Nada queda a medias en tu lista.
 
+## Cuando hiciste más de lo pedido
+
+Escribe el número real y pulsa **DONE**. La pantalla avisa de las unidades por encima del objetivo y abre **Autorización del responsable para sobreproducción**.
+
+- **Escanear la tarjeta** - un responsable o supervisor enseña a la cámara su QR personal (el mismo con el que ficha). Se acepta en cuanto se lee. **Cambiar cámara** alterna entre la cámara delantera y la trasera.
+- **Usar PIN del responsable** - si la cámara no lo lee, el responsable escribe su PIN de fichaje.
+
+Solo puede autorizar quien dirige esta planta. Tras cinco tarjetas o PIN erróneos la ventana se bloquea 15 minutos.
+
+Una vez autorizado, el trabajo crece a lo realmente hecho: el almacén guarda todo, lo que ningún pedido pidió va a stock y las materias primas se descuentan por el lote entero. Los pasos siguientes del mismo trabajo crecen también. La página de la orden de trabajo muestra quién hizo el extra, quién lo autorizó, cómo y cuándo.
+
 ## Cosas que conviene saber
 
 - **Un trabajo a la vez.** Mientras tienes un trabajo abierto, los botones START están desactivados. Ciérralo primero.

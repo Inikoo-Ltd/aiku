@@ -1116,6 +1116,63 @@ test('closing short can finish the job or carry the shortfall to a new job order
     expect($carriedAgain->reference)->toBe($jobOrder->reference.'b');
 });
 
+test('making more than the job asked for needs a manager badge or pin and grows the job to what was made', function () {
+    $boxing = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $boxing->id                => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+    SeedJobPositions::make()->handle($this->organisation);
+    $user = $this->guest->getUser();
+    \Illuminate\Support\Facades\RateLimiter::clear('overproduction-manager-code:'.$user->id);
+
+    $employeeWithPin = function (string $positionCode, string $pin) {
+        $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(10000, 99999);
+        $modelData['alias']           = 'Alias '.rand(10000, 99999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+        $modelData['username']        = 'overprod'.rand(10000, 99999);
+        $modelData['password']        = 'secret-password';
+        $employee                     = StoreEmployee::make()->action($this->organisation, $modelData);
+        SyncEmployeeJobPositions::make()->handle($employee, [
+            JobPosition::where('organisation_id', $this->organisation->id)->where('code', $positionCode)->first()->id => ['Production' => [$this->production->id]],
+        ]);
+        $employee->update(['pin' => $this->organisation->id.':'.$pin]);
+
+        return $employee;
+    };
+    $operativePin = 'OP'.rand(100000, 999999);
+    $managerPin   = 'MG'.rand(100000, 999999);
+    $employeeWithPin('prod-c', $operativePin);
+    $manager = $employeeWithPin('prod-m', $managerPin);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $mixing = $item->tasks()->orderBy('position')->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $mixing);
+    expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 25]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 25, 'manager_code' => $operativePin]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 25, 'manager_code' => $managerPin, 'manager_method' => 'qr']);
+
+    $tasks = $item->tasks()->orderBy('position')->get();
+    expect($item->refresh()->quantity)->toBe(25)
+        ->and((float) $tasks[0]->quantity_required)->toBe(25.0)
+        ->and($tasks[0]->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $tasks[1]->quantity_required)->toBe(25.0)
+        ->and($jobOrder->refresh()->data['overproductions'][0])->toMatchArray([
+            'quantity' => 5,
+            'manager'  => $manager->contact_name,
+            'method'   => 'qr',
+        ]);
+});
+
 test('historic job orders do not generate a work queue', function () {
     $jobOrder = StoreJobOrder::make()->action($this->production, [
         'state'       => JobOrderStateEnum::RECEIVED,
