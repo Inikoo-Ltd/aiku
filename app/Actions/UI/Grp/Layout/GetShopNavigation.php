@@ -544,7 +544,7 @@ class GetShopNavigation
                 }
             }
 
-            if ($shop->website) {
+            if ($shop->website && app()->isLocal()) {
                 $navigation["seo"] = [
                     "root"    => "grp.org.shops.show.seo.",
                     "icon"    => ["fal", "fa-search"],
