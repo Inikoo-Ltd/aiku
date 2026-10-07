@@ -642,6 +642,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('shopify:check')->dailyAt('02:40')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'CheckAllShopifyChannels',
+                ),
+                name: 'CheckAllShopifyChannels',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('woo:retry-timed-out-uploads --dispatch --days=3 --max-attempts=3')->dailyAt('01:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'RetryTimedOutWooUploads',
                 ),

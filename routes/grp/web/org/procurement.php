@@ -214,7 +214,9 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
                 Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
                 Route::post('bulk', StorePartnerShoppingListItems::class)->name('bulk_store');
                 Route::delete('open', DeleteOpenPartnerShoppingListItems::class)->name('destroy_open');
+                Route::delete('hub-suggestions', [DeleteOpenPartnerShoppingListItems::class, 'hubSuggestions'])->name('destroy_hub_suggestions');
                 Route::post('submit', SubmitPartnerShoppingList::class)->name('submit');
+                Route::post('{partnerShoppingListItem}/submit', [SubmitPartnerShoppingList::class, 'inItem'])->name('submit_item')->withoutScopedBindings();
                 Route::post('upload', ImportPartnerShoppingListItems::class)->name('upload');
                 Route::post('{orgStock:id}', StorePartnerShoppingListItem::class)->name('store')->withoutScopedBindings();
                 Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update')->withoutScopedBindings();

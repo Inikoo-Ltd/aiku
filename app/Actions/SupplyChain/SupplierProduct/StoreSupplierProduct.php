@@ -121,6 +121,7 @@ class StoreSupplierProduct extends OrgAction
             'units_per_carton'     => ['sometimes', 'nullable', 'integer', 'min:1'],
             'cbm'                  => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'extra_costs'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'carton_weight'        => ['sometimes', 'nullable', 'integer', 'min:0'],
 
             'trade_units'          => ['sometimes', 'nullable', 'array'],
             'trade_units.*'        => ['integer', 'exists:trade_units,id'],
@@ -131,6 +132,7 @@ class StoreSupplierProduct extends OrgAction
         if (!$this->strict) {
             $rules                     = $this->noStrictStoreRules($rules);
             $rules['source_slug']      = ['sometimes', 'nullable', 'string'];
+            $rules['data']             = ['sometimes', 'array'];
             $rules['units_per_pack']   = ['sometimes', 'nullable'];
             $rules['units_per_carton'] = ['sometimes', 'nullable'];
         }

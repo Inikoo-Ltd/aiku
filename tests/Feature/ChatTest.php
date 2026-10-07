@@ -9798,6 +9798,14 @@ test('enabling the chat widget seeds the chat permissions for an external shop',
             ->where('name', 'chat.'.$externalShop->id)->exists())->toBeFalse();
 });
 
+test('the storefront chat widget sizes its launcher in pixels so the host root font size cannot shrink it', function () {
+    $widgetBundle = file_get_contents(public_path('chat-widget/v1.js'));
+
+    expect($widgetBundle)->toContain('.w-14{width:56px}')
+        ->and($widgetBundle)->toContain('.h-14{height:56px}')
+        ->and($widgetBundle)->not->toContain('.w-14{width:3.5rem}');
+});
+
 test('the shop settings toggle turns chat on and off and seeds the permissions with it', function () {
     $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
     $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;

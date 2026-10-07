@@ -184,6 +184,17 @@ class GetProductionNavigation
                         'parameters' => [$production->organisation->slug, $production->slug]
                     ],
                 ];
+
+                $navigation['intervention'] = [
+                    'root'  => 'grp.org.productions.show.intervention.',
+                    'label' => __('Intervention'),
+                    'icon'  => ['fal', 'fa-hands-helping'],
+
+                    'route' => [
+                        'name'       => 'grp.org.productions.show.intervention.index',
+                        'parameters' => [$production->organisation->slug, $production->slug]
+                    ],
+                ];
             }
 
 

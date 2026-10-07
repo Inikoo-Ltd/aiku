@@ -279,7 +279,7 @@ class IndexSupplierProducts extends OrgAction
                 'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => array_map(
                     fn ($heading) => strtolower(str_replace(' ', '_', trim($heading))),
-                    SupplierProductTemplateExport::HEADINGS
+                    SupplierProductTemplateExport::headings()
                 ),
                 'template'        => [
                     'label' => __('Download template (.xlsx)'),
