@@ -433,7 +433,7 @@ onMounted(() => {
                                     optionLabel="label"
                                     :placeholder="ctrans('Preset size')"
                                     size="small"
-                                    class="ml-1 min-w-0 flex-1 text-xs"
+                                    class="ml-1 w-36 shrink-0 text-xs"
                                     @change="(e) => applyParcelPreset(parcel, e.value)"
                                 />
                             </div>
