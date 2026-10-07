@@ -42,6 +42,7 @@ const props = withDefaults(
 		onList?: { lines: number; cost: number } | null
 		analyseUrl?: string | null
 		inline?: boolean
+		orderUrl?: string | null
 	}>(),
 	{ size: "s", isHub: false, onList: null, inline: false }
 )
@@ -197,12 +198,13 @@ const stopTimer = () => {
 const prepare = () => {
 	isAsking.value = false
 	router.post(
-		route(
-			props.isHub
-				? "grp.models.org-partner.shopping_list_order.store"
-				: "grp.models.org-partner.rescue_purchase_order.store",
-			{ orgPartner: props.orgPartnerId }
-		),
+		props.orderUrl ??
+			route(
+				props.isHub
+					? "grp.models.org-partner.shopping_list_order.store"
+					: "grp.models.org-partner.rescue_purchase_order.store",
+				{ orgPartner: props.orgPartnerId }
+			),
 		{
 			buckets: selectedBuckets.value,
 			worst_only: worstOnly.value,

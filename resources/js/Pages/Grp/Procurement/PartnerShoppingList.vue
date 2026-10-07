@@ -24,8 +24,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCut, faUpload, faPaperPlane } from "@fal"
-library.add(faCut, faUpload, faPaperPlane)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCut, faUpload, faPaperPlane, faIndustryAlt } from "@fal"
+library.add(faCut, faUpload, faPaperPlane, faIndustryAlt)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -42,6 +43,8 @@ const props = defineProps<{
 	data: object
 	orgPartner: { id: number; slug: string; currency: string }
 	draftsCount: number
+	hubSuggestionsCount: number
+	partnerCode: string
 	isSentView: boolean
 	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
@@ -93,6 +96,28 @@ function confirmDeleteAll() {
 		accept: () => {
 			router.delete(
 				route("grp.org.procurement.org_partners.show.shopping_list.destroy_open", [
+					routeParams["organisation"],
+					props.orgPartner.id,
+				]),
+				{ preserveScroll: true, ...tableLoadingEvents }
+			)
+		},
+	})
+}
+
+function confirmDropHubSuggestions() {
+	confirm.require({
+		group: "partner-shopping-list",
+		header: ctrans("Drop :partner suggestions", { partner: props.partnerCode }),
+		message: ctrans(
+			"Remove the :count draft lines :partner suggested? Lines you added stay.",
+			{ count: String(props.hubSuggestionsCount), partner: props.partnerCode }
+		),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Drop them"), severity: "danger" },
+		accept: () => {
+			router.delete(
+				route("grp.org.procurement.org_partners.show.shopping_list.destroy_hub_suggestions", [
 					routeParams["organisation"],
 					props.orgPartner.id,
 				]),
@@ -341,6 +366,13 @@ function deleteItem(item: { id: number }) {
 				:label="ctrans('Delete all')"
 				@click="confirmDeleteAll" />
 			<Button
+				v-if="hubSuggestionsCount"
+				type="secondary"
+				icon="fal fa-industry-alt"
+				:label="ctrans('Drop :partner suggestions (:count)', { partner: partnerCode, count: String(hubSuggestionsCount) })"
+				:tooltip="ctrans(':partner production added these for you. Keep them by submitting, or drop them all here', { partner: partnerCode })"
+				@click="confirmDropHubSuggestions" />
+			<Button
 				type="secondary"
 				icon="fal fa-magic"
 				:label="ctrans('Auto-fill')"
@@ -435,6 +467,13 @@ function deleteItem(item: { id: number }) {
 				<div class="min-w-0 space-y-0.5">
 					<div class="text-sm font-medium text-gray-800">
 						{{ item.org_stock_name }}
+						<span
+							v-if="item.suggested_by_hub"
+							v-tooltip="ctrans(':partner production suggested this line', { partner: partnerCode })"
+							class="ml-1 whitespace-nowrap rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-normal text-indigo-700">
+							<FontAwesomeIcon icon="fal fa-industry-alt" fixed-width aria-hidden="true" />
+							{{ ctrans(":partner suggested", { partner: partnerCode }) }}
+						</span>
 					</div>
 					<div v-if="item.price_per_sko" class="text-xs text-gray-500">
 						{{ ctrans("SKO cost") }}:

@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $needed_by
  * @property string|null $notes
  * @property int|null $added_by_user_id
+ * @property bool $suggested_by_hub
  * @property int|null $transaction_id
  * @property int|null $parent_id
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -87,6 +88,7 @@ class PartnerShoppingListItem extends Model
             'state'          => ShoppingListItemStateEnum::class,
             'needed_by'      => 'date',
             'expiry_date'    => 'date',
+            'suggested_by_hub' => 'boolean',
         ];
     }
 

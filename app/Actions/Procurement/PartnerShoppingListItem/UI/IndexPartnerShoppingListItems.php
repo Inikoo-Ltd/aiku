@@ -106,6 +106,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->selectRaw('org_stocks.health_rank as rank, count(*) as total')
             ->groupBy('org_stocks.health_rank')
             ->pluck('total', 'rank');
+        $originCounts   = $items()->selectRaw('suggested_by_hub, count(*) as total')->groupBy('suggested_by_hub')->pluck('total', 'suggested_by_hub');
         $categoryCounts = $items()
             ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
                 $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
@@ -143,6 +144,14 @@ class IndexPartnerShoppingListItems extends OrgAction
                         }
                     });
                 },
+            ],
+            'origin'   => [
+                'label'   => __('Added by'),
+                'options' => [
+                    $option('us', __('Us'), $originCounts[0] ?? 0),
+                    $option('hub', __(':partner suggested', ['partner' => $orgPartner->partner->code]), $originCounts[1] ?? 0),
+                ],
+                'engine'  => fn ($query, array $values) => $query->whereIn('partner_shopping_list_items.suggested_by_hub', array_map(fn ($value) => $value === 'hub', $values)),
             ],
             'rank'     => [
                 'label'   => __('Rank'),
@@ -269,6 +278,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'partner_shopping_list_items.pre_picked_at',
                 'partner_shopping_list_items.preparing_at',
+                'partner_shopping_list_items.suggested_by_hub',
                 'partner_shopping_list_items.org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -651,6 +661,11 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'draftsCount' => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
                     ->where('state', ShoppingListItemStateEnum::DRAFT)
                     ->count(),
+                'hubSuggestionsCount' => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+                    ->where('state', ShoppingListItemStateEnum::DRAFT)
+                    ->where('suggested_by_hub', true)
+                    ->count(),
+                'partnerCode' => $this->orgPartner->partner->code,
                 'filterGroups' => collect($this->filterGroups($this->orgPartner))->map(fn ($group, $key) => ['key' => $key, 'label' => $group['label'], 'options' => $group['options']])->values(),
                 'data' => $items,
             ]

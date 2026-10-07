@@ -49,14 +49,15 @@ const props = withDefaults(
 		orgPartnerId: number
 		partnerName: string
 		currencyCode: string
-		seeAllUrl: string
+		seeAllUrl?: string | null
 		canCreate?: boolean
 		draftReference?: string | null
 		onList?: { lines: number; cost: number } | null
 		analyseUrl?: string | null
 		buttonSize?: string
+		orderUrl?: string | null
 	}>(),
-	{ canCreate: false, draftReference: null, onList: null, analyseUrl: null, buttonSize: "xs" }
+	{ canCreate: false, draftReference: null, onList: null, analyseUrl: null, buttonSize: "xs", seeAllUrl: null, orderUrl: null }
 )
 
 const locale = useLocaleStore()
@@ -281,6 +282,7 @@ const hasRescuable = computed(() => props.rescuable.buckets.some((bucket) => buc
 					:isHub="isHub"
 					:onList="onList"
 					:analyseUrl="analyseUrl"
+					:orderUrl="orderUrl"
 					:size="buttonSize" />
 				<span
 					v-if="rescuable.order.lines"
@@ -298,6 +300,7 @@ const hasRescuable = computed(() => props.rescuable.buckets.some((bucket) => buc
 					}}
 				</span>
 				<Link
+					v-if="seeAllUrl"
 					:href="seeAllUrl"
 					class="ml-auto whitespace-nowrap text-xs font-medium text-indigo-600 hover:underline">
 					{{
