@@ -14,9 +14,9 @@ import { faImage } from "@far"
 import { faMoneyBill } from "@fal"
 import MasterVariantShowcase from "@/Components/Showcases/Grp/MasterVariantShowcase.vue"
 import { useTabChange } from "@/Composables/tab-change"
-import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
 import TableMasterProductsPricing from "@/Components/Tables/Grp/Goods/TableMasterProductsPricing.vue"
 import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
+import VariantProductOrdering from "@/Components/Master/VariantProductOrdering.vue"
 
 library.add(faImage, faMoneyBill)
 
@@ -55,8 +55,9 @@ const props = defineProps<{
     }
     showcase?: {}
     variants?: {}
-    products?: {}
+    products?: { id: number, code: string, name: string | null, image_thumbnail?: any }[]
     pricing?: {}
+    reorderRoute?: { name: string, parameters: Record<string, unknown> } | null
     masterProductCategoryId?: number
     pricingMajorCurrencies?: string[]
     pricingCurrencies?: Record<string, any>
@@ -78,7 +79,7 @@ watch(currentTab, (tab) => {
 const component = computed(() => {
     const components: Record<string, any> ={
         showcase: MasterVariantShowcase,
-        products: TableMasterProducts,
+        products: VariantProductOrdering,
         variants: TableVariants,
         pricing: TableMasterProductsPricing,
     }
@@ -102,6 +103,7 @@ const component = computed(() => {
         :pricingCurrencies="pricingCurrencies"
         :pricingCostRates="pricingCostRates"
         :masterProductCategoryId="masterProductCategoryId"
+        :reorderRoute="reorderRoute"
     />
 
 </template>

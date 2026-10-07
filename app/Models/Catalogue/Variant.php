@@ -81,7 +81,8 @@ class Variant extends Model implements Auditable, HasMedia
 
     protected $guarded = [];
     protected $casts = [
-        'data'      => 'array',
+        'data'                        => 'array',
+        'follow_master_variant_order' => 'boolean',
     ];
 
     public function generateTags(): array
@@ -140,13 +141,17 @@ class Variant extends Model implements Auditable, HasMedia
 
     public function allProduct(): HasMany
     {
-        return $this->hasMany(Product::class, 'variant_id');
+        return $this->hasMany(Product::class, 'variant_id')
+            ->orderByRaw('products.index_under_variant asc nulls last')
+            ->orderBy('products.id');
     }
 
     public function allProductForSale(): HasMany
     {
         return $this->hasMany(Product::class, 'variant_id')
-                ->where('is_for_sale', true);
+            ->where('is_for_sale', true)
+            ->orderByRaw('products.index_under_variant asc nulls last')
+            ->orderBy('products.id');
     }
 
     public function leaderProduct(): HasOne

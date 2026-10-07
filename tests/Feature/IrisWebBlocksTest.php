@@ -1103,6 +1103,50 @@ test('a variant leader is searchable by the codes of its other options', functio
         ->and($options->first()->fresh()->toSearchableArray()['variant_codes'])->toBe('');
 });
 
+test('a shop variant keeps its own product order or follows its master order', function () {
+    [, $leader] = createProduct($this->shop);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $leader->group_id,
+        'code'     => $leader->code,
+        'data'     => ['products' => []],
+    ]);
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'          => $leader->group_id,
+        'organisation_id'   => $leader->organisation_id,
+        'shop_id'           => $leader->shop_id,
+        'family_id'         => $leader->family_id,
+        'code'              => $leader->code,
+        'leader_id'         => $leader->id,
+        'data'              => ['products' => []],
+    ]);
+    $leader->updateQuietly(['variant_id' => $variant->id, 'is_variant_leader' => true]);
+
+    $option = $leader->replicate(['slug', 'webpage_id', 'is_variant_leader']);
+    $option->forceFill(['code' => $leader->code.'-B', 'slug' => strtolower($leader->slug.'-b'), 'variant_id' => $variant->id, 'is_variant_leader' => false])->saveQuietly();
+
+    $masterOption = \App\Models\Masters\MasterAsset::whereNotNull('id')->first();
+    $masterOption?->updateQuietly(['master_variant_id' => $masterVariant->id, 'index_under_master_variant' => 7]);
+    $option->updateQuietly(['master_product_id' => $masterOption?->id]);
+
+    \App\Actions\Catalogue\Variant\UpdateVariantProductOrder::run($variant, ['products' => [
+        ['id' => $option->id, 'index' => 0],
+        ['id' => $leader->id, 'index' => 1],
+    ]]);
+
+    expect($variant->fresh()->follow_master_variant_order)->toBeFalse()
+        ->and($option->fresh()->index_under_variant)->toBe(0)
+        ->and($leader->fresh()->index_under_variant)->toBe(1)
+        ->and($variant->fresh()->allProduct->pluck('id')->all())->toBe([$option->id, $leader->id])
+        ->and(\App\Http\Resources\Web\ProductOfVariantResource::make($option->fresh())->toArray(request())['variant_position'])->toBe(0);
+
+    \App\Actions\Catalogue\Variant\UpdateVariantProductOrder::run($variant, ['follow_master_variant_order' => true]);
+
+    expect($variant->fresh()->follow_master_variant_order)->toBeTrue()
+        ->and($option->fresh()->index_under_variant)->toBe($masterOption ? 7 : 0);
+});
+
 test('iris product lists name the first variant axis so the choose button can read choose size', function () {
     [, $product] = createProduct($this->shop);
     $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => 10]);
