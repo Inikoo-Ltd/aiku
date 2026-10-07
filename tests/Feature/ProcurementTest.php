@@ -1214,6 +1214,20 @@ test('suppliers set to receive purchase orders by email get an email button on t
     UpdateSupplier::make()->action($orgSupplier->supplier, ['po_by_email' => false]);
 });
 
+test('searching a purchase order tab table keeps that tab when the url has no tab', function () {
+    $purchaseOrder = $this->purchaseOrder;
+    $showUrl       = route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]);
+
+    $this->get($showUrl.'?products_filter%5Bglobal%5D=orgbokg&products_sort=code')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'products'));
+
+    $this->get($showUrl.'?notesPage=2')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'notes'));
+
+    $this->get($showUrl.'?tab=history&products_filter%5Bglobal%5D=orgbokg')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'history'));
+});
+
 test('purchase order page has an edit button to change its reference', function () {
     $purchaseOrder = $this->purchaseOrder;
 
