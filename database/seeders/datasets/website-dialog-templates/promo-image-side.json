@@ -1,18 +1,22 @@
 {
     "code": "promo-image-side",
-    "name": "Promotion with image",
+    "name": "Sale with image",
     "component": "dialog-image-side",
     "position": 2,
     "fields": {
+        "accent": "rgba(220, 38, 38, 1)",
         "image": {
             "source": null,
             "alt": ""
         },
+        "eyebrow": {
+            "text": "Limited time"
+        },
         "title": {
-            "text": "<h2><strong>Summer Sale</strong></h2>"
+            "text": "<h2 style=\"text-align: left\"><strong>Summer Sale</strong></h2>"
         },
         "description": {
-            "text": "<p>Up to <strong>30% off</strong> on selected products, only this week.</p>"
+            "text": "<p style=\"text-align: left\">Up to <strong>30% off</strong> on selected products, this week only.</p>"
         },
         "button": {
             "text": "See the offers",
@@ -37,16 +41,16 @@
                     "padding": {
                         "unit": "px",
                         "top": {
-                            "value": 10
+                            "value": 12
                         },
                         "left": {
-                            "value": 24
+                            "value": 28
                         },
                         "right": {
-                            "value": 24
+                            "value": 28
                         },
                         "bottom": {
-                            "value": 10
+                            "value": 12
                         }
                     },
                     "margin": {
@@ -78,25 +82,28 @@
                         "bottom": {
                             "value": 0
                         },
-                        "color": "#000000",
+                        "color": "rgba(220, 38, 38, 1)",
                         "rounded": {
                             "unit": "px",
                             "topleft": {
-                                "value": 6
+                                "value": 999
                             },
                             "topright": {
-                                "value": 6
+                                "value": 999
                             },
                             "bottomleft": {
-                                "value": 6
+                                "value": 999
                             },
                             "bottomright": {
-                                "value": 6
+                                "value": 999
                             }
                         }
                     }
                 }
             }
+        },
+        "note": {
+            "text": "<p style=\"text-align: left\">While stocks last.</p>"
         }
     },
     "container_properties": {
@@ -144,23 +151,23 @@
             "rounded": {
                 "unit": "px",
                 "topleft": {
-                    "value": 16
+                    "value": 20
                 },
                 "topright": {
-                    "value": 16
+                    "value": 20
                 },
                 "bottomleft": {
-                    "value": 16
+                    "value": 20
                 },
                 "bottomright": {
-                    "value": 16
+                    "value": 20
                 }
             }
         },
         "dimension": {
             "width": {
                 "unit": "px",
-                "value": 760
+                "value": 740
             },
             "height": {
                 "unit": "px",

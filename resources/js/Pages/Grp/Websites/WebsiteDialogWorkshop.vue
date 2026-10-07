@@ -8,6 +8,7 @@ import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheckCircle } from "@far"
+import { faPalette, faTicketAlt } from "@fal"
 import { faChevronLeft, faChevronRight, faCircle, faCog, faExternalLink, faHandPointer, faImage, faLayerGroup, faRectangleWide, faText, faThLarge, faUndoAlt, faCheck, faExclamationTriangle } from "@fal"
 import { faTimes } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -19,7 +20,7 @@ import ScreenView from "@/Components/ScreenView.vue"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import WebsiteDialogTemplateList from "@/Components/Websites/WebsiteDialog/WebsiteDialogTemplateList.vue"
 import WebsiteDialogSettings from "@/Components/Websites/WebsiteDialog/WebsiteDialogSettings.vue"
-import { blueprint } from "@/Components/Websites/WebsiteDialog/Templates/Blueprint"
+import { getWebsiteDialogBlueprint } from "@/Components/Websites/WebsiteDialog/Templates/Blueprint"
 import { getWebsiteDialogComponent } from "@/Composables/useWebsiteDialog"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
@@ -28,7 +29,7 @@ import type { PageHeadingTypes } from "@/types/PageHeading"
 import type { routeType } from "@/types/route"
 import type { WebsiteDialogData } from "@/types/WebsiteDialog"
 
-library.add(faCheckCircle, faChevronLeft, faChevronRight, faCircle, faCog, faExternalLink, faHandPointer, faImage, faLayerGroup, faRectangleWide, faText, faThLarge, faUndoAlt, faCheck, faExclamationTriangle, faTimes)
+library.add(faPalette, faTicketAlt, faCheckCircle, faChevronLeft, faChevronRight, faCircle, faCog, faExternalLink, faHandPointer, faImage, faLayerGroup, faRectangleWide, faText, faThLarge, faUndoAlt, faCheck, faExclamationTriangle, faTimes)
 
 const props = defineProps<{
     title: string
@@ -349,7 +350,8 @@ const openTemplateTab = () => {
                                 <SideEditor
                                     :modelValue="dialogData"
                                     @update:modelValue="(value: Partial<WebsiteDialogData>) => value !== dialogData && Object.assign(dialogData, value)"
-                                    :blueprint="blueprint"
+                                    :key="dialogData.component ?? 'none'"
+                                    :blueprint="getWebsiteDialogBlueprint(dialogData.component)"
                                     :panelOpen="openFieldWorkshop"
                                     :uploadImageRoute="routes_list.upload_image_route"
                                 />

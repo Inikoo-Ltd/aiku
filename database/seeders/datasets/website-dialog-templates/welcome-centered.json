@@ -4,18 +4,22 @@
     "component": "dialog-centered",
     "position": 1,
     "fields": {
+        "accent": "rgba(79, 70, 229, 1)",
         "image": {
             "source": null,
             "alt": ""
         },
+        "eyebrow": {
+            "text": "Welcome"
+        },
         "title": {
-            "text": "<h2 style=\"text-align: center\"><strong>Welcome to our shop!</strong></h2>"
+            "text": "<h2 style=\"text-align: center\"><strong>Nice to meet you!</strong></h2>"
         },
         "description": {
-            "text": "<p style=\"text-align: center\">Sign up today and get <strong>10% off</strong> your first order.</p>"
+            "text": "<p style=\"text-align: center\">Create an account today and get <strong>10% off</strong> your first order.</p>"
         },
         "button": {
-            "text": "Shop now",
+            "text": "Create my account",
             "link": {
                 "type": "external",
                 "href": "#",
@@ -29,7 +33,7 @@
                     },
                     "background": {
                         "type": "color",
-                        "color": "rgba(17, 24, 39, 1)",
+                        "color": "rgba(79, 70, 229, 1)",
                         "image": {
                             "original": null
                         }
@@ -37,16 +41,16 @@
                     "padding": {
                         "unit": "px",
                         "top": {
-                            "value": 10
+                            "value": 12
                         },
                         "left": {
-                            "value": 24
+                            "value": 28
                         },
                         "right": {
-                            "value": 24
+                            "value": 28
                         },
                         "bottom": {
-                            "value": 10
+                            "value": 12
                         }
                     },
                     "margin": {
@@ -78,25 +82,28 @@
                         "bottom": {
                             "value": 0
                         },
-                        "color": "#000000",
+                        "color": "rgba(79, 70, 229, 1)",
                         "rounded": {
                             "unit": "px",
                             "topleft": {
-                                "value": 6
+                                "value": 999
                             },
                             "topright": {
-                                "value": 6
+                                "value": 999
                             },
                             "bottomleft": {
-                                "value": 6
+                                "value": 999
                             },
                             "bottomright": {
-                                "value": 6
+                                "value": 999
                             }
                         }
                     }
                 }
             }
+        },
+        "note": {
+            "text": "<p style=\"text-align: center\">No spam, unsubscribe anytime.</p>"
         }
     },
     "container_properties": {
@@ -144,23 +151,23 @@
             "rounded": {
                 "unit": "px",
                 "topleft": {
-                    "value": 16
+                    "value": 20
                 },
                 "topright": {
-                    "value": 16
+                    "value": 20
                 },
                 "bottomleft": {
-                    "value": 16
+                    "value": 20
                 },
                 "bottomright": {
-                    "value": 16
+                    "value": 20
                 }
             }
         },
         "dimension": {
             "width": {
                 "unit": "px",
-                "value": 480
+                "value": 460
             },
             "height": {
                 "unit": "px",

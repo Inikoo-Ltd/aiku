@@ -4,6 +4,21 @@ export interface WebsiteDialogTemplateData {
     template_code?: string | null
     component?: string | null
     fields: {
+        accent?: string
+        eyebrow?: {
+            text: string
+        }
+        note?: {
+            text: string
+        }
+        subscribe?: {
+            placeholder?: string
+            success_text?: string
+        }
+        coupon?: {
+            label?: string
+            code?: string
+        }
         image?: {
             source?: any
             alt?: string
