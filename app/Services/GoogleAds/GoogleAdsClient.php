@@ -112,6 +112,26 @@ class GoogleAdsClient
     }
 
     /**
+     * @return array<int, array>
+     * @throws GoogleAdsException
+     */
+    public function generateKeywordIdeas(array $body): array
+    {
+        $results   = [];
+        $pageToken = null;
+
+        do {
+            $response = $this->post("customers/{$this->customerId}:generateKeywordIdeas", $pageToken ? [...$body, 'pageToken' => $pageToken] : $body);
+
+            array_push($results, ...$response->json('results', []));
+
+            $pageToken = $response->json('nextPageToken');
+        } while ($pageToken);
+
+        return $results;
+    }
+
+    /**
      * Applies write operations to one Google Ads service, e.g. `campaigns` or `campaignBudgets`.
      *
      * Partial failure is off: a half-applied batch leaves Google and Aiku disagreeing about what the

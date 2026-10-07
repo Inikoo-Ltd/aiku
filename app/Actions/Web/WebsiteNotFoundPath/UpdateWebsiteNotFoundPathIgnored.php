@@ -9,12 +9,15 @@
 namespace App\Actions\Web\WebsiteNotFoundPath;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Seo\WithSeoEditAuthorisation;
 use App\Models\Web\WebsiteNotFoundPath;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateWebsiteNotFoundPathIgnored extends OrgAction
 {
+    use WithSeoEditAuthorisation;
+
     public function handle(WebsiteNotFoundPath $websiteNotFoundPath, bool $isIgnored): WebsiteNotFoundPath
     {
         $websiteNotFoundPath->update(['is_ignored' => $isIgnored]);
@@ -31,15 +34,7 @@ class UpdateWebsiteNotFoundPathIgnored extends OrgAction
 
     public function asController(WebsiteNotFoundPath $websiteNotFoundPath, ActionRequest $request): WebsiteNotFoundPath
     {
-        $website = $websiteNotFoundPath->website;
-
-        abort_unless($request->user()->authTo([
-            "websites-view.$website->organisation_id",
-            "web.$website->shop_id.edit",
-            "group-webmaster.edit",
-        ]), 403);
-
-        $this->initialisationFromShop($website->shop, $request);
+        $this->initialisationFromShop($websiteNotFoundPath->website->shop, $request);
 
         return $this->handle($websiteNotFoundPath, (bool) $this->validatedData['is_ignored']);
     }
