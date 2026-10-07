@@ -5,13 +5,13 @@
   -->
 
 <script setup lang="ts">
-import { ref, onBeforeMount, onMounted, onUnmounted, toRaw } from "vue"
+import { ref, onMounted, toRaw } from "vue"
 import axios from 'axios'
 import Image from "@common/Components/Image.vue"
 import { notify } from '@kyvg/vue3-notification'
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ImageData } from '@/types/Image'
 import { Images } from "@/types/Images"
@@ -32,6 +32,14 @@ const props = defineProps<{
     closePopup?: Function
     maxSelected?: number
 }>()
+
+const tilesGridClass = 'grid gap-3 grid-cols-[repeat(auto-fill,minmax(6rem,1fr))]'
+
+const getRetinaThumbnail = (thumbnail?: Record<string, any> | null) => ({
+    avif: thumbnail?.avif_2x,
+    webp: thumbnail?.webp_2x,
+    original: thumbnail?.original_2x,
+})
 
 const selectedIdImages = ref<number[]>([])
 
@@ -59,8 +67,8 @@ const toggleImageSelection = (imageId: number) => {
             selectedIdImages.value.push(imageId);
         } else {
             notify({
-                title: trans('Selection limit reached'),
-                text: trans(`You can only select up to :maxSelected images.`, { maxSelected: props.maxSelected ?? '0' }),
+                title: ctrans('Selection limit reached'),
+                text: ctrans(`You can only select up to :maxSelected images.`, { maxSelected: String(props.maxSelected ?? 0) }),
                 type: 'warning',
             });
         }
@@ -89,7 +97,7 @@ const submitSelectedImages = () => {
                 },
                 onError: (err) => {
                     notify({
-                        title: trans('Something went wrong.'),
+                        title: ctrans('Something went wrong.'),
                         text: err?.message || '',
                         type: 'error',
                     })
@@ -138,8 +146,8 @@ const fetchProductList = async (url?: string) => {
     } catch (error) {
         // console.log(error)
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch product list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to fetch product list'),
             type: 'error',
         })
     }
@@ -154,29 +162,13 @@ const onSearchQuery = debounce(async (query: string) => {
 
 // Method: fetching next page
 const onFetchNext = () => {
-    const _imagesView = document.querySelector('#imagesView')
-    // console.log(_imagesView?.scrollTop, _imagesView?.clientHeight, _imagesView?.scrollHeight)
-
-    const bottomReached = (_imagesView?.scrollTop || 0) + (_imagesView?.clientHeight || 0) >= (_imagesView?.scrollHeight || 10) - 10
-    if (bottomReached && optionsLinks.value?.next && isLoading.value != 'fetchProduct') {
-        // console.log(_imagesView?.scrollTop, _imagesView?.clientHeight, _imagesView?.scrollHeight)
+    if (optionsLinks.value?.next && isLoading.value != 'fetchProduct') {
         fetchProductList(optionsLinks.value.next)
     }
 }
 
-onMounted(async () => {
+onMounted(() => {
     fetchProductList()
-    const _imagesView = document.querySelector('#imagesView')
-    if (_imagesView) {
-        _imagesView.addEventListener('scroll', () => onFetchNext())
-    }
-})
-
-onUnmounted(() => {
-    const _imagesView = document.querySelector('#imagesView')
-    if (_imagesView) {
-        _imagesView.removeEventListener('scroll', () => onFetchNext())
-    }
 })
 </script>
 
@@ -184,24 +176,26 @@ onUnmounted(() => {
     <div class="h-full relative isolate pr-4 flex flex-col">
         <!-- <template v-if="!isLoading"> -->
             <div class="sticky top-0 pb-2 z-10 bg-white ">
-                <div class="pb-2 flex justify-between border-b border-gray-300 ">
-                    <div class="text-2xl font-semibold tabular-nums">
-                        <!-- {{ trans('Select images') }} ({{ selectedImages.length }}/{{ optionsList.length }}) -->
+                <div class="pb-2 flex flex-wrap items-center justify-between gap-2 border-b border-gray-300 ">
+                    <div class="w-full max-w-xs">
                         <PureInputWithAddOn
                             @update:model-value="(val) => onSearchQuery(val)"
                             :leftAddOn="{ icon: 'fal fa-search' }"
+                            :placeholder="ctrans('Search images')"
                         />
                     </div>
 
-                    <div class="flex items-end gap-x-2">
-                        <div @click="() => selectedIdImages.length ? selectedIdImages = [] : false"
-                            class=""
-                            :class="selectedIdImages.length ? 'underline cursor-pointer' : 'text-gray-400'"
+                    <div class="flex items-center gap-x-3">
+                        <button
+                            type="button"
+                            @click="selectedIdImages = []"
+                            :disabled="!selectedIdImages.length"
+                            class="text-sm underline underline-offset-2 text-gray-500 hover:text-gray-700 disabled:no-underline disabled:text-gray-300 disabled:cursor-not-allowed"
                         >
-                            {{ trans('Unselect all') }}
-                        </div>
+                            {{ ctrans('Unselect all') }}
+                        </button>
                         <Button
-                            :label="`Select image ${selectedIdImages.length}/${maxSelected || optionsList.length}`"
+                            :label="`${ctrans('Select image')} ${selectedIdImages.length}${maxSelected ? '/' + maxSelected : ''}`"
                             @click="() => submitSelectedImages()"
                             :loading="isLoadingSubmit"
                             :disabled="!selectedIdImages.length"
@@ -210,16 +204,16 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <div id="imagesView" class="overflow-y-auto h-full select-none">
+            <div id="imagesView" class="overflow-y-auto overscroll-contain h-full max-h-[60vh] select-none">
                 <template v-if="optionsList.length">
-                    <div class="flex flex-wrap justify-around gap-2">
+                    <div :class="tilesGridClass">
                         <div
                             v-for="option in optionsList"
-                            class="relative h-20 w-20 overflow-hidden border rounded cursor-pointer transition-all"
+                            class="relative aspect-square overflow-hidden border rounded cursor-pointer transition-all"
                             @click="() => toggleImageSelection(option.id)"
                             :class="selectedIdImages.includes(option.id) ? 'border-blue-400 scale-[97%]' : 'border-gray-300'"
                         >
-                            <Image :src="option.thumbnail" :alt="option.alt || option.slug" :imageCover="true" />
+                            <Image :src="option.thumbnail" :srcset="getRetinaThumbnail(option.thumbnail)" :alt="option.alt || option.slug" :imageCover="true" />
                             <div v-if="selectedIdImages.includes(option.id)" class="absolute inset-0 bg-blue-500/40"
                             />
                             <FontAwesomeIcon v-if="selectedIdImages.includes(option.id)" icon='fas fa-check-circle' class='absolute top-1 right-1 text-green-500' fixed-width aria-hidden='true' />
@@ -231,19 +225,16 @@ onUnmounted(() => {
                     </div>
             
                     <div v-if="optionsLinks?.next" class="mt-8 flex justify-center">
-                        <Button @click="onFetchNext" :label="trans('Load more')" :loading="!!isLoading" type="tertiary" />
+                        <Button @click="onFetchNext" :label="ctrans('Load more')" :loading="!!isLoading" type="tertiary" />
                     </div>
                 </template>
 
                 <div v-else-if="!isLoading" class="flex justify-center col-span-4">
-                    <EmptyState :data="{ title : trans('You dont have images'), description : ''}"/>
+                    <EmptyState :data="{ title : ctrans('You dont have images'), description : ''}"/>
                 </div>
 
-                <div v-else class="flex gap-x-2">
-                    <div class="h-16 w-full rounded skeleton"></div>
-                    <div class="h-16 w-full rounded skeleton"></div>
-                    <div class="h-16 w-full rounded skeleton"></div>
-                    <div class="h-16 w-full rounded skeleton"></div>
+                <div v-else :class="tilesGridClass">
+                    <div v-for="index in 18" :key="index" class="aspect-square rounded border border-gray-200 skeleton" />
                 </div>
             </div>
         <!-- </template> -->
