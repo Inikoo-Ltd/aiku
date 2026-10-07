@@ -353,7 +353,7 @@ class ImportSupplierProductUpload
                 }
             }
 
-            $summary[$key] = ['purchase_order' => $purchaseOrder->reference, 'lines' => $added, 'errors' => $errors];
+            $summary[$key] = ['purchase_order' => $purchaseOrder->reference, 'purchase_order_id' => $purchaseOrder->id, 'lines' => $added, 'errors' => $errors];
         }
 
         $upload->update(['data' => array_merge($upload->data ?? [], ['purchase_orders' => $summary])]);

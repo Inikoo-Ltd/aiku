@@ -481,6 +481,23 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
 
     expect(App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder::make()->estimatedExpenses($purchaseOrder))->toEqual(24.0);
 
+    $orderColumn = strtoupper($this->organisation->code);
+    $this->get(route('grp.supply-chain.suppliers.supplier_products.uploads.show', [$supplier->slug, $upload->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where("upload.purchase_orders.$orderColumn.purchase_order", $purchaseOrder->reference)
+            ->where("upload.purchase_orders.$orderColumn.organisation", $this->organisation->name)
+            ->where("upload.purchase_orders.$orderColumn.route.name", 'grp.org.procurement.purchase_orders.show')
+            ->where("upload.purchase_orders.$orderColumn.route.parameters.purchaseOrder", $purchaseOrder->slug)
+            ->etc());
+
+    $this->get(route('grp.supply-chain.suppliers.supplier_products.index', [$supplier->slug, 'tab' => 'uploads']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('SupplyChain/SupplierProducts')
+            ->where('tabs.current', 'uploads')
+            ->where('uploads.data.0.id', $upload->id)
+            ->where('uploads.data.0.preview_route.name', 'grp.supply-chain.suppliers.supplier_products.uploads.show')
+            ->etc());
+
     $again = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit cost (Sup Cur)' => 3])]));
     $againFindings = collect($again->records()->first()->data['findings'])->pluck('level', 'code');
 

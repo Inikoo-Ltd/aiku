@@ -10,6 +10,28 @@ Same signature — `ctrans(text, replacements)` — but it falls back to the ori
 English string instead of an empty node. When you touch a file that still calls `trans(`,
 convert those calls and the import as well.
 
+## Every change is tested
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+
+## Laravel 12 on the Laravel 10 structure
+
+This project upgraded from Laravel 10 without migrating to the streamlined Laravel 11+ file
+structure. That is deliberate: follow the Laravel 10 structure unless asked to migrate.
+
+- Middleware lives in `app/Http/Middleware/` and service providers in `app/Providers/`.
+- There is no `bootstrap/app.php` application configuration:
+    - Middleware registration happens in `app/Http/Kernel.php`
+    - Exception handling is in `app/Exceptions/Handler.php`
+    - Console commands and schedule register in `app/Console/Kernel.php`
+    - Rate limits live in `RouteServiceProvider` or `app/Http/Kernel.php`
+- When modifying a column, the migration must include every attribute previously defined on
+  the column, or they are dropped.
+- Eager loads can be limited natively: `$query->latest()->limit(10);`.
+- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts`
+  property. Follow the conventions of sibling models.
+
 ## Tests share one database per parallel worker
 
 Pest runs with `--parallel`. Each worker restores the dump ONCE and then runs many test
@@ -126,3 +148,30 @@ Before writing a new wrapper, reuse the existing ones:
 Style PrimeVue through `pt` or scoped `:deep()` rules using the theme variables from the
 section above, never hardcoded colours. When you touch a file that still has hand-rolled
 controls, convert them.
+
+## Spreadsheet uploads explain their failures, they don't just count them
+
+A user who sees "Fails: 150" and nothing else uploads the same file again. Every spreadsheet
+import (`App\Imports\*` with `WithImport`) writes one `upload_records` row per line, with the
+line's `values`, its `errors` and its `status`, so the reason is always there to show.
+Reuse what reads it instead of building another table of rows:
+
+- `Upload::failReasons()` groups the failed rows by error, most frequent first, with a count
+  and the first row numbers it hit. The live progress bar (`UploadProgressResource`,
+  `@/Components/Utils/ProgressBar.vue`) already sends it once the import finishes and lets
+  the user expand it. Never call it per row while the import runs: `upload_records` is large
+  and `upload_id` is not indexed.
+- To give a page an upload history, add an icon-only tab placed just left of History, with
+  `'icon' => 'fal fa-upload'` and `'icon_badge' => 'fal fa-clock'`, fill it with
+  `IndexUploadReports::run(parent: $parent, model: class_basename(Model::class), prefix: $tab)`
+  and render `@/Components/Upload/UploadReports.vue` for it. Each upload becomes a card
+  showing who uploaded which file, when, the outcome and the grouped reasons, and its rows
+  load on demand by status from `grp.helpers.uploads.records.index`. The Prospects page
+  (`IndexProspects`, `ProspectsTabsEnum::UPLOADS`) is the reference.
+- So the progress bar can link to that tab, add the page to
+  `UploadProgressResource::reportRoute()`. Leave `show_route` alone: `ModalUpload` fetches
+  failed rows from it.
+- An import that skips blank lines must set `number_rows` to the lines it will really
+  process, as `ProspectImport::collection()` does. The default, `getHighestRow()`, also
+  counts empty rows that only carry formatting, so the bar stops short of its total and
+  looks like the import died.

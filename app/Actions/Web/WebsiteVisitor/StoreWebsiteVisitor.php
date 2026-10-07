@@ -66,6 +66,7 @@ class StoreWebsiteVisitor
             'referrer_url'     => $referrer,
             'is_bounce'        => true,
             'is_new_visitor'   => $isNewVisitor,
+            ...GetWebsiteVisitorTrafficSource::run($currentUrl, $referrer, $website->id, $visitorHash),
         ]);
 
         $cacheKey = "visitor:session:$sessionId:$website->id";

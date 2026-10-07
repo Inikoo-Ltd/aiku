@@ -16,6 +16,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import ProspectsDashboard from '@/Pages/Grp/Org/Shop/CRM/ProspectsDashboard.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue';
+import UploadReports from '@/Components/Upload/UploadReports.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from '@/Composables/useTrans'
 import { PageHeadingTypes } from "@/types/PageHeading";
@@ -41,6 +42,7 @@ const props = defineProps<{
       contacted?: {}
       failed?: {}
       success?: {}
+      uploads?: {}
       upload_spreadsheet?: {}
       download_route: {
         xlsx: routeType
@@ -63,6 +65,7 @@ const component = computed(() => {
         failed: TableProspects,
         success: TableProspects,
         mailshots: TableMailshots,
+        uploads: UploadReports,
         history: TableHistories,
        /*  lists: TableProspectLists */
       }

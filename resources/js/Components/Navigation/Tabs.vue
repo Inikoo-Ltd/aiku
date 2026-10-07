@@ -39,6 +39,7 @@ import {
 	faRepeat,
 	faListUl,
 	faThList,
+	faUpload,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -77,6 +78,7 @@ library.add(
 	faLayerGroup,
 	faSortShapesUpAlt,
 	faThList,
+	faUpload,
 )
 
 const layoutStore = inject("layout", layoutStructure)
@@ -265,6 +267,7 @@ const placeMobileTabOptions = () => {
 					<template v-for="(tab, tabSlug) in navigation" :key="tabSlug">
 						<button
 							v-if="tab.align !== 'right'"
+							v-tooltip="tab.tooltip"
 							@click="onChangeTab(tabSlug)"
 							:class="tabButtonClass(tab, tabSlug === currentTab)"
 							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -297,6 +300,11 @@ const placeMobileTabOptions = () => {
 								:rotation="tab.icon_rotation" />
 							<span class="relative">
 								{{ tab.title }}
+								<FontAwesomeIcon
+									v-if="tab.tooltip"
+									icon="fal fa-question-circle"
+									class="ml-0.5 text-xs text-gray-400"
+									fixed-width aria-hidden="true" />
 								<span
 									v-if="tabSlug === 'bundles'"
 									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded
@@ -347,20 +355,27 @@ const placeMobileTabOptions = () => {
 								icon="fad fa-spinner-third"
 								class="animate-spin h-5 w-5"
 								fixed-width aria-hidden="true" />
-							<FontAwesomeIcon
-								v-else-if="tab.icon"
-								:icon="tab.icon"
-								class="h-5 w-5"
-								fixed-width aria-hidden="true"
-								:class="
-									tabIconClass(
-										tabSlug === currentTab,
-										tab.type,
-										tab.align,
-										tab.iconClass || ''
-									)
-								"
-							/>
+							<span v-else-if="tab.icon" class="relative inline-flex">
+								<FontAwesomeIcon
+									:icon="tab.icon"
+									class="h-5 w-5"
+									fixed-width aria-hidden="true"
+									:class="
+										tabIconClass(
+											tabSlug === currentTab,
+											tab.type,
+											tab.align,
+											tab.iconClass || ''
+										)
+									"
+								/>
+								<FontAwesomeIcon
+									v-if="tab.icon_badge"
+									:icon="tab.icon_badge"
+									class="absolute -bottom-1 -right-1.5 rounded-full bg-white text-[10px]"
+									fixed-width aria-hidden="true"
+								/>
+							</span>
 							<span v-if="tab.type !== 'icon'" class="whitespace-nowrap">{{
 								tab.title
 							}}</span>

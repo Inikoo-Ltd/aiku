@@ -8,6 +8,8 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\SysAdmin\WithLogRequest;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -27,6 +29,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $referrer_url
  * @property bool $is_bounce
  * @property bool $is_new_visitor
+ * @property int|null $web_user_id
+ * @property string|null $web_user_slug
+ * @property string|null $customer_slug
+ * @property string|null $web_user_contact_name
+ * @property string|null $traffic_source_type
+ * @property string|null $traffic_source_reference
  */
 class WebsiteVisitorResource extends JsonResource
 {
@@ -42,6 +50,11 @@ class WebsiteVisitorResource extends JsonResource
         return [
             'id'          => $this->id,
             'session_id'  => substr($this->session_id, 0, 8) . '...',
+            'web_user'    => $this->web_user_id ? [
+                'slug'          => $this->web_user_slug,
+                'customer_slug' => $this->customer_slug,
+                'contact_name'  => $this->web_user_contact_name,
+            ] : null,
             'device_type' => [
                 'label'   => ucfirst($this->device_type),
                 'tooltip' => $this->device_type,
@@ -58,6 +71,11 @@ class WebsiteVisitorResource extends JsonResource
                 'icon'    => $this->getPlatformIcon($this->os)
             ],
             'location'    => $location,
+            'traffic_source_type' => $this->traffic_source_type ? [
+                'label'     => WebsiteVisitorChannelEnum::typeLabel($this->traffic_source_type),
+                'channel'   => WebsiteVisitorChannelEnum::fromType($this->traffic_source_type)?->value,
+                'reference' => $this->sourceDetail(),
+            ] : null,
             'page_views'  => $this->page_views,
             'duration'    => $this->formatDuration($this->duration_seconds),
             'bounce'      => $this->is_bounce ? __('Yes') : __('No'),
@@ -68,6 +86,20 @@ class WebsiteVisitorResource extends JsonResource
             'referrer_url'  => $this->referrer_url,
             'is_new_visitor' => $this->is_new_visitor,
         ];
+    }
+
+    protected function sourceDetail(): ?string
+    {
+        $reference = $this->traffic_source_reference;
+
+        if (!$reference) {
+            return null;
+        }
+
+        $isCampaign = TrafficSourcesTypeEnum::tryFrom($this->traffic_source_type)?->isPaid()
+            || ($this->traffic_source_type === WebsiteVisitorChannelEnum::EMAIL_TYPE && !str_contains($reference, '.'));
+
+        return $isCampaign ? __('Campaign :campaign', ['campaign' => $reference]) : $reference;
     }
 
     protected function formatDuration(int $seconds): string

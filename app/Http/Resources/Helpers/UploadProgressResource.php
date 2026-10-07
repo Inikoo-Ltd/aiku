@@ -8,7 +8,10 @@
 
 namespace App\Http\Resources\Helpers;
 
+use App\Enums\UI\CRM\ProspectsTabsEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Upload;
 use App\Models\SysAdmin\User;
@@ -28,7 +31,8 @@ class UploadProgressResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Upload $upload */
-        $upload = $this;
+        $upload     = $this->resource;
+        $isFinished = $upload->number_success + $upload->number_fails >= $upload->number_rows;
 
         return [
             'action_type'       => 'Upload',
@@ -52,9 +56,35 @@ class UploadProgressResource extends JsonResource
                 'number_success' => $upload->number_success,
                 'number_fails'   => $upload->number_fails,
             ],
+            'fail_reasons' => $isFinished ? $upload->failReasons() : [],
+            'report_route' => $isFinished && $upload->number_fails > 0 ? $this->reportRoute($upload) : null,
             'show_route'   => $this->user instanceof \App\Models\CRM\WebUser
                 ? ['name' => 'retina.helpers.uploads.records.show', 'parameters' => $upload->id]
                 : ['name' => 'grp.helpers.uploads.records.show', 'parameters' => $upload->id],
+        ];
+    }
+
+    /**
+     * @return array{name: string, parameters: array<string, string>}|null
+     */
+    private function reportRoute(Upload $upload): ?array
+    {
+        if (!$this->user instanceof User || $upload->model !== class_basename(Prospect::class)) {
+            return null;
+        }
+
+        $shop = $upload->parent;
+        if (!$shop instanceof Shop) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.org.shops.show.crm.prospects.index',
+            'parameters' => [
+                'organisation' => $shop->organisation->slug,
+                'shop'         => $shop->slug,
+                'tab'          => ProspectsTabsEnum::UPLOADS->value,
+            ],
         ];
     }
 }

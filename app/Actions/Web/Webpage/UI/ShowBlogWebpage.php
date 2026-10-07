@@ -28,7 +28,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Actions\Web\Webpage\GetWebpageGoogleCloud;
+use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
 
@@ -91,8 +91,8 @@ class ShowBlogWebpage extends OrgAction
                     : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
 
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
-                    fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                    : Inertia::optional(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+                    fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
+                    : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
                 WebpageTabsEnum::SNAPSHOTS->value => $this->tab == WebpageTabsEnum::SNAPSHOTS->value ?
                     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))

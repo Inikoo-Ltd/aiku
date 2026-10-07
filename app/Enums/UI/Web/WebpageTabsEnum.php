@@ -18,6 +18,7 @@ enum WebpageTabsEnum: string
 
     case SHOWCASE             = 'showcase';
     case ANALYTICS            = 'analytics';
+    case TRAFFIC_SOURCES      = 'traffic_sources';
     case EXTERNAL_LINKS        = 'external_links';
     case WEBPAGES             = 'webpages';
 
@@ -48,6 +49,10 @@ enum WebpageTabsEnum: string
             WebpageTabsEnum::ANALYTICS => [
                 'title' => __('Performance'),
                 'icon'  => 'fal fa-analytics',
+            ],
+            WebpageTabsEnum::TRAFFIC_SOURCES => [
+                'title' => __('Traffic sources'),
+                'icon'  => 'fal fa-route',
             ],
             WebpageTabsEnum::SNAPSHOTS => [
                 'title' => __('Snapshots'),
