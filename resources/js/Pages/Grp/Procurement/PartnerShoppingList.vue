@@ -439,6 +439,9 @@ function deleteItem(item: { id: number }) {
 					<div v-if="item.price_per_sko" class="text-xs text-gray-500">
 						{{ ctrans("SKO cost") }}:
 						{{ useLocaleStore().currencyFormat(orgPartner.currency, item.price_per_sko) }}
+						<span v-if="Number(item.units_per_pack) > 1">
+							· {{ ctrans("1 SKO = :units units", { units: Number(item.units_per_pack) }) }}
+						</span>
 					</div>
 					<RenderWhenVisible minHeight="9rem">
 						<PurchaseOrderItemStockInfo
