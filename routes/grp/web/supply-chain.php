@@ -23,6 +23,7 @@ use App\Actions\SupplyChain\Supplier\UI\IndexAssignableSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
+use App\Actions\SupplyChain\SupplierProduct\Upload\UI\ShowSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\UI\CreateSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\EditSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
@@ -101,6 +102,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
                 Route::get('', [IndexSupplierProducts::class, 'inSupplier'])->name('.index');
                 Route::get('create', CreateSupplierProduct::class)->name('.create');
                 Route::get('templates', DownloadSupplierProductsTemplate::class)->name('.uploads.templates');
+                Route::get('uploads/{upload:id}', ShowSupplierProductUpload::class)->name('.uploads.show')->withoutScopedBindings();
 
                 Route::prefix('{supplierProduct}')->group(function () {
                     Route::get('', [ShowSupplierProduct::class, 'inSupplier'])->name('.show');

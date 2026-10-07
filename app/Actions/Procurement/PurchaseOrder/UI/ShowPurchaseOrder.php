@@ -46,6 +46,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Facades\DB;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -278,6 +279,7 @@ class ShowPurchaseOrder extends OrgAction
                         'tax'          => $purchaseOrder->cost_tax,
                         'total'        => $purchaseOrder->cost_total,
                         'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
+                        'estimated_expenses' => $this->estimatedExpenses($purchaseOrder),
                     ],
                 ],
 
@@ -962,4 +964,16 @@ class ShowPurchaseOrder extends OrgAction
         ];
     }
 
+
+    /**
+     * The supplier's rough per unit expense estimate (from the product upload) times the quantity ordered,
+     * a budgeting hint shown next to the real total.
+     */
+    public function estimatedExpenses(PurchaseOrder $purchaseOrder): float
+    {
+        return (float)$purchaseOrder->purchaseOrderTransactions()
+            ->join('supplier_products', 'supplier_products.id', '=', 'purchase_order_transactions.supplier_product_id')
+            ->whereRaw("supplier_products.data->>'unit_expense' ~ '^[0-9.]+$'")
+            ->sum(DB::raw("purchase_order_transactions.quantity_ordered * (supplier_products.data->>'unit_expense')::numeric"));
+    }
 }

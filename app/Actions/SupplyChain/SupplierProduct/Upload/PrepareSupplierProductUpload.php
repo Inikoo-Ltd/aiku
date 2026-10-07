@@ -56,8 +56,11 @@ class PrepareSupplierProductUpload
                 'heading_row'   => $sheet['heading_row'],
                 'order_columns' => array_values($sheet['order_columns']),
                 'new_draft'     => [],
+                'ai'            => 'queued',
             ],
         ]);
+
+        CheckSupplierProductUploadWithAI::dispatch($upload);
 
         return $upload;
     }

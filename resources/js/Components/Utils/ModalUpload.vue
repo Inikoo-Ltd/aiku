@@ -155,6 +155,11 @@ const submitUpload = async () => {
         selectedFile.value = null  // Clear the selected file
         csvData.value = []  // Clear the preview table
 
+        if (aaa.data.preview_url) {
+            router.visit(aaa.data.preview_url)
+            return
+        }
+
         idRecentUpload.value = aaa.data.id
         set(selectedEchopersonal, 'isShowProgress', true)
 

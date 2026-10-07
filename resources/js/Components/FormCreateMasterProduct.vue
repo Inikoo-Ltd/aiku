@@ -95,6 +95,7 @@ const avg_org_cost = ref(0)
 const rrp_price_ratio = ref(2.4)
 const base_currency_code = ref<string | null>(null)
 const family_unit_price_median = ref<number | null>(null)
+const supplier_recommendation = ref<Record<string, number> | null>(null)
 const price_outlier_factor = ref(3)
 
 // Inertia form
@@ -207,6 +208,7 @@ const getTableData = (data) => {
             avg_org_cost.value = response.data.avg_org_cost
             base_currency_code.value = response.data.base_currency_code
             family_unit_price_median.value = response.data.family_unit_price_median
+            supplier_recommendation.value = response.data.supplier_recommendation ?? null
             price_outlier_factor.value = response.data.price_outlier_factor
             
         } catch (error: any) {
@@ -732,6 +734,9 @@ const successEditTradeUnit = (data) => {
                         </div>
                         <div>
                           <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Price')}}</label> -->
+                            <p v-if="supplier_recommendation" class="mb-1 text-xs text-gray-500">
+                                {{ ctrans('Supplier upload recommends £:price / RRP £:rrp per unit', { price: supplier_recommendation.recommended_price, rrp: supplier_recommendation.recommended_rrp }) }}<template v-if="supplier_recommendation.recommended_units_per_outer">{{ ctrans(', sold :units units per outer', { units: supplier_recommendation.recommended_units_per_outer }) }}</template>
+                            </p>
                             <MasterPriceCurrencyTable
                                 v-model="form.master_prices"
                                 :currencies="currencies_data"
