@@ -731,6 +731,16 @@ class Product extends Model implements Auditable, HasMedia
             && in_array($this->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
     }
 
+    /**
+     * isSellableThroughSalesChannels() as SQL over a joined products table, for listings of a
+     * customer's own portfolio: there an exclusive product is theirs, so it is for sale to them.
+     */
+    public static function sellableThroughSalesChannelsSql(string $table = 'products'): string
+    {
+        return "($table.is_for_sale or ($table.exclusive_for_customer_id is not null and $table.state in ('"
+            .ProductStateEnum::ACTIVE->value."', '".ProductStateEnum::DISCONTINUING->value."')))";
+    }
+
     public function isExclusiveFor(?int $customerId): bool
     {
         if (!$this->isExclusive()) {

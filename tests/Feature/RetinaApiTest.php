@@ -17,6 +17,7 @@ use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -368,6 +369,40 @@ test('retina api dropshipping feeds expose product ingredients', function () {
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();
     expect($response->json('data.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+});
+
+test('retina api my products shows the customer own exclusive product as for sale to them', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    $original = $this->product->only(['exclusive_for_customer_id', 'is_for_sale', 'status', 'state', 'available_quantity']);
+    $this->product->updateQuietly([
+        'exclusive_for_customer_id' => $this->dropshippingCustomer->id,
+        'is_for_sale'               => false,
+        'status'                    => ProductStatusEnum::NOT_FOR_SALE,
+        'state'                     => ProductStateEnum::ACTIVE,
+        'available_quantity'        => 5,
+    ]);
+
+    $row = collect(getJson(route('retina.api.dropshipping.products.my_product.index'))->assertOk()->json('data'))->firstWhere('id', $portfolioId);
+    expect($row['is_for_sale'])->toBeTrue()
+        ->and($row['is_exclusive'])->toBeTrue()
+        ->and($row['product_status'])->toBe(ProductStatusEnum::FOR_SALE->value);
+
+    expect(collect(getJson(route('retina.api.dropshipping.products.my_product.index', ['is_for_sale' => 'true']))->json('data'))->pluck('id'))->toContain($portfolioId)
+        ->and(collect(getJson(route('retina.api.dropshipping.products.my_product.index', ['is_for_sale' => 'false']))->json('data'))->pluck('id'))->not->toContain($portfolioId);
+
+    $this->product->updateQuietly(['exclusive_for_customer_id' => null]);
+
+    $row = collect(getJson(route('retina.api.dropshipping.products.my_product.index'))->json('data'))->firstWhere('id', $portfolioId);
+    expect($row['is_for_sale'])->toBeFalse()
+        ->and($row['is_exclusive'])->toBeFalse()
+        ->and($row['product_status'])->toBe(ProductStatusEnum::NOT_FOR_SALE->value);
+
+    $this->product->updateQuietly($original);
 });
 
 // ---- Dropshipping: order transactions ----

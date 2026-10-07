@@ -10,6 +10,7 @@
 
 use App\Models\Inventory\OrgStock;
 use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns;
 use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Accounting\Invoice\StoreRefund;
@@ -2346,6 +2347,38 @@ test('submit order skips upcoming transactions for out of stock products', funct
 
     expect($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
         ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
+});
+
+test('submit order applies follow-ons of the customer own exclusive product while it has stock', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $original = $this->product->only(['status', 'is_for_sale', 'exclusive_for_customer_id', 'available_quantity', 'state']);
+    $this->product->updateQuietly([
+        'status'                    => ProductStatusEnum::NOT_FOR_SALE,
+        'is_for_sale'               => false,
+        'exclusive_for_customer_id' => $this->customer->id,
+        'state'                     => ProductStateEnum::ACTIVE,
+        'available_quantity'        => 0,
+    ]);
+
+    $followOn = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $emptyStockOrder = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->processUpComingTransactions($emptyStockOrder);
+    expect($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    $this->product->updateQuietly(['available_quantity' => 3]);
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->processUpComingTransactions($order);
+
+    expect($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(1);
+
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $this->product->updateQuietly($original);
 });
 
 test('submit order skips upcoming transaction when product has no current historic asset', function () {
@@ -5381,16 +5414,34 @@ test('a claim refunded to balance is paid out of the card payment and leaves not
         'state'  => PaymentStateEnum::COMPLETED->value,
     ]);
 
-    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed);
+    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed, 50);
 
-    $credit = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
-    expect($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+    $invoicedLine = $invoice->invoiceTransactions()->where('transaction_id', $item->transaction_id)->firstOrFail();
+    $credit       = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
+    expect(abs((float) $refund->net_amount))->toEqual(round((float) $invoicedLine->net_amount * min(1, 1 / (float) $item->quantity_required) / 2, 2))
+        ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and((float) $refund->total_amount)->toBeLessThan(0.0)
         ->and((float) $order->customer->refresh()->balance)->toBe(abs((float) $refund->total_amount))
         ->and($credit->type)->toBe(CreditTransactionTypeEnum::PAY_RETURN)
         ->and($credit->payment->original_payment_id)->toBe($payment->id)
         ->and($credit->payment->paymentAccount->type)->toBe(PaymentAccountTypeEnum::ACCOUNT)
         ->and(StoreOrderPaymentLink::amountDue($order->refresh()))->toBe(0.0);
+
+    $followOn = StoreClaimFollowOns::make()->handle($order->refresh(), $claimed, 'damaged_in_transit')->sole();
+    expect($followOn->type)->toBe(UpcomingTransactionTypeEnum::FOLLOW_ON)
+        ->and($followOn->product_id)->toBe($this->product->id)
+        ->and((float) $followOn->quantity)->toEqual(1.0)
+        ->and($followOn->public_notes)->toContain($order->reference);
+
+    $nextOrder = StoreOrder::make()->action($order->customer->refresh(), Order::factory()->definition());
+    StoreTransaction::make()->action($nextOrder, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+    SubmitOrder::make()->action($nextOrder->refresh());
+
+    $freeLine = $nextOrder->transactions()->where('is_follow_on', true)->sole();
+    expect((float) $freeLine->quantity_bonus)->toEqual(1.0)
+        ->and((float) $freeLine->quantity_ordered)->toEqual(0.0)
+        ->and($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($followOn->order_id)->toBe($nextOrder->id);
 
     if ($attachedOrgStock) {
         $this->product->orgStocks()->detach($attachedOrgStock->id);

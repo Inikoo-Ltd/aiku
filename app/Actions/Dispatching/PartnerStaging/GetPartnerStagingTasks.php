@@ -74,7 +74,7 @@ class GetPartnerStagingTasks
             $bay = $partner->bayFor((bool) $row->is_cosmetic);
 
             $staged = (float) DB::table('location_org_stocks')
-                ->where('location_id', $bay->id)
+                ->whereIn('location_id', $partner->bayIds())
                 ->where('org_stock_id', $sellerOrgStockId)
                 ->sum('quantity');
 

@@ -13,11 +13,15 @@ use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\UpcomingTransaction;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -34,22 +38,24 @@ class GetChatClaimCase
     /**
      * @return array<string, mixed>|null
      */
-    public function handle(ChatSession|MetaChatSession $chatSession, Customer $customer): ?array
+    public function handle(ChatSession|MetaChatSession $chatSession, Customer $customer, ?string $pickedOrderReference = null): ?array
     {
         $details = GetChatClaimDetails::run($chatSession);
-        $order   = $this->order($customer, $details['order_reference']);
+        $order   = ($pickedOrderReference ? $customer->orders()->where('reference', $pickedOrderReference)->first() : null)
+            ?? $this->order($customer, $details['order_reference']);
 
         if (!$order) {
             return null;
         }
 
         $text  = mb_strtolower($details['text']);
+        $left  = CheckClaimCompensation::run($order);
         $lines = DeliveryNoteItem::query()
             ->whereIn('delivery_note_id', $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->pluck('delivery_notes.id'))
             ->with(['transaction.asset', 'orgStock'])
             ->limit(80)
             ->get()
-            ->map(function (DeliveryNoteItem $item) use ($text) {
+            ->map(function (DeliveryNoteItem $item) use ($text, $left) {
                 $code = $item->transaction?->asset?->code ?? $item->orgStock?->code;
 
                 return [
@@ -59,6 +65,7 @@ class GetChatClaimCase
                     'name'       => $item->transaction?->asset?->name ?? $item->orgStock?->name,
                     'ordered'    => (float) $item->quantity_required,
                     'dispatched' => (float) ($item->quantity_dispatched ?? 0),
+                    'claimable'  => floor(($left[$item->transaction_id] ?? 1) * (float) $item->quantity_required * 1000 + 0.001) / 1000,
                     'mentioned'  => $code !== null && str_contains($text, mb_strtolower($code)),
                 ];
             })
@@ -71,8 +78,20 @@ class GetChatClaimCase
                 'id'        => $order->id,
                 'reference' => $order->reference,
                 'state'     => $order->state->value,
-                'named'     => $details['order_reference'] === $order->reference,
+                'named'     => $details['order_reference'] === $order->reference || $pickedOrderReference === $order->reference,
+                'too_old'   => CheckClaimCompensation::isTooOld($order),
             ],
+            'max_age_days'    => CheckClaimCompensation::MAX_AGE_DAYS,
+            'orders'          => $customer->orders()
+                ->whereIn('state', [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])
+                ->where('dispatched_at', '>=', now()->subDays(CheckClaimCompensation::MAX_AGE_DAYS))
+                ->latest('dispatched_at')
+                ->limit(10)
+                ->pluck('reference')
+                ->push($order->reference)
+                ->unique()
+                ->values()
+                ->all(),
             'photos'          => $details['photos'],
             'lines'           => $lines,
             'reason'          => $this->reason($text)->value,
@@ -81,6 +100,16 @@ class GetChatClaimCase
                 ->all(),
             'replacement'     => ['name' => 'grp.models.order.replacement_delivery_note.store', 'parameters' => ['order' => $order->id]],
             'replacements'    => $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->pluck('reference')->all(),
+            'follow_on'       => !$order->customer_client_id && request()->user()?->authTo("crm.{$order->shop_id}.edit")
+                ? ['name' => 'grp.models.order.claim_follow_on', 'parameters' => ['order' => $order->id]]
+                : null,
+            'follow_ons'      => $customer->upcomingTransactions()
+                ->where('type', UpcomingTransactionTypeEnum::FOLLOW_ON)
+                ->where('state', UpcomingTransactionStateEnum::READY)
+                ->with('product:id,code')
+                ->get()
+                ->map(fn (UpcomingTransaction $followOn) => $followOn->product?->code.' ×'.(float) $followOn->quantity)
+                ->all(),
             ...$this->refund($order),
         ];
     }

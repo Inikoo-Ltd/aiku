@@ -5928,6 +5928,57 @@ describe('partner shopping list', function () {
             ->and((float) $sourceSlot->refresh()->quantity)->toBe(500 - 2 - ($toMove + 5));
     });
 
+    test('stock already staged in the main bay stays staged when the partner gets a cosmetic bay', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+        $sellerOrgStock->stock->update(['is_cosmetic' => true]);
+
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+
+        $warehouse   = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source      = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $cosmeticBay = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+        $cosmeticBay->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalSettings = $sellerPartner->only(['goods_out_location_id', 'split_cosmetics', 'cosmetic_goods_out_location_id']);
+
+        try {
+            $sellerPartner->update(['goods_out_location_id' => $goodsOut->id, 'split_cosmetics' => false, 'cosmetic_goods_out_location_id' => null]);
+
+            $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+                'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+            ]);
+            \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
+
+            \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()
+                ->action($seller, [['id' => $item->id]]);
+
+            $taskFor = fn () => collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))
+                ->firstWhere('org_stock_id', $sellerOrgStock->id);
+            $toMove  = (float) $taskFor()['quantity_to_move'];
+
+            \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, $toMove);
+            expect($taskFor())->toBeNull();
+
+            $sellerPartner->update(['split_cosmetics' => true, 'cosmetic_goods_out_location_id' => $cosmeticBay->id]);
+
+            expect($taskFor())->toBeNull()
+                ->and(\App\Actions\Dispatching\PartnerStaging\ReleasePartnerStagingTask::make()->action($warehouse, $sellerPartner->refresh(), $sellerOrgStock))->toBe(0.0);
+        } finally {
+            $sellerPartner->update($originalSettings);
+            $sellerOrgStock->stock->update(['is_cosmetic' => false]);
+        }
+    });
+
     test('releasing a staging task keeps what was moved promised and sends the rest back to the lists', function () {
         $seller = $this->orgPartner->partner;
 

@@ -39,6 +39,7 @@ class StoreUpcomingTransaction extends OrgAction
             'product_id'     => ['required', 'exists:products,id'],
             'order_id'       => ['sometimes', 'nullable', 'exists:orders,id'],
             'transaction_id' => ['sometimes', 'nullable', 'exists:transactions,id'],
+            'source_transaction_id' => ['sometimes', 'nullable', 'exists:transactions,id'],
             'quantity'       => ['sometimes', 'nullable', 'numeric'],
             'public_notes'   => ['sometimes', 'nullable', 'string'],
             'private_notes'  => ['sometimes', 'nullable', 'string'],

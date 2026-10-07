@@ -43,6 +43,7 @@ use Illuminate\Support\Arr;
  * @property mixed $item_id
  * @property mixed $bundle_id
  * @property mixed $is_for_sale
+ * @property mixed $is_exclusive
  * @property mixed $rrp
  * @property mixed $platform_type
  * @property mixed $available_quantity
@@ -250,6 +251,7 @@ class DropshippingPortfoliosResource extends JsonResource
             ],
             'product_state'                          => $this->product_state ?? null,
             'is_for_sale'                            => ($this->is_bundle ? true : $this->is_for_sale) ?? null,
+            'is_exclusive'                           => (bool) $this->is_exclusive,
             'product_rrp'                            => $this->rrp,
             'price_rule'                             => Arr::get($this->settings, 'pricing'),
             ...$shopifyUploadRoute,

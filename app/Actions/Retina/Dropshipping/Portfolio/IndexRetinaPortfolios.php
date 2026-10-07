@@ -23,6 +23,7 @@ use App\Http\Resources\Dropshipping\EbayOverseasWarehousePolicy;
 use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\MagentoUser;
@@ -88,7 +89,6 @@ class IndexRetinaPortfolios extends RetinaAction
             'products.description as product_description',
             'products.web_images',
             'products.state as product_state',
-            'products.is_for_sale',
             'products.available_quantity',
             'products.current_historic_asset_id',
             'products.gross_weight',
@@ -102,6 +102,8 @@ class IndexRetinaPortfolios extends RetinaAction
             'customer_sales_channels.platform_status as customer_sales_channels_platform_status'
         );
         $query->selectRaw("'{$customerSalesChannel->shop->currency->code}' as currency_code");
+        $query->selectRaw(Product::sellableThroughSalesChannelsSql().' as is_for_sale');
+        $query->selectRaw('products.exclusive_for_customer_id is not null as is_exclusive');
 
         if ($this->tab === CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value) {
             $query->where('portfolios.is_bundle', true);
@@ -146,9 +148,9 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         return AllowedFilter::callback('is_for_sale', function ($query, $value) {
             if ($value === 'true' || $value === true) {
-                $query->where('products.is_for_sale', true);
+                $query->whereRaw(Product::sellableThroughSalesChannelsSql());
             } elseif ($value === 'false' || $value === false) {
-                $query->where('products.is_for_sale', false);
+                $query->whereRaw('not '.Product::sellableThroughSalesChannelsSql());
             }
         });
     }
@@ -363,7 +365,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         ->from('products as p')
                         ->whereColumn('p.id', 'portfolios.item_id')
                         ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                        ->where('p.is_for_sale', true);
+                        ->whereRaw(Product::sellableThroughSalesChannelsSql('p'));
                 })
                 ->where('portfolios.platform_status', false)
                 ->count();

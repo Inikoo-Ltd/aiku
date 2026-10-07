@@ -14,6 +14,7 @@ use App\Actions\RetinaApiAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\Api\DropshippingApiPortfoliosResource;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Services\QueryBuilder;
@@ -68,12 +69,14 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
                 'products.web_images',
                 'products.state as product_state',
                 'products.status as product_status',
-                'products.is_for_sale',
             );
+        $query->selectRaw(Product::sellableThroughSalesChannelsSql().' as is_for_sale');
+        $query->selectRaw('products.exclusive_for_customer_id is not null as is_exclusive');
         $query->selectRaw("'{$customerSalesChannel->shop->currency->code}'  as currency_code");
 
         if (!is_null(Arr::get($modelData, 'is_for_sale'))) {
-            $query->where('products.is_for_sale', filter_var($modelData['is_for_sale'], FILTER_VALIDATE_BOOLEAN));
+            $sellable = Product::sellableThroughSalesChannelsSql();
+            $query->whereRaw(filter_var($modelData['is_for_sale'], FILTER_VALIDATE_BOOLEAN) ? $sellable : 'not '.$sellable);
         }
 
         if (Arr::get($modelData, 'state')) {

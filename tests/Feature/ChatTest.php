@@ -7510,6 +7510,66 @@ test('a claim is prepared for the agent: the order the customer names, and a rep
         ->and($claim['replacement']['name'])->toBe('grp.models.order.replacement_delivery_note.store');
 });
 
+test('a claim with no order number falls back to the last dispatched order, and the agent can pick an earlier one', function () {
+    $customer = createOwnCustomer($this->shop, 'claim-pick');
+    $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+
+    $insertOrder = function (string $reference, int $dispatchedDaysAgo) use ($customer) {
+        \Illuminate\Support\Facades\DB::table('orders')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'slug'            => 'ord-'.uniqid(),
+            'reference'       => $reference,
+            'state'           => 'dispatched',
+            'net_amount'      => 100,
+            'org_net_amount'  => 100,
+            'grp_net_amount'  => 100,
+            'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDays($dispatchedDaysAgo + 1),
+            'dispatched_at'   => now()->subDays($dispatchedDaysAgo),
+            'created_at'      => now()->subDays($dispatchedDaysAgo + 1),
+            'updated_at'      => now()->subDays($dispatchedDaysAgo),
+        ]);
+    };
+
+    $earlier = 'CLE'.random_int(100000, 999999);
+    $latest  = 'CLL'.random_int(100000, 999999);
+    $insertOrder($earlier, 6);
+    $insertOrder($latest, 4);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::WAITING,
+        'channel'     => ChatChannelEnum::WEBSITE,
+        'shop_id'     => $this->shop->id,
+        'web_user_id' => $webUser->id,
+        'topic'       => \App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED->value,
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::USER,
+        'message_text'    => 'The three large glass bowls are broken',
+    ]);
+
+    $fallback = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer);
+    $picked   = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer, $earlier);
+    $foreign  = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer, 'NOT-THEIRS');
+
+    expect($fallback['order']['reference'])->toBe($latest)
+        ->and($fallback['order']['named'])->toBeFalse()
+        ->and($fallback['orders'])->toBe([$latest, $earlier])
+        ->and($picked['order']['reference'])->toBe($earlier)
+        ->and($picked['order']['named'])->toBeTrue()
+        ->and($foreign['order']['reference'])->toBe($latest);
+});
+
 
 test('an email is found by an order or consignment number in its subject or body', function () {
     \Illuminate\Support\Facades\Http::fake();
