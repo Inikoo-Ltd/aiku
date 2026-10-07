@@ -84,9 +84,9 @@ Click any order to open its full record. The title is the order's reference, wit
 - **Dispatched emails** — the emails aiku has sent the customer about this order.
 - **History** — everything that has ever happened to the order.
 
-## Production review (organisations that make their own products)
+## Production review (manufacturing hubs)
 
-In an organisation with a production, each order shows a **Production review** bar under its title. When you have checked the order and printed its manufacturing labels, click **Mark production reviewed**: aiku records who did it and when ("Reviewed by … on …"). **Reset review** clears it if you need to look again.
+In a manufacturing hub (such as Aromatics), each order shows a **Production review** bar under its title. When you have checked the order and printed its manufacturing labels, click **Mark production reviewed**: aiku records who did it and when ("Reviewed by … on …"). **Reset review** clears it if you need to look again.
 
 The **Backlog** and **Orders** lists show the same status in a **Production review** column (green **Reviewed**, grey **Pending review**; hover to see who and when), and the filter row above the backlog lets you show only **Production reviewed** or **Unreviewed** orders. To mark several at once, tick them in the backlog and click **Mark selected as production reviewed**.
 

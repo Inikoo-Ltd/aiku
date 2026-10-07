@@ -68,6 +68,7 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -6111,6 +6112,11 @@ test('group orders hydrator counts orders in a single scan', function () {
 });
 
 test('production managers mark orders as production reviewed, one by one or in bulk, and filter the backlog by it', function () {
+    $wasManufacturingHub = $this->organisation->is_manufacturing_hub;
+    $this->organisation->update(['is_manufacturing_hub' => false]);
+    expect(UpdateOrderProductionReview::isUsedBy($this->organisation))->toBeFalse();
+    $this->organisation->update(['is_manufacturing_hub' => true]);
+
     $this->organisation->productions()->first()
         ?? \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'PRV', 'name' => 'PRV']);
     $this->organisation->unsetRelation('productions');
@@ -6143,4 +6149,6 @@ test('production managers mark orders as production reviewed, one by one or in b
     $first->refresh();
     expect($first->production_reviewed_at)->toBeNull()
         ->and($first->production_reviewed_by)->toBeNull();
+
+    $this->organisation->update(['is_manufacturing_hub' => $wasManufacturingHub]);
 });

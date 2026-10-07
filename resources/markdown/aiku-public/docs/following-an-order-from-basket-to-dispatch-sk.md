@@ -86,7 +86,7 @@ Otvorte ktorúkoľvek objednávku, aby ste videli jej úplný záznam. Stránka 
 
 ## Kontrola výroby (organizácie, ktoré vyrábajú vlastné produkty)
 
-V organizácii s výrobou má každá objednávka pod názvom lištu **Production review**. Keď objednávku skontrolujete a vytlačíte jej výrobné etikety, kliknite na **Mark production reviewed**: aiku zaznamená, kto to urobil a kedy. **Reset review** to zruší, ak ju treba skontrolovať znova.
+Vo výrobnom centre (napríklad Aromatics) má každá objednávka pod názvom lištu **Production review**. Keď objednávku skontrolujete a vytlačíte jej výrobné etikety, kliknite na **Mark production reviewed**: aiku zaznamená, kto to urobil a kedy. **Reset review** to zruší, ak ju treba skontrolovať znova.
 
 Zoznamy **Backlog** a **Orders** ukazujú ten istý stav v stĺpci **Production review** (zelené **Reviewed**, sivé **Pending review**; po prejdení myšou uvidíte kto a kedy) a v riadku filtrov backlogu si zobrazíte len objednávky **Production reviewed** alebo **Unreviewed**. Ak chcete označiť viac naraz, zaškrtnite ich v backlogu a kliknite na **Mark selected as production reviewed**.
 

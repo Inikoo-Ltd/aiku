@@ -32,7 +32,7 @@ class UpdateOrderProductionReview extends OrgAction
 
     public static function isUsedBy(Organisation $organisation): bool
     {
-        return $organisation->productions->isNotEmpty();
+        return $organisation->is_manufacturing_hub;
     }
 
     public static function canReview(User $user, Shop $shop): bool

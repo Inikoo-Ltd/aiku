@@ -86,7 +86,7 @@ Abre cualquier pedido para ver su ficha completa. La página muestra la referenc
 
 ## Revisión de producción (organizaciones que fabrican sus propios productos)
 
-En una organización con producción, cada pedido muestra una barra **Production review** bajo su título. Cuando hayas revisado el pedido e impreso sus etiquetas de fabricación, pulsa **Mark production reviewed**: aiku guarda quién lo hizo y cuándo. **Reset review** lo borra si necesitas revisarlo de nuevo.
+En un centro de fabricación (como Aromatics), cada pedido muestra una barra **Production review** bajo su título. Cuando hayas revisado el pedido e impreso sus etiquetas de fabricación, pulsa **Mark production reviewed**: aiku guarda quién lo hizo y cuándo. **Reset review** lo borra si necesitas revisarlo de nuevo.
 
 Las listas **Backlog** y **Pedidos** muestran el mismo estado en una columna **Production review** (verde **Reviewed**, gris **Pending review**; pasa el ratón para ver quién y cuándo), y la fila de filtros del backlog permite mostrar solo pedidos **Production reviewed** o **Unreviewed**. Para marcar varios a la vez, selecciónalos en el backlog y pulsa **Mark selected as production reviewed**.
 
