@@ -9,18 +9,24 @@ namespace App\Actions\Web\WebsiteVisitor\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\PruneWebsiteVisitors;
+use App\Actions\Web\Website\UI\ShowSeoDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
+use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Http\Resources\Web\WebsiteVisitorResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteVisitor;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,7 +37,11 @@ class IndexWebsiteVisitors extends OrgAction
     use WithWebAuthorisation;
     use WithWebsiteAnalyticsSubNavigation;
 
-    public function handle(Website $parent, $prefix = null): LengthAwarePaginator
+    private Website $website;
+
+    private ?Webpage $webpage = null;
+
+    public function handle(Website $parent, $prefix = null, ?Webpage $webpage = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,6 +58,15 @@ class IndexWebsiteVisitors extends OrgAction
 
         $queryBuilder = QueryBuilder::for(WebsiteVisitor::class);
         $queryBuilder->where('website_visitors.website_id', $parent->id);
+
+        if ($webpage) {
+            $queryBuilder->whereExists(function ($query) use ($webpage) {
+                $query->select(DB::raw(1))
+                    ->from('website_page_views')
+                    ->whereColumn('website_page_views.website_visitor_id', 'website_visitors.id')
+                    ->where('website_page_views.webpage_id', $webpage->id);
+            });
+        }
 
         return $queryBuilder
             ->defaultSort('-first_seen_at')
@@ -86,13 +105,38 @@ class IndexWebsiteVisitors extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
+        $this->website = $website;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($website);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSeo(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        abort_unless($shop->website, 404);
+
+        $this->website = $shop->website;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($this->website);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSeoWebpage(Organisation $organisation, Shop $shop, Webpage $webpage, ActionRequest $request): LengthAwarePaginator
+    {
+        abort_unless($shop->website && $webpage->website_id === $shop->website->id, 404);
+
+        $this->website = $shop->website;
+        $this->webpage = $webpage;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($this->website, webpage: $webpage);
+    }
+
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
+        $this->website = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($website);
@@ -100,29 +144,95 @@ class IndexWebsiteVisitors extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $visitors, ActionRequest $request): Response
     {
-        /** @var Website $website */
-        $website = $request->route()->parameter('website');
-        $title   = __('Website Visitors');
+        $title    = __('Website Visitors');
+        $pageHead = [
+            'title' => $title,
+        ];
+
+        if ($this->webpage) {
+            $title    = __('Visitors of :webpage', ['webpage' => $this->webpage->code]);
+            $pageHead = [
+                'title' => $title,
+                'meta'  => [
+                    [
+                        'key'      => 'webpage',
+                        'label'    => __('Open webpage traffic sources'),
+                        'leftIcon' => [
+                            'icon'    => 'fal fa-browser',
+                            'tooltip' => __('Webpage'),
+                        ],
+                        'route'    => [
+                            'name'       => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => [
+                                'organisation' => $this->organisation->slug,
+                                'shop'         => $this->shop->slug,
+                                'website'      => $this->website->slug,
+                                'webpage'      => $this->webpage->slug,
+                                'tab'          => WebpageTabsEnum::TRAFFIC_SOURCES->value,
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        if (!str_starts_with($request->route()->getName(), 'grp.org.shops.show.seo.')) {
+            $pageHead['subNavigation'] = $this->getWebsiteAnalyticsNavigation($this->website);
+        }
 
         return Inertia::render(
             'Org/Web/WebsiteVisitors',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'   => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $title,
-                'pageHead'    => [
-                    'title'         => $title,
-                    'subNavigation' => $this->getWebsiteAnalyticsNavigation($website),
-                ],
-                'data'        => WebsiteVisitorResource::collection($visitors),
+                'title'         => $title,
+                'pageHead'      => $pageHead,
+                'retentionDays' => PruneWebsiteVisitors::RETENTION_DAYS,
+                'data'          => WebsiteVisitorResource::collection($visitors),
             ]
         )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
+        if ($routeName == 'grp.org.shops.show.seo.visitors.webpage') {
+            return array_merge(
+                $this->getBreadcrumbs('grp.org.shops.show.seo.visitors.index', Arr::only($routeParameters, ['organisation', 'shop'])),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.seo.visitors.webpage',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => $this->webpage?->code,
+                        ]
+                    ]
+                ]
+            );
+        }
+
+        if ($routeName == 'grp.org.shops.show.seo.visitors.index') {
+            return array_merge(
+                ShowSeoDashboard::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.seo.visitors.index',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Visitors'),
+                        ]
+                    ]
+                ]
+            );
+        }
+
         if ($routeName == 'grp.org.shops.show.web.analytics.visitors.index') {
             return array_merge(
                 ShowWebsiteAnalyticsDashboard::make()->getBreadcrumbs('grp.org.shops.show.web.analytics.dashboard', $routeParameters),

@@ -22,15 +22,16 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faUsersClass, faAnalytics, faBrowser, faChartLine, faDraftingCompass, faRoad, faSlidersH, faClock, faLevelDown, faShapes, faSortAmountDownAlt, faLayerGroup, faExternalLink,faObjectGroup ,faDirections} from '@fal'
 import WebpageShowcase from "@/Components/Showcases/Org/WebpageShowcase.vue"
 import WebpageAnalytics from "@/Components/DataDisplay/WebpageAnalytics.vue"
+import TableWebpageTrafficSources from "@/Components/Tables/Grp/Org/Web/TableWebpageTrafficSources.vue"
 import TableSnapshots from "@/Components/Tables/TableSnapshots.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableRedirects from '@/Components/Tables/Grp/Org/Web/TableRedirects.vue'
 import WebpageLockBanner from '@/Components/CMS/Webpage/WebpageLockBanner.vue'
 import WebpageLockButton from '@/Components/CMS/Webpage/WebpageLockButton.vue'
-import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull } from '@fal'
-import { trans } from 'laravel-vue-i18n'
-library.add(faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull, faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink,faObjectGroup,faDirections)
+import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull, faRoute } from '@fal'
+import { ctrans } from '@/Composables/useTrans'
+library.add(faRoute, faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull, faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink,faObjectGroup,faDirections)
 
 const props = defineProps<{
     title: string
@@ -48,6 +49,7 @@ const props = defineProps<{
     external_links?: {}
     labeled_snapshots?: {}
     analytics?:any
+    traffic_sources?: any
     pagespeed?: any
     engagement?: any
     seo?: any
@@ -72,6 +74,7 @@ const component = computed(() => {
         'changelog': TableHistories,
         'showcase': WebpageShowcase,
         'analytics': WebpageAnalytics,
+        'traffic_sources': TableWebpageTrafficSources,
         'webpages': TableWebpages,
         'snapshots': TableSnapshots,
         'redirects': TableRedirects,
@@ -101,7 +104,7 @@ onUnmounted(() => {
             <WebpageLockButton v-if="lock" :lock="lock" />
         </template>
         <template #other>
-            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
+            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="ctrans('Open website in new tab')" aclick="openWebsite" >
                 <FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" size="xl" />
             </a>
         </template>

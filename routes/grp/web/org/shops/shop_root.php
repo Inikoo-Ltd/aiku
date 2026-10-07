@@ -11,6 +11,9 @@ use App\Actions\Catalogue\Shop\UI\CreateShop;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\UI\ShowCrmDashboard;
+use App\Actions\Web\WebsitePageView\UI\IndexWebsitePageViews;
+use App\Actions\Web\Website\UI\ShowSeoDashboard;
+use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexShops::class)->name('index');
@@ -98,6 +101,16 @@ Route::prefix('{shop}')->name('show.')
         Route::prefix("web")
             ->name("web.")
             ->group(__DIR__ . "/websites.php");
+
+        Route::prefix("seo")
+            ->name("seo.")
+            ->group(function () {
+                Route::get('', ShowSeoDashboard::class)->name('dashboard');
+                Route::get('visitors', [IndexWebsiteVisitors::class, 'inSeo'])->name('visitors.index');
+                Route::get('visitors/webpages/{webpage}', [IndexWebsiteVisitors::class, 'inSeoWebpage'])->name('visitors.webpage')->withoutScopedBindings();
+                Route::get('page-views', IndexWebsitePageViews::class)->name('page_views.index');
+                Route::get('page-views/visitors/{websiteVisitor}', [IndexWebsitePageViews::class, 'inVisitor'])->name('page_views.visitor')->withoutScopedBindings();
+            });
 
         Route::prefix("settings")
             ->name("settings.")

@@ -4,6 +4,8 @@
   -->
 
 <script setup lang="ts">
+import { Link } from "@inertiajs/vue3"
+import { route } from "ziggy-js"
 import Table from '@/Components/Table/Table.vue'
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -11,13 +13,22 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 defineProps<{
     data: {}
 }>()
+
+const routeParams = route().params as Record<string, string>
+
+const pageViewsOfVisitorHref = (visitorId: number) => routeParams.shop
+    ? route("grp.org.shops.show.seo.page_views.visitor", [routeParams.organisation, routeParams.shop, visitorId])
+    : null
 </script>
 
 <template>
     <Table :resource="data" class="mt-5">
         <!-- Column: Session ID -->
         <template #cell(session_id)="{ item: visitor }">
-            <span class="font-mono text-xs">{{ visitor.session_id }}</span>
+            <Link v-if="pageViewsOfVisitorHref(visitor.id)" :href="pageViewsOfVisitorHref(visitor.id)" class="primaryLink font-mono text-xs">
+                {{ visitor.session_id }}
+            </Link>
+            <span v-else class="font-mono text-xs">{{ visitor.session_id }}</span>
         </template>
 
         <!-- Column: Device Type -->
