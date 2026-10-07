@@ -10,10 +10,34 @@
 import { defineConfig } from "vite"
 import vue from "@vitejs/plugin-vue"
 import { fileURLToPath, URL } from "node:url"
+import tailwindNesting from "tailwindcss/nesting/index.js"
+import tailwindcss from "tailwindcss"
+import autoprefixer from "autoprefixer"
+
+const browserDefaultRootFontSizeInPixels = 16
+
+const convertRemToPixels = {
+    postcssPlugin: "chat-widget-rem-to-px",
+    Declaration(declaration) {
+        if (!declaration.value.includes("rem")) {
+            return
+        }
+
+        declaration.value = declaration.value.replace(
+            /(-?\d*\.?\d+)rem\b/g,
+            (_, remValue) => `${parseFloat((parseFloat(remValue) * browserDefaultRootFontSizeInPixels).toFixed(4))}px`
+        )
+    },
+}
 
 export default defineConfig({
     cacheDir: "node_modules/.vite-chat-widget",
     publicDir: false,
+    css: {
+        postcss: {
+            plugins: [tailwindNesting, tailwindcss, autoprefixer, convertRemToPixels],
+        },
+    },
     define: {
         "process.env.NODE_ENV": JSON.stringify("production"),
     },
