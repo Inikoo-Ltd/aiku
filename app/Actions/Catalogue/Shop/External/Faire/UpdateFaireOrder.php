@@ -538,7 +538,7 @@ class UpdateFaireOrder extends OrgAction
              * A line the warehouse has never seen cannot be picked from a note that is already
              * packed, so the note goes back far enough for the new line to be worked.
              */
-            $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, null);
+            $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, null);
         });
     }
 
@@ -601,7 +601,7 @@ class UpdateFaireOrder extends OrgAction
             $this->syncDeliveryNote($deliveryNote->refresh(), $transaction, $orgStocks, null);
 
             if ($createdItem) {
-                $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, null);
+                $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, null);
             }
 
             return false;
