@@ -585,6 +585,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Missing pages"),
+                                "tooltip" => __("Missing pages (404)"),
+                                "icon"    => ["fal", "fa-unlink"],
+                                "root"    => "grp.org.shops.show.seo.not_found.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.not_found.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

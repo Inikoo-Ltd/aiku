@@ -152,17 +152,28 @@ external link weekly, Sunday 02:00 UTC, five at a time.
 
 ### 1.3 404 log
 
-**Today.** `ShowIrisWebpage` calls `abort(404)` and nothing is recorded.
+Done on 7 October 2026.
 
-**Build.**
+- `ShowIrisWebpage` dispatches `RecordWebsiteNotFoundHit` (queue `analytics`) just before the
+  `abort(404)` for a path with no webpage and no redirect, with the website, the path, the referrer
+  and the user agent. The other two 404s there (exclusive products, webpages that fail to render)
+  are not logged: those pages exist and need a different fix.
+- The job skips bots with `IsBot` and upserts one row per path in `website_not_found_paths`
+  (website, path, last segment, hits, first and last seen, last referrer, ignored). A trailing
+  slash does not make a new row.
+- `maintenance:prune_website_not_found_paths` deletes paths not seen for 90 days, daily at 03:50 UTC.
+- Hits are a floor, not a count: when Varnish caches a 404, repeat visits never reach Laravel.
 
-- Before the abort, dispatch `RecordWebsiteNotFoundHit` (queue `analytics`) with the website, path
-  and referrer. Skip bots with the existing `IsBot`.
-- `website_not_found_paths`: website_id, path, first_seen_at, last_seen_at, hits, last_referrer,
-  is_resolved. Upsert one row per path, so the table holds paths, not hits.
-- On the dashboard, list paths by hits with a "Create redirect" action that opens the existing
-  redirect form (`app/Actions/Web/Redirect/`) prefilled with the path. Creating the redirect marks
-  the row resolved.
+**Screen.** SEO > Missing pages lists paths by hits with last seen, first seen and where the last
+visit came from, filtered to Open by default (Open, Fixed, Ignored).
+
+- "Create redirect" opens a modal to pick a live page and posts to the existing
+  `StoreRedirectFromWebsite` (`grp.models.website.redirect.store`).
+- Redirects in Aiku match on the last path segment, so the modal says that every URL ending the same
+  way goes to the chosen page.
+- A path counts as Fixed while a redirect exists for its last segment or a live webpage now uses it.
+  This is computed, not stored, so redirects made elsewhere also count.
+- "Ignore" hides probes such as `/wp-login.php`; "Restore" brings them back.
 
 ### 1.4 PageSpeed scores
 
@@ -188,7 +199,7 @@ survive the nightly rebuild.
 - Every website has had at least one audit, and the issue list matches a Semrush Site Audit run on
   the same site closely enough that the team trusts it. (Built; the comparison with Semrush is still
   to do.)
-- 404 paths are visible and redirects can be created from them.
+- 404 paths are visible and redirects can be created from them. (Done)
 - PageSpeed scores are fetched weekly.
 
 ## Phase 2: keywords

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Web\WebsiteNotFoundPath\RecordWebsiteNotFoundHit;
 use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
@@ -169,6 +170,13 @@ class ShowIrisWebpage
 
 
         if ($webpageID === null) {
+            RecordWebsiteNotFoundHit::dispatch(
+                $request->input('website')->id,
+                '/'.$request->path(),
+                $request->header('referer'),
+                (string) $request->userAgent()
+            );
+
             abort(404, 'Not found');
         }
 

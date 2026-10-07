@@ -95,7 +95,7 @@ class AuditWebsite implements ShouldBeUnique
 
         $crawl->update(['state' => CrawlStateEnum::RUNNING, 'start_at' => now(), 'running' => true]);
 
-        $baseUrl                = $this->publicBaseUrl($website);
+        $baseUrl                = self::publicBaseUrl($website);
         $this->host             = $this->hostWithoutWww(parse_url($baseUrl, PHP_URL_HOST) ?? '');
         $this->robotsTxt        = $this->fetchRobotsTxt($baseUrl);
         $this->webpageIdsByPath = $this->webpageIdsByPath($website);
@@ -344,7 +344,7 @@ class AuditWebsite implements ShouldBeUnique
         return $root.'/'.ltrim(implode('/', $segments), '/');
     }
 
-    private function publicBaseUrl(Website $website): string
+    public static function publicBaseUrl(Website $website): string
     {
         $storefrontUrl = parse_url((string) $website->storefront?->canonical_url);
 
