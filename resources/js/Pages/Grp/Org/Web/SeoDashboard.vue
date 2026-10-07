@@ -13,6 +13,10 @@ import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSetti
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TableWebpagesPerformance from "@/Components/Tables/Grp/Org/Web/TableWebpagesPerformance.vue"
 import TableSearchConsoleQueries from "@/Components/Tables/Grp/Org/Web/TableSearchConsoleQueries.vue"
+import TableWebpagesPageSpeed from "@/Components/Tables/Grp/Org/Web/TableWebpagesPageSpeed.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import { coreWebVitalRating, formatCoreWebVital, ratingStyles } from "@/Components/DataDisplay/coreWebVitals"
+import type { CoreWebVital } from "@/Components/DataDisplay/coreWebVitals"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
@@ -24,9 +28,9 @@ import { Intervals, Settings } from "@/types/Components/Dashboard"
 import { routeType } from "@/types/route"
 import { Navigation } from "@/types/Tabs"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBrowser, faSearch, faMousePointer } from "@fal"
+import { faBrowser, faSearch, faMousePointer, faTachometerAltFast } from "@fal"
 
-library.add(faBrowser, faSearch, faMousePointer)
+library.add(faBrowser, faSearch, faMousePointer, faTachometerAltFast)
 
 type DailyTraffic = {
     day: string
@@ -56,6 +60,13 @@ type DailySearch = {
     day: string
     clicks: number
     impressions: number
+}
+
+type DeviceVitals = { lcp: number | null, inp: number | null, cls: number | null, samples?: number } | null
+
+type PageSpeedSummary = {
+    crux: { period_start: string | null, period_end: string | null, devices: Record<"phone" | "desktop", DeviceVitals> } | null
+    visitors: { days: number, devices: Record<"phone" | "desktop", DeviceVitals> } | null
 }
 
 type SearchPerformance = {
@@ -95,6 +106,8 @@ const props = defineProps<{
     website: PerformanceWebsite | null
     performance: WebsitePerformance | null
     search: SearchPerformance | null
+    page_speed_summary: PageSpeedSummary | null
+    page_speed?: object | null
     tabs: {
         current: string
         navigation: Navigation
@@ -107,7 +120,68 @@ const props = defineProps<{
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-const tabComponent = computed(() => currentTab.value === "webpages" ? TableWebpagesPerformance : TableSearchConsoleQueries)
+const tabComponent = computed(() => ({
+    webpages: TableWebpagesPerformance,
+    search_queries: TableSearchConsoleQueries,
+    search_opportunities: TableSearchConsoleQueries,
+    page_speed: TableWebpagesPageSpeed,
+})[currentTab.value])
+
+type SpeedSource = "crux" | "visitors"
+
+const speedSource = ref<SpeedSource>(props.page_speed_summary?.crux ? "crux" : "visitors")
+
+const speedSourceOptions = [
+    { label: ctrans("Google"), value: "crux" },
+    { label: ctrans("Our visitors"), value: "visitors" },
+]
+
+const speedDevices = [
+    { key: "phone" as const, label: ctrans("Mobile") },
+    { key: "desktop" as const, label: ctrans("Desktop") },
+]
+
+const speedMetrics: Array<{ key: CoreWebVital, label: string, description: string }> = [
+    { key: "lcp", label: "LCP", description: ctrans("Largest Contentful Paint: how long until the main content shows. Good is 2.5 s or less") },
+    { key: "inp", label: "INP", description: ctrans("Interaction to Next Paint: how fast the page reacts to a tap or click. Good is 200 ms or less") },
+    { key: "cls", label: "CLS", description: ctrans("Cumulative Layout Shift: how much the page jumps while loading. Good is 0.1 or less") },
+]
+
+const speedData = computed(() => props.page_speed_summary?.[speedSource.value] ?? null)
+
+const speedPeriodText = computed(() => {
+    if (speedSource.value === "crux") {
+        const crux = props.page_speed_summary?.crux
+
+        return crux?.period_end
+            ? ctrans("Chrome users, 28 days to :date", { date: useFormatTime(`${crux.period_end}T00:00:00`, { formatTime: "mdy" }) })
+            : ""
+    }
+
+    const visitors = props.page_speed_summary?.visitors
+
+    return visitors ? ctrans("Measured in visitors' browsers, last :days days", { days: visitors.days }) : ""
+})
+
+const deviceVerdict = (vitals: DeviceVitals) => {
+    if (!vitals) {
+        return null
+    }
+
+    const ratings = speedMetrics.map((metric) => coreWebVitalRating(metric.key, vitals[metric.key])).filter((rating) => rating !== null)
+
+    if (!ratings.length) {
+        return null
+    }
+
+    return ratings.includes("poor") ? "poor" : ratings.includes("needs_improvement") ? "needs_improvement" : "good"
+}
+
+const verdictText = (rating: "good" | "needs_improvement" | "poor") => ({
+    good: ctrans("Passes Core Web Vitals"),
+    needs_improvement: ctrans("Needs improvement"),
+    poor: ctrans("Fails Core Web Vitals"),
+})[rating]
 
 const reloadOnly = computed(() => ["intervals", "performance", "search", currentTab.value])
 
@@ -547,6 +621,62 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                 </div>
             </div>
         </template>
+    </section>
+
+    <section
+        v-if="page_speed_summary"
+        :aria-label="ctrans('Page speed')"
+        class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 pt-4">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span class="font-medium text-gray-900">{{ ctrans("Page speed") }}</span>
+                <SegmentedToggle v-model="speedSource" :options="speedSourceOptions" :aria-label="ctrans('Data source')" />
+            </div>
+            <span v-if="speedPeriodText" class="text-xs text-gray-500">{{ speedPeriodText }}</span>
+        </div>
+
+        <p v-if="!speedData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+            {{
+                speedSource === "crux"
+                    ? ctrans("Google has not reported this website yet. It needs enough Chrome visits over 28 days, and the report is fetched every Tuesday.")
+                    : ctrans("Not enough page loads measured in visitors' browsers in the last 28 days.")
+            }}
+        </p>
+
+        <div v-else class="grid grid-cols-1 gap-x-8 gap-y-5 px-5 pb-5 pt-4 sm:grid-cols-2">
+            <div v-for="device in speedDevices" :key="device.key">
+                <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <h3 class="text-sm font-medium text-gray-900">{{ device.label }}</h3>
+                    <span
+                        v-if="deviceVerdict(speedData.devices[device.key])"
+                        class="inline-flex items-center gap-1.5 text-xs"
+                        :class="ratingStyles[deviceVerdict(speedData.devices[device.key])!].text">
+                        <span class="size-2 rounded-full" :class="ratingStyles[deviceVerdict(speedData.devices[device.key])!].dot" aria-hidden="true" />
+                        {{ verdictText(deviceVerdict(speedData.devices[device.key])!) }}
+                    </span>
+                    <span v-else class="text-xs text-gray-500">{{ ctrans("No data") }}</span>
+                </div>
+
+                <dl v-if="speedData.devices[device.key]" class="mt-2 divide-y divide-gray-100 text-sm">
+                    <div v-for="metric in speedMetrics" :key="metric.key" class="flex items-center gap-2 py-1.5">
+                        <dt class="text-gray-600" v-tooltip="metric.description">{{ metric.label }}</dt>
+                        <dd class="ml-auto flex items-center gap-1.5 tabular-nums text-gray-900">
+                            {{ formatCoreWebVital(metric.key, speedData.devices[device.key]?.[metric.key]) }}
+                            <span
+                                v-if="coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])"
+                                class="size-2 rounded-full"
+                                :class="ratingStyles[coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])!].dot"
+                                :title="ratingStyles[coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])!].label" />
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <div v-if="website" class="border-t border-gray-100 px-5 py-3 text-xs text-gray-500">
+            {{ ctrans("75th percentile of real page loads.") }}
+            <Link :href="route(website.route.name, website.route.parameters)" class="text-gray-700 underline underline-offset-2 hover:text-gray-900">{{ ctrans("See the weekly history") }}</Link>
+        </div>
     </section>
 
     <section

@@ -175,19 +175,41 @@ visit came from, filtered to Open by default (Open, Fixed, Ignored).
   This is computed, not stored, so redirects made elsewhere also count.
 - "Ignore" hides probes such as `/wp-login.php`; "Restore" brings them back.
 
-### 1.4 PageSpeed scores (not built)
+### 1.4 Page speed (field data, following HELP-3303)
 
-Dropped on 7 October 2026. HELP-3303 (commit `92f37c381f`, 24 September 2026) deliberately replaced
-the Lighthouse lab test with field data: the lab test scored pages such as the stationery family at
-49 while real desktop visitors passed, so staff chased a number customers never saw. Page speed in
-Aiku is judged on the Chrome UX Report (`FetchCruxHistory`, needs `GOOGLE_CRUX_API_KEY`) and the web
-vitals measured in our visitors' browsers, both shown as Real user speed on the website and webpage
-pages. That covers what Semrush shows for Core Web Vitals.
+Done on 7 October 2026, without lab scores.
 
-- The `pagespeed_{desktop,mobile}_*` columns on `webpage_time_series_records` still hold the history
-  of the removed nightly crawl (29,428 rows for 12,646 webpages in the 7 October restore). Nothing
-  writes or reads them now. They are kept until the owner of HELP-3303 decides to drop them.
-- `GOOGLE_PAGESPEED_API_KEY` is no longer read by any config.
+HELP-3303 (commit `92f37c381f`, 24 September 2026) replaced the Lighthouse lab test with field data:
+the lab test scored pages such as the stationery family at 49 while real desktop visitors passed, so
+staff chased a number customers never saw. 1.4 follows it and adds no PageSpeed Insights calls.
+
+**Today (from HELP-3303).** `FetchCruxRecords` (`crux:fetch`, Tuesdays 01:00 UTC) stores the Chrome
+UX Report history of every live website and of every page with 50 or more views in 28 days in
+`crux_records`. `StoreWebVitalSample` records LCP, INP, CLS, FCP and TTFB from visitors' browsers
+in `web_vital_samples` (kept 400 days). Both show as Real user speed on the website and webpage
+pages.
+
+**Built.**
+
+- SEO dashboard, Page speed card: the website's 75th percentile LCP, INP and CLS for mobile and
+  desktop, with a Good, Needs improvement or Poor mark per metric and a Passes or Fails Core Web
+  Vitals verdict per device. A toggle switches between Google (the latest Chrome UX Report period)
+  and Our visitors (last 28 days). Not affected by the dashboard interval. Built by
+  `GetWebsitePageSpeedSummary`.
+- SEO dashboard, Page speed tab (`IndexWebpagesPageSpeed`): every webpage with at least 5 measured
+  page loads in 28 days, with its 75th percentile LCP, INP and CLS and the worst of the three as
+  the Core Web Vitals status, worst pages first. Filter by Mobile or Desktop. The code opens the
+  webpage's Performance tab, where the weekly history is.
+- Limits are Google's: LCP 2.5 s and 4 s, INP 200 ms and 500 ms, CLS 0.1 and 0.25.
+
+**Configuration.** `GOOGLE_CRUX_API_KEY`, a Google Cloud API key with the Chrome UX Report API
+enabled. Without it the Google side keeps the last stored weeks and stops updating; the visitors
+side needs no key.
+
+**Not built.** Lab scores from PageSpeed Insights. The `pagespeed_{desktop,mobile}_*` columns on
+`webpage_time_series_records` still hold the history of the removed nightly crawl (29,428 rows for
+12,646 webpages in the 7 October restore). Nothing writes or reads them; they are kept until the
+owner of HELP-3303 decides to drop them.
 
 ### Phase 1 is done when
 
@@ -196,7 +218,7 @@ pages. That covers what Semrush shows for Core Web Vitals.
   the same site closely enough that the team trusts it. (Built; the comparison with Semrush is still
   to do.)
 - 404 paths are visible and redirects can be created from them. (Done)
-- Page speed: covered by the Chrome UX Report and our visitors' web vitals (see 1.4).
+- Page speed: Core Web Vitals per website and per page on the SEO dashboard, from field data. (Done)
 
 ## Phase 2: keywords
 

@@ -9,6 +9,7 @@
 namespace App\Enums\UI\Web;
 
 use App\Actions\Web\SearchConsole\UI\IndexSearchConsoleQueries;
+use App\Actions\Web\WebVital\GetWebsitePageSpeedSummary;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
@@ -20,6 +21,7 @@ enum SeoDashboardTabsEnum: string
     case WEBPAGES             = 'webpages';
     case SEARCH_QUERIES       = 'search_queries';
     case SEARCH_OPPORTUNITIES = 'search_opportunities';
+    case PAGE_SPEED           = 'page_speed';
 
     public function blueprint(): array
     {
@@ -42,6 +44,11 @@ enum SeoDashboardTabsEnum: string
                     'position'    => IndexSearchConsoleQueries::OPPORTUNITY_MAX_POSITION,
                     'ctr'         => IndexSearchConsoleQueries::OPPORTUNITY_MAX_CTR,
                 ]),
+            ],
+            SeoDashboardTabsEnum::PAGE_SPEED => [
+                'title'   => __('Page speed'),
+                'icon'    => 'fal fa-tachometer-alt-fast',
+                'tooltip' => __('Core Web Vitals of each webpage, measured in visitors\' browsers over the last :days days: how fast the main content shows (LCP), how fast the page reacts (INP) and how much it jumps (CLS). Worst pages first.', ['days' => GetWebsitePageSpeedSummary::VISITOR_DAYS]),
             ],
         };
     }

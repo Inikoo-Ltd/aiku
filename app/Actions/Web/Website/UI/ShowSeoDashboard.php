@@ -16,9 +16,12 @@ use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Web\SearchConsole\GetWebsiteSearchConsoleStats;
 use App\Actions\Web\SearchConsole\UI\IndexSearchConsoleQueries;
 use App\Actions\Web\Webpage\UI\IndexWebpagesPerformance;
+use App\Actions\Web\WebVital\GetWebsitePageSpeedSummary;
+use App\Actions\Web\WebVital\UI\IndexWebpagesPageSpeed;
 use App\Actions\Web\Website\GetWebsitePerformanceStats;
 use App\Enums\UI\Web\SeoDashboardTabsEnum;
 use App\Http\Resources\Web\SearchConsoleQueryResource;
+use App\Http\Resources\Web\WebpagePageSpeedResource;
 use App\Http\Resources\Web\WebpagePerformanceResource;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Catalogue\Shop;
@@ -93,6 +96,9 @@ class ShowSeoDashboard extends OrgAction
                 'search'      => fn () => $shop->website
                     ? GetWebsiteSearchConsoleStats::run($shop->website, $fromDate, $toDate)
                     : null,
+                'page_speed_summary' => fn () => $shop->website
+                    ? GetWebsitePageSpeedSummary::run($shop->website)
+                    : null,
 
                 SeoDashboardTabsEnum::WEBPAGES->value => $this->tabProp(
                     SeoDashboardTabsEnum::WEBPAGES,
@@ -104,6 +110,12 @@ class ShowSeoDashboard extends OrgAction
                     SeoDashboardTabsEnum::SEARCH_QUERIES,
                     $shop->website,
                     fn (Website $website) => SearchConsoleQueryResource::collection(IndexSearchConsoleQueries::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::SEARCH_QUERIES->value))
+                ),
+
+                SeoDashboardTabsEnum::PAGE_SPEED->value => $this->tabProp(
+                    SeoDashboardTabsEnum::PAGE_SPEED,
+                    $shop->website,
+                    fn (Website $website) => WebpagePageSpeedResource::collection(IndexWebpagesPageSpeed::run($website, SeoDashboardTabsEnum::PAGE_SPEED->value))
                 ),
 
                 SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value => $this->tabProp(
@@ -118,7 +130,8 @@ class ShowSeoDashboard extends OrgAction
             $inertiaResponse
                 ->table(IndexWebpagesPerformance::make()->tableStructure(prefix: SeoDashboardTabsEnum::WEBPAGES->value))
                 ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_QUERIES->value))
-                ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value, lowCtrOnly: true));
+                ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value, lowCtrOnly: true))
+                ->table(IndexWebpagesPageSpeed::make()->tableStructure($shop->website, prefix: SeoDashboardTabsEnum::PAGE_SPEED->value));
         }
 
         return $inertiaResponse;

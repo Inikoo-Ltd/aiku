@@ -14,13 +14,14 @@ All work is on the `seo` branch and has not been deployed yet.
 | 1.1 Search Console history | 16 months of clicks, impressions, CTR and position, fetched daily, per website, page and query | SEO dashboard: Google Search card, Search queries and Low CTR queries tabs, search columns on Webpages; Webpage > Performance tab |
 | 1.2 Site Audit | Weekly crawl of every live website, 23 issue types, health score and trend, pages per issue | SEO > Site audit |
 | 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO > Missing pages |
+| 1.4 Page speed | Core Web Vitals (LCP, INP, CLS) from real visits, per website and per page, following HELP-3303: Google's Chrome UX Report and visitors' browsers | SEO dashboard: Page speed card and Page speed tab |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
 
 | Part | Why |
 | --- | --- |
-| 1.4 PageSpeed lab scores | HELP-3303 (commit `92f37c381f`) replaced the Lighthouse lab test with field data from the Chrome UX Report and our visitors' web vitals, because the lab score sent staff after numbers customers never saw. Page speed stays on Real user speed. The old `pagespeed_*` columns on `webpage_time_series_records` keep their history until the owner of HELP-3303 decides to drop them. |
+| 1.4 lab scores (PageSpeed Insights) | HELP-3303 (commit `92f37c381f`) replaced the Lighthouse lab test with field data, because the lab score sent staff after numbers customers never saw. 1.4 uses that field data instead. The old `pagespeed_*` columns on `webpage_time_series_records` keep their history until the owner of HELP-3303 decides to drop them. |
 
 ## Not started
 
@@ -65,7 +66,7 @@ external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC.
 | Variable | Used for | Needed |
 | --- | --- | --- |
 | `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
-| `GOOGLE_CRUX_API_KEY` | Real user speed from the Chrome UX Report (existing feature) | Yes, for Real user speed |
+| `GOOGLE_CRUX_API_KEY` | Chrome UX Report: Real user speed and the Google side of 1.4. The key needs the Chrome UX Report API enabled in its Google Cloud project | Yes |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | Keyword research (2.1, not started) | Needs Basic access |
-| `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 is skipped | No |
+| `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
 | `OPENROUTER_API_KEY` | AI visibility and content help (Phase 3) | Not yet |
