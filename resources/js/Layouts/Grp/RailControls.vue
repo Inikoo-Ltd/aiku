@@ -81,7 +81,7 @@ const shownOnRail = (key: string, isShown: boolean) => isShown && !isOffRail(key
 const myTasksCount = computed(() => sumCounts(layout.task_badges?.mine, ['todo', 'in_progress']))
 const myTasksOverdue = computed(() => layout.task_badges?.mine?.overdue?.count ?? 0)
 const myTasksUnread = computed(() => (layout.task_badges?.recent ?? []).filter((update) => !update.read).length)
-const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0))
+const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0 || layout.leave_covers.length > 0))
 const createdTasks = computed(() => layout.task_badges?.created ?? null)
 const myTasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks', true))
 const createdTasksOnRail = computed(() => (createdTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_created', true))
@@ -250,7 +250,7 @@ onBeforeUnmount(clearCollapseTimer)
                             </div>
                         </template>
                         <template #content="{ close }">
-                            <TaskBadgeList :badges="layout.task_badges!" :close="close" />
+                            <TaskBadgeList :badges="layout.task_badges!" :covers="layout.leave_covers" :close="close" />
                         </template>
                     </Popover>
                 </div>

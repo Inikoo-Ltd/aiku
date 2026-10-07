@@ -377,6 +377,15 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
+                    [
+                        'label' => __('Covering'),
+                        'icon'  => ['fal', 'fa-user-friends'],
+                        'root'  => 'grp.org.tasks.covering',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.covering',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
                 ],
             ],
         ];
