@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router, usePoll } from "@inertiajs/vue3"
-import { computed, ref, watch } from "vue"
+import { computed, reactive, ref, watch } from "vue"
+import axios from "axios"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { notify } from "@kyvg/vue3-notification"
 
 interface Finding {
     level: "error" | "block" | "link" | "warning"
@@ -87,28 +89,51 @@ const levelLabel = computed(() => ({
 const sortedFindings = (row: Row) => [...row.findings].sort((a, b) => levelOrder[a.level] - levelOrder[b.level])
 
 const counts = computed(() => {
-    const active = props.rows.filter((row) => !row.skip)
+    const active = props.rows.filter((row) => !isSkipped(row))
     const has = (row: Row, level: string) => row.findings.some((finding) => finding.level === level)
     return {
         rows: props.rows.length,
         skipped: props.rows.length - active.length,
         errors: active.filter((row) => has(row, "error")).length,
-        blocks: active.filter((row) => row.findings.some((finding) => ["block", "link"].includes(finding.level) && !row.decisions[finding.code]?.accepted)).length,
+        blocks: active.filter((row) => row.findings.some((finding) => ["block", "link"].includes(finding.level) && !isAccepted(row, finding))).length,
         warnings: active.filter((row) => has(row, "warning")).length,
     }
 })
 
 const needsSkoName = (row: Row) => (row.values.units_per_sko ?? 1) > 1
 
+const localDecisions = reactive<Record<number, Record<string, boolean>>>({})
+const localSkips = reactive<Record<number, boolean>>({})
+const isAccepted = (row: Row, finding: Finding) => localDecisions[row.id]?.[finding.code] ?? !!row.decisions[finding.code]?.accepted
+const isSkipped = (row: Row) => localSkips[row.id] ?? row.skip
+
+const pendingSaves = ref(0)
+let saveChain: Promise<unknown> = Promise.resolve()
 const updateRecord = (row: Row, payload: Record<string, any>) => {
-    router.patch(route(props.routes.record.name, { ...props.routes.record.parameters, record: row.id }), payload, {
-        preserveScroll: true,
-        preserveState: true,
-    })
+    pendingSaves.value++
+    saveChain = saveChain
+        .then(() => axios.patch(route(props.routes.record.name, { ...props.routes.record.parameters, record: row.id }), payload, { headers: { Accept: "application/json" } }))
+        .catch(() => notify({ title: ctrans("Not saved"), text: ctrans("A change could not be saved, the page will reload."), type: "error" }))
+        .finally(() => {
+            pendingSaves.value--
+            if (pendingSaves.value === 0) {
+                router.reload({ only: ["upload", "rows", "draft_orders"], onSuccess: () => {
+                    Object.keys(localDecisions).forEach((key) => delete localDecisions[Number(key)])
+                    Object.keys(localSkips).forEach((key) => delete localSkips[Number(key)])
+                } })
+            }
+        })
 }
 
-const toggleDecision = (row: Row, finding: Finding, accepted: boolean) => updateRecord(row, { decisions: { [finding.code]: accepted } })
-const toggleSkip = (row: Row) => updateRecord(row, { skip: !row.skip })
+const toggleDecision = (row: Row, finding: Finding, accepted: boolean) => {
+    localDecisions[row.id] = { ...(localDecisions[row.id] ?? {}), [finding.code]: accepted }
+    updateRecord(row, { decisions: { [finding.code]: accepted } })
+}
+const toggleSkip = (row: Row) => {
+    const skip = !isSkipped(row)
+    localSkips[row.id] = skip
+    updateRecord(row, { skip })
+}
 const saveSkoName = (row: Row) => {
     if ((row.values.sko_name ?? "") !== skoNames.value[row.id]) {
         updateRecord(row, { sko_name: skoNames.value[row.id] })
@@ -146,7 +171,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     type="save"
                     :label="ctrans('Import')"
                     :loading="isImporting"
-                    :disabled="upload.problems.length > 0"
+                    :disabled="upload.problems.length > 0 || pendingSaves > 0"
                     @click="importUpload"
                 />
             </div>
@@ -226,7 +251,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                 v-for="row in rows"
                 :key="row.id"
                 class="rounded border p-3"
-                :class="row.skip ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-gray-200'"
+                :class="isSkipped(row) ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-gray-200'"
             >
                 <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span class="text-xs text-gray-500 tabular-nums">{{ ctrans("Row") }} {{ row.row }}</span>
@@ -235,7 +260,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     <span class="text-gray-500">{{ row.values.family }}</span>
                     <span v-if="row.status !== 'preview'" class="text-xs font-medium" :class="row.status === 'failed' ? 'text-red-700' : 'text-gray-500'">{{ row.status }}</span>
                     <button v-if="upload.can_edit" type="button" class="ml-auto text-xs text-gray-600 hover:underline" @click="toggleSkip(row)">
-                        {{ row.skip ? ctrans("Include row") : ctrans("Skip row") }}
+                        {{ isSkipped(row) ? ctrans("Include row") : ctrans("Skip row") }}
                     </button>
                 </div>
 
@@ -250,7 +275,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     <span v-for="(cartons, key) in row.values.order" :key="key">{{ key }} {{ cartons }} {{ ctrans("cartons") }}</span>
                 </div>
 
-                <div v-if="!row.skip && needsSkoName(row)" class="mt-2 flex items-center gap-2 text-xs">
+                <div v-if="!isSkipped(row) && needsSkoName(row)" class="mt-2 flex items-center gap-2 text-xs">
                     <label class="text-gray-500" :for="`sko-name-${row.id}`">{{ ctrans("SKO name") }}</label>
                     <input
                         :id="`sko-name-${row.id}`"
@@ -270,10 +295,10 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                         <span>{{ finding.message }}</span>
                         <span v-if="finding.source === 'jev'" class="text-gray-500">({{ ctrans("AI") }})</span>
                         <label
-                            v-if="upload.can_edit && !row.skip && ['block', 'link'].includes(finding.level)"
+                            v-if="upload.can_edit && !isSkipped(row) && ['block', 'link'].includes(finding.level)"
                             class="inline-flex items-center gap-1.5 text-gray-600"
                         >
-                            <input type="checkbox" :checked="!!row.decisions[finding.code]?.accepted" @change="toggleDecision(row, finding, ($event.target as HTMLInputElement).checked)" />
+                            <input type="checkbox" :checked="isAccepted(row, finding)" @change="toggleDecision(row, finding, ($event.target as HTMLInputElement).checked)" />
                             {{ finding.level === "link" ? ctrans("Add this supplier to it") : ctrans("This is OK, I accept responsibility") }}
                         </label>
                     </li>

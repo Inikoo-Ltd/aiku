@@ -520,6 +520,18 @@ test('supplier product upload AI checks add Jev findings and the final review, a
     expect($upload->data['review']['status'])->toBe('off');
 });
 
+test('supplier product upload is not left waiting when the AI checks crash', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    App\Actions\Helpers\AI\AskJev::shouldRun()->andThrow(new RuntimeException('AI gateway down'));
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow()]));
+
+    expect($upload->data['ai'])->toBe('failed')
+        ->and(collect($upload->records()->first()->data['findings'])->pluck('level', 'code')->all())->toMatchArray(['ai_checks_not_run' => 'block'])
+        ->and(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make()->problems($upload))->not->toContain('The AI checks are still running.');
+});
+
 test('UI supplier product upload preview shows the rows and saves decisions', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());

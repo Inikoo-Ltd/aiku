@@ -183,7 +183,7 @@ PROMPT;
     protected function saveReview(Upload $upload, array $review): Upload
     {
         $upload->refresh();
-        $upload->update(['data' => array_merge($upload->data, ['review' => $review])]);
+        $upload->update(['data' => array_merge($upload->data ?? [], ['review' => $review])]);
 
         return $upload;
     }
