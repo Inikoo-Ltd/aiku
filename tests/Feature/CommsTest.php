@@ -13,6 +13,7 @@ namespace Tests\Feature;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
@@ -108,6 +109,7 @@ use App\Actions\Maintenance\Comms\RepairEmailSocialIcons;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
+use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
@@ -2389,6 +2391,35 @@ test('UI show mailshot template workshop', function (EmailTemplate $emailTemplat
             ->where('imagesUploadRoute.name', 'grp.models.email-templates.images.store')
             ->has('breadcrumbs');
     });
+})->depends('update mailshot template');
+
+test('shop email editor defaults to beefree and can be switched to aiku', function (EmailTemplate $emailTemplate) {
+    $shop = $emailTemplate->shop;
+    $shop->update(['settings' => Arr::except($shop->settings ?? [], 'email_editor')]);
+
+    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
+    $trackingSettings = Arr::get($shop->settings, 'mailshot_tracking');
+
+    $this->patch(route('grp.models.org.shop.update', [$shop->organisation_id, $shop->id]), [
+        'email_editor' => 'aiku',
+    ])->assertRedirect();
+
+    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::AIKU)
+        ->and(Arr::get($shop->settings, 'mailshot_tracking'))->toBe($trackingSettings);
+
+    $this->get(route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->etc());
+
+    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('emailEditor', 'aiku')->etc());
+
+    $this->patch(route('grp.models.org.shop.update', [$shop->organisation_id, $shop->id]), [
+        'email_editor' => 'unlayer',
+    ])->assertSessionHasErrors('email_editor');
+
+    UpdateShop::make()->action($shop, ['email_editor' => 'beefree']);
+
+    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
 })->depends('update mailshot template');
 
 test('upload images to email template from workshop', function (EmailTemplate $emailTemplate) {

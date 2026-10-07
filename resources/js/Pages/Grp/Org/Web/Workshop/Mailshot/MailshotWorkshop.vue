@@ -40,6 +40,7 @@ const props = defineProps<{
     builder: string
     imagesUploadRoute: routeType
     videoThumbnailRoute?: routeType
+    emailEditor?: 'aiku' | 'beefree'
     updateRoute: routeType
     snapshot: routeType
     unpublished_layout: any
@@ -363,6 +364,11 @@ onMounted(() => {
         <template #afterTitle2>
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
+        <template v-if="builder == 'beefree' && emailEditor === 'beefree'" #otherBefore>
+            <Button @click="() => isModalCloneTemplateEmail = true" :label="ctrans('Choose Template')"
+                class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
+                :icon="faThLarge" :disabled="!isBeefreeReady" />
+        </template>
         <template #button-utm="{ action }">
             <Button :label="action.label" type="tertiary" :icon="faLink" @click="isUtmLinksModalOpen = true" />
         </template>
@@ -400,17 +406,13 @@ onMounted(() => {
     </Dialog>
 
     <template v-if="builder == 'beefree'">
-        <!-- <Beetree :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+        <Beetree v-if="emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
             ref="_beefree" @ready="isBeefreeReady = $event" />
 
-        <div class="border-y border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700">
-            {{ ctrans('Aiku Email Workshop (comparison)') }}
-        </div> -->
-
-        <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute"
+        <EmailWorkshop v-else :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"
