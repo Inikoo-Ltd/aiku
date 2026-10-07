@@ -103,7 +103,6 @@ const pdfUrl = computed(() => {
 
 const openPdf = () => {
     window.open(pdfUrl.value, "_blank")
-    emits("onClose")
 }
 
 const optionClass = (isActive: boolean) => [
