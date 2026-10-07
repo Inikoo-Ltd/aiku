@@ -10,7 +10,8 @@ import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref, computed, watch, nextTick, onBeforeUnmount } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import Tag from "@/Components/Tag.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
@@ -233,8 +234,8 @@ const onSubmitVariant = () => {
 			},
 			onSuccess: () => {
 				notify({
-					title: trans("Success"),
-					text: trans("Successfully match the product"),
+					title: ctrans("Success"),
+					text: ctrans("Successfully match the product"),
 					type: "success",
 				})
 
@@ -246,8 +247,8 @@ const onSubmitVariant = () => {
 			},
 			onError: (errors) => {
 				notify({
-					title: trans("Something went wrong"),
-					text: errors.message ?? trans("Failed to match the product to platform"),
+					title: ctrans("Something went wrong"),
+					text: errors.message ?? ctrans("Failed to match the product to platform"),
 					type: "error",
 				})
 			},
@@ -403,16 +404,16 @@ const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
 			},
 			onSuccess: () => {
 				notify({
-					title: trans("Success"),
-					text: trans("Successfully submit the data"),
+					title: ctrans("Success"),
+					text: ctrans("Successfully submit the data"),
 					type: "success",
 				})
 				isOpenModalEditProduct.value = false
 			},
 			onError: (errors) => {
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Try again or contact administrator"),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Try again or contact administrator"),
 					type: "error",
 				})
 			},
@@ -614,8 +615,8 @@ const fetchEditMediaGallery = async () => {
 		console.error(e)
 
 		notify({
-			title: trans('Error'),
-			text: trans('Failed to load media'),
+			title: ctrans('Error'),
+			text: ctrans('Failed to load media'),
 			type: 'error'
 		})
 	} finally {
@@ -709,8 +710,8 @@ const fetchMediaGallery = async () => {
 		console.error(e)
 
 		notify({
-			title: trans('Error'),
-			text: trans('Failed to load media'),
+			title: ctrans('Error'),
+			text: ctrans('Failed to load media'),
 			type: 'error'
 		})
 	} finally {
@@ -785,17 +786,17 @@ const generateAITitle = async () => {
 		)
 		selectedEditProduct.value.name = data
 		notify({
-			title: trans('Success'),
-			text: trans('Success generate AI'),
+			title: ctrans('Success'),
+			text: ctrans('Success generate AI'),
 			type: 'success'
 		})
 	} catch (e: any) {
 		aiTitleError.value =
 			e?.response?.data?.message
-			|| trans('The OpenAI service is currently unreachable, please try again later.')
+			|| ctrans('The OpenAI service is currently unreachable, please try again later.')
 		// notify({
-		// 	title: trans('Error'),
-		// 	text: trans('Failed to generate AI'),
+		// 	title: ctrans('Error'),
+		// 	text: ctrans('Failed to generate AI'),
 		// 	type: 'error'
 		// })
 	} finally {
@@ -828,16 +829,16 @@ const generateAIDescription = async () => {
 		await nextTick()
 		
 		notify({
-			title: trans('Success'),
-			text: trans('Success generate AI'),
+			title: ctrans('Success'),
+			text: ctrans('Success generate AI'),
 			type: 'success'
 		})
 	} catch (e: any) {
 		aiDescError.value =
 			e?.response?.data?.message
-			|| trans('The OpenAI service is currently unreachable, please try again later.')
+			|| ctrans('The OpenAI service is currently unreachable, please try again later.')
 		notify({
-			title: trans('Error'),
+			title: ctrans('Error'),
 			text: aiDescError.value,
 			type: 'error'
 		})
@@ -960,16 +961,16 @@ const isPlatformLinked = computed(
 
 const syncStatusLabel = computed(() => {
 	if (props.isPlatformManual) {
-		return trans('Not connected to an external sales channel')
+		return ctrans('Not connected to an external sales channel')
 	}
 
 	if (!selectedEditProduct.value?.customer_sales_channel_platform_status) {
-		return trans('Sales channel disconnected')
+		return ctrans('Sales channel disconnected')
 	}
 
 	return isPlatformLinked.value
-		? trans('Synchronised with :platform', { platform: props.platform_data?.name })
-		: trans('Not synchronised yet')
+		? ctrans('Synchronised with :platform', { platform: props.platform_data?.name })
+		: ctrans('Not synchronised yet')
 })
 
 const isPendingSync = computed(
@@ -1010,8 +1011,8 @@ const syncBundleToPlatform = (payload: any) => {
 			onSuccess: () => {
 				clearPendingSync(bundleId)
 				notify({
-					title: trans('Success'),
-					text: trans('Bundle saved and synchronised with :platform', { platform: props.platform_data?.name }),
+					title: ctrans('Success'),
+					text: ctrans('Bundle saved and synchronised with :platform', { platform: props.platform_data?.name }),
 					type: 'success'
 				})
 				isOpenModalEditProduct.value = false
@@ -1021,10 +1022,10 @@ const syncBundleToPlatform = (payload: any) => {
 				markPendingSync(bundleId)
 				submitError.value =
 					Object.values(errors)[0] ||
-					trans("Failed to synchronise the bundle, please try again")
+					ctrans("Failed to synchronise the bundle, please try again")
 
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: submitError.value,
 					type: "error"
 				})
@@ -1071,8 +1072,8 @@ const submitBundle = (withSync = false) => {
 				}
 
 				notify({
-					title: trans('Success'),
-					text: trans('Success edit bundle'),
+					title: ctrans('Success'),
+					text: ctrans('Success edit bundle'),
 					type: 'success'
 				})
 				isOpenModalEditProduct.value = false
@@ -1086,10 +1087,10 @@ const submitBundle = (withSync = false) => {
 					errors.images ||
 					errors.products ||
 					Object.values(errors)[0] ||
-					trans("Failed to submit the data, please try again")
+					ctrans("Failed to submit the data, please try again")
 
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: submitError.value,
 					type: "error"
 				})
@@ -1151,19 +1152,19 @@ onBeforeUnmount(() => {
 		</template>
 
 		<template #add-on-button>
-			<Button @click="onClickFilterForSale('true')" v-tooltip="trans('Only show products that are for sale')"
-				:label="trans('Only For Sale')" size="xs" class="whitespace-nowrap" :key="compTableFilterForSale"
+			<Button @click="onClickFilterForSale('true')" v-tooltip="ctrans('Only show products that are for sale')"
+				:label="ctrans('Only For Sale')" size="xs" class="whitespace-nowrap" :key="compTableFilterForSale"
 				:type="compTableFilterForSale ? 'secondary' : 'tertiary'"
 				:icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'" iconRight="fal fa-times"
 				:loading="isLoadingTable == 'discontinued'" />
 			<Button @click="onClickFilterOutOfStock('discontinued')"
-				v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
+				v-tooltip="ctrans('Filter the product that discontinued')" label="Discontinued" size="xs"
 				class="whitespace-nowrap" :key="compTableFilterStatus"
 				:type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
 				:icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
 				iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'" />
 			<Button @click="onClickFilterOutOfStock('out-of-stock')"
-				v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
+				v-tooltip="ctrans('Filter the product that out of stock')" label="Out of stock" size="xs"
 				class="whitespace-nowrap" :key="compTableFilterStatus"
 				:type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
 				:icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
@@ -1192,18 +1193,19 @@ onBeforeUnmount(() => {
 			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
 				{{ product["code"] }}
 			</Link>
+			<Tag v-if="product.is_exclusive" :label="ctrans('Exclusive to you')" v-tooltip="ctrans('Only you can see and order this product')" :theme="5" noHoverColor class="ml-1" />
 			<div class="text-base font-semibold">
 				{{ product["name"] }}
 			</div>
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-				<div>{{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
+				<div>{{ ctrans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
 			</div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div>
-					{{ trans("Weight:") }} <span v-tooltip="trans('Marketing weight')">{{
+					{{ ctrans("Weight:") }} <span v-tooltip="ctrans('Marketing weight')">{{
 						locale.number(product.marketing_weight / 1000)
-					}}Kg</span> / <span v-tooltip="trans('Weight including packing')">{{
+					}}Kg</span> / <span v-tooltip="ctrans('Weight including packing')">{{
 							locale.number(product.weight / 1000)
 						}}Kg</span>
 				</div>
@@ -1211,30 +1213,30 @@ onBeforeUnmount(() => {
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div>
-					{{ trans("Dimension:") }}
+					{{ ctrans("Dimension:") }}
 					{{ product.dimension }}
 				</div>
 			</div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div v-if="customerSalesChannel.include_vat">
-					{{ trans("Price (include VAT):") }}
+					{{ ctrans("Price (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
 				</div>
 				<div v-else>
-					{{ trans("Price:") }}
+					{{ ctrans("Price:") }}
 					{{ locale.currencyFormat(product.currency_code, product.price) }}
 				</div>
 				<div v-if="customerSalesChannel.include_vat">
-					{{ trans("RRP (include VAT):") }}
+					{{ ctrans("RRP (include VAT):") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
 				<div v-else-if="platform_data.type === 'ebay'">
-					{{ trans("RRP:") }}
+					{{ ctrans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price * 0.8) }}
 				</div>
 				<div v-else>
-					{{ trans("RRP:") }}
+					{{ ctrans("RRP:") }}
 					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
 			</div>
@@ -1244,20 +1246,20 @@ onBeforeUnmount(() => {
 		<template #cell(status)="{ item }">
 			<div class="whitespace-nowrap">
 				<FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-					v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
+					v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
 					fixed-width aria-hidden="true" />
-				<FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
+				<FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times"
 					class="text-red-500" fixed-width aria-hidden="true" />
-				<FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
+				<FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="ctrans('Exist in platform')"
 					icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-				<FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
+				<FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500"
 					fixed-width aria-hidden="true" />
-				<FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
+				<FontAwesomeIcon v-if="item.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check"
 					class="text-green-500" fixed-width aria-hidden="true" />
-				<FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
+				<FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500"
 					fixed-width aria-hidden="true" />
 				<FontAwesomeIcon v-if="pendingSyncBundleIds.includes(item.bundle_id)"
-					v-tooltip="trans('Saved changes have not been pushed to :platform yet', { platform: platform_data?.name })"
+					v-tooltip="ctrans('Saved changes have not been pushed to :platform yet', { platform: platform_data?.name })"
 					icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
 			</div>
 		</template>
@@ -1265,12 +1267,12 @@ onBeforeUnmount(() => {
 		<template #cell(message)="{ item }">
 			<div class="whitespace min-w-[50px] text-left font-medium italic whitespace-break-spaces text-red-500"
 				v-if="disableButtons(item)">
-				<FontAwesomeLayers v-if="item.product_state == 'discontinued'" v-tooltip="trans('This product line has been discontinued. Please remove this item')
+				<FontAwesomeLayers v-if="item.product_state == 'discontinued'" v-tooltip="ctrans('This product line has been discontinued. Please remove this item')
 					" class="flex h-full w-full">
 					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
 					<FontAwesomeIcon :icon="faCube" class="text-md text-center" fixed-width />
 				</FontAwesomeLayers>
-				<FontAwesomeLayers v-else v-tooltip="trans('This product line is currently not for sale')"
+				<FontAwesomeLayers v-else v-tooltip="ctrans('This product line is currently not for sale')"
 					class="flex h-full w-full">
 					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
 					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" fixed-width />
@@ -1313,10 +1315,10 @@ onBeforeUnmount(() => {
 							!disabled &&
 							item.is_for_sale
 						" v-tooltip="item.is_for_sale
-							? trans('Match to existing :platform product', {
+							? ctrans('Match to existing :platform product', {
 								platform: platform_data?.name || 'Platform',
 							})
-							: trans('This product line is currently not for sale')
+							: ctrans('This product line is currently not for sale')
 							" :routeTarget="item.is_for_sale
 								? {
 									method: 'post',
@@ -1329,7 +1331,7 @@ onBeforeUnmount(() => {
 									},
 								}
 								: {}
-								" :bindToLink="{ preserveScroll: true }" type="primary" :label="trans('Match with this product')" size="xxs"
+								" :bindToLink="{ preserveScroll: true }" type="primary" :label="ctrans('Match with this product')" size="xxs"
 							icon="fal fa-hand-pointer" :disabled="disableButtons(item)" />
 					</div>
 
@@ -1343,9 +1345,9 @@ onBeforeUnmount(() => {
 								}
 							}
 						" v-tooltip="item.is_for_sale
-							? trans('Choose another product from your shop')
-							: trans('This product line is currently not for sale')
-							" :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs" type="tertiary"
+							? ctrans('Choose another product from your shop')
+							: ctrans('This product line is currently not for sale')
+							" :label="ctrans('Choose another product from your shop')" :capitalize="false" size="xxs" type="tertiary"
 							:style="'white-w-outline'" :disabled="disableButtons(item)" />
 						<Button v-else @click="
 							() => {
@@ -1356,9 +1358,9 @@ onBeforeUnmount(() => {
 								}
 							}
 						" v-tooltip="item.is_for_sale
-							? trans('Match it with an existing product in your shop')
-							: trans('This product line is currently not for sale')
-							" :label="trans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
+							? ctrans('Match it with an existing product in your shop')
+							: ctrans('This product line is currently not for sale')
+							" :label="ctrans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
 							type="tertiary" :style="'white-w-outline'" :disabled="disableButtons(item)" />
 					</div>
 				</template>
@@ -1385,9 +1387,9 @@ onBeforeUnmount(() => {
 							}
 						}
 					" v-tooltip="item.is_for_sale
-						? trans('Connect with other product')
-						: trans('This product line is currently not for sale')
-						" :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle" size="xxs" type="tertiary"
+						? ctrans('Connect with other product')
+						: ctrans('This product line is currently not for sale')
+						" :label="ctrans('Connect with other product')" :capitalize="false" :icon="faRecycle" size="xxs" type="tertiary"
 						:style="'white-w-outline'" :disabled="disableButtons(item)" />
 				</template>
 			</template>
@@ -1399,10 +1401,10 @@ onBeforeUnmount(() => {
 			<div v-if="item.customer_sales_channel_platform_status && !item.platform_status"
 				class="flex gap-x-2 items-center">
 				<ButtonWithLink v-tooltip="item.is_for_sale
-					? trans('Will create new product in :platform', {
+					? ctrans('Will create new product in :platform', {
 						platform: props.platform_data.name,
 					})
-					: trans('This product line is currently not for sale')
+					: ctrans('This product line is currently not for sale')
 					" :routeTarget="item.is_for_sale
 						? {
 							method: 'post',
@@ -1412,7 +1414,7 @@ onBeforeUnmount(() => {
 							},
 						}
 						: {}
-						" isWithError icon="" :label="trans('Create new product')" size="xxs" type="tertiary" :style="'white-w-outline'"
+						" isWithError icon="" :label="ctrans('Create new product')" size="xxs" type="tertiary" :style="'white-w-outline'"
 					:bindToLink="{
 						preserveScroll: true,
 					}" @success="
@@ -1436,9 +1438,9 @@ onBeforeUnmount(() => {
 		<template #cell(delete)="{ item }" v-if="!disabled">
 			
 			<div class="flex gap-2">
-				<Button v-tooltip="trans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
+				<Button v-tooltip="ctrans('Edit Bundle')" type="tertiary" :style="'white-w-outline'" size="xs"
 				icon="fal fa-pencil" @click="openEditModal(item)" />
-				<ButtonWithLink v-tooltip="trans('Unlink Bundle', {
+				<ButtonWithLink v-tooltip="ctrans('Unlink Bundle', {
 					platform: props.platform_data.name,
 				})" type="negative" icon="fal fa-unlink" size="xs" :style="'white-r-outline'" :method="'delete'"
 					:bindToLink="{ preserveScroll: true }" :routeTarget="{
@@ -1470,7 +1472,7 @@ onBeforeUnmount(() => {
 			<div class="mb-2">
 				<strong>
 					{{
-						trans("List of Products under your :_storetype Store", {
+						ctrans("List of Products under your :_storetype Store", {
 							_storetype: platform_data.name,
 						})
 					}}
@@ -1479,7 +1481,7 @@ onBeforeUnmount(() => {
 
 			<div class="mb-2 relative">
 				<PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()"
-					:placeholder="trans('Search in :platform', { platform: platform_data.name })"
+					:placeholder="ctrans('Search in :platform', { platform: platform_data.name })"
 					:disabled="isLoadingFetchPlatformProduct" />
 				<div v-if="isLoadingFetchPlatformProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
 					<LoadingIcon />
@@ -1490,7 +1492,7 @@ onBeforeUnmount(() => {
 			<div class="xh-full xmd:h-[570px] text-base font-normal">
 				<div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
 					<div class="flex justify-between items-center">
-						<!-- <div class="font-semibold text-lg py-1">{{ trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
+						<!-- <div class="font-semibold text-lg py-1">{{ ctrans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
 					</div>
 					<div class="border-t border-gray-300 mb-1"></div>
 					<div class="h-full md:h-[400px] overflow-x-clip overflow-y-scroll py-2 relative"
@@ -1501,7 +1503,7 @@ onBeforeUnmount(() => {
 							<div v-if="isLoadingFetchPlatformProduct" class="text-center text-gray-500 col-span-3">
 								<LoadingIcon class="ml-1" />
 								{{
-									trans("Fetching your :_storetype product list", {
+									ctrans("Fetching your :_storetype product list", {
 										_storetype: platform_data.name,
 									})
 								}}
@@ -1531,25 +1533,25 @@ onBeforeUnmount(() => {
 										</div>
 										<div class="flex flex-col justify-between">
 											<div class="w-fit" xclick="() => selectProduct(item)">
-												<div v-tooltip="trans('Name')"
+												<div v-tooltip="ctrans('Name')"
 													class="w-fit font-semibold leading-none mb-1">
 													{{ item.name || "no name" }}
 												</div>
-												<div v-if="item.code" v-tooltip="trans('Code')"
+												<div v-if="item.code" v-tooltip="ctrans('Code')"
 													class="w-fit text-xs text-gray-400 italic">
 													{{ item.code }}
 												</div>
-												<div v-if="item.reference" v-tooltip="trans('Reference')"
+												<div v-if="item.reference" v-tooltip="ctrans('Reference')"
 													class="w-fit text-xs text-gray-400 italic">
 													{{ item.reference || "no reference" }}
 												</div>
-												<div v-if="item.gross_weight" v-tooltip="trans('Weight')"
+												<div v-if="item.gross_weight" v-tooltip="ctrans('Weight')"
 													class="w-fit text-xs text-gray-400 italic">
 													{{ item.gross_weight }}
 												</div>
 											</div>
 											<div v-if="!item.no_price && item.price" xclick="() => selectProduct(item)"
-												v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+												v-tooltip="ctrans('Price')" class="w-fit text-xs text-gray-x500">
 												{{
 													locale?.currencyFormat(
 														item.currency_code || "usd",
@@ -1564,19 +1566,19 @@ onBeforeUnmount(() => {
 									<LoadingIcon v-if="hasMore" />
 								</div>
 								<div v-if="!hasMore" class="col-span-2 text-center">
-									{{ trans("You've reached the end of item list") }}
+									{{ ctrans("You've reached the end of item list") }}
 								</div>
 							</template>
 							<div v-else class="text-center text-gray-500 col-span-3">
-								{{ trans("No products found") }}
+								{{ ctrans("No products found") }}
 							</div>
 						</div>
 					</div>
 					<div class="mt-4">
 						<Button @click="() => onSubmitVariant()" :disabled="!selectedVariant?.id" v-tooltip="!selectedVariant?.id
-							? trans('Select at least one product on your platform')
+							? ctrans('Select at least one product on your platform')
 							: ''
-							" :label="trans('Link :_productcode to selected item on your platform', {
+							" :label="ctrans('Link :_productcode to selected item on your platform', {
 								_productcode: selectedPortfolio?.code ?? 'it',
 							})
 								" type="primary" full xicon="fas fa-plus" :loading="isLoadingSubmit" />
@@ -1589,17 +1591,17 @@ onBeforeUnmount(() => {
 	<Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-3xl h-full" @close="isOpenModalEditProduct = false">
 		<div class="overflow-auto">
 			<div class="text-xl font-semibold text-center">
-				{{ trans("Edit Bundle") }}
+				{{ ctrans("Edit Bundle") }}
 			</div>
 
 			<div class="my-3 rounded-lg border bg-gray-50 px-3 py-2 text-sm">
 				<div class="flex flex-wrap gap-x-6 gap-y-1">
 					<div>
-						<span class="text-gray-500">{{ trans("Last modified") }}:</span>
+						<span class="text-gray-500">{{ ctrans("Last modified") }}:</span>
 						{{ useFormatTime(selectedEditProduct?.updated_at, { formatTime: "hm" }) }}
 					</div>
 					<div class="flex items-center gap-2">
-						<span class="text-gray-500">{{ trans("Synchronisation") }}:</span>
+						<span class="text-gray-500">{{ ctrans("Synchronisation") }}:</span>
 						<FontAwesomeIcon
 							:icon="isPlatformLinked ? 'fal fa-check' : 'fal fa-times'"
 							:class="isPlatformLinked ? 'text-green-500' : 'text-red-500'"
@@ -1615,7 +1617,7 @@ onBeforeUnmount(() => {
 				class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
 				<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
 				{{
-					trans("This bundle has changes that have not been pushed to :platform yet. Use Save & Sync to update the external product.", {
+					ctrans("This bundle has changes that have not been pushed to :platform yet. Use Save & Sync to update the external product.", {
 						platform: platform_data?.name,
 					})
 				}}
@@ -1623,7 +1625,7 @@ onBeforeUnmount(() => {
 
 			<div class="mb-3 relative">
 				<label for="edit-product-title" class="block text-sm font-semibold">{{
-					trans("Title")
+					ctrans("Title")
 				}}</label>
 				<InputText v-model="selectedEditProduct.name" fluid inputId="edit-product-title" size="small"
 					:disabled="isLoadingSubmitErrorTitle" />
@@ -1631,20 +1633,20 @@ onBeforeUnmount(() => {
                         {{ aiTitleError }}
                     </div>
 				<Button icon="fal fa-sparkles" type="button" @click="generateAITitle" :loading="isGeneratingAI" :disabled="isGeneratingAI"
-					v-tooltip="trans('Generate AI')"
+					v-tooltip="ctrans('Generate AI')"
 					class="absolute right-2 top-10 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md border bg-white hover:bg-gray-100 transition shadow-sm" />
 
 			</div>
 
 			<div class="mb-3 space-y-2">
 				<label for="edit-product-description" class="block text-sm font-semibold">{{
-					trans("Description")
+					ctrans("Description")
 				}}</label>
 				<Editor2
 					:key="editorKey"
 					v-model="selectedEditProduct.description"
 					class="w-full"
-					:placeholder="trans('Input your description')"
+					:placeholder="ctrans('Input your description')"
 					:toggle="[
 					'heading1',
 					'heading2',
@@ -1677,13 +1679,13 @@ onBeforeUnmount(() => {
                         {{ aiDescError }}
                     </div>
 				<Button icon="fal fa-sparkles" @click="generateAIDescription" :loading="isGeneratingAI" type="primary"
-				:label="trans('Generate with AI')"
+				:label="ctrans('Generate with AI')"
 			:disabled="!selectedEditProduct?.description?.length" />
 			</div>
 
 			<div class="mb-5">
 				<label class="text-sm font-semibold">
-					{{ trans('Bundle media') }}
+					{{ ctrans('Bundle media') }}
 				</label>
 
 				<div class="bg-gray-100 rounded-xl p-4 mt-2 grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[140px]">
@@ -1696,10 +1698,10 @@ onBeforeUnmount(() => {
 					>
 						<FontAwesomeIcon icon="fal fa-image" class="text-3xl mb-2 opacity-60" fixed-width />
 						<p class="text-sm font-medium">
-							{{ trans('No media added yet') }}
+							{{ ctrans('No media added yet') }}
 						</p>
 						<p class="text-xs">
-							{{ trans('select existing media') }}
+							{{ ctrans('select existing media') }}
 						</p>
 					</div>
 					<div v-else v-for="img in selectedMedia" class="relative group rounded-xl border bg-white flex items-center justify-center h-36 md:h-44">
@@ -1722,7 +1724,7 @@ onBeforeUnmount(() => {
 			<div class="mb-5">
 				<div class="flex items-center justify-between">
 					<label class="text-sm font-semibold">
-						{{ trans("Bundle Items") }}
+						{{ ctrans("Bundle Items") }}
 					</label>
 
 					<Button
@@ -1730,7 +1732,7 @@ onBeforeUnmount(() => {
 						type="secondary"
 						size="xs"
 						icon="fal fa-plus"
-						:label="trans('Add or remove products')" />
+						:label="ctrans('Add or remove products')" />
 				</div>
 
 				<div class="mt-2 space-y-2">
@@ -1749,7 +1751,7 @@ onBeforeUnmount(() => {
 							@update:modelValue="(val) => updateItemQty(item.id, val)" />
 
 						<button
-							v-tooltip="trans('Remove from bundle')"
+							v-tooltip="ctrans('Remove from bundle')"
 							class="text-red-500 hover:text-red-600"
 							@click="removeBundleItem(item.id)">
 							<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
@@ -1757,14 +1759,14 @@ onBeforeUnmount(() => {
 					</div>
 
 					<div v-if="!bundleItems.length" class="text-center text-sm text-gray-400 py-6 border rounded-lg">
-						{{ trans("A bundle needs at least one product") }}
+						{{ ctrans("A bundle needs at least one product") }}
 					</div>
 				</div>
 			</div>
 
 			<div class="mb-5">
 				<label for="edit-bundle-rrp" class="block text-sm font-semibold">
-					{{ trans("RRP") }}
+					{{ ctrans("RRP") }}
 				</label>
 
 				<InputNumber
@@ -1779,21 +1781,21 @@ onBeforeUnmount(() => {
 
 				<div class="mt-2 space-y-1 text-sm">
 					<div class="flex justify-between">
-						<span class="text-gray-500">{{ trans("Cost Price (Individual Purchase)") }}</span>
+						<span class="text-gray-500">{{ ctrans("Cost Price (Individual Purchase)") }}</span>
 						<span v-if="isSummaryLoading" class="text-gray-400">…</span>
 						<span v-else>
 							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_price ?? 0) }}
 						</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-gray-500">{{ trans("Bundle Price") }}</span>
+						<span class="text-gray-500">{{ ctrans("Bundle Price") }}</span>
 						<span v-if="isSummaryLoading" class="text-gray-400">…</span>
 						<span v-else>
 							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_bundle_price ?? 0) }}
 						</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-gray-500">{{ trans("Suggested RRP") }}</span>
+						<span class="text-gray-500">{{ ctrans("Suggested RRP") }}</span>
 						<span v-if="isSummaryLoading" class="text-gray-400">…</span>
 						<span class="flex items-center gap-2" v-else>
 							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_rrp ?? 0) }}
@@ -1801,7 +1803,7 @@ onBeforeUnmount(() => {
 								v-if="bundleSummary.total_rrp"
 								class="text-xs text-indigo-600 hover:underline"
 								@click="bundleRrp = Number(bundleSummary.total_rrp)">
-								{{ trans("Use") }}
+								{{ ctrans("Use") }}
 							</button>
 						</span>
 					</div>
@@ -1827,24 +1829,24 @@ onBeforeUnmount(() => {
 			<div class="mt-3 flex gap-2">
 				<Button
 					@click="submitBundle(false)"
-					:label="isSubmitBundle ? trans('Loading') : trans('Save')"
+					:label="isSubmitBundle ? ctrans('Loading') : ctrans('Save')"
 					full
 					icon="fad fa-save"
 					:type="isPlatformLinked ? 'tertiary' : 'primary'"
 					:loading="isSubmitBundle"
 					:disabled="!canSubmitBundle"
-					v-tooltip="isBundleFilled && !hasBundleChanges ? trans('No changes to save') : ''"
+					v-tooltip="isBundleFilled && !hasBundleChanges ? ctrans('No changes to save') : ''"
 				/>
 				<Button
 					v-if="isPlatformLinked"
 					@click="submitBundle(true)"
-					:label="trans('Save & Sync')"
+					:label="ctrans('Save & Sync')"
 					full
 					icon="fal fa-sync-alt"
 					type="primary"
 					:loading="isSubmitBundle"
 					:disabled="!canSubmitBundle"
-					v-tooltip="trans('Save and update the product on :platform', { platform: platform_data?.name })"
+					v-tooltip="ctrans('Save and update the product on :platform', { platform: platform_data?.name })"
 				/>
 			</div>
 		</div>
@@ -1853,18 +1855,18 @@ onBeforeUnmount(() => {
 	<Dialog
 		v-model:visible="showProductSelector"
 		modal
-		:header="trans('Bundle products')"
+		:header="ctrans('Bundle products')"
 		:style="{ width: '900px' }"
 		:breakpoints="{ '1024px': '90vw', '576px': '95vw' }">
 		<BundlesSelector
 			:route-fetch="props.routes.itemRoute"
 			:preselected="productSelectorPreselected"
-			:label_result="trans('Products')"
+			:label_result="ctrans('Products')"
 			withQuantity
 			@update:selected="onUpdateBundleProducts" />
 
 		<template #footer>
-			<Button @click="showProductSelector = false" type="primary" :label="trans('Done')" />
+			<Button @click="showProductSelector = false" type="primary" :label="ctrans('Done')" />
 		</template>
 	</Dialog>
 
@@ -1959,7 +1961,7 @@ onBeforeUnmount(() => {
 	</Dialog>
 	<Dialog
 		v-model:visible="showGenerateProgressModal"
-		:header="trans('Generating AI Image')"
+		:header="ctrans('Generating AI Image')"
 		modal
 		:closable="false"
 		:closeOnEscape="false"
@@ -1969,10 +1971,10 @@ onBeforeUnmount(() => {
 		<div class="py-6 flex flex-col items-center text-center">
 			<LoadingIcon class="mb-4" />
 			<div class="text-sm font-semibold text-gray-800">
-				{{ trans('Generating your image...') }}
+				{{ ctrans('Generating your image...') }}
 			</div>
 			<div class="text-xs text-gray-500 mt-2">
-				{{ trans('Please wait while we process your prompt and listen for the result.') }}
+				{{ ctrans('Please wait while we process your prompt and listen for the result.') }}
 			</div>
 		</div>
 	</Dialog>

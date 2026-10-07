@@ -6,6 +6,7 @@
 
 namespace App\Actions\Dropshipping\Wix\Product;
 
+use App\Models\Catalogue\Product;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -25,7 +26,7 @@ class CreateNewAllPortfoliosToWix extends RetinaAction
                     ->from('products as p')
                     ->whereColumn('p.id', 'portfolios.item_id')
                     ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                    ->where('p.is_for_sale', true);
+                    ->whereRaw(Product::sellableThroughSalesChannelsSql('p'));
             })
             ->where('status', true)
             ->where('platform_status', false)

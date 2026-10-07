@@ -2349,6 +2349,38 @@ test('submit order skips upcoming transactions for out of stock products', funct
         ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
 });
 
+test('submit order applies follow-ons of the customer own exclusive product while it has stock', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $original = $this->product->only(['status', 'is_for_sale', 'exclusive_for_customer_id', 'available_quantity', 'state']);
+    $this->product->updateQuietly([
+        'status'                    => ProductStatusEnum::NOT_FOR_SALE,
+        'is_for_sale'               => false,
+        'exclusive_for_customer_id' => $this->customer->id,
+        'state'                     => ProductStateEnum::ACTIVE,
+        'available_quantity'        => 0,
+    ]);
+
+    $followOn = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $emptyStockOrder = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->processUpComingTransactions($emptyStockOrder);
+    expect($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    $this->product->updateQuietly(['available_quantity' => 3]);
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->processUpComingTransactions($order);
+
+    expect($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(1);
+
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $this->product->updateQuietly($original);
+});
+
 test('submit order skips upcoming transaction when product has no current historic asset', function () {
     UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
     $originalHistoricAssetId = $this->product->current_historic_asset_id;

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Shopify;
 
+use App\Models\Catalogue\Product;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -34,7 +35,7 @@ class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
                     ->from('products as p')
                     ->whereColumn('p.id', 'portfolios.item_id')
                     ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                    ->where('p.is_for_sale', true);
+                    ->whereRaw(Product::sellableThroughSalesChannelsSql('p'));
             })
             ->where('status', true)
             ->where('platform_status', false)
