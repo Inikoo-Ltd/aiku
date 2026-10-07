@@ -26,7 +26,8 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Skeleton from 'primevue/skeleton';
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { Fieldset, InputNumber } from "primevue"
+import { Fieldset, InputNumber, Select } from "primevue"
+import { parcelPresets, findParcelPreset, applyParcelPreset } from "@/Composables/useParcelPresets"
 import Icon from "@/Components/Icon.vue"
 import axios from "axios"
 import PageHeading from "./Headings/PageHeading.vue";
@@ -380,7 +381,7 @@ onMounted(() => {
 </div>
 
 
-    <Modal :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
+    <Modal :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-xl">
         <div class="text-center font-bold mb-4">
             {{ ctrans('Add shipment') }}
         </div>
@@ -426,7 +427,15 @@ onMounted(() => {
                                 <div class="text-gray-400">x</div>
                                 <InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small"
                                     placeholder="0" fluid />
-                                <!-- <button class="text-gray-600">≡</button> -->
+                                <Select
+                                    :modelValue="findParcelPreset(parcel.dimensions)"
+                                    :options="parcelPresets"
+                                    optionLabel="label"
+                                    :placeholder="ctrans('Preset size')"
+                                    size="small"
+                                    class="ml-1 min-w-0 flex-1 text-xs"
+                                    @change="(e) => applyParcelPreset(parcel, e.value)"
+                                />
                             </div>
                         </div>
                     </TransitionGroup>

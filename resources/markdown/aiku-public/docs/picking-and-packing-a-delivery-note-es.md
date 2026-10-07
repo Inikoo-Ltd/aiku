@@ -52,6 +52,8 @@ Durante el packing, el albarán no puede marcarse como **Set as packed** si toda
 
 Al pulsar **Set as packed** se registra quién empaquetó el albarán, se incorporan las líneas que no se confirmaron una a una en el puesto, y se fija un paquete por defecto si todavía no se había registrado ninguno.
 
+Los paquetes se registran en la ventana **Add shipment**, que se abre desde el albarán o desde su fila en una sesión de picking. Cada fila de paquete tiene una lista **Preset size** junto a sus medidas: al elegir un tamaño de caja, por ejemplo 39 × 39 × 39 cm, se rellenan de una vez el largo, el ancho y el alto, y solo hay que escribir el peso.
+
 Si un albarán necesita retroceder un paso, los albaranes editables llevan botones de deshacer: **Undo set as picked** devuelve un albarán **Picked** a picking, **Undo packing** devuelve un albarán **Packing** a picked, y **Unpack** devuelve un albarán **Packed** o **Finalised** a **Packing**.
 
 ## Finalizar y expedir con un transportista
