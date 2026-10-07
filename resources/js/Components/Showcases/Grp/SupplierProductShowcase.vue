@@ -4,7 +4,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, ref } from "vue"
+import { computed, inject, nextTick, onMounted, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -53,6 +53,21 @@ library.add(
     faSeedling,
     faWeightHanging,
 )
+
+type Barcode = {
+    level: string
+    label: string
+    number: string | null
+    weight: number | null
+    dimensions: {
+        h?: number
+        l?: number
+        w?: number
+        type?: string
+        units?: string
+    } | null
+    warning?: string | null
+}
 
 const props = defineProps<{
     data: {
@@ -141,25 +156,13 @@ const props = defineProps<{
             description?: string
             full?: boolean
         }[]
-        barcodes?: {
-            level: string
-            label: string
-            number: string | null
-            weight: number | null
-            dimensions: {
-                h?: number
-                l?: number
-                w?: number
-                type?: string
-                units?: string
-            } | null
-            warning?: string | null
-        }[]
+        barcodes?: Barcode[]
         label_org_stocks?: {
             id: number
             code: string
             organisation_code: string
             warehouse_slug: string
+            barcodes: Barcode[]
         }[]
     }
 }>()
@@ -257,8 +260,14 @@ const formatDimensions = (dimensions: { h?: number; l?: number; w?: number; unit
     return `${sides.join(" × ")} ${dimensions.units ?? ""}`.trim()
 }
 
+const labelOrgStocks = computed(() => props.data.label_org_stocks ?? [])
+const selectedLabelOrgStockId = ref<number | null>(labelOrgStocks.value[0]?.id ?? null)
+
+const shownBarcodes = computed<Barcode[]>(() =>
+    labelOrgStocks.value.find((orgStock) => orgStock.id === selectedLabelOrgStockId.value)?.barcodes ?? props.data.barcodes ?? [])
+
 const renderBarcodes = () => {
-    props.data.barcodes?.forEach((barcode) => {
+    shownBarcodes.value.forEach((barcode) => {
         if (!barcode.number) {
             return
         }
@@ -274,9 +283,7 @@ const renderBarcodes = () => {
 }
 
 onMounted(() => nextTick(renderBarcodes))
-
-const labelOrgStocks = computed(() => props.data.label_org_stocks ?? [])
-const selectedLabelOrgStockId = ref<number | null>(labelOrgStocks.value[0]?.id ?? null)
+watch(selectedLabelOrgStockId, () => nextTick(renderBarcodes))
 
 const isPrintable = (barcode: { level: string; number: string | null }) =>
     !!barcode.number && barcode.level !== "carton" && selectedLabelOrgStockId.value !== null
@@ -437,14 +444,14 @@ const availabilityBadge = (isAvailable: boolean) =>
             </template>
         </section>
 
-        <section v-if="data.barcodes?.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <section v-if="shownBarcodes.length" class="md:col-span-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <div class="mb-3 flex flex-wrap items-center gap-2">
                 <h3 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                     <Icon :data="{ icon: 'fal fa-barcode' }" />
                     {{ ctrans("Barcodes") }}
                 </h3>
                 <div v-if="labelOrgStocks.length > 1" class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
-                    <span class="text-gray-400">{{ ctrans("Print label for") }}</span>
+                    <span class="text-gray-400">{{ ctrans("SKO of") }}</span>
                     <button v-for="orgStock in labelOrgStocks" :key="orgStock.id" type="button"
                         v-tooltip="orgStock.code"
                         class="rounded-full px-2 py-0.5 font-medium ring-1 ring-inset transition"
@@ -457,7 +464,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                 </div>
             </div>
             <div class="grid grid-cols-1 gap-3 xl:grid-cols-[auto_auto_auto_1fr] xl:items-center xl:gap-x-4 xl:gap-y-3">
-                <template v-for="barcode in data.barcodes" :key="barcode.level">
+                <template v-for="barcode in shownBarcodes" :key="selectedLabelOrgStockId + '-' + barcode.level">
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
                         <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
                             v-tooltip="ctrans(barcode.label)">

@@ -48,14 +48,13 @@ class GetOrgSupplierProductShowcase
     }
 
     /**
-     * The numbers come from this organisation's SKO when the supplier product is linked to one, and
-     * from the master stock otherwise, which is always the case in an agent organisation since it
-     * holds no stock of its own.
-     *
      * The PDF label is printed from an SKO, so the SKOs offered for it are this organisation's linked
-     * ones, or for an agent the SKOs of the organisations it supplies.
+     * ones, or for an agent, which holds no stock of its own, the SKOs of the organisations it supplies.
      *
-     * @return array{barcodes: array<int, array<string, mixed>>, label_org_stocks: array<int, array{id: int, code: string, organisation_code: string, warehouse_slug: string}>}
+     * Each SKO carries its own numbers, so what is shown is what that SKO's label prints. The master
+     * stock is only a fallback when no SKO can be found, and it never knows the unit EAN.
+     *
+     * @return array{barcodes: array<int, array<string, mixed>>, label_org_stocks: array<int, array{id: int, code: string, organisation_code: string, warehouse_slug: string, barcodes: array<int, array<string, mixed>>}>}
      */
     private function getBarcodesData(OrgSupplierProduct $orgSupplierProduct): array
     {
@@ -64,33 +63,24 @@ class GetOrgSupplierProductShowcase
             ->with('organisation.warehouses')
             ->get();
 
+        $labelOrgStocks = ($ownOrgStocks->isNotEmpty() ? $ownOrgStocks : $this->getSuppliedOrgStocks($orgSupplierProduct))
+            ->filter(fn (OrgStock $orgStock) => $orgStock->organisation->warehouses->isNotEmpty())
+            ->sortBy(fn (OrgStock $orgStock) => $orgStock->organisation->code)
+            ->map(fn (OrgStock $orgStock) => [
+                'id'                => $orgStock->id,
+                'code'              => $orgStock->code,
+                'organisation_code' => $orgStock->organisation->code,
+                'warehouse_slug'    => $orgStock->organisation->warehouses->first()->slug,
+                'barcodes'          => GetOrgStockBarcodes::run($orgStock),
+            ])
+            ->values()
+            ->all();
+
         $masterStock = $orgSupplierProduct->supplierProduct->stocks->first();
 
-        if ($ownOrgStocks->count() === 1) {
-            $barcodes = GetOrgStockBarcodes::run($ownOrgStocks->first());
-        } elseif ($masterStock) {
-            $barcodes = GetStockBarcodes::run($masterStock);
-        } else {
-            $barcodes = [];
-        }
-
-        $labelOrgStocks = $ownOrgStocks->isNotEmpty()
-            ? $ownOrgStocks
-            : $this->getSuppliedOrgStocks($orgSupplierProduct);
-
         return [
-            'barcodes'         => $barcodes,
-            'label_org_stocks' => $labelOrgStocks
-                ->filter(fn (OrgStock $orgStock) => $orgStock->organisation->warehouses->isNotEmpty())
-                ->sortBy(fn (OrgStock $orgStock) => $orgStock->organisation->code)
-                ->map(fn (OrgStock $orgStock) => [
-                    'id'                => $orgStock->id,
-                    'code'              => $orgStock->code,
-                    'organisation_code' => $orgStock->organisation->code,
-                    'warehouse_slug'    => $orgStock->organisation->warehouses->first()->slug,
-                ])
-                ->values()
-                ->all(),
+            'barcodes'         => $labelOrgStocks[0]['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock) : []),
+            'label_org_stocks' => $labelOrgStocks,
         ];
     }
 
