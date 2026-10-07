@@ -7,6 +7,11 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
+import Icon from '@/Components/Icon.vue'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faSeedling, faPaperPlane, faSpellCheck, faBoxCheck, faTruck, faClipboardCheck, faExclamationCircle } from '@fal'
+
+library.add(faSeedling, faPaperPlane, faSpellCheck, faBoxCheck, faTruck, faClipboardCheck, faExclamationCircle)
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 const props = defineProps<{
@@ -34,6 +39,12 @@ function aspoRoute(aspo: { slug: string }) {
                 {{ aspo.supplier_code }}
             </Link>
             <span v-else>{{ aspo.supplier_code }}</span>
+        </template>
+        <template #cell(state)="{ item: aspo }">
+            <Icon :data="aspo.state_icon" />
+        </template>
+        <template #cell(delivery_state)="{ item: aspo }">
+            <Icon :data="aspo.delivery_state_icon" />
         </template>
         <template #cell(date)="{ item: aspo }">
             {{ useFormatTime(aspo.date) }}
