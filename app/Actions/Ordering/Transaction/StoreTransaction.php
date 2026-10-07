@@ -192,7 +192,7 @@ class StoreTransaction extends OrgAction
             'marketplace_id'          => [
                 'sometimes',
                 Rule::unique('transactions', 'marketplace_id')->where(function ($query) {
-                    $query->where('group_id', $this->shop->group_id);
+                    $query->where('group_id', $this->shop->group_id)->whereNull('deleted_at');
                 })
             ],
         ];
