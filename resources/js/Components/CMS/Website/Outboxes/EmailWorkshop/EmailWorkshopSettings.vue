@@ -23,6 +23,7 @@ const props = defineProps<{
     mailshot?: MailshotMetadata | null
     updateMailshotRoute?: routeType
     imagesUploadRoute?: routeType
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     websiteTheme?: WebsiteTheme | null
 }>()
 
@@ -181,10 +182,10 @@ const removeFavicon = () => {
             </div>
         </EmailWorkshopSection>
 
-        <EmailWorkshopProperties :body="email.page.body" />
+        <EmailWorkshopProperties :body="email.page.body" :imagesUploadRoute="imagesUploadRoute" :imageCategories="imageCategories" />
 
         <TiptapImageDialog v-if="isFaviconPickerOpen" :show="isFaviconPickerOpen" :uploadImageRoute="imagesUploadRoute"
-            :imagesUploadedRoute="{ name: 'grp.gallery.uploaded-images.email.index' }"
+            :imagesUploadedRoute="{ name: 'grp.gallery.uploaded-images.email.index' }" :imageCategories="imageCategories"
             @insert="onFaviconPicked" @close="isFaviconPickerOpen = false" />
     </div>
 </template>

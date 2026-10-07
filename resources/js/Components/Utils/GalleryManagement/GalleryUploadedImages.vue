@@ -31,6 +31,7 @@ const props = defineProps<{
     attachImageRoute: routeType
     closePopup?: Function
     maxSelected?: number
+    fill?: boolean
 }>()
 
 const tilesGridClass = 'grid gap-3 grid-cols-[repeat(auto-fill,minmax(6rem,1fr))]'
@@ -173,11 +174,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="h-full relative isolate pr-4 flex flex-col">
+    <div class="relative isolate flex h-full flex-col" :class="fill ? 'min-h-0' : 'pr-4'">
         <!-- <template v-if="!isLoading"> -->
-            <div class="sticky top-0 pb-2 z-10 bg-white ">
-                <div class="pb-2 flex flex-wrap items-center justify-between gap-2 border-b border-gray-300 ">
-                    <div class="w-full max-w-xs">
+            <div class="sticky top-0 z-10 shrink-0 bg-white pb-2" :class="fill ? 'px-0.5 pt-1' : ''">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2" :class="fill ? '' : 'border-b border-gray-300'">
+                    <div class="w-full min-w-[12rem] max-w-xs flex-1">
                         <PureInputWithAddOn
                             @update:model-value="(val) => onSearchQuery(val)"
                             :leftAddOn="{ icon: 'fal fa-search' }"
@@ -204,14 +205,40 @@ onMounted(() => {
                 </div>
             </div>
 
-            <div id="imagesView" class="overflow-y-auto overscroll-contain h-full max-h-[60vh] select-none">
+            <div id="imagesView" class="select-none overflow-y-auto overscroll-contain" :class="fill ? 'min-h-0 flex-1 rounded-md border border-gray-200 bg-gray-50 p-3' : 'h-full max-h-[60vh]'">
                 <template v-if="optionsList.length">
-                    <div :class="tilesGridClass">
+                    <div v-if="fill" class="columns-[9.5rem] gap-3">
+                        <button
+                            v-for="option in optionsList"
+                            :key="option.id"
+                            type="button"
+                            class="group relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-md border bg-white text-left transition-all focus:outline-none"
+                            :class="selectedIdImages.includes(option.id) ? 'border-blue-400 ring-2 ring-blue-400' : 'border-gray-200 hover:border-gray-400 hover:shadow-md'"
+                            :title="option.name"
+                            :aria-pressed="selectedIdImages.includes(option.id)"
+                            @click="() => toggleImageSelection(option.id)"
+                            @dblclick="() => { if (maxSelected === 1) { selectedIdImages = [option.id]; submitSelectedImages() } }"
+                        >
+                            <div class="relative bg-[repeating-conic-gradient(#f3f4f6_0%_25%,#ffffff_0%_50%)] bg-[length:16px_16px]">
+                                <Image :src="option.preview ?? option.thumbnail" :alt="option.alt || option.name || option.slug" class="block w-full" :style="{ height: 'auto', width: '100%', display: 'block' }" />
+                                <div v-if="selectedIdImages.includes(option.id)" class="absolute inset-0 bg-blue-500/20" />
+                                <FontAwesomeIcon v-if="selectedIdImages.includes(option.id)" icon="fas fa-check-circle" class="absolute right-1.5 top-1.5 rounded-full bg-white text-lg text-blue-500" fixed-width aria-hidden="true" />
+                            </div>
+                            <div class="px-2 py-1.5">
+                                <div class="line-clamp-2 break-words text-[11px] leading-snug text-gray-700">{{ option.name }}</div>
+                                <div v-if="option.size" class="mt-0.5 text-[10px] text-gray-400">{{ option.size }}</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div v-else :class="tilesGridClass">
                         <div
                             v-for="option in optionsList"
-                            class="relative aspect-square overflow-hidden border rounded cursor-pointer transition-all"
+                            class="group relative aspect-square cursor-pointer overflow-hidden rounded border bg-white transition-all"
                             @click="() => toggleImageSelection(option.id)"
-                            :class="selectedIdImages.includes(option.id) ? 'border-blue-400 scale-[97%]' : 'border-gray-300'"
+                            @dblclick="() => { if (maxSelected === 1) { selectedIdImages = [option.id]; submitSelectedImages() } }"
+                            :title="option.name"
+                            :class="selectedIdImages.includes(option.id) ? 'scale-[97%] border-blue-400 ring-2 ring-blue-400' : 'border-gray-300 hover:border-gray-400 hover:shadow-md'"
                         >
                             <Image :src="option.thumbnail" :srcset="getRetinaThumbnail(option.thumbnail)" :alt="option.alt || option.slug" :imageCover="true" />
                             <div v-if="selectedIdImages.includes(option.id)" class="absolute inset-0 bg-blue-500/40"
@@ -231,6 +258,10 @@ onMounted(() => {
 
                 <div v-else-if="!isLoading" class="flex justify-center col-span-4">
                     <EmptyState :data="{ title : ctrans('You dont have images'), description : ''}"/>
+                </div>
+
+                <div v-else-if="fill" class="columns-[9.5rem] gap-3">
+                    <div v-for="index in 18" :key="index" class="skeleton mb-3 break-inside-avoid rounded-md border border-gray-200" :style="{ height: `${[120, 180, 150, 210, 135, 165][index % 6]}px` }" />
                 </div>
 
                 <div v-else :class="tilesGridClass">

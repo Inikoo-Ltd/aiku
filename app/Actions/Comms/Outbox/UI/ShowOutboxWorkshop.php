@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Outbox\UI;
 
 use App\Actions\Comms\Email\GetEmailWebsiteTheme;
+use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
 use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
 use App\Actions\Comms\EmailTemplate\UI\IndexOtherStoreEmailTemplates;
@@ -146,6 +147,7 @@ class ShowOutboxWorkshop extends OrgAction
                 ],
                 'emailEditor'         => $email->shop?->emailEditor()->value,
                 'websiteTheme'        => GetEmailWebsiteTheme::run($email->shop),
+                'imageCategories'     => IndexShopGalleryImages::categories($email->shop),
                 'updateRoute' => [
                     'name' => 'grp.models.shop.outboxes.workshop.update',
                     'parameters' => [

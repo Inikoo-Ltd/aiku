@@ -2,7 +2,7 @@
 import { ref, computed, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
+import GalleryDialog from "@/Components/Utils/GalleryManagement/GalleryDialog.vue"
 import Image from "@common/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
@@ -249,10 +249,8 @@ const formatRatioLabel = (ratio: number | null) => {
     </div>
 
     <!-- Gallery Dialog -->
-    <Dialog v-model:visible="isOpenGalleryImages" modal header="Select Image" :style="{ width: '75%' }" closable>
-        <GalleryManagement :maxSelected="1" :tabs="['images_uploaded', 'stock_images']"
-            :closePopup="() => (isOpenGalleryImages = false)" @submitSelectedImages="onPickImage" />
-    </Dialog>
+    <GalleryDialog v-model:visible="isOpenGalleryImages" :maxSelected="1" :tabs="['images_uploaded', 'stock_images']"
+        @submitSelectedImages="onPickImage" />
 
     <!-- Cropper Dialog -->
     <Dialog v-model:visible="cropperVisible" modal header="Crop Image" :style="{ width: '75%' }" closable>

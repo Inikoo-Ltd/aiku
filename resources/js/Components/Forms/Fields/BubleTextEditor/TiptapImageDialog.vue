@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import Dialog from 'primevue/dialog'
-import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
+import GalleryDialog from '@/Components/Utils/GalleryManagement/GalleryDialog.vue'
 import { routeType } from '@/types/route'
 import { ctrans } from '@/Composables/useTrans'
+import { GalleryCategory } from '@/Composables/useShopGalleryCategories'
 import { ref, watch } from 'vue'
 
 const props = defineProps<{
   show: boolean
   uploadImageRoute?: routeType
   imagesUploadedRoute?: routeType
+  imageCategories?: GalleryCategory[]
 }>()
 
 const emit = defineEmits<{
@@ -45,22 +46,17 @@ function onSuccessUpload(value: any) {
 </script>
 
 <template>
-  <Dialog
+  <GalleryDialog
     v-model:visible="visible"
-    modal
     :header="ctrans('Select Image')"
-    class="w-full max-w-5xl"
-    dismissableMask
-    @hide="closeDialog"
-  >
-    <GalleryManagement
-      :maxSelected="1"
-      :closePopup="closeDialog"
-      @submitSelectedImages="onPick"
-      @onSuccessUpload="onSuccessUpload"
-      :uploadRoute="uploadImageRoute"
-      :imagesUploadedRoutes="imagesUploadedRoute"
-      :tabs="uploadImageRoute ? undefined : ['images_uploaded', 'stock_images']"
-    />
-  </Dialog>
+    :imageCategories="imageCategories"
+    :maxSelected="1"
+    :closePopup="closeDialog"
+    :uploadRoute="uploadImageRoute"
+    :imagesUploadedRoutes="imagesUploadedRoute"
+    :tabs="uploadImageRoute ? undefined : ['images_uploaded', 'stock_images']"
+    @update:visible="(isVisible) => { if (!isVisible) closeDialog() }"
+    @submitSelectedImages="onPick"
+    @onSuccessUpload="onSuccessUpload"
+  />
 </template>

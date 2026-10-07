@@ -2,9 +2,8 @@
 import { ref } from "vue";
 import type { Component } from "vue";
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import Modal from '@/Components/Utils/Modal.vue'
 import { faChevronCircleLeft, faChevronCircleRight, faImage, faExclamationTriangle, faSave } from '@far'
-import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
+import GalleryDialog from '@/Components/Utils/GalleryManagement/GalleryDialog.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { useConfirm } from "primevue/useconfirm";
@@ -204,9 +203,7 @@ const onUpload = async (files: File[], clear) => {
         </template>
     </ConfirmDialog>
 
-    <Modal :isOpen="isModalGallery" @onClose="() => (isModalGallery = false)" width="w-3/4">
-        <GalleryManagement :uploadRoute="{ name: '', parameters: '' }" :closePopup="() => (isModalGallery = false)"
-            :submitUpload="onUpload" :maxSelected="1"
-            @submitSelectedImages="(e) => { form.image_id = e[0].id, isModalGallery = false, onSaveAll() }" />
-    </Modal>
+    <GalleryDialog v-model:visible="isModalGallery" :uploadRoute="{ name: '', parameters: '' }"
+        :submitUpload="onUpload" :maxSelected="1"
+        @submitSelectedImages="(e) => { form.image_id = e[0].id, isModalGallery = false, onSaveAll() }" />
 </template>

@@ -43,6 +43,7 @@ const props = withDefaults(defineProps<{
     imagesUploadRoute?: routeType
     videoThumbnailRoute?: routeType
     websiteTheme?: WebsiteTheme | null
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     snapshot: any
     unpublished_layout?: any
     mergeTags: Array<any>
@@ -962,7 +963,7 @@ defineExpose({
                         </div>
                         <div class="min-h-0 flex-1 overflow-y-auto">
                             <EmailWorkshopProperties :module="selectedModule" :row="selectedModule ? null : selectedRow" :body="email.page.body"
-                                :imagesUploadRoute="imagesUploadRoute" :mergeTags="editorMergeTags" :textRevision="editorRevision + panelTextRevision"
+                                :imagesUploadRoute="imagesUploadRoute" :imageCategories="imageCategories" :mergeTags="editorMergeTags" :textRevision="editorRevision + panelTextRevision"
                                 :videoThumbnailState="selectedModule ? videoThumbnailStates[selectedModule.uuid!] : undefined"
                                 @textEdited="scheduleTextSync('canvas')"
                                 @replaceDynamicContent="openDynamicContentChooser(true)" />
@@ -1021,7 +1022,7 @@ defineExpose({
                             </div>
 
                             <EmailWorkshopSettings v-else :email="email" :mailshot="mailshot" :updateMailshotRoute="updateMailshotRoute"
-                                :imagesUploadRoute="imagesUploadRoute" :websiteTheme="websiteTheme" @mailshotSaved="emits('mailshotSaved', $event)" />
+                                :imagesUploadRoute="imagesUploadRoute" :imageCategories="imageCategories" :websiteTheme="websiteTheme" @mailshotSaved="emits('mailshotSaved', $event)" />
                         </div>
                     </template>
                 </aside>

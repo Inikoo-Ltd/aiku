@@ -23,6 +23,7 @@ const props = defineProps<{
     row?: EmailRow | null
     body: EmailBody
     imagesUploadRoute?: routeType
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     mergeTags?: Array<{ name: string, value: string }>
     textRevision?: number
     videoThumbnailState?: 'loading' | 'error'
@@ -720,7 +721,7 @@ const contentSectionTitle = computed(() => ({
         </template>
 
         <TiptapImageDialog v-if="isImagePickerOpen" :show="isImagePickerOpen" :uploadImageRoute="imagesUploadRoute"
-            :imagesUploadedRoute="{ name: 'grp.gallery.uploaded-images.email.index' }"
+            :imagesUploadedRoute="{ name: 'grp.gallery.uploaded-images.email.index' }" :imageCategories="imageCategories"
             @insert="onImagePicked" @close="isImagePickerOpen = false" />
     </div>
 </template>

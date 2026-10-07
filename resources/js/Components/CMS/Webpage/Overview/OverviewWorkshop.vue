@@ -4,8 +4,7 @@ import { ref, onMounted, onBeforeUnmount } from "vue"
 import Moveable from "vue3-moveable"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
-import Modal from "@/Components/Utils/Modal.vue"
+import GalleryDialog from "@/Components/Utils/GalleryManagement/GalleryDialog.vue"
 import { notify } from "@kyvg/vue3-notification"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -248,8 +247,7 @@ onBeforeUnmount(() => {
 			<div v-html="text.text" />
 		</div>
 	</div>
-	<Modal :isOpen="isModalGallery" @onClose="() => (isModalGallery = false)" width="w-3/4">
-		<GalleryManagement
+	<GalleryDialog v-model:visible="isModalGallery"
 			:maxSelected="1"
 			:uploadRoute="{
 				...webpageData.images_upload_route,
@@ -257,9 +255,7 @@ onBeforeUnmount(() => {
 						modelHasWebBlocks: blockData?.id
 					},
 			}"
-			:closePopup="() => (isModalGallery = false)"
 			@submitSelectedImages="onChangeImage" 
 			:submitUpload="onUpload"
 			/>
-	</Modal>
 </template>

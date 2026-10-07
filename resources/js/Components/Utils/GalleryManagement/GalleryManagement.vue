@@ -6,18 +6,20 @@
 
 <script setup lang="ts">
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import GalleryUpload from '@/Components/Utils/GalleryManagement/GalleryUpload.vue'
 import GalleryUploadedImages from '@/Components/Utils/GalleryManagement/GalleryUploadedImages.vue'
 import axios from 'axios'
 import { faCube, faStar, faImage } from "@fas"
+import { faCloudUpload, faImages, faPhotoVideo, faCopyright, faBooks } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
 import { ImageData } from '@/types/Image'
-library.add(faCube, faStar, faImage)
+library.add(faCube, faStar, faImage, faCloudUpload, faImages, faPhotoVideo, faCopyright, faBooks)
 
 const layout = inject('layout', layoutStructure)
 const props = withDefaults(defineProps<{
@@ -33,7 +35,10 @@ const props = withDefaults(defineProps<{
     stockImagesRoute?: routeType;
     //images uploded
     imagesUploadedRoutes?: routeType;
+    imagesUploadedLabel?: string;
     attachImageRoute?: routeType;
+    imageCategories?: Array<{ key: string, label: string, route: routeType, icon?: string }>;
+    fill?: boolean;
 }>(), {
     multiple: false,
     tabs: () => ['upload', 'images_uploaded', 'stock_images'],
@@ -45,6 +50,13 @@ const props = withDefaults(defineProps<{
     }),
 });
 
+
+const visibleTabs = computed(() => [
+    ...(props.tabs.includes('upload') ? [{ key: 'upload', label: ctrans('Upload'), icon: 'fal fa-cloud-upload', route: undefined }] : []),
+    ...(props.imageCategories ?? []).map((category) => ({ ...category, key: `category-${category.key}` })),
+    ...(props.tabs.includes('images_uploaded') ? [{ key: 'images_uploaded', label: props.imagesUploadedLabel ?? ctrans('Images Uploaded'), icon: 'fal fa-images', route: props.imagesUploadedRoutes }] : []),
+    ...(props.tabs.includes('stock_images') ? [{ key: 'stock_images', label: ctrans('Stock Images'), icon: 'fal fa-photo-video', route: props.stockImagesRoute }] : []),
+])
 
 const selectedTab = ref(0)
 const galleryUploadRef = ref(null);
@@ -116,58 +128,39 @@ const beforeSubmitImage = (files) => {
 
 
 <template>
-    <div>
-        <TabGroup :selectedIndex="selectedTab" @change="(index) => selectedTab = index">
-            <TabList class="flex space-x-8 border-b-2">
-                <Tab as="template" v-slot="{ selected }" v-if="tabs.includes('upload')">
-                    <button
+    <div :class="fill ? 'flex h-full min-h-0 flex-col' : ''">
+        <TabGroup :selectedIndex="selectedTab" @change="(index) => selectedTab = index" as="div" :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''">
+            <TabList class="flex shrink-0 flex-wrap gap-x-1 border-b border-gray-200">
+                <Tab as="template" v-slot="{ selected }" v-for="tab in visibleTabs" :key="tab.key">
+                    <button type="button"
                         :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
-                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2">
-                        Upload
-                    </button>
-                </Tab>
-                <Tab as="template" v-slot="{ selected }" v-if="tabs.includes('images_uploaded')">
-                    <button
-                        :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
-                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2">
-                        Images Uploaded
-                    </button>
-                </Tab>
-                <Tab as="template" v-slot="{ selected }" v-if="tabs.includes('stock_images')">
-                    <button
-                        :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
-                        class="whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2">
-                        Stock Images
+                        class="-mb-px flex items-center gap-x-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-0"
+                        :class="selected ? '' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'">
+                        <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" fixed-width aria-hidden="true" />
+                        {{ tab.label }}
                     </button>
                 </Tab>
             </TabList>
 
-            <TabPanels class="mt-2">
-                <TabPanel class="h-full rounded-xl bg-white p-3" v-if="tabs.includes('upload')">
+            <TabPanels :class="fill ? 'mt-3 min-h-0 flex-1' : 'mt-2'">
+                <TabPanel v-for="tab in visibleTabs" :key="tab.key" :class="fill ? 'flex h-full flex-col focus:outline-none' : 'h-full rounded-xl bg-white p-3'">
                     <GalleryUpload
-                        ref="galleryUploadRef"
+                        v-if="tab.key === 'upload'"
+                        :ref="(element) => { galleryUploadRef = element }"
                         :fileLimit="maxSelected"
                         :isLoading="props.isLoadingSubmit || isLoading"
                         @onSubmitUpload="beforeSubmitImage"
-                        accept="image/*" 
-                        name="image" 
+                        accept="image/*"
+                        name="image"
+                        :fill
                         :uploadProgress="uploadProgress"
                     />
-                </TabPanel>
-                <TabPanel class="h-full rounded-xl bg-white p-3" v-if="tabs.includes('images_uploaded')">
                     <GalleryUploadedImages
-                        :imagesUploadedRoutes
+                        v-else
+                        :imagesUploadedRoutes="tab.route"
                         :attachImageRoute
                         :maxSelected
-                        @selectImage="(image) => emits('selectImage', image)"
-                        @submitSelectedImages="(images) => emits('submitSelectedImages', images)"
-                    />
-                </TabPanel>
-                <TabPanel class="h-full rounded-xl bg-white p-3" v-if="tabs.includes('stock_images')">
-                    <GalleryUploadedImages
-                        :imagesUploadedRoutes="stockImagesRoute"
-                        :attachImageRoute
-                        :maxSelected
+                        :fill
                         @selectImage="(image) => emits('selectImage', image)"
                         @submitSelectedImages="(images) => emits('submitSelectedImages', images)"
                     />

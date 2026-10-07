@@ -42,6 +42,7 @@ const props = defineProps<{
     videoThumbnailRoute?: routeType
     emailEditor?: 'aiku' | 'beefree'
     websiteTheme?: { color: string[], fontFamily: string | null } | null
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
     snapshot: routeType
     unpublished_layout: any
@@ -413,7 +414,7 @@ onMounted(() => {
             @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
             ref="_beefree" @ready="isBeefreeReady = $event" />
 
-        <EmailWorkshop v-else :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme"
+        <EmailWorkshop v-else :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"

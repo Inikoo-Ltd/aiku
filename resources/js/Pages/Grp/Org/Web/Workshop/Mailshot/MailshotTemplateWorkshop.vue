@@ -34,6 +34,7 @@ const props = defineProps<{
     videoThumbnailRoute?: routeType
     emailEditor?: 'aiku' | 'beefree'
     websiteTheme?: { color: string[], fontFamily: string | null } | null
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
@@ -237,7 +238,7 @@ const handleDelete = async () => {
         :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <!-- email workshop -->
-    <EmailWorkshop v-else-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme"
+    <EmailWorkshop v-else-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
         :snapshot="snapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSave"
         :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 

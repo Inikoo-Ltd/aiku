@@ -2450,6 +2450,31 @@ test('email workshop offers the shop website theme', function (EmailTemplate $em
         ->assertInertia(fn (AssertableInertia $page) => $page->where('websiteTheme.color.0', '#A57FBC')->etc());
 })->depends('update mailshot template');
 
+test('email gallery lists shop logos and catalogue images', function (EmailTemplate $emailTemplate) {
+    $shop = $emailTemplate->shop;
+
+    $this->getJson(route('grp.json.shop.gallery.logos', ['shop' => $shop->slug]))
+        ->assertSuccessful()
+        ->assertJsonStructure(['data', 'meta' => ['total'], 'links']);
+
+    $catalogue = $this->getJson(route('grp.json.shop.gallery.catalogue', ['shop' => $shop->slug]))
+        ->assertSuccessful()
+        ->assertJsonStructure(['data', 'meta' => ['total'], 'links']);
+
+    $firstImageName = $catalogue->json('data.0.name');
+    if ($firstImageName) {
+        $search = explode(' ', $firstImageName)[0];
+        expect(collect($this->getJson(route('grp.json.shop.gallery.catalogue', ['shop' => $shop->slug, 'filter' => ['global' => $search]]))->json('data'))->pluck('name')->map(fn (string $name) => strtolower($name)))
+            ->each->toContain(strtolower($search));
+    }
+
+    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('imageCategories.0.route.name', 'grp.json.shop.gallery.logos')
+            ->where('imageCategories.1.route.name', 'grp.json.shop.gallery.catalogue')
+            ->etc());
+})->depends('update mailshot template');
+
 test('upload images to email template from workshop', function (EmailTemplate $emailTemplate) {
     $uploadRoute = route('grp.models.email-templates.images.store', ['emailTemplate' => $emailTemplate->id]);
 

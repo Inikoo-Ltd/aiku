@@ -2,7 +2,7 @@
 import FileUpload from 'primevue/fileupload'
 import Badge from 'primevue/badge'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUpload, faImages } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -20,7 +20,13 @@ const props = defineProps<{
     accept: String,
     name: String,
     uploadProgress?: Number
+    fill?: boolean
 }>()
+
+const fileUploadProps = computed(() => {
+    const { fill, ...fileUploadOptions } = props
+    return fileUploadOptions
+})
 
 const emits = defineEmits<{
     (e: 'onSubmitUpload', files: File[]): void
@@ -54,8 +60,12 @@ defineExpose({
 </script>
 
 <template>
-    <div class="relative">
-        <FileUpload ref="fileUploadRef" v-bind="props" @select="handleFileSelection">
+    <div class="relative" :class="fill ? 'flex h-full min-h-0 flex-col' : ''">
+        <FileUpload ref="fileUploadRef" v-bind="fileUploadProps" @select="handleFileSelection"
+            :pt="fill ? {
+                root: { class: 'flex h-full min-h-0 flex-1 flex-col' },
+                content: { class: 'flex min-h-0 flex-1 flex-col overflow-y-auto' },
+            } : undefined">
             <template #header="{ chooseCallback, clearCallback, files, uploadedFiles, uploadCallback }">
                 <div class="flex flex-wrap justify-center items-center flex-1 gap-4">
                     <Button @click="() => { chooseCallback(); fileUploadRef.upload(); }" label="Choose & Upload" icon="fal fa-images" type="tertiary" />
@@ -104,7 +114,7 @@ defineExpose({
             </template>
 
             <template #empty>
-                <div class="flex items-center justify-center flex-col">
+                <div class="flex flex-col items-center justify-center" :class="fill ? 'h-full min-h-[14rem] flex-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 text-gray-500' : ''">
                     <FontAwesomeIcon icon='fal fa-upload'
                         class='!border-2 !rounded-full !p-8 !text-4xl !text-muted-color' fixed-width
                         aria-hidden='true' />
