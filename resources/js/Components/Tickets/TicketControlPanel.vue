@@ -54,7 +54,7 @@ const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id:
 </script>
 
 <template>
-    <aside class="text-sm" :class="embedded ? '-mx-5 -mt-3 mb-4 border-b border-gray-200' : 'bg-white rounded-lg border border-gray-300'">
+    <aside class="text-sm" :class="embedded ? '-mx-5 -mt-3 mb-4 border-b border-gray-200' : 'overflow-hidden bg-white rounded-lg border border-gray-300'">
         <button type="button" class="flex w-full items-start justify-between gap-3 p-4 text-left transition duration-200 hover:bg-gray-50" @click="toggle">
             <span v-if="embedded" class="flex min-w-0 flex-col gap-1">
                 <span class="text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Assignee") }}</span>
