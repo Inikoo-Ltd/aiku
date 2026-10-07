@@ -484,6 +484,7 @@ class GetPartnerStockCoverBuckets
             ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
             ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
+            ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
             ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
             ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
             ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');

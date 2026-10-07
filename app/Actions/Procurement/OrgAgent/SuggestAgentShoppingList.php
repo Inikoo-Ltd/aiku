@@ -120,6 +120,7 @@ class SuggestAgentShoppingList extends OrgAction
             ->leftJoinLateral(GetAgentStockCoverBuckets::bestOrgStock(), 'os')
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
             ->whereIn('osp.id', $ids)
+            ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
             ->whereNotExists(function ($query) {
                 $query->selectRaw('1')
                     ->from('shopping_list_items as sli')
