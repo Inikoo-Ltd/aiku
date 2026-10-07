@@ -161,8 +161,8 @@ const props = defineProps<{
             id: number
             code: string
             organisation_code: string
-            warehouse_slug: string
             barcodes: Barcode[]
+            label_options_route: routeType
         }[]
     }
 }>()
@@ -304,10 +304,7 @@ const openLabelModal = async (level: string) => {
     isLoadingLabelOptions.value = true
 
     try {
-        const { data } = await axios.get(route("grp.json.warehouse.org_stock.label_options", {
-            warehouse: orgStock.warehouse_slug,
-            orgStock: orgStock.id,
-        }))
+        const { data } = await axios.get(route(orgStock.label_options_route.name, orgStock.label_options_route.parameters))
 
         labelOptions.value = data.options
         labelRoute.value = data.label_route
