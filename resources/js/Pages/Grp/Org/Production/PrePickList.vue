@@ -134,7 +134,21 @@ function prePickAll() {
 	)
 }
 
-function prePick(lines: { id: number; quantity: number }[]) {
+function closeShort(item: PrePickItem) {
+	const quantity = quantityFor(item)
+	const message = trans(
+		"Send :quantity and cancel the other :shortfall? The partner's list drops to :quantity and the rest will not be made.",
+		{
+			quantity: useLocaleStore().number(quantity),
+			shortfall: useLocaleStore().number(Number(item.quantity) - quantity),
+		}
+	)
+	if (window.confirm(message)) {
+		prePick([{ id: item.id, quantity, cancel_shortfall: true }])
+	}
+}
+
+function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boolean }[]) {
 	router.post(
 		route("grp.org.productions.show.pre_pick.pick", [
 			route().params["organisation"],
@@ -265,6 +279,14 @@ function prePick(lines: { id: number; quantity: number }[]) {
 				"
 				@click="prePick([{ id: item.id, quantity: quantityFor(item) }])">
 				{{ trans("Pre-pick") }}
+			</button>
+			<button
+				v-if="isPartial(item) && quantityFor(item) > 0"
+				type="button"
+				class="ml-1 rounded border border-amber-500 px-2 py-0.5 text-xs text-amber-700 hover:bg-amber-50"
+				:title="trans('Pre-pick this quantity and cancel the shortfall, nothing stays outstanding')"
+				@click="closeShort(item)">
+				{{ trans("Close short") }}
 			</button>
 		</template>
 		<template #cell(stock_code)="{ item }: { item: PrePickItem }">

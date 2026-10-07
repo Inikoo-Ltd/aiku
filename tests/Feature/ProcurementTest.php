@@ -7042,6 +7042,33 @@ test('pre-picking reserves stock for the partner without creating any order', fu
     expect(collect($listed)->pluck('id'))->not->toContain($item->id);
 });
 
+test('pre-pick closed short cancels the shortfall instead of leaving it outstanding', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+    $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $sellerOrgStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $buyerOrgStock->stock_id)->first()
+        ?? createOrgStocks($seller, [$buyerOrgStock->stock])[0];
+    $sellerOrgStock->update(['quantity_available' => 25]);
+
+    $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 28]);
+
+    $this->post(route('grp.org.productions.show.pre_pick.pick', [$seller->slug, $production->slug]), ['lines' => [['id' => $item->id, 'quantity' => 25, 'cancel_shortfall' => true]]])
+        ->assertRedirect();
+
+    $item->refresh();
+    $shortfall = PartnerShoppingListItem::where('parent_id', $item->id)->first();
+
+    expect((float) $item->quantity)->toBe(25.0)
+        ->and($item->pre_picked_at)->not->toBeNull()
+        ->and((float) $shortfall->quantity)->toBe(3.0)
+        ->and($shortfall->state)->toBe(ShoppingListItemStateEnum::DISMISSED)
+        ->and($shortfall->dismissed_at)->not->toBeNull()
+        ->and(PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::OPEN)->whereNull('pre_picked_at')->exists())->toBeFalse();
+});
+
 test('only a manufacturing hub sells to its partners through the shopping list and pre-pick', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
     $seller     = $this->orgPartner->partner;
