@@ -21,7 +21,7 @@ class IndexUploadReports
     {
         return UploadReportResource::collection(
             Upload::query()
-                ->with('user')
+                ->with(['user', 'parent'])
                 ->where('parent_type', $parent->getMorphClass())
                 ->where('parent_id', $parent->getKey())
                 ->where('model', $model)
