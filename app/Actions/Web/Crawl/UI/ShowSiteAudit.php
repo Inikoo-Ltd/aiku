@@ -71,6 +71,7 @@ class ShowSiteAudit extends OrgAction
             'finish_reason'     => $crawl->finish_reason,
             'health_score'      => (float) $crawl->health_score,
             'pages'             => $crawl->urls_processed,
+            'urls_found'        => $crawl->urls_found,
             'pages_with_errors' => $crawl->pages_with_errors,
             'errors'            => $crawl->number_errors,
             'warnings'          => $crawl->number_warnings,

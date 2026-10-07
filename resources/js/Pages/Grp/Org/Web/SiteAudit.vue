@@ -17,8 +17,8 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInfoCircle } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle } from "@fal"
 
 library.add(faInfoCircle)
 
@@ -30,6 +30,7 @@ type AuditSummary = {
     finish_reason: string | null
     health_score: number
     pages: number
+    urls_found: number
     pages_with_errors: number
     errors: number
     warnings: number
@@ -65,10 +66,10 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const severityStyles: Record<Severity, { dot: string, text: string }> = {
-    error: { dot: "bg-red-500", text: "text-red-700" },
-    warning: { dot: "bg-amber-500", text: "text-amber-700" },
-    notice: { dot: "bg-gray-400", text: "text-gray-600" },
+const severityDots: Record<Severity, string> = {
+    error: "bg-red-500",
+    warning: "bg-amber-500",
+    notice: "bg-gray-400",
 }
 
 const isRunning = computed(() => props.audit.running !== null)
@@ -95,24 +96,39 @@ const issueRoute = (issueType: string) => {
 
 const issueChange = (issue: IssueSummary) => issue.previous_pages === null ? null : issue.pages - issue.previous_pages
 
-const severityTotals = computed(() => {
+const hasPreviousAudit = computed(() => props.audit.previous !== null)
+
+const severityTotal = (severity: Severity) => {
     const latest = props.audit.latest
 
     if (!latest) {
-        return []
+        return 0
     }
 
-    const previous = props.audit.previous
+    return { error: latest.errors, warning: latest.warnings, notice: latest.notices }[severity]
+}
 
-    return ([
-        { severity: "error", value: latest.errors, previous: previous?.errors },
-        { severity: "warning", value: latest.warnings, previous: previous?.warnings },
-        { severity: "notice", value: latest.notices, previous: previous?.notices },
-    ] as Array<{ severity: Severity, value: number, previous?: number }>).map((total) => ({
-        ...total,
-        label: props.severities[total.severity],
-        change: total.previous === undefined ? null : total.value - total.previous,
-    }))
+const issueSections = computed(() => (["error", "warning", "notice"] as Severity[]).map((severity) => ({
+    severity,
+    label: props.severities[severity],
+    total: severityTotal(severity),
+    issues: props.audit.issues.filter((issue) => issue.severity === severity && (issue.pages > 0 || issue.previous_pages)),
+})))
+
+const shareOfPages = (pages: number) => {
+    const checkedPages = props.audit.latest?.pages ?? 0
+
+    return checkedPages > 0 ? Math.round(pages / checkedPages * 1000) / 10 : 0
+}
+
+const coverageText = computed(() => {
+    const latest = props.audit.latest
+
+    if (!latest) {
+        return ""
+    }
+
+    return ctrans(":checked of :found URLs checked", { checked: locale.number(latest.pages), found: locale.number(Math.max(latest.urls_found, latest.pages)) })
 })
 
 const healthChange = computed(() => {
@@ -207,100 +223,105 @@ const finishReasonText = computed(() => {
 
     <template v-else>
         <section
-            :aria-label="ctrans('Site health')"
-            class="mx-4 my-4 rounded-xl bg-white ring-1 ring-gray-200">
-            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
-                <span class="text-sm font-medium text-gray-900">{{ website.domain }}</span>
-                <span class="text-xs text-gray-500">
-                    {{ ctrans("Audit finished :date", { date: useRangeFromNow(audit.latest.end_at) }) }}
-                </span>
-            </div>
-
-            <div
-                class="grid grid-cols-1 gap-x-8 gap-y-6 px-5 pb-5 pt-5"
-                :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showTrend }">
-                <div class="flex flex-col justify-between gap-y-5">
-                    <div>
-                        <div class="flex items-baseline gap-x-3">
-                            <span class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(audit.latest.health_score) }}%</span>
-                            <span v-if="healthChange" class="text-sm tabular-nums" :class="healthChange > 0 ? 'text-green-700' : 'text-red-700'">
-                                {{ formatChange(healthChange) }}
-                            </span>
-                        </div>
-                        <div class="mt-1 text-sm text-gray-600">{{ ctrans("Site health") }}</div>
-                        <div class="text-xs text-gray-500">
-                            {{ ctrans(":clean of :pages pages have no errors", { clean: locale.number(audit.latest.pages - audit.latest.pages_with_errors), pages: locale.number(audit.latest.pages) }) }}
-                        </div>
-                        <p v-if="finishReasonText" class="mt-2 text-xs text-amber-700">{{ finishReasonText }}</p>
+            :aria-label="ctrans('Latest audit')"
+            class="mx-4 mt-4 rounded-xl bg-white ring-1 ring-gray-200">
+            <div class="flex flex-wrap items-end gap-x-10 gap-y-4 px-5 py-4">
+                <div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Site health") }}</div>
+                    <div class="mt-0.5 flex items-baseline gap-x-2">
+                        <span class="text-3xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(audit.latest.health_score) }}%</span>
+                        <span v-if="healthChange" class="text-sm tabular-nums" :class="healthChange > 0 ? 'text-green-700' : 'text-red-700'">
+                            {{ formatChange(healthChange) }}
+                        </span>
                     </div>
-
-                    <dl class="space-y-1 text-sm">
-                        <div v-for="total in severityTotals" :key="total.severity" class="flex items-center gap-2">
-                            <span class="size-2.5 shrink-0 rounded-full" :class="severityStyles[total.severity].dot" aria-hidden="true" />
-                            <dt class="text-gray-600">{{ total.label }}</dt>
-                            <dd class="ml-auto tabular-nums text-gray-900">
-                                {{ locale.number(total.value) }}
-                                <span v-if="total.change" class="ml-1.5 inline-block w-12 text-right text-xs" :class="total.change > 0 ? 'text-red-700' : 'text-green-700'">
-                                    {{ formatChange(total.change) }}
-                                </span>
-                                <span v-else class="ml-1.5 inline-block w-12" />
-                            </dd>
-                        </div>
-                    </dl>
+                    <div class="text-xs text-gray-500">
+                        {{ ctrans(":clean of :pages pages have no errors", { clean: locale.number(audit.latest.pages - audit.latest.pages_with_errors), pages: locale.number(audit.latest.pages) }) }}
+                    </div>
                 </div>
 
-                <div v-if="showTrend" class="min-w-0">
-                    <div class="h-48 sm:h-56" role="img" :aria-label="ctrans('Site health of the last :count audits', { count: audit.history.length })">
-                        <Chart type="line" :data="trendData" :options="trendOptions" class="h-full" />
+                <dl class="flex gap-x-8">
+                    <div v-for="section in issueSections" :key="section.severity">
+                        <dt class="flex items-center gap-1.5 text-xs text-gray-500">
+                            <span class="size-2 rounded-full" :class="severityDots[section.severity]" aria-hidden="true" />
+                            {{ section.label }}
+                        </dt>
+                        <dd class="mt-0.5 text-xl font-medium tabular-nums text-gray-900">{{ locale.number(section.total) }}</dd>
                     </div>
+                </dl>
+
+                <div class="ml-auto text-right text-xs text-gray-500">
+                    <div class="font-medium text-gray-900">{{ website.domain }}</div>
+                    <div>{{ ctrans("Finished :date", { date: useRangeFromNow(audit.latest.end_at) }) }}</div>
+                    <div :class="{ 'text-amber-700': finishReasonText }">{{ coverageText }}</div>
+                    <div v-if="finishReasonText" class="text-amber-700">{{ finishReasonText }}</div>
+                </div>
+            </div>
+
+            <div v-if="showTrend" class="border-t border-gray-100 px-5 py-4">
+                <h3 class="text-xs font-medium text-gray-700">{{ ctrans("Site health per audit") }}</h3>
+                <div class="mt-2 h-36" role="img" :aria-label="ctrans('Site health of the last :count audits', { count: audit.history.length })">
+                    <Chart type="line" :data="trendData" :options="trendOptions" class="h-full" />
                 </div>
             </div>
         </section>
 
-        <section
-            :aria-label="ctrans('Issues')"
-            class="mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
-            <p v-if="!audit.issues.length" class="px-5 py-5 text-sm text-gray-600">
-                {{ ctrans("The latest audit found no issues.") }}
-            </p>
+        <p v-if="!audit.issues.length" class="mx-4 mt-4 rounded-xl bg-white px-5 py-5 text-sm text-gray-600 ring-1 ring-gray-200">
+            {{ ctrans("The latest audit found no issues.") }}
+        </p>
 
-            <table v-else class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
-                        <th scope="col" class="px-5 py-3 font-medium">{{ ctrans("Issue") }}</th>
-                        <th scope="col" class="px-5 py-3 text-right font-medium">{{ ctrans("Pages") }}</th>
-                        <th scope="col" class="w-28 px-5 py-3 text-right font-medium">{{ ctrans("Since last audit") }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <tr v-for="issue in audit.issues" :key="issue.type" class="hover:bg-gray-50">
-                        <td class="px-5 py-2.5">
-                            <div class="flex items-center gap-2">
-                                <span class="size-2.5 shrink-0 rounded-full" :class="severityStyles[issue.severity].dot" :title="severities[issue.severity]" aria-hidden="true" />
-                                <span class="sr-only">{{ severities[issue.severity] }}:</span>
-                                <Link v-if="issue.pages" :href="issueRoute(issue.type)" class="text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
-                                    {{ issue.label }}
-                                </Link>
-                                <span v-else class="text-gray-500">{{ issue.label }}</span>
-                                <button
-                                    type="button"
-                                    v-tooltip="issue.description"
-                                    :aria-label="issue.description"
-                                    class="text-gray-400 hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[--app-accent]">
-                                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
-                                </button>
-                            </div>
-                        </td>
-                        <td class="px-5 py-2.5 text-right tabular-nums text-gray-900">{{ locale.number(issue.pages) }}</td>
-                        <td class="px-5 py-2.5 text-right tabular-nums">
+        <div v-else class="mb-4">
+            <section
+                v-for="section in issueSections"
+                :key="section.severity"
+                :aria-labelledby="`issues-${section.severity}`"
+                class="mx-4 mt-4 rounded-xl bg-white ring-1 ring-gray-200">
+                <div class="flex items-baseline gap-2 border-b border-gray-100 px-5 py-3">
+                    <span class="size-2 shrink-0 self-center rounded-full" :class="severityDots[section.severity]" aria-hidden="true" />
+                    <h2 :id="`issues-${section.severity}`" class="text-sm font-medium text-gray-900">{{ section.label }}</h2>
+                    <span class="text-xs text-gray-500">{{ ctrans(":count issues", { count: locale.number(section.total) }) }}</span>
+                </div>
+
+                <p v-if="!section.issues.length" class="px-5 py-3 text-sm text-gray-500">
+                    {{ ctrans("None found in this audit.") }}
+                </p>
+
+                <ul v-else class="divide-y divide-gray-100">
+                    <li
+                        v-for="issue in section.issues"
+                        :key="issue.type"
+                        class="flex items-center gap-x-4 px-5 py-2.5 text-sm">
+                        <span class="w-12 shrink-0 text-right font-medium tabular-nums text-gray-900">{{ locale.number(issue.pages) }}</span>
+
+                        <div class="flex min-w-0 flex-1 items-center gap-1.5">
+                            <Link
+                                v-if="issue.pages"
+                                :href="issueRoute(issue.type)"
+                                class="truncate text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
+                                {{ issue.label }}
+                            </Link>
+                            <span v-else class="truncate text-gray-500">{{ issue.label }}</span>
+                            <button
+                                type="button"
+                                v-tooltip="issue.description"
+                                :aria-label="issue.description"
+                                class="shrink-0 text-gray-400 hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[--app-accent]">
+                                <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+
+                        <span class="hidden shrink-0 text-xs tabular-nums text-gray-500 sm:inline">
+                            {{ ctrans(":share% of pages", { share: locale.number(shareOfPages(issue.pages)) }) }}
+                        </span>
+
+                        <span v-if="hasPreviousAudit" class="w-36 shrink-0 text-right text-xs tabular-nums">
                             <span v-if="issueChange(issue)" :class="issueChange(issue)! > 0 ? 'text-red-700' : 'text-green-700'">
-                                {{ formatChange(issueChange(issue)!) }}
+                                {{ ctrans(":change since last audit", { change: formatChange(issueChange(issue)!) }) }}
                             </span>
-                            <span v-else class="text-gray-400">-</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+                            <span v-else class="text-gray-400">{{ ctrans("No change") }}</span>
+                        </span>
+                    </li>
+                </ul>
+            </section>
+        </div>
     </template>
 </template>
