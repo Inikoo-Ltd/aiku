@@ -13,6 +13,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
+use App\Actions\Catalogue\ProductCategory\UI\WithWebpageActions;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
@@ -40,6 +41,7 @@ class ShowCollection extends OrgAction
     use WithCollectionSubNavigation;
     use WithCollectionNavigation;
     use WithCatalogueAuthorisation;
+    use WithWebpageActions;
 
     private Organisation|Shop|ProductCategory $parent;
 
@@ -183,7 +185,7 @@ class ShowCollection extends OrgAction
                                     ]
                                 ]
                             ]
-                            : [
+                            : ($this->canCreateWebpage() ? [
                                 'type'    => 'button',
                                 'style'   => 'edit',
                                 'tooltip' => __('Create Webpage'),
@@ -194,7 +196,7 @@ class ShowCollection extends OrgAction
                                     'parameters' => $collection->id,
                                     'method'     => 'post'
                                 ]
-                            ],
+                            ] : false),
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',

@@ -10,6 +10,7 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\PurgeVarnishPath;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateRedirect extends OrgAction
 {
     use WithActionUpdate;
+    use WithWebEditAuthorisation;
 
     public function handle(Redirect $redirect, array $modelData): Redirect
     {

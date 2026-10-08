@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class BreakWebpageCache extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
+    use WithWebEditAuthorisation;
 
     public string $jobQueue = 'urgent';
 
@@ -134,7 +136,7 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
 
     public function asController(Webpage $webpage, ActionRequest $request): void
     {
-        $this->initialisation($webpage->organisation, $request);
+        $this->initialisationFromShop($webpage->shop, $request);
 
         $this->handle($webpage);
     }

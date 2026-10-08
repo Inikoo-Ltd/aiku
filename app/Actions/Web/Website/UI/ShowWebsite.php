@@ -362,7 +362,8 @@ class ShowWebsite extends OrgAction
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),
                     [
-                        'layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']
+                        'layout'   => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList'],
+                        'can_edit' => $this->canEdit,
                     ],
                     [
                         'stats'                => $stats,

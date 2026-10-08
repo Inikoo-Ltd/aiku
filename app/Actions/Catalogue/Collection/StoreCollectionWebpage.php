@@ -10,15 +10,19 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreCollectionWebpage extends OrgAction
 {
+    use WithWebEditAuthorisation;
+
     /**
      * @throws \Throwable
      */
@@ -56,9 +60,9 @@ class StoreCollectionWebpage extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Collection $collection): Webpage
+    public function asController(Collection $collection, ActionRequest $request): Webpage
     {
-        $this->initialisationFromShop($collection->shop, []);
+        $this->initialisationFromShop($collection->shop, $request);
 
         return $this->handle($collection);
     }

@@ -9,16 +9,18 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Table from "@/Components/Table/Table.vue"
 import { faSkull } from "@fal";
 import { Link, router } from '@inertiajs/vue3';
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
-import Toggle from "@/Components/Pure/Toggle.vue";
 
-defineProps<{
+withDefaults(defineProps<{
     data: {}
     tab?: string
-}>()
+    canEdit?: boolean
+}>(), {
+    canEdit: false
+})
 
 const isLoadingDelete = ref(null);
 
@@ -94,15 +96,15 @@ const deleteRedirect = (item) => {
         },
         onSuccess: () => {
             notify({
-            title: trans("Success"),
-            text: trans("Redirect has been deleted"),
+            title: ctrans("Success"),
+            text: ctrans("Redirect has been deleted"),
             type: "success",
             })
         },
         onError: (err) => {
             notify({
-                title: trans("Fail"),
-                text: trans("Fail to delete redirect"),
+                title: ctrans("Fail"),
+                text: ctrans("Fail to delete redirect"),
                 type: "error",
             })
         },
@@ -112,39 +114,37 @@ const deleteRedirect = (item) => {
     })
 }
 
-// console.log('dddd', route())
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(to_webpage_url)="{ item: data }">
-            <!-- <pre>{{ data }}</pre> -->
             <Link v-if="data.to_webpage_code" :href="webpageRoute(data)" class="primaryLink">
                 {{ data['to_webpage_code'] }}
             </Link>
             <div v-else class="text-gray-400 italic">
-                {{ trans("No target webpage") }}
+                {{ ctrans("No target webpage") }}
             </div>
         </template>
 
         <template #cell(path)="{ item: data }">
-            {{ data.full_path }} 
+            {{ data.full_path }}
             <span class="italic" v-if="data.full_path != data.path">
                 <br>
                 ({{ data.path }})
             </span>
         </template>
-        
+
         <template #cell(actions_from_website)="{ item: data }">
-            <div class="flex align-items-center">
+            <div v-if="canEdit" class="flex align-items-center">
                 <ButtonWithLink
-                    v-tooltip="trans('Edit redirect')"
+                    v-tooltip="ctrans('Edit redirect')"
                     type="edit"
                     :url="editRedirect(data)"
                     size="sm"
                 />
                 <Button
-                    v-tooltip="trans('Delete redirect')"
+                    v-tooltip="ctrans('Delete redirect')"
                     @click="deleteRedirect(data)"
                     :icon="faSkull"
                     :style="'negative'"

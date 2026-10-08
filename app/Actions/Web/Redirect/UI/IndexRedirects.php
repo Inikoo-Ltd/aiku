@@ -59,6 +59,7 @@ class IndexRedirects extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => RedirectTabsEnum::navigation()
             ],
+            'can_edit'                         => $this->canEdit,
             'route_redirects'                  => [
                 'submit'              => [
                     'name'       => 'grp.models.website.redirect.store',

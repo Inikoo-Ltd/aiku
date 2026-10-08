@@ -362,6 +362,7 @@ class ShowWebpage extends OrgAction
                 'webpage_canonical_url' => $webpage->canonical_url,
                 'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
                 'closed'                => $this->getClosure($webpage),
+                'can_edit'              => $this->canEdit,
                 'lock' => GetWebpageLock::run($webpage, $request->user()),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()

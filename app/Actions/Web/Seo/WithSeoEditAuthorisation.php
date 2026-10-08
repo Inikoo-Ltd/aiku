@@ -19,7 +19,6 @@ trait WithSeoEditAuthorisation
         }
 
         return $request->user()->authTo([
-            "websites-view.{$this->shop->organisation_id}",
             "web.{$this->shop->id}.edit",
             "group-webmaster.edit",
         ]);

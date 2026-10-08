@@ -16,6 +16,8 @@ use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\StoreAnnouncement;
@@ -683,6 +685,40 @@ test('store redirect', function (Webpage $webpage) {
 
     return $redirect;
 })->depends('create webpage');
+
+test('a shop viewer sees the webpage but none of the controls to change it', function (Webpage $webpage, Redirect $redirect) {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    SetUserAuthorisedModels::run($this->user);
+    \Illuminate\Support\Facades\Cache::tags('auth-user:'.$this->user->id)->flush();
+
+    expect($this->user->refresh()->authTo('websites-view.'.$this->organisation->id))->toBeTrue();
+
+    $response = get(route('grp.org.shops.show.web.webpages.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $webpage->website->slug,
+        $webpage->slug
+    ]));
+
+    $props          = $response->viewData('page')['props'];
+    $actionRoutes   = collect($props['pageHead']['actions'])->pluck('route.name')->filter();
+
+    expect($props['can_edit'])->toBeFalse()
+        ->and($actionRoutes->contains(fn (string $name) => str_ends_with($name, '.workshop') || str_ends_with($name, '.edit')))->toBeFalse();
+
+    delete(route('grp.models.redirect.delete', ['redirect' => $redirect->id]))->assertForbidden();
+    post(route('grp.models.website.break_cache', ['website' => $webpage->website_id]))->assertForbidden();
+    expect(Redirect::find($redirect->id))->not->toBeNull();
+
+    $productCategory = \App\Models\Catalogue\ProductCategory::where('shop_id', $this->shop->id)->first();
+    if ($productCategory) {
+        post(route('grp.models.webpages.product_category.store', ['productCategory' => $productCategory->id]))->assertForbidden();
+    }
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+    SetUserAuthorisedModels::run($this->user);
+})->depends('create webpage', 'store redirect');
 
 
 test('web sitemap creation', function () {

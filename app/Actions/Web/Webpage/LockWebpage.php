@@ -56,7 +56,12 @@ class LockWebpage extends OrgAction
             return true;
         }
 
-        return $this->webpage->canEditLockBy($this->user);
+        return $this->webpage->canEditLockBy($this->user)
+            && $this->user->authTo([
+                "web.{$this->webpage->shop_id}.edit",
+                "supervisor-web.{$this->webpage->shop_id}",
+                "group-webmaster.edit",
+            ]);
     }
 
     public function rules(): array
