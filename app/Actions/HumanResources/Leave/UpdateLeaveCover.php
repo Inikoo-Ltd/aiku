@@ -73,6 +73,10 @@ class UpdateLeaveCover extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if ($this->leave->end_date->lt(today())) {
+            $validator->errors()->add('cover_employee_id', __('This leave has ended, its cover can no longer be changed.'));
+        }
+
         if ($this->get('cover_employee_id') && $this->leave->status !== LeaveStatusEnum::APPROVED) {
             $validator->errors()->add('cover_employee_id', __('Only approved leave can be covered.'));
         }

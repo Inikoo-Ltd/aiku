@@ -33,11 +33,11 @@ class IndexLeaveCovers extends OrgAction
         return QueryBuilder::for(Leave::class)
             ->where('organisation_id', $organisation->id)
             ->where('status', LeaveStatusEnum::APPROVED)
-            ->whereDate('end_date', '>=', now()->toDateString())
+            ->where(fn ($query) => $query->whereDate('end_date', '>=', now()->toDateString())->orWhereNotNull('cover_employee_id'))
             ->with(['leaveType:id,name', 'coverEmployee:id,contact_name'])
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['employee_name', 'start_date', 'end_date'])
-            ->defaultSort('start_date')
+            ->defaultSort('-start_date')
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -47,7 +47,7 @@ class IndexLeaveCovers extends OrgAction
         return function (InertiaTable $table) {
             $table
                 ->withGlobalSearch()
-                ->withEmptyState(['title' => __('Nobody is on leave today or later')])
+                ->withEmptyState(['title' => __('No absences to cover')])
                 ->withLabelRecord([__('absence'), __('absences')])
                 ->column(key: 'employee_name', label: __('Employee'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), canBeHidden: false)
@@ -55,7 +55,7 @@ class IndexLeaveCovers extends OrgAction
                 ->column(key: 'end_date', label: __('To'), canBeHidden: false, sortable: true)
                 ->column(key: 'covered_by', label: __('Covered by'), canBeHidden: false)
                 ->column(key: 'actions', label: '', canBeHidden: false)
-                ->defaultSort('start_date');
+                ->defaultSort('-start_date');
         };
     }
 

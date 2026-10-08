@@ -19,7 +19,8 @@ class LeaveCoversResource extends JsonResource
             'type_label'            => $leave->leaveType?->name ?? $leave->type,
             'start_date'            => $leave->start_date->format('Y-m-d'),
             'end_date'              => $leave->end_date->format('Y-m-d'),
-            'is_ongoing'            => $leave->start_date->lte(today()),
+            'is_ongoing'            => $leave->start_date->lte(today()) && $leave->end_date->gte(today()),
+            'has_ended'             => $leave->end_date->lt(today()),
             'cover_employee_id'     => $leave->cover_employee_id,
             'covered_by'            => $leave->coverEmployee?->contact_name,
         ];

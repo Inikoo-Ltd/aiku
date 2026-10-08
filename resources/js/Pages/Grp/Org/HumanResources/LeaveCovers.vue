@@ -25,6 +25,7 @@ interface LeaveCover {
 	start_date: string
 	end_date: string
 	is_ongoing: boolean
+	has_ended: boolean
 	cover_employee_id: number | null
 	covered_by: string | null
 }
@@ -84,6 +85,7 @@ const saveCover = (leave: LeaveCover, coverEmployeeId: string | number) => {
 
 		<template #cell(end_date)="{ item: leave }">
 			<span class="whitespace-nowrap">{{ formatDate(leave.end_date) }}</span>
+			<Tag v-if="leave.has_ended" :label="ctrans('Ended')" size="xs" class="ml-1" />
 		</template>
 
 		<template #cell(covered_by)="{ item: leave }">
@@ -92,7 +94,7 @@ const saveCover = (leave: LeaveCover, coverEmployeeId: string | number) => {
 		</template>
 
 		<template #cell(actions)="{ item: leave }">
-			<div v-if="can_edit" class="flex justify-end gap-2">
+			<div v-if="can_edit && !leave.has_ended" class="flex justify-end gap-2">
 				<Button
 					:icon="leave.covered_by ? faEdit : faPlus"
 					:label="leave.covered_by ? ctrans('Change') : ctrans('Assign cover')"
