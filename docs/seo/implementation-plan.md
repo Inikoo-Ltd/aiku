@@ -245,11 +245,16 @@ Center), or a keyword data provider instead.
 - Keyword difficulty: compute our own from the top 10 results of the keyword (their referring
   domains once Phase 3 lands, SERP features, and whether our page is already in Search Console for
   it). Until Phase 3, show it without the backlink part and label it as partial.
+- Search intent: `seo_keywords` gets `intent` (informational, navigational, commercial or
+  transactional), `secondary_intents` (json) and `intent_source`. Keyword Planner does not return
+  intent, so it comes from the keyword data provider when it has an intent endpoint (DataForSEO
+  does), or from a classification prompt through the AI gateway in batches of keywords. Classify
+  once per keyword and language; intent rarely changes, so refresh it yearly.
 - Let the team set the tracked keyword list and the competitor domains per shop from the UI, so
   those two decisions are made in Aiku.
 
-**Screens.** A Keywords tab: search by seed or URL, results with volume, trend and difficulty, and a
-"Track" action that adds the keyword to rank tracking.
+**Screens.** A Keywords tab: search by seed or URL, results with volume, trend, difficulty and
+intent, a filter per intent, and a "Track" action that adds the keyword to rank tracking.
 
 ### 2.2 Rank tracking
 
@@ -275,12 +280,20 @@ Center), or a keyword data provider instead.
 per shop and the frequency before switching it on, set the per-run budget cap, and show the month's
 spend on the dashboard.
 
-**Screens.** A Rankings tab: visibility (share of tracked keywords in the top 3, top 10, top 100),
-position changes since the previous check, winners and losers, competitors on the same keywords.
+**Screens.** A Rankings tab:
+
+- Visibility: share of tracked keywords in the top 3, top 10 and top 100.
+- Position changes since the previous check, winners and losers.
+- Competitors on the same keywords: their position per keyword, and their visibility next to ours.
+- Intent overview: the share of tracked keywords per intent (for example 40% informational,
+  10% navigational, 30% commercial, 20% transactional), with our visibility within each intent, so
+  the team sees whether we win the buying searches or only the reading ones. Each share opens the
+  keyword list filtered to that intent.
 
 ### Phase 2 is done when
 
 - Every shop has its tracked keyword list, checked on schedule within budget.
+- Every tracked keyword has an intent, and the intent overview is on the Rankings tab.
 - For a sample of keywords, positions match Semrush Position Tracking for the same location and
   device, give or take the day-to-day movement both tools show.
 
@@ -293,12 +306,38 @@ position changes since the previous check, winners and losers, competitors on th
 - One backlink provider (DataForSEO Backlinks, Ahrefs API, or similar). The Search Console API has
   no links endpoint, so there is no free source.
 - Weekly per website and per competitor domain:
-  - `seo_backlink_summaries`: domain, date, backlinks, referring_domains, new and lost since the last
-    run, the provider's authority score.
+  - `seo_backlink_summaries`: domain, date, backlinks, referring_domains, new, lost and broken since
+    the last run, the provider's authority score.
   - `seo_referring_domains`: domain, referring_domain, first_seen, last_seen, backlinks, authority,
     is_lost.
-- Backlink gap: referring domains that link to two or more competitors and not to us.
+- Weekly for our own websites only, one row per link:
+  - `seo_backlinks`: website_id, source_url, source_domain, source_authority, target_url,
+    target_webpage_id, anchor, is_dofollow, first_seen, last_seen, lost_at, is_broken.
+  - `target_webpage_id` is matched the same way as Search Console pages (1.1), so each webpage gets
+    its own backlinks and referring domains.
+  - New: `first_seen` after the previous run. Lost: the provider no longer finds the link, or the
+    source page dropped it; `lost_at` is set and the row is kept. Prefer the provider's own new and
+    lost dates where it reports them.
+  - Broken: the link points at a URL on our site that does not answer 200. Check the target against
+    the latest crawl (1.2) and `website_not_found_paths` (1.3) before asking the provider. A broken
+    backlink is a lost referring domain that a redirect wins back, so the Missing pages screen shows
+    the backlinks pointing at each path and sorts by them.
+  - Competitors get summaries and referring domains only. Their links one by one cost per row and
+    the gap tools below do not need them.
+- Authority is the provider's score (DataForSEO calls it rank) per domain and per page, not Moz DA or
+  the Semrush Authority Score. The numbers will not match either; label the source on every screen
+  and compare trends, not values.
 - Feed referring domains into the keyword difficulty from 2.1.
+
+**Backlink gap tool.** Our domain plus up to four other domains, typed in or picked from
+`seo_competitors`. It lists referring domains that link to at least one of the others and not to us,
+with how many of the domains each links to and its authority, most linked first. The default filter
+is "links to two or more of them". A typed-in domain that is not in `seo_competitors` is fetched
+once and cached for 30 days, counted against the same budget cap.
+
+**Screens.** A Backlinks tab: authority, referring domains and backlinks with their trend; new, lost
+and broken backlinks since the previous run, each opening the link list; referring domains with
+authority and first and last seen; and the backlink gap tool.
 
 ### 3.2 Competitor research
 
@@ -306,9 +345,33 @@ position changes since the previous check, winners and losers, competitors on th
 
 - From the same provider family: ranked keywords per competitor domain and organic competitors per
   shop domain, monthly.
-- `seo_domain_keywords`: domain, keyword, location, position, url, estimated_traffic, fetched_at.
-- Keyword gap: keywords where a competitor ranks in the top 20 and we do not rank, sorted by volume.
+- `seo_domain_keywords`: domain, keyword, location, position, url, estimated_traffic, intent,
+  fetched_at. Intent uses the same values and source as 2.1.
 - Label every traffic figure for a domain we do not own as the provider's estimate.
+
+**Domain comparison tool.** Our domain and up to four others side by side: authority, referring
+domains, backlinks, organic keywords, estimated organic traffic, the share of their keywords per
+intent, and the monthly visits from 3.5 where we have them. Each figure carries its source. Domains
+come from `seo_competitors` or are typed in, with the same 30 day cache and budget cap as the
+backlink gap tool.
+
+**Keyword gap tool.** The same domain picker, compared on the top 100 positions of each domain:
+
+| Group | Meaning |
+| --- | --- |
+| Shared | Every domain ranks for it |
+| Missing | Every other domain ranks for it and we do not |
+| Weak | We rank, but lower than every other domain |
+| Strong | We rank higher than every other domain |
+| Untapped | At least one other domain ranks and we do not |
+| Unique | Only we rank |
+
+Columns: keyword, intent, volume, difficulty, and the position of each domain. Sorted by volume,
+filterable by intent and position range. "Track" adds the keyword to rank tracking (2.2).
+
+**Screens.** A Competitors tab with the domain comparison and keyword gap tools, and the organic
+competitors the provider suggests for our domain, each with a button to add it to
+`seo_competitors`.
 
 ### 3.3 AI visibility
 
@@ -319,11 +382,28 @@ product titles and descriptions.
 
 - `seo_ai_prompts`: shop_id, prompt, language, is_active. Prompts are the questions a customer would
   ask, written by the team per shop.
-- Weekly, send each prompt to the models the team cares about through the gateway.
-  `seo_ai_answers`: prompt_id, model, run_at, answer, brand_mentioned, competitor_mentions (json),
-  cited_urls (json).
+- Weekly, send each prompt to the models the team cares about through the gateway: at least
+  ChatGPT (OpenAI), Gemini, Claude and Perplexity.
+- Use each model with web search on (OpenRouter's `:online` variants, Perplexity Sonar). Without it
+  the model answers from training data, cites nothing, and does not behave like the ChatGPT or
+  Gemini apps customers use. Even with search on, API answers differ from the apps, so treat the
+  result as a sample, not what every customer sees.
+- `seo_ai_answers`: prompt_id, model, run_at, answer, brand_mentioned, brand_position (the order in
+  which our brand appears among the brands named), competitor_mentions (json).
+- `seo_ai_citations`: answer_id, url, domain, position, competitor_id (nullable), website_id and
+  webpage_id when the URL is ours, matched like Search Console pages.
 - AI Overviews come from the SERP results already fetched in 2.2, not from the gateway.
+- Check whether the SEO provider offers AI mention data (DataForSEO has an AI optimisation API)
+  before building the sending side ourselves, and compare its price with the gateway's.
 - Models change answers between runs. Show mention rate over several runs, not one answer.
+
+**Screens.** An AI visibility tab:
+
+- Mention rate and citation rate per model, ours next to each competitor (share of voice), with the
+  trend over the weekly runs.
+- Prompts: per prompt, which models mention us, which cite us and with which page, and which
+  competitors they name instead.
+- Cited pages: our webpages by the number of prompts and models that cite them.
 
 ### 3.4 Content help
 
@@ -379,10 +459,39 @@ countries.
 **Decision.** Choose between an Apify actor (cheap, against Similarweb's terms, may break) and the
 Similarweb API (licensed, priced) for competitor traffic before building it.
 
+### 3.6 Top pages
+
+**Today.** The Webpages tab of the SEO dashboard lists webpages with Aiku's traffic for the
+dashboard interval and, since 1.1, Search Console clicks, impressions and position. It shows no
+comparison with an earlier period.
+
+**Build.** Turn the Webpages tab into Top pages, one column group at a time as the data arrives:
+
+| Columns | Source | Can start |
+| --- | --- | --- |
+| Visitors, page views and their % change against the previous period of the same length | `webpage_time_series_records` | Now |
+| Search clicks, impressions and their % change, position and its change, number of queries | `search_console_page_days`, `search_console_page_queries` | Now |
+| Referring domains and backlinks | `seo_backlinks` (3.1) | With 3.1 |
+| AI prompts that cite the page, and by how many models | `seo_ai_citations` (3.3) | With 3.3 |
+
+- The previous period ends the day before the dashboard interval starts and has the same number of
+  days. Search Console data ends 3 days before today, so its comparison uses its own last day, not
+  today.
+- The change is shown in % with its direction, and as the absolute difference on hover, because a
+  page going from 2 visitors to 4 is +100% and means nothing. Hide the % below a minimum (for example
+  20 visitors or clicks in either period) and show only the difference.
+- Filters: Growing, Dropping, New (no traffic in the previous period), Lost (no traffic now).
+  Sorted by traffic by default; sorting by change finds the biggest drops.
+- The prompts column opens the list of prompts and models that cited the page; the referring
+  domains column opens the backlinks to the page.
+
 ### Phase 3 is done when
 
-- Backlink summaries and gaps update weekly for our domains and the competitors in `seo_competitors`.
-- Keyword gaps and AI visibility are on the dashboard.
+- Backlink summaries and gaps update weekly for our domains and the competitors in `seo_competitors`,
+  with new, lost and broken backlinks for our own domains.
+- Domain comparison, keyword gap and AI visibility are on the dashboard.
+- Top pages shows the change against the previous period, referring domains and the AI prompts that
+  cite each page.
 - Competitor domain traffic is fetched monthly, and Bing and non-Google search signals are shown
   beside Google volumes.
 
@@ -405,7 +514,9 @@ Similarweb API (licensed, priced) for competitor traffic before building it.
 | Tracked keyword list, locations and devices per shop, and check frequency | Phase 2 |
 | Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |
 | Competitor domains per shop | Phase 2 (positions) and Phase 3 (backlinks) |
-| Models and prompts for AI visibility | Phase 3 |
+| Keyword intent: from the keyword data provider or classified through the AI gateway | Phase 2 |
+| Models and prompts for AI visibility, and whether to buy AI mention data from the SEO provider | Phase 3 |
+| Budget for domains typed into the comparison and gap tools | Phase 3 |
 | Competitor domain traffic: Apify actor or the Similarweb API | Phase 3 |
 | Which non-Google platforms to collect search signals from | Phase 3 |
 | How long to run side by side before cancelling | After Phase 3 |

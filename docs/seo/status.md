@@ -1,6 +1,6 @@
 # Status
 
-Where each part of the [implementation plan](implementation-plan.md) stands, as of 7 October 2026.
+Where each part of the [implementation plan](implementation-plan.md) stands, as of 8 October 2026.
 All work is on the `seo` branch and has not been deployed yet.
 
 ## Done
@@ -30,6 +30,7 @@ All work is on the `seo` branch and has not been deployed yet.
 | Part | What has to happen first |
 | --- | --- |
 | 2.1 Keyword research | Google Ads Basic access for the developer token (it has Explorer access, and Keyword Planner refuses it), or a keyword data provider |
+| 2.1 Keyword intent | Choose the source: the keyword data provider or a classification prompt through the AI gateway |
 | 2.2 Rank tracking | Choose a SERP provider and a monthly budget |
 | Tracked keywords and competitors per shop | Part of 2.1 and 2.2: the list, countries, devices, check frequency and competitor domains |
 
@@ -37,11 +38,12 @@ All work is on the `seo` branch and has not been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 3.1 Backlinks, 3.2 Competitor research | Choose a backlink and competitor data provider, ideally the same as the SERP one |
-| 3.3 AI visibility | Choose the models and write the prompts per shop |
+| 3.1 Backlinks and backlink gap, 3.2 Domain comparison and keyword gap | Choose a backlink and competitor data provider, ideally the same as the SERP one, and a budget for domains typed into the tools |
+| 3.3 AI visibility | Choose the models (with web search on) and write the prompts per shop; check the SEO provider's AI mention data first |
 | 3.4 Content help | Nothing; can start any time. The first Site Audit found many product pages with an empty meta description, which is where this would start. |
 | 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
 | 3.5 Non-Google demand | Choose the platforms; Bing Webmaster Tools keyword data is free |
+| 3.6 Top pages | Nothing for the traffic and Search Console change against the previous period; can start any time. Referring domains and AI citations per page wait for 3.1 and 3.3. |
 
 ### Still open in Phase 1
 
