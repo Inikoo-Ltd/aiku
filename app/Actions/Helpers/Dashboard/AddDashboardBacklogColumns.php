@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Dashboard;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Closure;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -63,6 +64,33 @@ class AddDashboardBacklogColumns
         $table['totals']['columns'] = array_merge($table['totals']['columns'] ?? [], $this->getDashboardColumnsFromArray($this->totalsData($rows, $inGroup), $keys));
 
         return $table;
+    }
+
+    public static function shopRouteTarget(array $row): ?array
+    {
+        if (!isset($row['slug'], $row['organisation_slug']) || ($row['type'] ?? null) === ShopTypeEnum::FULFILMENT) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.org.shops.show.ordering.backlog',
+            'parameters' => [
+                'organisation' => $row['organisation_slug'],
+                'shop'         => $row['slug'],
+            ],
+        ];
+    }
+
+    public static function organisationRouteTarget(array $row): ?array
+    {
+        if (!isset($row['slug'])) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.org.overview.ordering.backlog',
+            'parameters' => ['organisation' => $row['slug']],
+        ];
     }
 
     /**

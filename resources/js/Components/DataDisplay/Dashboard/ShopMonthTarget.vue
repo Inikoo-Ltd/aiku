@@ -23,6 +23,7 @@ interface PeriodTarget {
     day_of_month: number
     days_in_month: number
     sales_so_far: number
+    invoices?: number
     last_year_so_far: number
     last_year_total: number
     expected: number
@@ -327,8 +328,8 @@ const chartOptions = computed(() => ({
 const neededAfterPipeline = computed(() => Math.max(0, (target.value ?? 0) - periodData.value.sales_so_far - periodData.value.pipeline.amount))
 
 const breakdown = computed(() => [
-    { key: "invoiced", label: ctrans("Invoiced"), amount: periodData.value.sales_so_far, color: COLORS.invoiced },
-    { key: "pipeline", label: ctrans("In the warehouse pipeline"), amount: periodData.value.pipeline.amount, color: COLORS.pipeline },
+    { key: "invoiced", label: ctrans("Invoiced"), amount: periodData.value.sales_so_far, color: COLORS.invoiced, count: ctrans(":count invoices", { count: (periodData.value.invoices ?? 0).toLocaleString() }) },
+    { key: "pipeline", label: ctrans("In the warehouse pipeline"), amount: periodData.value.pipeline.amount, color: COLORS.pipeline, count: ctrans(":count orders", { count: (periodData.value.pipeline.orders ?? 0).toLocaleString() }) },
     { key: "needed", label: ctrans("Still needed"), amount: neededAfterPipeline.value, color: COLORS.needed },
 ])
 
@@ -467,6 +468,7 @@ const donutOptions = {
                                         {{ row.label }}
                                     </span>
                                 </td>
+                                <td class="py-1 pr-5 text-right text-xs text-gray-500">{{ row.count }}</td>
                                 <td class="py-1 pr-5 text-right font-medium">{{ money(row.amount) }}</td>
                                 <td class="py-1 text-right text-gray-500">{{ percentOf(row.amount, target).toFixed(0) }}%</td>
                             </tr>
