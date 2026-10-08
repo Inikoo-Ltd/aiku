@@ -157,7 +157,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ],
                                 ]
                             ],
-                            [
+                            ...($customer->shop->type == ShopTypeEnum::B2B ? [[
                                 'title'  => __('Order preferences'),
                                 'label'  => __('Preferences'),
                                 'icon'   => 'fa-light fa-gift',
@@ -168,7 +168,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'value' => (bool) data_get($customer->settings, 'is_gift_opted_out', false),
                                     ],
                                 ],
-                            ],
+                            ]] : []),
                              ...($showInterests ? [[
                             'title'  => __('Interest'),
                             'label'  => __('Interest'),
