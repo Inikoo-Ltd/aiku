@@ -7144,6 +7144,32 @@ describe('partner shopping list', function () {
             ->and($sent)->not->toContain($draft->id);
     });
 
+    test('an ongoing PO line shows what is already sent to the partner at its stage, until it is dispatched', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+        $picked = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 6]);
+        $order  = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $picked->id]])['orders'][0];
+        submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $draft    = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
+        $packedIn = (float) ($this->buyerOrgStock->packed_in ?: 1);
+
+        actingAs($this->adminGuest->getUser());
+        $incoming = fn () => collect(collect(
+            get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data']
+        )->firstWhere('id', $draft->id)['other_open_purchase_orders'])->where('state', 'sent')->mapWithKeys(fn ($sent) => [$sent['stage'] => [$sent['reference'], (float) $sent['quantity_ordered']]])->all();
+
+        expect($incoming())->toEqual([
+            'Waiting for the partner' => [__('from :partner', ['partner' => $this->orgPartner->partner->name]), 4 * $packedIn],
+            'Pre-picked'              => [$order->reference, 6 * $packedIn],
+        ]);
+
+        $order->update(['state' => OrderStateEnum::DISPATCHED]);
+
+        expect($incoming())->toEqual([
+            'Waiting for the partner' => [__('from :partner', ['partner' => $this->orgPartner->partner->name]), 4 * $packedIn],
+        ]);
+    });
+
     test('the old shopping list address goes to the ongoing PO', function () {
         actingAs($this->adminGuest->getUser());
 

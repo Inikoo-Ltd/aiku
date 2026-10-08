@@ -366,7 +366,8 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     /**
      * Lines already sent to this partner count as incoming stock for the same SKO, so the suggestion
-     * does not order it twice.
+     * does not order it twice, each shown at the stage the partner has it. Once its delivery note is
+     * dispatched the line arrives as a stock delivery, which is counted on its own.
      *
      * @param Collection<int, OrgStock> $orgStocks
      */
@@ -374,30 +375,38 @@ class IndexPartnerShoppingListItems extends OrgAction
     {
         $rows = $paginator->getCollection();
 
-        $sentSkos = DB::table('partner_shopping_list_items')
-            ->where('org_partner_id', $orgPartner->id)
-            ->whereIn('org_stock_id', $rows->pluck('org_stock_id')->filter()->unique()->values())
-            ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
-            ->whereNull('deleted_at')
-            ->selectRaw('org_stock_id, id, quantity')
+        $sentLines = $this->linesQuery(PartnerShoppingListItem::query(), $orgPartner)
+            ->whereIn('partner_shopping_list_items.org_stock_id', $rows->pluck('org_stock_id')->filter()->unique()->values())
+            ->whereIn('partner_shopping_list_items.state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
             ->get()
-            ->groupBy('org_stock_id');
+            ->reject(fn ($line) => $line->delivery_note_state === 'dispatched' || in_array($line->order_state, ['dispatched', 'cancelled']));
+
+        $this->loadProductionSteps($sentLines);
+        $sentLines = $sentLines->groupBy('org_stock_id');
 
         $partnerName = $orgPartner->partner->name;
 
-        $rows->transform(function ($row) use ($sentSkos, $orgStocks, $partnerName) {
-            $skos = (float) $sentSkos->get($row->org_stock_id, collect())->whereNotIn('id', [$row->id, ...($row->folded_ids ?? [])])->sum('quantity');
+        $rows->transform(function ($row) use ($sentLines, $orgStocks, $partnerName) {
+            $lines = $sentLines->get($row->org_stock_id, collect())->whereNotIn('id', [$row->id, ...($row->folded_ids ?? [])]);
 
-            if ($skos > 0) {
-                $packedIn = (float) ($orgStocks->get($row->org_stock_id)?->packed_in ?: 1);
-
-                $row->other_open_purchase_orders = collect($row->other_open_purchase_orders ?? [])->push([
-                    'slug'             => null,
-                    'reference'        => __('from :partner', ['partner' => $partnerName]),
-                    'state'            => 'sent',
-                    'quantity_ordered' => $skos * $packedIn,
-                ])->all();
+            if ($lines->isEmpty()) {
+                return $row;
             }
+
+            $packedIn = (float) ($orgStocks->get($row->org_stock_id)?->packed_in ?: 1);
+
+            $row->other_open_purchase_orders = collect($row->other_open_purchase_orders ?? [])->concat(
+                $lines->map(fn ($line) => ['line' => $line, 'stage' => $this->stageOf($line)])
+                    ->groupBy(fn ($sent) => $sent['stage']['label'].'|'.$sent['stage']['reference'])
+                    ->map(fn ($group) => [
+                        'slug'             => null,
+                        'reference'        => $group->first()['stage']['reference'] ?? __('from :partner', ['partner' => $partnerName]),
+                        'state'            => 'sent',
+                        'stage'            => $group->first()['stage']['label'],
+                        'quantity_ordered' => $group->sum(fn ($sent) => (float) $sent['line']->quantity) * $packedIn,
+                    ])
+                    ->values()
+            )->all();
 
             return $row;
         });
