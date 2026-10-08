@@ -68,12 +68,23 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 
         if (! $isDraft) {
             match ($portfolio->platform->type) {
-                PlatformTypeEnum::EBAY => UpdateEbayOffer::run($portfolio),
+                PlatformTypeEnum::EBAY => $this->updateEbayChannel($portfolio),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
                 PlatformTypeEnum::SHOPIFY => $this->updateShopifyChannel($portfolio),
                 PlatformTypeEnum::WIX => UpdateWixProduct::run($portfolio),
                 default => null
             };
+        }
+    }
+
+    public function updateEbayChannel(Portfolio $portfolio): void
+    {
+        $ebayError = UpdateEbayOffer::run($portfolio, withTitle: true);
+
+        if ($ebayError) {
+            throw ValidationException::withMessages([
+                'title' => __('Saved, but eBay did not accept the change: :reason', ['reason' => $ebayError])
+            ]);
         }
     }
 

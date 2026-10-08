@@ -1599,9 +1599,16 @@ trait WithEbayApiRequest
                 data_set($data, 'listingPolicies', $this->channelListingPolicies());
             }
 
-            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            $endpoint      = "/sell/inventory/v1/offer/$offerId";
+            $offerResponse = $this->makeEbayRequest('put', $endpoint, $data);
 
-            return $this->makeEbayRequest('put', $endpoint, $data);
+            if (self::ebayResponseError($offerResponse) || blank(Arr::get($offerData, 'title')) || blank(Arr::get($currentOffer, 'sku'))) {
+                return $offerResponse;
+            }
+
+            $titleResponse = $this->updateInventoryItemTitle(Arr::get($currentOffer, 'sku'), Arr::get($offerData, 'title'));
+
+            return self::ebayResponseError($titleResponse) ? $titleResponse : $offerResponse;
         } catch (Exception $e) {
             Log::error('Update eBay Offer Error: '.$e->getMessage());
 
@@ -1609,6 +1616,68 @@ trait WithEbayApiRequest
         }
     }
 
+
+    /**
+     * The listing title belongs to the inventory item, not the offer, and eBay carries it to the live listing.
+     * The inventory item PUT is a full replace too, so the current item is read back and only the title changes.
+     */
+    public function updateInventoryItemTitle(string $sku, string $title): array
+    {
+        $title         = mb_substr($title, 0, 80);
+        $inventoryItem = $this->getProduct($sku);
+
+        if (!is_array($inventoryItem) || !Arr::has($inventoryItem, 'product')) {
+            return ['error' => self::ebayResponseError($inventoryItem) ?? 'eBay inventory item '.$sku.' not found'];
+        }
+
+        if (filled(Arr::get($inventoryItem, 'groupIds'))) {
+            return ['error' => 'Multi-variation listing: its title is set on the eBay group, change it on eBay'];
+        }
+
+        if (Arr::get($inventoryItem, 'product.title') === $title) {
+            return [];
+        }
+
+        $data = Arr::only($inventoryItem, [
+            'availability',
+            'condition',
+            'conditionDescription',
+            'conditionDescriptors',
+            'locale',
+            'packageWeightAndSize',
+            'product',
+        ]);
+        data_set($data, 'product.title', $title);
+
+        $response = $this->updateProduct($sku, $data);
+        $error    = self::ebayResponseError($response);
+
+        return $error ? ['error' => $error] : [];
+    }
+
+    /**
+     * makeEbayRequest reports failure as ['errors' => [...]] from eBay, ['error' => msg], or [msg] when the request itself threw.
+     */
+    public static function ebayResponseError(mixed $response): ?string
+    {
+        if (!is_array($response) || blank($response)) {
+            return null;
+        }
+
+        if ($errors = Arr::get($response, 'errors')) {
+            return (string) (Arr::get($errors, '0.message') ?? json_encode($errors));
+        }
+
+        if ($error = Arr::get($response, 'error')) {
+            return is_string($error) ? $error : json_encode($error);
+        }
+
+        if (array_is_list($response)) {
+            return is_string($response[0]) ? $response[0] : json_encode($response);
+        }
+
+        return null;
+    }
 
     /**
      * Delete product from eBay
