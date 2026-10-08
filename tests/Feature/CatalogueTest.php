@@ -1171,6 +1171,38 @@ test('product detail carries the public documents of the selected variant', func
         ->and($attachments[0]['scope'])->toBe('doc');
 });
 
+test('product detail carries the incoming stock only while the shop lets customers see it', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+    $request = \Lorisleiva\Actions\ActionRequest::createFrom(request());
+
+    $settings = $shop->settings;
+    data_set($settings, 'catalog.allow_stocks_to_be_shown_on_iris', true);
+    data_set($settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true);
+    $shop->update(['settings' => $settings]);
+
+    $detail = \App\Actions\Iris\Catalogue\GetProductDetail::make()->jsonResponse(Product::find($product->id), $request);
+
+    expect($detail['allow_stocks_to_be_shown_on_iris'])->toBeTrue()
+        ->and($detail['allow_incoming_stocks_to_be_shown_on_iris'])->toBeTrue()
+        ->and($detail['incoming_stock'])->toBe(\App\Actions\Catalogue\Product\GetProductIncomingStock::run(Product::find($product->id), true));
+
+    data_set($settings, 'catalog.allow_stocks_to_be_shown_on_iris', false);
+    data_set($settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', false);
+    $shop->update(['settings' => $settings]);
+
+    $detail = \App\Actions\Iris\Catalogue\GetProductDetail::make()->jsonResponse(Product::find($product->id), $request);
+
+    expect($detail['allow_stocks_to_be_shown_on_iris'])->toBeFalse()
+        ->and($detail['allow_incoming_stocks_to_be_shown_on_iris'])->toBeFalse()
+        ->and($detail['incoming_stock'])->toBe([]);
+
+    data_set($settings, 'catalog.allow_stocks_to_be_shown_on_iris', true);
+    data_set($settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true);
+    $shop->update(['settings' => $settings]);
+});
+
 test('bulk update product unit is scoped to shop', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);

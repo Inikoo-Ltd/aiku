@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Catalogue\Variant\LocaliseVariantData;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductAttachments;
@@ -39,7 +40,11 @@ class GetWebBlockProduct
 
         $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
-        $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
+        $resourceWebBlockProduct = [
+            ...WebBlockProductResource::make($webpage->model)->toArray(request()),
+            'allow_stocks_to_be_shown_on_iris' => data_get($product->shop->settings, 'catalog.allow_stocks_to_be_shown_on_iris', true),
+            'allow_incoming_stocks_to_be_shown_on_iris' => data_get($product->shop->settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true),            'incoming_stock' => GetProductIncomingStock::run($product, true),
+        ];
 
         $webPublishedLayout = $webpage->website->published_layout;
 

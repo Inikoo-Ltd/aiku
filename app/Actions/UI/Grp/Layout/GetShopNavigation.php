@@ -605,6 +605,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Keywords"),
+                                "tooltip" => __("Keywords"),
+                                "icon"    => ["fal", "fa-key"],
+                                "root"    => "grp.org.shops.show.seo.keywords.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.keywords.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

@@ -18,6 +18,7 @@ use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
@@ -644,6 +645,26 @@ class IndexOrders extends OrgAction
             $shop = $this->parent;
         } else {
             $shop = $this->parent->shop ?? null;
+        }
+
+        if ($this->parent instanceof Shop && $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::SHOPIFY) {
+            $actions = [
+                [
+                    'type'        => 'button',
+                    'style'       => 'primary',
+                    'label'       => __('Fetch Shopify Orders'),
+                    'icon'        => 'fal fa-sync',
+                    'fullLoading' => true,
+                    'route'       => [
+                        'method'     => 'post',
+                        'name'       => 'grp.org.shops.show.ordering.orders.fetch_shopify_orders',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop'         => $shop->slug,
+                        ]
+                    ],
+                ],
+            ];
         }
 
         return Inertia::render(

@@ -222,39 +222,45 @@ owner of HELP-3303 decides to drop them.
 
 ## Phase 2: keywords
 
-Not started. See [status.md](status.md).
+2.1 is built; 2.2 is not started. See [status.md](status.md).
 
 ### 2.1 Keyword research
 
-**Today.** Shops connect a Google Ads account through OAuth (`app/Actions/CRM/Customer/GoogleAds/`).
-Keyword code exists only for paid search: `app/Actions/CRM/TrafficSourceCampaign/GoogleAds/`.
-The developer token has Explorer access. On 7 October 2026 a test call to
-`customers/{id}:generateKeywordIdeas` was refused with "This method is not allowed for use with
-explorer access", so Keyword Planner needs Basic access first (an application in the Google Ads API
-Center), or a keyword data provider instead.
+Built on 8 October 2026 on DataForSEO, so it does not wait for Google Ads Basic access.
 
-**Build.**
+- `App\Services\DataForSeo\DataForSeoClient` is the one client for DataForSEO (basic auth with
+  `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD`). Every call is logged in `seo_api_requests` with the
+  cost DataForSEO reports, and no call is made once the month's spend reaches
+  `DATAFORSEO_MONTHLY_BUDGET` (default 250 USD).
+- `GetKeywordIdeas` (`app/Actions/Web/Seo/`) takes up to 5 seed keywords, a URL, or both, with a
+  country and a language. Each seed goes to Labs `keyword_suggestions` (its own figures and the
+  keywords that contain it, like Semrush's Keyword Magic Tool), with the 300 rows shared between the
+  seeds, so a search costs about $0.05 for one seed and $0.10 for five. `keyword_ideas` was tried
+  first and dropped: it returns keywords from the same product category, so "incense sticks" brought
+  "asda kettles". A URL goes to Labs `ranked_keywords` (what the page ranks for in Google). The
+  country maps to DataForSEO's location through the free `locations_and_languages` list, cached 30
+  days, which also says which languages each country has data for.
+- Results (top 300, seeds first) are cached 24 hours per search and upserted into `seo_keywords`:
+  average and 12 monthly volumes (Google Ads data), ad competition, CPC and top of page bids in USD,
+  keyword difficulty (1 to 100, DataForSEO's estimate; DataForSEO sends 0 when it has none, which is
+  stored as null and shown as a dash), intent and secondary intents with `intent_source`.
+- Not built yet: the monthly refresh of saved keywords, with 2.2.
 
-- `GetKeywordIdeas` calls `KeywordPlanIdeaService.GenerateKeywordIdeas` with the shop's existing
-  Google Ads connection, for a seed keyword or a URL, a location and a language.
-- `seo_keywords`: shop_id, keyword, location_id, language, avg_monthly_searches, monthly_searches
-  (json, 12 months), competition, low and high top-of-page bid, fetched_at. Refresh monthly for
-  saved keywords.
-- Google can return less precise volumes for accounts with little ad spend. Check what our accounts
-  receive before relying on the numbers, and show the source next to every volume.
-- Keyword difficulty: compute our own from the top 10 results of the keyword (their referring
-  domains once Phase 3 lands, SERP features, and whether our page is already in Search Console for
-  it). Until Phase 3, show it without the backlink part and label it as partial.
-- Search intent: `seo_keywords` gets `intent` (informational, navigational, commercial or
-  transactional), `secondary_intents` (json) and `intent_source`. Keyword Planner does not return
-  intent, so it comes from the keyword data provider when it has an intent endpoint (DataForSEO
-  does), or from a classification prompt through the AI gateway in batches of keywords. Classify
-  once per keyword and language; intent rarely changes, so refresh it yearly.
-- Let the team set the tracked keyword list and the competitor domains per shop from the UI, so
-  those two decisions are made in Aiku.
+**Screen.** SEO > Keywords, tab Research: keywords or a URL, country and language (defaulting to the
+shop's), results with intent, volume, a 12 month trend, difficulty, CPC and ad competition, a filter
+per intent, and the month's DataForSEO spend. Below them, the Search Console queries of the website
+that contain the same words (last 90 days). Every result has a Track action.
 
-**Screens.** A Keywords tab: search by seed or URL, results with volume, trend, difficulty and
-intent, a filter per intent, and a "Track" action that adds the keyword to rank tracking.
+### Tracked keywords and competitors (set from the UI)
+
+- `seo_tracked_keywords`: shop, keyword (lower case), country, language, device (mobile, desktop),
+  check frequency (weekly, daily), optional target webpage, active. Unique per shop, keyword,
+  country, language and device.
+- `seo_competitors`: shop, domain (stored without scheme, `www.` and path), optional name.
+- SEO > Keywords, tabs Tracked keywords and Competitors: add, change device and frequency inline,
+  pause, remove. Editing needs the same web edit permission as the other SEO actions
+  (`WithSeoEditAuthorisation`).
+- Nothing is fetched for them yet; that is 2.2.
 
 ### 2.2 Rank tracking
 
@@ -510,11 +516,9 @@ comparison with an earlier period.
 | --- | --- |
 | Who adds the service account to the properties that are still missing | Phase 1 |
 | SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
-| Apply for Google Ads Basic access, or pick a keyword data provider | Phase 2 |
-| Tracked keyword list, locations and devices per shop, and check frequency | Phase 2 |
+| Tracked keyword list, locations and devices per shop, and check frequency (set in SEO > Keywords) | Phase 2 |
 | Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |
-| Competitor domains per shop | Phase 2 (positions) and Phase 3 (backlinks) |
-| Keyword intent: from the keyword data provider or classified through the AI gateway | Phase 2 |
+| Competitor domains per shop (set in SEO > Keywords) | Phase 2 (positions) and Phase 3 (backlinks) |
 | Models and prompts for AI visibility, and whether to buy AI mention data from the SEO provider | Phase 3 |
 | Budget for domains typed into the comparison and gap tools | Phase 3 |
 | Competitor domain traffic: Apify actor or the Similarweb API | Phase 3 |

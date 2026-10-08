@@ -20,7 +20,7 @@ to replace all of them before the subscription goes.
 | Site Audit | Phase 1 | Our own crawler |
 | Organic Research (our own sites) | Phase 1 | Google Search Console |
 | Page speed and Core Web Vitals | Phase 1 | CrUX and our visitors' web vitals (HELP-3303 replaced the lab test) |
-| Keyword Overview, Keyword Magic Tool | Phase 2 | Google Ads Keyword Planner, through the Google Ads connection shops already have |
+| Keyword Overview, Keyword Magic Tool | Phase 2 | DataForSEO Labs (Google Ads volumes, difficulty, intent) |
 | Position Tracking | Phase 2 | A SERP data provider, plus Search Console for the positions Google reports itself |
 | Keyword intent | Phase 2 | The keyword data provider, or a classification prompt through our AI gateway |
 | Backlink Analytics (authority, referring domains, new, lost and broken backlinks), Backlink Gap | Phase 3 | A backlink data provider, checked against our own crawl and 404 log for broken links |
@@ -50,7 +50,7 @@ Already in Aiku and used by the plan:
 1. **Our own sites, from free and first-party sources.** Search Console history, a real SEO
    crawler, a 404 log and Core Web Vitals from real visits. When this phase ships, Site Audit and
    Organic Research for our own sites can be done in Aiku.
-2. **Keywords.** Keyword research through Keyword Planner and daily or weekly rank tracking for a
+2. **Keywords.** Keyword research through DataForSEO and daily or weekly rank tracking for a
    chosen list of keywords per shop, with competitor positions read from the same results.
 3. **The outside world.** Backlinks, competitor domains, domain comparison, keyword and backlink
    gaps, AI visibility, and top pages with their change against the previous period.

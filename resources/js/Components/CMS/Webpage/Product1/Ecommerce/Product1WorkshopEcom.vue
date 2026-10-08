@@ -8,6 +8,7 @@ import { ref, inject, useAttrs, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { ctrans } from "@/Composables/useTrans"
+import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
 import ProductContents from "@/Components/CMS/Webpage/Product1/ProductContents.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 import Image from "@common/Components/Image.vue"
@@ -174,17 +175,19 @@ defineOptions({
                         <!-- STOCK SECTION -->
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center">
                             <div class="flex items-center gap-2 text-sm">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
-                                <span>
+                                <StockInfoPopover :product="product">
+                                    <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                        :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
                                     <span>
-                                        {{ product?.is_on_demand
-                                            ? ctrans("Unlimited quantity available")
-                                            : (product.stock > 0 ? ctrans("In stock") + ` (${product.stock} ` +
-                                                ctrans("available") + `)` : ctrans("Out Of Stock"))
-                                        }}
+                                        <span>
+                                            {{ product?.is_on_demand
+                                                ? ctrans("Unlimited quantity available")
+                                                : (product.stock > 0 ? ctrans("In stock") + ` (${product.stock} ` +
+                                                    ctrans("available") + `)` : ctrans("Out Of Stock"))
+                                            }}
+                                        </span>
                                     </span>
-                                </span>
+                                </StockInfoPopover>
                             </div>
 
                             <!-- REMIND ME -->

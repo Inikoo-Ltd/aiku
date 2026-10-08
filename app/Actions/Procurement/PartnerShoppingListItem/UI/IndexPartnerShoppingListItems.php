@@ -21,6 +21,7 @@ use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -163,6 +164,38 @@ class IndexPartnerShoppingListItems extends OrgAction
     }
 
     /**
+     * @return array<string, array{label: string, elements: array<string, array{0: string, 1: int, 2: null, 3: array{icon: string, class: string, tooltip: string}}>, engine: Closure}>
+     */
+    private function elementGroups(OrgPartner $orgPartner): array
+    {
+        $priorityCounts = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $orgPartner->id)
+            ->whereIn('state', $this->statesInView())
+            ->whereNull('deleted_at')
+            ->when($this->isSentView, fn ($query) => PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView()))
+            ->selectRaw('priority, count(*) as total')
+            ->groupBy('priority')
+            ->pluck('total', 'priority');
+
+        return [
+            'priority' => [
+                'label'    => __('Priority'),
+                'elements' => collect(ShoppingListItemPriorityEnum::cases())->mapWithKeys(
+                    fn (ShoppingListItemPriorityEnum $priority) => [
+                        $priority->value => [
+                            ShoppingListItemPriorityEnum::labels()[$priority->value],
+                            (int) ($priorityCounts[$priority->value] ?? 0),
+                            null,
+                            ShoppingListItemPriorityEnum::icons()[$priority->value],
+                        ],
+                    ]
+                )->all(),
+                'engine'   => fn ($query, array $elements) => $query->whereIn('partner_shopping_list_items.priority', $elements),
+            ],
+        ];
+    }
+
+    /**
      * Price of one SKO in the selling partner's catalogue, correlated to the item's row.
      */
     public function handle(OrgPartner $orgPartner): LengthAwarePaginator
@@ -182,6 +215,14 @@ class IndexPartnerShoppingListItems extends OrgAction
 
         if ($this->isSentView) {
             PartnerShoppingListItem::whereNotSplitPiece($queryBuilder->getEloquentBuilder(), $this->statesInView());
+        }
+
+        foreach ($this->elementGroups($orgPartner) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+            );
         }
 
         $paginator = $queryBuilder
@@ -570,8 +611,15 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'info', label: __('SKO description'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('SKOs'), canBeHidden: false, align: 'right')
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
-                ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true);
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right');
+
+            foreach ($this->elementGroups($orgPartner) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                );
+            }
 
             if ($this->isSentView) {
                 $table
