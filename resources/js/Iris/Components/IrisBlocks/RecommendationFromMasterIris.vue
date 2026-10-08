@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from "vue"
+import { ref, shallowRef, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
@@ -11,7 +11,6 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 
 import 'swiper/css'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { Navigation } from "swiper/modules"
 import { get } from 'lodash-es'
 
 
@@ -70,13 +69,21 @@ const shouldShowComponent = computed(() => products.value.length >= minAmountSho
 
 const shouldShowNavigation = computed(() => products.value.length > slidesPerView.value)
 
+const shouldShowNavigationButtons = computed(() => shouldShowNavigation.value && props.screenType !== 'mobile')
+
 const componentId = computed(() => props.fieldValue?.id ?? `recommended-master${props.indexBlock ?? ''}`)
 
 const titleContent = computed(() => props.fieldValue?.recommendation_settings?.title ?? ctrans('Related Products'))
 
 
-const prevEl = ref(null)
-const nextEl = ref(null)
+const swiperInstance = shallowRef<any>(null)
+
+const onSwiper = (swiper: any) => {
+  swiperInstance.value = swiper
+}
+
+const slidePrev = () => swiperInstance.value?.slidePrev()
+const slideNext = () => swiperInstance.value?.slideNext()
 
 
 onMounted(()=>{
@@ -86,6 +93,7 @@ onMounted(()=>{
 </script>
 
 <template>
+  asdasd
   <div v-if="shouldShowComponent" :id="componentId" class="w-full pb-6 related-product" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
@@ -101,18 +109,21 @@ onMounted(()=>{
     <!-- Products -->
     <div v-if="products.length" class="relative px-4 py-6">
       <!-- Navigation -->
-      <button ref="prevEl" class="swiper-nav-button hidden lg:block left-12 top-1/2">
+      <button v-if="shouldShowNavigationButtons" type="button" :aria-label="ctrans('Previous')"
+        class="swiper-nav-button left-12" @click.stop="slidePrev">
         <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl" fixed-width />
       </button>
 
-      <button ref="nextEl" class="swiper-nav-button hidden lg:block right-12 top-1/2">
+      <button v-if="shouldShowNavigationButtons" type="button" :aria-label="ctrans('Next')"
+        class="swiper-nav-button right-12" @click.stop="slideNext">
         <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl" fixed-width />
       </button>
 
       <!-- Swiper -->
       <div class="py-4 md:px-12 lg:px-[50px] px-0">
-        <Swiper ref="swiperRef" :slides-per-view="slidesPerView" :loop="shouldShowNavigation" :auto-height="false"
-          :modules="[Navigation]" class="w-full" :navigation="{ prevEl, nextEl }">
+        <Swiper :key="`${key}-${slidesPerView}-${shouldShowNavigation}-${products.length}`"
+          :slides-per-view="slidesPerView" :loop="shouldShowNavigation" :auto-height="false" class="w-full"
+          @swiper="onSwiper">
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
             <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
               <div v-if="product" class="flex-1 flex flex-col product-card">
