@@ -57,6 +57,7 @@ const props = defineProps<{
 		meta: Meta
 	}
 	tab?: string
+	canEdit?: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -248,7 +249,7 @@ onUnmounted(() => {
 
 			<component :is="draggable" v-model="items" item-key="id" tag="tbody" :animation="180" handle=".drag-handle"
 				ghost-class="opacity-40" class="divide-y divide-gray-100" @start="handleDragStart" @end="handleDragEnd"
-				@change="handleDragChange" :move="canMove">
+				@change="handleDragChange" :move="canMove" :disabled="!canEdit">
 				<template #item="{ element: zone, index }">
 					<tr :class="[
 						'transition-colors hover:bg-gray-50',
@@ -266,9 +267,10 @@ onUnmounted(() => {
 							</div>
 
 							<div v-else
-								class="drag-handle inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-800 cursor-move"
+								class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-sm font-medium text-gray-600"
+								:class="canEdit ? 'drag-handle transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-800 cursor-move' : ''"
 								v-tooltip="`Position: ${zone.position}`">
-								<FontAwesomeIcon :icon="faBars" class="text-xs opacity-70" fixed-width />
+								<FontAwesomeIcon v-if="canEdit" :icon="faBars" class="text-xs opacity-70" fixed-width />
 
 								<span class="tabular-nums">
 									{{ zone.position }}

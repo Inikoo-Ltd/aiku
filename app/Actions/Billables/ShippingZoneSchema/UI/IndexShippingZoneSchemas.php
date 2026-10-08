@@ -139,7 +139,7 @@ class IndexShippingZoneSchemas extends OrgAction
         $iconRight  = null;
         $modelPageHeading = null;
 
-        $actions = [
+        $actions = $this->canEdit ? [
             [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -150,7 +150,7 @@ class IndexShippingZoneSchemas extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ]
-        ];
+        ] : [];
 
         if ($this->parent instanceof Shop) {
             $subNavigation = $this->getShippingZoneSchemaSubNavigation($this->parent);

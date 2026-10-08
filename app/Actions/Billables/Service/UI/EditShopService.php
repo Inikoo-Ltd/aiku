@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Service\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Shop;
@@ -21,7 +21,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditShopService extends OrgAction
 {
-    use WithBillablesAuthorisation;
+    use WithBillablesEditAuthorisation;
 
     public function handle(Service $service): Service
     {

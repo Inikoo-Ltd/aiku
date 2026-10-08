@@ -93,8 +93,10 @@ class IndexLeaflets extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), canBeHidden: false)
                 ->column(key: 'family_codes', label: __('Applies to'), canBeHidden: false)
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency')
-                ->column(key: 'actions', label: '', canBeHidden: false);
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency');
+            if ($canEdit) {
+                $table->column(key: 'actions', label: '', canBeHidden: false);
+            }
         };
     }
 

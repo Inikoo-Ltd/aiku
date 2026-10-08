@@ -2161,6 +2161,22 @@ test('platform and country top listed and top sold tabs count portfolios and inv
         ->and($rowFor($countryUrl, 'top_products', $this->product->asset_id))->toMatchArray(['code' => $this->product->code, 'total_sold' => 6, 'total_amount' => 20]);
 });
 
+test('a shop viewer sees billables but cannot open their create or edit forms', function () {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+
+    expect(get(route('grp.org.shops.show.billables.packagings.index', $parameters))->assertOk()->viewData('page')['props']['can_edit'])->toBeFalse()
+        ->and(get(route('grp.org.shops.show.billables.shipping.index', $parameters))->assertOk()->viewData('page')['props']['pageHead']['actions'])->toBeEmpty();
+
+    get(route('grp.org.shops.show.billables.packagings.create', $parameters))->assertForbidden();
+    get(route('grp.org.shops.show.billables.leaflets.create', $parameters))->assertForbidden();
+    get(route('grp.org.shops.show.billables.shipping.create', $parameters))->assertForbidden();
+    get(route('grp.org.shops.show.billables.charges.create', $parameters))->assertForbidden();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+});
+
 test('a shop viewer sees category offers and related categories but none of the controls to change them', function () {
     $originalRoles = $this->user->roles->pluck('name')->toArray();
     actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);

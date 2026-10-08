@@ -10,7 +10,7 @@ namespace App\Actions\Billables\ShippingZone\UI;
 
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Models\Billables\ShippingZone;
@@ -24,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditShippingZone extends OrgAction
 {
-    use WithBillablesAuthorisation;
+    use WithBillablesEditAuthorisation;
 
     public function handle(ShippingZone $shippingZone): ShippingZone
     {
