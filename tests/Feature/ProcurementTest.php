@@ -10008,3 +10008,102 @@ test('raw material unit cost follows the preferred supplier cost per unit when t
 
     UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => $originalCost]);
 });
+
+test('a supplier product linked to several org stocks answers with the one where it is the preferred supplier', function () {
+    $tradeUnit       = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $supplierProduct = StoreSupplierProduct::make()->action($this->supplier, [
+        'code'             => 'preferred-link-'.$tradeUnit->id,
+        'name'             => 'Preferred link',
+        'cost'             => 1,
+        'trade_units'      => [$tradeUnit->id],
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+    $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $this->orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->first()
+        ?? StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+    $orgSupplierProduct->updateQuietly(['is_available' => true, 'state' => OrgSupplierProductStateEnum::ACTIVE]);
+
+    $newOrgStock = fn () => \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]))
+    );
+    $otherOrgStock     = $newOrgStock();
+    $preferredOrgStock = $newOrgStock();
+
+    DB::table('org_stock_has_org_supplier_products')->where('org_supplier_product_id', $orgSupplierProduct->id)->delete();
+    foreach ([[$otherOrgStock, 0], [$preferredOrgStock, 10]] as [$orgStock, $priority]) {
+        DB::table('org_stock_has_org_supplier_products')->insert([
+            'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $orgStock->stock_id, 'supplier_product_id' => $supplierProduct->id]),
+            'org_stock_id'                  => $orgStock->id,
+            'org_supplier_product_id'       => $orgSupplierProduct->id,
+            'status'                        => true,
+            'local_priority'                => $priority,
+            'created_at'                    => now(),
+            'updated_at'                    => now(),
+        ]);
+    }
+
+    $item   = StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 10]);
+    $picked = CherryPickShoppingListItems::make()->action($this->agent, [['id' => $item->id]]);
+
+    expect(App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity::linkedOrgStock($orgSupplierProduct)->id)->toBe($preferredOrgStock->id)
+        ->and(App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity::linkedOrgStock($orgSupplierProduct)->id)->toBe($preferredOrgStock->id)
+        ->and(App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct::run($this->organisation, $supplierProduct)->id)->toBe($preferredOrgStock->id)
+        ->and((int) DB::table('org_supplier_products as osp')
+            ->joinLateral(App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets::bestOrgStock(), 'os')
+            ->where('osp.id', $orgSupplierProduct->id)
+            ->value('os.id'))->toBe($preferredOrgStock->id)
+        ->and((int) App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets::make()->scopedQuery($this->orgSupplier)
+            ->where('p.id', $orgSupplierProduct->id)
+            ->value('os.id'))->toBe($preferredOrgStock->id)
+        ->and($picked['picked'])->toBe(1)
+        ->and(PurchaseOrderTransaction::find($item->fresh()->purchase_order_transaction_id)->org_stock_id)->toBe($preferredOrgStock->id);
+});
+
+test('an org stock linked to several supplier products answers with its preferred supplier product', function () {
+    $stock         = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $sellerStock   = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->partner, $stock);
+    $buyerOrgStock = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->where('stock_id', $stock->id)->first()
+        ?? \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->organisation, $stock);
+    $sellerStock->updateQuietly(['packed_in' => 1]);
+
+    foreach ([[6, 30, 0], [24, 9, 10]] as [$unitsPerCarton, $leadTimeDays, $priority]) {
+        $tradeUnit       = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $supplierProduct = StoreSupplierProduct::make()->action($this->supplier, [
+            'code'             => 'preferred-sp-'.$tradeUnit->id,
+            'name'             => 'Preferred supplier product',
+            'cost'             => 1,
+            'trade_units'      => [$tradeUnit->id],
+            'units_per_pack'   => 1,
+            'units_per_carton' => $unitsPerCarton,
+        ]);
+        $supplierProduct->updateQuietly(['estimated_lead_time_days' => $leadTimeDays]);
+        $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $this->orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->first()
+            ?? StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+        $orgSupplierProduct->updateQuietly(['state' => OrgSupplierProductStateEnum::ACTIVE]);
+        DB::table('org_stock_has_org_supplier_products')->insert([
+            'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $stock->id, 'supplier_product_id' => $supplierProduct->id]),
+            'org_stock_id'                  => $sellerStock->id,
+            'org_supplier_product_id'       => $orgSupplierProduct->id,
+            'status'                        => true,
+            'local_priority'                => $priority,
+            'created_at'                    => now(),
+            'updated_at'                    => now(),
+        ]);
+    }
+
+    $buckets       = GetPartnerStockCoverBuckets::make();
+    $partnerCarton = (int) DB::selectOne(
+        'select '.(new ReflectionMethod($buckets, 'partnerCartonSkos'))->invoke($buckets).' as carton from org_stocks p, (select 1 as packed_in) os where p.id = ?',
+        [$sellerStock->id]
+    )->carton;
+    $action        = IndexPurchaseOrderTransactions::make();
+    $partnerStocks = (new ReflectionMethod($action, 'partnerStocks'))->invoke($action, $this->orgPartner, collect([$buyerOrgStock->id]));
+
+    expect($partnerCarton)->toBe(24)
+        ->and((int) $partnerStocks->get($buyerOrgStock->id)->units_per_carton)->toBe(24)
+        ->and((int) DB::table('org_stocks')
+            ->joinLateral(GetOrganisationStockCoverBuckets::make()->primarySupplierProduct(), 'primary_sp')
+            ->where('org_stocks.id', $sellerStock->id)
+            ->value('primary_sp.estimated_lead_time_days'))->toBe(9);
+});

@@ -416,7 +416,7 @@ class GetPartnerStockCoverBuckets
             join org_supplier_products osp on osp.id = link.org_supplier_product_id
             join supplier_products sp on sp.id = osp.supplier_product_id
             where link.org_stock_id = p.id and link.status
-            order by link.local_priority
+            order by link.local_priority desc
             limit 1), 1)";
     }
 

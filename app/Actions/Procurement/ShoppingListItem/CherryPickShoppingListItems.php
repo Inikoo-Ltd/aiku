@@ -73,7 +73,7 @@ class CherryPickShoppingListItems extends OrgAction
 
             $pivot = OrgStockHasOrgSupplierProduct::where('org_supplier_product_id', $item->org_supplier_product_id)
                 ->where('status', true)
-                ->orderBy('local_priority')
+                ->orderByDesc('local_priority')
                 ->first();
 
             $orgStock = $pivot?->orgStock ?? ResolveOrgStockForSupplierProduct::run($item->organisation, $item->supplierProduct);

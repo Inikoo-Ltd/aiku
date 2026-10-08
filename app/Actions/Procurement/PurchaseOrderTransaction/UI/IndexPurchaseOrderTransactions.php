@@ -204,7 +204,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
             ->whereColumn('link.org_stock_id', 'seller.id')
             ->where('link.status', true)
-            ->orderBy('link.local_priority')
+            ->orderByDesc('link.local_priority')
             ->select('sp.units_per_carton')
             ->limit(1);
 
