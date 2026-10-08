@@ -396,6 +396,18 @@ class EditShop extends OrgAction
                             'information' => __('This would force related product categories under this shop to follow any updates done on master'),
                             'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'allow_stocks_to_be_shown_on_iris'  => [
+                            'label'       => __('Show Stock on Iris'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.allow_stocks_to_be_shown_on_iris', true),
+                            'information' => __('This would allow customers to view current stock when they hover on the stock status'),
+                        ],
+                        'allow_incoming_stocks_to_be_shown_on_iris'  => [
+                            'label'       => __('Show Incoming Stock on Iris'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true),
+                            'information' => __('This would allow customers to view incoming stock when they hover on the stock status'),
+                        ]
                     ]
                 ] : [],
                 [

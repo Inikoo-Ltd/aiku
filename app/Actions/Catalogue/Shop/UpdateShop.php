@@ -309,6 +309,16 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.family_order_follow_master', Arr::pull($modelData, 'family_order_follow_master'));
         }
 
+        // Stock on Iris
+
+        if (Arr::has($modelData, 'allow_stocks_to_be_shown_on_iris')) {
+            data_set($modelData, 'settings.catalog.allow_stocks_to_be_shown_on_iris', Arr::pull($modelData, 'allow_stocks_to_be_shown_on_iris'));
+        }
+
+        if (Arr::has($modelData, 'allow_incoming_stocks_to_be_shown_on_iris')) {
+            data_set($modelData, 'settings.catalog.allow_incoming_stocks_to_be_shown_on_iris', Arr::pull($modelData, 'allow_incoming_stocks_to_be_shown_on_iris'));
+        }
+
         if (Arr::exists($modelData, 'portal_link')) {
             if (Arr::get($modelData, 'portal_link') === null) {
                 data_set($modelData, 'portal_link', '');
@@ -1059,6 +1069,8 @@ class UpdateShop extends OrgAction
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'family_order_follow_master'                              => ['sometimes', 'boolean'],
+            'allow_stocks_to_be_shown_on_iris'                        => ['sometimes', 'boolean'],
+            'allow_incoming_stocks_to_be_shown_on_iris'               => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
