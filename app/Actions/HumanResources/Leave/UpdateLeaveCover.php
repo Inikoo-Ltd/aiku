@@ -23,7 +23,7 @@ class UpdateLeaveCover extends OrgAction
     private Leave $leave;
 
     /**
-     * @param array{cover_employee_id?: int|null, cover_has_permissions?: bool} $modelData
+     * @param array{cover_employee_id?: int|null} $modelData
      */
     public function handle(Leave $leave, array $modelData): Leave
     {
@@ -32,7 +32,7 @@ class UpdateLeaveCover extends OrgAction
 
         $leave->update([
             'cover_employee_id'     => $coverEmployeeId,
-            'cover_has_permissions' => $coverEmployeeId && ($modelData['cover_has_permissions'] ?? false),
+            'cover_has_permissions' => (bool) $coverEmployeeId,
         ]);
         $leave->load('coverEmployee');
 
@@ -55,7 +55,7 @@ class UpdateLeaveCover extends OrgAction
     public static function coverRules(Organisation $organisation, int $absentEmployeeId): array
     {
         return [
-            'cover_employee_id'     => [
+            'cover_employee_id' => [
                 'nullable',
                 'integer',
                 Rule::notIn([$absentEmployeeId]),
@@ -63,7 +63,6 @@ class UpdateLeaveCover extends OrgAction
                     ->where('organisation_id', $organisation->id)
                     ->where('state', EmployeeStateEnum::WORKING->value),
             ],
-            'cover_has_permissions' => ['sometimes', 'boolean'],
         ];
     }
 

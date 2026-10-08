@@ -50,7 +50,7 @@ class StoreEmployeeLeave extends OrgAction
         ApproveLeave::make()->applyBalanceDeduction($leave);
 
         if (!empty($modelData['cover_employee_id'])) {
-            UpdateLeaveCover::make()->handle($leave, Arr::only($modelData, ['cover_employee_id', 'cover_has_permissions']));
+            UpdateLeaveCover::make()->handle($leave, Arr::only($modelData, ['cover_employee_id']));
         }
 
         return $leave;

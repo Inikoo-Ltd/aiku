@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
+import Select from "primevue/select"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { capitalize } from "@/Composables/capitalize"
@@ -26,10 +27,9 @@ interface LeaveCover {
 	is_ongoing: boolean
 	cover_employee_id: number | null
 	covered_by: string | null
-	cover_has_permissions: boolean
 }
 
-defineProps<{
+const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	data: object
@@ -40,9 +40,14 @@ defineProps<{
 const locale = useLocaleStore()
 const selectedLeave = ref<LeaveCover | null>(null)
 
+const coverOptions = computed(() =>
+	Object.entries(props.employee_options ?? {})
+		.map(([value, label]) => ({ value: Number(value), label }))
+		.filter((option) => option.value !== selectedLeave.value?.employee_id)
+)
+
 const coverForm = useForm({
 	cover_employee_id: "" as string | number,
-	cover_has_permissions: false,
 })
 
 const formatDate = (date: string) => useFormatTime(date, { localeCode: locale?.language?.code })
@@ -51,7 +56,6 @@ const openCoverModal = (leave: LeaveCover) => {
 	selectedLeave.value = leave
 	coverForm.clearErrors()
 	coverForm.cover_employee_id = leave.cover_employee_id ?? ""
-	coverForm.cover_has_permissions = leave.cover_has_permissions
 }
 
 const closeCoverModal = () => {
@@ -87,10 +91,6 @@ const saveCover = (leave: LeaveCover, coverEmployeeId: string | number) => {
 			<span v-else class="text-amber-600">{{ ctrans("Not covered") }}</span>
 		</template>
 
-		<template #cell(cover_has_permissions)="{ item: leave }">
-			<span v-if="leave.covered_by">{{ leave.cover_has_permissions ? ctrans("Yes") : ctrans("No") }}</span>
-		</template>
-
 		<template #cell(actions)="{ item: leave }">
 			<div v-if="can_edit" class="flex justify-end gap-2">
 				<Button
@@ -120,26 +120,22 @@ const saveCover = (leave: LeaveCover, coverEmployeeId: string | number) => {
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Covered by") }}</label>
-				<select
+				<Select
 					v-model="coverForm.cover_employee_id"
-					required
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ ctrans("Select employee") }}</option>
-					<template v-for="(label, value) in employee_options" :key="value">
-						<option v-if="Number(value) !== selectedLeave.employee_id" :value="value">{{ label }}</option>
-					</template>
-				</select>
+					:options="coverOptions"
+					optionLabel="label"
+					optionValue="value"
+					filter
+					:placeholder="ctrans('Select employee')"
+					class="mt-1 w-full" />
 				<p v-if="coverForm.errors.cover_employee_id" class="mt-1 text-sm text-red-600">{{ coverForm.errors.cover_employee_id }}</p>
 			</div>
 
-			<label class="flex items-center gap-2 text-sm text-gray-700">
-				<input v-model="coverForm.cover_has_permissions" type="checkbox" class="rounded border-gray-300" />
-				{{ ctrans("Give the cover this employee's permissions until the leave ends") }}
-			</label>
+			<p class="text-sm text-gray-500">{{ ctrans("The cover gets this employee's permissions until the leave ends") }}</p>
 
 			<div class="flex justify-end gap-2">
 				<Button :label="ctrans('Cancel')" type="tertiary" @click="closeCoverModal" />
-				<Button type="save" nativeType="submit" :label="ctrans('Save')" :loading="coverForm.processing" />
+				<Button type="save" nativeType="submit" :label="ctrans('Save')" :loading="coverForm.processing" :disabled="!coverForm.cover_employee_id" />
 			</div>
 		</form>
 	</Modal>

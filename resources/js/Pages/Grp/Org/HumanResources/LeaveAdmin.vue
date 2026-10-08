@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import DatePicker from "@vuepic/vue-datepicker"
 import "@vuepic/vue-datepicker/dist/main.css"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -13,7 +13,6 @@ import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Select from "primevue/select"
-import Checkbox from "primevue/checkbox"
 import Textarea from "primevue/textarea"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -41,6 +40,7 @@ const props = defineProps<{
 	holidays: { date: string; label: string }[]
 	employee_options: Record<string, string>
 	employee_job_positions: Record<string, { id: number; name: string; department: string | null }[]>
+	employee_ids_with_group_access: number[]
 }>()
 
 const parsedEmployeeOptions = computed(() => props.employee_options ?? {})
@@ -49,7 +49,10 @@ const employeeSelectOptions = computed(() =>
 	Object.entries(parsedEmployeeOptions.value).map(([value, label]) => ({ value, label }))
 )
 
+const employeeIdsWithGroupAccess = computed(() => new Set((props.employee_ids_with_group_access ?? []).map(String)))
+
 const coverOptions = computed(() => {
+	const absentHasGroupAccess = employeeIdsWithGroupAccess.value.has(String(recordForm.employee_id))
 	const absentPositions = props.employee_job_positions?.[recordForm.employee_id] ?? []
 	const absentPositionIds = new Set(absentPositions.map((position) => position.id))
 	const absentDepartments = new Set(absentPositions.map((position) => position.department).filter(Boolean))
@@ -61,9 +64,18 @@ const coverOptions = computed(() => {
 			const sharedRoles = positions.filter((position) => absentPositionIds.has(position.id)).map((position) => position.name)
 			const sharedDepartments = [...new Set(positions.map((position) => position.department).filter((department) => department && absentDepartments.has(department)))]
 
-			return { ...option, sharedRoles, sharedDepartments }
+			const lacksGroupAccess = absentHasGroupAccess && !employeeIdsWithGroupAccess.value.has(option.value)
+			const tooltip = lacksGroupAccess
+				? ctrans("No group access: cannot reach the group-wide sections the absent employee works in")
+				: sharedRoles.length
+					? ctrans("Same organisation and same role: :roles", { roles: sharedRoles.join(", ") })
+					: sharedDepartments.length
+						? ctrans("Same organisation and same department: :departments", { departments: sharedDepartments.join(", ") })
+						: null
+
+			return { ...option, sharedRoles, sharedDepartments, lacksGroupAccess, tooltip }
 		})
-		.sort((a, b) => b.sharedRoles.length - a.sharedRoles.length || b.sharedDepartments.length - a.sharedDepartments.length)
+		.sort((a, b) => Number(a.lacksGroupAccess) - Number(b.lacksGroupAccess) || b.sharedRoles.length - a.sharedRoles.length || b.sharedDepartments.length - a.sharedDepartments.length)
 })
 
 const parsedTypeOptions = computed(() => {
@@ -125,8 +137,12 @@ const recordForm = useForm({
 	end_date: "",
 	reason: "",
 	cover_employee_id: "" as string | number,
-	cover_has_permissions: false,
 })
+
+watch(
+	() => recordForm.employee_id,
+	() => (recordForm.cover_employee_id = "")
+)
 
 const submitRecord = () => {
 	recordForm.post(
@@ -445,26 +461,18 @@ const closeRejectModal = () => {
 					:placeholder="ctrans('Nobody')"
 					class="mt-1 w-full">
 					<template #option="{ option }">
-						<div class="flex w-full items-center justify-between gap-2">
+						<div v-tooltip="option.tooltip" class="flex w-full items-center justify-between gap-2">
 							<span>{{ option.label }}</span>
-							<span
-								v-if="option.sharedRoles.length"
-								v-tooltip="ctrans('Same organisation and same role: :roles', { roles: option.sharedRoles.join(', ') })">
-								<Tag :theme="3" size="xxs" :label="ctrans('Highly recommended')" />
-							</span>
-							<span
-								v-else-if="option.sharedDepartments.length"
-								v-tooltip="ctrans('Same organisation and same department: :departments', { departments: option.sharedDepartments.join(', ') })">
-								<Tag :theme="1" size="xxs" :label="ctrans('Recommended')" />
-							</span>
+							<Tag v-if="option.lacksGroupAccess" :theme="7" size="xxs" :label="ctrans('Not recommended')" />
+							<Tag v-else-if="option.sharedRoles.length" :theme="3" size="xxs" :label="ctrans('Highly recommended')" />
+							<Tag v-else-if="option.sharedDepartments.length" :theme="1" size="xxs" :label="ctrans('Recommended')" />
 						</div>
 					</template>
 				</Select>
 				<p v-if="recordForm.errors.cover_employee_id" class="mt-1 text-sm text-red-600">{{ recordForm.errors.cover_employee_id }}</p>
-				<label v-if="recordForm.cover_employee_id" class="mt-2 flex items-center gap-2 text-sm text-gray-700">
-					<Checkbox v-model="recordForm.cover_has_permissions" binary />
-					{{ ctrans("Give the cover this employee's permissions until the leave ends") }}
-				</label>
+				<p v-if="recordForm.cover_employee_id" class="mt-2 text-sm text-gray-500">
+					{{ ctrans("The cover gets this employee's permissions until the leave ends") }}
+				</p>
 			</div>
 
 			<div>

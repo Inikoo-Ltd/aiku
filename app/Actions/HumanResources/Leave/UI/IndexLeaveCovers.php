@@ -54,7 +54,6 @@ class IndexLeaveCovers extends OrgAction
                 ->column(key: 'start_date', label: __('From'), canBeHidden: false, sortable: true)
                 ->column(key: 'end_date', label: __('To'), canBeHidden: false, sortable: true)
                 ->column(key: 'covered_by', label: __('Covered by'), canBeHidden: false)
-                ->column(key: 'cover_has_permissions', label: __('Has their permissions'), canBeHidden: false)
                 ->column(key: 'actions', label: '', canBeHidden: false)
                 ->defaultSort('start_date');
         };

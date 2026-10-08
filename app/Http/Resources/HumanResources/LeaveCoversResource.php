@@ -22,7 +22,6 @@ class LeaveCoversResource extends JsonResource
             'is_ongoing'            => $leave->start_date->lte(today()),
             'cover_employee_id'     => $leave->cover_employee_id,
             'covered_by'            => $leave->coverEmployee?->contact_name,
-            'cover_has_permissions' => $leave->cover_has_permissions,
         ];
     }
 }

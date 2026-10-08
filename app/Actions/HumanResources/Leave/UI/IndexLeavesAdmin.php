@@ -15,6 +15,7 @@ use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use App\Services\QueryBuilder;
 use Closure;
@@ -95,7 +96,10 @@ class IndexLeavesAdmin extends OrgAction
         $employees = Employee::where('organisation_id', $this->organisation->id)
             ->where('state', EmployeeStateEnum::WORKING)
             ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
-            ->with('jobPositions:job_positions.id,job_positions.name,job_positions.department')
+            ->with([
+                'jobPositions:job_positions.id,job_positions.name,job_positions.department',
+                'users' => fn ($query) => $query->wherePivot('status', true)->where('users.status', true),
+            ])
             ->orderBy('contact_name')
             ->get(['id', 'contact_name']);
 
@@ -133,6 +137,11 @@ class IndexLeavesAdmin extends OrgAction
                 'employee_job_positions' => $employees->mapWithKeys(fn (Employee $employee) => [
                     $employee->id => $employee->jobPositions->map(fn (JobPosition $jobPosition) => $jobPosition->only(['id', 'name', 'department'])),
                 ]),
+                // ponytail: a few permission queries per employee, fine at tens of employees; precompute per user if an organisation grows to hundreds
+                'employee_ids_with_group_access' => $employees
+                    ->filter(fn (Employee $employee) => $employee->users->contains(fn (User $user) => $user->hasGroupAccess()))
+                    ->pluck('id')
+                    ->values(),
             ]
         )->table($this->tableStructure());
     }
