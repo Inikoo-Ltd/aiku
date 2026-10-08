@@ -13,6 +13,7 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import PurchaseOrderSuggestButton from "@/Components/Procurement/PurchaseOrderSuggestButton.vue"
 import RenderWhenVisible from "@/Components/Utils/RenderWhenVisible.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { createReusableTemplate } from "@vueuse/core"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -281,7 +282,28 @@ interface QuantityItem {
 	price_per_sko: number | null
 }
 
+const pendingQuantitySaves: Record<number, ReturnType<typeof setTimeout>> = {}
+const quantityInputResets = ref<Record<number, number>>({})
+
+function queueQuantitySave(item: QuantityItem, quantity: number) {
+	clearTimeout(pendingQuantitySaves[item.id])
+	delete pendingQuantitySaves[item.id]
+
+	if (quantity === Number(withSavedQuantity(item).quantity)) {
+		delete typedSkos.value[item.id]
+		return
+	}
+
+	typedSkos.value[item.id] = quantity
+	pendingQuantitySaves[item.id] = setTimeout(() => {
+		delete pendingQuantitySaves[item.id]
+		saveQuantity(item, quantity)
+	}, 800)
+}
+
 async function saveQuantity(item: QuantityItem, quantity: number): Promise<boolean> {
+	clearTimeout(pendingQuantitySaves[item.id])
+	delete pendingQuantitySaves[item.id]
 	savingId.value = item.id
 	try {
 		const response = await axios.patch(
@@ -305,16 +327,12 @@ async function saveQuantity(item: QuantityItem, quantity: number): Promise<boole
 			text: error?.response?.data?.message || ctrans("Failed to update quantity"),
 			type: "error",
 		})
+		delete typedSkos.value[item.id]
+		quantityInputResets.value[item.id] = (quantityInputResets.value[item.id] ?? 0) + 1
 
 		return false
 	} finally {
 		savingId.value = null
-	}
-}
-
-async function onSaveQuantity(item: QuantityItem, form: { quantity: number; defaults: () => void }) {
-	if (await saveQuantity(item, Number(form.quantity))) {
-		form.defaults()
 	}
 }
 
@@ -606,13 +624,16 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 								<div class="flex items-center">
 									<ReuseLineActions :item="item" />
 									<NumberWithButtonSave
-										:key="`${item.id}-${withSavedQuantity(item).quantity}`"
+										:key="`${item.id}-${quantityInputResets[item.id] ?? 0}`"
 										isWithRefreshModel
+										noSaveButton
+										noUndoButton
 										:modelValue="Number(withSavedQuantity(item).quantity)"
 										:min="0"
-										:isLoading="savingId === item.id"
-										@update:modelValue="(value) => (typedSkos[item.id] = Number(value))"
-										@onSave="(form) => onSaveQuantity(item, form)" />
+										@update:modelValue="(value) => queueQuantitySave(item, Number(value))" />
+									<span class="ml-1 w-4">
+										<LoadingIcon v-if="savingId === item.id" />
+									</span>
 								</div>
 							</div>
 							<Button
@@ -622,8 +643,8 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 								icon="fal fa-paper-plane"
 								:label="ctrans('Submit')"
 								:loading="submittingId === item.id"
-								:disabled="hasUnsavedQuantity(item)"
-								:tooltip="hasUnsavedQuantity(item) ? ctrans('Save the quantity first') : ctrans('Send only this line to the partner now')"
+								:disabled="hasUnsavedQuantity(item) || savingId === item.id"
+								:tooltip="hasUnsavedQuantity(item) || savingId === item.id ? ctrans('Saving the quantity, try again in a moment') : ctrans('Send only this line to the partner now')"
 								@click="submitItem(item)" />
 						</div>
 						<span
