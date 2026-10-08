@@ -3,6 +3,7 @@
 namespace App\Actions\Reviews\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsAuthorisation;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Shop;
@@ -13,6 +14,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexOverallReviews extends OrgAction
 {
+    use WithReviewsAuthorisation;
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
@@ -47,7 +50,7 @@ class IndexOverallReviews extends OrgAction
                 'replier_type'    => 'merchant',
                 'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
             ],
-        ])->table(IndexReviews::make()->tableStructure());
+        ])->table(IndexReviews::make()->tableStructure(canManage: $this->canEdit));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

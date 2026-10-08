@@ -30,6 +30,7 @@ use App\Actions\Ordering\Order\UI\IndexOrdersInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithReviewsPermissions;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
@@ -68,6 +69,7 @@ class ShowProduct extends OrgAction
     use WithIndivisibleSet;
     use WithWebpageActions;
     use WithCategoryOfferPermissions;
+    use WithReviewsPermissions;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -529,7 +531,7 @@ class ShowProduct extends OrgAction
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value, model: $product))
             ->table(IndexCustomers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::CUSTOMERS->value))
-            ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value));
+            ->table(IndexReviews::make()->tableStructure(prefix: ProductTabsEnum::REVIEWS->value, canManage: $this->canManageReviews($request->user(), $this->shop)));
 
         if (!$isExternalShop) {
             $productPage = $productPage

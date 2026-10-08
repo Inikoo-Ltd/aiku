@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsEditAuthorisation;
 use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ApproveReview extends OrgAction
 {
+    use WithReviewsEditAuthorisation;
+
     use HasReviewHydrators;
 
     public function handle(Review $review, ?int $approvedBy = null): Review

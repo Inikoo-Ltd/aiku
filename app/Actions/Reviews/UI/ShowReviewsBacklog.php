@@ -3,6 +3,7 @@
 namespace App\Actions\Reviews\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsAuthorisation;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Enums\UI\Reviews\ReviewsBacklogTabsEnum;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowReviewsBacklog extends OrgAction
 {
+    use WithReviewsAuthorisation;
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request)->withTab(ReviewsBacklogTabsEnum::values());
@@ -54,7 +57,7 @@ class ShowReviewsBacklog extends OrgAction
         $response = Inertia::render('Org/Catalogue/ShopReviewsBacklog', $props);
 
         foreach (ReviewsBacklogTabsEnum::values() as $bucket) {
-            $response->table(IndexReviews::make()->tableStructure(prefix: $bucket));
+            $response->table(IndexReviews::make()->tableStructure(prefix: $bucket, canManage: $this->canEdit));
         }
 
         return $response;

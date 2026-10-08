@@ -2161,6 +2161,27 @@ test('platform and country top listed and top sold tabs count portfolios and inv
         ->and($rowFor($countryUrl, 'top_products', $this->product->asset_id))->toMatchArray(['code' => $this->product->code, 'total_sold' => 6, 'total_amount' => 20]);
 });
 
+test('reviews need website or CRM view to open and website or CRM edit to manage', function () {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    $parameters    = [$this->organisation->slug, $this->shop->slug];
+
+    actingAsUserWithRoles($this->user, []);
+    get(route('grp.org.shops.show.reviews.backlog', $parameters))->assertForbidden();
+
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    get(route('grp.org.shops.show.reviews.backlog', $parameters))->assertOk();
+    get(route('grp.org.shops.show.reviews.overall', $parameters))->assertOk();
+
+    $review = \App\Models\Reviews\Review::where('shop_id', $this->shop->id)->first();
+    if ($review) {
+        $this->patch(route('grp.models.review.approve', ['review' => $review->id]))->assertForbidden();
+        $this->patch(route('grp.models.review.reject', ['review' => $review->id]))->assertForbidden();
+        $this->delete(route('grp.models.review.delete', ['review' => $review->id]))->assertForbidden();
+    }
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+});
+
 test('a shop viewer sees billables but cannot open their create or edit forms', function () {
     $originalRoles = $this->user->roles->pluck('name')->toArray();
     actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);

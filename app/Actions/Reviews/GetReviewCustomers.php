@@ -8,6 +8,7 @@
 
 namespace App\Actions\Reviews;
 
+use App\Actions\Traits\Authorisations\WithReviewsPermissions;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -19,6 +20,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetReviewCustomers
 {
     use AsAction;
+    use WithReviewsPermissions;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $reviewable = $request->route('productCategory') ?? $request->route('product') ?? $request->route('shop');
+        $shop       = $reviewable instanceof Shop ? $reviewable : $reviewable?->shop;
+
+        return $shop && $this->canViewReviews($request->user(), $shop);
+    }
 
     public function handle(ProductCategory|Product|Shop $reviewable, int $page = 1, int $perPage = 50, ?string $search = null): array
     {

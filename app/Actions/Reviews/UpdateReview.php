@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsEditAuthorisation;
 use App\Actions\Reviews\Traits\HasReviewCommonLogic;
 use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateReview extends OrgAction
 {
+    use WithReviewsEditAuthorisation;
+
     use HasReviewCommonLogic;
     use HasReviewHydrators;
 

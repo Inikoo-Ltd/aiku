@@ -3,6 +3,7 @@
 namespace App\Actions\Reviews\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsAuthorisation;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Shop;
@@ -14,6 +15,8 @@ use Lorisleiva\Actions\ActionRequest;
 https://app.aiku.test/org/sk/shops/at/reviews/products
 class IndexFamilyReviews extends OrgAction
 {
+    use WithReviewsAuthorisation;
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
@@ -48,7 +51,7 @@ class IndexFamilyReviews extends OrgAction
                 'replier_type'    => 'merchant',
                 'rating_labels'   => ReviewsResource::ratingLabelsFor($shop),
             ],
-        ])->table(IndexReviews::make()->tableStructure(withFamily: true));
+        ])->table(IndexReviews::make()->tableStructure(withFamily: true, canManage: $this->canEdit));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

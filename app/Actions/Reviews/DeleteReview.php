@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsEditAuthorisation;
 use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class DeleteReview extends OrgAction
 {
+    use WithReviewsEditAuthorisation;
+
     use AsAction;
     use HasReviewHydrators;
 

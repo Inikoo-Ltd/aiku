@@ -24,6 +24,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithReviewsPermissions;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
@@ -49,6 +50,7 @@ class ShowFamily extends OrgAction
     use WithFamilyNavigation;
     use WithWebpageActions;
     use WithCategoryOfferPermissions;
+    use WithReviewsPermissions;
 
     private Organisation|ProductCategory|Shop $parent;
 
@@ -332,7 +334,7 @@ class ShowFamily extends OrgAction
         ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
         ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
         ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
-        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value));
+        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value, canManage: $this->canManageReviews($request->user(), $this->shop)));
     }
 
     public function jsonResponse(ProductCategory $family): DepartmentsResource

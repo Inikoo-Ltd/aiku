@@ -195,9 +195,9 @@ class IndexReviews extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null, bool $withProduct = false, bool $withFamily = false): Closure
+    public function tableStructure(?string $prefix = null, bool $withProduct = false, bool $withFamily = false, bool $canManage = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $withProduct, $withFamily) {
+        return function (InertiaTable $table) use ($prefix, $withProduct, $withFamily, $canManage) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -224,7 +224,9 @@ class IndexReviews extends OrgAction
             $table->column(key: 'rating', label: __('Rating'), sortable: true, align: 'right');
             $table->column(key: 'message', label: __('Message'), searchable: true);
             $table->column(key: 'likes', label: __('Likes / Dislikes'), sortable: true, align: 'right');
-            $table->column(key: 'action', label: __('Actions'), align: 'right');
+            if ($canManage) {
+                $table->column(key: 'action', label: __('Actions'), align: 'right');
+            }
         };
     }
 }

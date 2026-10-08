@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews\ReviewReply;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsEditAuthorisation;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteReviewReply extends OrgAction
 {
+    use WithReviewsEditAuthorisation;
+
     public function handle(Review $review): Review
     {
         $review->update([
