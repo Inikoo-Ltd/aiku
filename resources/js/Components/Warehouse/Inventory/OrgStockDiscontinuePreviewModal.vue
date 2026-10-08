@@ -10,6 +10,8 @@ import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { computed, inject, ref, watch } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faExpandAlt, faCompressAlt } from "@fal"
 
 interface CountWithReferences {
     count: number
@@ -68,6 +70,7 @@ const form = ref({
     organisation_states: {} as Record<string, string>,
 })
 const isSubmitting = ref(false)
+const isFullscreen = ref(false)
 const submitError = ref<string | null>(null)
 
 const organisationCodes = computed(() => {
@@ -166,21 +169,33 @@ const platformSummary = (byPlatform: Record<string, number>) =>
 </script>
 
 <template>
-    <Modal :isOpen="isOpen" :zIndex="zIndex" @onClose="emits('onClose')" width="w-full max-w-5xl">
-        <div class="flex flex-col gap-4">
-            <div>
-                <h3 class="text-lg font-semibold">{{ ctrans("Discontinue preview") }}</h3>
-                <p class="text-sm text-gray-500">{{ ctrans("What still hangs off the selected SKOs. Nothing is changed yet.") }}</p>
-                <p class="text-xs text-gray-400">{{ ctrans("Customer stores are never touched: once discontinued, their own stock sync shows zero and they delist it themselves.") }}</p>
+    <Modal :isOpen="isOpen" :zIndex="zIndex" @onClose="emits('onClose')" :width="isFullscreen ? 'w-full' : 'w-full max-w-7xl'">
+        <div class="flex flex-col gap-4" :class="{ 'h-[calc(100vh-5rem)]': isFullscreen }">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold">{{ ctrans("Discontinue preview") }}</h3>
+                    <p class="text-sm text-gray-500">{{ ctrans("What still hangs off the selected SKOs. Nothing is changed yet.") }}</p>
+                    <p class="text-xs text-gray-400">{{ ctrans("Customer stores are never touched: once discontinued, their own stock sync shows zero and they delist it themselves.") }}</p>
+                </div>
+                <button
+                    v-tooltip="isFullscreen ? ctrans('Exit full screen') : ctrans('Full screen')"
+                    type="button"
+                    class="shrink-0 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-gray-600 transition-colors hover:border-[--app-accent] hover:text-[--app-accent] focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]"
+                    :aria-label="isFullscreen ? ctrans('Exit full screen') : ctrans('Full screen')"
+                    :aria-pressed="isFullscreen"
+                    @click="isFullscreen = !isFullscreen"
+                >
+                    <FontAwesomeIcon :icon="isFullscreen ? faCompressAlt : faExpandAlt" fixed-width aria-hidden="true" />
+                </button>
             </div>
 
-            <div v-if="isLoading" class="flex items-center gap-2 py-8 justify-center text-gray-500">
+            <div v-if="isLoading" class="flex items-center gap-2 py-8 justify-center text-gray-500" :class="{ 'flex-1': isFullscreen }">
                 <LoadingIcon /> {{ ctrans("Loading") }}
             </div>
 
-            <div v-else-if="errorMessage" class="text-red-600 text-sm">{{ errorMessage }}</div>
+            <div v-else-if="errorMessage" class="text-red-600 text-sm" :class="{ 'flex-1': isFullscreen }">{{ errorMessage }}</div>
 
-            <div v-else class="max-h-[60vh] overflow-auto">
+            <div v-else class="overflow-auto" :class="isFullscreen ? 'min-h-0 flex-1' : 'max-h-[65vh]'">
                 <table class="min-w-full text-sm">
                     <thead class="text-left text-gray-500 border-b border-gray-200">
                         <tr>

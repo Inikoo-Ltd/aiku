@@ -154,6 +154,7 @@ use Inertia\Testing\AssertableInertia;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
+use App\Actions\Inventory\OrgStock\DiscontinueGroupOrgStocks;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -4113,6 +4114,47 @@ describe('discontinue confirm', function () {
             ->and($audit->new_values['source'])->toBe('mcp')
             ->and($audit->new_values['request_text'])->toBe('discontinue this one please')
             ->and($audit->new_values['overrides'])->toBe(['other' => 'active']);
+    });
+
+    test('group routes preview and change org stocks picked across organisations in one request', function () {
+        $orgStock      = $this->orgStocks[1];
+        $otherOrgStock = $this->otherOrgStocks[2];
+        $orgStockIds   = [$orgStock->id, $otherOrgStock->id];
+
+        $previews = $this->getJson(route('grp.goods.org_stocks.discontinue_preview', ['org_stock_ids' => $orgStockIds]))
+            ->assertOk()
+            ->assertJsonCount(2)
+            ->json();
+
+        expect(collect($previews)->pluck('id')->sort()->values()->all())->toBe(collect($orgStockIds)->sort()->values()->all());
+
+        $this->post(route('grp.goods.org_stocks.discontinue'), [
+            'org_stock_ids'       => $orgStockIds,
+            'state'               => OrgStockStateEnum::SUSPENDED->value,
+            'scope'               => 'group',
+            'reason'              => 'Bulk hold from the dashboard',
+            'expected_updated_at' => collect($previews)->pluck('updated_at', 'id')->all(),
+            'source'              => 'ui',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::SUSPENDED)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::SUSPENDED);
+    });
+
+    test('group change is all or nothing when one organisation refuses', function () {
+        $orgStock      = $this->orgStocks[1];
+        $otherOrgStock = $this->otherOrgStocks[2];
+
+        expect(fn () => DiscontinueGroupOrgStocks::make()->action($this->group, [
+            'org_stock_ids'       => [$orgStock->id, $otherOrgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUED->value,
+            'scope'               => 'organisation',
+            'reason'              => 'Stale preview in the second organisation',
+            'expected_updated_at' => [$otherOrgStock->id => now()->subYear()->toIso8601String()],
+        ]))->toThrow(ValidationException::class);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
     });
 
     test('a discontinued sko is refused on a purchase order line', function () {
