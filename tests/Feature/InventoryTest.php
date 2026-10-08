@@ -177,6 +177,7 @@ use Mockery;
 use RuntimeException;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 
 beforeAll(function () {
@@ -582,6 +583,42 @@ test('move stock location', function ($warehouseArea) {
     expect($sourceSlot->quantity)->toBeNumeric(1)
         ->and($targetSlot->quantity)->toBeNumeric(1);
 })->depends('create warehouse area');
+
+test('bulk delete locations needs the typed confirmation and refuses any location with stock', function (Warehouse $warehouse) {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $empty    = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $assigned = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $stocked  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    $zeroSlot = StoreLocationOrgStock::make()->action($orgStock, $assigned, ['type' => LocationStockTypeEnum::PICKING]);
+    StoreLocationOrgStock::make()->action($orgStock, $stocked, ['type' => LocationStockTypeEnum::PICKING])->update(['quantity' => 5]);
+
+    $url = route('grp.models.warehouse.locations.bulk_delete', ['warehouse' => $warehouse->id]);
+
+    delete($url, ['locations' => [$empty->id], 'confirmation' => 'yes'])->assertSessionHasErrors('confirmation');
+    delete($url, ['locations' => [$empty->id, $assigned->id], 'confirmation' => 'DELETE 1 LOCATION'])->assertSessionHasErrors('confirmation');
+    expect(Location::find($empty->id))->not->toBeNull();
+
+    delete($url, ['locations' => [$empty->id, $assigned->id, $stocked->id], 'confirmation' => 'DELETE 3 LOCATIONS'])
+        ->assertSessionHasErrors(['locations' => __('These locations still have stock or pallets, move it before deleting them: :codes', ['codes' => $stocked->code])]);
+    expect(Location::whereIn('id', [$empty->id, $assigned->id, $stocked->id])->count())->toBe(3);
+
+    delete($url, ['locations' => [$empty->id, $assigned->id], 'confirmation' => 'DELETE 2 LOCATIONS'])
+        ->assertSessionHasNoErrors();
+
+    expect(Location::whereIn('id', [$empty->id, $assigned->id])->count())->toBe(0)
+        ->and(LocationOrgStock::find($zeroSlot->id))->toBeNull()
+        ->and(Location::find($stocked->id))->not->toBeNull();
+
+    expect(fn () => DeleteLocation::make()->action($stocked))->toThrow(ValidationException::class);
+
+    $stocked->locationOrgStocks()->update(['quantity' => 0]);
+    DeleteLocation::make()->action($stocked);
+    expect(Location::find($stocked->id))->toBeNull()
+        ->and(LocationOrgStock::where('location_id', $stocked->id)->exists())->toBeFalse();
+})->depends('create warehouse');
 
 test('update location', function ($location) {
     $location = UpdateLocation::make()->action($location, ['code' => 'AE-3']);
@@ -2074,8 +2111,11 @@ test('sync org stock locations creates, updates and removes links', function () 
         ->toEqualCanonicalizing([$locB->id]);
 });
 
-test('calculate value location org stock sets value = quantity * cost', function () {
-    $locationOrgStock = LocationOrgStock::first();
+test('calculate value location org stock sets value = quantity * cost', function (Warehouse $warehouse) {
+    $stock            = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock         = StoreOrgStock::make()->action($this->organisation, $stock);
+    $location         = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
     $locationOrgStock->update(['value' => 9999]);
 
     CalculateValueLocationOrgStock::run($locationOrgStock->id);
@@ -2089,7 +2129,9 @@ test('calculate value location org stock sets value = quantity * cost', function
     CalculateValueLocationOrgStock::run(null);
     CalculateValueLocationOrgStock::run(999999999);
     expect((float) $locationOrgStock->fresh()->value)->toBe($expected);
-});
+
+    DeleteLocation::make()->action($location);
+})->depends('create warehouse');
 
 test('delete warehouse deletes areas and locations', function () {
     $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'DEL-WH', 'name' => 'To be deleted']);

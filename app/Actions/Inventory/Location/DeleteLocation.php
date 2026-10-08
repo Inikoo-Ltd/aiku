@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location;
 
+use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
 use App\Actions\OrgAction;
@@ -16,6 +17,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -30,9 +32,22 @@ class DeleteLocation extends OrgAction
 
     private Location $location;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Location $location): Location
     {
         $this->location = $location;
+
+        if (!self::isEmpty($location)) {
+            throw ValidationException::withMessages([
+                'location' => __('Location :code is not empty, move its contents before deleting it.', ['code' => $location->code])
+            ]);
+        }
+
+        foreach ($location->locationOrgStocks()->get() as $locationOrgStock) {
+            DeleteLocationOrgStock::make()->action($locationOrgStock);
+        }
 
         $location->delete();
 
@@ -48,6 +63,15 @@ class DeleteLocation extends OrgAction
     }
 
 
+    public static function isEmpty(Location $location): bool
+    {
+        return !$location->locationOrgStocks()->where('quantity', '!=', 0)->exists()
+            && !$location->pallets()->exists();
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function action(Location $location): Location
     {
         $this->asAction = true;
@@ -55,13 +79,12 @@ class DeleteLocation extends OrgAction
         return $this->handle($location);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Location $location, ActionRequest $request): Location
     {
         $this->initialisationFromWarehouse($location->warehouse, $request);
-
-        if ($location->locationOrgStocks()->where('quantity', '>', 0)->exists() || $location->pallets()->exists()) {
-            abort(422, __('This location is not empty, move its contents before deleting it.'));
-        }
 
         return $this->handle($location);
     }
