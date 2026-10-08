@@ -37,6 +37,11 @@ enum CrawlIssueTypeEnum: string
     case CANONICAL_TO_OTHER_PAGE    = 'canonical_to_other_page';
     case NOT_IN_SITEMAP             = 'not_in_sitemap';
     case LINKED_REDIRECT            = 'linked_redirect';
+    case HREFLANG_TO_BROKEN         = 'hreflang_to_broken';
+    case HREFLANG_INVALID_CODE      = 'hreflang_invalid_code';
+    case HREFLANG_CONFLICTING_CODE  = 'hreflang_conflicting_code';
+    case HREFLANG_MISSING_SELF      = 'hreflang_missing_self';
+    case HREFLANG_MISSING_RETURN    = 'hreflang_missing_return';
 
     public const int TITLE_MAX_LENGTH            = 60;
     public const int TITLE_MIN_LENGTH            = 20;
@@ -52,7 +57,8 @@ enum CrawlIssueTypeEnum: string
             self::FETCH_FAILED,
             self::REDIRECT_LOOP,
             self::MISSING_TITLE,
-            self::CANONICAL_TO_BROKEN => CrawlIssueSeverityEnum::ERROR,
+            self::CANONICAL_TO_BROKEN,
+            self::HREFLANG_TO_BROKEN => CrawlIssueSeverityEnum::ERROR,
 
             self::REDIRECT_CHAIN,
             self::DUPLICATE_TITLE,
@@ -63,7 +69,11 @@ enum CrawlIssueTypeEnum: string
             self::MISSING_CANONICAL,
             self::NOINDEX_IN_SITEMAP,
             self::SLOW_RESPONSE,
-            self::IMAGES_WITHOUT_ALT => CrawlIssueSeverityEnum::WARNING,
+            self::IMAGES_WITHOUT_ALT,
+            self::HREFLANG_INVALID_CODE,
+            self::HREFLANG_CONFLICTING_CODE,
+            self::HREFLANG_MISSING_SELF,
+            self::HREFLANG_MISSING_RETURN => CrawlIssueSeverityEnum::WARNING,
 
             self::TITLE_TOO_LONG,
             self::TITLE_TOO_SHORT,
@@ -101,6 +111,11 @@ enum CrawlIssueTypeEnum: string
             self::CANONICAL_TO_OTHER_PAGE->value    => __('Canonical points to another page'),
             self::NOT_IN_SITEMAP->value             => __('Indexable page missing from the sitemap'),
             self::LINKED_REDIRECT->value            => __('Internal links point to a redirect'),
+            self::HREFLANG_TO_BROKEN->value         => __('Hreflang points to a broken or redirecting URL'),
+            self::HREFLANG_INVALID_CODE->value      => __('Invalid hreflang code'),
+            self::HREFLANG_CONFLICTING_CODE->value  => __('Hreflang code used for more than one URL'),
+            self::HREFLANG_MISSING_SELF->value      => __('Hreflang does not list the page itself'),
+            self::HREFLANG_MISSING_RETURN->value    => __('Hreflang alternate does not link back'),
         ];
     }
 
@@ -130,6 +145,11 @@ enum CrawlIssueTypeEnum: string
             self::CANONICAL_TO_OTHER_PAGE->value    => __('The page names another URL as canonical, so Google indexes that URL instead. Fine for variants, wrong for unique pages.'),
             self::NOT_IN_SITEMAP->value             => __('Google can index the page, but the sitemap does not list it.'),
             self::LINKED_REDIRECT->value            => __('Links inside the website point to a URL that redirects. Linking to the final URL saves a hop.'),
+            self::HREFLANG_TO_BROKEN->value         => __('A language version listed in hreflang does not answer with 200. Google ignores the whole set of alternates when one of them is broken.'),
+            self::HREFLANG_INVALID_CODE->value      => __('The hreflang value is not a language code (ISO 639-1), a language and region (for example en-GB) or x-default, so Google ignores it.'),
+            self::HREFLANG_CONFLICTING_CODE->value  => __('The same hreflang code points to different URLs, so Google cannot tell which one to show.'),
+            self::HREFLANG_MISSING_SELF->value      => __('The page lists other language versions but not itself. Every version must list all versions, itself included.'),
+            self::HREFLANG_MISSING_RETURN->value    => __('A language version listed here does not list this page back, so Google ignores the pair. Checked against the latest audit of the other website.'),
         ];
     }
 }

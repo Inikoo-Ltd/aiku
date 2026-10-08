@@ -192,6 +192,7 @@ class AuditWebsite implements ShouldBeUnique
             'robots_meta'        => null,
             'h1_count'           => 0,
             'images_without_alt' => 0,
+            'hreflang'           => null,
             'is_in_sitemap'      => isset($this->inSitemap[md5($url)]),
             'is_indexable'       => false,
             'fetch_error'        => null,
@@ -241,6 +242,13 @@ class AuditWebsite implements ShouldBeUnique
         $row['h1_count']           = $html->h1Count;
         $row['images_without_alt'] = $html->imagesWithoutAlt;
         $row['is_indexable']       = !$isNoindex && ($canonical === null || $canonical === $url);
+
+        if ($html->hreflangs) {
+            $row['hreflang'] = json_encode(array_map(fn (array $alternate) => [
+                'hreflang' => $alternate['hreflang'],
+                'href'     => $this->normaliseInternalUrl($this->resolveUrl($url, $alternate['href'])) ?? $this->resolveUrl($url, $alternate['href']) ?? $alternate['href'],
+            ], $html->hreflangs));
+        }
 
         foreach ($html->hrefs as $href) {
             $linkedUrl = $this->normaliseInternalUrl($this->resolveUrl($url, $href));

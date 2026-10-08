@@ -12,7 +12,7 @@ All work is on the `seo` branch and has not been deployed yet.
 | Webpage traffic sources | Where the arrivals on one webpage came from, last 90 days | Webpage > Traffic sources tab |
 | Phase 0: data fixes | Smartphones and phablets count as mobile; session duration caps idle time at 30 minutes; `pagespeed` props renamed to `real_user_speed` | SEO dashboard figures |
 | 1.1 Search Console history | 16 months of clicks, impressions, CTR and position, fetched daily, per website, page and query | SEO dashboard: Google Search card, Search queries and Low CTR queries tabs, search columns on Webpages; Webpage > Performance tab |
-| 1.2 Site Audit | Weekly crawl of every live website, 23 issue types, health score and trend, pages per issue | SEO > Site audit |
+| 1.2 Site Audit | Weekly crawl of every live website, 28 issue types (hreflang included), health score and trend, pages per issue | SEO > Site audit |
 | 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO > Missing pages |
 | 1.4 Page speed | Core Web Vitals (LCP, INP, CLS) from real visits, per website and per page, following HELP-3303: Google's Chrome UX Report and visitors' browsers | SEO dashboard: Page speed card and Page speed tab |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |

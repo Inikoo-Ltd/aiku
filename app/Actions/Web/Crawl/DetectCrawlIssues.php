@@ -10,8 +10,11 @@ namespace App\Actions\Web\Crawl;
 
 use App\Enums\Web\Crawl\CrawlIssueSeverityEnum;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
+use App\Enums\Web\Crawl\CrawlStateEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\CrawlIssue;
+use App\Models\Web\Website;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,6 +24,8 @@ class DetectCrawlIssues
     use AsObject;
 
     private const int DUPLICATES_SHOWN = 5;
+
+    private const string HREFLANG_CODE_PATTERN = '/^(x-default|[a-z]{2,3}(-[a-z]{4})?(-([a-z]{2}|\d{3}))?)$/i';
 
     private array $issues = [];
 
@@ -54,6 +59,7 @@ class DetectCrawlIssues
 
         $this->detectDuplicates($indexablePages, 'title', CrawlIssueTypeEnum::DUPLICATE_TITLE);
         $this->detectDuplicates($indexablePages, 'meta_description', CrawlIssueTypeEnum::DUPLICATE_META_DESCRIPTION);
+        $this->detectHreflangIssues($crawl, $pages, $indexablePages);
 
         DB::transaction(function () use ($crawl, $redirectHops) {
             CrawlIssue::where('crawl_id', $crawl->id)->delete();
@@ -245,6 +251,173 @@ class DetectCrawlIssues
                     ]);
                 }
             });
+    }
+
+    private function detectHreflangIssues(Crawl $crawl, Collection $pages, Collection $indexablePages): void
+    {
+        $alternatesByPage = $indexablePages
+            ->filter(fn ($page) => $page->hreflang !== null)
+            ->mapWithKeys(fn ($page) => [$page->id => $this->hreflangAlternates($page->hreflang)])
+            ->filter();
+
+        if ($alternatesByPage->isEmpty()) {
+            return;
+        }
+
+        $targets = $this->hreflangTargets($crawl, $pages, $alternatesByPage);
+
+        foreach ($indexablePages as $page) {
+            $alternates = collect($alternatesByPage->get($page->id, []));
+
+            if ($alternates->isEmpty()) {
+                continue;
+            }
+
+            $pageUrl = $this->normaliseUrl($page->url);
+
+            $invalidCodes = $alternates->pluck('hreflang')
+                ->reject(fn (string $code) => preg_match(self::HREFLANG_CODE_PATTERN, $code))
+                ->unique()
+                ->values();
+
+            if ($invalidCodes->isNotEmpty()) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_INVALID_CODE, ['codes' => $invalidCodes->all()]);
+            }
+
+            $conflictingCodes = $alternates
+                ->groupBy(fn (array $alternate) => strtolower($alternate['hreflang']))
+                ->filter(fn (Collection $group) => $group->pluck('url')->unique()->count() > 1)
+                ->keys();
+
+            if ($conflictingCodes->isNotEmpty()) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_CONFLICTING_CODE, ['codes' => $conflictingCodes->all()]);
+            }
+
+            if (!$alternates->contains('url', $pageUrl)) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_MISSING_SELF, ['alternates' => $alternates->count()]);
+            }
+
+            $broken        = [];
+            $missingReturn = [];
+
+            foreach ($alternates->pluck('url')->unique() as $url) {
+                $target = $targets->get(md5($url));
+
+                if ($url === $pageUrl || !$target) {
+                    continue;
+                }
+
+                if ($target->status_code !== 200) {
+                    $broken[] = ['url' => $url, 'status_code' => $target->status_code];
+                } elseif (($target->hreflang_audited ?? true) && !collect($this->hreflangAlternates($target->hreflang))->contains('url', $pageUrl)) {
+                    $missingReturn[] = $url;
+                }
+            }
+
+            if ($broken) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_TO_BROKEN, ['count' => count($broken), 'alternates' => array_slice($broken, 0, self::DUPLICATES_SHOWN)]);
+            }
+
+            if ($missingReturn) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_MISSING_RETURN, ['count' => count($missingReturn), 'alternates' => array_slice($missingReturn, 0, self::DUPLICATES_SHOWN)]);
+            }
+        }
+    }
+
+    /**
+     * The crawled page behind each alternate URL, from this audit for the website's own pages and
+     * from the latest audit of the other website for the rest. URLs with no audited page are left
+     * out, because nothing can be said about them, and the return link is not checked against an
+     * audit that ran before hreflang was recorded.
+     *
+     * @return Collection<string, object>
+     */
+    private function hreflangTargets(Crawl $crawl, Collection $pages, Collection $alternatesByPage): Collection
+    {
+        $targets       = collect();
+        $urlsByWebsite = [];
+
+        foreach ($alternatesByPage->flatten(1)->pluck('url')->unique() as $url) {
+            $hash = md5($url);
+
+            if ($pages->has($hash)) {
+                $targets->put($hash, $pages->get($hash));
+
+                continue;
+            }
+
+            $host = preg_replace('/^www\./', '', (string) parse_url($url, PHP_URL_HOST));
+
+            $urlsByWebsite[$host][] = $hash;
+        }
+
+        $websiteIds = Website::whereIn('domain', array_keys($urlsByWebsite))->pluck('id', 'domain');
+
+        foreach ($urlsByWebsite as $host => $hashes) {
+            $websiteId = $websiteIds->get($host);
+
+            if (!$websiteId || $websiteId === $crawl->website_id) {
+                continue;
+            }
+
+            $latestAuditId = Crawl::where('website_id', $websiteId)
+                ->where('type', CrawlTypeEnum::AUDIT)
+                ->where('state', CrawlStateEnum::FINISH)
+                ->whereNotNull('health_score')
+                ->latest('id')
+                ->value('id');
+
+            if (!$latestAuditId) {
+                continue;
+            }
+
+            $hreflangAudited = DB::table('crawl_pages')
+                ->where('crawl_id', $latestAuditId)
+                ->whereNotNull('hreflang')
+                ->exists();
+
+            foreach (array_chunk($hashes, 1000) as $chunk) {
+                DB::table('crawl_pages')
+                    ->where('crawl_id', $latestAuditId)
+                    ->whereIn('url_hash', $chunk)
+                    ->get(['url_hash', 'status_code', 'hreflang'])
+                    ->each(function ($target) use ($targets, $hreflangAudited) {
+                        $target->hreflang_audited = $hreflangAudited;
+                        $targets->put($target->url_hash, $target);
+                    });
+            }
+        }
+
+        return $targets;
+    }
+
+    /**
+     * @return array<int, array{hreflang: string, url: string}>
+     */
+    private function hreflangAlternates(?string $hreflang): array
+    {
+        $alternates = [];
+
+        foreach (json_decode((string) $hreflang, true) ?: [] as $alternate) {
+            $url = $this->normaliseUrl($alternate['href'] ?? null);
+
+            if ($url) {
+                $alternates[] = ['hreflang' => (string) ($alternate['hreflang'] ?? ''), 'url' => $url];
+            }
+        }
+
+        return $alternates;
+    }
+
+    private function normaliseUrl(?string $url): ?string
+    {
+        $parts = parse_url((string) $url);
+
+        if (!$parts || !isset($parts['scheme'], $parts['host'])) {
+            return null;
+        }
+
+        return strtolower($parts['scheme']).'://'.strtolower($parts['host']).(isset($parts['port']) ? ':'.$parts['port'] : '').($parts['path'] ?? '/').(isset($parts['query']) ? '?'.$parts['query'] : '');
     }
 
     private function isHtmlPage(object $page): bool
