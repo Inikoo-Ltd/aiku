@@ -5393,6 +5393,68 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
     expect($otherStock->refresh()->is_made_in_house)->toBeTrue();
 });
 
+test('the ai assistant sets up artefacts, raw materials, tasks and recipes only when enrolled, logged and revertible', function () {
+    $user = $this->guest->getUser();
+    $user->update(['can_use_mcp' => true, 'can_use_mcp_production' => false]);
+    $suffix = strtoupper(\Illuminate\Support\Str::random(5));
+    $tool   = fn (string $class, array $arguments) => \App\Mcp\Servers\AikuServer::actingAs($user)->tool($class, ['production' => $this->production->slug, ...$arguments]);
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'manufacture_task'])->assertHasErrors(['not enabled for this user']);
+
+    [, , $shop] = createShop();
+    expect($shop->organisation_id)->toBe($this->production->organisation_id);
+    $shopkeeper = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->production->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    expect($this->production->canBeSetUpBy($shopkeeper))->toBeFalse();
+    setPermissionsTeamId($shopkeeper->group_id);
+    $shopkeeper->givePermissionTo('products.'.$shop->id);
+    expect($this->production->canBeSetUpBy($shopkeeper->fresh()))->toBeTrue();
+    $user->update(['can_use_mcp_production' => true]);
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'artefact', 'code' => 'AI-'.$suffix, 'create' => true, 'fields' => ['name' => 'Lip balm'], 'request_text' => 'create it'])
+        ->assertHasErrors(['needs its SKO']);
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'artefact', 'code' => 'AI-'.$suffix, 'fields' => ['name' => 'Lip balm'], 'request_text' => 'create it'])
+        ->assertHasErrors(['create=true']);
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'artefact', 'code' => 'AI-'.$suffix, 'create' => true, 'fields' => ['name' => 'Lip balm'], 'new_sko' => ['units' => 1], 'request_text' => 'create it with its sko'])
+        ->assertOk()->assertSee(['"sko":"AI-'.$suffix.'"', '"trade_unit":"AI-'.$suffix.'"']);
+    $artefact = Artefact::where('production_id', $this->production->id)->where('code', 'AI-'.$suffix)->firstOrFail();
+    expect($artefact->orgStock->stock->code)->toBe('AI-'.$suffix)
+        ->and($artefact->orgStock->is_made_in_house)->toBeTrue();
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'create' => true, 'fields' => ['type' => 'stock', 'description' => 'Beeswax', 'unit' => 'kilogram', 'unit_cost' => 8], 'request_text' => 'add beeswax'])->assertOk();
+    foreach (['POUR', 'PACK'] as $code) {
+        $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'manufacture_task', 'code' => $code.$suffix, 'create' => true, 'fields' => ['name' => $code], 'request_text' => 'add the tasks'])->assertOk();
+    }
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'fields' => ['unit_cost' => 10], 'request_text' => 'beeswax is 10 now'])->assertOk();
+    $costChange = \App\Models\SysAdmin\McpChange::latest('id')->first();
+    expect($costChange->type)->toBe(\App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCTION_RECORD);
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run($costChange, $user);
+    expect((float) RawMaterial::where('code', 'AIRM-'.$suffix)->value('unit_cost'))->toBe(8.0);
+
+    $recipe = fn (array $steps) => $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['artefacts' => ['ai-'.$suffix], 'steps' => $steps, 'request_text' => 'set the steps']);
+    $recipe([['task' => 'POUR'.$suffix]])->assertHasErrors(['units_per_artefact']);
+    $recipe([['task' => 'POUR'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => 216, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.01]]], ['task' => 'PACK'.$suffix, 'units_per_artefact' => 0.1667, 'target_per_hour' => 11]])
+        ->assertOk()->assertSee(['"task":"POUR'.$suffix.'"', '"target_per_hour":216', '"units_per_artefact":0.1667', '"materials_cost":0.08']);
+    expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['POUR'.$suffix, 'PACK'.$suffix]);
+
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
+    expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
+
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AID'.$suffix, 'name' => 'AI department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'AIF'.$suffix, 'name' => 'AI family']);
+    $artefact->update(['artefact_family_id' => $family->id]);
+    $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['families' => ['AIF'.$suffix], 'steps' => [['task' => 'POUR'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null,
+        'raw_materials'          => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.01]],
+        'artefact_raw_materials' => [['artefact' => 'AI-'.$suffix, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.02]]]]]], 'request_text' => 'the whole family'])
+        ->assertOk()->assertSee(['"code":"AI-'.$suffix.'"', '"quantity":0.02']);
+    $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['families' => ['AIF'.$suffix], 'except' => ['AI-'.$suffix]])->assertHasErrors(['No artefacts left']);
+
+    $recipe([['task' => 'NOPE'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null]])->assertHasErrors(['task NOPE'.$suffix]);
+    expect(fn () => \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::where('label', 'like', 'Create artefact AI-'.$suffix.'%')->firstOrFail(), $user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('a custom product is made for one customer from an artefact waiting for its trade unit', function () {
     list($organisation, , $shop) = createShop();
     $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());

@@ -1,0 +1,338 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 08 Oct 2026, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Mcp\Tools;
+
+use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Production\Artefact\SetArtefactState;
+use App\Actions\Production\Artefact\StoreArtefact;
+use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\ManufactureTask\StoreManufactureTask;
+use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
+use App\Actions\Production\RawMaterial\StoreRawMaterial;
+use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\SysAdmin\McpChange\GetMcpChangeSnapshot;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Enums\SysAdmin\Authorisation\ProductionPermissionsEnum;
+use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
+use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\OrgStock;
+use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ManufactureTask;
+use App\Models\Production\Production;
+use App\Models\Production\RawMaterial;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tool;
+
+/**
+ * Records go through the same store and update actions as the production pages. An artefact is
+ * never created without its SKO: one created bare leaves an in-process twin beside the real one,
+ * which is how awa ended up with ACLB-08 and ACLB-08_.
+ */
+#[Description('Shows, creates or edits the records a production is set up from: artefacts (what is made), raw materials (what it is made from, with their unit cost) and manufacture tasks (the steps people record on the tablets, e.g. POUR, LABEL, PACK). Without code it lists the records of that kind (filter with search, and artefacts with family). With code and no fields it shows that record. With fields it edits the record; to create one pass create=true. A new artefact needs its SKO: pass sko with an existing SKO code, or new_sko to create the stock, its trade unit and the SKO in one go. Recipes (which steps an artefact has and the raw materials each step uses) are set with production-recipe-tool. A raw material linked to a SKO takes its unit cost from the preferred supplier, so a unit_cost set by hand on it is overwritten. Show the user what you will create or change and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
+class ProductionRecordsTool extends Tool
+{
+    use WithMcpPermissions;
+    use WithMcpChangeLog;
+    use WithMcpProduction;
+
+    private const array FIELDS = [
+        'artefact'         => ['code', 'name', 'state', 'recommended_batch_size', 'shelf_life_days', 'family', 'department', 'sko', 'trade_unit'],
+        'raw_material'     => ['code', 'description', 'type', 'state', 'unit', 'unit_cost', 'sko', 'trade_unit'],
+        'manufacture_task' => ['code', 'name', 'description', 'status', 'is_piece_rate'],
+    ];
+
+    public function handle(Request $request): Response
+    {
+        $request->validate([
+            'production'           => ['required', 'string'],
+            'kind'                 => ['required', 'in:artefact,raw_material,manufacture_task'],
+            'code'                 => ['sometimes', 'string'],
+            'search'               => ['sometimes', 'string'],
+            'family'               => ['sometimes', 'string'],
+            'fields'               => ['sometimes', 'array'],
+            'create'               => ['sometimes', 'boolean'],
+            'new_sko'              => ['sometimes', 'array'],
+            'new_sko.units'        => ['required_with:new_sko', 'integer', 'min:1'],
+            'new_sko.name'         => ['sometimes', 'string', 'max:255'],
+            'new_sko.description'  => ['sometimes', 'string', 'max:255'],
+            'request_text'         => ['required_with:fields', 'string', 'max:4000'],
+        ]);
+
+        $production = $this->resolveProduction($request);
+        if ($production instanceof Response) {
+            return $production;
+        }
+
+        $kind = (string) $request->string('kind');
+
+        if (!$request->has('code')) {
+            try {
+                $familyId = $request->has('family') && $kind === 'artefact' ? $this->familyId($production, (string) $request->string('family')) : null;
+            } catch (ValidationException $exception) {
+                return $this->validationError($exception);
+            }
+            if ($request->has('family') && $kind === 'artefact' && !$familyId) {
+                return Response::error("There is no artefact family {$request->string('family')} in {$production->code}. Families: ".ArtefactFamily::where('production_id', $production->id)->orderBy('code')->pluck('code')->unique()->implode(', ').'.');
+            }
+
+            return Response::json($this->index($production, $kind, $request->get('search'), $familyId));
+        }
+
+        $code   = trim((string) $request->string('code'));
+        $record = $this->find($production, $kind, $code);
+
+        if (!$request->has('fields')) {
+            return $record ? Response::json($this->show($kind, $record)) : Response::error("There is no {$kind} {$code} in {$production->organisation->code}.");
+        }
+
+        if (!$this->canInProduction($request, $production, ProductionPermissionsEnum::PRODUCTION_RD_EDIT)) {
+            return $this->cannotEditError($production);
+        }
+
+        $fields  = $request->get('fields');
+        $unknown = array_diff(array_keys($fields), self::FIELDS[$kind]);
+        if ($unknown) {
+            return Response::error('Unknown fields for '.$kind.': '.implode(', ', $unknown).'. Allowed: '.implode(', ', self::FIELDS[$kind]).'. Nothing was changed.');
+        }
+
+        if ($request->boolean('create')) {
+            if ($record) {
+                return Response::error("{$kind} {$code} already exists in {$production->organisation->code}; call again without create to edit it. Nothing was changed.");
+            }
+        } elseif (!$record) {
+            return Response::error("There is no {$kind} {$code} in {$production->organisation->code}. To create it call again with create=true. Nothing was changed.");
+        }
+
+        if ($record && $request->has('new_sko')) {
+            return Response::error("new_sko is only for creating an artefact. To link {$code} to another SKO pass fields.sko. Nothing was changed.");
+        }
+
+        try {
+            $modelData = $this->modelData($production, $kind, $fields);
+
+            if ($kind === 'raw_material' && array_key_exists('unit_cost', $modelData) && ($modelData['org_stock_id'] ?? $record?->org_stock_id)) {
+                return Response::error("{$code} is linked to a SKO, so its unit cost comes from the preferred supplier and a cost set here would be overwritten. Change the supplier cost instead, or unlink the SKO (sko: null) first. Nothing was changed.");
+            }
+
+            if (!$record && $kind === 'artefact' && !Arr::get($modelData, 'org_stock_id') && !$request->has('new_sko')) {
+                return Response::error('A new artefact needs its SKO: pass fields.sko with an existing SKO code, or new_sko {units, name?, description?} to create the stock, trade unit and SKO with the artefact code. Nothing was changed.');
+            }
+
+            $record = $this->recordChange(
+                $request,
+                McpChangeTypeEnum::PRODUCTION_RECORD,
+                ($record ? 'Edit ' : 'Create ').str_replace('_', ' ', $kind).' '.$code.' in '.$production->code,
+                ['kind' => $kind, 'organisation_id' => $production->organisation_id, 'production_id' => $production->id, 'id' => $record?->id, 'code' => $code],
+                fn () => DB::transaction(fn () => $record
+                    ? $this->update($kind, $record, $modelData)
+                    : $this->store($production, $kind, $code, $modelData, $request->get('new_sko'))),
+                ['production' => $production->code]
+            );
+        } catch (ValidationException $exception) {
+            return $this->validationError($exception);
+        }
+
+        return Response::json([
+            'changed'       => (bool) $this->mcpChange,
+            'change_log_id' => $this->mcpChange?->id,
+            ...$this->show($kind, $record->refresh()),
+        ]);
+    }
+
+    /**
+     * Turns the codes the assistant knows (family, SKO, trade unit) into the ids the actions take.
+     */
+    private function modelData(Production $production, string $kind, array $fields): array
+    {
+        $lookups = [
+            'family'     => ['artefact_family_id', fn ($code) => $this->familyId($production, $code)],
+            'department' => ['artefact_department_id', fn ($code) => ArtefactDepartment::where('production_id', $production->id)->whereRaw('lower(code) = ?', [strtolower($code)])->value('id')],
+            'sko'        => ['org_stock_id', fn ($code) => OrgStock::where('organisation_id', $production->organisation_id)->whereRaw('lower(code) = ?', [strtolower($code)])->value('id')],
+            'trade_unit' => ['trade_unit_id', fn ($code) => TradeUnit::where('group_id', $production->group_id)->whereRaw('lower(code) = ?', [strtolower($code)])->value('id')],
+        ];
+
+        $modelData = [];
+        foreach ($fields as $field => $value) {
+            if (!isset($lookups[$field])) {
+                $modelData[$field] = $value;
+                continue;
+            }
+
+            [$column, $lookup] = $lookups[$field];
+            $id = $value === null ? null : $lookup((string) $value);
+            if ($value !== null && !$id) {
+                $options = match ($field) {
+                    'family'     => ' Families: '.ArtefactFamily::where('production_id', $production->id)->orderBy('code')->pluck('code')->implode(', ').'.',
+                    'department' => ' Departments: '.ArtefactDepartment::where('production_id', $production->id)->orderBy('code')->pluck('code')->implode(', ').'.',
+                    default      => '',
+                };
+                throw ValidationException::withMessages([$field => "There is no {$field} {$value} in {$production->organisation->code}.".$options]);
+            }
+            $modelData[$column] = $id;
+        }
+
+        if ($kind === 'artefact' && Arr::get($modelData, 'org_stock_id') && !array_key_exists('trade_unit_id', $modelData)
+            && $tradeUnitId = $this->singleTradeUnitId(OrgStock::find($modelData['org_stock_id'])->stock)) {
+            $modelData['trade_unit_id'] = $tradeUnitId;
+        }
+
+        if ($kind === 'artefact' && array_key_exists('state', $modelData) && !ArtefactStateEnum::tryFrom((string) $modelData['state'])) {
+            throw ValidationException::withMessages(['state' => 'state must be one of: '.implode(', ', ArtefactStateEnum::values()).'.']);
+        }
+
+        return $modelData;
+    }
+
+    private function familyId(Production $production, string $identifier): ?int
+    {
+        $ids = ArtefactFamily::where('production_id', $production->id)
+            ->where(fn ($query) => $query->whereRaw('lower(slug) = ?', [strtolower($identifier)])->orWhereRaw('lower(code) = ?', [strtolower($identifier)]))
+            ->pluck('slug', 'id');
+
+        if ($ids->count() > 1) {
+            throw ValidationException::withMessages(['family' => "More than one family is coded {$identifier}; pass the slug of the one you mean: ".$ids->implode(', ').'.']);
+        }
+
+        return $ids->keys()->first();
+    }
+
+    private function store(Production $production, string $kind, string $code, array $modelData, ?array $newSko): Artefact|RawMaterial|ManufactureTask
+    {
+        $modelData['code'] = $code;
+
+        return match ($kind) {
+            'artefact'         => StoreArtefact::make()->action($production, $newSko && !Arr::get($modelData, 'org_stock_id') ? [...$modelData, ...$this->newSko($production, $modelData, $newSko)] : $modelData),
+            'raw_material'     => StoreRawMaterial::make()->action($production, $modelData),
+            'manufacture_task' => StoreManufactureTask::make()->action($production, $modelData),
+        };
+    }
+
+    /**
+     * An existing group stock with this code only needs its SKO in this organisation.
+     */
+    private function newSko(Production $production, array $modelData, array $newSko): array
+    {
+        $stock = Stock::where('group_id', $production->group_id)->whereRaw('lower(code) = ?', [strtolower($modelData['code'])])->first()
+            ?? StoreStock::make()->action($production->group, [
+                'code'       => $modelData['code'],
+                'name'       => $newSko['name'] ?? $modelData['name'] ?? $modelData['code'],
+                'units'      => $newSko['units'],
+                'trade_unit' => ['description' => $newSko['description'] ?? $newSko['name'] ?? $modelData['name'] ?? $modelData['code']],
+            ]);
+
+        $orgStock = OrgStock::where('organisation_id', $production->organisation_id)->where('stock_id', $stock->id)->first()
+            ?? StoreOrgStock::make()->action($production->organisation, $stock);
+
+        return [
+            'org_stock_id'  => $orgStock->id,
+            'trade_unit_id' => $this->singleTradeUnitId($stock),
+        ];
+    }
+
+    private function singleTradeUnitId(Stock $stock): ?int
+    {
+        $tradeUnitIds = $stock->tradeUnits()->pluck('trade_units.id');
+
+        return $tradeUnitIds->count() === 1 ? $tradeUnitIds->first() : null;
+    }
+
+    private function update(string $kind, Artefact|RawMaterial|ManufactureTask $record, array $modelData): Artefact|RawMaterial|ManufactureTask
+    {
+        if ($record instanceof Artefact) {
+            if ($state = Arr::pull($modelData, 'state')) {
+                SetArtefactState::make()->action($record, ArtefactStateEnum::from($state));
+            }
+
+            return $modelData ? UpdateArtefact::make()->action($record, $modelData) : $record;
+        }
+
+        return match ($kind) {
+            'raw_material'     => UpdateRawMaterial::make()->action($record, $modelData),
+            'manufacture_task' => UpdateManufactureTask::make()->action($record, $modelData),
+        };
+    }
+
+    private function find(Production $production, string $kind, string $code): Artefact|RawMaterial|ManufactureTask|null
+    {
+        return $this->query($production, $kind)->whereRaw('lower(code) = ?', [strtolower($code)])->first();
+    }
+
+    private function query(Production $production, string $kind)
+    {
+        return match ($kind) {
+            'artefact'         => Artefact::where('production_id', $production->id),
+            'raw_material'     => RawMaterial::where('organisation_id', $production->organisation_id),
+            'manufacture_task' => ManufactureTask::where('production_id', $production->id),
+        };
+    }
+
+    private function index(Production $production, string $kind, ?string $search, ?int $familyId): array
+    {
+        $records = $this->query($production, $kind)
+            ->when($familyId, fn ($query) => $query->where('artefact_family_id', $familyId))
+            ->when($search, fn ($query) => $query->where(fn ($query) => $query
+                ->whereRaw('code ilike ?', ['%'.$search.'%'])
+                ->orWhereRaw(($kind === 'raw_material' ? 'description' : 'name').' ilike ?', ['%'.$search.'%'])))
+            ->with(match ($kind) {
+                'artefact'         => ['artefactFamily:id,code', 'artefactDepartment:id,code', 'orgStock:id,code', 'tradeUnit:id,code'],
+                'raw_material'     => ['orgStock:id,code', 'tradeUnit:id,code', 'organisation.currency'],
+                'manufacture_task' => [],
+            })
+            ->orderBy('code')
+            ->limit(300)
+            ->get();
+
+        return [
+            'production' => $production->code,
+            'kind'       => $kind,
+            'records'    => $records->map(fn ($record) => $this->show($kind, $record))->all(),
+            'truncated'  => $records->count() === 300,
+        ];
+    }
+
+    private function show(string $kind, Artefact|RawMaterial|ManufactureTask $record): array
+    {
+        $fields = Arr::only($record->getAttributes(), GetMcpChangeSnapshot::PRODUCTION_RECORD_FIELDS[$kind]);
+        unset($fields['id'], $fields['org_stock_id'], $fields['trade_unit_id'], $fields['artefact_family_id'], $fields['artefact_department_id']);
+
+        return match ($kind) {
+            'artefact'         => [...$fields, 'family' => $record->artefactFamily?->code, 'department' => $record->artefactDepartment?->code, 'sko' => $record->orgStock?->code, 'trade_unit' => $record->tradeUnit?->code],
+            'raw_material'     => [...$fields, 'sko' => $record->orgStock?->code, 'trade_unit' => $record->tradeUnit?->code, 'currency' => $record->organisation->currency->code],
+            'manufacture_task' => $fields,
+        };
+    }
+
+    /**
+     * @return array<string, JsonSchema>
+     */
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'production'   => $schema->string()->description('Production slug or code, e.g. awa')->required(),
+            'kind'         => $schema->string()->enum(['artefact', 'raw_material', 'manufacture_task'])->required(),
+            'code'         => $schema->string()->description('Code of the record to show, edit or create. Omit to list'),
+            'search'       => $schema->string()->description('When listing: text in code or name/description'),
+            'family'       => $schema->string()->description('When listing artefacts: only those in this family (code or slug)'),
+            'fields'       => $schema->object()->description('Fields to set. artefact: code, name, state (in_process, active, dormant, discontinued), recommended_batch_size, shelf_life_days, family (artefact family code), department, sko (SKO code), trade_unit. raw_material: code, description, type (stock, consumable, intermediate), state, unit (unit, pack, carton, liter, kilogram), unit_cost (organisation currency, per unit), sko, trade_unit (unit_cost only when not linked to a SKO). manufacture_task: code, name, description, status (true = active), is_piece_rate. Null clears a link'),
+            'create'       => $schema->boolean()->description('true to create the record with this code'),
+            'new_sko'      => $schema->object()->description('New artefact only, when its SKO does not exist yet: {units: trade units per SKO, name?: SKO name, description?: trade unit description}. Creates the stock and trade unit (group-wide, with the artefact code) and the SKO in this organisation'),
+            'request_text' => $schema->string()->description('The user\'s request, verbatim; required when writing'),
+        ];
+    }
+}

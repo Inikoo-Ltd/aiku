@@ -11,7 +11,9 @@ namespace App\Models\Production;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Models\Analytics\AikuSection;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Role;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
@@ -117,6 +119,23 @@ class Production extends Model implements Auditable
     public function roles(): MorphMany
     {
         return $this->morphMany(Role::class, 'scope');
+    }
+
+    /**
+     * Who may set this production up through an AI assistant: group admins, organisation admins,
+     * R&D of this production, and the shop admins and shopkeepers of the organisation's shops,
+     * who sell what it makes.
+     */
+    public function canBeSetUpBy(User $user, bool $toEdit = true): bool
+    {
+        setPermissionsTeamId($user->group_id);
+
+        return $user->authTo([
+            'sysadmin.edit',
+            'org-supervisor.'.$this->organisation_id,
+            "productions_rd.{$this->id}.".($toEdit ? 'edit' : 'view'),
+            ...Shop::where('organisation_id', $this->organisation_id)->pluck('id')->map(fn (int $shopId) => "products.{$shopId}.edit"),
+        ]);
     }
 
     public function rawMaterials(): HasMany
