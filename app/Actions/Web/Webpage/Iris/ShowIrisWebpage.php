@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\Iris;
 use App\Actions\Web\WebsiteNotFoundPath\RecordWebsiteNotFoundHit;
 use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Actions\Web\Webpage\GetWebpageHreflangAlternates;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Actions\Web\Webpage\WithWebpageSeoData;
@@ -100,6 +101,7 @@ class ShowIrisWebpage
                 'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
+                'hreflang'      => GetWebpageHreflangAlternates::run($webpage),
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
                 'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc

@@ -28,6 +28,7 @@ const props = defineProps<{
 		share_image?: { url?: string; alt?: string }
 		structured_data?: Record<string, any> | Array<Record<string, any>>
 		structured_data_types?: string[]
+		hreflang?: { hreflang: string; href: string }[]
 	}
 	structuredDataSource?: WebpageStructuredDataSource | null
 	stacked?: boolean
@@ -134,6 +135,19 @@ const robotFlags = computed(() => [
 						<FontAwesomeIcon :icon="flag.on ? faCheckCircle : faTimesCircle" :class="flag.on ? 'text-green-600' : 'text-red-500'" fixed-width />
 						{{ flag.label }}
 					</span>
+				</div>
+
+				<div class="border-t pt-4">
+					<dt class="text-xs text-gray-500">{{ ctrans("Language versions (hreflang)") }}</dt>
+					<dd v-if="seo.hreflang?.length" class="mt-1 space-y-1">
+						<div v-for="alternate in seo.hreflang" :key="alternate.hreflang" class="flex gap-2 text-sm">
+							<span class="w-20 shrink-0 font-mono text-xs leading-5 text-gray-500">{{ alternate.hreflang }}</span>
+							<a :href="alternate.href" target="_blank" rel="noopener" class="break-all text-[--app-accent] hover:underline">{{ alternate.href }}</a>
+						</div>
+					</dd>
+					<dd v-else class="text-sm italic text-gray-400">
+						{{ ctrans("None. Set a hreflang group on the website, and this page needs a live, indexed counterpart on another website of the group.") }}
+					</dd>
 				</div>
 			</dl>
 
