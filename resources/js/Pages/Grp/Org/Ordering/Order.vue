@@ -1631,6 +1631,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             </div>
         </template>
 
+        <template #button-add-product-to-warehouse-order="{ action }">
+            <Button v-if="currentTab === 'transactions'" :style="action.style" :label="action.label" :icon="action.icon" :tooltip="action.tooltip"
+                @click="() => _refComponents?.openModal(action)" />
+        </template>
+
         <template #button-invoice-only="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="invoiceOnlyLoading"
