@@ -570,8 +570,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'info', label: __('SKO description'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('SKOs'), canBeHidden: false, align: 'right')
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
-                ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true);
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right');
 
             if ($this->isSentView) {
                 $table
