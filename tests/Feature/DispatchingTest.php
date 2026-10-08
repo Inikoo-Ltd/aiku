@@ -4986,6 +4986,29 @@ test('delivery note tariff codes use the organisation override for the national 
         ->and((bool) $row->is_incomplete)->toBeFalse();
 });
 
+test('delivery note tariff codes describe a code by its export name, falling back to the official heading (HELP-3823)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $tradeUnit                         = $deliveryNoteItem->orgStock->tradeUnits->first();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, [
+        'tariff_code'       => '3307 41 0000',
+        'origin_country_id' => $this->organisation->country_id,
+    ]);
+
+    $heading = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'level' => 6, 'description' => 'Agarbatti and other odoriferous preparations which operate by burning']);
+    $named   = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '3307410000'], ['section' => 'VI', 'level' => 10, 'description' => 'Agarbatti']);
+    $named->update(['name' => 'Incense sticks for home fragrance']);
+    $heading->update(['name' => null]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
+        ->toBe('Incense sticks for home fragrance');
+
+    $named->update(['name' => null]);
+    expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
+        ->toBe($heading->description);
+});
+
 test('a two-part product splits its transaction amount between the parts by cost instead of counting it twice (HELP-3131)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->deliveryNoteItems()->whereKeyNot($deliveryNoteItem->id)->delete();
