@@ -286,6 +286,21 @@ class ShowWebpage extends OrgAction
         ];
     }
 
+    /**
+     * A page kept out of the index is never measured: nobody tunes an advert page for search
+     * results, so its report is not offered and no PageSpeed run is spent on it. What it is
+     * judged on instead is how the visitors it is bought for behave. A page that is not live
+     * has nothing published to measure, so it gets no report either.
+     */
+    public function realUserSpeedProp(Webpage $webpage, string $tab): mixed
+    {
+        return match (true) {
+            (bool)$webpage->sub_type?->isHiddenFromSearchEngines(), $webpage->state != WebpageStateEnum::LIVE => null,
+            in_array($tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'real_user_speed'),
+            default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
+        };
+    }
+
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
@@ -314,17 +329,7 @@ class ShowWebpage extends OrgAction
 
         $isHiddenFromSearchEngines = (bool)$webpage->sub_type?->isHiddenFromSearchEngines();
 
-        /**
-         * A page kept out of the index is never measured: nobody tunes an advert page for search
-         * results, so its report is not offered and no PageSpeed run is spent on it. What it is
-         * judged on instead is how the visitors it is bought for behave. A page that is not live
-         * has nothing published to measure, so it gets no report either.
-         */
-        $realUserSpeed = match (true) {
-            $isHiddenFromSearchEngines, $webpage->state != WebpageStateEnum::LIVE => null,
-            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'real_user_speed'),
-            default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
-        };
+        $realUserSpeed = $this->realUserSpeedProp($webpage, $this->tab);
 
         return Inertia::render(
             'Org/Web/Webpage',
