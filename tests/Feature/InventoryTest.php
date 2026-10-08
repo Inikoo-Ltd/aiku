@@ -4287,45 +4287,27 @@ describe('discontinue authorisation', function () {
             ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
     });
 
-    test('a buyer can change status in their own organisation but is refused group scope and organisation overrides', function () {
-        setPermissionsTeamId($this->authUser->group_id);
-        $this->authUser->syncRoles([RolesEnum::getRoleName(RolesEnum::PROCUREMENT_CLERK->value, $this->organisation)]);
-        Cache::tags('auth-user:'.$this->authUser->id)->flush();
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    test('buyers and supply chain workers are refused, only supply chain managers discontinue', function () {
+        $orgStock = $this->authOrgStocks[0];
 
-        $orgStock      = $this->authOrgStocks[0];
-        $otherOrgStock = $this->authOtherOrgStocks[0];
+        foreach ([
+            RolesEnum::getRoleName(RolesEnum::PROCUREMENT_CLERK->value, $this->organisation),
+            RolesEnum::getRoleName(RolesEnum::SUPPLY_CHAIN_WORKER->value, $this->group),
+        ] as $role) {
+            setPermissionsTeamId($this->authUser->group_id);
+            $this->authUser->syncRoles([$role]);
+            Cache::tags('auth-user:'.$this->authUser->id)->flush();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
-            'org_stock_ids' => [$orgStock->id],
-            'state'         => OrgStockStateEnum::DISCONTINUING->value,
-            'scope'         => 'organisation',
-            'reason'        => 'buyer scoped change',
-        ], $this->authUser);
+            expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+                'org_stock_ids' => [$orgStock->id],
+                'state'         => OrgStockStateEnum::DISCONTINUING->value,
+                'scope'         => 'organisation',
+                'reason'        => 'not a manager',
+            ], $this->authUser))->toThrow(ValidationException::class);
+        }
 
-        expect($stats['changed'])->toBe(1)
-            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
-            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
-
-        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
-            'org_stock_ids' => [$orgStock->id],
-            'state'         => OrgStockStateEnum::ACTIVE->value,
-        ], $this->authUser))->toThrow(ValidationException::class);
-
-        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
-            'org_stock_ids'       => [$orgStock->id],
-            'state'               => OrgStockStateEnum::DISCONTINUING->value,
-            'scope'               => 'organisation',
-            'organisation_states' => ['other' => OrgStockStateEnum::ACTIVE->value],
-            'reason'              => 'attempted override',
-        ], $this->authUser))->toThrow(ValidationException::class);
-
-        expect(fn () => DiscontinueOrgStocks::make()->action($this->authOtherOrganisation, [
-            'org_stock_ids' => [$otherOrgStock->id],
-            'state'         => OrgStockStateEnum::DISCONTINUING->value,
-            'scope'         => 'organisation',
-            'reason'        => 'wrong organisation',
-        ], $this->authUser))->toThrow(ValidationException::class);
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
     });
 
     test('a user with neither permission is refused by the action and the controller', function () {
@@ -4367,7 +4349,7 @@ describe('discontinue authorisation', function () {
             'state'        => 'discontinuing',
             'reason'       => 'no permission via mcp',
             'request_text' => 'please discontinue',
-        ])->assertHasErrors(['Changing every organisation needs the Supply Chain Manager permission']);
+        ])->assertHasErrors(['Discontinuing SKOs needs the Supply Chain Manager permission']);
 
         expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
     });

@@ -57,8 +57,13 @@ use App\Models\Helpers\Currency;
 use Illuminate\Validation\ValidationException;
 use App\Models\SupplyChain\SupplierProduct;
 use Inertia\Testing\AssertableInertia;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\PermissionRegistrar;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -752,6 +757,24 @@ test('UI show supplier product in supply chain', function (SupplierProduct $supp
     expect($showcase['composition'])->toBeArray();
 })->depends('create supplier product independent supplier');
 
+
+test('a supply chain worker edits a supplier product but only a manager discontinues it', function (SupplierProduct $supplierProduct) {
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles()->pluck('name')->all();
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles([RolesEnum::getRoleName(RolesEnum::SUPPLY_CHAIN_WORKER->value, $this->group)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+
+    patch(route('grp.models.supplier-product.update', $supplierProduct->id), ['name' => 'Worker renamed'])->assertRedirect();
+    patch(route('grp.models.supplier-product.update', $supplierProduct->id), ['state' => SupplierProductStateEnum::DISCONTINUED->value])->assertForbidden();
+    expect($supplierProduct->refresh()->state)->not->toBe(SupplierProductStateEnum::DISCONTINUED);
+
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+})->depends('create supplier product independent supplier');
 
 test('create trade unit', function () {
     $tradeUnit = StoreTradeUnit::make()->action(
