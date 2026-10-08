@@ -419,8 +419,9 @@ class DraftChatReply implements ShouldBeUnique
      */
     private function storeDraft(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $trigger, ChatTopicEnum $topic, array $facts, string $reply): ChatAiDraft
     {
-        $shop  = $chatSession->shop;
-        $draft = DB::transaction(function () use ($chatSession, $shop, $trigger, $topic, $facts, $reply) {
+        $shop   = $chatSession->shop;
+        $shadow = self::isShadow($shop->slug, $facts);
+        $draft  = DB::transaction(function () use ($chatSession, $shop, $trigger, $topic, $facts, $reply, $shadow) {
             $this->pendingDraft($chatSession)?->update(['status' => ChatAiDraftStatusEnum::SUPERSEDED, 'decided_at' => now()]);
 
             $draft = ChatAiDraft::create([
@@ -431,17 +432,21 @@ class DraftChatReply implements ShouldBeUnique
                 'meta_chat_session_id' => $chatSession instanceof MetaChatSession ? $chatSession->id : null,
                 'trigger_message_id'   => $trigger->id,
                 'topic'                => $topic,
-                'facts'                => $facts,
+                'facts'                => $shadow ? $facts + ['shadow' => true] : $facts,
                 'text'                 => $reply,
                 'status'               => ChatAiDraftStatusEnum::PENDING,
             ]);
 
-            DB::afterCommit(fn () => BroadcastChatAiDraft::dispatch($chatSession, $draft));
+            if (!$shadow) {
+                DB::afterCommit(fn () => BroadcastChatAiDraft::dispatch($chatSession, $draft));
+            }
 
             return $draft;
         });
 
-        SendChatAiAnswer::run($draft);
+        if (!$shadow) {
+            SendChatAiAnswer::run($draft);
+        }
 
         return $draft->refresh();
     }
@@ -580,6 +585,17 @@ class DraftChatReply implements ShouldBeUnique
     public static function answersOurQuestion(string $weSaid, string $text): bool
     {
         return str_ends_with(rtrim($weSaid), '?') && !str_contains($text, '?');
+    }
+
+    /**
+     * A suggestion on a shop where suggestions are still too often wrong: kept and scored against
+     * what staff send, never shown, so a bad card does not teach staff to ignore the box.
+     *
+     * @param  array<string, mixed>  $facts
+     */
+    public static function isShadow(string $shopSlug, array $facts): bool
+    {
+        return ($facts['mode'] ?? null) === self::SUGGESTION && in_array($shopSlug, config('chat.suggestion_shadow_shops'), true);
     }
 
     public static function pendingDraft(ChatSession|MetaChatSession $chatSession): ?ChatAiDraft
