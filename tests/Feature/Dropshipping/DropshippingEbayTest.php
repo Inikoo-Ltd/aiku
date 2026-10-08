@@ -831,6 +831,25 @@ test('uploading a sku that already has an offer on eBay replaces that offer inst
     sentEbayRequest('POST', '/sell/inventory/v1/offer/offer-existing/publish');
 });
 
+test('re-uploading a live listing that does not follow our price keeps the seller price and category on eBay', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['customer_price' => 20, 'settings' => ['pricing' => ['type' => 'not_follow', 'value' => null], 'pricing_opt_out' => true]]);
+
+    $existing = ['offerId' => 'offer-live', 'sku' => $portfolio->sku, 'status' => 'PUBLISHED', 'categoryId' => '77777', 'format' => 'FIXED_PRICE'];
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(offersForSku: [$existing], offerById: $existing),
+    ]);
+
+    StoreEbayProduct::run($ebayUser, $portfolio->refresh());
+
+    $replaced = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-live')->data();
+
+    expect($replaced['pricingSummary']['price']['value'])->toBe('9.99')
+        ->and($replaced['categoryId'])->toBe('77777');
+});
+
 test('uploading a sku whose offer on eBay points at an old postage policy moves the offer onto the channel policies', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);

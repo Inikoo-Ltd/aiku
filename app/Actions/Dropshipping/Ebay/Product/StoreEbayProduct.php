@@ -281,18 +281,27 @@ class StoreEbayProduct extends RetinaAction
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
 
-                $updatedOffer = $ebayUser->updateOffer(
-                    Arr::get($offer, 'offerId'),
-                    [
-                        'sku' => Arr::get($inventoryItem, 'sku'),
-                        'description' => Arr::get($inventoryItem, 'product.description'),
-                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
-                        'price' => $customerPrice,
-                        'currency' => $portfolio->shop->currency->code,
-                        'category_id' => $categoryId,
-                        'use_channel_policies' => true
-                    ]
-                );
+                $offerData = [
+                    'sku' => Arr::get($inventoryItem, 'sku'),
+                    'description' => Arr::get($inventoryItem, 'product.description'),
+                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
+                    'currency' => $portfolio->shop->currency->code,
+                    'use_channel_policies' => true
+                ];
+
+                if (self::sendsOurPrice($portfolio)) {
+                    $offerData['price'] = $customerPrice;
+                }
+
+                $isLive = Arr::get($offer, 'status') === 'PUBLISHED' && filled(Arr::get($offer, 'categoryId'));
+
+                if ($isLive) {
+                    $categoryId = Arr::get($offer, 'categoryId');
+                } else {
+                    $offerData['category_id'] = $categoryId;
+                }
+
+                $updatedOffer = $ebayUser->updateOffer(Arr::get($offer, 'offerId'), $offerData);
 
                 if ($handleError($updatedOffer)) {
                     return $portfolio;
@@ -412,6 +421,12 @@ class StoreEbayProduct extends RetinaAction
         $updatedOffer = $ebayUser->refresh()->updateOffer($offerId, ['use_channel_policies' => true]);
 
         return !Arr::hasAny((array) $updatedOffer, ['error', 'errors']);
+    }
+
+    public static function sendsOurPrice(Portfolio $portfolio): bool
+    {
+        return !Arr::get($portfolio->customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow';
     }
 
     /**
