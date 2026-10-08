@@ -1362,3 +1362,43 @@ test('department families list takes collection families only from active collec
         ->not->toContain($familyFromOtherModelCollection->id)
         ->not->toContain($familyFromInactiveCollection->id);
 });
+
+test('iris variant shows its option groups and options in the shop language and still matches each product to its options', function () {
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['is_for_sale' => true]);
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $product->group_id,
+        'code'     => $product->code.'-plug',
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id'   => $masterVariant->id,
+        'group_id'            => $product->group_id,
+        'organisation_id'     => $product->organisation_id,
+        'shop_id'             => $product->shop_id,
+        'family_id'           => $product->family_id,
+        'code'                => $product->code.'-plug',
+        'leader_id'           => $product->id,
+        'data'                => [
+            'groupBy'  => 'Plug',
+            'variants' => [['label' => 'Plug', 'options' => ['UK Plug', 'EU Plug']]],
+            'products' => [$product->id => ['Plug' => 'EU Plug', 'is_leader' => true, 'product' => ['id' => $product->id]]],
+        ],
+        'option_translations' => ['Plug' => 'Wtyczka', 'EU Plug' => 'Wtyczka UE', 'UK Plug' => ''],
+    ]);
+    $product->updateQuietly(['variant_id' => $variant->id]);
+
+    $variantAndProducts = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant);
+
+    expect(\App\Actions\Catalogue\Variant\LocaliseVariantData::make()->terms($variant->data))->toBe(['Plug', 'UK Plug', 'EU Plug'])
+        ->and($variantAndProducts['variant_data']['variants'])->toBe([['label' => 'Wtyczka', 'options' => ['UK Plug', 'Wtyczka UE']]])
+        ->and($variantAndProducts['variant_data']['products'][$product->id]['Wtyczka'])->toBe('Wtyczka UE')
+        ->and($variantAndProducts['variant_data']['products'][$product->id])->not->toHaveKey('Plug')
+        ->and($variantAndProducts['products'][0]['variant_axis_label'])->toBe('Wtyczka');
+
+    \App\Actions\Catalogue\Variant\UpdateVariant::make()->action($variant, ['option_translations' => ['Plug' => 'Wtyczka', 'UK Plug' => 'Wtyczka UK', 'EU Plug' => '', '0.5kg' => '0,5 kg']]);
+
+    expect($variant->refresh()->option_translations)->toEqual(['Plug' => 'Wtyczka', 'UK Plug' => 'Wtyczka UK', '0.5kg' => '0,5 kg']);
+});

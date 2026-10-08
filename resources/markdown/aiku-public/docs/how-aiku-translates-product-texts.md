@@ -1,10 +1,10 @@
 ---
 title: How aiku translates product texts
 summary: Product and family names and descriptions arrive in your shop's language by machine translation. What the translator is told, how the stars under a translated text work, and how your corrections teach it.
-date: 2026-10-02
+date: 2026-10-07
 tags: catalogue, website, translations
 category: catalogue
-help_routes: grp.org.shops.show.catalogue.families.edit, grp.org.shops.show.catalogue.families.show.products.edit, grp.org.shops.show.catalogue.products.current_products.edit
+help_routes: grp.org.shops.show.catalogue.families.edit, grp.org.shops.show.catalogue.families.show.variants.edit, grp.org.shops.show.catalogue.families.show.products.edit, grp.org.shops.show.catalogue.products.current_products.edit
 ---
 
 <aside class="tldr">
@@ -35,6 +35,12 @@ Under a name or description that nobody has reviewed yet, the edit page shows **
 Then fix the text and save as usual. aiku keeps the English text, the machine's version, your version and your stars together. Recent corrections are shown to the translator as examples, so the same mistake should stop coming back in your language.
 
 Only the first rewrite of a machine text counts as a correction. Once you have saved a text it is yours, the person icon appears, and later edits to it are not treated as fixing the machine.
+
+## Variant options
+
+Products sold as a variant show a picker on the website, for example **Choose Plug** with **UK Plug**, **EU Plug** and **None**. Those option groups and options come from the master in English, so aiku translates them into your shop's language too: when a variant is created and whenever its options change, only the names that have no translation yet.
+
+To check or fix them, open the variant and click **Edit**. Under **Option names on the website** each English name sits next to the name your customers see. Change any of them and save; the website shows the new name straight away. A box left empty shows the English name. Your names are never overwritten by the translator. The field is not shown in shops in English.
 
 ## What it does not fix
 

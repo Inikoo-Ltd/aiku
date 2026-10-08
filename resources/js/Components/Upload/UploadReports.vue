@@ -34,6 +34,7 @@ interface UploadReport {
     fail_reasons: FailReason[]
     records_route: routeType
     download_route: routeType
+    preview_route?: routeType | null
 }
 
 interface UploadRecord {
@@ -293,6 +294,11 @@ const recordErrors = (record: UploadRecord): string[] => {
                                         :aria-label="ctrans('Download')"
                                         v-tooltip="ctrans('Download')">
                                         <FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+                                    </a>
+                                    <a v-if="upload.preview_route"
+                                        :href="route(upload.preview_route.name, upload.preview_route.parameters)"
+                                        class="font-medium text-[--app-accent-strong] hover:underline">
+                                        {{ ctrans('Open preview') }}
                                     </a>
                                 </div>
                             </div>

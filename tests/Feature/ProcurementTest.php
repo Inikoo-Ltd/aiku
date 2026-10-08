@@ -580,6 +580,7 @@ test('agent manager only sees their own agent organisation', function () {
             'grp.org.procurement.agent_supplier_purchase_orders.',
             'grp.org.procurement.stock_deliveries.',
             'grp.org.procurement.org_suppliers.',
+            'grp.org.procurement.org_supplier_products.',
             'grp.org.procurement.supplier_messages.',
             'grp.org.procurement.settings.',
         ]);
@@ -1212,6 +1213,20 @@ test('suppliers set to receive purchase orders by email get an email button on t
             )));
 
     UpdateSupplier::make()->action($orgSupplier->supplier, ['po_by_email' => false]);
+});
+
+test('searching a purchase order tab table keeps that tab when the url has no tab', function () {
+    $purchaseOrder = $this->purchaseOrder;
+    $showUrl       = route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]);
+
+    $this->get($showUrl.'?products_filter%5Bglobal%5D=orgbokg&products_sort=code')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'products'));
+
+    $this->get($showUrl.'?notesPage=2')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'notes'));
+
+    $this->get($showUrl.'?tab=history&products_filter%5Bglobal%5D=orgbokg')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'history'));
 });
 
 test('purchase order page has an edit button to change its reference', function () {
@@ -2827,12 +2842,54 @@ test('a rescue line orders at least a month of sales, never more than the partne
     $buckets  = GetPartnerStockCoverBuckets::make();
     $quantity = fn (string $spare) => DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
-        from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os,
+        from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available, 1 as packed_in) os,
             (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
     )->quantity;
 
     expect((int) $quantity('500'))->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
         ->and((int) $quantity('12'))->toBe(12);
+});
+
+test('a rescue line to a sister company is rounded up to the partner\'s carton while it can spare it and it lasts under a year', function () {
+    $stock       = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $sellerStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->partner, $stock);
+    $linkId      = DB::table('org_stock_has_org_supplier_products')->insertGetId([
+        'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $stock->id, 'supplier_product_id' => $this->orgSupplierProduct->supplier_product_id]),
+        'org_stock_id'            => $sellerStock->id,
+        'org_supplier_product_id' => $this->orgSupplierProduct->id,
+        'status'                  => true,
+        'local_priority'          => 1,
+        'created_at'              => now(),
+        'updated_at'              => now(),
+    ]);
+    $supplierProduct = $this->orgSupplierProduct->supplierProduct;
+    $unitsPerCarton  = $supplierProduct->units_per_carton;
+    $supplierProduct->updateQuietly(['units_per_carton' => 24]);
+
+    $buckets  = GetPartnerStockCoverBuckets::make();
+    $quantity = fn (string $spare, float $usage) => (int) DB::selectOne(
+        'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
+        from (select '.$usage.' as predicted_daily_usage) s, (select 3 as quantity_available, 2 as packed_in) os,
+            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, '.$sellerStock->id.' as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
+    )->quantity;
+
+    $partner = $this->orgPartner->partner;
+    $wasHub  = $partner->is_manufacturing_hub;
+    try {
+        $partner->is_manufacturing_hub = false;
+        $rounded   = $quantity('500', 0.1);
+        $unsold    = $quantity('500', 0.01);
+        $tooScarce = $quantity('10', 0.1);
+    } finally {
+        $partner->is_manufacturing_hub = $wasHub;
+    }
+
+    $supplierProduct->updateQuietly(['units_per_carton' => $unitsPerCarton]);
+    DB::table('org_stock_has_org_supplier_products')->where('id', $linkId)->delete();
+
+    expect($rounded)->toBe(12)
+        ->and($unsold)->toBe(1)
+        ->and($tooScarce)->toBe(3);
 });
 
 test('a sku on a rescue being prepared for another sister company is not offered again', function () {
@@ -6575,22 +6632,83 @@ describe('partner shopping list', function () {
             ->and(PartnerShoppingListItem::find($ours->id))->not->toBeNull();
     });
 
-    test('over http only drafts can be changed or removed, sent lines are the partner\'s', function () {
-        $open  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+    test('over http drafts and sent lines the partner has not started can be changed or removed, started lines are the partner\'s', function () {
+        $started = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $started->update(['preparing_at' => now()]);
+        $waiting = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
         $draft = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
         $route = fn (string $name, PartnerShoppingListItem $item) => route("grp.org.procurement.org_partners.show.shopping_list.$name", [$this->organisation->slug, $this->orgPartner->id, $item->id]);
 
         actingAs($this->adminGuest->getUser());
-        $this->patch($route('update', $open), ['priority' => 'high'])->assertStatus(422);
-        $this->delete($route('destroy', $open))->assertStatus(422);
+
+        $sentRows = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+        expect($sentRows[$waiting->id]['is_editable'])->toBeTrue()
+            ->and($sentRows[$started->id]['is_editable'])->toBeFalse();
+
+        $otherPartnerOrganisation = Organisation::where('id', '!=', $this->organisation->id)->where('group_id', $this->organisation->group_id)->firstOrFail();
+        $otherOrgPartner          = OrgPartner::where('organisation_id', $this->organisation->id)->where('partner_id', $otherPartnerOrganisation->id)->first()
+            ?? StoreOrgPartner::make()->action($this->organisation, $otherPartnerOrganisation);
+        $foreignUrl = fn (string $name) => route("grp.org.procurement.org_partners.show.shopping_list.$name", [$this->organisation->slug, $otherOrgPartner->id, $waiting->id]);
+        $this->patch($foreignUrl('update'), ['quantity' => 1, 'break_batch' => true])->assertNotFound();
+        $this->delete($foreignUrl('destroy'))->assertNotFound();
+
+        $this->patch($route('update', $started), ['priority' => 'high'])->assertStatus(422);
+        $this->delete($route('destroy', $started))->assertStatus(422);
+        $this->patch($route('update', $waiting), ['priority' => 'high', 'quantity' => 2, 'break_batch' => true])->assertRedirect();
         $this->patch($route('update', $draft), ['priority' => 'high'])->assertRedirect();
         $this->delete($route('destroy', $draft))->assertRedirect();
 
-        expect($open->refresh()->priority)->not->toBe(ShoppingListItemPriorityEnum::HIGH)
+        expect($started->refresh()->priority)->not->toBe(ShoppingListItemPriorityEnum::HIGH)
+            ->and($waiting->refresh()->priority)->toBe(ShoppingListItemPriorityEnum::HIGH)
+            ->and((float) $waiting->quantity)->toBe(2.0)
             ->and(PartnerShoppingListItem::find($draft->id))->toBeNull();
+
+        $this->delete($route('destroy', $waiting))->assertRedirect();
+        expect(PartnerShoppingListItem::find($waiting->id))->toBeNull();
     });
 
-    test('the ongoing PO lists the drafts and sent lists what was submitted, read only', function () {
+    test('the buyer can poke the partner production about a sent line, once an hour, until it is delivered', function () {
+        Notification::fake();
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $poker     = $this->adminGuest->getUser();
+        $recipient = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+        setPermissionsTeamId($this->organisation->group_id);
+        $recipient->givePermissionTo("productions_operations.$production->id.orchestrate");
+
+        $delivered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $delivered->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $waiting = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $poke = fn (PartnerShoppingListItem $item, ?OrgPartner $orgPartner = null) => $this->postJson(route('grp.org.procurement.org_partners.show.shopping_list.poke', [$this->organisation->slug, ($orgPartner ?? $this->orgPartner)->id, $item->id]));
+
+        try {
+            actingAs($poker);
+            $sentRows = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'])->keyBy('id');
+            expect($sentRows[$waiting->id]['can_be_poked'])->toBeTrue();
+
+            $poke($delivered)->assertStatus(422);
+            expect((int) $poke($waiting)->assertOk()->getContent())->toBeGreaterThanOrEqual(1);
+            $poke($waiting)->assertStatus(429);
+            expect($waiting->refresh()->poked_at)->not->toBeNull()
+                ->and($waiting->poked_by_user_id)->toBe($poker->id);
+
+            $board = collect(get(route('grp.org.productions.show.to_produce.list', [$seller->slug, $production->slug]))->viewData('page')['props']['data']['data'])->keyBy('id');
+            expect($board[$waiting->id]['poked_at'])->not->toBeNull();
+
+            $waiting->update(['poked_at' => now()->subHours(2)]);
+            $poke($waiting)->assertOk();
+
+            Notification::assertSentToTimes($recipient, \App\Notifications\PartnerLinePokedNotification::class, 2);
+            Notification::assertNotSentTo($poker, \App\Notifications\PartnerLinePokedNotification::class);
+        } finally {
+            $recipient->revokePermissionTo("productions_operations.$production->id.orchestrate");
+        }
+    });
+
+    test('the ongoing PO lists the drafts and sent lists what was submitted', function () {
         $ordered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $ordered->update(['state' => ShoppingListItemStateEnum::ORDERED]);
         $open  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
@@ -6622,8 +6740,10 @@ describe('partner shopping list', function () {
     test('removing a line with do not suggest again keeps the SKO out of prepared orders until unblocked', function () {
         $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
         PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
-        $this->sellerProduct->orgStocks()->first()->update(['state' => OrgStockStateEnum::ACTIVE]);
-        $this->buyerOrgStock->update(['quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        createOrgStocks($this->orgPartner->partner, [$stock])[0]->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$stock])[0];
+        $this->buyerOrgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_available' => 0, 'health_rank' => HealthRankEnum::A, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
         $this->buyerOrgStock->stats()->updateOrCreate([], ['predicted_daily_usage' => 2, 'days_of_cover' => 0]);
         $orgPartner = $this->orgPartner->refresh();
         $rescued    = fn () => GetPartnerStockCoverBuckets::make()->rescueItems($orgPartner)->pluck('org_stock_id')->map(fn ($id) => (int) $id)->all();
@@ -6801,9 +6921,10 @@ describe('partner browse', function () {
 
         $this->buyerOrgStock->update(['health_rank' => null]);
         Cache::forget("partner-order-capacity:{$this->orgPartner->id}");
-        foreach ([$firstItem, $outOfStockItem, $aRankItem] as $item) {
-            DeletePartnerShoppingListItem::make()->action($item);
-        }
+        expect($outOfStockItem->id)->toBe($firstItem->id)
+            ->and($aRankItem->id)->toBe($firstItem->id)
+            ->and(DeletePartnerShoppingListItem::make()->action($firstItem))->toBeTrue();
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
     });
 
     test('browse card shows the component that runs out first', function () {
@@ -7040,6 +7161,33 @@ test('pre-picking reserves stock for the partner without creating any order', fu
     $listed = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
         ->assertOk()->viewData('page')['props']['data']['data'];
     expect(collect($listed)->pluck('id'))->not->toContain($item->id);
+});
+
+test('pre-pick closed short cancels the shortfall instead of leaving it outstanding', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+    $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $sellerOrgStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $buyerOrgStock->stock_id)->first()
+        ?? createOrgStocks($seller, [$buyerOrgStock->stock])[0];
+    $sellerOrgStock->update(['quantity_available' => 25]);
+
+    $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 28]);
+
+    $this->post(route('grp.org.productions.show.pre_pick.pick', [$seller->slug, $production->slug]), ['lines' => [['id' => $item->id, 'quantity' => 25, 'cancel_shortfall' => true]]])
+        ->assertRedirect();
+
+    $item->refresh();
+    $shortfall = PartnerShoppingListItem::where('parent_id', $item->id)->first();
+
+    expect((float) $item->quantity)->toBe(25.0)
+        ->and($item->pre_picked_at)->not->toBeNull()
+        ->and((float) $shortfall->quantity)->toBe(3.0)
+        ->and($shortfall->state)->toBe(ShoppingListItemStateEnum::DISMISSED)
+        ->and($shortfall->dismissed_at)->not->toBeNull()
+        ->and(PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::OPEN)->whereNull('pre_picked_at')->exists())->toBeFalse();
 });
 
 test('only a manufacturing hub sells to its partners through the shopping list and pre-pick', function () {
@@ -7973,6 +8121,33 @@ test('repair supplier drift leaves rows whose correct twin already exists', func
 
     expect($result['collisions'])->toBe($baseline['collisions'] + 1)
         ->and($drifted->refresh()->org_supplier_id)->toBe($orgSupplierA->id);
+});
+
+test('storing an org supplier product twice for the same org supplier returns the first row', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'ONCE-1',
+        'name'             => 'Stored once',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    $first = OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->firstOrFail();
+    expect($first->source_id)->toBeNull();
+
+    $second = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct, ['source_id' => '1:999999']);
+
+    expect($second->id)->toBe($first->id)
+        ->and(OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->count())->toBe(1)
+        ->and($first->refresh()->source_id)->toBe('1:999999')
+        ->and($first->stats()->count())->toBe(1);
 });
 
 test('attach a supplier product to an org stock that has none, first one becomes preferred', function () {

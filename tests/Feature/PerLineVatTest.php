@@ -9,6 +9,7 @@
 
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersInShop;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -49,6 +50,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\patch;
@@ -480,6 +482,29 @@ test('manual shipping on a faire order refreshes the faire tax snapshot', functi
     } finally {
         $this->shop->updateQuietly(['type' => ShopTypeEnum::B2B, 'engine' => ShopEngineEnum::AIKU]);
     }
+});
+
+/** HELP-3805: Faire re-ordered two backordered lines as a new order with the same item ids, and the import died after storing an empty order. */
+test('a faire line moved to a re-order leaves the original order unless it already reached the warehouse', function () {
+    $faireItemId = 'oi_help3805_'.uniqid();
+
+    $originalOrder = StoreOrder::make()->action($this->customer, []);
+    $staleLine     = StoreTransaction::make()->action($originalOrder->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1, 'marketplace_id' => $faireItemId]);
+
+    $action = GetFaireOrdersInShop::make();
+
+    $staleLine->updateQuietly(['quantity_dispatched' => 1]);
+    expect($action->releaseFaireItemMovedFromAnotherOrder($this->shop, $faireItemId)?->id)->toBe($originalOrder->id)
+        ->and(Transaction::find($staleLine->id))->not->toBeNull();
+
+    $staleLine->updateQuietly(['quantity_dispatched' => 0]);
+    expect($action->releaseFaireItemMovedFromAnotherOrder($this->shop, $faireItemId))->toBeNull()
+        ->and(Transaction::find($staleLine->id))->toBeNull();
+
+    $reOrder = StoreOrder::make()->action($this->customer, []);
+    $movedLine = StoreTransaction::make()->action($reOrder->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1, 'marketplace_id' => $faireItemId]);
+
+    expect($movedLine->order_id)->toBe($reOrder->id);
 });
 
 test('manual shipping on a non-faire order does not touch faire', function () {

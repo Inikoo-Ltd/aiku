@@ -52,6 +52,8 @@ Počas balenia nie je možné dodací list označiť ako **Set as packed**, ak e
 
 Stlačenie **Set as packed** zaznamená, kto dodací list zabalil, dotiahne riadky, ktoré neboli potvrdené jednotlivo pri balení, a nastaví predvolenú zásielku, ak ešte žiadna nie je zaznamenaná.
 
+Zásielky sa zaznamenávajú v okne **Add shipment**, ktoré sa otvára z dodacieho listu alebo z jeho riadku v pickovacej relácii. Každý riadok zásielky má vedľa rozmerov zoznam **Preset size**: výberom veľkosti krabice, napríklad 39 × 39 × 39 cm, sa naraz vyplní dĺžka, šírka aj výška, takže treba zadať už len hmotnosť.
+
 Ak sa dodací list potrebuje vrátiť o krok späť, upraviteľné dodacie listy majú tlačidlá na vrátenie: **Undo set as picked** vráti dodací list z **Picked** späť do vyskladňovania, **Undo packing** vráti **Packing** späť do picked, a **Unpack** vráti **Packed** alebo **Finalised** dodací list späť do **Packing**.
 
 ## Finalizácia a expedícia so zasielateľom

@@ -8,7 +8,6 @@ use App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum a
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Upload;
-use App\Models\Helpers\UploadRecord;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,17 +37,13 @@ class CheckSupplierProductUploadWithJev
         $failed  = 0;
 
         foreach ($records->values() as $index => $record) {
-            $answers = AskJev::run($this->state($record, $records->get($index - 1), $records->get($index + 1)), $this->questions($record));
-
-            $findings = collect(Arr::get($record->data, 'findings', []))->reject(fn (array $finding) => Arr::get($finding, 'source') === 'jev')->values()->all();
-            if ($answers === null) {
+            $findings    = collect(Arr::get($record->data, 'findings', []))->reject(fn (array $finding) => Arr::get($finding, 'source') === 'jev')->values()->all();
+            $jevFindings = $this->checkValues($upload->group_id, $record->values, $findings, $records->get($index - 1)?->values, $records->get($index + 1)?->values);
+            if (collect($jevFindings)->contains('code', 'ai_checks_not_run')) {
                 $failed++;
-                $findings[] = $this->finding('block', 'ai_checks_not_run', null, __('The AI checks could not run on this row.'));
-            } else {
-                $findings = [...$findings, ...$this->findings($record, $answers)];
             }
 
-            $record->update(['data' => array_merge($record->data ?? [], ['findings' => $findings])]);
+            $record->update(['data' => array_merge($record->data ?? [], ['findings' => [...$findings, ...$jevFindings]])]);
         }
 
         $upload->update(['data' => array_merge($upload->data ?? [], ['jev' => $failed ? 'failed' : 'done'])]);
@@ -57,12 +52,32 @@ class CheckSupplierProductUploadWithJev
     }
 
     /**
+     * Jev's findings for one product (an upload row or the New supplier product form), or a block when it could not answer.
+     *
+     * @param array<string, mixed> $values
+     * @param list<array{level: string, code: string, column: ?string, message: string}> $findings the rule findings already on the product
+     * @param array<string, mixed>|null $previous values of the row above, on uploads
+     * @param array<string, mixed>|null $next values of the row below, on uploads
+     *
+     * @return list<array{level: string, code: string, column: ?string, message: string, source: string}>
+     */
+    public function checkValues(int $groupId, array $values, array $findings, ?array $previous = null, ?array $next = null): array
+    {
+        $this->groupId = $groupId;
+
+        $answers = AskJev::run($this->state($values, $previous, $next), $this->questions($values));
+        if ($answers === null) {
+            return [$this->finding('block', 'ai_checks_not_run', null, __('The AI checks could not run on this row.'))];
+        }
+
+        return $this->findings($values, $answers, collect($findings)->pluck('code')->all());
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    protected function state(UploadRecord $record, ?UploadRecord $previous, ?UploadRecord $next): array
+    protected function state(array $values, ?array $previous, ?array $next): array
     {
-        $values = $record->values;
-
         return array_filter([
             'unit_name'                 => $values['unit_name'] ?? null,
             'unit_label'                => $values['unit_label'] ?? null,
@@ -76,15 +91,15 @@ class CheckSupplierProductUploadWithJev
             'skos_per_carton'           => $values['skos_per_carton'] ?? null,
             'wholesale_price_gbp'       => $values['recommended_price'] ?? null,
             'tariff_code'               => $values['tariff_code'] ?? null,
-            'row_above'                 => $previous ? trim(($previous->values['unit_name'] ?? '').' / materials: '.($previous->values['materials'] ?? '')) : null,
-            'row_below'                 => $next ? trim(($next->values['unit_name'] ?? '').' / materials: '.($next->values['materials'] ?? '')) : null,
+            'row_above'                 => $previous ? trim(($previous['unit_name'] ?? '').' / materials: '.($previous['materials'] ?? '')) : null,
+            'row_below'                 => $next ? trim(($next['unit_name'] ?? '').' / materials: '.($next['materials'] ?? '')) : null,
         ], fn ($value) => $value !== null && $value !== '');
     }
 
     /**
      * @return array<string, array{type: string, instructions: string, criteria: array<string, string>}>
      */
-    protected function questions(UploadRecord $record): array
+    protected function questions(array $values): array
     {
         $question = fn (string $instructions, string $whenTrue, string $whenFalse) => [
             'type'         => 'noul',
@@ -125,7 +140,7 @@ class CheckSupplierProductUploadWithJev
             ),
         ];
 
-        if (filled($record->values['unit_label'] ?? null) && !in_array(mb_strtolower($record->values['unit_label']), $this->usedLabels(), true)) {
+        if (filled($values['unit_label'] ?? null) && !in_array(mb_strtolower($values['unit_label']), $this->usedLabels(), true)) {
             $questions['unit_label_odd'] = $question(
                 'Is unit_label something other than a plain word for one single unit (such as piece, bag, jar, candle, pair)? Numbers, quantities, groups like pack or set, typos and fragments count as yes.',
                 'yes, not a plain single unit word',
@@ -133,7 +148,7 @@ class CheckSupplierProductUploadWithJev
             );
         }
 
-        if (filled($record->values['tariff_code'] ?? null)) {
+        if (filled($values['tariff_code'] ?? null)) {
             $questions['tariff_misfit'] = $question(
                 'Is tariff_code (an HS customs code) clearly wrong for the item named in unit_name?',
                 'yes, clearly the wrong customs code',
@@ -146,22 +161,23 @@ class CheckSupplierProductUploadWithJev
 
     /**
      * @param array<string, array<string, mixed>> $answers
+     * @param list<string> $existingCodes
      *
      * @return list<array{level: string, code: string, column: ?string, message: string, source: string}>
      */
-    protected function findings(UploadRecord $record, array $answers): array
+    protected function findings(array $values, array $answers, array $existingCodes): array
     {
         $probability = fn (string $key) => (float)Arr::get($answers, $key.'.noul', 0);
         $blocks      = fn (string $key) => $probability($key) >= self::BLOCK_PROBABILITY;
         $flagged     = fn (string $key) => $probability($key) >= self::WARNING_PROBABILITY;
-        $already = collect(Arr::get($record->data, 'findings', []))->pluck('code');
+        $already     = collect($existingCodes);
 
         $findings = [];
         if ($blocks('unit_name_is_pack') && !$already->contains('unit_name_pack')) {
             $findings[] = $this->finding('block', 'jev_unit_name_pack', Column::UNIT_NAME, __('The unit name reads like a pack or a quantity, not a single unit.'));
         }
         if ($blocks('unit_label_odd') && !$already->contains('unit_label_odd')) {
-            $findings[] = $this->finding('block', 'jev_unit_label_odd', Column::UNIT_LABEL, __('Unit label ":label" does not look like a single unit word.', ['label' => $record->values['unit_label']]));
+            $findings[] = $this->finding('block', 'jev_unit_label_odd', Column::UNIT_LABEL, __('Unit label ":label" does not look like a single unit word.', ['label' => $values['unit_label']]));
         }
         if ($flagged('spelling')) {
             $findings[] = $this->finding('warning', 'jev_spelling', Column::UNIT_NAME, __('There may be a spelling mistake in the name, label or materials.'));
@@ -173,13 +189,13 @@ class CheckSupplierProductUploadWithJev
             $findings[] = $this->finding('warning', 'jev_numbers_odd', null, __('Some weights, sizes, pack sizes or prices look unusual for this product.'));
         }
         if ($flagged('family_misfit')) {
-            $findings[] = $this->finding('warning', 'jev_family_misfit', Column::FAMILY, __('This product does not look like the rest of family :family.', ['family' => $record->values['family']]));
+            $findings[] = $this->finding('warning', 'jev_family_misfit', Column::FAMILY, __('This product does not look like the rest of family :family.', ['family' => $values['family']]));
         }
         if ($flagged('rows_shifted')) {
             $findings[] = $this->finding('warning', 'jev_rows_shifted', null, __('The materials or weight may belong to the row above or below.'));
         }
         if ($flagged('tariff_misfit')) {
-            $findings[] = $this->finding('warning', 'jev_tariff_misfit', Column::TARIFF_CODE, __('Tariff code :code does not seem to fit this product.', ['code' => $record->values['tariff_code']]));
+            $findings[] = $this->finding('warning', 'jev_tariff_misfit', Column::TARIFF_CODE, __('Tariff code :code does not seem to fit this product.', ['code' => $values['tariff_code']]));
         }
 
         return $findings;

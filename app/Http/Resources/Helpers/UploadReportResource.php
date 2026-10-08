@@ -9,6 +9,8 @@ namespace App\Http\Resources\Helpers;
 
 use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Upload;
+use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class UploadReportResource extends JsonResource
@@ -37,6 +39,22 @@ class UploadReportResource extends JsonResource
                 'name'       => 'grp.helpers.uploads.records.download',
                 'parameters' => ['upload' => $upload->id],
             ],
+            'preview_route'     => $this->previewRoute($upload),
+        ];
+    }
+
+    /**
+     * @return array{name: string, parameters: array<string, mixed>}|null
+     */
+    private function previewRoute(Upload $upload): ?array
+    {
+        if ($upload->model !== class_basename(SupplierProduct::class) || !$upload->parent instanceof Supplier) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.supply-chain.suppliers.supplier_products.uploads.show',
+            'parameters' => ['supplier' => $upload->parent->slug, 'upload' => $upload->id],
         ];
     }
 }

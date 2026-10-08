@@ -72,6 +72,7 @@ const props = defineProps<{
         public_notes: string | null
         employee_id: number | null
         artisan: string | null
+        overproductions: { step: string, artefact_code: string, quantity: number, made_by: string, manager: string, method: 'qr' | 'pin', at: string }[]
     }
     artisan_options: { id: number, name: string }[]
     update_route: null | { name: string, parameters: object }
@@ -230,7 +231,7 @@ const subJobStateLabels: Record<SubJob["state"], string> = {
 }
 
 const subJobStateClasses: Record<SubJob["state"], string> = {
-    assigned: "bg-indigo-50 text-indigo-700",
+    assigned: "bg-[--app-accent-soft] text-[--app-accent-strong]",
     in_progress: "bg-amber-50 text-amber-700",
     complete: "bg-green-50 text-green-700",
 }
@@ -307,6 +308,20 @@ function receiveIntoStock() {
                 {{ ctrans('Release to floor') }}
             </button>
         </div>
+        <div v-if="job_order.overproductions?.length" class="mb-6 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-gray-700">
+            <div class="font-semibold text-amber-800 mb-1">{{ ctrans('Overproduction') }}</div>
+            <div v-for="(entry, index) in job_order.overproductions" :key="index">
+                {{ ctrans('+:quantity :code on :step by :maker, authorised by :manager via :method', {
+                    quantity: entry.quantity,
+                    code: entry.artefact_code,
+                    step: entry.step,
+                    maker: entry.made_by,
+                    manager: entry.manager,
+                    method: entry.method === 'qr' ? ctrans('QR scan') : ctrans('PIN'),
+                }) }}
+                <span class="text-gray-500">· {{ useFormatTime(entry.at, { formatTime: 'hm' }) }}</span>
+            </div>
+        </div>
         <div v-if="confirm_route" class="mb-6 -mt-3 text-sm text-amber-600">
             {{ ctrans('Draft — workers cannot see these tasks until the order is released to the floor') }}
         </div>
@@ -323,13 +338,13 @@ function receiveIntoStock() {
                 </div>
                 <form v-if="editingItemId === item.id" class="flex items-center gap-2" @submit.prevent="saveQuantity(item, editedQuantity)">
                     <input v-model.number="editedQuantity" type="number" min="1" step="1" class="w-24 rounded border-gray-300 text-sm tabular-nums" :aria-label="ctrans('Quantity')" />
-                    <button type="submit" class="text-sm font-medium text-indigo-600">{{ ctrans('Save') }}</button>
+                    <button type="submit" class="text-sm font-medium text-[--app-accent]">{{ ctrans('Save') }}</button>
                     <button type="button" class="text-sm text-gray-500" @click="editingItemId = null">{{ ctrans('Cancel') }}</button>
                 </form>
                 <div v-else class="tabular-nums text-gray-700">
                     × {{ item.quantity }}
-                    <button v-if="item.update_route" type="button" class="ml-2 text-sm text-indigo-600" @click="startEditingQuantity(item)">{{ ctrans('Change') }}</button>
-                    <button v-if="item.split_route" type="button" class="ml-3 text-sm text-indigo-600" @click="openSplit(item)">
+                    <button v-if="item.update_route" type="button" class="ml-2 text-sm text-[--app-accent]" @click="startEditingQuantity(item)">{{ ctrans('Change') }}</button>
+                    <button v-if="item.split_route" type="button" class="ml-3 text-sm text-[--app-accent]" @click="openSplit(item)">
                         <FontAwesomeIcon :icon="['fal', 'users']" fixed-width class="mr-0.5" />
                         {{ item.sub_jobs.length ? ctrans('Change artisans') : ctrans('Split / Assign multiple artisans') }}
                     </button>
@@ -363,7 +378,7 @@ function receiveIntoStock() {
                 <div class="mt-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                     <div
                         class="h-full rounded-full"
-                        :class="task.state == 'done' ? 'bg-green-500' : 'bg-indigo-500'"
+                        :class="task.state == 'done' ? 'bg-green-500' : 'bg-[--app-accent]'"
                         :style="{ width: progressPercent(task) + '%' }"
                     />
                 </div>
@@ -439,7 +454,7 @@ function receiveIntoStock() {
                     </template>
                 </div>
 
-                <button type="button" class="mt-3 rounded border border-indigo-300 text-indigo-600 text-sm px-3 py-1.5" @click="addAssignment">
+                <button type="button" class="mt-3 rounded border border-[--app-accent-muted] text-[--app-accent] text-sm px-3 py-1.5" @click="addAssignment">
                     <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width class="mr-1" />
                     {{ ctrans('Add artisan') }}
                 </button>
@@ -454,7 +469,7 @@ function receiveIntoStock() {
                     <button type="button" class="rounded border border-gray-300 text-sm px-4 py-2" @click="splittingItem = null">{{ ctrans('Cancel') }}</button>
                     <button
                         type="button"
-                        class="rounded bg-indigo-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
+                        class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm font-semibold px-4 py-2 disabled:opacity-40"
                         :disabled="!canSaveAssignments || processing"
                         @click="saveAssignments"
                     >
@@ -523,7 +538,7 @@ function receiveIntoStock() {
             </div>
             <button
                 type="button"
-                class="rounded bg-indigo-600 text-white text-sm px-3 py-2 disabled:opacity-50"
+                class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-2 disabled:opacity-50"
                 :disabled="!newArtefactId || !newQuantity || processing"
                 @click="addItem"
             >

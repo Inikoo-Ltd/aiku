@@ -20,6 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import PreOrderPanel from "@/Components/Ordering/PreOrderPanel.vue"
+import ProductionReviewBar from "@/Components/Ordering/ProductionReviewBar.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { routeType } from "@/types/route"
@@ -132,6 +133,7 @@ const props = defineProps<{
     pre_order?: any
     split_pre_order?: { reference: string, slug: string } | null
     aurora_notice?: string | null
+    production_review?: InstanceType<typeof ProductionReviewBar>['$props']['review'] | null
     basket_customer_balance?: number | string | null
     title: string
     tabs: TSTabs
@@ -1857,6 +1859,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
         </template>
     </PageHeading>
+
+    <ProductionReviewBar v-if="production_review" :review="production_review" />
 
     <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
         <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />

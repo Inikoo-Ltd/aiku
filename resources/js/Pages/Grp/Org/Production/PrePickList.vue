@@ -50,7 +50,7 @@ const isPartial = (item: PrePickItem) => quantityFor(item) < Number(item.quantit
 const automationStatuses = {
 	releasing: { label: trans("Going to the warehouse"), class: "text-emerald-600" },
 	held_buffer: { label: trans("Held, one more needed on the shelf"), class: "text-amber-600" },
-	awaiting_full_stock: { label: trans("Awaiting full stock"), class: "text-amber-600" },
+	awaiting_full_stock: { label: trans("Awaiting full stock, production manager to decide"), class: "text-amber-600" },
 	to_produce: { label: trans("In To produce"), class: "text-gray-500" },
 }
 
@@ -134,7 +134,21 @@ function prePickAll() {
 	)
 }
 
-function prePick(lines: { id: number; quantity: number }[]) {
+function closeShort(item: PrePickItem) {
+	const quantity = quantityFor(item)
+	const message = trans(
+		"Send :quantity and cancel the other :shortfall? The partner's list drops to :quantity and the rest will not be made.",
+		{
+			quantity: useLocaleStore().number(quantity),
+			shortfall: useLocaleStore().number(Number(item.quantity) - quantity),
+		}
+	)
+	if (window.confirm(message)) {
+		prePick([{ id: item.id, quantity, cancel_shortfall: true }])
+	}
+}
+
+function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boolean }[]) {
 	router.post(
 		route("grp.org.productions.show.pre_pick.pick", [
 			route().params["organisation"],
@@ -266,6 +280,14 @@ function prePick(lines: { id: number; quantity: number }[]) {
 				@click="prePick([{ id: item.id, quantity: quantityFor(item) }])">
 				{{ trans("Pre-pick") }}
 			</button>
+			<button
+				v-if="isPartial(item) && quantityFor(item) > 0"
+				type="button"
+				class="ml-1 rounded border border-amber-500 px-2 py-0.5 text-xs text-amber-700 hover:bg-amber-50"
+				:title="trans('Pre-pick this quantity and cancel the shortfall, nothing stays outstanding')"
+				@click="closeShort(item)">
+				{{ trans("Close short") }}
+			</button>
 		</template>
 		<template #cell(stock_code)="{ item }: { item: PrePickItem }">
 			<div class="flex items-center gap-1.5 font-medium">
@@ -323,15 +345,6 @@ function prePick(lines: { id: number; quantity: number }[]) {
 			<span :class="automationStatuses[item.automation_status].class">{{
 				automationStatuses[item.automation_status].label
 			}}</span>
-			<div
-				v-if="item.automation_status === 'awaiting_full_stock'"
-				class="text-xs text-gray-500">
-				{{
-					trans("Shortfall sent to To produce: :quantity", {
-						quantity: useLocaleStore().number(Number(item.shortfall)),
-					})
-				}}
-			</div>
 		</template>
 		<template #cell(priority)="{ item }: { item: PrePickItem }">
 			<span

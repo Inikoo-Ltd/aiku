@@ -297,6 +297,20 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					class="whitespace-nowrap"
 					@click="createPurchaseOrder(partner)" />
 				<Link
+					v-else-if="can_create_purchase_orders && purchaseOrderInProcess(partner)"
+					:href="purchaseOrderInProcess(partner)!.url">
+					<Button
+						:label="
+							ctrans('Add items to :reference', {
+								reference: purchaseOrderInProcess(partner)!.reference,
+							})
+						"
+						icon="fal fa-plus"
+						type="secondary"
+						size="s"
+						class="whitespace-nowrap" />
+				</Link>
+				<Link
 					v-if="partner.is_hub"
 					:href="
 						partnerUrl(

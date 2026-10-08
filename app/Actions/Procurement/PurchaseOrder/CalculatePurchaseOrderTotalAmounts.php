@@ -16,6 +16,7 @@ use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchas
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use RuntimeException;
 
@@ -38,7 +39,7 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             'cost_total' => $itemsNet + $extras,
         ]);
 
-        if ($purchaseOrder->parent instanceof OrgAgent && $purchaseOrder->state != PurchaseOrderStateEnum::IN_PROCESS) {
+        if ($purchaseOrder->parent instanceof OrgAgent && ($purchaseOrder->state != PurchaseOrderStateEnum::IN_PROCESS || AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)->exists())) {
             StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
         }
     }

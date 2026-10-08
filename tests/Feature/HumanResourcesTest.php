@@ -38,6 +38,7 @@ use App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
+use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
@@ -117,6 +118,8 @@ use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -883,6 +886,36 @@ test('can update clocking notes', function () {
     $updated = UpdateClockingNotes::make()->handle($clocking, 'Forgot badge', null);
 
     expect($updated->notes)->toBe('Forgot badge');
+});
+
+test('manual and edited clockings stay on the timesheet date', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Timesheet Date Clocking Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->subDays(12)->setTime(8, 0)->toDateTimeString(),
+    ], 0, true);
+
+    $timesheet = $clocking->timesheet;
+    $timezone  = $timesheet->organisation->timezone->name ?? 'UTC';
+    $laterDay  = now($timezone)->setTime(16, 30)->toIso8601String();
+
+    $manual = StoreManualClocking::make()->action($timesheet, ['clocked_at' => $laterDay]);
+    $edited = UpdateClockingNotes::make()->handle($clocking, null, $laterDay);
+
+    foreach ([$manual, $edited] as $anchored) {
+        $local = $anchored->clocked_at->copy()->setTimezone($timezone);
+        expect($local->toDateString())->toBe($timesheet->date->toDateString())
+            ->and($local->format('H:i'))->toBe('16:30');
+    }
 });
 
 test('can delete clocking', function () {
@@ -3522,4 +3555,165 @@ test('a section supervisor sees, read only, only the HR pages of the employees i
     get(route('grp.org.hr.employees.index', $organisation->slug))->assertOk();
     get(route('grp.org.hr.employees.show', [$organisation->slug, $warehouseClerk->slug]))->assertForbidden();
     get(route('grp.org.hr.workplaces.index', $organisation->slug))->assertForbidden();
+});
+
+test('warehouse supervisors see their warehouse team and add clockings from the warehouse', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($warehouse->organisation);
+    $organisation = $warehouse->organisation;
+
+    if (!$organisation->workplaces()->exists()) {
+        StoreWorkplace::make()->action($organisation, [
+            'name' => 'Warehouse team workplace',
+            'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        ]);
+    }
+
+    $picker = JobPosition::where('organisation_id', $organisation->id)->where('code', 'dist-pik')->firstOrFail();
+    $buyer  = JobPosition::where('organisation_id', $organisation->id)->where('code', 'buy')->firstOrFail();
+
+    $teamMember = Employee::factory()->create(['organisation_id' => $organisation->id, 'group_id' => $organisation->group_id, 'state' => EmployeeStateEnum::WORKING]);
+    SyncEmployeeJobPositions::run($teamMember, [$picker->id => ['Warehouse' => [$warehouse->id]]]);
+    $otherWarehouseMember = Employee::factory()->create(['organisation_id' => $organisation->id, 'group_id' => $organisation->group_id, 'state' => EmployeeStateEnum::WORKING]);
+    SyncEmployeeJobPositions::run($otherWarehouseMember, [$picker->id => ['Warehouse' => [$warehouse->id + 1000]]]);
+    $outsider = Employee::factory()->create(['organisation_id' => $organisation->id, 'group_id' => $organisation->group_id, 'state' => EmployeeStateEnum::WORKING]);
+    SyncEmployeeJobPositions::run($outsider, [$buyer->id => []]);
+
+    $teamIds = \App\Actions\Inventory\WarehouseTeam\UI\ShowWarehouseTeam::teamQuery($warehouse)->pluck('employees.id');
+    expect($teamIds)->toContain($teamMember->id)
+        ->not->toContain($otherWarehouseMember->id)
+        ->not->toContain($outsider->id);
+
+    $manager = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $manager->assignRole(RolesEnum::getRoleName(RolesEnum::WAREHOUSE_ADMIN->value, $warehouse));
+    $clerk = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::DISPATCH_CLERK->value, $warehouse));
+
+    expect(\App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $manager->fresh()))->toHaveKey('team')
+        ->and(\App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $clerk->fresh()))->not->toHaveKey('team');
+
+    $this->withoutVite();
+    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    $teamRoute = route('grp.org.warehouses.show.team.dashboard', [$organisation->slug, $warehouse->slug]);
+    $this->actingAs($clerk)->get($teamRoute)->assertForbidden();
+
+    $storeRoute = fn (Employee $employee) => route('grp.models.warehouse.team.clocking.store', ['warehouse' => $warehouse->id, 'employee' => $employee->id]);
+    $this->actingAs($clerk)->post($storeRoute($teamMember), ['clocked_at' => now()->toIso8601String()])->assertForbidden();
+
+    $this->actingAs($manager)
+        ->post($storeRoute($teamMember), ['clocked_at' => now()->subMinutes(5)->setTimezone('Asia/Kuala_Lumpur')->toIso8601String(), 'notes' => 'Forgot to clock in'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $clocking = $teamMember->clockings()->latest('id')->firstOrFail();
+    expect($clocking->type)->toBe(ClockingTypeEnum::MANUAL)
+        ->and($clocking->notes)->toBe('Forgot to clock in')
+        ->and(abs($clocking->clocked_at->diffInSeconds(now()->subMinutes(5))))->toBeLessThan(60)
+        ->and($clocking->generator_type)->toBe('User')
+        ->and($clocking->generator_id)->toBe($manager->id);
+
+    $clocking->update(['is_late' => true]);
+
+    $this->actingAs($manager)
+        ->post($storeRoute($outsider), ['clocked_at' => now()->toIso8601String()])
+        ->assertSessionHasErrors('employee');
+    expect($outsider->clockings()->count())->toBe(0);
+
+    $this->actingAs($manager)->get($teamRoute)
+        ->assertOk()
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->component('Org/Warehouse/WarehouseTeam')
+                ->where('tabs.current', 'dashboard')
+                ->where('dashboard.period', 'today')
+                ->where('dashboard.floor.people', fn ($people) => collect($people)->contains(fn ($person) => $person['id'] === $teamMember->id && $person['status'] === 'on_site')
+                    && !collect($people)->contains('id', $outsider->id))
+                ->where('dashboard.leaderboard', fn ($rows) => collect($rows)->contains(fn ($row) => $row['id'] === $teamMember->id && $row['late'] === 1)
+                    && !collect($rows)->contains('id', $outsider->id))
+                ->where('dashboard.kpis.late.value', 1)
+                ->has('dashboard.hourly.hours', 24)
+                ->has('dashboard.daily.days', 30)
+                ->has('dashboard.backlog.to_pick')
+                ->missing('clockings')
+                ->etc()
+        );
+
+    $this->actingAs($manager)->get($teamRoute.'?period=month')
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.period', 'month')->etc());
+
+    $this->actingAs($manager)->get($teamRoute.'?tab=clockings')
+        ->assertOk()
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('tabs.current', 'clockings')
+                ->where('clockings.date', now($organisation->timezone->name)->toDateString())
+                ->where('clockings.people', fn ($people) => collect($people)->contains(fn ($person) => $person['id'] === $teamMember->id && $person['is_open'] === true && collect($person['clockings'])->contains('id', $clocking->id)))
+                ->missing('dashboard')
+                ->etc()
+        );
+
+    $clockingRoute = fn (Clocking $clocking, string $action) => route("grp.models.warehouse.team.clocking.$action", ['warehouse' => $warehouse->id, 'clocking' => $clocking->id]);
+    $newTime       = now()->subMinutes(20)->startOfMinute();
+
+    $this->actingAs($clerk)->patch($clockingRoute($clocking, 'update'), ['clocked_at' => $newTime->toIso8601String()])->assertForbidden();
+
+    $this->actingAs($manager)
+        ->patch($clockingRoute($clocking, 'update'), ['clocked_at' => $newTime->copy()->setTimezone('Asia/Kuala_Lumpur')->toIso8601String(), 'notes' => 'Arrived earlier'])
+        ->assertSessionHasNoErrors();
+    $clocking->refresh();
+    expect($clocking->clocked_at->equalTo($newTime))->toBeTrue()
+        ->and($clocking->notes)->toBe('Arrived earlier')
+        ->and(\App\Models\HumanResources\TimeTracker::where('start_clocking_id', $clocking->id)->first()?->starts_at?->equalTo($newTime))->toBeTrue();
+
+    $outsiderClocking = StoreClocking::make()->action($manager, $organisation->workplaces()->first(), $outsider, ['clocked_at' => now()->subMinute()]);
+    $this->actingAs($manager)
+        ->patch($clockingRoute($outsiderClocking, 'update'), ['clocked_at' => now()->toIso8601String()])
+        ->assertSessionHasErrors('clocking');
+    $this->actingAs($manager)->delete($clockingRoute($outsiderClocking, 'delete'))->assertSessionHasErrors('clocking');
+    expect(Clocking::withTrashed()->whereKey($outsiderClocking->id)->exists())->toBeTrue();
+
+    $this->actingAs($clerk)->delete($clockingRoute($clocking, 'delete'))->assertForbidden();
+    $this->actingAs($manager)->delete($clockingRoute($clocking, 'delete'))->assertSessionHasNoErrors();
+    expect(Clocking::withTrashed()->whereKey($clocking->id)->exists())->toBeFalse()
+        ->and(\App\Models\HumanResources\Timesheet::find($clocking->timesheet_id)->number_open_time_trackers)->toBe(0);
+});
+
+test('only human resources editors can change a clocking time or notes from the clockings table', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Clocking Notes Authorisation Workplace '.rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at'   => now()->toDateTimeString(),
+    ], 0, true);
+    $originalClockedAt = $clocking->clocked_at;
+
+    $route = route('grp.models.clocking-machine.clocking.notes.update', ['clocking' => $clocking->id]);
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAs($outsider)->patchJson($route, ['notes' => 'Tampered', 'clocked_at' => now()->subHours(3)->toIso8601String()])->assertForbidden();
+
+    $clocking->refresh();
+    expect($clocking->notes)->not->toBe('Tampered')
+        ->and($clocking->clocked_at->equalTo($originalClockedAt))->toBeTrue();
+
+    $editor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $editor->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $editor->forgetWildcardPermissionIndex();
+
+    actingAs($editor)->patchJson($route, ['notes' => 'Forgot badge'])->assertOk();
+
+    expect($clocking->refresh()->notes)->toBe('Forgot badge');
 });

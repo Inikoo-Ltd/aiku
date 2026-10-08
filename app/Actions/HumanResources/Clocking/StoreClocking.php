@@ -167,6 +167,7 @@ class StoreClocking extends OrgAction
     {
         $rules = [
             'clocked_at' => ['sometimes', 'required', 'date'],
+            'notes'      => ['sometimes', 'nullable', 'string', 'max:1000'],
             'photo'      => [
                 'sometimes',
                 'nullable'

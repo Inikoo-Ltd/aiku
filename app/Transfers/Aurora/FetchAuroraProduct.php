@@ -143,7 +143,6 @@ class FetchAuroraProduct extends FetchAurora
             'code'                      => $code,
             'name'                      => $name,
             'price'                     => round($price, 2),
-            'unit_price'                => round($unit_price, 2),
             'units'                     => $units,
             'status'                    => $status,
             'unit'                      => $this->auroraModelData->{'Product Unit Label'},

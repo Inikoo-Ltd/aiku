@@ -64,10 +64,6 @@ class StoreProduct extends OrgAction
         data_set($modelData, 'status', ProductStatusEnum::FOR_SALE, false);
         data_set($modelData, 'state', ProductStateEnum::ACTIVE, false);
 
-        if (!Arr::has($modelData, 'unit_price')) {
-            data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
-        }
-
         $orgStocks  = null;
         $tradeUnits = null;
         if ($this->strict) {
@@ -267,7 +263,6 @@ class StoreProduct extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
             'price'             => ['required', 'numeric', 'min:0'],
-            'unit_price'        => ['sometimes', 'numeric', 'min:0'],
             'unit'              => ['sometimes', 'required', 'string'],
             'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'description'       => ['sometimes', 'required', 'max:15000'],

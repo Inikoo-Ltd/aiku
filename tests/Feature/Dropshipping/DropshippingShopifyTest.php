@@ -644,6 +644,9 @@ test('uploading a product creates it, creates one variant with the right stock a
     $variantCalls     = ShopifyFake::calls('ProductVariantsCreate');
     expect($productVariables['product']['title'])->toBe($this->product->name)
         ->and($productVariables['product']['vendor'])->toBe($this->product->shop->name)
+        ->and($productVariables['product'])->not->toHaveKey('metafields')
+        ->and(collect(ShopifyFake::calls('updateSpecifications')[0]['variables']['metafields'])->keyBy('key')->only(['net_weight', 'shipping_weight'])->pluck('value')->all())->toBe(['{"value":430,"unit":"g"}', '{"value":1371,"unit":"g"}'])
+        ->and(ShopifyFake::calls('metafieldDefinitionCreate'))->toHaveCount(6)
         ->and($variantCalls)->toHaveCount(1)
         ->and($variantCalls[0]['variables']['productId'])->toBe('gid://shopify/Product/7100')
         ->and($variantCalls[0]['variables']['variants'][0]['inventoryItem']['sku'])->toBe($portfolio->sku)
@@ -657,6 +660,37 @@ test('uploading a product creates it, creates one variant with the right stock a
         ->and($portfolio->has_valid_platform_product_id)->toBeTrue()
         ->and($portfolio->data['shopify_product']['id'])->toBe('gid://shopify/Product/7100')
         ->and($portfolio->errors_response)->toBeNull();
+});
+
+test('updating all dimensions sends the shipping weight to the variant and the specifications as aw metafields, and reports what shopify refuses (CUS-1770)', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-specs');
+    $channel     = $shopifyUser->customerSalesChannel;
+    $this->product->update(['marketing_weight' => 625, 'gross_weight' => 550, 'marketing_dimensions' => ['h' => 0.12, 'l' => 0.3, 'w' => 0.22, 'type' => 'rectangular', 'units' => 'cm'], 'marketing_ingredients' => 'Juniperus communis', 'cpnp_number' => null]);
+
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/7200', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8200', 'platform_status' => true]);
+
+    ShopifyFake::fake([
+        'updateSpecifications' => Http::sequence()
+            ->push(ShopifyFake::graphql(['productVariantsBulkUpdate' => ['userErrors' => []], 'metafieldsSet' => ['userErrors' => []]]))
+            ->push(ShopifyFake::graphql(['productVariantsBulkUpdate' => ['userErrors' => []], 'metafieldsSet' => ['userErrors' => [['field' => ['metafields', '0'], 'message' => 'Value is invalid']]]])),
+    ]);
+
+    [$updated] = UpdateShopifyProductDimensions::run($channel, $portfolio->refresh());
+    [$refused, $error] = UpdateShopifyProductDimensions::run($channel, $portfolio);
+
+    $variables  = ShopifyFake::calls('updateSpecifications')[0]['variables'];
+    $metafields = collect($variables['metafields'])->keyBy('key');
+
+    expect($updated)->toBeTrue()
+        ->and($variables['variants'][0])->toBe(['id' => 'gid://shopify/ProductVariant/8200', 'inventoryItem' => ['measurement' => ['weight' => ['unit' => 'GRAMS', 'value' => 550]]]])
+        ->and($metafields->keys()->all())->toEqualCanonicalizing(['net_weight', 'shipping_weight', 'dimensions', 'ingredients'])
+        ->and($metafields['dimensions'])->toBe(['namespace' => 'aw', 'key' => 'dimensions', 'type' => 'single_line_text_field', 'value' => '30x22x12 (cm)', 'ownerId' => 'gid://shopify/Product/7200'])
+        ->and($metafields['net_weight']['value'])->toBe('{"value":625,"unit":"g"}')
+        ->and(ShopifyFake::calls('metafieldDefinitionCreate'))->toHaveCount(6)
+        ->and($refused)->toBeFalse()
+        ->and($error)->toContain('Value is invalid');
 });
 
 test('a rejected product upload keeps the portfolio unpublished with a readable error and never creates a variant', function () {
@@ -1802,7 +1836,7 @@ test('two products built on the same stock get their own sku, and each is found 
         ->and(StorePortfolio::make()->findProductBySKU($second->sku, $this->shop)?->id)->toBe($secondProduct->id);
 
     $secondProduct->update(['is_bundle' => true]);
-    expect(StorePortfolio::make()->getSKU($secondProduct->refresh()))->toBe($sharedOrgStock->stock->slug);
+    expect(StorePortfolio::make()->getSKU($secondProduct->refresh()))->toBe($sharedOrgStock->stock->slug.'-x5');
 });
 
 test('the borrowed sku repair gives an unlinked portfolio its own sku back and leaves alone one linked to a listing', function () {

@@ -222,6 +222,7 @@ test('can create chat session for authenticated web user', function () {
         'shop_id'          => $this->shop->id,
     ];
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
     $chatSession = $this->action->handle($modelData);
 
     expect($chatSession->web_user_id)->toBe($webUser->id)
@@ -282,6 +283,7 @@ test('creates chat event for authenticated user session', function () {
         'shop_id'     => $this->shop->id,
     ];
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
     $chatSession = $this->action->handle($modelData);
 
     $chatEvent = ChatEvent::where('chat_session_id', $chatSession->id)->first();
@@ -10524,6 +10526,8 @@ test('a logged in customer is never asked for the name and email we already hold
     data_set($settings, 'chat.email_offline_replies', true);
     $this->shop->updateQuietly(['settings' => $settings]);
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
+
     $session = StoreOfflineMessage::make()->handle($this->shop->refresh(), [
         'message'     => 'Nobody was on, please write back',
         'language_id' => 68,
@@ -10949,7 +10953,10 @@ test('formatting an agent picks reaches the customer as html beside the readable
 
     expect($markupToHtml("*Bold* _italic_ __under__ ~gone~\n• one"))->toBe("<strong>Bold</strong> <em>italic</em> <u>under</u> <s>gone</s><br />\n• one")
         ->and($markupToHtml('snake_case_name costs 2*3*4'))->toBe('snake_case_name costs 2*3*4')
-        ->and($markupToHtml('*<script>alert(1)</script>*'))->toBe('<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>');
+        ->and($markupToHtml('*<script>alert(1)</script>*'))->toBe('<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>')
+        ->and($markupToHtml('See https://shop.test/a_b_c?x=1&y=2.'))->toBe('See <a href="https://shop.test/a_b_c?x=1&amp;y=2" target="_blank" rel="noopener noreferrer">https://shop.test/a_b_c?x=1&amp;y=2</a>.')
+        ->and($markupToHtml('*visit www.shop.test/p*'))->toBe('<strong>visit <a href="https://www.shop.test/p" target="_blank" rel="noopener noreferrer">www.shop.test/p</a></strong>')
+        ->and($markupToHtml('https://shop.test/"onclick=1'))->toBe('<a href="https://shop.test/" target="_blank" rel="noopener noreferrer">https://shop.test/</a>&quot;onclick=1');
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];

@@ -12,7 +12,6 @@ use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -37,7 +36,7 @@ class StoreManualClocking extends OrgAction
                 'subject_type'    => 'Employee',
                 'subject_id'      => $employee->id,
                 'type'            => ClockingTypeEnum::MANUAL,
-                'clocked_at'      => Carbon::parse($modelData['clocked_at'])->utc(),
+                'clocked_at'      => $timesheet->clockedAtOnTimesheetDate($modelData['clocked_at']),
                 'generator_type'  => 'User',
                 'generator_id'    => Auth::id(),
                 'notes'           => $modelData['notes'] ?? null,

@@ -1463,6 +1463,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('production:release_pre_pick')->everyTenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ReleaseFullyStockedPrePickLines',
+                ),
+                name: 'ReleaseFullyStockedPrePickLines',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

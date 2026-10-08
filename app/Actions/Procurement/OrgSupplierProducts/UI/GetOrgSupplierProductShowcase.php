@@ -46,6 +46,11 @@ class GetOrgSupplierProductShowcase
                 ])),
                 'stats'        => $this->getProcurementStatsBoxes($orgSupplierProduct->stats),
                 'supplierProductInfo' => $this->supplierProductInfo($orgSupplierProduct->supplierProduct),
+                'internal_images'     => $this->getSupplierProductInternalImages(
+                    $orgSupplierProduct->supplierProduct,
+                    (bool) request()->user()?->authTo("procurement.{$orgSupplierProduct->organisation_id}.edit"),
+                    $orgSupplierProduct
+                ),
             ],
             $this->getBarcodesData($orgSupplierProduct)
         );
