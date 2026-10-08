@@ -187,7 +187,7 @@ class ShowDepartment extends OrgAction
                 'url_master'       => $urlMaster,
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => DepartmentTabsEnum::navigation()
+                    'navigation' => DepartmentTabsEnum::navigationExcept([DepartmentTabsEnum::RELATED_CATEGORIES])
                 ],
                 'shop_data' => [
                     'id'            => $department->shop->id,

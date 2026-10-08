@@ -176,7 +176,7 @@ class ShowSubDepartment extends OrgAction
                 ],
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => DepartmentTabsEnum::navigation()
+                    'navigation' => DepartmentTabsEnum::navigationExcept([DepartmentTabsEnum::FAMILIES_ORDER, DepartmentTabsEnum::RELATED_CATEGORIES])
                 ],
 
                 'routes' => [
