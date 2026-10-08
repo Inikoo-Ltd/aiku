@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue"
 import Popover from "primevue/popover"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBoxOpen, faShippingFast, faCalendarAlt, faClock, faInfinity } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -33,7 +31,6 @@ const isIncomingStockShown = computed(() => Boolean(props.product?.allow_incomin
 const isEnabled = computed(() => isStockShown.value || isIncomingStockShown.value)
 
 const availableStock = computed(() => Number(props.stock ?? props.product?.stock ?? 0))
-const isAvailable = computed(() => Boolean(props.product?.is_on_demand) || availableStock.value > 0)
 
 const incomingStocks = computed(() => {
     const groupedByEta = new Map<string, IncomingStock>()
@@ -57,6 +54,8 @@ const incomingStocks = computed(() => {
         return a.eta.localeCompare(b.eta)
     })
 })
+
+const hasEstimatedEta = computed(() => incomingStocks.value.some(incoming => incoming.eta && incoming.is_estimate))
 
 const _popover = ref()
 const _trigger = ref<HTMLElement | null>(null)
@@ -91,44 +90,37 @@ onBeforeUnmount(cancelHide)
     >
         <slot />
 
-        <Popover v-if="isEnabled" ref="_popover" class="max-w-[90vw]" :pt="{ content: { class: '!p-2' } }">
-            <div class="min-w-[180px] text-xs text-gray-700" @mouseenter="cancelHide" @mouseleave="hidePopover">
-                <div
-                    v-if="isStockShown"
-                    class="flex items-center justify-between gap-4 rounded px-2 py-1"
-                    :class="isAvailable ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'"
-                >
-                    <span class="flex items-center gap-1.5">
-                        <FontAwesomeIcon :icon="faBoxOpen" :class="isAvailable ? 'text-green-500' : 'text-red-500'" fixed-width aria-hidden="true" />
-                        {{ ctrans("Available now") }}
-                    </span>
-                    <span class="text-sm font-bold tabular-nums">
-                        <FontAwesomeIcon v-if="product.is_on_demand" :icon="faInfinity" aria-hidden="true" />
-                        <template v-else>{{ locale.number(availableStock) }}</template>
+        <Popover v-if="isEnabled" ref="_popover" class="max-w-[90vw]">
+            <div class="min-w-[220px] text-sm text-gray-700" @mouseenter="cancelHide" @mouseleave="hidePopover">
+                <div v-if="isStockShown" class="flex items-center justify-between gap-6">
+                    <span class="text-gray-500">{{ ctrans("Available now") }}</span>
+                    <span class="font-semibold tabular-nums" :class="product.is_on_demand || availableStock > 0 ? 'text-green-600' : 'text-red-600'">
+                        {{ product.is_on_demand ? ctrans("Unlimited") : locale.number(availableStock) }}
                     </span>
                 </div>
 
-                <div v-if="isIncomingStockShown" class="px-2" :class="isStockShown ? 'mt-1.5' : ''">
-                    <div class="flex items-center gap-1.5 font-semibold text-amber-600">
-                        <FontAwesomeIcon :icon="faShippingFast" fixed-width aria-hidden="true" />
-                        {{ ctrans("On its way") }}
-                        <span v-if="!incomingStocks.length" class="ml-auto font-normal text-gray-500">{{ ctrans("Nothing on order") }}</span>
-                    </div>
+                <div v-if="isIncomingStockShown" :class="isStockShown ? 'mt-3 border-t border-gray-200 pt-3' : ''">
+                    <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("On its way") }}</div>
 
-                    <div
-                        v-for="incoming in incomingStocks"
-                        :key="`${incoming.eta}-${incoming.is_estimate}`"
-                        class="mt-0.5 flex items-center justify-between gap-4"
-                    >
-                        <span class="font-bold tabular-nums text-amber-600">+{{ locale.number(incoming.quantity) }}</span>
-                        <span
-                            class="flex items-center gap-1 whitespace-nowrap text-gray-600"
-                            v-tooltip="incoming.eta && incoming.is_estimate ? ctrans('Estimated date') : undefined"
-                        >
-                            <FontAwesomeIcon :icon="incoming.eta && !incoming.is_estimate ? faCalendarAlt : faClock" class="text-amber-500" fixed-width aria-hidden="true" />
-                            {{ incoming.eta ? (incoming.is_estimate ? "~ " : "") + useFormatTime(incoming.eta, { formatTime: "mdy" }) : ctrans("To be confirmed") }}
-                        </span>
-                    </div>
+                    <table v-if="incomingStocks.length" class="w-full">
+                        <thead>
+                            <tr class="text-left text-xs text-gray-400">
+                                <th class="py-1 font-normal">{{ ctrans("Quantity") }}</th>
+                                <th class="py-1 text-right font-normal">{{ ctrans("ETA") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="incoming in incomingStocks" :key="`${incoming.eta}-${incoming.is_estimate}`" class="border-t border-gray-100">
+                                <td class="py-1 font-medium tabular-nums">{{ locale.number(incoming.quantity) }}</td>
+                                <td class="whitespace-nowrap py-1 pl-6 text-right text-gray-500">
+                                    {{ incoming.eta ? (incoming.is_estimate ? "~ " : "") + useFormatTime(incoming.eta, { formatTime: "mdy" }) : ctrans("To be confirmed") }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-else class="text-gray-500">{{ ctrans("Nothing on order") }}</div>
+
+                    <div v-if="hasEstimatedEta" class="mt-2 text-xs text-gray-400">~ {{ ctrans("Estimated date") }}</div>
                 </div>
             </div>
         </Popover>
