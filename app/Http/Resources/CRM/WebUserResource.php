@@ -10,6 +10,7 @@ namespace App\Http\Resources\CRM;
 
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 class WebUserResource extends JsonResource
 {
@@ -38,7 +39,7 @@ class WebUserResource extends JsonResource
             'last_failed_login_ip'     => $webUser->stats->last_failed_login_ip,
             'last_device'              => $webUser->stats->last_device,
             'last_os'                  => $webUser->stats->last_os,
-            'last_location'            => $webUser->stats->last_location,
+            'last_location'            => $this->lastLocation($webUser->stats?->last_location),
             'created_at' => $webUser->created_at,
             'updated_at' => $webUser->updated_at,
             'customer'   => CustomersResource::make($webUser->customer),
@@ -49,5 +50,17 @@ class WebUserResource extends JsonResource
                 ]
             ]
         ];
+    }
+
+    private function lastLocation(mixed $location): ?array
+    {
+        $location    = is_string($location) ? json_decode($location, true) : $location;
+        $countryCode = Arr::get($location, 0);
+
+        if (!$countryCode) {
+            return null;
+        }
+
+        return [$countryCode, $countryCode, Arr::get($location, 2) ?: $countryCode];
     }
 }

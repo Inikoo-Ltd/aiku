@@ -108,6 +108,7 @@ import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
 import ReviewRatingLabels from '@/Components/Forms/Fields/ReviewRatingLabels.vue'
+import VariantOptionTranslations from '@/Components/Forms/Fields/VariantOptionTranslations.vue'
 import ReviewPublishing from '@/Components/Forms/Fields/ReviewPublishing.vue'
 import ReviewVisibility from '@/Components/Forms/Fields/ReviewVisibility.vue'
 import ReviewValidationScope from '@/Components/Forms/Fields/ReviewValidationScope.vue'
@@ -232,6 +233,7 @@ export const componentsList: { [key: string]: Component } = {
     'emergency_contact' : EmergencyContact,
     'website_reviews' : WebsiteReview,
     'review_rating_labels': ReviewRatingLabels,
+    'variant_option_translations': VariantOptionTranslations,
     'review_publishing': ReviewPublishing,
     'review_visibility': ReviewVisibility,
     'review_validation_scope': ReviewValidationScope,

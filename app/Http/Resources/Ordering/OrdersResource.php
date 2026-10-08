@@ -66,6 +66,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $attribution_share
  * @property mixed $last_touch_at
  * @property mixed $is_pre_order
+ * @property int $id
+ * @property mixed $production_reviewed_at
+ * @property mixed $production_reviewed_by_name
  */
 class OrdersResource extends JsonResource
 {
@@ -100,6 +103,7 @@ class OrdersResource extends JsonResource
         }
 
         return [
+            'id'                          => $this->id,
             'slug'                        => $this->slug,
             'reference'                   => $this->reference,
             'date'                        => $this->date,
@@ -151,6 +155,8 @@ class OrdersResource extends JsonResource
             /* Only present when the listing is scoped to a traffic source, which sums it in. */
             'attribution_share'           => $this->attribution_share ?? null,
             'last_touch_at'               => $this->last_touch_at ?? null,
+            'production_reviewed_at'      => $this->production_reviewed_at ?? null,
+            'production_reviewed_by_name' => $this->production_reviewed_by_name ?? null,
         ];
     }
 }

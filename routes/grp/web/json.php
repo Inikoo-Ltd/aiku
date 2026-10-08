@@ -14,6 +14,9 @@ use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByC
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
 use App\Actions\Catalogue\Product\Json\GetProductsByCodes;
 use App\Actions\Helpers\Ticket\Json\GetTicketChat;
+use App\Actions\Helpers\Ticket\Json\GetSimilarTickets;
+use App\Actions\Helpers\Ticket\Json\GetSimilarTicketsForDraft;
+use App\Actions\Helpers\Ticket\Json\SearchTicketsToLink;
 use App\Actions\Helpers\Ticket\Json\GetTicketControls;
 use App\Actions\Helpers\Ticket\Json\GetTicketRow;
 use App\Actions\Helpers\Ticket\Json\GetTicketPullRequest;
@@ -36,6 +39,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
@@ -309,6 +313,7 @@ Route::get('workshop/product-category/{productCategory:id}/products', GetProduct
 Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
 Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+Route::get('product-category/{productCategory:id}/discontinuing-products', GetDiscontinuingProductsInFamily::class)->name('product_category.discontinuing_products.index');
 
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
 Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
@@ -462,6 +467,9 @@ Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLoc
 Route::get('tickets/qa-queue', GetTicketQaQueue::class)->name('ticket.qa_queue');
 Route::get('tickets/recently-updated', GetRecentlyUpdatedTickets::class)->name('ticket.recently_updated');
 Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');
+Route::get('tickets/{ticket:id}/similar', GetSimilarTickets::class)->name('ticket.similar')->whereNumber('ticket');
+Route::post('tickets/similar', GetSimilarTicketsForDraft::class)->name('ticket.similar_draft');
+Route::get('tickets/{ticket:id}/link-search', SearchTicketsToLink::class)->name('ticket.link_search')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/row', GetTicketRow::class)->name('ticket.row')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/pull-request', GetTicketPullRequest::class)->name('ticket.pull_request')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/chat', GetTicketChat::class)->name('ticket.chat')->whereNumber('ticket');

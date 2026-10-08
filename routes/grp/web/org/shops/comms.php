@@ -8,6 +8,7 @@
 
 use App\Actions\Comms\DispatchedEmail\UI\ShowDispatchedEmail;
 use App\Actions\Comms\Mailshot\UI\CreateMailshotTemplate;
+use App\Actions\Comms\Mailshot\UI\EditCommsTemplate;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\ShowMailshotTemplateWorkshop;
 use App\Actions\Comms\EmailBulkRun\UI\ShowEmailBulkRun;
@@ -32,6 +33,7 @@ Route::get('push-outboxes', [IndexOutboxes::class, 'inShopPush'])->name('push_ou
 Route::get('templates', IndexMailshotTemplates::class)->name('templates.index');
 Route::get('templates/create', CreateMailshotTemplate::class)->name('templates.create');
 Route::get('templates/{emailTemplate}/workshop', ShowMailshotTemplateWorkshop::class)->name('templates.workshop');
+Route::get('templates/{emailTemplate}/edit', EditCommsTemplate::class)->name('templates.edit');
 Route::get('test-outboxes', [IndexOutboxes::class, 'inShopTest'])->name('test_outboxes.index');
 Route::get('outboxes/{outbox}', [ShowOutbox::class, 'inShop'])->name('outboxes.show');
 Route::get('outboxes/{outbox}/edit', EditOutboxInShop::class)->name('outboxes.edit');

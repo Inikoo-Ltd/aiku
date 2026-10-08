@@ -52,6 +52,8 @@ During packing, the note cannot be marked **Set as packed** if it still has line
 
 Pressing **Set as packed** records who packed the note, sweeps in any lines that were not confirmed line-by-line at the bench, and sets a default parcel if none has been recorded yet.
 
+Parcels are recorded in the **Add shipment** window, opened from the delivery note or from its row in a picking session. Each parcel row has a **Preset size** list next to its dimensions: picking a box size, such as 39 × 39 × 39 cm, fills in length, width and height in one go, so only the weight needs typing.
+
 If a note needs to go back a step, editable notes carry undo buttons: **Undo set as picked** returns a **Picked** note to picking, **Undo packing** returns a **Packing** note to picked, and **Unpack** takes a **Packed** or **Finalised** note back to **Packing**.
 
 ## Finalising and dispatching with a shipper

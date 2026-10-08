@@ -11,6 +11,11 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Goods\Barcode\StoreBarcode;
+use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
+use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
+use App\Actions\Goods\Barcode\Json\GetNextFreeBarcode;
+use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
@@ -313,4 +318,19 @@ test('the json endpoint hands the modal its options and the pdf route', function
         ->and($payload['label_route']['parameters']['warehouse'])->toBe($warehouse->slug)
         ->and($payload['options']['sizes'])->toHaveKeys(['sko', 'unit'])
         ->and($payload['options']['fields'])->toHaveKeys(['sko', 'unit']);
+});
+
+test('a single trade unit SKO without a unit EAN takes the next free one from the pool', function () {
+    $orgStock = ($this->makeOrgStock)([['barcode' => null, 'barcode_id' => null]], null);
+
+    StoreBarcode::make()->action($this->group, [
+        'number' => '50'.substr((string) hrtime(true), -11),
+        'type'   => BarcodeTypeEnum::EAN->value,
+        'status' => BarcodeStatusEnum::AVAILABLE->value,
+    ]);
+    $expected = GetNextFreeBarcode::make()->handle($this->group);
+
+    UpdateOrgStockUnitBarcode::make()->handle($orgStock, ['from_pool' => true]);
+
+    expect($orgStock->tradeUnits->first()->refresh()->barcode)->toBe($expected->number);
 });

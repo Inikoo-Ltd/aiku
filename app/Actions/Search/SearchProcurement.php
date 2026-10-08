@@ -25,6 +25,7 @@ class SearchProcurement
     public function handle(string $query, array $options): array
     {
         $organisationId = Arr::get($options, 'organisation_id');
+        $agentId        = Arr::get($options, 'agent_id');
 
         $purchaseOrdersQuery = PurchaseOrder::search($query);
         if ($organisationId) {
@@ -47,7 +48,9 @@ class SearchProcurement
         }
 
         $supplierProductsQuery = SupplierProduct::search($query);
-        if ($organisationId) {
+        if ($agentId) {
+            $supplierProductsQuery->where('agent_id', $agentId);
+        } elseif ($organisationId) {
             $supplierProductsQuery->where('organisation_ids', $organisationId);
         }
 

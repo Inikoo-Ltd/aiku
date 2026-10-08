@@ -10,6 +10,7 @@ namespace App\Actions\Search;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class Search extends OrgAction
 {
     use WithChatAgentAuthorisation;
+    use WithAgentOrganisation;
 
     protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat', 'tickets'];
     protected const array ORGANISATION_SCOPES = ['accounting', 'hr', 'procurement'];
@@ -132,6 +134,9 @@ class Search extends OrgAction
                 },
             ]);
             $options = ['organisation_id' => $organisation->id];
+            if ($scope === 'procurement' && $agent = $this->getOrganisationAgent($organisation)) {
+                $options['agent_id'] = $agent->id;
+            }
         } elseif (in_array($scope, self::WAREHOUSE_SCOPES, true)) {
             $warehouse = Warehouse::where('slug', $request->query('warehouse'))->where('group_id', $request->user()->group_id)->firstOrFail();
             $this->initialisationFromWarehouse($warehouse, $request);

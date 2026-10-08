@@ -11,6 +11,7 @@ use App\Enums\Helpers\Import\UploadStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\UploadRecord;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -64,7 +65,7 @@ class ShowSupplierProductUpload extends InertiaAction
                 'problems'    => $upload->state === UploadStateEnum::WAITING_CONFIRMATION ? ImportSupplierProductUpload::make()->problems($upload) : [],
                 'review'      => Arr::get($upload->data, 'review'),
                 'ai'          => Arr::get($upload->data, 'ai'),
-                'purchase_orders' => Arr::get($upload->data, 'purchase_orders'),
+                'purchase_orders' => $this->purchaseOrders($upload),
             ],
             'supplier'    => [
                 'code'     => $supplier->code,
@@ -93,6 +94,38 @@ class ShowSupplierProductUpload extends InertiaAction
                 'cancel'    => ['name' => 'grp.models.supplier_product_upload.cancel', 'parameters' => ['upload' => $upload->id]],
             ],
         ]);
+    }
+
+    /**
+     * The import summary, with a route to each draft purchase order. Older uploads only stored the reference.
+     */
+    protected function purchaseOrders(Upload $upload): ?array
+    {
+        $summary = Arr::get($upload->data, 'purchase_orders');
+        if (!$summary) {
+            return $summary;
+        }
+
+        foreach ($summary as $key => $order) {
+            $summary[$key]['organisation'] = CheckSupplierProductSheet::make()->organisationForOrderColumn($upload->parent, $key)?->name;
+
+            if (empty($order['purchase_order'])) {
+                continue;
+            }
+
+            $purchaseOrder = isset($order['purchase_order_id'])
+                ? PurchaseOrder::find($order['purchase_order_id'])
+                : PurchaseOrder::where('reference', $order['purchase_order'])->latest('id')->first();
+
+            $summary[$key]['route'] = $purchaseOrder ? [
+                'name'       => 'grp.org.procurement.purchase_orders.show',
+                'parameters' => ['organisation' => $purchaseOrder->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug],
+            ] : null;
+            $summary[$key]['parent_name'] = $purchaseOrder?->parent_name;
+            $summary[$key]['state']       = $purchaseOrder?->state?->labels()[$purchaseOrder->state->value] ?? null;
+        }
+
+        return $summary;
     }
 
     /**

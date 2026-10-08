@@ -26,10 +26,15 @@ class UpdateMailshotTemplate extends OrgAction
         data_set($modelData, 'state', EmailTemplateStateEnum::ACTIVE->value);
 
         if (Arr::pull($modelData, 'common_outbox')) {
-            data_set($modelData, 'data', array_merge($emailTemplate->data ?? [], ['common_outbox' => true]));
+            data_set($modelData, 'data.common_outbox', true);
         }
 
-        return $this->update($emailTemplate, $modelData);
+        if (Arr::has($modelData, 'dynamic_block')) {
+            $isDynamicBlock = (bool) Arr::pull($modelData, 'dynamic_block');
+            data_set($modelData, 'data.dynamic_block', $isDynamicBlock);
+        }
+
+        return $this->update($emailTemplate, $modelData, ['data']);
     }
 
     public function rules(): array
@@ -39,6 +44,7 @@ class UpdateMailshotTemplate extends OrgAction
             'layout'            => ['sometimes', 'array'],
             'compiled_layout'   => ['sometimes', 'string'],
             'common_outbox'     => ['sometimes', 'boolean'],
+            'dynamic_block'     => ['sometimes', 'boolean'],
         ];
 
         return $rules;

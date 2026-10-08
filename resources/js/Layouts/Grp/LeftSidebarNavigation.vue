@@ -57,9 +57,26 @@ let stopWatchingNavigationSize: (() => void) | null = null
 
 onBeforeUnmount(() => stopWatchingNavigationSize?.())
 
+const revealActiveNavigation = () => {
+    const container = navigationScroll.value
+    const active = container?.querySelector<HTMLElement>(".navigationActive")
+    if (!container || !active) return
+    const containerBox = container.getBoundingClientRect()
+    const activeBox = active.getBoundingClientRect()
+    if (activeBox.bottom > containerBox.bottom) {
+        container.scrollTop += activeBox.bottom - containerBox.bottom + 16
+    } else if (activeBox.top < containerBox.top) {
+        container.scrollTop -= containerBox.top - activeBox.top + 16
+    }
+}
+
 watch(
     () => [layout.currentRoute, layout.leftSidebar.show],
-    () => nextTick(measureNavigationScroll)
+    () => nextTick(() => {
+        revealActiveNavigation()
+        measureNavigationScroll()
+    }),
+    { immediate: true }
 )
 
 const iconList: { [key: string]: string } = {

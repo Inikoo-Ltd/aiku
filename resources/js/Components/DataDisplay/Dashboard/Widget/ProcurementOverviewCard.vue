@@ -18,7 +18,7 @@ interface ProcurementCard {
 	icon: string | string[]
 	value: number | null
 	tone: "violet" | "emerald" | "amber" | "indigo" | "sky"
-	route: routeType
+	route: routeType | null
 	metrics: ProcurementMetric[]
 }
 
@@ -67,10 +67,11 @@ const tone = toneClasses[props.card.tone]
 
 <template>
 	<article
-		class="group/card rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-gray-300 hover:shadow">
-		<Link
-			:href="route(card.route.name, card.route.parameters)"
-			class="block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+		class="group/card flex h-full flex-col rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-gray-300 hover:shadow">
+		<component
+			:is="card.route ? Link : 'div'"
+			:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
+			class="block flex-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
 			@start="loadingTarget = 'card'"
 			@finish="loadingTarget = null">
 			<div class="flex items-center justify-between gap-3">
@@ -86,24 +87,26 @@ const tone = toneClasses[props.card.tone]
 							fixed-width
 							aria-hidden="true" />
 					</div>
-					<h2 class="truncate text-sm font-semibold text-gray-600" :class="tone.hover">
+					<h2 class="truncate text-sm font-semibold text-gray-600" :class="card.route ? tone.hover : ''">
 						{{ card.label }}
 					</h2>
 				</div>
 				<FontAwesomeIcon
+					v-if="card.route"
 					icon="fal fa-arrow-right"
 					class="text-xs text-gray-300 transition group-hover/card:translate-x-0.5 group-hover/card:text-gray-500"
 					fixed-width aria-hidden="true" />
 			</div>
 
-			<div v-if="card.value !== null" class="mt-3 flex items-baseline gap-2">
-				<span class="text-2xl font-semibold tracking-tight text-gray-800 tabular-nums">{{
-					locale.number(card.value)
-				}}</span>
-				<span class="truncate text-xs text-gray-400">{{ card.description }}</span>
+			<div
+				v-if="card.value !== null"
+				class="mt-3 text-3xl font-semibold tracking-tight text-gray-800 tabular-nums">
+				{{ locale.number(card.value) }}
 			</div>
-			<p v-else class="mt-3 truncate text-xs text-gray-400">{{ card.description }}</p>
-		</Link>
+			<p v-if="card.description" class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500">
+				{{ card.description }}
+			</p>
+		</component>
 
 		<div
 			v-if="card.metrics?.length"

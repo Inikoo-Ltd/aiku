@@ -10,29 +10,39 @@ import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash, faHistory, faProjectDiagram } from "@fal"
+import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faBell, faBellSlash, faHistory, faProjectDiagram, faLink } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash, faHistory, faProjectDiagram)
+library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown, faBell, faBellSlash, faHistory, faProjectDiagram, faLink)
 import { Select } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
+import TicketDraftSimilar from "@/Components/Tickets/TicketDraftSimilar.vue"
 
 const props = defineProps<{
+    fillScreen?: boolean
     storeRoute: { name: string; parameters?: Record<string, unknown> }
     priorities?: { label: string; value: string }[]
     kinds?: { label: string; value: string }[]
     types?: { label: string; value: string }[]
     modules?: { label: string; value: string }[]
     project?: { id: number; name: string } | null
+    linkFrom?: { id: number; reference: string; subject: string; types: { value: string; label: string }[] } | null
+    stay?: boolean
 }>()
 
-const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[]; reporter_muted: boolean; ticket_project_id: number | null }>({
+const emit = defineEmits<{
+    (e: "created"): void
+}>()
+
+const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[]; reporter_muted: boolean; ticket_project_id: number | null; link_ticket_id: number | null; link_type: string | null }>({
     subject: "",
     description: "",
     reference_url: "",
     priority: "normal",
-    type: props.types?.[0]?.value ?? null,
+    type: props.linkFrom ? "engineer" : props.types?.[0]?.value ?? null,
+    link_ticket_id: props.linkFrom?.id ?? null,
+    link_type: props.linkFrom ? "relates" : null,
     kind: props.kinds?.[0]?.value ?? null,
     module: null,
     images: [],
@@ -74,14 +84,37 @@ const optionIconClasses: Record<string, string> = {
 
 const submit = () =>
     form
-        .transform((data) => (data.type ? data : { ...data, type: undefined }))
-        .post(route(props.storeRoute.name, props.storeRoute.parameters ?? {}), { forceFormData: true })
+        .transform((data) => {
+            const payload: Record<string, unknown> = data.type ? { ...data } : { ...data, type: undefined }
+            if (!data.link_ticket_id) {
+                delete payload.link_ticket_id
+                delete payload.link_type
+            }
+            if (props.stay) payload.stay = true
+            return payload
+        })
+        .post(route(props.storeRoute.name, props.storeRoute.parameters ?? {}), {
+            forceFormData: true,
+            preserveScroll: props.stay,
+            onSuccess: () => {
+                if (!props.stay) return
+                form.reset()
+                emit("created")
+            },
+        })
 </script>
 
 <template>
-    <form class="flex h-[calc(100vh-9rem-40px)] flex-col" @submit.prevent="submit">
+    <form class="flex flex-col" :class="fillScreen && 'h-[calc(100vh-9rem-40px)]'" @submit.prevent="submit">
         <div class="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div class="thinScrollbar space-y-4 overflow-y-auto pr-2">
+        <div class="thinScrollbar space-y-4 pr-2" :class="fillScreen && 'overflow-y-auto'">
+            <div v-if="linkFrom" class="flex flex-wrap items-center gap-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2 text-sm text-gray-700">
+                <FontAwesomeIcon icon="fal fa-link" fixed-width class="text-[--app-accent-strong]" />
+                <span class="font-medium text-[--app-accent-strong]">{{ linkFrom.reference }}</span>
+                <Select v-model="form.link_type" :options="linkFrom.types" option-label="label" option-value="value" size="small" class="min-w-[9rem]" />
+                <span>{{ ctrans("this new ticket") }}</span>
+                <span class="w-full truncate text-xs text-gray-500">{{ linkFrom.subject }}</span>
+            </div>
             <p v-if="project" class="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700">
                 <FontAwesomeIcon icon="fal fa-project-diagram" fixed-width class="mr-1 text-gray-400" />
                 {{ ctrans("This ticket goes into the project :name", { name: project.name }) }}
@@ -113,7 +146,7 @@ const submit = () =>
             </div>
         </div>
 
-        <aside class="space-y-4 overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6">
+        <aside class="space-y-4 lg:border-l lg:border-gray-200 lg:pl-6" :class="fillScreen && 'overflow-y-auto'">
             <div v-if="types?.length">
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans("Type") }}</label>
                 <Select v-model="form.type" :options="types" option-label="label" option-value="value" class="w-full">
@@ -188,10 +221,13 @@ const submit = () =>
                 </Select>
                 </div>
             </template>
+            <div class="border-t border-gray-200 pt-4">
+                <TicketDraftSimilar :subject="form.subject" :description="form.description" />
+            </div>
         </aside>
         </div>
 
-        <div class="mt-4 shrink-0 border-t border-gray-200 pt-4 pb-[40px] flex justify-end">
+        <div class="mt-4 flex shrink-0 justify-end border-t border-gray-200 pt-4" :class="fillScreen && 'pb-[40px]'">
             <Button :label="ctrans('Create ticket')" :loading="form.processing" :disabled="!form.subject.trim()" @click="submit" />
         </div>
     </form>

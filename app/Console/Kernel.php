@@ -80,7 +80,9 @@ use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\WebVital\PruneWebVitalSamples;
+use App\Actions\Web\ExternalLink\RecheckExternalLinkStatuses;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
+use App\Actions\Web\WebsiteNotFoundPath\PruneWebsiteNotFoundPaths;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
@@ -1301,6 +1303,50 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('search_console:fetch --async')
+                    ->dailyAt('02:30')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchSearchConsoleAnalytics',
+                    ),
+                name: 'FetchSearchConsoleAnalytics',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('crawl:audit --async')
+                    ->weeklyOn(0, '03:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'AuditWebsites',
+                    ),
+                name: 'AuditWebsites',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RecheckExternalLinkStatuses::makeJob())
+                    ->weeklyOn(0, '02:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'RecheckExternalLinkStatuses',
+                    ),
+                name: 'RecheckExternalLinkStatuses',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PruneWebsiteNotFoundPaths::makeJob())
+                    ->dailyAt('03:50')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'PruneWebsiteNotFoundPaths',
+                    ),
+                name: 'PruneWebsiteNotFoundPaths',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:prune-agent-presence')->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'PruneStaleChatAgentPresence',
                 ),
@@ -1413,6 +1459,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'AlertUnclaimedChatSessions',
                 ),
                 name: 'AlertUnclaimedChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('production:release_pre_pick')->everyTenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ReleaseFullyStockedPrePickLines',
+                ),
+                name: 'ReleaseFullyStockedPrePickLines',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

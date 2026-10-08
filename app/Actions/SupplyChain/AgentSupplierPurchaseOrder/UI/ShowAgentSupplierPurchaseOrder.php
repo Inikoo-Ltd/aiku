@@ -9,7 +9,9 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Helpers\Currency;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Organisation;
@@ -63,6 +65,20 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
         AgentSupplierPurchaseOrderDeliveryStateEnum::CANCELLED,
     ];
 
+    /**
+     * Submitting the agent supplier purchase order submits the agent purchase order it hangs from,
+     * which moves all its agent supplier purchase orders to submitted.
+     */
+    private function canSubmit(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): bool
+    {
+        $purchaseOrder = $agentSupplierPurchaseOrder->purchaseOrder;
+
+        return $purchaseOrder
+            && in_array($agentSupplierPurchaseOrder->state, [AgentSupplierPurchaseOrderStateEnum::IN_PROCESS, AgentSupplierPurchaseOrderStateEnum::SUBMITTED], true)
+            && $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && $request->user()->authTo("procurement.$purchaseOrder->organisation_id.edit");
+    }
+
     public function htmlResponse(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): Response
     {
         $supplier      = $agentSupplierPurchaseOrder->supplier;
@@ -88,8 +104,20 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
                         'title' => __('Agent supplier purchase order')
                     ],
                     'title'   => $agentSupplierPurchaseOrder->reference,
-                    'actions' => $this->canEdit ? [
-                        [
+                    'actions' => array_values(array_filter([
+                        $this->canSubmit($agentSupplierPurchaseOrder, $request) ? [
+                            'type'    => 'button',
+                            'style'   => 'save',
+                            'icon'    => 'fal fa-paper-plane',
+                            'tooltip' => __('Submits :reference with all its suppliers', ['reference' => $purchaseOrder->reference]),
+                            'label'   => __('Submit'),
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.purchase-order.submit',
+                                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                            ]
+                        ] : null,
+                        $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'edit',
                             'tooltip' => __('Edit agent supplier purchase order'),
@@ -98,8 +126,8 @@ class ShowAgentSupplierPurchaseOrder extends OrgAction
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ]
-                    ] : [],
+                        ] : null,
+                    ])),
                 ],
                 'showcase'    => [
                     'reference'             => $agentSupplierPurchaseOrder->reference,

@@ -8,7 +8,7 @@
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewPill.vue"
+import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewCard.vue"
 import StockOutsWidget from "@/Components/Procurement/StockOutsWidget.vue"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -24,7 +24,7 @@ defineProps(["title", "pageHead", "dashboardCards", "stockLevels", "stockOuts"])
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
 	<StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :stockLevels="stockLevels" :cards="dashboardCards" storageKey="procurement-dashboard-stock-outs" class="mx-4 mt-3" />
-	<div v-else class="mx-4 mt-3 flex flex-wrap gap-3">
-		<ProcurementOverviewPill v-for="card in dashboardCards" :key="card.label" :card="card" />
+	<div v-else class="mx-4 mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+		<ProcurementOverviewCard v-for="card in dashboardCards" :key="card.label" :card="card" />
 	</div>
 </template>

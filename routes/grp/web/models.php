@@ -335,6 +335,9 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Helpers\Translations\TranslateFromMaster;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
+use App\Actions\Inventory\WarehouseTeam\DeleteWarehouseTeamClocking;
+use App\Actions\Inventory\WarehouseTeam\StoreWarehouseTeamClocking;
+use App\Actions\Inventory\WarehouseTeam\UpdateWarehouseTeamClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
@@ -437,6 +440,7 @@ use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
+use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonWeights;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
@@ -514,6 +518,8 @@ use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
+use App\Actions\SupplyChain\SupplierProduct\CheckSupplierProductForm;
+use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProductFromForm;
 use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
@@ -528,6 +534,8 @@ use App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
+use App\Actions\SupplyChain\SupplierProduct\DeleteImageFromSupplierProduct;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\SysAdmin\Guest\DeleteGuest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
@@ -541,6 +549,8 @@ use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\Web\Crawl\StartSiteAudit;
+use App\Actions\Web\WebsiteNotFoundPath\UpdateWebsiteNotFoundPathIgnored;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\ResetAnnouncement;
@@ -618,6 +628,8 @@ use App\Actions\Helpers\Ticket\TranslateTicketText;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
+use App\Actions\Helpers\Ticket\StoreTicketLink;
+use App\Actions\Helpers\Ticket\DeleteTicketLink;
 use App\Actions\Helpers\Ticket\UpdateTicketPullRequest;
 use Illuminate\Support\Facades\Route;
 
@@ -646,6 +658,8 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('{ticket:id}/translate', [TranslateTicketText::class, 'inTicket'])->name('translate')->whereNumber('ticket');
     Route::delete('comment/{ticketComment:id}', DeleteTicketComment::class)->name('comment.delete')->whereNumber('ticketComment');
     Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
+    Route::post('{ticket:id}/link', StoreTicketLink::class)->name('link.store')->whereNumber('ticket');
+    Route::delete('link/{ticketLink:id}', DeleteTicketLink::class)->name('link.delete')->whereNumber('ticketLink');
     Route::delete('{ticket:id}', DeleteTicket::class)->name('delete')->whereNumber('ticket');
 });
 
@@ -902,6 +916,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('supplier', [StoreSupplier::class, 'inOrganisation'])->name('supplier.store');
     Route::post('org-supplier/from-supplier/{supplier:id}', [StoreOrgSupplier::class, 'inOrganisation'])->name('org_supplier.store')->withoutScopedBindings();
+    Route::patch('org-supplier-product/{orgSupplierProduct:id}/carton-weights', UpdateOrgSupplierProductCartonWeights::class)->name('org_supplier_product.carton_weights.update')->withoutScopedBindings();
 
     Route::post('shop', StoreShop::class)->name('shop.store');
     Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
@@ -1279,7 +1294,10 @@ Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilme
 
 Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('organisation.store');
 
+Route::patch('website-not-found-path/{websiteNotFoundPath:id}/ignored', UpdateWebsiteNotFoundPathIgnored::class)->name('website_not_found_path.ignored.update');
+
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
+    Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 
@@ -1417,6 +1435,10 @@ Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
+Route::post('/supplier-product/{supplierProduct:id}/upload-images', UploadImagesToSupplierProduct::class)->name('supplier-product.upload_images');
+Route::delete('/supplier-product/{supplierProduct:id}/detach-image/{media:id}', DeleteImageFromSupplierProduct::class)->name('supplier-product.detach_image')->withoutScopedBindings();
+Route::post('/org-supplier-product/{orgSupplierProduct:id}/upload-images', [UploadImagesToSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.upload_images');
+Route::delete('/org-supplier-product/{orgSupplierProduct:id}/detach-image/{media:id}', [DeleteImageFromSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.detach_image')->withoutScopedBindings();
 Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', UpdateAgentSupplierPurchaseOrder::class)->name('agent_supplier_purchase_order.update');
 Route::post('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/deposit', StoreAspoDeposit::class)->name('agent_supplier_purchase_order.deposit.store');
 Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/journey-stage', [UpdatePurchaseOrderJourneyStage::class, 'inAgentSupplierPurchaseOrder'])->name('agent_supplier_purchase_order.journey_stage');
@@ -1510,6 +1532,8 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product', StoreSupplierProduct::class)->name('supplier-product.store');
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
+    Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
+    Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
 });
 
 Route::name('supplier_product_upload.')->prefix('supplier-product-upload/{upload:id}')->group(function () {
@@ -1776,6 +1800,9 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
 });
 Route::delete('timesheet/{timesheet:id}', DeleteTimesheet::class)->name('timesheet.delete');
 Route::post('timesheet/{timesheet:id}/clocking', StoreManualClocking::class)->name('timesheet.clocking.store');
+Route::post('warehouse/{warehouse:id}/team/{employee:id}/clocking', StoreWarehouseTeamClocking::class)->name('warehouse.team.clocking.store')->withoutScopedBindings();
+Route::patch('warehouse/{warehouse:id}/team/clocking/{clocking:id}', UpdateWarehouseTeamClocking::class)->name('warehouse.team.clocking.update')->withoutScopedBindings();
+Route::delete('warehouse/{warehouse:id}/team/clocking/{clocking:id}', DeleteWarehouseTeamClocking::class)->name('warehouse.team.clocking.delete')->withoutScopedBindings();
 Route::patch('time-tracker/{timeTracker:id}/clock-in', ClockInTimeTracker::class)->name('time-tracker.clock-in');
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::delete('time-tracker/{timeTracker:id}', DeleteTimeTracker::class)->name('time-tracker.delete');

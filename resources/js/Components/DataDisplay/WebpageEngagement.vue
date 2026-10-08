@@ -14,6 +14,9 @@ type HistoryRecord = {
 	visitors: number
 	bounces: number
 	add_to_baskets: number
+	entrances: number
+	checkouts: number
+	purchases: number
 	conversion_rate: number | null
 	bounce_rate: number | null
 	avg_time_on_page: number | null
@@ -25,6 +28,9 @@ const props = defineProps<{
 		page_views?: number
 		visitors?: number
 		add_to_baskets?: number
+		entrances?: number
+		checkouts?: number
+		purchases?: number
 		conversion_rate?: number
 		bounces?: number
 		bounce_rate?: number
@@ -62,7 +68,11 @@ const metrics = computed<
 		icon: faBullseye,
 		color: "#059669",
 		value: percent(props.engagement?.conversion_rate),
-		hint: ctrans(":count added to basket", { count: props.engagement?.add_to_baskets ?? 0 }),
+		hint: ctrans(":purchases purchases from :entrances entrances, :baskets added to basket", {
+			purchases: props.engagement?.purchases ?? 0,
+			entrances: props.engagement?.entrances ?? 0,
+			baskets: props.engagement?.add_to_baskets ?? 0,
+		}),
 		format: (value: number) => `${value}%`,
 	},
 	{

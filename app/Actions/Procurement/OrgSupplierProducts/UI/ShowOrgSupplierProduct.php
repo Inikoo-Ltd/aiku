@@ -24,6 +24,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -70,12 +71,16 @@ class ShowOrgSupplierProduct extends OrgAction
         return Inertia::render(
             'Procurement/OrgSupplierProduct',
             [
-                'title'       => __('Supplier Product'),
+                'title'       => '(' . $orgSupplierProduct->supplierProduct->code . ') ' . __('Supplier Product'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgSupplierProduct,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
+                'navigation'  => [
+                    'previous' => $this->getPrevious($orgSupplierProduct, $request),
+                    'next'     => $this->getNext($orgSupplierProduct, $request),
+                ],
                 'pageHead'    => [
                     'title' => $orgSupplierProduct->supplierProduct->name,
                     'model' => __('Supplier Product'),
@@ -179,6 +184,73 @@ class ShowOrgSupplierProduct extends OrgAction
             ),
             default => [],
         };
+    }
+
+    public function getPrevious(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ?array
+    {
+        $previous = $this->siblings($request)
+            ->whereRaw('(supplier_products.code, org_supplier_products.id) < (?, ?)', [$orgSupplierProduct->supplierProduct->code, $orgSupplierProduct->id])
+            ->orderBy('supplier_products.code', 'desc')
+            ->orderBy('org_supplier_products.id', 'desc')
+            ->first();
+
+        return $this->getNavigation($previous, $request);
+    }
+
+    public function getNext(OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ?array
+    {
+        $next = $this->siblings($request)
+            ->whereRaw('(supplier_products.code, org_supplier_products.id) > (?, ?)', [$orgSupplierProduct->supplierProduct->code, $orgSupplierProduct->id])
+            ->orderBy('supplier_products.code')
+            ->orderBy('org_supplier_products.id')
+            ->first();
+
+        return $this->getNavigation($next, $request);
+    }
+
+    /**
+     * The same set the supplier products list shows for this route, in the same code order, so
+     * stepping through them walks the list the user came from.
+     */
+    private function siblings(ActionRequest $request): Builder
+    {
+        $query = OrgSupplierProduct::query()
+            ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
+            ->select('org_supplier_products.*', 'supplier_products.code', 'supplier_products.name');
+
+        $orgAgent    = $request->route('orgAgent');
+        $orgSupplier = $request->route('orgSupplier');
+        $agent       = $this->getOrganisationAgent($this->organisation);
+
+        if ($orgAgent instanceof OrgAgent) {
+            $query->where('org_supplier_products.org_agent_id', $orgAgent->id);
+        } elseif ($orgSupplier instanceof OrgSupplier) {
+            $query->where('org_supplier_products.org_supplier_id', $orgSupplier->id);
+        } elseif ($agent) {
+            $query->whereIn('org_supplier_products.org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id'));
+        } else {
+            $query->where('org_supplier_products.organisation_id', $this->organisation->id);
+        }
+
+        return $query;
+    }
+
+    private function getNavigation(?OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): ?array
+    {
+        if (!$orgSupplierProduct) {
+            return null;
+        }
+
+        return [
+            'label' => $orgSupplierProduct->name,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => array_merge(
+                    $request->route()->originalParameters(),
+                    ['orgSupplierProduct' => $orgSupplierProduct->slug]
+                ),
+            ],
+        ];
     }
 
     private function getTabs(): array

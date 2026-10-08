@@ -8,30 +8,35 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateBulkShopifyProductDimensions
 {
     use AsAction;
-    use WithShopifyApi;
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+        $failures = [];
+
+        Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
             ->where('platform_status', true)
             ->whereNotNull('platform_product_id')
             ->whereNotNull('platform_product_variant_id')
-            ->get()
-            ->chunk(50);
+            ->chunkById(50, function ($portfolios) use ($customerSalesChannel, &$failures) {
+                foreach ($portfolios as $portfolio) {
+                    [$updated, $error] = UpdateShopifyProductDimensions::run($customerSalesChannel, $portfolio);
+                    if (!$updated) {
+                        $failures[$portfolio->id] = $error;
+                    }
+                }
+            });
 
-        foreach ($portfolios as $portfoliosChunk) {
-            foreach ($portfoliosChunk as $portfolio) {
-                UpdateShopifyProductDimensions::run($customerSalesChannel, $portfolio);
-            }
+        if ($failures) {
+            Log::warning('Shopify specifications not updated', ['customer_sales_channel_id' => $customerSalesChannel->id, 'failures' => $failures]);
         }
     }
 }

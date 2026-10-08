@@ -16,6 +16,7 @@ use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -54,6 +56,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $units_per_carton units per carton
  * @property numeric|null $cbm carton cubic meters
  * @property int|null $carton_weight grams
+ * @property int|null $carton_net_weight grams
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
  * @property string|null $activated_at
@@ -73,6 +76,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read Group|null $group
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\SupplyChain\HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read Collection<int, \App\Models\SupplyChain\HistoricSupplierProduct> $historicSupplierProducts
  * @property-read Collection<int, OrgSupplierProduct> $orgSupplierProducts
@@ -89,9 +94,10 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|SupplierProduct withoutTrashed()
  * @mixin Eloquent
  */
-class SupplierProduct extends Model implements Auditable
+class SupplierProduct extends Model implements HasMedia, Auditable
 {
     use SoftDeletes;
+    use HasImage;
     use HasSlug;
     use HasFactory;
     use HasHistory;
@@ -165,6 +171,7 @@ class SupplierProduct extends Model implements Auditable
             'state'            => $this->state?->value,
             'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
             'organisation_ids' => $this->orgSupplierProducts()->pluck('organisation_id')->all(),
+            'agent_id'         => $this->agent_id,
         ];
     }
 

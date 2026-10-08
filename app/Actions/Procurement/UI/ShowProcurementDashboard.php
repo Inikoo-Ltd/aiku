@@ -83,19 +83,19 @@ class ShowProcurementDashboard extends OrgAction
 
         if ($organisation->type === OrganisationTypeEnum::AGENT) {
             return [
-                $this->dashboardCard(__('Purchase Orders'), __('Received from our organisations'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
-                $this->dashboardCard(__('Supplier Purchase Orders'), __('Sent to suppliers'), 'fal fa-clipboard-list', $numbers['supplier_purchase_orders'], 'amber', 'grp.org.procurement.agent_supplier_purchase_orders.index'),
-                $this->dashboardCard(__('Stock Deliveries'), __('Shipped to our organisations'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
-                $this->dashboardCard(__('Suppliers'), __('Current suppliers'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
+                $this->dashboardCard(__('Purchase Orders'), __('Orders our organisations place with us for products from our suppliers'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
+                $this->dashboardCard(__('Supplier Purchase Orders'), __('Purchase orders split per supplier, sent to each supplier to produce'), 'fal fa-clipboard-list', $numbers['supplier_purchase_orders'], 'amber', 'grp.org.procurement.agent_supplier_purchase_orders.index'),
+                $this->dashboardCard(__('Stock Deliveries'), __('Shipments of the ordered goods to our organisations'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
+                $this->dashboardCard(__('Suppliers'), __('Active suppliers we source products from'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
             ];
         }
 
         if ($organisation->type !== OrganisationTypeEnum::SHOP) {
             return [
-                $this->dashboardCard(__('Suppliers'), __('Current suppliers'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
-                $this->dashboardCard(__('Supplier Products'), __('Current supplier products'), 'fal fa-box-usd', $numbers['supplier_products'], 'amber', 'grp.org.procurement.org_supplier_products.index'),
-                $this->dashboardCard(__('Purchase Orders'), __('Purchase orders'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
-                $this->dashboardCard(__('Stock Deliveries'), __('Stock deliveries'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
+                $this->dashboardCard(__('Suppliers'), __('Active suppliers we buy from directly'), 'fal fa-person-dolly', $numbers['suppliers'], 'emerald', 'grp.org.procurement.org_suppliers.index'),
+                $this->dashboardCard(__('Supplier Products'), __('Products we can buy from our suppliers'), 'fal fa-box-usd', $numbers['supplier_products'], 'amber', 'grp.org.procurement.org_supplier_products.index'),
+                $this->dashboardCard(__('Purchase Orders'), __('Orders we place with suppliers and agents'), 'fal fa-clipboard-list', $numbers['purchase_orders'], 'indigo', 'grp.org.procurement.purchase_orders.index'),
+                $this->dashboardCard(__('Stock Deliveries'), __('Incoming goods from suppliers and agents'), 'fal fa-truck-container', $numbers['stock_deliveries'], 'sky', 'grp.org.procurement.stock_deliveries.index'),
             ];
         }
 

@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Procurement\AgentLabel\DownloadAgentArtefactLabelPdf;
+use App\Actions\Procurement\AgentLabel\FetchAgentOrgStockBarcodeLabelOptions;
+use App\Actions\Procurement\AgentLabel\PdfAgentOrgStockBarcodeLabel;
 use App\Actions\Procurement\AgentLabel\UI\IndexAgentLabels;
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
@@ -29,11 +31,14 @@ use App\Actions\Procurement\OrgPartner\UI\IndexPartnerCoverBucketItems;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerShoppingDashboard;
 use App\Actions\Procurement\OrgPartner\RemoveMisplacedShoppingListItems;
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerBlockedOrgStocks;
+use App\Actions\Procurement\OrgPartner\UnblockPartnerOrgStock;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeleteOpenPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\PokePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
@@ -154,6 +159,8 @@ Route::get('agent-suppliers', IndexOrgAgentSuppliers::class)->name('org_agent_su
 Route::prefix('agent-labels')->as('agent_labels.')->group(function () {
     Route::get('', IndexAgentLabels::class)->name('index');
     Route::get('{orgStock:id}/{label:id}/pdf', DownloadAgentArtefactLabelPdf::class)->name('pdf')->withoutScopedBindings();
+    Route::get('{orgStock:id}/barcode-label', PdfAgentOrgStockBarcodeLabel::class)->name('barcode_label')->withoutScopedBindings();
+    Route::get('{orgStock:id}/barcode-label-options', FetchAgentOrgStockBarcodeLabelOptions::class)->name('barcode_label_options')->withoutScopedBindings();
 });
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
@@ -209,6 +216,8 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
                 Route::get('', ShowPartnerBrowse::class)->name('index');
             });
             Route::get('sent', [IndexPartnerShoppingListItems::class, 'inSent'])->name('.shopping_list.sent');
+            Route::get('blocked', IndexPartnerBlockedOrgStocks::class)->name('.shopping_list.blocked');
+            Route::delete('blocked/{orgStock:id}', UnblockPartnerOrgStock::class)->name('.shopping_list.unblock')->withoutScopedBindings();
             Route::prefix('ongoing-po')->as('.shopping_list.')->group(function () {
                 Route::get('', IndexPartnerShoppingListItems::class)->name('index');
                 Route::post('suggest', SuggestPartnerShoppingList::class)->name('suggest');
@@ -221,6 +230,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
                 Route::post('{orgStock:id}', StorePartnerShoppingListItem::class)->name('store')->withoutScopedBindings();
                 Route::patch('{partnerShoppingListItem}', UpdatePartnerShoppingListItem::class)->name('update')->withoutScopedBindings();
                 Route::delete('{partnerShoppingListItem}', DeletePartnerShoppingListItem::class)->name('destroy')->withoutScopedBindings();
+                Route::post('{partnerShoppingListItem}/poke', PokePartnerShoppingListItem::class)->name('poke')->withoutScopedBindings();
             });
         });
     });

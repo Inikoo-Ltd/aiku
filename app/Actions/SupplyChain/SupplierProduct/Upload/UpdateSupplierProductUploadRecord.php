@@ -22,7 +22,7 @@ class UpdateSupplierProductUploadRecord extends OrgAction
 
     public function handle(UploadRecord $record, array $modelData, ?int $userId): UploadRecord
     {
-        $data = $record->data;
+        $data = $record->data ?? [];
 
         foreach (Arr::get($modelData, 'decisions', []) as $code => $accepted) {
             if ($accepted) {

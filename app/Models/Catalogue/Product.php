@@ -145,7 +145,6 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $price_updated_at
  * @property Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
- * @property numeric|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n

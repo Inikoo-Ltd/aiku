@@ -50,6 +50,11 @@ class GetSupplierProductSearchSchema
                         'optional' => true,
                     ],
                     [
+                        'name'     => 'agent_id',
+                        'type'     => 'int64',
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => '__soft_deleted',
                         'type'     => 'int32',
                         'optional' => true,

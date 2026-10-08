@@ -15,7 +15,7 @@ trait WithVariantColumns
 {
     public function getVariantAxisLabelColumn(): Expression
     {
-        return DB::raw("(SELECT variants.data->'variants'->0->>'label' FROM variants WHERE variants.id = products.variant_id) as variant_axis_label");
+        return DB::raw("(SELECT COALESCE(NULLIF(variants.option_translations->>(variants.data->'variants'->0->>'label'), ''), variants.data->'variants'->0->>'label') FROM variants WHERE variants.id = products.variant_id) as variant_axis_label");
     }
 
     public function getVariantTitleColumn(): Expression

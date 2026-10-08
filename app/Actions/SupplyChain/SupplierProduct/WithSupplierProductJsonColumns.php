@@ -29,6 +29,8 @@ trait WithSupplierProductJsonColumns
         'minimum_carton_order',
         'delivery_time',
         'unit_expense',
+        'carton_weight',
+        'carton_net_weight',
     ];
 
     /**

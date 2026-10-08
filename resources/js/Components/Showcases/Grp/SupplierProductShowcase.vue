@@ -5,12 +5,13 @@
 
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, ref, watch } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBarcode,
     faBoxOpen,
+    faCamera,
     faChair,
     faCube,
     faCubes,
@@ -23,6 +24,7 @@ import {
     faPersonDolly,
     faRulerCombined,
     faSeedling,
+    faTrashAlt,
     faWeightHanging,
 } from "@fal"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -39,6 +41,7 @@ import { notify } from "@kyvg/vue3-notification"
 library.add(
     faBarcode,
     faBoxOpen,
+    faCamera,
     faChair,
     faCube,
     faCubes,
@@ -51,6 +54,7 @@ library.add(
     faPersonDolly,
     faRulerCombined,
     faSeedling,
+    faTrashAlt,
     faWeightHanging,
 )
 
@@ -161,9 +165,24 @@ const props = defineProps<{
             id: number
             code: string
             organisation_code: string
-            warehouse_slug: string
             barcodes: Barcode[]
+            label_options_route: routeType
         }[]
+        carton?: {
+            supplier_product_id: number
+            net_weight: number | null
+            gross_weight: number | null
+            update_route: routeType | null
+        }
+        internal_images?: {
+            upload_route: routeType | null
+            images: {
+                id: number
+                is_main: boolean
+                image: object
+                detach_route: routeType | null
+            }[]
+        }
     }
 }>()
 
@@ -286,7 +305,7 @@ onMounted(() => nextTick(renderBarcodes))
 watch(selectedLabelOrgStockId, () => nextTick(renderBarcodes))
 
 const isPrintable = (barcode: { level: string; number: string | null }) =>
-    !!barcode.number && barcode.level !== "carton" && selectedLabelOrgStockId.value !== null
+    !!barcode.number && selectedLabelOrgStockId.value !== null
 
 const isLabelModalOpen = ref(false)
 const isLoadingLabelOptions = ref(false)
@@ -304,13 +323,15 @@ const openLabelModal = async (level: string) => {
     isLoadingLabelOptions.value = true
 
     try {
-        const { data } = await axios.get(route("grp.json.warehouse.org_stock.label_options", {
-            warehouse: orgStock.warehouse_slug,
-            orgStock: orgStock.id,
+        const { data } = await axios.get(route(orgStock.label_options_route.name, {
+            ...orgStock.label_options_route.parameters,
+            ...(props.data.carton ? { supplier_product: props.data.carton.supplier_product_id } : {}),
         }))
 
         labelOptions.value = data.options
-        labelRoute.value = data.label_route
+        labelRoute.value = props.data.carton
+            ? { ...data.label_route, parameters: { ...data.label_route.parameters, supplier_product: props.data.carton.supplier_product_id } }
+            : data.label_route
         labelLevel.value = level
         isLabelModalOpen.value = true
     } catch (error) {
@@ -322,6 +343,103 @@ const openLabelModal = async (level: string) => {
     } finally {
         isLoadingLabelOptions.value = false
     }
+}
+
+const gramsToKilograms = (grams: number | null | undefined) => (grams ? String(grams / 1000) : "")
+
+const kilogramsToGrams = (kilograms: string): number | null => {
+    const value = kilograms.trim().replace(",", ".")
+
+    return value === "" ? null : Math.round(Number(value) * 1000)
+}
+
+const cartonNetWeight = ref("")
+const cartonGrossWeight = ref("")
+const isSavingCartonWeights = ref(false)
+
+watch(() => props.data.carton, (carton) => {
+    cartonNetWeight.value = gramsToKilograms(carton?.net_weight)
+    cartonGrossWeight.value = gramsToKilograms(carton?.gross_weight)
+}, { immediate: true })
+
+const isValidKilograms = (kilograms: string) => {
+    const grams = kilogramsToGrams(kilograms)
+
+    return grams === null || (Number.isFinite(grams) && grams >= 0)
+}
+
+const canSaveCartonWeights = computed(() =>
+    isValidKilograms(cartonNetWeight.value)
+    && isValidKilograms(cartonGrossWeight.value)
+    && (kilogramsToGrams(cartonNetWeight.value) !== (props.data.carton?.net_weight ?? null)
+        || kilogramsToGrams(cartonGrossWeight.value) !== (props.data.carton?.gross_weight ?? null)))
+
+const saveCartonWeights = async () => {
+    const updateRoute = props.data.carton?.update_route
+
+    if (!updateRoute || !canSaveCartonWeights.value || isSavingCartonWeights.value) {
+        return
+    }
+
+    isSavingCartonWeights.value = true
+
+    try {
+        await axios.patch(route(updateRoute.name, updateRoute.parameters), {
+            carton_net_weight: kilogramsToGrams(cartonNetWeight.value),
+            carton_weight: kilogramsToGrams(cartonGrossWeight.value),
+        })
+        router.reload({ only: ["showcase"] })
+        notify({
+            title: ctrans("Saved"),
+            text: ctrans("Carton weights updated"),
+            type: "success",
+        })
+    } catch (error) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Could not save the carton weights"),
+            type: "error",
+        })
+    } finally {
+        isSavingCartonWeights.value = false
+    }
+}
+
+const isUploadingImages = ref(false)
+
+const uploadInternalImages = async (event: Event) => {
+    const input = event.target as HTMLInputElement
+    const uploadRoute = props.data.internal_images?.upload_route
+
+    if (!uploadRoute || !input.files?.length) {
+        return
+    }
+
+    const formData = new FormData()
+    Array.from(input.files).forEach((file) => formData.append("images[]", file))
+
+    isUploadingImages.value = true
+
+    try {
+        await axios.post(route(uploadRoute.name, uploadRoute.parameters), formData)
+        router.reload({ only: ["showcase"] })
+    } catch (error) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Could not upload the pictures"),
+            type: "error",
+        })
+    } finally {
+        isUploadingImages.value = false
+        input.value = ""
+    }
+}
+
+const removeInternalImage = (detachRoute: routeType) => {
+    router.delete(route(detachRoute.name, detachRoute.parameters), {
+        preserveScroll: true,
+        only: ["showcase"],
+    })
 }
 
 const availabilityBadge = (isAvailable: boolean) =>
@@ -358,6 +476,36 @@ const availabilityBadge = (isAvailable: boolean) =>
             <p v-if="data.product.description" class="mt-4 whitespace-pre-wrap text-sm text-gray-500">
                 {{ data.product.description }}
             </p>
+
+            <div v-if="data.internal_images && (data.internal_images.images.length || data.internal_images.upload_route)"
+                class="mt-4 border-t border-gray-100 pt-3">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-gray-400"
+                        v-tooltip="ctrans('Only for internal use, these pictures never reach the websites')">
+                        {{ ctrans("Internal pictures") }}
+                    </div>
+                    <label v-if="data.internal_images.upload_route"
+                        class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900"
+                        :class="{ 'pointer-events-none opacity-50': isUploadingImages }">
+                        <Icon :data="{ icon: 'fal fa-camera' }" />
+                        {{ isUploadingImages ? ctrans("Uploading") : ctrans("Add picture") }}
+                        <input type="file" accept="image/*" multiple class="hidden" @change="uploadInternalImages" />
+                    </label>
+                </div>
+                <div v-if="data.internal_images.images.length" class="mt-2 flex flex-wrap gap-2">
+                    <div v-for="internalImage in data.internal_images.images" :key="internalImage.id"
+                        class="group relative h-16 w-16 overflow-hidden rounded border"
+                        :class="internalImage.is_main ? 'border-gray-500' : 'border-gray-200'">
+                        <Image :src="internalImage.image" class="h-full w-full" />
+                        <button v-if="internalImage.detach_route" type="button"
+                            class="absolute right-0.5 top-0.5 hidden rounded bg-white/90 px-1 text-xs text-red-500 group-hover:block"
+                            v-tooltip="ctrans('Remove picture')"
+                            @click="removeInternalImage(internalImage.detach_route)">
+                            <Icon :data="{ icon: 'fal fa-trash-alt' }" />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div v-if="data.organisation" class="mt-4 border-t border-gray-100 pt-3">
                 <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">
@@ -482,29 +630,64 @@ const availabilityBadge = (isAvailable: boolean) =>
                         <svg v-else-if="barcode.number" :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
                         <div v-else class="flex h-14 items-center text-sm italic text-gray-400">{{ ctrans("No barcode") }}</div>
 
-                        <span v-if="formatWeight(barcode.weight)"
-                            class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-700">
+                        <div v-if="barcode.level === 'carton' && data.carton"
+                            class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-700 xl:col-span-2">
                             <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
-                            <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
-                        </span>
-                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                            <template v-if="data.carton.update_route">
+                                <label class="inline-flex items-center gap-1.5">
+                                    <span class="text-xs font-medium text-gray-500" v-tooltip="ctrans('Net weight')">{{ ctrans("NW") }}</span>
+                                    <input v-model="cartonNetWeight" type="text" inputmode="decimal"
+                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[--app-accent] focus:ring-[--app-accent]"
+                                        :class="isValidKilograms(cartonNetWeight) ? '' : 'border-red-400'"
+                                        @keydown.enter="saveCartonWeights" />
+                                    <span class="text-xs text-gray-400">kg</span>
+                                </label>
+                                <label class="inline-flex items-center gap-1.5">
+                                    <span class="text-xs font-medium text-gray-500" v-tooltip="ctrans('Gross weight')">{{ ctrans("GW") }}</span>
+                                    <input v-model="cartonGrossWeight" type="text" inputmode="decimal"
+                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[--app-accent] focus:ring-[--app-accent]"
+                                        :class="isValidKilograms(cartonGrossWeight) ? '' : 'border-red-400'"
+                                        @keydown.enter="saveCartonWeights" />
+                                    <span class="text-xs text-gray-400">kg</span>
+                                </label>
+                                <button v-if="canSaveCartonWeights" type="button"
+                                    class="rounded border border-[--app-accent] bg-[--app-accent] px-2 py-1 text-xs text-[--app-accent-text] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-60"
+                                    :disabled="isSavingCartonWeights"
+                                    @click="saveCartonWeights">
+                                    {{ ctrans("Save") }}
+                                </button>
+                            </template>
+                            <template v-else>
+                                <span v-tooltip="ctrans('Net weight')">{{ ctrans("NW") }} <span class="font-medium tabular-nums">{{ formatWeight(data.carton.net_weight) ?? "—" }}</span></span>
+                                <span v-tooltip="ctrans('Gross weight')">{{ ctrans("GW") }} <span class="font-medium tabular-nums">{{ formatWeight(data.carton.gross_weight) ?? "—" }}</span></span>
+                            </template>
+                        </div>
 
-                        <span v-if="formatDimensions(barcode.dimensions)"
-                            v-tooltip="ctrans('Dimensions (L × W × H)')"
-                            class="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
-                            <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
-                            <span class="whitespace-nowrap font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
-                            <span v-if="barcode.dimensions?.type"
-                                class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
-                                {{ barcode.dimensions.type }}
+                        <template v-else>
+                            <span v-if="formatWeight(barcode.weight)"
+                                class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-700">
+                                <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
+                                <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
                             </span>
-                        </span>
-                        <span v-else-if="barcode.warning"
-                            class="inline-flex min-w-0 items-start gap-2 text-xs leading-snug text-amber-700">
-                            <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="mt-0.5 w-4 shrink-0 text-amber-500" />
-                            <span>{{ barcode.warning }}</span>
-                        </span>
-                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                            <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+
+                            <span v-if="formatDimensions(barcode.dimensions)"
+                                v-tooltip="ctrans('Dimensions (L × W × H)')"
+                                class="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
+                                <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
+                                <span class="whitespace-nowrap font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
+                                <span v-if="barcode.dimensions?.type"
+                                    class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
+                                    {{ barcode.dimensions.type }}
+                                </span>
+                            </span>
+                            <span v-else-if="barcode.warning"
+                                class="inline-flex min-w-0 items-start gap-2 text-xs leading-snug text-amber-700">
+                                <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="mt-0.5 w-4 shrink-0 text-amber-500" />
+                                <span>{{ barcode.warning }}</span>
+                            </span>
+                            <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                        </template>
                     </div>
                 </template>
             </div>
