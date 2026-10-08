@@ -123,6 +123,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingProduct;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Production\Artefact\StoreArtefact;
@@ -5585,6 +5586,32 @@ describe('partner shopping list', function () {
             expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)?->id)->toBe($this->sellerProduct->id);
         } finally {
             $errorOrgStock->forceDelete();
+        }
+    });
+
+    test('a cheaper special label sharing the SKO does not replace the product named after it', function () {
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $originalCode   = $sellerOrgStock->code;
+        $sellerOrgStock->update(['code' => strtoupper($this->sellerProduct->code)]);
+
+        $specialLabel        = $this->sellerProduct->replicate();
+        $specialLabel->code  = 'SC-'.$this->sellerProduct->id;
+        $specialLabel->slug  = 'sc-'.$this->sellerProduct->id;
+        $specialLabel->price = round((float) $this->sellerProduct->price / 2, 2);
+        $specialLabel->save();
+        DB::table('product_has_org_stocks')->insert([
+            'product_id' => $specialLabel->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => $sellerOrgStock->pivot->quantity,
+        ]);
+
+        try {
+            $pricePerSko = DB::query()->selectRaw(PartnerSkoPrice::pricePerSkoSql((string) $sellerOrgStock->id, [$this->sellerShop->id]).' as price')->value('price');
+
+            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id)
+                ->and(round((float) $pricePerSko, 4))->toBe(round((float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity, 4));
+        } finally {
+            DB::table('product_has_org_stocks')->where('product_id', $specialLabel->id)->delete();
+            $specialLabel->forceDelete();
+            $sellerOrgStock->update(['code' => $originalCode]);
         }
     });
 

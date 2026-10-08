@@ -22,6 +22,16 @@ final class PartnerSkoPrice
     }
 
     /**
+     * Products sharing an SKO at the same pack size tie on everything but price, and the cheaper one is
+     * often a customer's special label (PREOSC-01 beside PrEO-01). The product carrying the SKO's own
+     * code is the one the partner sells it as.
+     */
+    private static function notNamedAfterSkoSql(string $productCodeExpression, string $orgStockIdExpression): string
+    {
+        return "lower($productCodeExpression) is distinct from (select lower(sko.code) from org_stocks sko where sko.id = $orgStockIdExpression)";
+    }
+
+    /**
      * An org stock is sold through several products: the plain box, multi-box packs and
      * mixed starter packs holding dozens of other SKOs. Only a product that holds this SKO
      * alone prices it, and of those the smallest, cheapest pack is the unit price;
@@ -39,7 +49,7 @@ final class PartnerSkoPrice
             join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id in (".implode(',', array_map(intval(...), $shopIds)).")
             where phos.org_stock_id = ".$orgStockIdExpression."
                 and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
-            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", phos.quantity, pr.price
+            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", phos.quantity, ".self::notNamedAfterSkoSql('pr.code', 'phos.org_stock_id').", pr.price
             limit 1)";
     }
 
@@ -59,6 +69,7 @@ final class PartnerSkoPrice
             ->where('products.state', ProductStateEnum::ACTIVE->value)
             ->whereRaw('(select count(*) from product_has_org_stocks bundle where bundle.product_id = products.id) = 1')
             ->orderBy('product_has_org_stocks.quantity')
+            ->orderByRaw(self::notNamedAfterSkoSql('products.code', 'product_has_org_stocks.org_stock_id'))
             ->orderBy('products.price');
     }
 }
