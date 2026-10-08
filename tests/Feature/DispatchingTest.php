@@ -2431,6 +2431,45 @@ test('picking session add remove and undo finish packing', function () {
     expect($pickingSession->fresh())->toBeInstanceOf(PickingSession::class);
 });
 
+test('a queued delivery note can be put in a picking session', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::QUEUED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ], true);
+
+    expect($pickingSession->deliveryNotes()->pluck('delivery_notes.id')->all())->toBe([$deliveryNote->id]);
+});
+
+test('a second picking session for the same delivery notes is refused and leaves the items on the first one', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $lockedQueries = [];
+    DB::listen(function ($query) use (&$lockedQueries) {
+        if (str_contains($query->sql, 'from "delivery_notes"') && str_contains($query->sql, 'for update')) {
+            $lockedQueries[] = $query->sql;
+        }
+    });
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+
+    expect($lockedQueries)->not->toBeEmpty();
+
+    expect(fn () => StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($deliveryNote->deliveryNoteItems()->pluck('picking_session_id')->unique()->values()->all())->toBe([$pickingSession->id])
+        ->and($deliveryNote->pickingSessions()->count())->toBe(1);
+});
+
 test('delete shipment action', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'DS'.Str::random(4), 'name' => 'Ds', 'trade_as' => 'ds']);

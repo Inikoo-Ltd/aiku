@@ -35,6 +35,8 @@ class AddDeliveryNotesToPickingSession extends OrgAction
             $user = request()->user();
 
             $validDeliveryNoteIds = DeliveryNote::whereIn('id', $deliveryNoteIds)
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get()
                 ->filter(function ($deliveryNote) {
                     return $deliveryNote->pickingSessions->isEmpty()
