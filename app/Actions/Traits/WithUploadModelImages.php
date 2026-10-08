@@ -23,6 +23,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -34,7 +35,7 @@ trait WithUploadModelImages
     use WithAttachMediaToModel;
 
 
-    public function uploadImages(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|MasterCollection $model, string $scope, array $modelData): array
+    public function uploadImages(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|MasterCollection|SupplierProduct $model, string $scope, array $modelData): array
     {
         $medias = [];
 

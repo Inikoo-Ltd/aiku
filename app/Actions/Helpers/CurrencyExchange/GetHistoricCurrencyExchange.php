@@ -14,6 +14,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class GetHistoricCurrencyExchange
 {
@@ -70,7 +72,15 @@ class GetHistoricCurrencyExchange
             if ($currencyExchange) {
                 $exchange = $currencyExchange->exchange;
             } else {
-                $exchangeData = FetchCurrencyExchange::run($exchangePivotCurrency, $currency, $date);
+                try {
+                    $exchangeData = FetchCurrencyExchange::run($exchangePivotCurrency, $currency, $date);
+                } catch (Throwable $e) {
+                    if (!app()->isLocal()) {
+                        throw $e;
+                    }
+
+                    return $this->localGuess($currency, $date, $e);
+                }
                 $exchange     = $exchangeData['exchange'] ?? null;
                 if ($exchange) {
                     StoreCurrencyExchange::run($currency, [
@@ -85,6 +95,18 @@ class GetHistoricCurrencyExchange
         return $exchange;
     }
 
+
+    /**
+     * Local development only: when the rate service does not answer, carry on with the latest stored rate
+     * (or 1) instead of failing, so purchase orders can still be created offline. Nothing is stored.
+     */
+    private function localGuess(Currency $currency, Carbon $date, Throwable $e): float
+    {
+        $guess = (float)(CurrencyExchange::where('currency_id', $currency->id)->where('date', '<=', $date)->orderByDesc('date')->value('exchange') ?: 1);
+        Log::warning("Local FX guess {$currency->code} @{$date->toDateString()}: $guess (".$e->getMessage().')');
+
+        return $guess;
+    }
 
     public function asCommand(Command $command): int
     {

@@ -35,57 +35,71 @@ class ReviewSupplierProductUpload
 
     public function handle(Upload $upload): Upload
     {
-        $records = $upload->records()->where('status', UploadRecordStatusEnum::PREVIEW)->orderBy('row_number')->get()
+        $rows = $upload->records()->where('status', UploadRecordStatusEnum::PREVIEW)->orderBy('row_number')->get()
             ->reject(fn (UploadRecord $record) => Arr::get($record->data, 'skip'))
+            ->map(fn (UploadRecord $record) => ['row' => $record->row_number, 'values' => $record->values, 'findings' => Arr::get($record->data, 'findings', [])])
             ->values();
-
-        if ($records->isEmpty()) {
-            return $this->saveReview($upload, ['status' => 'skipped']);
-        }
-
-        if ($this->spentThisMonth() >= self::MONTHLY_BUDGET) {
-            return $this->saveReview($upload, ['status' => 'off', 'note' => __('AI final review is off this month: the monthly budget is used up.')]);
-        }
 
         /** @var Supplier $supplier */
         $supplier = $upload->parent;
-        $prompt   = $this->prompt($supplier, $records);
-        $partial  = false;
+
+        return $this->saveReview($upload, $this->review($supplier, $rows));
+    }
+
+    /**
+     * The review of some rows (an upload, or the one product of the New supplier product form).
+     *
+     * @param Collection<int, array{row: int, values: array<string, mixed>, findings: list<array{level: string, message: string}>}> $rows
+     *
+     * @return array{status: string, note?: string, partial?: bool, summary?: ?string, rows?: array<string, string>}
+     */
+    public function review(Supplier $supplier, Collection $rows): array
+    {
+        if ($rows->isEmpty()) {
+            return ['status' => 'skipped'];
+        }
+
+        if ($this->spentThisMonth() >= self::MONTHLY_BUDGET) {
+            return ['status' => 'off', 'note' => __('AI final review is off this month: the monthly budget is used up.')];
+        }
+
+        $prompt  = $this->prompt($supplier, $rows);
+        $partial = false;
 
         if ($this->estimatedCost($prompt) > self::MAX_UPLOAD_COST) {
-            $flagged = $records->filter(fn (UploadRecord $record) => collect(Arr::get($record->data, 'findings', []))->whereIn('level', ['error', 'block', 'link', 'warning'])->isNotEmpty())->values();
+            $flagged = $rows->filter(fn (array $row) => collect($row['findings'])->whereIn('level', ['error', 'block', 'link', 'warning'])->isNotEmpty())->values();
             $prompt  = $this->prompt($supplier, $flagged);
             $partial = true;
             if ($this->estimatedCost($prompt) > self::MAX_UPLOAD_COST) {
-                return $this->saveReview($upload, ['status' => 'off', 'note' => __('AI final review skipped: this sheet is too big for the per upload limit.')]);
+                return ['status' => 'off', 'note' => __('AI final review skipped: this sheet is too big for the per upload limit.')];
             }
         }
 
         $answer = $this->ask($prompt);
         if ($answer === null) {
-            return $this->saveReview($upload, ['status' => 'failed', 'note' => __('AI final review could not run.')]);
+            return ['status' => 'failed', 'note' => __('AI final review could not run.')];
         }
 
-        return $this->saveReview($upload, [
+        return [
             'status'  => 'done',
             'partial' => $partial,
             'summary' => is_array(Arr::get($answer, 'summary')) ? implode("\n", Arr::get($answer, 'summary')) : Arr::get($answer, 'summary'),
             'rows'    => collect(Arr::get($answer, 'rows', []))->filter(fn ($suggestion) => is_string($suggestion) && $suggestion !== '')->all(),
-        ]);
+        ];
     }
 
     /**
-     * @param Collection<int, UploadRecord> $records
+     * @param Collection<int, array{row: int, values: array<string, mixed>, findings: list<array{level: string, message: string}>}> $rows
      */
-    protected function prompt(Supplier $supplier, Collection $records): string
+    protected function prompt(Supplier $supplier, Collection $rows): string
     {
-        $rows = $records->map(fn (UploadRecord $record) => [
-            'row'      => $record->row_number,
-            'values'   => Arr::except($record->values, ['trade_unit_id', 'stock_id', 'supplier_product_id']),
-            'findings' => collect(Arr::get($record->data, 'findings', []))->map(fn (array $finding) => $finding['level'].': '.$finding['message'])->values()->all(),
-        ])->values()->all();
+        $rows = $rows->map(fn (array $row) => [
+            'row'      => $row['row'],
+            'values'   => Arr::except($row['values'], ['trade_unit_id', 'stock_id', 'supplier_product_id']),
+            'findings' => collect($row['findings'])->map(fn (array $finding) => $finding['level'].': '.$finding['message'])->values()->all(),
+        ])->values();
 
-        $families = $records->pluck('values.family')->filter()->unique()->mapWithKeys(fn (string $family) => [
+        $families = $rows->pluck('values.family')->filter()->unique()->mapWithKeys(fn (string $family) => [
             $family => StockFamily::where('group_id', $supplier->group_id)->whereRaw('lower(code) = lower(?)', [$family])->first()?->stocks()->latest('id')->limit(12)->pluck('name')->filter()->values()->all() ?? [],
         ])->all();
 
@@ -105,7 +119,7 @@ class ReviewSupplierProductUpload
             'targets'                         => 'our margin on the wholesale price at least 60% of the price after landed cost; retailer margin (RRP vs price) usually about 58%, at least 50%',
             'other_products_in_the_families'  => $families,
             'this_suppliers_existing_products' => $supplierProducts,
-            'rows'                            => $rows,
+            'rows'                            => $rows->all(),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return <<<PROMPT
@@ -183,7 +197,7 @@ PROMPT;
     protected function saveReview(Upload $upload, array $review): Upload
     {
         $upload->refresh();
-        $upload->update(['data' => array_merge($upload->data, ['review' => $review])]);
+        $upload->update(['data' => array_merge($upload->data ?? [], ['review' => $review])]);
 
         return $upload;
     }

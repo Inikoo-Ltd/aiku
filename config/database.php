@@ -64,6 +64,7 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
+            'timezone'       => 'UTC',
         ],
         'aiku_no_sticky' => [
             'driver'         => 'pgsql',
@@ -87,6 +88,7 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
+            'timezone'       => 'UTC',
         ],
         'aiku_read_only' => [
             'driver'         => 'pgsql',
@@ -107,6 +109,7 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
+            'timezone'       => 'UTC',
         ],
         'archive'  => [
             'driver'         => 'pgsql',
@@ -120,6 +123,7 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('ARCHIVE_DB_SEARCH_PATH', 'public'),
             'sslmode'        => env('ARCHIVE_DB_SSLMODE', 'prefer'),
+            'timezone'       => 'UTC',
             'connect_timeout' => env('ARCHIVE_DB_CONNECT_TIMEOUT', 3),
             'options'         => [
                 PDO::ATTR_TIMEOUT => env('ARCHIVE_DB_CONNECT_TIMEOUT', 3),
@@ -237,6 +241,7 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('NIGHTOWL_DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
+            'timezone'       => 'UTC',
         ],
 
     ],

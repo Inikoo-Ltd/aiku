@@ -8,188 +8,83 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-use App\Actions\Dropshipping\Shopify\WithShopifyApi;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Catalogue\Product;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
+/**
+ * Shopify stores only a shipping weight on the variant; the rest of the specifications go as metafields.
+ */
 class UpdateShopifyProductDimensions
 {
     use AsAction;
-    use WithShopifyApi;
+    use WithShopifyProductSpecifications;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio): array
     {
         if ($portfolio->isShopifyVariantAdopted()) {
-            return;
+            return [false, 'This portfolio is linked to a variant the merchant already had, its data is never changed'];
         }
 
-        try {
-            /** @var ShopifyUser $shopifyUser */
-            $shopifyUser = $customerSalesChannel->user;
-            $variantId = $portfolio->platform_product_variant_id;
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
 
-            if (!$variantId) {
-                $variantId = $this->getDefaultVariantId($shopifyUser, $portfolio->platform_product_id);
+        /** @var Product $product */
+        $product = $portfolio->item;
 
-                if ($variantId) {
-                    LinkShopifyPortfolio::run($portfolio, null, $variantId);
-                }
-            }
+        $this->ensureSpecificationDefinitions($shopifyUser);
 
-            $inventoryItemId = $this->getInventoryItemId($shopifyUser, $variantId);
+        $metafields = array_map(
+            fn (array $metafield) => array_merge($metafield, ['ownerId' => $portfolio->platform_product_id]),
+            $this->specificationMetafields($product)
+        );
 
-            if (! $inventoryItemId) {
-                return;
-            }
-
-            /** @var Product $product */
-            $product = $portfolio->item;
-
-            $width  = $product->width  ?? null;
-            $length = $product->length ?? null;
-            $height = $product->height ?? null;
-
-            if ($width === null && $length === null && $height === null) {
-                return;
-            }
-
-            $measurementInput = [];
-
-            if ($width !== null) {
-                $measurementInput['width'] = [
-                    'value' => (float) $width,
-                    'unit'  => 'CENTIMETERS',
-                ];
-            }
-
-            if ($length !== null) {
-                $measurementInput['length'] = [
-                    'value' => (float) $length,
-                    'unit'  => 'CENTIMETERS',
-                ];
-            }
-
-            if ($height !== null) {
-                $measurementInput['height'] = [
-                    'value' => (float) $height,
-                    'unit'  => 'CENTIMETERS',
-                ];
-            }
-
-            $mutation = <<<'MUTATION'
-                mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
-                    inventoryItemUpdate(id: $id, input: $input) {
-                        inventoryItem {
-                            id
-                            measurement {
-                                weight {
-                                    value
-                                    unit
-                                }
-                                dimensions {
-                                    width {
-                                        value
-                                        unit
-                                    }
-                                    length {
-                                        value
-                                        unit
-                                    }
-                                    height {
-                                        value
-                                        unit
-                                    }
-                                }
-                            }
-                        }
-                        userErrors {
-                            field
-                            message
-                        }
-                    }
-                }
-            MUTATION;
-
-            $variables = [
-                'id'    => $inventoryItemId,
-                'input' => [
-                    'measurement' => [
-                        'dimensions' => $measurementInput,
+        $variant        = ['id' => $portfolio->platform_product_variant_id];
+        $shippingWeight = $product->gross_weight ?: $product->marketing_weight;
+        if ($shippingWeight) {
+            $variant['inventoryItem'] = [
+                'measurement' => [
+                    'weight' => [
+                        'unit'  => 'GRAMS',
+                        'value' => $shippingWeight,
                     ],
                 ],
             ];
-
-            list($status, $res) = $this->doPost($shopifyUser, $mutation, $variables);
-
-            if (!$status) {
-                return;
-            }
-
-            $body = $res['body']->toArray();
-
-            $userErrors = $body['data']['inventoryItemUpdate']['userErrors'] ?? [];
-
-            if (!empty($userErrors)) {
-                return;
-            }
-        } catch (\Throwable $e) {
-            Sentry::captureException($e);
         }
-    }
 
-    private function getDefaultVariantId(ShopifyUser $shopifyUser, string $productId): ?string
-    {
-        $query = <<<'QUERY'
-            query getProductVariants($id: ID!) {
-                product(id: $id) {
-                    id
-                    variants(first: 1) {
-                        edges {
-                            node {
-                                id
-                            }
-                        }
-                    }
-                }
-            }
-        QUERY;
+        if (!$metafields && !isset($variant['inventoryItem'])) {
+            return [true, ''];
+        }
 
-        list($status, $res) = $this->doPost($shopifyUser, $query, ['id' => $productId]);
+        $mutation = 'mutation updateSpecifications($productId: ID!, $variants: [ProductVariantsBulkInput!]!'.($metafields ? ', $metafields: [MetafieldsSetInput!]!' : '').') {
+            productVariantsBulkUpdate(productId: $productId, variants: $variants) { userErrors { field message } }
+            '.($metafields ? 'metafieldsSet(metafields: $metafields) { userErrors { field message } }' : '').'
+        }';
+
+        [$status, $res] = $this->doPost($shopifyUser, $mutation, array_filter([
+            'productId'  => $portfolio->platform_product_id,
+            'variants'   => [$variant],
+            'metafields' => $metafields,
+        ]));
 
         if (!$status) {
-            return null;
+            return [false, $res];
         }
 
-        $body = $res['body']->toArray();
+        $body       = $res['body']->toArray();
+        $userErrors = array_merge(
+            Arr::get($body, 'data.productVariantsBulkUpdate.userErrors', []),
+            Arr::get($body, 'data.metafieldsSet.userErrors', []),
+            Arr::get($body, 'errors', [])
+        );
 
-        return $body['data']['product']['variants']['edges'][0]['node']['id'] ?? null;
-    }
-
-    private function getInventoryItemId(ShopifyUser $shopifyUser, string $variantId): ?string
-    {
-        $query = <<<'QUERY'
-            query getInventoryItemId($id: ID!) {
-                productVariant(id: $id) {
-                    id
-                    inventoryItem {
-                        id
-                    }
-                }
-            }
-        QUERY;
-
-        list($status, $res) = $this->doPost($shopifyUser, $query, ['id' => $variantId]);
-
-        if (!$status) {
-            return null;
+        if (!empty($userErrors)) {
+            return [false, json_encode($userErrors)];
         }
 
-        $body = $res['body']->toArray();
-
-        return $body['data']['productVariant']['inventoryItem']['id'] ?? null;
+        return [true, ''];
     }
 }

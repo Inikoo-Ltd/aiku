@@ -20,6 +20,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Order\SendOrderPurchaseToGoogleAnalytics;
+use App\Actions\Web\WebsiteConversionEvent\ProcessOrderPurchaseConversionEvent;
 use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\PreOrder\MoveOrderExcessPaymentToPreOrder;
@@ -45,7 +46,10 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
+use App\Actions\Discounts\Offer\FinishOffer;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
@@ -255,6 +259,14 @@ class SubmitOrder extends OrgAction
             SendOrderPurchaseToGoogleAnalytics::dispatch($order->id)->afterCommit();
         }
 
+        $isWebsiteRequest = request()->hasSession() && request()->input('website');
+
+        ProcessOrderPurchaseConversionEvent::dispatch(
+            $order->id,
+            $isWebsiteRequest ? request()->session()->getId() : null,
+            $isWebsiteRequest ? (request()->header('referer') ?? request()->fullUrl()) : null
+        )->afterCommit();
+
         /** Tells any other browser tab still showing this order's checkout to redirect away,
          * so a stale card widget cannot take a second payment */
         RetinaOrderSubmittedEvent::dispatch($order->customer_id, $order->id);
@@ -329,8 +341,10 @@ class SubmitOrder extends OrgAction
             ->join('offers', 'offers.id', '=', 'pivot.offer_id')
             ->join('transactions', 'transactions.id', '=', 'pivot.transaction_id')
             ->where('transactions.order_id', $order->id)
+            ->leftJoin('offer_allowances', 'offer_allowances.id', '=', 'pivot.offer_allowance_id')
             ->where('pivot.is_gift', true)
             ->whereNull('transactions.deleted_at')
+            ->whereNull(DB::raw("offer_allowances.data->>'discontinuing_in_family_id'"))
             ->where(function ($query) {
                 $query->where('offers.status', false)->orWhereNotNull('offers.deleted_at');
             })
@@ -382,67 +396,126 @@ class SubmitOrder extends OrgAction
                     ->whereNull('deleted_at')
                     ->sum('quantity_ordered');
                 $eligible        = $itemQuantity > 0 && $orderedQuantity >= $itemQuantity;
+            } elseif ($giftOfferData->trigger_type == 'ProductCategory') {
+                $itemQuantity    = (int)Arr::get($triggerData, 'item_quantity', 0);
+                $orderedQuantity = DB::table('transactions')
+                    ->join('products', 'products.id', '=', 'transactions.model_id')
+                    ->where('transactions.order_id', $order->id)
+                    ->where('transactions.model_type', 'Product')
+                    ->where('products.family_id', $giftOfferData->trigger_id)
+                    ->whereNull('transactions.deleted_at')
+                    ->sum('transactions.quantity_ordered');
+                $eligible        = $itemQuantity > 0 && $orderedQuantity >= $itemQuantity;
             } else {
                 $eligible = $order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0);
             }
 
-            if ($eligible) {
-                $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
-                if ($allowanceData) {
-                    $allowanceGiftData = json_decode($allowanceData->data, true);
+            if (!$eligible || $this->orderHasGiftFromOffer($order, $giftOfferData->id)) {
+                continue;
+            }
 
-                    /** @var Product $gift */
-                    $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
-                    $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
-                    if ($quantity > 0 && $gift && !$this->orderHasGiftFromOffer($order, $giftOfferData->id)) {
-                        $giftTransaction = StoreTransaction::make()->action(
-                            $order,
-                            $gift->currentHistoricProduct,
-                            [
-                                'quantity_ordered' => 0,
-                                'quantity_bonus'   => $quantity,
-                                'is_gift'          => true,
-                            ]
-                        );
+            $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
+            if (!$allowanceData) {
+                continue;
+            }
 
-                        $giftTransaction->update([
-                            'offers_data' => [
-                                'v' => 1,
-                                'o' => [
-                                    'oc' => $giftOfferData->offer_campaign_id,
-                                    'o'  => $giftOfferData->id,
-                                    'oa' => $allowanceData->id,
-                                    't'  => 'gift',
-                                    'p'  => 0,
-                                    'l'  => $giftOfferData->name,
-                                ]
-                            ]
-                        ]);
+            $allowanceGiftData = json_decode($allowanceData->data, true);
+            $quantity          = (int)Arr::get($allowanceGiftData, 'quantity', 0);
+            if ($quantity <= 0) {
+                continue;
+            }
 
-                        DB::table('transaction_has_offer_allowances')->insert([
-                            'order_id'              => $order->id,
-                            'transaction_id'        => $giftTransaction->id,
-                            'model_type'            => $giftTransaction->model_type,
-                            'model_id'              => $giftTransaction->model_id,
-                            'offer_campaign_id'     => $giftOfferData->offer_campaign_id,
-                            'offer_id'              => $giftOfferData->id,
-                            'offer_allowance_id'    => $allowanceData->id,
-                            'discounted_amount'     => 0,
-                            'discounted_percentage' => 0,
-                            'is_gift'               => true,
-                            'free_items_value'      => $gift->price * $quantity,
-                            'number_of_free_items'  => 1,
-                            'created_at'            => now(),
-                            'updated_at'            => now(),
-                            'data'                  => '{}'
+            $isStockExhausted = false;
+            if ($clearanceFamilyId = Arr::get($allowanceGiftData, 'discontinuing_in_family_id')) {
+                [$giftLines, $isStockExhausted] = $this->getClearanceGiftLines($clearanceFamilyId, Arr::get($allowanceGiftData, 'product_id'), $quantity);
+            } else {
+                $gift      = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
+                $giftLines = $gift ? [[$gift, $quantity]] : [];
+            }
 
-                        ]);
-                    }
-                }
+            foreach ($giftLines as [$gift, $giftQuantity]) {
+                $this->storeGiftTransaction($order, $giftOfferData, $allowanceData->id, $gift, $giftQuantity);
+            }
+
+            if ($isStockExhausted && $offer = Offer::find($giftOfferData->id)) {
+                FinishOffer::dispatch($offer)->afterCommit();
             }
         }
 
         return $order;
+    }
+
+    /**
+     * Discontinued stock of the family, cheapest first, spilling to the next product when one runs short.
+     * Also says whether this order takes the last of it, so the offer can finish (HELP-3794).
+     *
+     * @return array{0: array<int, array{0: Product, 1: int}>, 1: bool}
+     */
+    private function getClearanceGiftLines(int $familyId, ?int $productId, int $quantity): array
+    {
+        $family     = ProductCategory::find($familyId);
+        $candidates = $family ? GetDiscontinuingProductsInFamily::run($family) : collect();
+        if ($productId) {
+            $candidates = $candidates->where('id', $productId);
+        }
+
+        $giftLines = [];
+        $remaining = $quantity;
+        foreach ($candidates as $product) {
+            if ($remaining <= 0) {
+                break;
+            }
+            $giftQuantity = min($remaining, (int)$product->available_quantity);
+            $giftLines[]  = [$product, $giftQuantity];
+            $remaining    -= $giftQuantity;
+        }
+
+        return [$giftLines, $candidates->sum('available_quantity') <= $quantity - $remaining];
+    }
+
+    private function storeGiftTransaction(Order $order, object $giftOfferData, int $offerAllowanceId, Product $gift, int $quantity): void
+    {
+        $giftTransaction = StoreTransaction::make()->action(
+            $order,
+            $gift->currentHistoricProduct,
+            [
+                'quantity_ordered' => 0,
+                'quantity_bonus'   => $quantity,
+                'is_gift'          => true,
+            ]
+        );
+
+        $giftTransaction->update([
+            'offers_data' => [
+                'v' => 1,
+                'o' => [
+                    'oc' => $giftOfferData->offer_campaign_id,
+                    'o'  => $giftOfferData->id,
+                    'oa' => $offerAllowanceId,
+                    't'  => 'gift',
+                    'p'  => 0,
+                    'l'  => $giftOfferData->name,
+                ]
+            ]
+        ]);
+
+        DB::table('transaction_has_offer_allowances')->insert([
+            'order_id'              => $order->id,
+            'transaction_id'        => $giftTransaction->id,
+            'model_type'            => $giftTransaction->model_type,
+            'model_id'              => $giftTransaction->model_id,
+            'offer_campaign_id'     => $giftOfferData->offer_campaign_id,
+            'offer_id'              => $giftOfferData->id,
+            'offer_allowance_id'    => $offerAllowanceId,
+            'discounted_amount'     => 0,
+            'discounted_percentage' => 0,
+            'is_gift'               => true,
+            'free_items_value'      => $gift->price * $quantity,
+            'number_of_free_items'  => 1,
+            'created_at'            => now(),
+            'updated_at'            => now(),
+            'data'                  => '{}'
+        ]);
     }
 
     public function processVoucherGiftOffers(Order $order): Order

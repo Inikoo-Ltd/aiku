@@ -12,7 +12,7 @@ import { ctrans } from "@/Composables/useTrans";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { setIframeView } from "@/Composables/Workshop";
 import { useHighlightLinks } from "@/Composables/useHighlightLinks";
-import { useWorkshopShortcuts, formatShortcutKey } from "@/Composables/useWorkshopShortcuts";
+import { useWorkshopShortcuts, formatShortcutKey, WorkshopShortcut } from "@/Composables/useWorkshopShortcuts";
 
 // Components
 import ScreenView from "@/Components/ScreenView.vue";
@@ -50,6 +50,10 @@ const props = defineProps<{
   url: string
 }>();
 
+const emits = defineEmits<{
+  (e: "update:isSaving", value: boolean): void
+}>();
+
 // Provide / Inject
 const layout = inject('layout', layoutStructure);
 provide('isInWorkshop', true);
@@ -68,7 +72,9 @@ const isAddBlockLoading = ref<string | null>(null);
 const isLoadingBlock = ref<string | null>(null);
 const isLoadingDeleteBlock = ref<number | null>(null);
 const cancelTokens = ref<Record<string, Function>>({});
-const debounceTimers = ref({});
+const debounceTimers = ref<Record<number, ReturnType<typeof setTimeout>>>({});
+const pendingBlocks: Record<number, any> = {};
+const savingRequests: Record<number, Promise<boolean>> = {};
 const filterBlock = ref('all');
 
 // Provide global state
@@ -85,49 +91,80 @@ const sendToIframe = (data: any) => {
   _iframe.value?.contentWindow.postMessage(data, '*');
 };
 
-const debounceSaveWorkshop = (block) => {
-  if (debounceTimers.value[block.id]) clearTimeout(debounceTimers.value[block.id]);
+const saveBlock = async (block): Promise<boolean> => {
+  clearTimeout(debounceTimers.value[block.id]);
+  delete debounceTimers.value[block.id];
+  delete pendingBlocks[block.id];
+  if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
 
-  debounceTimers.value[block.id] = setTimeout(async () => {
-    const url = route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id });
-    isLoadingBlock.value = block.id;
-    isSavingBlock.value = true;
-    const source = axios.CancelToken.source();
-    cancelTokens.value[block.id] = source.cancel;
+  const url = route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id });
+  const source = axios.CancelToken.source();
+  cancelTokens.value[block.id] = source.cancel;
+  isLoadingBlock.value = block.id;
+  isSavingBlock.value = true;
 
-    try {
-      await axios.patch(
-        url,
-        {
-          layout: block.web_block.layout,
-          show_logged_in: block.visibility.in,
-          show_logged_out: block.visibility.out,
-          show: block.show,
-        },
-        {
-          cancelToken: source.token,
-          headers: { "X-Requested-With": "XMLHttpRequest" },
-        }
-      );
-      sendToIframe({ key: "reload", value: {} });
-    } catch (error) {
-      if (!axios.isCancel(error)) {
-        notify({
-          title: ctrans("Something went wrong"),
-          text: error?.response?.data?.message || error.message,
-          type: "error",
-        });
-      }
-    } finally {
-      isLoadingBlock.value = null;
-      isSavingBlock.value = false;
-      delete cancelTokens.value[block.id];
+  const request = axios.patch(
+    url,
+    {
+      layout: block.web_block.layout,
+      show_logged_in: block.visibility.in,
+      show_logged_out: block.visibility.out,
+      show: block.show,
+    },
+    {
+      cancelToken: source.token,
+      headers: { "X-Requested-With": "XMLHttpRequest" },
     }
-  }, 1500);
+  ).then(() => {
+    sendToIframe({ key: "reload", value: {} });
+    return true;
+  }).catch((error) => {
+    if (axios.isCancel(error)) return savingRequests[block.id] ?? true;
+    notify({
+      title: ctrans("Failed to save"),
+      text: error?.response?.data?.message || error.message,
+      type: "error",
+    });
+    return false;
+  }).finally(() => {
+    if (cancelTokens.value[block.id] !== source.cancel) return;
+    isLoadingBlock.value = null;
+    isSavingBlock.value = false;
+    delete cancelTokens.value[block.id];
+    delete savingRequests[block.id];
+  });
+
+  savingRequests[block.id] = request;
+  return request;
 };
 
+const debounceSaveWorkshop = (block) => {
+  clearTimeout(debounceTimers.value[block.id]);
+  pendingBlocks[block.id] = block;
+  debounceTimers.value[block.id] = setTimeout(() => saveBlock(block), 1500);
+};
+
+const saveNow = async (): Promise<boolean> => {
+  Object.values(pendingBlocks).forEach(block => saveBlock(block));
+  const results = await Promise.all(Object.values(savingRequests));
+  return results.every(Boolean);
+};
+
+const onSaveWithShortcut = async () => {
+  if (await saveNow()) {
+    notify({
+      title: ctrans("Saved"),
+      text: ctrans("Your changes are saved. Publish when you are ready to put them live."),
+      type: "success",
+    });
+  }
+};
+
+defineExpose({ saveNow });
+
+watch(isSavingBlock, (isSaving) => emits("update:isSaving", isSaving));
+
 const onSaveWorkshop = (block, sendValue = true) => {
-  if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
   if (sendValue) {
     sendToIframe({
       key: 'setWebpage',
@@ -137,9 +174,15 @@ const onSaveWorkshop = (block, sendValue = true) => {
   debounceSaveWorkshop(block);
 };
 
+const syncBlockFromIframe = (block) => {
+  const index = data.value.layout.web_blocks.findIndex(webBlock => webBlock.id === block.id);
+  if (index === -1) return block;
+  data.value.layout.web_blocks[index] = block;
+  return data.value.layout.web_blocks[index];
+};
+
 const onSaveWorkshopFromId = (blockId, from?) => {
   if (!blockId) return;
-  if (cancelTokens.value[blockId]) cancelTokens.value[blockId]();
   const block = data.value.layout.web_blocks.find(b => b.id === blockId);
   sendToIframe({
     key: 'setWebpage',
@@ -180,7 +223,13 @@ const openFullScreenPreview = () => {
 };
 
 const { isHighlightingLinks, toggleHighlightLinks, applyToIframe: applyHighlightLinksToIframe, highlightLinksShortcut } = useHighlightLinks(_iframe);
-const { listenTo: listenForShortcuts } = useWorkshopShortcuts([highlightLinksShortcut], () => false);
+const saveShortcut: WorkshopShortcut = {
+  id: "save", group: "Editor", label: "Save", combos: [["Mod", "S"]],
+  allowWhileTyping: true,
+  run: onSaveWithShortcut,
+};
+
+const { listenTo: listenForShortcuts } = useWorkshopShortcuts([saveShortcut, highlightLinksShortcut], () => false);
 
 const onIframeLoad = () => {
   isIframeLoading.value = false;
@@ -194,7 +243,7 @@ onMounted(() => {
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
-    if (key === 'autosave') onSaveWorkshop(value, false);
+    if (key === 'autosave') onSaveWorkshop(syncBlockFromIframe(value), false);
   });
 });
 
@@ -213,7 +262,7 @@ watch(currentView, (newVal) => {
         <SideEditor v-model="data.layout.web_blocks[0].web_block.layout.data.fieldValue" :panelOpen="openedChildSideEditor"
           :blueprint="Blueprint.blueprint"
           :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[0].id } }"
-          @update:modelValue="() => onSaveWorkshop(webpage.layout.web_blocks[0])" />
+          @update:modelValue="() => onSaveWorkshop(data.layout.web_blocks[0])" />
 
       </div>
 
@@ -224,12 +273,12 @@ watch(currentView, (newVal) => {
       <div class="flex items-center justify-between bg-white border-b px-4 py-2 shadow-sm">
         <div class="flex items-center gap-3 text-gray-600">
           <ScreenView v-model="currentView" @screenView="(e) => (currentView = e)" />
-          <FontAwesomeIcon :icon="faEye" fixed-width class="cursor-pointer hover:text-blue-600"
+          <FontAwesomeIcon :icon="faEye" fixed-width class="cursor-pointer hover:text-[--app-accent]"
             v-tooltip="ctrans('Open preview in new tab')" @click="openFullScreenPreview" />
           <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width
-            class="cursor-pointer hover:text-blue-600" v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" />
+            class="cursor-pointer hover:text-[--app-accent]" v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" />
           <FontAwesomeIcon :icon="faLink" fixed-width
-            :class="['cursor-pointer', isHighlightingLinks ? 'text-blue-600' : 'hover:text-blue-600']"
+            :class="['cursor-pointer', isHighlightingLinks ? 'text-[--app-accent]' : 'hover:text-[--app-accent]']"
             v-tooltip="`${isHighlightingLinks ? ctrans('Hide link highlights') : ctrans('Highlight links')} (${formatShortcutKey('L')})`"
             @click="toggleHighlightLinks" />
         </div>

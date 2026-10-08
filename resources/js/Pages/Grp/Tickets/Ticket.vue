@@ -21,6 +21,11 @@ import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketPullRequest from "@/Components/Tickets/TicketPullRequest.vue"
+import TicketSimilar from "@/Components/Tickets/TicketSimilar.vue"
+import TicketLinks from "@/Components/Tickets/TicketLinks.vue"
+import TicketForm from "@/Components/Tickets/TicketForm.vue"
+import { Dialog } from "primevue"
+import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import HistoryChangeModal from "@/Components/Tickets/HistoryChangeModal.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -93,7 +98,13 @@ const props = defineProps<{
         project?: { name: string; parameters: Record<string, unknown> }
         pull_request: { name: string; parameters: Record<string, unknown> }
         pull_request_update: { name: string; parameters: Record<string, unknown> }
+        link_store: { name: string; parameters: Record<string, unknown> }
+        link_search: { name: string; parameters: Record<string, unknown> }
     }
+    can_link: boolean
+    links: any[]
+    link_types: { value: string; label: string }[]
+    linked_ticket_types: { value: string; label: string }[]
 }>()
 
 useLiveTickets([], props.ticket.reference, undefined, props.ticket.id)
@@ -111,6 +122,8 @@ const readPanelState = (key: string) => {
 }
 
 const isHistoryOpen = ref(readPanelState("ticket_history_open"))
+const similarQuickLook = ref<{ id: number; reference: string } | null>(null)
+const isCreatingLinked = ref(false)
 
 const rememberPanelState = (key: string, isOpen: boolean) => {
     try {
@@ -179,7 +192,7 @@ const update = (field: string, value: unknown) => {
     <div class="p-4 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <div class="min-w-0 lg:col-span-2 space-y-4 pb-[26px] lg:border-r-2 lg:border-gray-300 lg:pr-6">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :content-route="can_edit_content ? routes.content : null" label-reporter-on-mobile:show-comments="isDesktop || mobileTab === 'comments'" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread tinted-header :ticket="ticket" :content-route="can_edit_content ? routes.content : null" label-reporter-on-mobile:show-comments="isDesktop || mobileTab === 'comments'" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #card-header-footer>
                     <div id="ticket-card-controls" />
                 </template>
@@ -198,6 +211,7 @@ const update = (field: string, value: unknown) => {
                     <div id="ticket-mobile-pull-request" class="lg:hidden" />
                     <TicketChatDropdown v-if="ticket.source?.has_conversation" :ticketId="ticket.id" :source="ticket.source" />
                     <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
+                    <div id="ticket-mobile-similar" class="lg:hidden" />
                 </template>
                 <template #before-comments>
                     <div class="flex border-b border-gray-200 lg:hidden" role="tablist">
@@ -218,21 +232,10 @@ const update = (field: string, value: unknown) => {
                 </template>
             </TicketThread>
         </div>
-        <div class="min-w-0 space-y-4 self-start max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto lg:pb-2.5 [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
+        <div class="min-w-0 space-y-4 self-start max-lg:hidden lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-26px-2rem)] lg:overflow-y-auto lg:pb-12 [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
         <Teleport defer to="#ticket-card-controls" :disabled="isDesktop">
         <TicketControlPanel :ticket="ticket" :storage-key="isDesktop ? 'ticket_controls_open' : 'ticket_controls_open_mobile'" :default-open="isDesktop" :embedded="!isDesktop">
             <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_claim_qa="can_claim_qa" :qa_held_by_another="qa_held_by_another" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_change_project="can_change_project" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
-            <div v-if="ticket.commits?.length">
-                <p class="text-xs text-gray-500 mb-1">{{ ctrans("Commits") }}</p>
-                <ul class="space-y-1 text-xs">
-                    <li v-for="commit in ticket.commits" :key="commit.hash">
-                        <a v-if="commit.url" :href="commit.url" target="_blank" class="font-mono text-blue-600 hover:underline">{{ commit.hash.slice(0, 8) }}</a>
-                        <span v-else class="font-mono">{{ commit.hash.slice(0, 8) }}</span>
-                        <span class="text-gray-600"> {{ commit.subject }}</span>
-                        <span v-if="commit.version || commit.deployed_at" class="text-gray-400"> · {{ commit.version || ctrans("deployed") }} {{ commit.deployed_at ? new Date(commit.deployed_at).toLocaleDateString() : "" }}</span>
-                    </li>
-                </ul>
-            </div>
             <dl class="space-y-1 text-gray-600">
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ ctrans("Escalated from") }}</dt><dd><Link :href="ticketRoute(ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
                 <div v-if="ticket.escalations.length" class="flex justify-between"><dt>{{ ctrans("Escalated to") }}</dt><dd class="space-x-1"><Link v-for="ref in ticket.escalations" :key="ref" :href="ticketRoute(ref)" class="text-blue-600 hover:underline">{{ ref }}</Link></dd></div>
@@ -244,8 +247,21 @@ const update = (field: string, value: unknown) => {
         <Teleport defer to="#ticket-mobile-pull-request" :disabled="isDesktop">
             <TicketPullRequest :ticket="ticket" :routes="routes" :can-edit="can_contribute" />
         </Teleport>
+        <Teleport defer to="#ticket-mobile-similar" :disabled="isDesktop">
+            <div class="space-y-4">
+                <TicketLinks
+                    :links="links"
+                    :link-types="link_types"
+                    :can-link="can_link"
+                    :store-route="routes.link_store"
+                    :search-route="routes.link_search"
+                    @preview="(linked) => (similarQuickLook = linked)"
+                    @create-linked="isCreatingLinked = true" />
+                <TicketSimilar :ticket-id="ticket.id" @preview="(similar) => (similarQuickLook = similar)" />
+            </div>
+        </Teleport>
         <Teleport defer to="#ticket-mobile-history" :disabled="isDesktop">
-        <div class="bg-white rounded-lg border border-gray-300 text-sm">
+        <div class="overflow-hidden bg-white rounded-lg border border-gray-300 text-sm">
             <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleHistory">
                 <span class="font-medium uppercase tracking-wide text-gray-400">{{ ctrans("History") }}</span>
                 <span class="flex shrink-0 items-center gap-3">
@@ -272,4 +288,22 @@ const update = (field: string, value: unknown) => {
         </Teleport>
         </div>
     </div>
+    <TicketQuickLook v-model:ticket="similarQuickLook" />
+    <Dialog
+        :visible="isCreatingLinked"
+        modal
+        :header="ctrans('New ticket linked to :reference', { reference: ticket.reference })"
+        :style="{ width: '64rem' }"
+        :breakpoints="{ '1024px': '95vw' }"
+        @update:visible="(visible) => !visible && (isCreatingLinked = false)">
+        <TicketForm
+            stay
+            :store-route="{ name: 'grp.models.ticket.store' }"
+            :priorities="options.priorities"
+            :kinds="options.kinds"
+            :modules="options.modules"
+            :types="linked_ticket_types"
+            :link-from="{ id: ticket.id, reference: ticket.reference, subject: ticket.subject, types: link_types }"
+            @created="isCreatingLinked = false" />
+    </Dialog>
 </template>

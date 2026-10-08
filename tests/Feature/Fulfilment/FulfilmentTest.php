@@ -56,6 +56,7 @@ use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\ImportPalletsInPalletDeliveryWithStoredItems;
 use App\Actions\Fulfilment\PalletDelivery\Notifications\SendPalletDeliveryNotification;
 use App\Actions\Fulfilment\PalletDelivery\Pdf\PdfPalletDelivery;
+use App\Actions\Fulfilment\PalletReturn\Pdf\PdfPalletReturn;
 use App\Actions\Fulfilment\PalletDelivery\ReceivePalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\SetPalletDeliveryAsBookedIn;
 use App\Actions\Fulfilment\PalletDelivery\StartBookingPalletDelivery;
@@ -1949,6 +1950,11 @@ test('dispatch pallet return', function (PalletReturn $palletReturn) {
 
     return $dispatchedPalletReturn;
 })->depends('create pallet return');
+
+test('can create dispatched pallet return pdf', function (PalletReturn $palletReturn) {
+    expect($palletReturn->pallets()->whereNull('location_id')->exists())->toBeTrue()
+        ->and(PdfPalletReturn::run($palletReturn)->getContent())->toStartWith('%PDF');
+})->depends('dispatch pallet return');
 
 test('create pallet no delivery', function (Fulfilment $fulfilment) {
     $customer = StoreCustomer::make()->action(

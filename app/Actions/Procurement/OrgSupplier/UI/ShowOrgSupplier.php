@@ -73,7 +73,7 @@ class ShowOrgSupplier extends OrgAction
                     'previous' => $this->getPrevious($orgSupplier, $request),
                     'next'     => $this->getNext($orgSupplier, $request),
                 ],
-                'title'       => __('Supplier'),
+                'title'       => '(' . $orgSupplier->supplier->code . ') ' . __('Supplier'),
                 'pageHead'    => [
                     'title'         => $orgSupplier->supplier->name,
                     'icon'          => [

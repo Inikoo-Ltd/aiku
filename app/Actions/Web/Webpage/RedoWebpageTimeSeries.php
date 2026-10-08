@@ -65,6 +65,13 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
                         ->where('event_type', WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value)
                         ->whereNotNull('webpage_id')
                 )
+                ->union(
+                    DB::table('website_conversion_events')
+                        ->select('landing_webpage_id')
+                        ->whereBetween('event_date', [$this->windowFrom, $this->windowTo])
+                        ->whereIn('event_type', [WebsiteConversionEventTypeEnum::CHECKOUT->value, WebsiteConversionEventTypeEnum::PURCHASE->value])
+                        ->whereNotNull('landing_webpage_id')
+                )
         );
     }
 
@@ -80,6 +87,11 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
                 'query' => fn () => DB::connection('aiku_no_sticky')->table('website_page_views'),
                 'key'   => 'webpage_id',
                 'date'  => 'view_date',
+            ],
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('website_conversion_events'),
+                'key'   => 'landing_webpage_id',
+                'date'  => 'event_date',
             ],
         ];
     }

@@ -41,6 +41,17 @@ const props = defineProps<{
             </Link>
         </template> -->
 
+        <template #cell(values)="{ item }">
+            <dl v-if="item.values" class="text-xs grid grid-cols-[auto_1fr] gap-x-2">
+                <template v-for="(value, field) in item.values" :key="field">
+                    <template v-if="value !== null && value !== ''">
+                        <dt class="text-gray-400">{{ String(field).replaceAll('_', ' ') }}</dt>
+                        <dd class="text-gray-700 break-all">{{ value }}</dd>
+                    </template>
+                </template>
+            </dl>
+        </template>
+
         <template #cell(errors)="{ item }">
             <ul v-if="Array.isArray(item.errors) && item.errors.length" class="list-disc list-inside text-red-600 text-xs">
                 <li v-for="(error, i) in item.errors" :key="i">{{ error }}</li>

@@ -16,4 +16,5 @@ enum CustomerWebActivityTypeEnum: string
     case PageView    = 'page_view';
     case ProductView = 'product_view';
     case AddToBasket = 'add_to_basket';
+    case Checkout    = 'checkout';
 }

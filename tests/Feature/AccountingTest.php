@@ -3705,7 +3705,11 @@ test('dashboards show the backlog of orders not invoiced yet', function () {
     $bodyRow        = collect($table['body'])->firstWhere('slug', $this->shop->slug);
 
     expect($table['header']['columns'])->toHaveKeys(['backlog', 'backlog_org_currency_external_minified'])
-        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
+        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640)
+        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['route_target'])->toBe([
+            'name'       => 'grp.org.shops.show.ordering.backlog',
+            'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug],
+        ]);
 
     $categoryTable = OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES->table($this->organisation, $timeSeriesData);
     $categoryRow   = collect($categoryTable['body'])->firstWhere('slug', $invoiceCategory->slug);

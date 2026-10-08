@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,6 +36,8 @@ class PdfOrgStockLabel
         '125x37'    => ['width' => 125.0, 'height' => 37.0],
         '130x60'    => ['width' => 130.0, 'height' => 60.0],
         '140x90'    => ['width' => 140.0, 'height' => 90.0],
+        '97x69'     => ['width' => 97.0, 'height' => 69.0],
+        '105x74.25' => ['width' => 105.0, 'height' => 74.25],
     ];
 
     /**
@@ -43,7 +46,8 @@ class PdfOrgStockLabel
      */
     public const LEVEL_SIZES = [
         'unit' => ['63x29.6', '63.5x29.6', '70x29.7', '70x30', '125x37', '130x60', '140x90'],
-        'sko'  => ['63x29.6', '63.5x29.6', '70x29.7', '130x60'],
+        'sko'    => ['63x29.6', '63.5x29.6', '70x29.7', '130x60'],
+        'carton' => ['97x69', '105x74.25'],
     ];
 
     public const DEFAULT_SIZE = '63x29.6';
@@ -54,22 +58,125 @@ class PdfOrgStockLabel
      */
     public const LEVEL_FIELDS = [
         'unit' => ['with_image', 'with_made_in', 'with_manufactured_by', 'with_weight', 'with_custom_text', 'with_account_signature'],
-        'sko'  => ['with_image', 'with_custom_text'],
+        'sko'    => ['with_image', 'with_custom_text'],
+        'carton' => ['with_image', 'with_ingredients', 'with_custom_text'],
     ];
 
     /**
-     * EU30161: 27 labels of 63.5 x 29.6mm on A4, three across and nine down. The margins are what
-     * is left of the page once the die cuts are placed, split evenly between the two edges.
+     * The A4 sheet each label size is die cut on, copied from Aurora's labels data so a box of sheets
+     * bought for the old system prints straight out of this one. Each size has exactly one sheet, so
+     * picking the size is what picks the sheet. EU30161 keeps the 2.5mm column gap and centred
+     * margins it was first measured with here.
      */
-    private const SHEET = [
-        'columns'      => 3,
-        'rows'         => 9,
-        'cell_width'   => 63.5,
-        'cell_height'  => 29.6,
-        'column_gap'   => 2.5,
-        'row_gap'      => 0.0,
-        'page_width'   => 210.0,
-        'page_height'  => 297.0,
+    public const SHEETS = [
+        '63x29.6'   => [
+            'code'        => 'EU30161',
+            'columns'     => 3,
+            'rows'        => 9,
+            'cell_width'  => 63.5,
+            'cell_height' => 29.6,
+            'margin_top'  => 15.3,
+            'margin_left' => 7.25,
+            'column_gap'  => 2.5,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '63.5x29.6' => [
+            'code'        => 'SK06302900',
+            'columns'     => 3,
+            'rows'        => 9,
+            'cell_width'  => 63.5,
+            'cell_height' => 29.6,
+            'margin_top'  => 15.3,
+            'margin_left' => 9.75,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '70x29.7'   => [
+            'code'        => 'EU30040',
+            'columns'     => 3,
+            'rows'        => 10,
+            'cell_width'  => 70.0,
+            'cell_height' => 29.7,
+            'margin_top'  => 0.0,
+            'margin_left' => 0.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '70x30'     => [
+            'code'        => 'ES0027D',
+            'columns'     => 3,
+            'rows'        => 9,
+            'cell_width'  => 70.0,
+            'cell_height' => 30.0,
+            'margin_top'  => 13.5,
+            'margin_left' => 0.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '125x37'    => [
+            'code'        => 'EU30140',
+            'columns'     => 1,
+            'rows'        => 7,
+            'cell_width'  => 125.0,
+            'cell_height' => 37.0,
+            'margin_top'  => 10.0,
+            'margin_left' => 42.5,
+            'column_gap'  => 0.0,
+            'row_gap'     => 3.0,
+            'orientation' => 'P',
+        ],
+        '130x60'    => [
+            'code'        => 'EU30137',
+            'columns'     => 2,
+            'rows'        => 3,
+            'cell_width'  => 130.0,
+            'cell_height' => 60.0,
+            'margin_top'  => 10.0,
+            'margin_left' => 16.0,
+            'column_gap'  => 5.0,
+            'row_gap'     => 5.0,
+            'orientation' => 'L',
+        ],
+        '140x90'    => [
+            'code'        => 'EU30129',
+            'columns'     => 1,
+            'rows'        => 3,
+            'cell_width'  => 140.0,
+            'cell_height' => 90.0,
+            'margin_top'  => 11.5,
+            'margin_left' => 35.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 2.0,
+            'orientation' => 'P',
+        ],
+        '97x69'     => [
+            'code'        => 'EU30090',
+            'columns'     => 2,
+            'rows'        => 4,
+            'cell_width'  => 97.0,
+            'cell_height' => 69.0,
+            'margin_top'  => 6.0,
+            'margin_left' => 6.5,
+            'column_gap'  => 3.0,
+            'row_gap'     => 3.0,
+            'orientation' => 'P',
+        ],
+        '105x74.25' => [
+            'code'        => 'EU30036',
+            'columns'     => 2,
+            'rows'        => 4,
+            'cell_width'  => 105.0,
+            'cell_height' => 74.25,
+            'margin_top'  => 0.0,
+            'margin_left' => 0.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
     ];
 
     private const CELL_PADDING = 1.5;
@@ -95,7 +202,7 @@ class PdfOrgStockLabel
     public function handle(OrgStock $orgStock, string $level, array $options): Response
     {
         $level = isset(self::LEVEL_FIELDS[$level]) ? $level : 'unit';
-        $label = GetOrgStockLabelData::run($orgStock, $level);
+        $label = GetOrgStockLabelData::run($orgStock, $level, $this->getSupplierProduct($orgStock, $options));
 
         /* The unit label is built around its barcode, so without one there is nothing to print. The
            SKO label never carries one, and prints for a box that has not been given a number yet. */
@@ -105,13 +212,14 @@ class PdfOrgStockLabel
 
         $show     = $this->getVisibleFields($options, $label, $level);
         $isSheet  = ($options['layout'] ?? 'single') === 'sheet';
-        $size     = $this->getSize($options, $level);
-        $filename = 'label-'.$orgStock->code.'-'.$level.($isSheet ? '-a4' : '').'.pdf';
+        $sizeKey  = $this->getSizeKey($options, $level);
+        $size     = self::SIZES[$sizeKey];
+        $filename = 'label-'.$orgStock->code.'-'.$level.($isSheet ? '-'.self::SHEETS[$sizeKey]['code'] : '').'.pdf';
 
         $withBarcode = filled($label['barcode']['number']);
 
         $pdf = $isSheet
-            ? $this->getSheetPdf($label, $show, $options, $level, $withBarcode, $filename)
+            ? $this->getSheetPdf(self::SHEETS[$sizeKey], $label, $show, $options, $level, $withBarcode, $filename)
             : $this->getSingleLabelPdf($label, $show, $options, $size, $level, $withBarcode, $filename);
 
         return response($pdf->output(), 200)
@@ -129,6 +237,7 @@ class PdfOrgStockLabel
             'show'       => $show,
             'level'      => $level,
             'skoBarcode' => $this->getSkoBarcode($label, $level, $size['width'], $size['height']),
+            'cartonBarcode' => $this->getCartonBarcode($label, $level, $size['width'], $size['height']),
             'customText' => $this->getCustomText($options),
             'scale'      => $this->getScale($size['width'], $size['height'], $level, $show['image'], $withBarcode),
         ], [], [
@@ -146,15 +255,14 @@ class PdfOrgStockLabel
     /**
      * @throws \Mpdf\MpdfException
      */
-    private function getSheetPdf(array $label, array $show, array $options, string $level, bool $withBarcode, string $filename)
+    private function getSheetPdf(array $sheet, array $label, array $show, array $options, string $level, bool $withBarcode, string $filename)
     {
-        $sheet = self::SHEET;
-
         return PDF::loadView('labels.templates.pdf.org_stock.label_sheet', [
             'label'       => $label,
             'show'        => $show,
             'level'       => $level,
             'skoBarcode'  => $this->getSkoBarcode($label, $level, $sheet['cell_width'], $sheet['cell_height']),
+            'cartonBarcode' => $this->getCartonBarcode($label, $level, $sheet['cell_width'], $sheet['cell_height']),
             'customText'  => $this->getCustomText($options),
             'scale'       => $this->getScale($sheet['cell_width'], $sheet['cell_height'], $level, $show['image'], $withBarcode),
             'cells'       => $this->getCells($sheet),
@@ -166,7 +274,7 @@ class PdfOrgStockLabel
         ], [], [
             'title'         => $filename,
             'format'        => 'A4',
-            'orientation'   => 'P',
+            'orientation'   => $sheet['orientation'],
             'margin_left'   => 0,
             'margin_right'  => 0,
             'margin_top'    => 0,
@@ -181,16 +289,13 @@ class PdfOrgStockLabel
      */
     private function getCells(array $sheet): array
     {
-        $leftMargin = ($sheet['page_width'] - $sheet['columns'] * $sheet['cell_width'] - ($sheet['columns'] - 1) * $sheet['column_gap']) / 2;
-        $topMargin  = ($sheet['page_height'] - $sheet['rows'] * $sheet['cell_height'] - ($sheet['rows'] - 1) * $sheet['row_gap']) / 2;
-
         $cells = [];
 
         for ($row = 0; $row < $sheet['rows']; $row++) {
             for ($column = 0; $column < $sheet['columns']; $column++) {
                 $cells[] = [
-                    'left' => $leftMargin + $column * ($sheet['cell_width'] + $sheet['column_gap']),
-                    'top'  => $topMargin + $row * ($sheet['cell_height'] + $sheet['row_gap']),
+                    'left' => $sheet['margin_left'] + $column * ($sheet['cell_width'] + $sheet['column_gap']),
+                    'top'  => $sheet['margin_top'] + $row * ($sheet['cell_height'] + $sheet['row_gap']),
                 ];
             }
         }
@@ -215,6 +320,7 @@ class PdfOrgStockLabel
             'with_weight'            => filled($label['weight']),
             'with_custom_text'       => filled($this->getCustomText($options)),
             'with_account_signature' => filled($label['signature']),
+            'with_ingredients'       => filled($label['materials']),
         ];
 
         $show = [];
@@ -230,6 +336,7 @@ class PdfOrgStockLabel
             'weight'          => $show['with_weight'],
             'custom_text'     => $show['with_custom_text'],
             'signature'       => $show['with_account_signature'],
+            'materials'       => $show['with_ingredients'],
         ];
     }
 
@@ -253,18 +360,26 @@ class PdfOrgStockLabel
         return $customText === '' ? null : $customText;
     }
 
-    /**
-     * @return array{width: float, height: float}
-     */
-    private function getSize(array $options, string $level): array
+    private function getSizeKey(array $options, string $level): string
     {
         $size = $options['size'] ?? null;
 
         if (is_string($size) && in_array($size, self::LEVEL_SIZES[$level], true)) {
-            return self::SIZES[$size];
+            return $size;
         }
 
-        return self::SIZES[self::DEFAULT_SIZE];
+        return in_array(self::DEFAULT_SIZE, self::LEVEL_SIZES[$level], true) ? self::DEFAULT_SIZE : self::LEVEL_SIZES[$level][0];
+    }
+
+    /**
+     * A stock can be bought from more than one supplier, each with its own pictures and carton, so
+     * the page the label was asked from names the supplier product.
+     */
+    private function getSupplierProduct(OrgStock $orgStock, array $options): ?SupplierProduct
+    {
+        $supplierProductId = $options['supplier_product'] ?? null;
+
+        return blank($supplierProductId) ? null : GetOrgStockLabelData::make()->getSupplierProduct($orgStock, (int) $supplierProductId);
     }
 
     /**
@@ -287,6 +402,21 @@ class PdfOrgStockLabel
     private function getScale(float $width, float $height, string $level = 'unit', bool $withImage = false, bool $withBarcode = true): array
     {
         $factor = min(max($height / 29.6, 1.0), 3.05);
+
+        if ($level === 'carton') {
+            $cartonFactor = $height / 69;
+            $imageWidth   = $withImage ? 25.0 : 0.0;
+
+            return [
+                'header'      => round(4.25 * $cartonFactor, 2),
+                'caption'     => round(5.67 * $cartonFactor, 2),
+                'value'       => round(8.5 * $cartonFactor, 2),
+                'small'       => round(7.0 * $cartonFactor, 2),
+                'text_width'  => 100 - $imageWidth,
+                'image_width' => $imageWidth,
+                'image'       => round(min($width * $imageWidth / 100 * 0.9, $height * 0.45) * 3.78).'px',
+            ];
+        }
 
         /* The SKO label carries three short lines instead of a dozen, and is read off a pallet
            rather than in the hand, so its code is set several times larger and its picture is given
@@ -371,10 +501,40 @@ class PdfOrgStockLabel
         ];
     }
 
+    /**
+     * The carton barcode is printed as CODE 128 whatever its digits, as Aurora printed it, and runs
+     * across most of the label rather than the full width, leaving the quiet zones clear.
+     *
+     * @param  array<string, mixed>  $label
+     * @return array{uri: string, width: string, height: string}|null
+     */
+    private function getCartonBarcode(array $label, string $level, float $width, float $height): ?array
+    {
+        $number = $label['barcode']['number'] ?? null;
+
+        if ($level !== 'carton' || blank($number)) {
+            return null;
+        }
+
+        try {
+            $png = (new BarcodeGeneratorPNG())->getBarcode($number, BarcodeGenerator::TYPE_CODE_128, 3, 60);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return [
+            'uri'    => 'data:image/png;base64,'.base64_encode($png),
+            'width'  => round(($width - 2 * self::CELL_PADDING) * 0.6 * 3.78).'px',
+            'height' => round(min($height * 0.16, 14.0) * 3.78).'px',
+        ];
+    }
+
     public function rules(): array
     {
         return [
-            'level'                  => ['sometimes', 'string', 'in:sko,unit'],
+            'level'                  => ['sometimes', 'string', 'in:sko,unit,carton'],
+            'supplier_product'       => ['sometimes', 'nullable', 'integer'],
+            'with_ingredients'       => ['sometimes', 'boolean'],
             'layout'                 => ['sometimes', 'string', 'in:single,sheet'],
             'size'                   => ['sometimes', 'string', 'in:'.implode(',', array_keys(self::SIZES))],
             'with_image'             => ['sometimes', 'boolean'],

@@ -54,8 +54,8 @@ class IndexPartnerShoppingListItems extends OrgAction
     private ?array $filterGroups = null;
 
     /**
-     * The ongoing PO is the drafts staff build and submit; the sent view follows, read only, what the
-     * partner does with the submitted lines.
+     * The ongoing PO is the drafts staff build and submit; the sent view follows what the partner does
+     * with the submitted lines, which can still be changed or removed until the partner starts them.
      *
      * @return array<int, string>
      */
@@ -279,6 +279,9 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'partner_shopping_list_items.pre_picked_at',
                 'partner_shopping_list_items.preparing_at',
+                'partner_shopping_list_items.job_order_id',
+                'partner_shopping_list_items.transaction_id',
+                'partner_shopping_list_items.poked_at',
                 'partner_shopping_list_items.suggested_by_hub',
                 'partner_shopping_list_items.dismiss_reason',
                 'partner_shopping_list_items.dismissed_at',
@@ -341,6 +344,9 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->image_sources            = $tradeUnit?->imageSources(160, 160);
             $row->price_per_sko            = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
             $row->progress                 = $this->progressOf($row);
+            $row->is_editable              = $row->state === ShoppingListItemStateEnum::DRAFT || (empty($row->folded_ids) && $row->isWaitingForPartner());
+            $row->can_be_poked             = $this->isSentView && $row->canBePoked();
+            $row->is_recently_poked        = $row->poked_at?->gt(now()->subHour()) ?? false;
             $row->stock_in_locations       = $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations);
             $row->stock_cover              = $orgStock ? GetOrgStockBuyingSignals::run($orgStock, null, $leadTimeDays) : null;
             $row->quarterly_usage          = $quarterlyUsage->get($row->org_stock_id) ?? collect();
@@ -572,11 +578,8 @@ class IndexPartnerShoppingListItems extends OrgAction
                     ->column(key: 'progress', label: __('Progress'), canBeHidden: false);
             }
 
-            $table->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true);
-
-            if (!$this->isSentView) {
-                $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
-            }
+            $table->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
+                ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
 
             $table->defaultSort('-created_at');
         };

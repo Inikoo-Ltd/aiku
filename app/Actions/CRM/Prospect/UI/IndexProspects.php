@@ -21,6 +21,7 @@ use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Enums\UI\CRM\ProspectsTabsEnum;
 use App\Http\Resources\CRM\ProspectsResource;
+use App\Actions\Helpers\Upload\UI\IndexUploadReports;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -292,6 +293,7 @@ class IndexProspects extends OrgAction
         $navigation = ProspectsTabsEnum::navigation();
 
         if (!($this->parent instanceof Shop)) {
+            unset($navigation[ProspectsTabsEnum::UPLOADS->value]);
             unset($navigation[ProspectsTabsEnum::CONTACTED->value]);
             unset($navigation[ProspectsTabsEnum::FAILED->value]);
             unset($navigation[ProspectsTabsEnum::SUCCESS->value]);
@@ -413,6 +415,11 @@ class IndexProspects extends OrgAction
                             scope: 'success'
                         )
                     )),
+
+            ProspectsTabsEnum::UPLOADS->value =>
+                $this->tab == ProspectsTabsEnum::UPLOADS->value
+                    ? fn () => $this->prospectUploads()
+                    : Inertia::optional(fn () => $this->prospectUploads()),
 
             ProspectsTabsEnum::HISTORY->value =>
                 $this->tab == ProspectsTabsEnum::HISTORY->value
@@ -541,6 +548,19 @@ class IndexProspects extends OrgAction
                 IndexHistory::make()
                     ->tableStructure(prefix: ProspectsTabsEnum::HISTORY->value)
             );
+    }
+
+    private function prospectUploads(): ?AnonymousResourceCollection
+    {
+        if (!($this->parent instanceof Shop)) {
+            return null;
+        }
+
+        return IndexUploadReports::run(
+            parent: $this->parent,
+            model: class_basename(Prospect::class),
+            prefix: ProspectsTabsEnum::UPLOADS->value
+        );
     }
 
     public function getBreadcrumbs(

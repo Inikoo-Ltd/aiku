@@ -7,13 +7,16 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Media;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -30,7 +33,7 @@ trait WithSupplierProductShowcase
 
     protected function getSupplierProductShowcase(SupplierProduct $supplierProduct, bool $withSupplyChainLink = false, ?int $organisationId = null): array
     {
-        $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks']);
+        $supplierProduct->loadMissing(['currency', 'supplier', 'agent', 'tradeUnits', 'stocks', 'image', 'images']);
 
         return [
             'product'     => $this->getSupplierProductDetails($supplierProduct, $withSupplyChainLink),
@@ -83,13 +86,43 @@ trait WithSupplierProductShowcase
         })->all();
     }
 
+    /**
+     * Internal pictures (warehouse, packing) kept on the supplier product, never on its trade units, so they never reach websites.
+     *
+     * @return array{upload_route: array<string, mixed>|null, images: array<int, array<string, mixed>>}
+     */
+    protected function getSupplierProductInternalImages(SupplierProduct $supplierProduct, bool $canEdit, ?OrgSupplierProduct $orgSupplierProduct = null): array
+    {
+        [$routePrefix, $routeParameters] = $orgSupplierProduct
+            ? ['grp.models.org_supplier_product', ['orgSupplierProduct' => $orgSupplierProduct->id]]
+            : ['grp.models.supplier-product', ['supplierProduct' => $supplierProduct->id]];
+
+        return [
+            'upload_route' => $canEdit ? [
+                'name'       => $routePrefix.'.upload_images',
+                'parameters' => $routeParameters,
+                'method'     => 'post',
+            ] : null,
+            'images'       => $supplierProduct->images->map(fn (Media $media) => [
+                'id'           => $media->id,
+                'is_main'      => $media->id === $supplierProduct->image_id,
+                'image'        => GetPictureSources::run($media->getImage()->resize(400, 400)),
+                'detach_route' => $canEdit ? [
+                    'name'       => $routePrefix.'.detach_image',
+                    'parameters' => array_merge($routeParameters, ['media' => $media->id]),
+                    'method'     => 'delete',
+                ] : null,
+            ])->values()->all(),
+        ];
+    }
+
     private function getSupplierProductDetails(SupplierProduct $supplierProduct, bool $withSupplyChainLink): array
     {
         return [
             'code'         => $supplierProduct->code,
             'name'         => $supplierProduct->name,
             'description'  => $supplierProduct->description,
-            'image'        => $supplierProduct->tradeUnits->first()?->imageSources(),
+            'image'        => $supplierProduct->imageSources() ?? $supplierProduct->tradeUnits->first()?->imageSources(),
             'state'        => [
                 'label' => SupplierProductStateEnum::labels()[$supplierProduct->state->value],
                 'icon'  => SupplierProductStateEnum::stateIcon()[$supplierProduct->state->value],

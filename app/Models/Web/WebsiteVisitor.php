@@ -39,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $exit_page
  * @property bool $is_bounce
  * @property bool $is_new_visitor
+ * @property string|null $traffic_source_type
+ * @property string|null $traffic_source_reference
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group|null $group

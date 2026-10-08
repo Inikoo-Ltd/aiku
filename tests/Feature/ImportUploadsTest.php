@@ -21,13 +21,17 @@ use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\SysAdmin\Guest\ImportGuests;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\Helpers\UploadProgressResource;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Production\Production;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 
 beforeAll(function () {
     loadDB();
@@ -160,6 +164,72 @@ test('import prospects finds each column by its header, whatever the order, spac
         ->and($this->shop->prospects()->where('email', 'ghost@example.com')->exists())->toBeFalse();
 });
 
+test('import prospects counts only filled rows and reports why rows failed', function () {
+    Storage::fake('local');
+
+    $file = csvUpload('prospects-reasons.csv', [
+        ['Contact Name', 'Email'],
+        ['Rita Reason', 'rita.reason@example.com'],
+        ['Rita Again', 'rita.reason@example.com'],
+        ['Bad Email', 'not-an-email'],
+        ['', ''],
+        ['', ''],
+        ['', ''],
+    ]);
+
+    $upload = ImportShopProspects::make()->handle($this->shop, $file);
+
+    $progress = UploadProgressResource::make($upload->refresh(), $this->user)->getArray();
+
+    expect($upload->number_rows)->toBe(3)
+        ->and($progress['total'])->toBe(3)
+        ->and($progress['done'])->toBe(3)
+        ->and($progress['fail_reasons'])->toHaveCount(2)
+        ->and($progress['report_route'])->toBe([
+            'name'       => 'grp.org.shops.show.crm.prospects.index',
+            'parameters' => [
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug,
+                'tab'          => 'uploads',
+            ],
+        ])
+        ->and($progress['show_route']['name'])->toBe('grp.helpers.uploads.records.show')
+        ->and(collect($progress['fail_reasons'])->firstWhere('message', 'The email has already been taken.'))
+        ->toBe(['message' => 'The email has already been taken.', 'count' => 1, 'rows' => [3]])
+        ->and(collect($progress['fail_reasons'])->firstWhere('message', 'The email must be a valid email address.')['rows'])
+        ->toBe([4]);
+});
+
+test('prospects uploads tab reports each upload with who uploaded it, and its rows load by status', function () {
+    Storage::fake('local');
+
+    $file = csvUpload('prospects-report.csv', [
+        ['Contact Name', 'Email'],
+        ['Ursula Upload', 'ursula.upload@example.com'],
+        ['Ursula Twice', 'ursula.upload@example.com'],
+    ]);
+
+    $upload = ImportShopProspects::make()->handle($this->shop, $file);
+    $upload->update(['user_id' => $this->user->id]);
+
+    get(route('grp.org.shops.show.crm.prospects.index', [$this->organisation->slug, $this->shop->slug, 'tab' => 'uploads']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tabs.navigation.uploads.icon', 'fal fa-upload')
+            ->where('tabs.navigation.uploads.icon_badge', 'fal fa-clock')
+            ->where('uploads.data.0.id', $upload->id)
+            ->where('uploads.data.0.uploaded_by', $this->user->contact_name ?: $this->user->username)
+            ->where('uploads.data.0.number_success', 1)
+            ->where('uploads.data.0.fail_reasons.0.message', 'The email has already been taken.')
+            ->where('uploads.data.0.fail_reasons.0.rows', [3]));
+
+    getJson(route('grp.helpers.uploads.records.index', ['upload' => $upload->id, 'status' => 'failed']))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.row_number', 3)
+        ->assertJsonPath('data.0.values.email', 'ursula.upload@example.com')
+        ->assertJsonPath('data.0.values.contact_name', 'Ursula Twice');
+});
+
 test('import employees from file', function () {
     Storage::fake('local');
 
@@ -233,6 +303,7 @@ test('import portfolios in customer sales channel from file, unknown sku fails i
         ->and($upload->number_fails)->toBe(1)
         ->and($customerSalesChannel->portfolios()->count())->toBe(1)
         ->and($customerSalesChannel->portfolios()->first()->item_id)->toBe($product->id)
+        ->and(UploadProgressResource::make($upload, $this->user)->getArray()['report_route'])->toBeNull()
         ->and($upload->records()->where('status', UploadRecordStatusEnum::FAILED)->first()->errors)
         ->toContain('SKU not found in this shop.');
 });

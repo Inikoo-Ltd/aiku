@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
+use App\Actions\Web\WebsiteConversionEvent\RecordOrderCheckoutConversionEvent;
 use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
@@ -137,6 +138,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         }
 
         CaptureOrderGoogleAnalyticsClient::run($order, $request);
+        RecordOrderCheckoutConversionEvent::run($order, $request);
 
         return $this->handle($order, $this->customer);
     }

@@ -26,20 +26,20 @@ class GetOrgStockLabelOptions
     /**
      * @return array<string, mixed>
      */
-    public function handle(OrgStock $orgStock): array
+    public function handle(OrgStock $orgStock, ?int $supplierProductId = null): array
     {
+        $supplierProduct = GetOrgStockLabelData::make()->getSupplierProduct($orgStock, $supplierProductId);
+
         $labels = [
-            'sko'  => GetOrgStockLabelData::run($orgStock, 'sko'),
-            'unit' => GetOrgStockLabelData::run($orgStock, 'unit'),
+            'sko'    => GetOrgStockLabelData::run($orgStock, 'sko', $supplierProduct),
+            'unit'   => GetOrgStockLabelData::run($orgStock, 'unit', $supplierProduct),
+            'carton' => GetOrgStockLabelData::run($orgStock, 'carton', $supplierProduct),
         ];
 
         return [
             'sizes'         => $this->getSizes(),
             'default_size'  => PdfOrgStockLabel::DEFAULT_SIZE,
-            'layouts'       => [
-                ['key' => 'single', 'label' => __('Single')],
-                ['key' => 'sheet', 'label' => __('A4 27 labels (EU30161)')],
-            ],
+            'layouts'       => $this->getLayouts(),
             'fields'        => $this->getFields($labels),
             'levels'        => $this->getLevels($labels),
             'custom_text_max_length' => 255,
@@ -67,6 +67,31 @@ class GetOrgStockLabelOptions
     }
 
     /**
+     * Every size prints one label at a time or on the A4 sheet that size is die cut on.
+     *
+     * @return array<string, array<int, array<string, string>>>
+     */
+    private function getLayouts(): array
+    {
+        $layouts = [];
+
+        foreach (PdfOrgStockLabel::SHEETS as $size => $sheet) {
+            $layouts[$size] = [
+                ['key' => 'single', 'label' => __('Single')],
+                [
+                    'key'   => 'sheet',
+                    'label' => __('A4 :count labels (:code)', [
+                        'count' => $sheet['columns'] * $sheet['rows'],
+                        'code'  => $sheet['code'],
+                    ]),
+                ],
+            ];
+        }
+
+        return $layouts;
+    }
+
+    /**
      * The unit label is built around its barcode and cannot print without one. The SKO label is a
      * box label that carries no barcode at all, so it prints whatever the org stock has been given.
      *
@@ -77,11 +102,15 @@ class GetOrgStockLabelOptions
     {
         $levels = [];
 
-        foreach (['sko' => __('SKO'), 'unit' => __('Unit')] as $level => $label) {
+        foreach (['sko' => __('SKO'), 'unit' => __('Unit'), 'carton' => __('Carton')] as $level => $label) {
             $levels[] = [
                 'key'       => $level,
                 'label'     => $label,
-                'printable' => $level === 'sko' || filled($labels[$level]['barcode']['number']),
+                'printable' => match ($level) {
+                    'sko'    => true,
+                    'unit'   => filled($labels[$level]['barcode']['number']),
+                    'carton' => filled($labels[$level]['barcode']['number']) || filled($labels[$level]['carton']['units_per_carton']),
+                },
             ];
         }
 
@@ -103,6 +132,7 @@ class GetOrgStockLabelOptions
             'with_weight'            => [__('With weight'), 'weight', __('This item has no weight'), true],
             'with_custom_text'       => [__('With custom text'), null, null, false],
             'with_account_signature' => [__('With account signature'), 'signature', __('This organisation has no address'), false],
+            'with_ingredients'       => [__('With ingredients/materials'), 'materials', __('This item has no materials'), true],
         ];
 
         foreach ($labels as $level => $label) {

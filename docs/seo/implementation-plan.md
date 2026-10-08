@@ -1,0 +1,522 @@
+# Implementation plan
+
+For engineers. Every path and behaviour named under "Today" was checked against the code on
+7 October 2026. Everything under "Build" is proposed and does not exist yet. Table and class names
+are suggestions; rename them freely, but keep the boundaries.
+
+## Ground rules
+
+- **Each data source writes its own tables.** Search Console, crawl, SERP and backlink data do not
+  go into `website_time_series_records` or `webpage_time_series_records`. Those are rebuilt from
+  `website_visitors`, which is pruned after 30 days, and `UpsertsTimeSeriesRecords::syncTimeSeriesRecords()`
+  deletes periods it does not rebuild. Search Console keeps 16 months and providers charge per
+  request, so our copy is the long-term copy and must never be on a delete path.
+- **Fetch jobs run on `long-low-priority`**, the long-running queue the time series redo jobs use, so a
+  slow provider cannot hold up `analytics`. A dedicated `seo` queue would need a Horizon supervisor in
+  every environment; add one only if fetches start to crowd that queue.
+- **Every fetch is idempotent per day.** Unique keys include the date, and a re-run upserts.
+- **Provider calls go through one client per provider**, with the API key in `config/services.php`,
+  a per-run budget cap, and a log row per request in `seo_api_requests` (provider, endpoint, rows,
+  duration, error, cost if the provider reports it). Phase 2 and 3 costs are only visible this way.
+  `App\Services\SearchConsole\SearchConsoleClient` is the first one.
+- **The SEO dashboard stays the entry point.** Each phase adds sections or tabs to
+  `ShowSeoDashboard` (`app/Actions/Web/Website/UI/ShowSeoDashboard.php`), filtered by the dashboard
+  interval like the existing performance card.
+
+## Phase 0: fix the data we already show
+
+Done on 7 October 2026.
+
+- Mobile sessions: `ProcessWebsiteTimeSeriesRecords` counts `Smartphone` and `Phablet` (and
+  `mobile`) as mobile. Before, it only matched `mobile`, which `GetBrowserInfo` never stores.
+- Session duration: `UpdateWebsiteVisitor` adds the time since the previous hit, capped at
+  30 minutes (`UpdateWebsiteVisitor::MAX_IDLE_SECONDS`), instead of `last_seen_at - first_seen_at`.
+  This matches the 30 minute cap `StoreWebsitePageView` already applies per page view.
+- `maintenance:recalculate_website_visitor_durations {website?}` rewrites the duration of the
+  visitors still stored from the sum of their page view durations. Run it once after deploying,
+  then `websites:redo_time_series --from=<30 days ago> --to=<today>`. Older days cannot be
+  corrected because their visitor rows are gone.
+- The `pagespeed` and `pagespeed_history` props on the webpage and website pages are now
+  `real_user_speed` and `real_user_speed_history`, because they carry CrUX and Web Vitals data.
+
+## Phase 1: our own sites
+
+### 1.1 Search Console history
+
+Done on 7 October 2026.
+
+**Credential.** The service account JSON, base64 encoded, in the group settings
+(`gcp.oauthClientSecret`) or `config('app.analytics.google.client_oauth_secret')`, with the
+`WEBMASTERS_READONLY` scope. The service account has to be a user on each Search Console property.
+
+**Fetch.** `FetchSearchConsoleAnalytics` (`app/Actions/Web/SearchConsole/`), command
+`search_console:fetch {website?} {--from=} {--to=} {--async}`, scheduled daily at 02:30 UTC with
+`--async`.
+
+- `SearchConsoleClient::forWebsite()` reads `website.data.gcp.siteUrl`. When it is missing, it lists
+  the properties the service account can see and saves the first exact match for the domain
+  (`sc-domain:`, then `https://www.`, `https://`, `http://www.`, `http://`). A website without a
+  match is skipped.
+- A first run backfills 16 months. Later runs start 3 days before the last stored day, because
+  Google finalises data with a delay, and stop yesterday. Only final data is stored
+  (`dataState=final`).
+- Per day, three requests, each paged with `startRow` in pages of 25,000 rows:
+  - `date, country, device` into `search_console_website_days`: website totals. When this returns
+    nothing the day has no data yet, and the other two requests are skipped.
+  - `date, page` into `search_console_page_days`: page totals, including the clicks of anonymised
+    queries that the page and query rows leave out.
+  - `date, page, query` into `search_console_page_queries`.
+- Every row is upserted on (website, date, hash), so re-runs are safe.
+- `page_url` is matched to `webpages` by the path of the canonical URL or by `url`, live pages
+  first. Unmatched URLs are kept with a null `webpage_id`.
+- Volume: the largest site (ancientwisdom.biz) had about 11,000 page and query rows a day in 2025
+  and about 1,700 in October 2026. A row takes about 300 bytes with its indexes, so 16 months of all
+  websites is a few GB. The tables are not partitioned yet; partition `search_console_page_queries`
+  by month on `date` if queries on it slow down or old months need dropping.
+
+**Screens.**
+
+- SEO dashboard: a Google Search card with clicks, impressions, CTR, average position and a daily
+  chart for the dashboard interval. When the website has no readable property, the card names the
+  service account to add instead.
+- Tabs under the cards:
+  - Webpages: search clicks, impressions and position added beside the traffic columns, from
+    `search_console_page_days`.
+  - Search queries: by query, with clicks, impressions, CTR, position and the number of pages shown.
+  - Low CTR queries: at least 100 impressions, average position 10 or better, CTR under 2%
+    (constants on `IndexSearchConsoleQueries`).
+- Position is always weighted by impressions.
+- The webpage Performance tab (and the blog webpage one) reads `search_console_page_days` instead of
+  calling the API. `GetWebpageGoogleCloud` and `GetWebsiteGoogleCloud` are deleted.
+
+### 1.2 SEO crawler (Site Audit)
+
+Done on 7 October 2026.
+
+**Crawl.** `AuditWebsite` (`app/Actions/Web/Crawl/`), command
+`crawl:audit {website?} {--max-pages=} {--concurrency=2} {--async}`, scheduled every Sunday at
+03:00 UTC for live websites. A "Run audit now" button on the Site Audit page starts one through
+`StartSiteAudit` (`grp.models.website.site_audit.store`).
+
+- Audits are rows in `crawls` with type `audit`; the cache warmer is unchanged. An audit claims
+  concurrency from the same budget of 8 the cache warmer uses, and stopping works the same way
+  (`should_stop`).
+- It always audits the public site: the scheme and host of the storefront's canonical URL, or
+  `https://` and the domain. `Website::getUrl()` points at local hosts outside production.
+- It reads `robots.txt` (its own parser, longest match wins, `*` and `$` supported), reads every
+  sitemap listed there or `/sitemap.xml`, starts from the home page and the sitemap URLs, and follows
+  internal links that are not `nofollow`. Links with a query string and links to files (images,
+  PDFs, scripts) are not followed.
+- User agent `Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)`. It is detected as a bot, so audits do
+  not appear as visitors.
+- Redirects are not followed by the HTTP client. Each hop is its own row, so chains and loops are
+  visible.
+- HTML is parsed with PHP 8.4 `Dom\HTMLDocument`. No package was added.
+- Default limit 10,000 pages per audit. At about 1.6 s per page on the storefronts this is roughly
+  2.5 hours at concurrency 2, inside the 3 hour job timeout of `long-low-priority`.
+- The last 10 audits per website are kept; older ones are deleted with their pages and issues.
+
+**Tables.** `crawl_pages` (one row per URL per audit, with status, redirect target and hops,
+response time, content type, title, meta description, canonical, robots meta, h1 count, images
+without alt, internal links in, in sitemap, indexable, matched `webpage_id`) and `crawl_issues`
+(crawl, page, type, severity, details). `crawls` gained `max_pages`, `health_score`,
+`pages_with_errors` and a count per severity.
+
+**Issues** (`CrawlIssueTypeEnum`, thresholds are constants on the enum):
+
+- Errors: 4xx, 5xx, fetch failed, redirect loop, missing title, canonical pointing at a URL that does
+  not answer 200.
+- Warnings: redirect chain, duplicate title, duplicate meta description, missing meta description,
+  missing or multiple h1, missing canonical, noindex page in the sitemap, response over 3 s, images
+  without alt.
+- Notices: title over 60 or under 20 characters, meta description over 160 or under 70, canonical
+  pointing at another page, indexable page missing from the sitemap, internal links pointing at a
+  redirect.
+- Content checks (title, description, h1, duplicates, sitemap) only run on indexable pages. Broken
+  pages carry up to 10 of the pages linking to them.
+
+**Health score** is the share of crawled pages with no error-level issue, stored on the crawl row.
+
+**Screens.** SEO > Site audit: health score with the change since the previous audit, counts per
+severity, the trend over the kept audits, and the issue list with pages per issue and the change
+since the previous audit. Each issue opens a page list with the URL, the matched webpage in Aiku,
+status, internal links in and the issue details. While an audit runs, the page polls its progress
+every 5 seconds.
+
+**First result.** A 150 page test audit of awgifts.bg found product pages rendering
+`<meta name="description" content>` with no text, because `webpages.description` is empty while
+the product has a description. Phase 3.4 (content help) is the natural place to fill these.
+
+**External links.** `external_links:check_status` (`RecheckExternalLinkStatuses`) rechecks every
+external link weekly, Sunday 02:00 UTC, five at a time.
+
+### 1.3 404 log
+
+Done on 7 October 2026.
+
+- `ShowIrisWebpage` dispatches `RecordWebsiteNotFoundHit` (queue `analytics`) just before the
+  `abort(404)` for a path with no webpage and no redirect, with the website, the path, the referrer
+  and the user agent. The other two 404s there (exclusive products, webpages that fail to render)
+  are not logged: those pages exist and need a different fix.
+- The job skips bots with `IsBot` and upserts one row per path in `website_not_found_paths`
+  (website, path, last segment, hits, first and last seen, last referrer, ignored). A trailing
+  slash does not make a new row.
+- `maintenance:prune_website_not_found_paths` deletes paths not seen for 90 days, daily at 03:50 UTC.
+- Hits are a floor, not a count: when Varnish caches a 404, repeat visits never reach Laravel.
+
+**Screen.** SEO > Missing pages lists paths by hits with last seen, first seen and where the last
+visit came from, filtered to Open by default (Open, Fixed, Ignored).
+
+- "Create redirect" opens a modal to pick a live page and posts to the existing
+  `StoreRedirectFromWebsite` (`grp.models.website.redirect.store`).
+- Redirects in Aiku match on the last path segment, so the modal says that every URL ending the same
+  way goes to the chosen page.
+- A path counts as Fixed while a redirect exists for its last segment or a live webpage now uses it.
+  This is computed, not stored, so redirects made elsewhere also count.
+- "Ignore" hides probes such as `/wp-login.php`; "Restore" brings them back.
+
+### 1.4 Page speed (field data, following HELP-3303)
+
+Done on 7 October 2026, without lab scores.
+
+HELP-3303 (commit `92f37c381f`, 24 September 2026) replaced the Lighthouse lab test with field data:
+the lab test scored pages such as the stationery family at 49 while real desktop visitors passed, so
+staff chased a number customers never saw. 1.4 follows it and adds no PageSpeed Insights calls.
+
+**Today (from HELP-3303).** `FetchCruxRecords` (`crux:fetch`, Tuesdays 01:00 UTC) stores the Chrome
+UX Report history of every live website and of every page with 50 or more views in 28 days in
+`crux_records`. `StoreWebVitalSample` records LCP, INP, CLS, FCP and TTFB from visitors' browsers
+in `web_vital_samples` (kept 400 days). Both show as Real user speed on the website and webpage
+pages.
+
+**Built.**
+
+- SEO dashboard, Page speed card: the website's 75th percentile LCP, INP and CLS for mobile and
+  desktop, with a Good, Needs improvement or Poor mark per metric and a Passes or Fails Core Web
+  Vitals verdict per device. A toggle switches between Google (the latest Chrome UX Report period)
+  and Our visitors (last 28 days). Not affected by the dashboard interval. Built by
+  `GetWebsitePageSpeedSummary`.
+- SEO dashboard, Page speed tab (`IndexWebpagesPageSpeed`): every webpage with at least 5 measured
+  page loads in 28 days, with its 75th percentile LCP, INP and CLS and the worst of the three as
+  the Core Web Vitals status, worst pages first. Filter by Mobile or Desktop. The code opens the
+  webpage's Performance tab, where the weekly history is.
+- Limits are Google's: LCP 2.5 s and 4 s, INP 200 ms and 500 ms, CLS 0.1 and 0.25.
+
+**Configuration.** `GOOGLE_CRUX_API_KEY`, a Google Cloud API key with the Chrome UX Report API
+enabled. Without it the Google side keeps the last stored weeks and stops updating; the visitors
+side needs no key.
+
+**Not built.** Lab scores from PageSpeed Insights. The `pagespeed_{desktop,mobile}_*` columns on
+`webpage_time_series_records` still hold the history of the removed nightly crawl (29,428 rows for
+12,646 webpages in the 7 October restore). Nothing writes or reads them; they are kept until the
+owner of HELP-3303 decides to drop them.
+
+### Phase 1 is done when
+
+- Search Console history is stored for every website with a property, and the webpage tab reads it. (Done)
+- Every website has had at least one audit, and the issue list matches a Semrush Site Audit run on
+  the same site closely enough that the team trusts it. (Built; the comparison with Semrush is still
+  to do.)
+- 404 paths are visible and redirects can be created from them. (Done)
+- Page speed: Core Web Vitals per website and per page on the SEO dashboard, from field data. (Done)
+
+## Phase 2: keywords
+
+Not started. See [status.md](status.md).
+
+### 2.1 Keyword research
+
+**Today.** Shops connect a Google Ads account through OAuth (`app/Actions/CRM/Customer/GoogleAds/`).
+Keyword code exists only for paid search: `app/Actions/CRM/TrafficSourceCampaign/GoogleAds/`.
+The developer token has Explorer access. On 7 October 2026 a test call to
+`customers/{id}:generateKeywordIdeas` was refused with "This method is not allowed for use with
+explorer access", so Keyword Planner needs Basic access first (an application in the Google Ads API
+Center), or a keyword data provider instead.
+
+**Build.**
+
+- `GetKeywordIdeas` calls `KeywordPlanIdeaService.GenerateKeywordIdeas` with the shop's existing
+  Google Ads connection, for a seed keyword or a URL, a location and a language.
+- `seo_keywords`: shop_id, keyword, location_id, language, avg_monthly_searches, monthly_searches
+  (json, 12 months), competition, low and high top-of-page bid, fetched_at. Refresh monthly for
+  saved keywords.
+- Google can return less precise volumes for accounts with little ad spend. Check what our accounts
+  receive before relying on the numbers, and show the source next to every volume.
+- Keyword difficulty: compute our own from the top 10 results of the keyword (their referring
+  domains once Phase 3 lands, SERP features, and whether our page is already in Search Console for
+  it). Until Phase 3, show it without the backlink part and label it as partial.
+- Search intent: `seo_keywords` gets `intent` (informational, navigational, commercial or
+  transactional), `secondary_intents` (json) and `intent_source`. Keyword Planner does not return
+  intent, so it comes from the keyword data provider when it has an intent endpoint (DataForSEO
+  does), or from a classification prompt through the AI gateway in batches of keywords. Classify
+  once per keyword and language; intent rarely changes, so refresh it yearly.
+- Let the team set the tracked keyword list and the competitor domains per shop from the UI, so
+  those two decisions are made in Aiku.
+
+**Screens.** A Keywords tab: search by seed or URL, results with volume, trend, difficulty and
+intent, a filter per intent, and a "Track" action that adds the keyword to rank tracking.
+
+### 2.2 Rank tracking
+
+**Build.**
+
+- Pick one SERP provider (DataForSEO, SerpApi, or similar) and one client class for it. Do not
+  scrape Google from our servers: it breaks Google's terms and needs a proxy pool.
+- `seo_tracked_keywords`: shop_id, keyword_id, location_code, language, device, target_webpage_id
+  (nullable), frequency (daily or weekly), is_active.
+- `seo_keyword_rankings`: tracked_keyword_id, date, position (null when not in the top 100),
+  ranking_url, webpage_id, serp_features (json: featured snippet, AI Overview, local pack, ads,
+  shopping), and whether our page is in the AI Overview.
+- `seo_competitors`: shop_id, domain, label. Competitor positions come from the same SERP response,
+  so they cost nothing extra: `seo_competitor_rankings` (tracked_keyword_id, competitor_id, date,
+  position, url).
+- Use the provider's queued mode where it is cheaper than live results; rankings are not needed in
+  real time.
+- Show the Search Console average position beside the tracked position. They measure different
+  things (an average over all impressions against one check from one location) and the team should
+  see both.
+
+**Cost control.** Cost grows with keywords × locations × devices × checks per month. Agree the list
+per shop and the frequency before switching it on, set the per-run budget cap, and show the month's
+spend on the dashboard.
+
+**Screens.** A Rankings tab:
+
+- Visibility: share of tracked keywords in the top 3, top 10 and top 100.
+- Position changes since the previous check, winners and losers.
+- Competitors on the same keywords: their position per keyword, and their visibility next to ours.
+- Intent overview: the share of tracked keywords per intent (for example 40% informational,
+  10% navigational, 30% commercial, 20% transactional), with our visibility within each intent, so
+  the team sees whether we win the buying searches or only the reading ones. Each share opens the
+  keyword list filtered to that intent.
+
+### Phase 2 is done when
+
+- Every shop has its tracked keyword list, checked on schedule within budget.
+- Every tracked keyword has an intent, and the intent overview is on the Rankings tab.
+- For a sample of keywords, positions match Semrush Position Tracking for the same location and
+  device, give or take the day-to-day movement both tools show.
+
+## Phase 3: the outside world
+
+### 3.1 Backlinks
+
+**Build.**
+
+- One backlink provider (DataForSEO Backlinks, Ahrefs API, or similar). The Search Console API has
+  no links endpoint, so there is no free source.
+- Weekly per website and per competitor domain:
+  - `seo_backlink_summaries`: domain, date, backlinks, referring_domains, new, lost and broken since
+    the last run, the provider's authority score.
+  - `seo_referring_domains`: domain, referring_domain, first_seen, last_seen, backlinks, authority,
+    is_lost.
+- Weekly for our own websites only, one row per link:
+  - `seo_backlinks`: website_id, source_url, source_domain, source_authority, target_url,
+    target_webpage_id, anchor, is_dofollow, first_seen, last_seen, lost_at, is_broken.
+  - `target_webpage_id` is matched the same way as Search Console pages (1.1), so each webpage gets
+    its own backlinks and referring domains.
+  - New: `first_seen` after the previous run. Lost: the provider no longer finds the link, or the
+    source page dropped it; `lost_at` is set and the row is kept. Prefer the provider's own new and
+    lost dates where it reports them.
+  - Broken: the link points at a URL on our site that does not answer 200. Check the target against
+    the latest crawl (1.2) and `website_not_found_paths` (1.3) before asking the provider. A broken
+    backlink is a lost referring domain that a redirect wins back, so the Missing pages screen shows
+    the backlinks pointing at each path and sorts by them.
+  - Competitors get summaries and referring domains only. Their links one by one cost per row and
+    the gap tools below do not need them.
+- Authority is the provider's score (DataForSEO calls it rank) per domain and per page, not Moz DA or
+  the Semrush Authority Score. The numbers will not match either; label the source on every screen
+  and compare trends, not values.
+- Feed referring domains into the keyword difficulty from 2.1.
+
+**Backlink gap tool.** Our domain plus up to four other domains, typed in or picked from
+`seo_competitors`. It lists referring domains that link to at least one of the others and not to us,
+with how many of the domains each links to and its authority, most linked first. The default filter
+is "links to two or more of them". A typed-in domain that is not in `seo_competitors` is fetched
+once and cached for 30 days, counted against the same budget cap.
+
+**Screens.** A Backlinks tab: authority, referring domains and backlinks with their trend; new, lost
+and broken backlinks since the previous run, each opening the link list; referring domains with
+authority and first and last seen; and the backlink gap tool.
+
+### 3.2 Competitor research
+
+**Build.**
+
+- From the same provider family: ranked keywords per competitor domain and organic competitors per
+  shop domain, monthly.
+- `seo_domain_keywords`: domain, keyword, location, position, url, estimated_traffic, intent,
+  fetched_at. Intent uses the same values and source as 2.1.
+- Label every traffic figure for a domain we do not own as the provider's estimate.
+
+**Domain comparison tool.** Our domain and up to four others side by side: authority, referring
+domains, backlinks, organic keywords, estimated organic traffic, the share of their keywords per
+intent, and the monthly visits from 3.5 where we have them. Each figure carries its source. Domains
+come from `seo_competitors` or are typed in, with the same 30 day cache and budget cap as the
+backlink gap tool.
+
+**Keyword gap tool.** The same domain picker, compared on the top 100 positions of each domain:
+
+| Group | Meaning |
+| --- | --- |
+| Shared | Every domain ranks for it |
+| Missing | Every other domain ranks for it and we do not |
+| Weak | We rank, but lower than every other domain |
+| Strong | We rank higher than every other domain |
+| Untapped | At least one other domain ranks and we do not |
+| Unique | Only we rank |
+
+Columns: keyword, intent, volume, difficulty, and the position of each domain. Sorted by volume,
+filterable by intent and position range. "Track" adds the keyword to rank tracking (2.2).
+
+**Screens.** A Competitors tab with the domain comparison and keyword gap tools, and the organic
+competitors the provider suggests for our domain, each with a button to add it to
+`seo_competitors`.
+
+### 3.3 AI visibility
+
+**Today.** `app/Actions/Helpers/AI/` already sends prompts through an AI gateway (OpenRouter) for
+product titles and descriptions.
+
+**Build.**
+
+- `seo_ai_prompts`: shop_id, prompt, language, is_active. Prompts are the questions a customer would
+  ask, written by the team per shop.
+- Weekly, send each prompt to the models the team cares about through the gateway: at least
+  ChatGPT (OpenAI), Gemini, Claude and Perplexity.
+- Use each model with web search on (OpenRouter's `:online` variants, Perplexity Sonar). Without it
+  the model answers from training data, cites nothing, and does not behave like the ChatGPT or
+  Gemini apps customers use. Even with search on, API answers differ from the apps, so treat the
+  result as a sample, not what every customer sees.
+- `seo_ai_answers`: prompt_id, model, run_at, answer, brand_mentioned, brand_position (the order in
+  which our brand appears among the brands named), competitor_mentions (json).
+- `seo_ai_citations`: answer_id, url, domain, position, competitor_id (nullable), website_id and
+  webpage_id when the URL is ours, matched like Search Console pages.
+- AI Overviews come from the SERP results already fetched in 2.2, not from the gateway.
+- Check whether the SEO provider offers AI mention data (DataForSEO has an AI optimisation API)
+  before building the sending side ourselves, and compare its price with the gateway's.
+- Models change answers between runs. Show mention rate over several runs, not one answer.
+
+**Screens.** An AI visibility tab:
+
+- Mention rate and citation rate per model, ours next to each competitor (share of voice), with the
+  trend over the weekly runs.
+- Prompts: per prompt, which models mention us, which cite us and with which page, and which
+  competitors they name instead.
+- Cited pages: our webpages by the number of prompts and models that cite them.
+
+### 3.4 Content help
+
+- `WithPromptAI::promptSeo()` exists and nothing calls it. Use the gateway to suggest meta titles
+  and descriptions for pages that the audit flags, and for pages with high impressions and low CTR.
+- Suggestions are never published automatically. Someone accepts them on the webpage SEO panel.
+
+### 3.5 Apify for competitor traffic and non-Google search demand
+
+Neither gap can be measured by us, and the SEO providers in 3.1 and 3.2 only estimate organic
+search traffic. [Apify](https://apify.com) runs third-party scrapers ("actors") on demand and
+returns JSON, which can cover both, with the limits below.
+
+**Total traffic of a competitor's domain.** Several actors read Similarweb's public data for a
+domain, for example [fetch_cat/similarweb-traffic-scraper](https://apify.com/fetch_cat/similarweb-traffic-scraper)
+and [bovi/similarweb-scraper](https://apify.com/bovi/similarweb-scraper). They return monthly
+visits, global and category rank, bounce rate, pages per visit, traffic channel mix and top
+countries.
+
+- What we get is Similarweb's model, not a measurement. It is the same kind of figure Semrush Traffic
+  Analytics shows, from a different panel, so the two will not match.
+- Small domains often have no figure at all. Expect gaps for niche competitors.
+- These actors read Similarweb pages or an undocumented endpoint without a Similarweb account, which
+  is against Similarweb's terms and breaks whenever Similarweb changes its site. The Similarweb API
+  is the licensed way to get the same data, at a subscription price.
+- Monthly granularity is enough. Run once a month per competitor domain.
+
+**Search demand outside Google.**
+
+- Bing has an official source and it is free: the Bing Webmaster Tools API (`GetKeywordStats`,
+  `GetRelatedKeywords`) returns Bing impressions per keyword, country and language. Use it before
+  Apify for Bing.
+- For Amazon, YouTube, TikTok and similar platforms, no platform publishes search volume. Actors
+  such as [Answer The Public](https://apify.com/deadlyaccurate/answer-the-public) collect what those
+  platforms suggest as people type. That tells us which searches exist and which are popular enough
+  to be suggested, not how many searches each one gets.
+- Show these keywords as demand signals (suggested, rising, related) next to Google volumes, never in
+  the same volume column.
+
+**Build.**
+
+- One `ApifyClient` that starts an actor run, waits for it or receives the webhook, and reads the
+  dataset. API token in `config/services.php`.
+- Pin each actor to a version and check its output shape before storing, so a changed actor fails
+  loudly instead of writing empty rows.
+- `seo_domain_traffic_estimates`: domain, month, source (`similarweb_via_apify` or
+  `similarweb_api`), visits, channel_mix (json), top_countries (json), rank, fetched_at.
+- `seo_platform_keyword_signals`: shop_id, platform, keyword, signal (suggested, related, rising),
+  country, language, fetched_at.
+- Apify charges per run or per result, depending on the actor. Track it with the same per-request
+  log and budget cap as the other providers.
+
+**Decision.** Choose between an Apify actor (cheap, against Similarweb's terms, may break) and the
+Similarweb API (licensed, priced) for competitor traffic before building it.
+
+### 3.6 Top pages
+
+**Today.** The Webpages tab of the SEO dashboard lists webpages with Aiku's traffic for the
+dashboard interval and, since 1.1, Search Console clicks, impressions and position. It shows no
+comparison with an earlier period.
+
+**Build.** Turn the Webpages tab into Top pages, one column group at a time as the data arrives:
+
+| Columns | Source | Can start |
+| --- | --- | --- |
+| Visitors, page views and their % change against the previous period of the same length | `webpage_time_series_records` | Now |
+| Search clicks, impressions and their % change, position and its change, number of queries | `search_console_page_days`, `search_console_page_queries` | Now |
+| Referring domains and backlinks | `seo_backlinks` (3.1) | With 3.1 |
+| AI prompts that cite the page, and by how many models | `seo_ai_citations` (3.3) | With 3.3 |
+
+- The previous period ends the day before the dashboard interval starts and has the same number of
+  days. Search Console data ends 3 days before today, so its comparison uses its own last day, not
+  today.
+- The change is shown in % with its direction, and as the absolute difference on hover, because a
+  page going from 2 visitors to 4 is +100% and means nothing. Hide the % below a minimum (for example
+  20 visitors or clicks in either period) and show only the difference.
+- Filters: Growing, Dropping, New (no traffic in the previous period), Lost (no traffic now).
+  Sorted by traffic by default; sorting by change finds the biggest drops.
+- The prompts column opens the list of prompts and models that cited the page; the referring
+  domains column opens the backlinks to the page.
+
+### Phase 3 is done when
+
+- Backlink summaries and gaps update weekly for our domains and the competitors in `seo_competitors`,
+  with new, lost and broken backlinks for our own domains.
+- Domain comparison, keyword gap and AI visibility are on the dashboard.
+- Top pages shows the change against the previous period, referring domains and the AI prompts that
+  cite each page.
+- Competitor domain traffic is fetched monthly, and Bing and non-Google search signals are shown
+  beside Google volumes.
+
+## Cancelling Semrush
+
+1. Run Aiku and Semrush side by side for at least one full Semrush billing cycle after Phase 3.
+2. Compare, for the same sites: audit issue counts, positions for a sample of tracked keywords,
+   referring domain counts. Write down where they differ and why.
+3. Export from Semrush whatever history the team wants to keep (position history, backlink history),
+   because Aiku's own history only starts on the day each fetch was switched on.
+4. Cancel when the team agrees the Aiku figures answer the same questions.
+
+## Decisions needed
+
+| Decision | Needed before |
+| --- | --- |
+| Who adds the service account to the properties that are still missing | Phase 1 |
+| SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
+| Apply for Google Ads Basic access, or pick a keyword data provider | Phase 2 |
+| Tracked keyword list, locations and devices per shop, and check frequency | Phase 2 |
+| Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |
+| Competitor domains per shop | Phase 2 (positions) and Phase 3 (backlinks) |
+| Keyword intent: from the keyword data provider or classified through the AI gateway | Phase 2 |
+| Models and prompts for AI visibility, and whether to buy AI mention data from the SEO provider | Phase 3 |
+| Budget for domains typed into the comparison and gap tools | Phase 3 |
+| Competitor domain traffic: Apify actor or the Similarweb API | Phase 3 |
+| Which non-Google platforms to collect search signals from | Phase 3 |
+| How long to run side by side before cancelling | After Phase 3 |

@@ -69,11 +69,12 @@ class GetShopMonthSalesTarget
 
         $pipelineByShop = $this->pipelineByShop($parent);
         $pipeline       = $this->sumPipelines($pipelineByShop);
+        $invoiceCounts  = $this->invoiceCountsByShop($this->salesShopIds($parent), $monthStart, $today);
 
         $children = match (true) {
-            $parent instanceof Shop         => $categories ? $this->categoryBlocks($parent, $categories, $targets, $monthStart, $today, $user, $growth, $expectedOf([$parent->id])) : [],
-            $parent instanceof Organisation => $this->shopBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth, $expectedOf),
-            default                         => $this->organisationBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth, $expectedOf),
+            $parent instanceof Shop         => $categories ? $this->categoryBlocks($parent, $categories, $targets, $monthStart, $today, $user, $growth, $expectedOf([$parent->id]), $this->invoiceCountsByCategory($parent, $monthStart, $today)) : [],
+            $parent instanceof Organisation => $this->shopBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth, $expectedOf, $invoiceCounts),
+            default                         => $this->organisationBlocks($parent, $targetShopIds, $thisYearDailyByShop, $lastYearDailyByShop, $shopTargets, $targetsByShop, $pipelineByShop, $monthStart, $today, $growth, $expectedOf, $invoiceCounts),
         };
         $tips = $parent instanceof Shop ? SalesTargetTip::where('shop_id', $parent->id)->where('date', $today->toDateString())->pluck('tip', 'invoice_category_id') : collect();
         $children = array_map(fn (array $child) => [...$child, 'tip' => isset($child['invoice_category_id']) ? $tips->get($child['invoice_category_id']) : null], $children);
@@ -85,7 +86,7 @@ class GetShopMonthSalesTarget
         };
 
         return [
-            ...$this->periodBlock($monthStart, $today, $thisYearDaily, $lastYearDaily, $targetAmount, $pipeline, $expectedOf($this->salesShopIds($parent))),
+            ...$this->periodBlock($monthStart, $today, $thisYearDaily, $lastYearDaily, $targetAmount, $pipeline, $expectedOf($this->salesShopIds($parent)), $this->sumInvoiceCounts($invoiceCounts)),
             'currency_code'     => $this->currencyCode($parent),
             'target'            => [
                 'amount'               => $targetAmount,
@@ -116,10 +117,10 @@ class GetShopMonthSalesTarget
      *
      * @return list<array<string, mixed>>
      */
-    private function shopBlocks(Organisation $organisation, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf): array
+    private function shopBlocks(Organisation $organisation, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf, array $invoiceCounts): array
     {
         $blocks = Shop::whereIn('id', $shopIds)->get(['id', 'slug', 'name'])->map(fn (Shop $shop) => [
-            ...$this->periodBlock($monthStart, $today, $thisYearDailyByShop[$shop->id] ?? [], $lastYearDailyByShop[$shop->id] ?? [], $shopTargets[$shop->id] > 0 ? round($shopTargets[$shop->id], 2) : null, $pipelineByShop[$shop->id] ?? $this->sumPipelines([]), $expectedOf([$shop->id])),
+            ...$this->periodBlock($monthStart, $today, $thisYearDailyByShop[$shop->id] ?? [], $lastYearDailyByShop[$shop->id] ?? [], $shopTargets[$shop->id] > 0 ? round($shopTargets[$shop->id], 2) : null, $pipelineByShop[$shop->id] ?? $this->sumPipelines([]), $expectedOf([$shop->id]), $this->sumInvoiceCounts($invoiceCounts, [$shop->id])),
             'key'           => (string) $shop->id,
             'name'          => $shop->name,
             'currency_code' => $organisation->currency->code,
@@ -137,7 +138,7 @@ class GetShopMonthSalesTarget
      *
      * @return list<array<string, mixed>>
      */
-    private function organisationBlocks(Group $group, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf): array
+    private function organisationBlocks(Group $group, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf, array $invoiceCounts): array
     {
         $salesShopsByOrganisation = Shop::whereIn('id', $this->salesShopIds($group))->pluck('organisation_id', 'id')->groupBy(fn ($organisationId) => $organisationId, true);
         $blocks                   = [];
@@ -155,7 +156,8 @@ class GetShopMonthSalesTarget
                     $this->sumDaily(array_intersect_key($lastYearDailyByShop, array_flip($organisationShopIds))),
                     $target > 0 ? round($target, 2) : null,
                     $this->sumPipelines(array_intersect_key($pipelineByShop, array_flip($organisationShopIds))),
-                    $expectedOf($organisationShopIds)
+                    $expectedOf($organisationShopIds),
+                    $this->sumInvoiceCounts($invoiceCounts, $organisationShopIds)
                 ),
                 'key'           => (string) $organisation->id,
                 'name'          => $organisation->name,
@@ -211,7 +213,7 @@ class GetShopMonthSalesTarget
     /**
      * Sales, pipeline and target figures of one month, shared by the shop and each of its categories.
      */
-    private function periodBlock(Carbon $monthStart, Carbon $today, array $thisYearDaily, array $lastYearDaily, ?float $targetAmount, array $pipeline, ?array $restOfMonth = null): array
+    private function periodBlock(Carbon $monthStart, Carbon $today, array $thisYearDaily, array $lastYearDaily, ?float $targetAmount, array $pipeline, ?array $restOfMonth = null, int $invoices = 0): array
     {
         $daysInMonth   = $monthStart->daysInMonth;
         $dayOfMonth    = $today->day;
@@ -230,6 +232,7 @@ class GetShopMonthSalesTarget
             'day_of_month'     => $dayOfMonth,
             'days_in_month'    => $daysInMonth,
             'sales_so_far'     => round($salesSoFar, 2),
+            'invoices'         => $invoices,
             'last_year_so_far' => round($lastYearSoFar, 2),
             'last_year_total'  => round(array_sum($lastYearDaily), 2),
             'expected'         => round($restOfMonth !== null ? $salesSoFar + array_sum(array_column($restOfMonth, 0)) : $this->expected($salesSoFar, $lastYearSoFar, $lastYearDaily, $dayOfMonth, $daysInMonth), 2),
@@ -271,7 +274,7 @@ class GetShopMonthSalesTarget
      *
      * @return list<array<string, mixed>>
      */
-    private function categoryBlocks(Shop $shop, array $categories, Collection $targets, Carbon $monthStart, Carbon $today, ?User $user, float $growth, ?array $shopRestOfMonth): array
+    private function categoryBlocks(Shop $shop, array $categories, Collection $targets, Carbon $monthStart, Carbon $today, ?User $user, float $growth, ?array $shopRestOfMonth, array $invoiceCounts): array
     {
         $pipelines = $this->pipelineByCategory($shop);
         foreach (array_diff(array_keys($pipelines), array_map(fn (array $category) => $category['invoice_category_id'] ?? 0, $categories)) as $categoryKey) {
@@ -287,12 +290,12 @@ class GetShopMonthSalesTarget
         usort($categories, fn (array $a, array $b) => [$b['target'], $b['sales']] <=> [$a['target'], $a['sales']]);
         $restByCategory = $this->shareForecastAcrossCategories($categories, $shopRestOfMonth, $today);
 
-        $blocks = array_map(function (array $category, int $position) use ($names, $pipelines, $emptyPipeline, $canEdit, $targets, $shop, $monthStart, $today, $growth, $restByCategory) {
+        $blocks = array_map(function (array $category, int $position) use ($names, $pipelines, $emptyPipeline, $canEdit, $targets, $shop, $monthStart, $today, $growth, $restByCategory, $invoiceCounts) {
             $categoryId = $category['invoice_category_id'];
             $setTarget  = $categoryId ? $targets->firstWhere('invoice_category_id', $categoryId) : null;
 
             return [
-                ...$this->periodBlock($monthStart, $today, $category['daily'], $category['last_year_daily'], $category['target'] > 0 ? $category['target'] : null, $pipelines[$categoryId ?? 0] ?? $emptyPipeline, $restByCategory[$position] ?? null),
+                ...$this->periodBlock($monthStart, $today, $category['daily'], $category['last_year_daily'], $category['target'] > 0 ? $category['target'] : null, $pipelines[$categoryId ?? 0] ?? $emptyPipeline, $restByCategory[$position] ?? null, $invoiceCounts[$categoryId ?? 0] ?? 0),
                 'key'                 => (string) ($categoryId ?? 'none'),
                 'invoice_category_id' => $categoryId,
                 'name'                => $categoryId ? $names->get($categoryId, '') : __('No category'),

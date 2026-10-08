@@ -9,9 +9,7 @@
 namespace App\Actions\Production\PartnerShippingList;
 
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
-use App\Models\Production\Artefact;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -23,20 +21,15 @@ class ReleaseFullyStockedPrePickLines
 {
     use AsAction;
 
-    public string $commandSignature = 'production:release_pre_pick {--dry-run : List what would be released and queued, then roll everything back}';
-    public string $commandDescription = 'Send whole partner lines to the warehouse when the shelf holds more than they ask, and queue the shortfall of the next one';
-
-    /** One more than the line asks must be free, so the line can be released once it is made. */
-    public const SHELF_BUFFER = 1;
+    public string $commandSignature = 'production:release_pre_pick {--dry-run : List what would be released, then roll everything back}';
+    public string $commandDescription = 'Send whole partner lines to the warehouse when the shelf holds more than they ask';
 
     /**
      * A line is released whole only when the free stock exceeds it plus every line queued ahead of it,
-     * so the warehouse never walks a partial. The first line it cannot cover keeps waiting in pre-pick
-     * and what it misses goes to To produce as our own restock line, landing on the shelf.
-     *
-     * @return array{released: int, queued: int}
+     * so the warehouse never walks a partial. A line it cannot cover keeps waiting in pre-pick for the
+     * production manager to decide; nothing is raised to To produce for it.
      */
-    public function handle(Organisation $seller): array
+    public function handle(Organisation $seller): int
     {
         $releasable = $this->waitingLines($seller)
             ->filter(fn (PartnerShoppingListItem $line) => (float) $line->queued_through < (float) $line->free_stock)
@@ -45,16 +38,9 @@ class ReleaseFullyStockedPrePickLines
             ->values()
             ->all();
 
-        $released = $releasable
+        return $releasable
             ? PrePickPartnerShoppingListItems::make()->action($seller, $releasable, wholeLinesOnly: true)['pre_picked']
             : 0;
-
-        $queued = $this->waitingLines($seller)
-            ->filter(fn (PartnerShoppingListItem $line) => (float) $line->shortfall > 0 && (float) $line->shortfall < (float) $line->quantity)
-            ->filter(fn (PartnerShoppingListItem $line) => $this->queueShortfall($seller, $line))
-            ->count();
-
-        return ['released' => $released, 'queued' => $queued];
     }
 
     /** @return Collection<int, PartnerShoppingListItem> */
@@ -73,45 +59,6 @@ class ReleaseFullyStockedPrePickLines
             ->get();
     }
 
-    /**
-     * Tops up our own restock lines for the stock until they cover the shortfall plus the shelf
-     * buffer; restock lines already queued or on the floor count, so a run never asks twice.
-     */
-    private function queueShortfall(Organisation $seller, PartnerShoppingListItem $line): bool
-    {
-        $orgStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $line->stock_id)->first();
-        if (!$orgStock || !Artefact::where('org_stock_id', $orgStock->id)->exists()) {
-            return false;
-        }
-
-        $inPipeline = (float) PartnerShoppingListItem::query()
-            ->where('organisation_id', $seller->id)
-            ->whereNull('partner_organisation_id')
-            ->whereNull('transaction_id')
-            ->whereNull('pre_picked_at')
-            ->where('stock_id', $line->stock_id)
-            ->where('state', ShoppingListItemStateEnum::OPEN)
-            ->sum(DB::raw('coalesce(quantity_to_produce, quantity)'));
-
-        $missing = ceil((float) $line->shortfall) + self::SHELF_BUFFER - $inPipeline;
-        if ($missing <= 0) {
-            return false;
-        }
-
-        PartnerShoppingListItem::create([
-            'group_id'        => $seller->group_id,
-            'organisation_id' => $seller->id,
-            'stock_id'        => $line->stock_id,
-            'org_stock_id'    => $orgStock->id,
-            'quantity'        => $missing,
-            'priority'        => $line->priority,
-            'needed_by'       => $line->needed_by,
-            'state'           => ShoppingListItemStateEnum::OPEN,
-        ]);
-
-        return true;
-    }
-
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
@@ -123,9 +70,8 @@ class ReleaseFullyStockedPrePickLines
                 return;
             }
 
-            $result = $this->handle($seller);
-            if ($result['released'] || $result['queued']) {
-                $command->info("$seller->code: {$result['released']} released, {$result['queued']} shortfalls queued");
+            if ($released = $this->handle($seller)) {
+                $command->info("$seller->code: $released released");
             }
         });
 
@@ -135,7 +81,6 @@ class ReleaseFullyStockedPrePickLines
     /** A real run inside a transaction that is rolled back, so the preview is exactly what a live run would do. */
     private function dryRun(Organisation $seller, Command $command): void
     {
-        $lastId    = (int) PartnerShoppingListItem::withTrashed()->max('id');
         $waitingIds = $this->waitingLines($seller)->pluck('id')->all();
 
         DB::beginTransaction();
@@ -153,25 +98,13 @@ class ReleaseFullyStockedPrePickLines
                 ->map(fn ($row) => [$row->stock, $row->for, (float) $row->quantity])
                 ->all();
 
-            $queued = PartnerShoppingListItem::query()
-                ->join('stocks', 'stocks.id', 'partner_shopping_list_items.stock_id')
-                ->where('partner_shopping_list_items.organisation_id', $seller->id)
-                ->whereNull('partner_shopping_list_items.partner_organisation_id')
-                ->where('partner_shopping_list_items.id', '>', $lastId)
-                ->orderBy('stocks.code')
-                ->get(['stocks.code as stock', 'partner_shopping_list_items.quantity'])
-                ->map(fn ($row) => [$row->stock, (float) $row->quantity])
-                ->all();
         } finally {
             DB::rollBack();
         }
 
-        $command->info("$seller->code (dry run, nothing saved): ".count($released).' lines would be released ('.array_sum(array_column($released, 2)).' SKOs), '.count($queued).' restock lines would be queued ('.array_sum(array_column($queued, 1)).' SKOs)');
+        $command->info("$seller->code (dry run, nothing saved): ".count($released).' lines would be released ('.array_sum(array_column($released, 2)).' SKOs)');
         if ($released) {
             $command->table(['Released', 'For', 'SKOs'], $released);
-        }
-        if ($queued) {
-            $command->table(['Queued to produce', 'SKOs'], $queued);
         }
     }
 }

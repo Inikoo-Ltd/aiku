@@ -113,7 +113,11 @@ enum OrganisationDashboardSalesTableTabsEnum: string
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
-        ], array_values($rows), false, $this === self::INVOICE_CATEGORIES ? self::invoiceCategoryBacklogRouteTarget(...) : null);
+        ], array_values($rows), false, match ($this) {
+            self::INVOICE_CATEGORIES => self::invoiceCategoryBacklogRouteTarget(...),
+            self::SHOPS              => AddDashboardBacklogColumns::shopRouteTarget(...),
+            default                  => null,
+        });
     }
 
     private static function invoiceCategoryBacklogRouteTarget(array $row): array

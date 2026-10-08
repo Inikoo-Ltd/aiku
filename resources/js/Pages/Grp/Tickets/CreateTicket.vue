@@ -19,6 +19,7 @@ defineProps<{
     types?: { label: string; value: string }[]
     modules: { label: string; value: string }[]
     project?: { id: number; name: string } | null
+    linkFrom?: { id: number; reference: string; subject: string; types: { value: string; label: string }[] } | null
 }>()
 </script>
 
@@ -26,6 +27,6 @@ defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 -mb-6 md:-mb-24">
-        <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :types="types" :modules="modules" :project="project" />
+        <TicketForm fill-screen :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :types="types" :modules="modules" :project="project" :link-from="linkFrom" />
     </div>
 </template>

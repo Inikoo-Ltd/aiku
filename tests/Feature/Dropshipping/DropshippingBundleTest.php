@@ -402,6 +402,47 @@ test('a bundle holding several of a component made of several trade units multip
     expect((float) $bundle->bundleable->tradeUnits->first()->pivot->quantity)->toEqual(6.0);
 });
 
+test('a bundle of several of one stock gets its own sku instead of the sku of the single', function () {
+    $channel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::TIKTOK)->first(),
+        ['reference' => 'multi_pack_sku_channel']
+    );
+
+    $stock     = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, \App\Models\Goods\Stock::factory()->definition());
+    $tradeUnit = $stock->tradeUnits()->firstOrFail();
+
+    $family = $this->shop->productCategories()
+        ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)
+        ->first();
+
+    $single = \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]],
+            'price'       => 10,
+            'rrp'         => 20,
+        ]
+    ));
+    $single = \App\Actions\Catalogue\Product\UpdateProduct::make()->action($single, ['state' => ProductStateEnum::ACTIVE]);
+
+    $twoPack = StoreBundle::make()->action($channel, [
+        'name'     => 'Two Pack Bundle',
+        'products' => [['product_id' => $single->id, 'quantity' => 2]],
+    ]);
+
+    $mixed = StoreBundle::make()->action($channel, [
+        'name'     => 'One Each Bundle',
+        'products' => [['product_id' => $single->id, 'quantity' => 1]],
+    ]);
+
+    $twoPackSku = \App\Models\Dropshipping\Portfolio::where('bundle_id', $twoPack->id)->firstOrFail()->sku;
+
+    expect($twoPackSku)->toBe($stock->slug.'-x2')
+        ->and(\App\Models\Dropshipping\Portfolio::where('bundle_id', $mixed->id)->firstOrFail()->sku)->toBe($stock->slug)
+        ->and(\App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->findProductBySKU($twoPackSku, $this->shop)?->id)->toBe($twoPack->bundleable->id);
+});
+
 test('a customer bundle stays out of the public shop data feed', function () {
     $bundle = StoreBundle::make()->action(
         $this->customerSalesChannel,

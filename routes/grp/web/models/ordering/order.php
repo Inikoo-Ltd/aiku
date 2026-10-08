@@ -23,6 +23,7 @@ use App\Actions\GoodsIn\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
+use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -75,6 +76,9 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->middleware(
     Route::patch('remove-discount', RemoveTransactionDiscount::class)->name('remove_discount');
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
+
+Route::patch('order/{order:id}/production-review', UpdateOrderProductionReview::class)->name('order.production_review');
+Route::patch('organisation/{organisation:id}/orders/production-review', [UpdateOrderProductionReview::class, 'inOrganisation'])->name('organisation.orders.production_review');
 
 Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledInAurora::class, EnsurePreOrderIsUnlocked::class])->group(function () {
     Route::post('discretionary-charge-transaction', StoreDiscretionaryChargeTransaction::class)->name('discretionary_charge_transaction');

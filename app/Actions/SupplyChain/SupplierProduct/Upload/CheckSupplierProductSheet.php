@@ -71,6 +71,38 @@ class CheckSupplierProductSheet
     }
 
     /**
+     * One product typed into the New supplier product form, checked exactly like a sheet row.
+     *
+     * @param array<string, mixed> $input form values keyed by column value, plus sko_name
+     *
+     * @return array{row: int, values: array<string, mixed>, findings: list<array{level: string, code: string, column: ?string, message: string}>}
+     */
+    public function checkProduct(Supplier $supplier, array $input): array
+    {
+        $this->supplier = $supplier;
+
+        $cells = [];
+        foreach (Column::cases() as $column) {
+            $value = Arr::get($input, $column->value);
+            if (is_string($value)) {
+                $value = trim($value) === '' ? null : trim($value);
+            }
+
+            $cells[$column->value] = ['value' => $value, 'text' => $value === null ? null : (string)$value, 'currencies' => []];
+        }
+
+        $row = $this->checkRow(['row' => 1, 'cells' => $cells, 'order' => []]);
+
+        $skoName = trim((string)Arr::get($input, 'sko_name'));
+        if ($skoName !== '' && $row['values']['units_per_sko'] > 1) {
+            $row['values']['sko_name'] = $skoName;
+            $row['findings']           = array_values(array_filter($row['findings'], fn (array $finding) => $finding['code'] !== 'sko_name_suggested'));
+        }
+
+        return $row;
+    }
+
+    /**
      * @param array{row: int, cells: array<string, array{value: mixed, text: ?string, currencies: list<string>}>, order: array<string, array{value: mixed, text: ?string, currencies: list<string>}>} $sheetRow
      *
      * @return array{row: int, values: array<string, mixed>, findings: list<array{level: string, code: string, column: ?string, message: string}>}

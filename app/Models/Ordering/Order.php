@@ -43,6 +43,7 @@ use App\Models\Reviews\OrderReviewStat;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
@@ -95,6 +96,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property int|null $delivery_country_id
  * @property Carbon $date
  * @property Carbon|null $submitted_at
+ * @property Carbon|null $production_reviewed_at
+ * @property int|null $production_reviewed_by
  * @property Carbon|null $in_warehouse_at
  * @property Carbon|null $handling_at
  * @property Carbon|null $packed_at
@@ -252,6 +255,7 @@ class Order extends Model implements HasMedia, Auditable
         'date'                          => 'datetime',
         'updated_by_customer_at'        => 'datetime',
         'submitted_at'                  => 'datetime',
+        'production_reviewed_at'        => 'datetime',
         'in_warehouse_at'               => 'datetime',
         'at_gate_at'                    => 'datetime',
         'handling_at'                   => 'datetime',
@@ -467,6 +471,11 @@ class Order extends Model implements HasMedia, Auditable
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
+    }
+
+    public function productionReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'production_reviewed_by');
     }
 
     public function transactions(): HasMany

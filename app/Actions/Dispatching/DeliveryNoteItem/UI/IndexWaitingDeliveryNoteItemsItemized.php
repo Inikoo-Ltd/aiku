@@ -56,6 +56,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 
         $query->where('delivery_note_items.quantity_required', '>', 0);
 
+        $query->orderByRaw('delivery_notes.is_premium_dispatch DESC NULLS LAST');
+
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select(array_merge(
                 $this->getDeliveryNoteItemBaseSelect(),
@@ -84,7 +86,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

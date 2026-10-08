@@ -16,6 +16,7 @@ use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -24,9 +25,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicket extends OrgAction
 {
+    private ?Ticket $linkSource = null;
+
     public function handle(Group $group, array $modelData): Ticket
     {
-        $type = TicketTypeEnum::from(Arr::get($modelData, 'type') ?: TicketTypeEnum::HELP->value);
+        $linkTicketId = Arr::pull($modelData, 'link_ticket_id');
+        $linkType     = Arr::pull($modelData, 'link_type');
+
+        $type = TicketTypeEnum::from(Arr::get($modelData, 'type') ?: ($linkTicketId ? TicketTypeEnum::ENGINEER->value : TicketTypeEnum::HELP->value));
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
 
@@ -50,7 +56,16 @@ class StoreTicket extends OrgAction
             ClassifyTicket::dispatch($ticket);
         }
 
+        if ($linkTicketId && $source = Ticket::where('group_id', $group->id)->find($linkTicketId)) {
+            StoreTicketLink::make()->handle($source, ['linked_ticket_id' => $ticket->id, 'type' => $linkType ?: 'relates'], $this->actor());
+        }
+
         return $ticket;
+    }
+
+    private function actor(): ?User
+    {
+        return $this->asAction ? null : request()->user();
     }
 
     public function rules(): array
@@ -58,7 +73,11 @@ class StoreTicket extends OrgAction
         return [
             'subject'         => ['required', 'string', 'max:255'],
             'description'     => ['sometimes', 'nullable', 'string'],
-            'type'            => ['sometimes', 'nullable', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value]))],
+            'type'            => ['sometimes', 'nullable', Rule::enum(TicketTypeEnum::class), $this->linkSource
+                ? Rule::in([TicketTypeEnum::ENGINEER->value, TicketTypeEnum::HELP->value])
+                : Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value]))],
+            'link_ticket_id'  => ['sometimes', 'nullable', 'integer'],
+            'link_type'       => ['sometimes', 'nullable', Rule::in(['relates', 'blocks', 'blocked_by', 'duplicates', 'duplicated_by'])],
             'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class), Rule::when(!$this->asAction && !Ticket::canBeManagedBy(request()->user()), Rule::notIn(TicketKindEnum::internalValues()))],
             'module'          => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'            => ['sometimes', 'array'],
@@ -101,7 +120,17 @@ class StoreTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || Ticket::canBeRaisedBy($request->user());
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($request->filled('link_ticket_id')) {
+            $this->linkSource = Ticket::where('group_id', group()->id)->find($request->integer('link_ticket_id'));
+
+            return $this->linkSource?->canLinkBy($request->user()) ?? false;
+        }
+
+        return Ticket::canBeRaisedBy($request->user());
     }
 
     public function action(Group $group, array $modelData): Ticket

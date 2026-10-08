@@ -170,6 +170,8 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.state',
                 'partner_shopping_list_items.needed_by',
                 'partner_shopping_list_items.notes',
+                'partner_shopping_list_items.poked_at',
+                DB::raw('(select coalesce(poker.contact_name, poker.username) from users as poker where poker.id = partner_shopping_list_items.poked_by_user_id) as poked_by'),
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',

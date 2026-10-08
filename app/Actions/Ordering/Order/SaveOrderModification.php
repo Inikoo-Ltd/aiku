@@ -190,7 +190,7 @@ class SaveOrderModification extends OrgAction
             }
         }
 
-        $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, $user);
+        $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, $user);
     }
 
     /**
