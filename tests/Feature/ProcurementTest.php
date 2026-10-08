@@ -3903,6 +3903,54 @@ test('current supplier sku cost distrusts implausible supplier cost and falls ba
     expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(4.0, 0.001);
 });
 
+test('current supplier sku cost skips a preferred supplier product that is no longer available', function () {
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    SyncStockTradeUnits::run($stock, [$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock = createOrgStocks($this->organisation, [$stock])[0];
+    $orgStock->updateQuietly(['sku_value' => 1, 'packed_in' => 1]);
+
+    $exchange = \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::run(
+        $this->orgSupplier->supplier->currency,
+        $orgStock->organisation->currency
+    );
+
+    $link = function (string $code, float $cost, int $priority) use ($tradeUnit, $stock, $orgStock, $exchange) {
+        $supplierProduct = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
+            'code'             => $code,
+            'name'             => $code,
+            'cost'             => $cost / $exchange,
+            'trade_units'      => [$tradeUnit->id],
+            'units_per_pack'   => 1,
+            'units_per_carton' => 10
+        ]);
+        $supplierProduct->updateQuietly(['extra_costs' => 0]);
+        $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $this->orgSupplier->id)
+            ->where('supplier_product_id', $supplierProduct->id)->first()
+            ?? StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+        $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
+            ['stock_id' => $stock->id, 'supplier_product_id' => $supplierProduct->id],
+            ['available' => true]
+        );
+        OrgStockHasOrgSupplierProduct::updateOrCreate(
+            ['org_stock_id' => $orgStock->id, 'org_supplier_product_id' => $orgSupplierProduct->id],
+            ['stock_has_supplier_product_id' => $stockHasSupplierProduct->id, 'status' => true, 'local_priority' => $priority]
+        );
+
+        return $supplierProduct;
+    };
+
+    $oldPreferred = $link('ini-060-old', 0.5, 10);
+    $link('ini-060-current', 1.2, 0);
+
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost::run($orgStock->fresh());
+    expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(0.5, 0.01);
+
+    $oldPreferred->updateQuietly(['is_available' => false]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost::run($orgStock->fresh());
+    expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(1.2, 0.01);
+});
+
 test('an agent sees and prints only the published labels of the SKOs it buys for us', function () {
     $this->orgSupplierProduct->updateQuietly(['org_agent_id' => $this->orgAgent->id, 'state' => 'active']);
     $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
