@@ -11,6 +11,7 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
@@ -91,6 +92,13 @@ class IndexLeavesAdmin extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $leaves, ActionRequest $request): Response
     {
+        $employees = Employee::where('organisation_id', $this->organisation->id)
+            ->where('state', EmployeeStateEnum::WORKING)
+            ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
+            ->with('jobPositions:job_positions.id,job_positions.name,job_positions.department')
+            ->orderBy('contact_name')
+            ->get(['id', 'contact_name']);
+
         return Inertia::render(
             'Org/HumanResources/LeaveAdmin',
             [
@@ -121,11 +129,10 @@ class IndexLeavesAdmin extends OrgAction
                     ->exists(),
                 'holidays' => $this->getHolidayDates(),
                 'can_record' => $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]),
-                'employee_options' => Employee::where('organisation_id', $this->organisation->id)
-                    ->where('state', EmployeeStateEnum::WORKING)
-                    ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
-                    ->orderBy('contact_name')
-                    ->pluck('contact_name', 'id'),
+                'employee_options' => $employees->pluck('contact_name', 'id'),
+                'employee_job_positions' => $employees->mapWithKeys(fn (Employee $employee) => [
+                    $employee->id => $employee->jobPositions->map(fn (JobPosition $jobPosition) => $jobPosition->only(['id', 'name', 'department'])),
+                ]),
             ]
         )->table($this->tableStructure());
     }

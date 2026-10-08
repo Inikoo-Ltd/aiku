@@ -12,6 +12,9 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
+import Select from "primevue/select"
+import Checkbox from "primevue/checkbox"
+import Textarea from "primevue/textarea"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { capitalize } from "@/Composables/capitalize"
@@ -37,9 +40,31 @@ const props = defineProps<{
 	can_record: boolean
 	holidays: { date: string; label: string }[]
 	employee_options: Record<string, string>
+	employee_job_positions: Record<string, { id: number; name: string; department: string | null }[]>
 }>()
 
 const parsedEmployeeOptions = computed(() => props.employee_options ?? {})
+
+const employeeSelectOptions = computed(() =>
+	Object.entries(parsedEmployeeOptions.value).map(([value, label]) => ({ value, label }))
+)
+
+const coverOptions = computed(() => {
+	const absentPositions = props.employee_job_positions?.[recordForm.employee_id] ?? []
+	const absentPositionIds = new Set(absentPositions.map((position) => position.id))
+	const absentDepartments = new Set(absentPositions.map((position) => position.department).filter(Boolean))
+
+	return employeeSelectOptions.value
+		.filter((option) => option.value !== String(recordForm.employee_id))
+		.map((option) => {
+			const positions = props.employee_job_positions?.[option.value] ?? []
+			const sharedRoles = positions.filter((position) => absentPositionIds.has(position.id)).map((position) => position.name)
+			const sharedDepartments = [...new Set(positions.map((position) => position.department).filter((department) => department && absentDepartments.has(department)))]
+
+			return { ...option, sharedRoles, sharedDepartments }
+		})
+		.sort((a, b) => b.sharedRoles.length - a.sharedRoles.length || b.sharedDepartments.length - a.sharedDepartments.length)
+})
 
 const parsedTypeOptions = computed(() => {
 	return Object.entries(props.type_options ?? {}).map(([value, data]) => ({
@@ -357,24 +382,25 @@ const closeRejectModal = () => {
 		<form @submit.prevent="submitRecord" class="space-y-4">
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Employee") }}</label>
-				<select
+				<Select
 					v-model="recordForm.employee_id"
-					required
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ ctrans("Select employee") }}</option>
-					<option v-for="(label, value) in parsedEmployeeOptions" :key="value" :value="value">{{ label }}</option>
-				</select>
+					:options="employeeSelectOptions"
+					optionLabel="label"
+					optionValue="value"
+					filter
+					:placeholder="ctrans('Select employee')"
+					class="mt-1 w-full" />
 			</div>
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Leave Type") }}</label>
-				<select
+				<Select
 					v-model="recordForm.type"
-					required
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ ctrans("Select type") }}</option>
-					<option v-for="option in parsedTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-				</select>
+					:options="parsedTypeOptions"
+					optionLabel="label"
+					optionValue="value"
+					:placeholder="ctrans('Select type')"
+					class="mt-1 w-full" />
 				<p v-if="recordForm.errors.type" class="mt-1 text-sm text-red-600">{{ recordForm.errors.type }}</p>
 			</div>
 
@@ -409,27 +435,44 @@ const closeRejectModal = () => {
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Covered by") }}</label>
-				<select
+				<Select
 					v-model="recordForm.cover_employee_id"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="">{{ ctrans("Nobody") }}</option>
-					<template v-for="(label, value) in parsedEmployeeOptions" :key="value">
-						<option v-if="String(value) !== String(recordForm.employee_id)" :value="value">{{ label }}</option>
+					:options="coverOptions"
+					optionLabel="label"
+					optionValue="value"
+					filter
+					showClear
+					:placeholder="ctrans('Nobody')"
+					class="mt-1 w-full">
+					<template #option="{ option }">
+						<div class="flex w-full items-center justify-between gap-2">
+							<span>{{ option.label }}</span>
+							<span
+								v-if="option.sharedRoles.length"
+								v-tooltip="ctrans('Same organisation and same role: :roles', { roles: option.sharedRoles.join(', ') })">
+								<Tag :theme="3" size="xxs" :label="ctrans('Highly recommended')" />
+							</span>
+							<span
+								v-else-if="option.sharedDepartments.length"
+								v-tooltip="ctrans('Same organisation and same department: :departments', { departments: option.sharedDepartments.join(', ') })">
+								<Tag :theme="1" size="xxs" :label="ctrans('Recommended')" />
+							</span>
+						</div>
 					</template>
-				</select>
+				</Select>
 				<p v-if="recordForm.errors.cover_employee_id" class="mt-1 text-sm text-red-600">{{ recordForm.errors.cover_employee_id }}</p>
 				<label v-if="recordForm.cover_employee_id" class="mt-2 flex items-center gap-2 text-sm text-gray-700">
-					<input v-model="recordForm.cover_has_permissions" type="checkbox" class="rounded border-gray-300" />
+					<Checkbox v-model="recordForm.cover_has_permissions" binary />
 					{{ ctrans("Give the cover this employee's permissions until the leave ends") }}
 				</label>
 			</div>
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Reason") }}</label>
-				<textarea
+				<Textarea
 					v-model="recordForm.reason"
 					rows="2"
-					class="mt-1 block w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm" />
+					class="mt-1 w-full resize-none" />
 			</div>
 
 			<div class="mt-6 flex justify-end gap-2">

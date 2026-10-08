@@ -47,6 +47,8 @@ class UpdateLeaveCover extends OrgAction
             );
         }
 
+        AddLeaveCoverCollaborators::dispatch($leave);
+
         return $leave;
     }
 
