@@ -1356,6 +1356,25 @@ test('UI dispatching item and courier index pages', function () {
     get(route('grp.org.shops.show.ordering.delivery-notes.index', [$this->organisation->slug, $this->shop->slug]))->assertOk();
 });
 
+test('waiting items list premium dispatch delivery notes first', function () {
+    $state = App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING;
+
+    foreach (['warehouse', 'crm'] as $waitingType) {
+        $byDeliveryNote = App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->handle($this->warehouse, $waitingType, $state)
+            ->getCollection()->pluck('delivery_note_is_premium_dispatch')->map(fn ($isPremium) => (bool)$isPremium)->all();
+        $itemized = App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsItemized::make()->handle($this->warehouse, $waitingType, $state)
+            ->getCollection()->pluck('delivery_note_is_premium_dispatch')->map(fn ($isPremium) => (bool)$isPremium)->all();
+        $byItem = App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsGroupedByItem::make()->handle($this->warehouse, $waitingType, $state)
+            ->getCollection()->pluck('has_premium_dispatch')->map(fn ($isPremium) => (bool)$isPremium)->all();
+
+        foreach ([$byDeliveryNote, $itemized, $byItem] as $flags) {
+            $premiumFirst = $flags;
+            rsort($premiumFirst);
+            expect($flags)->toBe($premiumFirst);
+        }
+    }
+});
+
 test('json badges and picker packer lists', function () {
     get(route('grp.json.dispatching_waiting_badge'))->assertOk();
     get(route('grp.json.crm_waiting_badge'))->assertOk();

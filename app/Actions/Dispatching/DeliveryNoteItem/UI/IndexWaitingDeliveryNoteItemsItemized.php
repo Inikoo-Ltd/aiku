@@ -56,6 +56,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 
         $query->where('delivery_note_items.quantity_required', '>', 0);
 
+        $query->orderByRaw('delivery_notes.is_premium_dispatch DESC NULLS LAST');
+
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select(array_merge(
                 $this->getDeliveryNoteItemBaseSelect(),
