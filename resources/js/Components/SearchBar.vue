@@ -9,7 +9,7 @@ import { inject, provide, ref, computed, defineAsyncComponent, watch, onMounted,
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { faTimes, faSearch, faSpinnerThird, faHistory } from '@fal'
@@ -47,7 +47,7 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
     trade_units: SearchResultGeneric,
     hr: SearchResultGeneric,
     chat: SearchResultGeneric,
-    tickets: SearchResultGeneric,
+    tickets: defineAsyncComponent(() => import('@/Components/Search/SearchResultTickets.vue')),
     procurement: SearchResultProcurement,
     production: SearchResultGeneric,
 }
@@ -87,8 +87,8 @@ const persistBookmarks = async (nextBookmarks: Bookmark[]) => {
     } catch (error) {
         layout.bookmarks = previousBookmarks
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to save bookmarks'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Failed to save bookmarks'),
             type: 'error',
         })
     } finally {
@@ -166,7 +166,7 @@ onUnmounted(() => stopNavListener?.())
 
 const relativeTime = (at: number): string => {
     const minutes = Math.floor((Date.now() - at) / 60000)
-    if (minutes < 1) return trans('now')
+    if (minutes < 1) return ctrans('now')
     if (minutes < 60) return `${minutes}m`
     const hours = Math.floor(minutes / 60)
     if (hours < 24) return `${hours}h`
@@ -347,7 +347,7 @@ onUnmounted(router.on('start', () => {
                                 @input="onTypeSearch"
                                 type="text"
                                 class="h-12 w-full border-0 bg-transparent text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
-                                :placeholder="trans('Search...')"
+                                :placeholder="ctrans('Search...')"
                             />
                             <button @click="closeModal">
                                 <FontAwesomeIcon icon="fal fa-times" class="text-lg" fixed-width />
