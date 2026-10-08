@@ -110,7 +110,7 @@ const dismissLeaveCovers = () => {
 
 						<div v-if="cover.has_permissions" class="mt-1 flex items-center gap-x-1 text-[10px] text-amber-600">
 							<FontAwesomeIcon icon="fal fa-key" fixed-width aria-hidden="true" />
-							{{ ctrans("You can use their permissions") }}
+							{{ ctrans("You have their permissions") }}
 						</div>
 					</Link>
 				</div>

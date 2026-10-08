@@ -8,9 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
-use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,8 +27,7 @@ class BorrowUserPermissions
     /**
      * Group admins and engineers can borrow anybody in the group. An organisation admin only
      * somebody whose permissions all sit inside the organisations they administer, so borrowing
-     * can never give them more than they already manage. An employee covering a colleague's leave
-     * with permissions can borrow that colleague until the leave ends.
+     * can never give them more than they already manage.
      */
     public static function canBorrow(User $borrower, User $lender): bool
     {
@@ -38,7 +35,7 @@ class BorrowUserPermissions
             return false;
         }
 
-        if (self::canBorrowAnybody($borrower) || self::coveredUserIds($borrower)->contains($lender->id)) {
+        if (self::canBorrowAnybody($borrower)) {
             return true;
         }
 
@@ -55,9 +52,7 @@ class BorrowUserPermissions
 
     public static function canBorrowSomebody(User $borrower): bool
     {
-        return self::canBorrowAnybody($borrower)
-            || self::administeredOrganisationIds($borrower)->isNotEmpty()
-            || self::coveredUserIds($borrower)->isNotEmpty();
+        return self::canBorrowAnybody($borrower) || self::administeredOrganisationIds($borrower)->isNotEmpty();
     }
 
     private static function canBorrowAnybody(User $borrower): bool
@@ -77,21 +72,6 @@ class BorrowUserPermissions
             ->pluck('roles.scope_id');
     }
 
-    private static function coveredUserIds(User $borrower): Collection
-    {
-        $today = now()->toDateString();
-
-        return User::whereHas('employees', fn ($query) => $query->where('user_has_models.status', true)->whereIn(
-            'employees.id',
-            Leave::where('status', LeaveStatusEnum::APPROVED)
-                ->where('cover_has_permissions', true)
-                ->whereDate('start_date', '<=', $today)
-                ->whereDate('end_date', '>=', $today)
-                ->whereIn('cover_employee_id', $borrower->employees()->wherePivot('status', true)->select('employees.id'))
-                ->select('employee_id')
-        ))->pluck('id');
-    }
-
     /**
      * ponytail: candidates are filtered one by one with canBorrow(), fine for a 50 row search box;
      * build it as a query if organisation admins start missing people they should see.
@@ -99,10 +79,8 @@ class BorrowUserPermissions
     public function lenders(Request $request): JsonResponse
     {
         /** @var User $borrower */
-        $borrower          = $request->user();
-        $search            = trim((string) $request->query('search'));
-        $canBorrowAnybody  = self::canBorrowAnybody($borrower);
-        $onlyCoversLeaves  = !$canBorrowAnybody && self::administeredOrganisationIds($borrower)->isEmpty();
+        $borrower = $request->user();
+        $search   = trim((string) $request->query('search'));
 
         return response()->json(User::where('group_id', $borrower->group_id)
             ->where('status', true)
@@ -110,11 +88,10 @@ class BorrowUserPermissions
             ->when($search !== '', fn ($query) => $query->where(
                 fn ($query) => $query->whereLike('username', "%$search%")->orWhereLike('contact_name', "%$search%")
             ))
-            ->when($onlyCoversLeaves, fn ($query) => $query->whereIn('id', self::coveredUserIds($borrower)))
             ->orderBy('username')
             ->limit(50)
             ->get()
-            ->when(!$canBorrowAnybody, fn ($lenders) => $lenders->filter(fn (User $lender) => self::canBorrow($borrower, $lender)))
+            ->when(!self::canBorrowAnybody($borrower), fn ($lenders) => $lenders->filter(fn (User $lender) => self::canBorrow($borrower, $lender)))
             ->take(15)
             ->map(fn (User $lender) => $lender->only(['id', 'username', 'contact_name']))
             ->values());

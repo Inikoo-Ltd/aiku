@@ -55,7 +55,7 @@ const workToTakeOver = (work: CoveredWork[]) => work.filter((kind) => kind.items
                 </div>
                 <span v-if="cover.has_permissions" class="flex items-center gap-x-1 text-xs text-amber-600">
                     <FontAwesomeIcon icon="fal fa-key" fixed-width aria-hidden="true" />
-                    {{ ctrans("You can use their permissions") }}
+                    {{ ctrans("You have their permissions") }}
                 </span>
             </header>
 
