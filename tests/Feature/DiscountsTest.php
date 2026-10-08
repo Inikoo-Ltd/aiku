@@ -58,6 +58,8 @@ use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\TransactionHasOfferAllowance\StoreTransactionHasOfferAllowance;
 use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOfferAllowance;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Models\Helpers\Country;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
@@ -2906,6 +2908,61 @@ describe('calculate order discounts', function () {
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('changing the delivery country reprices the shipping', function () {
+        $order = Order::latest('id')->first();
+        expect($order->state)->toBe(OrderStateEnum::CREATING)
+            ->and($order->stats->number_item_transactions)->toBeGreaterThan(0);
+        $previousSchemaId = $this->shop->shipping_zone_schema_id;
+
+        $schema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'Country shipping']);
+        $france = StoreShippingZone::make()->action($schema, [
+            'code'        => 'ZONE-FR',
+            'name'        => 'France',
+            'status'      => true,
+            'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 7]]],
+            'territories' => [['country_code' => 'FR']],
+            'position'    => 2,
+            'is_failover' => false,
+        ]);
+        $restOfWorld = StoreShippingZone::make()->action($schema, [
+            'code'        => 'ZONE-ROW',
+            'name'        => 'Rest of the world',
+            'status'      => true,
+            'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 15]]],
+            'position'    => 1,
+            'is_failover' => false,
+        ]);
+        $this->shop->update(['shipping_zone_schema_id' => $schema->id]);
+        $order->update(['shipping_engine' => OrderShippingEngineEnum::AUTO]);
+
+        $deliverTo = function (string $countryCode) use ($order): Order {
+            $country = Country::where('code', $countryCode)->firstOrFail();
+
+            return UpdateOrderDeliveryAddress::make()->action($order->fresh(), [
+                'address' => [
+                    'address_line_1' => '1 Test Street',
+                    'locality'       => 'Testville',
+                    'postal_code'    => '75001',
+                    'country_code'   => $country->code,
+                    'country_id'     => $country->id,
+                ],
+            ])->refresh();
+        };
+
+        $order = $deliverTo('MT');
+        expect($order->shipping_zone_id)->toBe($restOfWorld->id)
+            ->and((float)$order->shipping_amount)->toBe(15.0);
+
+        $order = $deliverTo('FR');
+        expect($order->shipping_zone_id)->toBe($france->id)
+            ->and((float)$order->shipping_amount)->toBe(7.0);
+
+        DB::table('transactions')->where('order_id', $order->id)->where('model_type', 'ShippingZone')->delete();
+        $this->shop->update(['shipping_zone_schema_id' => $previousSchemaId]);
+        $order->update(['shipping_zone_id' => null, 'shipping_zone_schema_id' => null]);
+        CalculateOrderTotalAmounts::run(order: $order->fresh(), calculateShipping: false, calculateDiscounts: false);
     });
 
     test('shop wide offers: amount threshold and unconditional', function () {
