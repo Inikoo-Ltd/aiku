@@ -24,6 +24,7 @@ import {
 	getRenamePermision,
 	getCopyPermissions,
 	BLOCKS_WITHOUT_VISIBILITY_OPTIONS,
+	getLockedBlockIds,
 } from '@/Composables/getBlueprintWorkshop'
 import { Root, Daum } from '@/types/webBlockTypes'
 import { Root as RootWebpage } from '@/types/webpageTypes'
@@ -53,7 +54,7 @@ import {
 	faPaste,
 	faEdit,
 } from '@fal'
-import { faBrush, faCogs, faExclamationTriangle, faLayerGroup, faShapes } from '@fas'
+import { faBrush, faCogs, faExclamationTriangle, faLayerGroup, faLock, faShapes } from '@fas'
 
 library.add(
 	faBrowser,
@@ -180,6 +181,12 @@ const filterOptions = [
 	{ label: 'Logged out', value: 'logged-out' },
 	{ label: 'Logged in', value: 'logged-in' },
 ]
+
+const lockedBlockIds = computed(() => getLockedBlockIds(props.webpage?.layout?.web_blocks))
+
+const isBlockMovable = (event: { draggedContext: { element: Daum, futureIndex: number } }) =>
+	!lockedBlockIds.value.has(event.draggedContext.element.id) &&
+	event.draggedContext.futureIndex >= lockedBlockIds.value.size
 
 const onChangeOrderBlock = () => {
 	const payload = {}
@@ -584,6 +591,7 @@ const showBlockVisibilityOptions = computed(
 							<draggable
 								:list="webpage.layout.web_blocks"
 								handle=".handle"
+								:move="isBlockMovable"
 								@change="onChangeOrderBlock"
 								ghost-class="ghost"
 								group="column"
@@ -629,6 +637,17 @@ const showBlockVisibilityOptions = computed(
 													)
 												">
 												<FontAwesomeIcon
+													v-if="lockedBlockIds.has(element.id)"
+													:icon="faLock"
+													v-tooltip="ctrans('This block position is fixed by the family template')"
+													class="shrink-0 text-xs"
+													:class="
+														openedBlockSideEditor === index
+															? 'text-white/70'
+															: 'text-slate-300'
+													" fixed-width />
+												<FontAwesomeIcon
+													v-else
 													icon="fal fa-bars"
 													v-tooltip="editable ? ctrans('Drag to reorder') : ''"
 													class="handle shrink-0 text-xs cursor-grab active:cursor-grabbing"

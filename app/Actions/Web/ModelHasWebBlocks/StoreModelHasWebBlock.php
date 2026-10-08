@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WebBlock\StoreWebBlock;
 use App\Actions\Web\WebBlockHistory\StoreWebBlockHistory;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\EnforceFamilyWebBlocksOrder;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -75,6 +76,7 @@ class StoreModelHasWebBlock extends OrgAction
             'layout' => $webBlock->layout,
         ]);
 
+        EnforceFamilyWebBlocksOrder::run($webpage);
         UpdateWebpageContent::run($webpage->refresh());
 
         return $modelHasWebBlock->refresh();

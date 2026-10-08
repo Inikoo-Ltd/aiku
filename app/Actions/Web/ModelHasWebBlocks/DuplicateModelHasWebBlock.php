@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\WebBlock\StoreWebBlock;
+use App\Actions\Web\Webpage\EnforceFamilyWebBlocksOrder;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
@@ -61,6 +62,7 @@ class DuplicateModelHasWebBlock extends OrgAction
                 'show_logged_out' => $modelHasWebBlocks->show_logged_out,
             ]
         );
+        EnforceFamilyWebBlocksOrder::run($webpage);
         UpdateWebpageContent::run($webpage->refresh());
 
         return $modelHasWebBlockCopy;

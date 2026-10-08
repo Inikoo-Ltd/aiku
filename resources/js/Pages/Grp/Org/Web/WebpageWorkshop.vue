@@ -22,7 +22,7 @@ import {
   useWorkshopShortcuts, formatShortcutCombo,
   WorkshopShortcut, CopiedWebBlock,
 } from "@/Composables/useWorkshopShortcuts";
-import { getCopyPermissions, getDeletePermissions, getHiddenPermissions } from "@/Composables/getBlueprintWorkshop";
+import { getCopyPermissions, getDeletePermissions, getHiddenPermissions, getLockedBlockIds } from "@/Composables/getBlueprintWorkshop";
 import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -982,6 +982,8 @@ const moveSelectedBlock = (offset: -1 | 1) => {
   if (from === null) return;
   const to = from + offset;
   if (to < 0 || to >= blocks.length) return;
+  const lockedBlockIds = getLockedBlockIds(blocks);
+  if (lockedBlockIds.has(blocks[from].id) || lockedBlockIds.has(blocks[to].id)) return;
 
   [blocks[from], blocks[to]] = [blocks[to], blocks[from]];
   openedBlockSideEditor.value = to;

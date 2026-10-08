@@ -24,9 +24,9 @@ class ReorderWebBlocks extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
-        // dd($modelData);
         $positions = Arr::pull($modelData, 'positions', []);
         $webpage->webBlocks()->syncWithoutDetaching($positions);
+        EnforceFamilyWebBlocksOrder::run($webpage);
         UpdateWebpageContent::run($webpage->refresh());
 
         return $webpage;

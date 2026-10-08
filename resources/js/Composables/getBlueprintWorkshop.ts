@@ -251,3 +251,24 @@ export const getBlueprintProduct = (componentName: string, shop_type?: string) =
 	const blueprint = components[componentName]
 	return typeof blueprint === "function" ? blueprint() : blueprint ?? []
 }
+const LOCKED_FAMILY_LAYOUTS: Record<string, string> = {
+    'family-2': 'family-2-extra-description',
+    'family-3': 'family-3-extra-description',
+}
+
+const PRODUCTS_LIST_BLOCKS = ['products-1', 'products-2']
+
+export const getLockedBlockIds = (blocks: { id: number, type: string }[] = []): Set<number> => {
+    const familyBlock = blocks.find(block => block.type in LOCKED_FAMILY_LAYOUTS)
+    if (!familyBlock) {
+        return new Set()
+    }
+
+    const lockedBlocks = [
+        familyBlock,
+        blocks.find(block => PRODUCTS_LIST_BLOCKS.includes(block.type)),
+        blocks.find(block => block.type === LOCKED_FAMILY_LAYOUTS[familyBlock.type]),
+    ]
+
+    return new Set(lockedBlocks.filter(Boolean).map(block => block!.id))
+}
