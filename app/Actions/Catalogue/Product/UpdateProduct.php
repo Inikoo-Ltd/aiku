@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Shop\External\Shopify\UpdateShopifyProductInventoryQuantity;
 use App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Catalogue\Asset\UpdateAsset;
@@ -377,6 +378,9 @@ class UpdateProduct extends OrgAction
             }
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::WIX) {
                 UpdateWixProductInventoryQuantity::dispatch($product)->delay(60);
+            }
+            if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::SHOPIFY) {
+                UpdateShopifyProductInventoryQuantity::dispatch($product)->delay(60);
             }
         }
 
