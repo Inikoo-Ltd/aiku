@@ -85,6 +85,8 @@ const props = defineProps<{
 		route: routeType
 		reference: string
 		channels: { channel: string; to: string }[]
+		to_submit: { supplier_code: string; supplier_name: string; currency_code: string; cost_total: number | string }[]
+		to_remove: string[]
 	} | null
 }>()
 
@@ -144,7 +146,7 @@ const saveUnits = async (line: OrderLine) => {
 		notify({ title: ctrans("Success"), text: ctrans("Quantity updated"), type: "success" })
 		await new Promise<void>((resolve) => {
 			router.reload({
-				only: ["supplier_orders", "agent_order"],
+				only: ["supplier_orders", "agent_order", "submit"],
 				onFinish: () => resolve(),
 			})
 		})
@@ -439,6 +441,26 @@ const hasToolbar = computed(() => !!props.products_list || !!props.submit)
 		:draggable="false"
 	>
 		<div class="flex flex-col gap-3">
+			<div class="rounded-md border border-gray-200 bg-gray-50 p-3">
+				<p class="text-sm font-medium text-gray-700">
+					{{ submit?.to_submit.length === 1 ? ctrans("1 supplier order will be submitted:") : ctrans(":count supplier orders will be submitted:", { count: submit?.to_submit.length ?? 0 }) }}
+				</p>
+				<ul class="mt-2 flex flex-col gap-1 text-sm">
+					<li v-for="order in submit?.to_submit" :key="order.supplier_code" class="flex items-baseline justify-between gap-4">
+						<span class="text-gray-700">
+							{{ order.supplier_code }}
+							<span class="text-xs text-gray-400">{{ order.supplier_name }}</span>
+						</span>
+						<span class="whitespace-nowrap font-medium text-gray-700">{{ money(order.currency_code, order.cost_total) }}</span>
+					</li>
+				</ul>
+				<p class="mt-2 border-t border-gray-200 pt-2 text-xs text-gray-500">
+					{{ ctrans("Supplier orders without products are removed.") }}
+					<template v-if="submit?.to_remove.length">
+						{{ ctrans("Removed now: :suppliers", { suppliers: submit.to_remove.join(", ") }) }}
+					</template>
+				</p>
+			</div>
 			<label v-for="option in submit?.channels" :key="option.channel" class="flex cursor-pointer items-start gap-3">
 				<RadioButton v-model="sendVia" :value="option.channel" :inputId="`agent-order-send-${option.channel}`" />
 				<span class="text-sm text-gray-700">

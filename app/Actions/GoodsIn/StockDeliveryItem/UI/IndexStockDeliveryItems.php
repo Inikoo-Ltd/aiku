@@ -99,12 +99,13 @@ class IndexStockDeliveryItems extends OrgAction
 
         $weight = DB::table('model_has_trade_units as mhtu')
             ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->join('org_stocks as pack', 'pack.id', '=', 'mhtu.model_id')
             ->whereColumn('mhtu.model_id', 'stock_delivery_items.org_stock_id')
             ->where('mhtu.model_type', 'OrgStock')
             ->selectRaw('
                 case
                     when count(*) = 0 or count(*) filter (where tu.gross_weight is null) > 0 then null
-                    else round(sum(tu.gross_weight * mhtu.quantity) * stock_delivery_items.unit_quantity / 1000, 1)
+                    else round(sum(tu.gross_weight * mhtu.quantity) * stock_delivery_items.unit_quantity / coalesce(nullif(max(pack.packed_in), 0), 1) / 1000, 1)
                 end
             ');
 

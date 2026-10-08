@@ -102,11 +102,7 @@ class EditPurchaseOrder extends OrgAction
                             'title'  => __('Payments'),
                             'icon'   => 'fal fa-money-bill',
                             'fields' => [
-                                'deposit_amount' => [
-                                    'type'  => 'input',
-                                    'label' => __('Deposit amount'),
-                                    'value' => $purchaseOrder->deposit_amount,
-                                ],
+                                'deposit_amount'  => $this->depositAmountField($purchaseOrder),
                                 'deposit_paid_at' => [
                                     'type'  => 'date',
                                     'label' => __('Deposit paid'),
@@ -169,11 +165,7 @@ class EditPurchaseOrder extends OrgAction
                 'title'  => __('Payments'),
                 'icon'   => 'fal fa-money-bill',
                 'fields' => [
-                    'deposit_amount'  => [
-                        'type'  => 'input',
-                        'label' => __('Deposit amount'),
-                        'value' => $purchaseOrder->deposit_amount,
-                    ],
+                    'deposit_amount'  => $this->depositAmountField($purchaseOrder),
                     'deposit_paid_at' => [
                         'type'  => 'date',
                         'label' => __('Deposit paid'),
@@ -181,6 +173,26 @@ class EditPurchaseOrder extends OrgAction
                     ],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function depositAmountField(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            'type'  => 'input_number',
+            'label' => __('Deposit amount'),
+            'bind'  => [
+                'mode'              => 'currency',
+                'currency'          => $purchaseOrder->currency->code,
+                'min'               => 0,
+                'step'              => 0.25,
+                'minFractionDigits' => 2,
+                'maxFractionDigits' => 2,
+            ],
+            'value' => $purchaseOrder->deposit_amount === null ? null : (float) $purchaseOrder->deposit_amount,
         ];
     }
 

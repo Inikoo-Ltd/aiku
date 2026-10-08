@@ -55,5 +55,5 @@ Log in → <b>Purchase Orders</b> → open the order → <b>Edit</b>. Each purch
 
 <aside class="wayfinder">
 <b>Permissions you need</b><br>
-A login for your agent organisation. The approved ready date, QC, clean handover and compliance fields are shown to you but locked.
+A login for your agent organisation. Your form holds only the fields you record: sample approved, production done, proposed ready date, deposit amount and deposit paid. The approved ready date, QC, clean handover and compliance fields are not on it, because the buying company records them.
 </aside>

@@ -29,7 +29,7 @@ Los productos añadidos después de enviar van al siguiente pedido de agente.
 
 ## Cada proveedor tiene su propio pedido
 
-Cada bloque del pedido de agente muestra el estado propio de ese proveedor, su llegada prevista, su fecha de listo y su depósito, y su referencia abre la orden de compra del proveedor. Las confirmaciones, los depósitos, las fechas, la entrega limpia (clean handover) y las entregas de stock se registran allí, proveedor por proveedor. Desde la orden de compra de un proveedor, **Whole agent order** te devuelve al pedido completo.
+Cada bloque del pedido de agente muestra el estado propio de ese proveedor, su llegada prevista, su fecha de listo y su depósito, y su referencia abre la orden de compra del proveedor. Las confirmaciones, los depósitos, las fechas, la entrega limpia (clean handover) y las entregas de stock se registran allí, proveedor por proveedor. Desde la orden de compra de un proveedor, **Whole agent order** te devuelve al pedido completo. La columna **Agent order** de la lista de órdenes de compra muestra a qué pedido de agente pertenece cada pedido de proveedor y lo abre, y puedes buscar en la lista por esa referencia.
 
 Cuando el agente envía, una sola entrega de stock puede llevar los pedidos de varios de sus proveedores: en un pedido confirmado, **New stock delivery** ofrece añadirlo a una entrega del mismo agente que todavía está en proceso.
 

@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\AgentOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\AgentOrder\ResolveAgentOrderReference;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -51,7 +52,10 @@ class ShowAgentOrder extends OrgAction
         $this->orgAgent = $orgAgent;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($orgAgent, $agentOrderReference);
+        $purchaseOrders = $this->handle($orgAgent, $agentOrderReference);
+        abort_if($purchaseOrders->isEmpty() && ResolveAgentOrderReference::make()->previewAgentOrderReference($orgAgent) !== $agentOrderReference, 404);
+
+        return $purchaseOrders;
     }
 
     public function htmlResponse(Collection $purchaseOrders, ActionRequest $request): Response
@@ -120,6 +124,15 @@ class ShowAgentOrder extends OrgAction
                     ],
                     'reference' => $reference,
                     'channels'  => SendPurchaseOrderToSupplier::channels($purchaseOrders->first()),
+                    'to_submit' => $drafts->filter(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->purchaseOrderTransactions->isNotEmpty())
+                        ->map(fn (PurchaseOrder $purchaseOrder) => [
+                            'supplier_code' => $purchaseOrder->parent_code,
+                            'supplier_name' => $purchaseOrder->parent_name,
+                            'currency_code' => $purchaseOrder->currency->code,
+                            'cost_total'    => $purchaseOrder->cost_total,
+                        ])->values()->all(),
+                    'to_remove' => $drafts->filter(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->purchaseOrderTransactions->isEmpty())
+                        ->map(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->parent_code)->values()->all(),
                 ] : null,
             ]
         );

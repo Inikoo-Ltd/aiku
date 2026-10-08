@@ -148,7 +148,6 @@ class StorePurchaseOrder extends OrgAction
             'date'           => ['sometimes', 'required'],
             'currency_id'    => ['sometimes', 'required'],
             'buyer_id'       => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
-            'agent_order_reference' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if ($this->strict) {
@@ -165,6 +164,7 @@ class StorePurchaseOrder extends OrgAction
             $rules = $this->noStrictStoreRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);
+            $rules['agent_order_reference'] = ['sometimes', 'nullable', 'string', 'max:255'];
         }
 
         return $rules;

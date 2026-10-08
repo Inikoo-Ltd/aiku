@@ -57,5 +57,5 @@ order: 2
 <aside class="wayfinder">
 <b>आवश्यक अनुमतियाँ</b><br>
 कृपया ध्यान दें: aiku का इंटरफ़ेस अंग्रेज़ी में है, इसलिए क्षेत्रों के नाम नीचे अंग्रेज़ी में दिए गए हैं।<br>
-आपके एजेंट संगठन का लॉगिन खाता। <b>approved ready date</b>, <b>QC</b>, <b>clean handover</b> और अनुपालन से जुड़े क्षेत्र आपको दिखते हैं, पर लॉक रहते हैं।
+आपके एजेंट संगठन का लॉगिन खाता। आपके फ़ॉर्म में केवल वही क्षेत्र हैं जो आप दर्ज करते हैं: <b>Sample approved</b>, <b>Production done</b>, <b>Proposed ready date</b>, <b>Deposit amount</b> और <b>Deposit paid</b>। <b>approved ready date</b>, <b>QC</b>, <b>clean handover</b> और अनुपालन से जुड़े क्षेत्र इस फ़ॉर्म में नहीं होते, क्योंकि उन्हें ख़रीदार कंपनी दर्ज करती है।
 </aside>

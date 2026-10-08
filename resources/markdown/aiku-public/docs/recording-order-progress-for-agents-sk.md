@@ -55,5 +55,5 @@ Prihláste sa → <b>Purchase Orders</b> → otvorte objednávku → <b>Edit</b>
 
 <aside class="wayfinder">
 <b>Aké práva potrebujete</b><br>
-Prihlásenie pre vašu agentskú organizáciu. Polia so schváleným dátumom pripravenosti, QC, clean handover a compliance sa vám zobrazujú, ale sú uzamknuté.
+Prihlásenie pre vašu agentskú organizáciu. Váš formulár obsahuje iba polia, ktoré zaznamenávate vy: schválená vzorka, hotová výroba, navrhovaný dátum pripravenosti, výška zálohy a zaplatená záloha. Polia so schváleným dátumom pripravenosti, QC, clean handover a compliance v ňom nie sú, pretože ich zaznamenáva nakupujúca spoločnosť.
 </aside>

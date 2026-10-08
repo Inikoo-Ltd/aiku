@@ -117,12 +117,13 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
         $weight = DB::table('model_has_trade_units as mhtu')
             ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->join('org_stocks as pack', 'pack.id', '=', 'mhtu.model_id')
             ->whereColumn('mhtu.model_id', 'purchase_order_transactions.org_stock_id')
             ->where('mhtu.model_type', 'OrgStock')
             ->selectRaw('
                 case
                     when count(*) = 0 or count(*) filter (where tu.gross_weight is null) > 0 then null
-                    else round(sum(tu.gross_weight * mhtu.quantity) * purchase_order_transactions.quantity_ordered / 1000, 1)
+                    else round(sum(tu.gross_weight * mhtu.quantity) * purchase_order_transactions.quantity_ordered / coalesce(nullif(max(pack.packed_in), 0), 1) / 1000, 1)
                 end
             ');
 

@@ -9,10 +9,12 @@
 namespace App\Models\SupplyChain;
 
 use App\Enums\SupplyChain\AspoDeposit\AspoDepositStateEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -81,6 +83,14 @@ class AspoDeposit extends Model implements Auditable
     public function stockDeliveryApplications(): HasMany
     {
         return $this->hasMany(\App\Models\GoodsIn\StockDeliveryDepositApplication::class);
+    }
+
+    public function scopeApplicableToStockDelivery(Builder $query, StockDelivery $stockDelivery): Builder
+    {
+        return $query
+            ->where('aspo_deposits.agent_id', $stockDelivery->agent_id)
+            ->where('aspo_deposits.currency_id', $stockDelivery->currency_id)
+            ->whereIn('aspo_deposits.purchase_order_id', $stockDelivery->purchaseOrders()->pluck('purchase_orders.id'));
     }
 
     public function getAppliedAmountAttribute(): float

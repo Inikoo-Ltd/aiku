@@ -120,7 +120,8 @@ class IndexPurchaseOrders extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('purchase_orders.reference', $value)
-                    ->orWhereAnyWordStartWith('purchase_orders.parent_name', $value);
+                    ->orWhereAnyWordStartWith('purchase_orders.parent_name', $value)
+                    ->orWhereAnyWordStartWith('purchase_orders.agent_order_reference', $value);
             });
         });
 
@@ -210,7 +211,7 @@ class IndexPurchaseOrders extends OrgAction
             ])
             ->allowedSorts($parent instanceof OrgSupplierProduct
                 ? ['reference', 'parent_name', 'date', 'quantity_ordered', 'org_net_amount']
-                : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
+                : ['reference', 'agent_order_reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -244,6 +245,10 @@ class IndexPurchaseOrders extends OrgAction
             $table
                 ->column(key: 'state', label: __('State'), canBeHidden: false)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+
+            if (!($parent instanceof OrgSupplierProduct)) {
+                $table->column(key: 'agent_order_reference', label: __('Agent order'), sortable: true);
+            }
 
             if ($parent instanceof Group || $parent instanceof Organisation || $parent instanceof OrgAgent) {
                 $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);

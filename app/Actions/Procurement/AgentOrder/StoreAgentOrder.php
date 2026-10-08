@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Opens the agent order being prepared, or numbers a new one. Its supplier orders are created as
- * products are added to it.
+ * Opens the agent order being prepared, or shows the number the next one will take. The number is
+ * only used up when the first product is added, which creates its first supplier order.
  */
 class StoreAgentOrder extends OrgAction
 {
@@ -27,7 +27,7 @@ class StoreAgentOrder extends OrgAction
 
     public function handle(OrgAgent $orgAgent): string
     {
-        return ResolveAgentOrderReference::run($orgAgent);
+        return ResolveAgentOrderReference::make()->previewAgentOrderReference($orgAgent);
     }
 
     public function asController(OrgAgent $orgAgent, ActionRequest $request): string

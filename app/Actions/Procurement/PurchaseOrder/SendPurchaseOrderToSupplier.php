@@ -103,7 +103,7 @@ class SendPurchaseOrderToSupplier
             'date'             => $purchaseOrder->submitted_at ?? now(),
             'supplierName'     => self::counterpartName($counterpart, contact: true),
             'organisationName' => $organisation->name,
-            'numberItems'      => $purchaseOrders->sum(fn (PurchaseOrder $order) => $order->purchaseOrderTransactions()->count()),
+            'numberItems'      => $purchaseOrders->sum(fn (PurchaseOrder $order) => $order->purchaseOrderTransactions->count()),
             'supplierOrders'   => $purchaseOrders->count() > 1 ? $purchaseOrders->map(fn (PurchaseOrder $order) => ['reference' => $order->reference, 'supplier' => $order->parent_name])->all() : [],
         ])->render();
 

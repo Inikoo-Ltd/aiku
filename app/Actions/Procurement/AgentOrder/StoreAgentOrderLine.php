@@ -39,7 +39,13 @@ class StoreAgentOrderLine extends OrgAction
                 $fail(__('This product is not bought through :agent', ['agent' => $orgAgent->agent->name]));
             }
 
+            OrgAgent::whereKey($orgAgent->id)->lockForUpdate()->firstOrFail();
             $orgSupplier = OrgSupplier::whereKey($orgSupplierProduct->org_supplier_id)->lockForUpdate()->firstOrFail();
+
+            $isNewAgentOrder = !PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)->exists();
+            if ($isNewAgentOrder && !ResolveAgentOrderReference::make()->reserveAgentOrderReference($orgAgent, $agentOrderReference)) {
+                $fail(__('Agent order :reference does not exist, open the agent order from the agent orders list', ['reference' => $agentOrderReference]));
+            }
 
             $supplierOrders = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)
                 ->where('parent_id', $orgSupplier->id)
@@ -64,7 +70,7 @@ class StoreAgentOrderLine extends OrgAction
 
                 $purchaseOrder = $openDraft
                     ? tap($openDraft)->update(['agent_order_reference' => $agentOrderReference])
-                    : StorePurchaseOrder::make()->action($orgSupplier, ['agent_order_reference' => $agentOrderReference]);
+                    : StorePurchaseOrder::make()->action($orgSupplier, ['agent_order_reference' => $agentOrderReference], strict: false);
             }
 
             return StorePurchaseOrderTransaction::make()->addOrgSupplierProduct($purchaseOrder, $orgSupplierProduct, $modelData);

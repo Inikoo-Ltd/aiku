@@ -55,5 +55,5 @@ Inicia sesión → <b>Purchase Orders</b> → abre el pedido → <b>Edit</b>. Ca
 
 <aside class="wayfinder">
 <b>Permisos que necesitas</b><br>
-Un acceso para tu organización de agente. Los campos de fecha de listo aprobada, control de calidad, entrega limpia y cumplimiento normativo se te muestran, pero están bloqueados.
+Un acceso para tu organización de agente. Tu formulario solo contiene los campos que tú registras: muestra aprobada, producción terminada, fecha de listo propuesta, importe del depósito y depósito pagado. Los campos de fecha de listo aprobada, control de calidad, entrega limpia y cumplimiento normativo no aparecen en él, porque los registra la empresa compradora.
 </aside>

@@ -29,7 +29,7 @@ Produkty pridané po odoslaní idú do ďalšej objednávky agenta.
 
 ## Každý dodávateľ má vlastnú objednávku
 
-Každý blok na objednávke agenta ukazuje vlastný stav daného dodávateľa, očakávaný príchod, dátum pripravenosti a zálohu a jeho referencia otvorí purchase order dodávateľa. Potvrdenia, zálohy, dátumy, čisté odovzdanie (clean handover) a stock deliveries sa zaznamenávajú tam, dodávateľ po dodávateľovi. Z purchase order dodávateľa vás **Whole agent order** vráti späť.
+Každý blok na objednávke agenta ukazuje vlastný stav daného dodávateľa, očakávaný príchod, dátum pripravenosti a zálohu a jeho referencia otvorí purchase order dodávateľa. Potvrdenia, zálohy, dátumy, čisté odovzdanie (clean handover) a stock deliveries sa zaznamenávajú tam, dodávateľ po dodávateľovi. Z purchase order dodávateľa vás **Whole agent order** vráti späť. Stĺpec **Agent order** v zozname purchase orders ukazuje, ku ktorej objednávke agenta každá objednávka dodávateľa patrí, a otvorí ju; v zozname môžete vyhľadávať aj podľa tejto referencie.
 
 Keď agent odosiela, jedna stock delivery môže niesť objednávky viacerých jeho dodávateľov: pri potvrdenej objednávke **New stock delivery** ponúka pridať ju k dodávke toho istého agenta, ktorá je ešte rozpracovaná.
 

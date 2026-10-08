@@ -95,6 +95,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
             if ($stockDeliveryId = Arr::get($modelData, 'stock_delivery_id')) {
                 $stockDelivery = StockDelivery::whereKey($stockDeliveryId)->lockForUpdate()->firstOrFail();
+                $this->fillEmptyDeliveryData($stockDelivery, $purchaseOrder);
             } else {
                 $stockDelivery = StoreStockDelivery::make()->action(
                     $deliveryParent,
@@ -285,6 +286,21 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             'org_exchange' => $model->org_exchange,
             'grp_exchange' => $model->grp_exchange,
         ], fn ($exchange) => $exchange !== null);
+    }
+
+    private function fillEmptyDeliveryData(StockDelivery $stockDelivery, PurchaseOrder $purchaseOrder): void
+    {
+        $data = $stockDelivery->data ?? [];
+
+        foreach ($this->getStockDeliveryData($purchaseOrder) as $key => $value) {
+            if (blank(Arr::get($data, $key)) && filled($value)) {
+                $data[$key] = $value;
+            }
+        }
+
+        if ($data !== ($stockDelivery->data ?? [])) {
+            $stockDelivery->update(['data' => $data]);
+        }
     }
 
     private function getStockDeliveryData(PurchaseOrder $purchaseOrder): array

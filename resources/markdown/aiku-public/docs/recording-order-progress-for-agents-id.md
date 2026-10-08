@@ -55,5 +55,5 @@ Masuk → <b>Purchase Orders</b> (Pesanan Pembelian) → buka pesanan → <b>Edi
 
 <aside class="wayfinder">
 <b>Izin yang Anda perlukan</b><br>
-Akun masuk untuk organisasi agen Anda. Kolom tanggal siap yang disetujui, QC, serah terima bersih, dan kepatuhan ditampilkan kepada Anda tetapi terkunci.
+Akun masuk untuk organisasi agen Anda. Formulir Anda hanya berisi kolom yang Anda catat sendiri: sampel disetujui, produksi selesai, tanggal siap yang diusulkan, jumlah deposit, dan deposit dibayar. Kolom tanggal siap yang disetujui, QC, serah terima bersih, dan kepatuhan tidak ada di formulir itu, karena dicatat oleh perusahaan pembeli.
 </aside>

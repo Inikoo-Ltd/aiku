@@ -29,7 +29,7 @@ Products added after submitting go on the next agent order.
 
 ## Each supplier has its own order
 
-Each block on the agent order shows that supplier's own state, expected arrival, ready date and deposit, and its reference opens the supplier's purchase order. Confirmations, deposits, dates, the clean handover and stock deliveries are recorded there, supplier by supplier. From a supplier's purchase order, **Whole agent order** brings you back.
+Each block on the agent order shows that supplier's own state, expected arrival, ready date and deposit, and its reference opens the supplier's purchase order. Confirmations, deposits, dates, the clean handover and stock deliveries are recorded there, supplier by supplier. From a supplier's purchase order, **Whole agent order** brings you back. The **Agent order** column in the Purchase Orders list shows which agent order each supplier order belongs to and opens it, and you can search the list by that reference.
 
 When the agent ships, one stock delivery can carry the orders of several of its suppliers: on a confirmed order, **New stock delivery** offers to add it to a delivery of the same agent that is still in process.
 

@@ -131,6 +131,18 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
 		purchaseOrder.org_agent_slug,
 	])
 }
+
+function AgentOrderRoute(purchaseOrder: PurchaseOrder) {
+	if (!purchaseOrder?.org_agent_slug || !purchaseOrder?.agent_order_reference) {
+		return null
+	}
+
+	return route("grp.org.procurement.org_agents.show.agent_orders.show", [
+		purchaseOrder.organisation_slug ?? route().params["organisation"],
+		purchaseOrder.org_agent_slug,
+		purchaseOrder.agent_order_reference,
+	])
+}
 </script>
 
 <template>
@@ -143,6 +155,16 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
 				{{ purchaseOrder.reference }}
 			</Link>
 			<span v-else>{{ purchaseOrder.reference }}</span>
+		</template>
+
+		<template #cell(agent_order_reference)="{ item: purchaseOrder }">
+			<Link
+				v-if="AgentOrderRoute(purchaseOrder)"
+				:href="AgentOrderRoute(purchaseOrder)"
+				class="secondaryLink">
+				{{ purchaseOrder.agent_order_reference }}
+			</Link>
+			<span v-else>{{ purchaseOrder.agent_order_reference }}</span>
 		</template>
 
 		<template #cell(parent_name)="{ item: purchaseOrder }">

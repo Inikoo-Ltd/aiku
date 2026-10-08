@@ -16,6 +16,7 @@ use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -210,13 +211,13 @@ class ShowSupplierMessage extends OrgAction
                         filled($email->delivery_state) => ['state' => $email->delivery_state, 'reads' => 0, 'clicks' => 0],
                         default => null,
                     },
-                    'purchase_order' => $email->purchaseOrder ? [
-                        'reference' => $email->purchaseOrder->reference,
+                    'purchase_orders' => $email->linkedPurchaseOrders()->map(fn (PurchaseOrder $purchaseOrder) => [
+                        'reference' => $purchaseOrder->reference,
                         'route'     => [
                             'name'       => 'grp.org.procurement.purchase_orders.show',
-                            'parameters' => [$this->organisation->slug, $email->purchaseOrder->slug],
+                            'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
                         ],
-                    ] : null,
+                    ])->values()->all(),
                     'attachments' => collect($email->attachments)->map(fn (array $attachment, int $index) => [
                         'name'      => $attachment['name'],
                         'size'      => $attachment['size'],

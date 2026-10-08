@@ -275,6 +275,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
             'slug'             => $this->slug,
             'parent_code'      => (string)$this->parent_code,
             'parent_name'      => (string)$this->parent_name,
+            'agent_order_reference' => (string)$this->agent_order_reference,
             'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }

@@ -57,7 +57,5 @@ order: 2
 <aside class="wayfinder">
 <b>चाहिने अनुमति</b><br>
 कृपया ध्यान दिनुहोस्: aiku को इन्टरफेस अङ्ग्रेजीमा छ, त्यसैले क्षेत्रका नाम तल अङ्ग्रेजीमै दिइएका छन्।<br>
-तपाईंको एजेन्ट संस्थाको लगइन खाता चाहिन्छ। <b>Approved ready date</b>, <b>QC</b>, <b>Clean handover</b> र अनुपालनसम्बन्धी क्षेत्रहरू तपाईंलाई देखिन्छन् तर लक गरिएका हुन्छन्।
+तपाईंको एजेन्ट संस्थाको लगइन खाता चाहिन्छ। तपाईंको फारममा तपाईंले अभिलेख गर्ने क्षेत्रहरू मात्र हुन्छन्: <b>Sample approved</b>, <b>Production done</b>, <b>Proposed ready date</b>, <b>Deposit amount</b> र <b>Deposit paid</b>। <b>Approved ready date</b>, <b>QC</b>, <b>Clean handover</b> र अनुपालनसम्बन्धी क्षेत्रहरू यो फारममा हुँदैनन्, किनकि तिनलाई खरिदकर्ता कम्पनीले अभिलेख गर्छ।
 </aside>
-</content>
-</invoke>
