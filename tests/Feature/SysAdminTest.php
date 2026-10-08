@@ -1296,7 +1296,7 @@ test('job positions that do not exist in the organisation are ignored', function
 })->depends('employee job position in another organisation');
 
 test('can show hr dashboard', function () {
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $this->withoutExceptionHandling();
     $response = get(route('grp.sysadmin.dashboard'));
@@ -1314,8 +1314,9 @@ test('can show hr dashboard', function () {
 
 test('UI show organisation setting', function () {
     $this->withoutExceptionHandling();
-    actingAs(User::first());
-    $organisation = Organisation::first();
+    $user = User::where('username', 'hello')->firstOrFail();
+    actingAs($user);
+    $organisation = $user->authorisedOrganisations()->orderBy('organisations.id')->firstOrFail();
 
     $response = get(
         route(
@@ -1346,7 +1347,7 @@ test('UI show organisation setting', function () {
 
 
 test('UI index organisation', function () {
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $this->withoutExceptionHandling();
     $response = get(
@@ -1370,9 +1371,9 @@ test('UI index organisation', function () {
 });
 
 test('UI edit organisation', function () {
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $this->withoutExceptionHandling();
     $response = get(
@@ -1397,8 +1398,9 @@ test('UI edit organisation', function () {
 });
 
 test('UI organisation edit settings', function () {
-    actingAs(User::first());
-    $organisation = Organisation::first();
+    $user = User::where('username', 'hello')->firstOrFail();
+    actingAs($user);
+    $organisation = $user->authorisedOrganisations()->orderBy('organisations.id')->firstOrFail();
 
     $response = get(
         route(
@@ -1422,7 +1424,7 @@ test('UI organisation edit settings', function () {
 });
 
 test('UI get section route group sysadmin index', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.sysadmin.dashboard', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1431,7 +1433,7 @@ test('UI get section route group sysadmin index', function () {
 });
 
 test('UI get section route group dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.dashboard', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1440,7 +1442,7 @@ test('UI get section route group dashboard', function () {
 });
 
 test('UI get section route group goods dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.goods.dashboard', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1449,7 +1451,7 @@ test('UI get section route group goods dashboard', function () {
 });
 
 test('UI get section route group organisation dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.organisations.index', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1458,7 +1460,7 @@ test('UI get section route group organisation dashboard', function () {
 });
 
 test('UI get section route group profile dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.profile.showcase.show', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1467,7 +1469,7 @@ test('UI get section route group profile dashboard', function () {
 });
 
 test('UI get section route org dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
     $sectionScope = GetSectionRoute::make()->handle('grp.org.dashboard.show', [
         'organisation' => $organisation->slug,
     ]);
@@ -1478,7 +1480,7 @@ test('UI get section route org dashboard', function () {
 });
 
 test('UI get section route org setting edit', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.settings.edit', [
         'organisation' => $organisation->slug,
@@ -1491,7 +1493,7 @@ test('UI get section route org setting edit', function () {
 
 
 test('UI get section route org reports index', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.reports.index', [
         'organisation' => $organisation->slug,
@@ -1503,7 +1505,7 @@ test('UI get section route org reports index', function () {
 });
 
 test('UI get section route org shops index', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.index', [
         'organisation' => $organisation->slug,
@@ -1517,7 +1519,7 @@ test('UI get section route org shops index', function () {
 test('UI index overview group', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1542,7 +1544,7 @@ test('UI index overview group', function () {
 test('UI index overview group changelog', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1567,7 +1569,7 @@ test('UI index overview group changelog', function () {
 test('UI show dashboard group', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1590,7 +1592,7 @@ test('UI show dashboard group', function () {
 test('UI show goods dashboard group', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1609,7 +1611,7 @@ test('UI show goods dashboard group', function () {
 test('UI show dashboard group (tab invoice_shops)', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1634,11 +1636,11 @@ test('UI show dashboard group (tab invoice_shops)', function () {
 
 test('test repair admins command', function () {
     $this->artisan('users:repair_admins_auth')->assertSuccessful();
-    RepairUsersAdminsAuth::run(User::first());
+    RepairUsersAdminsAuth::run(User::where('username', 'hello')->firstOrFail());
 });
 
 test('Hydrate users', function () {
-    HydrateUser::run(User::first());
+    HydrateUser::run(User::where('username', 'hello')->firstOrFail());
     $this->artisan('hydrate:users')->assertSuccessful();
 });
 
@@ -1654,7 +1656,7 @@ test('sysadmin hydrator', function () {
 test('reset colours', function () {
     ResetModelColours::run();
     $this->artisan('reset:colours')->assertSuccessful();
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
     expect($organisation->colour)->toBeString();
 });
 
