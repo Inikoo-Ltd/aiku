@@ -225,7 +225,8 @@ class NotifyTicketUsers
     public function qaChanged(Ticket $ticket, User $actor): void
     {
         if ($ticket->qa_status === TicketQaStatusEnum::REQUESTED) {
-            foreach ($ticket->qaUser ? [$ticket->qaUser] : GetTicketBadgeData::qaUsers($ticket->group_id) as $qaUser) {
+            $qaUsers = GetTicketBadgeData::qaUsers($ticket->group_id);
+            foreach (empty($ticket->qa_user_ids) ? $qaUsers : $qaUsers->whereIn('id', $ticket->qa_user_ids) as $qaUser) {
                 $this->handle($ticket, $actor, $qaUser, __(':reference is ready for QA', ['reference' => $ticket->reference]), [$ticket->subject], __('Check the ticket'), reason: 'qa');
             }
 

@@ -72,8 +72,8 @@ class IndexQaTickets extends IndexTickets
             'label'    => __('QA assignee'),
             'optional' => true,
             'elements' => [
-                'mine'     => [__('Mine'), (clone $base)->where('qa_user_id', $user->id)->count()],
-                'anyone'   => [__('Anyone'), (clone $base)->whereNotNull('qa_status')->whereNull('qa_user_id')->count()],
+                'mine'     => [__('Mine'), (clone $base)->qaCheckerIs($user)->count()],
+                'anyone'   => [__('Anyone'), (clone $base)->qaOpenToAnyone()->count()],
                 'everyone' => [__('Everyone'), (clone $base)->whereNotNull('qa_status')->count()],
             ],
             'engine'   => function ($query, $elements) use ($user) {
@@ -84,10 +84,10 @@ class IndexQaTickets extends IndexTickets
                         return;
                     }
                     if (in_array('mine', $elements)) {
-                        $query->orWhere('tickets.qa_user_id', $user->id);
+                        $query->orWhere(fn ($query) => $query->qaCheckerIs($user));
                     }
                     if (in_array('anyone', $elements)) {
-                        $query->orWhere(fn ($query) => $query->whereNotNull('tickets.qa_status')->whereNull('tickets.qa_user_id'));
+                        $query->orWhere(fn ($query) => $query->qaOpenToAnyone());
                     }
                 });
             },
@@ -111,8 +111,8 @@ class IndexQaTickets extends IndexTickets
         $user = request()->user();
 
         $queryBuilder->where(fn ($query) => $query
-            ->whereNull('tickets.qa_user_id')
-            ->orWhere('tickets.qa_user_id', $user->id));
+            ->where(fn ($query) => $query->whereNull('tickets.qa_user_id')->where('tickets.qa_user_ids', '[]'))
+            ->orWhere(fn ($query) => $query->qaCheckerIs($user)));
     }
 
     /**

@@ -18,6 +18,7 @@ use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\User;
@@ -138,6 +139,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'closes_source' => 'boolean',
             'reporter_muted' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
+            'qa_user_ids' => 'array',
             'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',
             'qa_checked_at' => 'datetime',
@@ -268,8 +270,22 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && $user->authTo('help-desk.qa');
     }
 
+    public function isReadyForQa(): bool
+    {
+        return $this->status->group() !== TicketStatusGroupEnum::TODO;
+    }
+
+    public function isQaAskedOf(?User $user): bool
+    {
+        return $user !== null && in_array($user->id, $this->qa_user_ids ?? [], true);
+    }
+
     public function canBeClaimedForQaBy(?User $user): bool
     {
+        if (!$this->isReadyForQa()) {
+            return false;
+        }
+
         if ($this->qa_status?->canBeCheckedAgain()) {
             return self::canGiveQaVerdict($user);
         }
@@ -277,14 +293,32 @@ class Ticket extends Model implements Auditable, HasMedia
         return self::canGiveQaVerdict($user)
             && !$this->qa_status?->isVerdict()
             && $this->qa_status !== TicketQaStatusEnum::CHECKING
-            && ($this->qa_user_id === null || $this->qa_user_id === $user->id);
+            && !$this->isQaHeldByAnotherThan($user);
     }
 
     public function isQaHeldByAnotherThan(?User $user): bool
     {
-        return in_array($this->qa_status, [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING], true)
-            && $this->qa_user_id !== null
-            && $this->qa_user_id !== $user?->id;
+        if (!in_array($this->qa_status, [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING], true)) {
+            return false;
+        }
+
+        if ($this->qa_user_id !== null) {
+            return $this->qa_user_id !== $user?->id;
+        }
+
+        return !empty($this->qa_user_ids) && !$this->isQaAskedOf($user);
+    }
+
+    public function scopeQaCheckerIs(Builder $query, User $user): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->where('tickets.qa_user_id', $user->id)
+            ->orWhere(fn (Builder $query) => $query->whereNull('tickets.qa_user_id')->whereJsonContains('tickets.qa_user_ids', $user->id)));
+    }
+
+    public function scopeQaOpenToAnyone(Builder $query): Builder
+    {
+        return $query->whereNotNull('tickets.qa_status')->whereNull('tickets.qa_user_id')->where('tickets.qa_user_ids', '[]');
     }
 
     public function canRequestQaBy(?User $user): bool
