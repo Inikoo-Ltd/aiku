@@ -578,8 +578,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     ->column(key: 'progress', label: __('Progress'), canBeHidden: false);
             }
 
-            $table->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
-                ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
+            $table->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true);
 
             $table->defaultSort('-created_at');
         };
