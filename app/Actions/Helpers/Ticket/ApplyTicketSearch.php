@@ -55,15 +55,6 @@ class ApplyTicketSearch
             return false;
         }
 
-        if ($hash = self::commitHash($search)) {
-            $query->whereRaw(
-                "EXISTS (SELECT 1 FROM jsonb_array_elements(tickets.data->'commits') deployed WHERE deployed->>'hash' LIKE ?)",
-                [$hash.'%']
-            );
-
-            return false;
-        }
-
         preg_match_all('/(-)?(?:([a-z]+):)?(?:"([^"]*)"|(\S+))/iu', $search, $tokens, PREG_SET_ORDER);
 
         $terms = [];
@@ -127,19 +118,6 @@ class ApplyTicketSearch
         }
 
         return [];
-    }
-
-    /**
-     * A pasted commit hash. Ten characters is the floor because order, invoice and delivery note
-     * references are themselves hex (113702a, ac000003): shorter than that, tens of thousands of
-     * them would be read as a hash and never reach the text search. A hex letter must appear too,
-     * so plain numbers stay out.
-     */
-    public static function commitHash(string $search): ?string
-    {
-        $search = trim($search);
-
-        return preg_match('/^(?=.*\d)(?=.*[a-f])[0-9a-f]{10,40}$/i', $search) ? strtolower($search) : null;
     }
 
     /**
