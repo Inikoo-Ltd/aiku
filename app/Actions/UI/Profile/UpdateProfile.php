@@ -69,13 +69,8 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['preferred_leaflet_printer_id'] = Arr::pull($modelData, 'preferred_leaflet_printer');
         }
 
-        if ($twoFa = Arr::pull($modelData, 'enable_2fa')) {
-            if (data_get($twoFa, 'has_2fa')) {
-                data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
-            } else {
-                // Remove from DB if it is false
-                data_set($modelData, 'google2fa_secret', null);
-            }
+        if (($twoFa = Arr::pull($modelData, 'enable_2fa')) && !data_get($twoFa, 'has_2fa')) {
+            data_set($modelData, 'google2fa_secret', null);
         }
 
         $avatarBeforeUpdate = $user->image_id;

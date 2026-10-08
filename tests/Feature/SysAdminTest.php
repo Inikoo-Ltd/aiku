@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\UI\Profile\UpdateProfile;
+use PragmaRX\Google2FAQRCode\Google2FA;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Helpers\Address\HydrateAddress;
@@ -1027,6 +1029,46 @@ test('passkey enrollment satisfies 2fa requirement', function (Guest $guest) {
 
     $passkey->delete();
     $user->update(['is_two_factor_required' => false]);
+})->depends('create guest');
+
+test('profile never hands the 2fa secret back and cannot replace it without a code', function (Guest $guest) {
+    $user = $guest->getUser();
+    $user->update(['google2fa_secret' => 'JBSWY3DPEHPK3PXP']);
+    app()->instance('group', $guest->group);
+    setPermissionsTeamId($guest->group->id);
+    actingAs($user);
+
+    try {
+        $this->withSession(['google2fa.auth_passed' => true])->withoutVite()->get(route('grp.profile.edit'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('formData.blueprint.1.fields.enable_2fa.value.has_2fa', true)
+                ->where('formData.blueprint.1.fields.enable_2fa.value.secretKey', null));
+
+        expect($user->toArray())->not->toHaveKey('google2fa_secret');
+
+        UpdateProfile::make()->asAction($user, ['enable_2fa' => ['has_2fa' => true, 'secretKey' => 'ATTACKERSECRET22']]);
+        expect($user->refresh()->google2fa_secret)->toBe('JBSWY3DPEHPK3PXP');
+
+        session()->forget('google2fa');
+        $this->getJson(route('grp.profile.2fa-qrcode'))->assertForbidden();
+        $this->post(route('grp.login.validate_save2fa'), [
+            'secret_key'        => 'ATTACKERSECRET22',
+            'one_time_password' => (new Google2FA())->getCurrentOtp('ATTACKERSECRET22'),
+        ])->assertForbidden();
+        expect($user->refresh()->google2fa_secret)->toBe('JBSWY3DPEHPK3PXP');
+
+        UpdateProfile::make()->asAction($user, ['enable_2fa' => ['has_2fa' => false]]);
+        expect($user->refresh()->google2fa_secret)->toBeNull();
+
+        $newSecret = $this->getJson(route('grp.profile.2fa-qrcode'))->assertOk()->json('secretKey');
+        $this->post(route('grp.login.validate_save2fa'), [
+            'secret_key'        => $newSecret,
+            'one_time_password' => (new Google2FA())->getCurrentOtp($newSecret),
+        ])->assertRedirect(route('grp.dashboard.show'));
+        expect($user->refresh()->google2fa_secret)->toBe($newSecret);
+    } finally {
+        $user->update(['google2fa_secret' => null]);
+    }
 })->depends('create guest');
 
 test('inactive user can not login with passkey', function (Guest $guest) {

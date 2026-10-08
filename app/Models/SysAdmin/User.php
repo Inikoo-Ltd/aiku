@@ -167,6 +167,7 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     protected $hidden = [
         'password',
         'remember_token',
+        'google2fa_secret',
     ];
 
     protected $casts = [
