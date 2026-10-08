@@ -674,6 +674,11 @@ test('UI new supplier product form checks like an upload row and creates the tra
         ->and($check->json('values.sko_name'))->toBe('Pack of 2 Hemp Forest Bag')
         ->and($check->json('review'))->toBeNull();
 
+    $symbols = collect($this->postJson($checkRoute, ['recommended_price_eur' => '€10.20', 'recommended_rrp_eur' => '£24'] + $input)->json());
+    expect($symbols['values']['recommended_price_eur'])->toEqual(10.2)
+        ->and(collect($symbols['findings'])->pluck('level', 'code')->all())->toMatchArray(['currency_recommended_rrp_eur' => 'error'])
+        ->and(collect($symbols['findings'])->pluck('code'))->not->toContain('currency_recommended_price_eur');
+
     $this->post($storeRoute, $input + ['accepted' => ['unit_label_odd']])->assertSessionHasErrors('review');
 
     App\Actions\Helpers\AI\AskJev::shouldRun()->once()->andReturn(['unit_name_is_pack' => ['noul' => 0.9]]);
@@ -705,6 +710,13 @@ test('UI new supplier product form checks like an upload row and creates the tra
     $tradeUnit       = TradeUnit::where('group_id', $this->group->id)->where('code', 'UPLF-01')->firstOrFail();
     $stock           = $tradeUnit->stocks()->firstOrFail();
     $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'UPLF-01')->firstOrFail();
+
+    $orgSupplierProductIds = $supplierProduct->orgSupplierProducts()->pluck('id');
+
+    expect($supplierProduct->data['decisions']['jev_unit_name_pack']['user_id'])->toBe($this->adminGuest->getUser()->id)
+        ->and($supplierProduct->data['decisions'])->toHaveKeys(['unit_label_odd', 'jev_unit_name_pack'])
+        ->and($stock->orgStocks()->count())->toBe($orgSupplierProductIds->count())
+        ->and(App\Models\Inventory\OrgStockHasOrgSupplierProduct::whereIn('org_supplier_product_id', $orgSupplierProductIds)->whereIn('org_stock_id', $stock->orgStocks()->pluck('id'))->where('status', true)->count())->toBe($orgSupplierProductIds->count());
 
     expect($tradeUnit->barcode)->toBe('5901234123464')
         ->and($tradeUnit->type)->toBe('20x')

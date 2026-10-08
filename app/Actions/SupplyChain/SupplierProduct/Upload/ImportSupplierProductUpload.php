@@ -13,6 +13,8 @@ use App\Actions\Goods\TradeUnit\AttachTradeUnitsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
+use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
+use App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
@@ -23,6 +25,7 @@ use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Enums\Helpers\Import\UploadStateEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -141,20 +144,27 @@ class ImportSupplierProductUpload
      */
     protected function importRecord(Supplier $supplier, UploadRecord $record): void
     {
-        ['supplier_product' => $supplierProduct, 'trade_unit' => $tradeUnit] = $this->importValues($supplier, $record->values);
+        $decisions = collect(Arr::get($record->data, 'findings', []))
+            ->filter(fn (array $finding) => Arr::get($record->data, 'decisions.'.$finding['code'].'.accepted'))
+            ->mapWithKeys(fn (array $finding) => [$finding['code'] => [...Arr::get($record->data, 'decisions.'.$finding['code']), 'message' => $finding['message']]])
+            ->all();
+
+        ['supplier_product' => $supplierProduct, 'trade_unit' => $tradeUnit] = $this->importValues($supplier, $record->values, $decisions);
 
         $record->update(['data' => array_merge($record->data ?? [], ['supplier_product_id' => $supplierProduct->id, 'trade_unit_id' => $tradeUnit->id])]);
     }
 
     /**
-     * Creates one checked product (a sheet row or the New supplier product form). Run it inside a transaction.
+     * Creates one checked product (a sheet row or the New supplier product form) and its SKO in every organisation
+     * buying from the supplier. Run it inside a transaction.
      *
      * @param array<string, mixed> $values
+     * @param array<string, array{accepted: bool, user_id: ?int, at: string, message: string}> $decisions the findings someone accepted, kept on the supplier product
      *
      * @return array{supplier_product: SupplierProduct, trade_unit: TradeUnit}
      * @throws Throwable
      */
-    public function importValues(Supplier $supplier, array $values): array
+    public function importValues(Supplier $supplier, array $values, array $decisions = []): array
     {
         $stockFamily     = $this->stockFamily($supplier, $values['family']);
         $tradeUnitFamily = $this->tradeUnitFamily($supplier, $values['family']);
@@ -171,7 +181,27 @@ class ImportSupplierProductUpload
         $supplierProduct = $this->supplierProduct($supplier, $values);
         SyncSupplierProductTradeUnits::run($supplierProduct, [$tradeUnit->id => ['quantity' => $values['units_per_sko']]]);
 
+        if ($decisions !== []) {
+            $supplierProduct->update(['data' => array_merge($supplierProduct->data ?? [], ['decisions' => array_merge(Arr::get($supplierProduct->data, 'decisions', []), $decisions)])]);
+        }
+
+        $this->orgStocks($supplierProduct);
+
         return ['supplier_product' => $supplierProduct, 'trade_unit' => $tradeUnit];
+    }
+
+    /**
+     * Every organisation buying from the supplier gets the SKO now and has it linked to its supplier product,
+     * instead of waiting for its first purchase order.
+     */
+    protected function orgStocks(SupplierProduct $supplierProduct): void
+    {
+        foreach ($supplierProduct->orgSupplierProducts()->with('organisation')->get() as $orgSupplierProduct) {
+            $orgStock = ResolveOrgStockForSupplierProduct::run($orgSupplierProduct->organisation, $supplierProduct);
+            if ($orgStock && !in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED], true)) {
+                AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+            }
+        }
     }
 
     protected function stockFamily(Supplier $supplier, string $code): StockFamily

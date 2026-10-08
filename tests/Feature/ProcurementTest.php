@@ -4103,8 +4103,12 @@ test('current supplier sku cost distrusts implausible supplier cost and falls ba
         ['org_stock_id' => $this->orgStocks[0]->id, 'org_supplier_product_id' => $this->orgSupplierProduct->id],
         ['stock_has_supplier_product_id' => $stockHasSupplierProduct->id, 'status' => true, 'local_priority' => 0]
     );
+    OrgStockHasOrgSupplierProduct::where('org_stock_id', $this->orgStocks[0]->id)
+        ->update(['status' => DB::raw('org_supplier_product_id = '.$this->orgSupplierProduct->id)]);
+    $this->supplierProduct->updateQuietly(['is_available' => true]);
+    $this->orgSupplierProduct->updateQuietly(['is_available' => true]);
 
-    $orgStock = $this->orgStocks[0];
+    $orgStock = $this->orgStocks[0]->fresh();
     $orgStock->updateQuietly(['sku_value' => 4, 'packed_in' => 1]);
 
     $exchange = \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::run(
@@ -7554,7 +7558,7 @@ test('UI partner shopping list index', function () {
             ->has('orgStockFetchRoute')
             ->where('filterGroups', fn ($groups) => collect($groups)->pluck('key')->all() === ['category', 'origin', 'rank']
                 && collect(collect($groups)->firstWhere('key', 'origin')['options'])->pluck('value')->all() === ['us', 'hub'])
-            ->where('queryBuilderProps.default.elementGroups', []);
+            ->where('queryBuilderProps.default.elementGroups', fn ($groups) => collect($groups)->keys()->all() === ['priority']);
     });
 
     $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [
@@ -9906,7 +9910,7 @@ test('staff reply to a supplier from Aiku through the procurement mailbox, threa
         ->assertInertia(fn (AssertableInertia $page) => $page->has('inbox.data', 1)->where('inbox.compose.email.counterpart', 'agent:'.$this->orgAgent->id));
 
     [$agentOrgSupplier] = createAgentOrgSupplierWithProduct($this);
-    $agentPurchaseOrder = (new PurchaseOrder())->forceFill(['agent_id' => $agentOrgSupplier->orgAgent->agent_id, 'parent_type' => 'OrgSupplier']);
+    $agentPurchaseOrder = (new PurchaseOrder())->forceFill(['organisation_id' => $agentOrgSupplier->organisation_id, 'agent_id' => $agentOrgSupplier->orgAgent->agent_id, 'parent_type' => 'OrgSupplier']);
     $agentPurchaseOrder->setRelation('parent', $agentOrgSupplier);
 
     expect(\App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::recipientEmail($agentPurchaseOrder))->toBe("desk@agent-$token.com");

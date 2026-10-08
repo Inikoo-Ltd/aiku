@@ -251,14 +251,24 @@ class CheckSupplierProductSheet
     {
         $this->supplier = $supplier;
 
-        $cells = [];
+        $reader = ReadSupplierProductSheet::make();
+        $cells  = [];
         foreach (Column::cases() as $column) {
-            $value = Arr::get($input, $column->value);
+            $value      = Arr::get($input, $column->value);
+            $currencies = [];
             if (is_string($value)) {
                 $value = trim($value) === '' ? null : trim($value);
             }
 
-            $cells[$column->value] = ['value' => $value, 'text' => $value === null ? null : (string)$value, 'currencies' => []];
+            if (is_string($value) && $column->currency() !== null) {
+                $currencies = $reader->currenciesIn($value);
+                $number     = $reader->numberIn($value);
+                if ($number !== null && $currencies !== []) {
+                    $value = $number;
+                }
+            }
+
+            $cells[$column->value] = ['value' => $value, 'text' => $value === null ? null : (string)$value, 'currencies' => $currencies];
         }
 
         $row = $this->checkRow(['row' => 1, 'cells' => $cells, 'order' => []]);

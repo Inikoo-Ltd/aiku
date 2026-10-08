@@ -27,7 +27,7 @@ class StoreSupplierProductFromForm extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Supplier $supplier, array $modelData): SupplierProduct
+    public function handle(Supplier $supplier, array $modelData, ?int $userId = null): SupplierProduct
     {
         $row = CheckSupplierProductSheet::make()->checkProduct($supplier, $modelData);
 
@@ -41,7 +41,12 @@ class StoreSupplierProductFromForm extends OrgAction
             throw ValidationException::withMessages(['findings' => $problems]);
         }
 
-        $supplierProduct = DB::transaction(fn () => ImportSupplierProductUpload::make()->importValues($supplier, $row['values'])['supplier_product']);
+        $decisions = collect($row['findings'])
+            ->whereIn('level', ['block', 'link'])
+            ->mapWithKeys(fn (array $finding) => [$finding['code'] => ['accepted' => true, 'user_id' => $userId, 'at' => now()->toIso8601String(), 'message' => $finding['message']]])
+            ->all();
+
+        $supplierProduct = DB::transaction(fn () => ImportSupplierProductUpload::make()->importValues($supplier, $row['values'], $decisions)['supplier_product']);
         ReviewSupplierProductForm::make()->forget($modelData['review']);
 
         return $supplierProduct;
@@ -90,7 +95,7 @@ class StoreSupplierProductFromForm extends OrgAction
     {
         $this->initialisationFromGroup($supplier->group, $request);
 
-        return $this->handle($supplier, $this->validatedData);
+        return $this->handle($supplier, $this->validatedData, $request->user()->id);
     }
 
     public function htmlResponse(SupplierProduct $supplierProduct): RedirectResponse

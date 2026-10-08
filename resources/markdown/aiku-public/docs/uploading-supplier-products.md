@@ -24,6 +24,8 @@ Each row of the sheet describes one product the supplier sells us, and Import tu
 | **Recommended prices** for the future master product | Unit recommended price and RRP in £ and € and Recommended SKOs per selling outer |
 | **Draft purchase orders** | Order Cartons UK / SK / ES / Aroma |
 
+Every organisation that buys from the supplier also gets the SKO straight away, linked to its copy of the supplier product.
+
 If the Part reference already exists, nothing new is made: the supplier is added to that trade unit as another source, and only its empty fields are filled.
 
 ## The template
@@ -76,7 +78,7 @@ Open the supplier, go to **Products**, press **Attach file** and choose the file
 
 ## Adding one product without a sheet
 
-For a single product, press **New Supplier Product** on the supplier's **Products** page. The form has the same fields as the template, with the same headings, grouped into Product, Packing and ordering, Cost and prices, and Weights and sizes. The same rules apply: one unit per product, money in the column's currency, weights in kg, sizes as 20x10x5, `auto` for a pool barcode.
+For a single product, press **New Supplier Product** on the supplier's **Products** page. The form has the same fields as the template, with the same headings, grouped into Product, Packing and ordering, Cost and prices, and Weights and sizes. The same rules apply: one unit per product, money in the column's currency (a symbol is fine, "€10.20" in a € field, but a £ amount in a € field is refused), weights in kg, sizes as 20x10x5, `auto` for a pool barcode.
 
 Saving takes two steps:
 
@@ -94,7 +96,7 @@ If the AI checks cannot run, the window asks for **I accept responsibility** ins
 
 When an SKO holds more than one unit, **SKO name** appears under Packing, pre-filled as "Pack of N …". Change it if the wording is wrong.
 
-Submit creates the families, trade unit, barcode, SKO and supplier product in one go, exactly as Import does for a row, and opens the new supplier product. Every organisation that buys from the supplier gets the supplier product straight away, and its SKO the first time it orders the product.
+Submit creates the families, trade unit, barcode, SKO and supplier product in one go, exactly as Import does for a row, and opens the new supplier product. Every organisation that buys from the supplier gets the supplier product and its SKO straight away, linked to each other, so the product can be ordered at once. Who ticked each decision, and when, is kept on the supplier product.
 
 The form does not order cartons. Add the product to a purchase order afterwards, or use the sheet when you also want draft purchase orders.
 
