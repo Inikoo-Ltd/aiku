@@ -6227,6 +6227,7 @@ describe('partner shopping list', function () {
         $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
 
         $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+        PartnerShoppingListItem::where('partner_organisation_id', $seller->id)->where('stock_id', $sellerOrgStock->stock_id)->where('id', '!=', $item->id)->forceDelete();
 
         $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
         $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
