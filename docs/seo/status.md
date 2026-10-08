@@ -1,7 +1,7 @@
 # Status
 
 Where each part of the [implementation plan](implementation-plan.md) stands, as of 8 October 2026.
-All work is on the `seo` branch and has not been deployed yet.
+Nothing here has been deployed yet.
 
 ## Done
 
@@ -15,6 +15,8 @@ All work is on the `seo` branch and has not been deployed yet.
 | 1.2 Site Audit | Weekly crawl of every live website, 28 issue types (hreflang included), health score and trend, pages per issue | SEO > Site audit |
 | 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO > Missing pages |
 | 1.4 Page speed | Core Web Vitals (LCP, INP, CLS) from real visits, per website and per page, following HELP-3303: Google's Chrome UX Report and visitors' browsers | SEO dashboard: Page speed card and Page speed tab |
+| 2.1 Keyword research | Volume, 12 month trend, difficulty, intent and CPC for seed keywords and related ideas, or the keywords a URL ranks for, through DataForSEO Labs; Search Console queries with the same words | SEO > Keywords: Research tab |
+| Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team; nothing is fetched for them until 2.2 | SEO > Keywords: Tracked keywords and Competitors tabs |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -29,10 +31,8 @@ All work is on the `seo` branch and has not been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 2.1 Keyword research | Google Ads Basic access for the developer token (it has Explorer access, and Keyword Planner refuses it), or a keyword data provider |
-| 2.1 Keyword intent | Choose the source: the keyword data provider or a classification prompt through the AI gateway |
-| 2.2 Rank tracking | Choose a SERP provider and a monthly budget |
-| Tracked keywords and competitors per shop | Part of 2.1 and 2.2: the list, countries, devices, check frequency and competitor domains |
+| 2.2 Rank tracking | Approve the monthly budget ([budget.md](budget.md)); the team fills the tracked keyword list and competitors |
+| 2.1 Monthly refresh of saved keywords | Built with 2.2 |
 
 ### Phase 3: the outside world
 
@@ -71,6 +71,8 @@ external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC.
 | --- | --- | --- |
 | `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
 | `GOOGLE_CRUX_API_KEY` | Chrome UX Report: Real user speed and the Google side of 1.4. The key needs the Chrome UX Report API enabled in its Google Cloud project | Yes |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | Keyword research (2.1, not started) | Needs Basic access |
+| `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | Keyword research (2.1), and rank tracking, backlinks and competitor data later | Yes, for SEO > Keywords |
+| `DATAFORSEO_MONTHLY_BUDGET` | The month's DataForSEO spend after which no call is made, in USD | No, defaults to 250 |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
 | `OPENROUTER_API_KEY` | AI visibility and content help (Phase 3) | Not yet |
