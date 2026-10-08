@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -146,6 +147,47 @@ class StockDeliveryItem extends Model implements Auditable
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class);
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(StockDeliveryItemBatch::class)->orderBy('id');
+    }
+
+    /**
+     * SKOs of each batch already put on a shelf, read off the stock movements of this line's put-aways.
+     *
+     * @return array<int, float>
+     */
+    public function placedBatchQuantities(): array
+    {
+        return DB::table('org_stock_movement_batches')
+            ->join('sowings', 'sowings.org_stock_movement_id', '=', 'org_stock_movement_batches.org_stock_movement_id')
+            ->where('sowings.stock_delivery_item_id', $this->id)
+            ->groupBy('org_stock_movement_batches.batch_code_id')
+            ->selectRaw('org_stock_movement_batches.batch_code_id, sum(org_stock_movement_batches.quantity) as quantity')
+            ->pluck('quantity', 'batch_code_id')
+            ->map(fn ($quantity) => (float) $quantity)
+            ->all();
+    }
+
+    /**
+     * What is still to be put away of each batch, in the order the batches were entered.
+     *
+     * @return array<int, array{batch_code_id: int, quantity: float}>
+     */
+    public function unplacedBatches(): array
+    {
+        $placed = $this->placedBatchQuantities();
+
+        return $this->batches()->get()
+            ->map(fn (StockDeliveryItemBatch $batch) => [
+                'batch_code_id' => $batch->batch_code_id,
+                'quantity'      => round((float) $batch->quantity - ($placed[$batch->batch_code_id] ?? 0), 6),
+            ])
+            ->filter(fn (array $batch) => $batch['quantity'] > 0)
+            ->values()
+            ->all();
     }
 
     public function unitsPerSko(): float

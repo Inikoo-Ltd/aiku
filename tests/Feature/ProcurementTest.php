@@ -66,6 +66,7 @@ use App\Models\Helpers\Audit;
 use App\Models\Inventory\OrganisationStockHistory;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemBatches;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
@@ -10332,4 +10333,39 @@ test('an org stock linked to several supplier products answers with its preferre
             ->joinLateral(GetOrganisationStockCoverBuckets::make()->primarySupplierProduct(), 'primary_sp')
             ->where('org_stocks.id', $sellerStock->id)
             ->value('primary_sp.estimated_lead_time_days'))->toBe(9);
+});
+
+test('goods in records the batches a delivery line arrived in and puts them away in order', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'BATCHES-IN', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = $stockDelivery->items()->first();
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 10]);
+    $checkedSkos       = 10 / $stockDeliveryItem->unitsPerSko();
+
+    expect(fn () => SetStockDeliveryItemBatches::make()->action($stockDeliveryItem, ['batches' => [['code' => 'TOO-MANY', 'quantity' => $checkedSkos + 1]]]))
+        ->toThrow(ValidationException::class);
+
+    $this->patch(route('grp.models.stock-delivery-item.batches', $stockDeliveryItem->id), ['batches' => [
+        ['code' => 'LOT-A', 'expiry_date' => '2027-03-01', 'quantity' => $checkedSkos * 0.6],
+        ['code' => 'LOT-B', 'expiry_date' => null, 'quantity' => $checkedSkos * 0.4],
+    ]])->assertSessionHasNoErrors();
+
+    $batches = $stockDeliveryItem->batches()->with('batchCode')->get();
+    expect($batches->pluck('batchCode.code')->all())->toBe(['LOT-A', 'LOT-B'])
+        ->and($batches->first()->batchCode->expiry_date->toDateString())->toBe('2027-03-01');
+
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => $checkedSkos * 0.7, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
+
+    $placed = $stockDeliveryItem->placedBatchQuantities();
+    expect($placed[$batches[0]->batch_code_id])->toEqualWithDelta($checkedSkos * 0.6, 0.0001)
+        ->and($placed[$batches[1]->batch_code_id])->toEqualWithDelta($checkedSkos * 0.1, 0.0001)
+        ->and(fn () => SetStockDeliveryItemBatches::make()->action($stockDeliveryItem, ['batches' => [['code' => 'LOT-B', 'quantity' => $checkedSkos]]]))
+        ->toThrow(ValidationException::class);
+
+    DeleteSowing::make()->action($stockDeliveryItem->sowings()->first());
+
+    expect($stockDeliveryItem->placedBatchQuantities())->toBe([])
+        ->and((float) DB::table('org_stock_movement_batches')->where('org_stock_id', $stockDeliveryItem->org_stock_id)->whereIn('batch_code_id', $batches->pluck('batch_code_id'))->sum('quantity'))->toEqualWithDelta(0.0, 0.0001);
 });

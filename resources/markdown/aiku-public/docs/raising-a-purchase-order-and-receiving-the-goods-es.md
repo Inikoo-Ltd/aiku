@@ -56,6 +56,8 @@ La entrega pasa después por sus propios estados:
 
 Comprobar un artículo significa confirmar cuánto de cada línea llegó realmente - no todos los pedidos llegan completos, y las cantidades de menos o de más aparecen en la pestaña **Under/Over delivered items**, así que nada se pierde en la diferencia entre lo que pediste y lo que llegó.
 
+Debajo de la cantidad comprobada, **Batch** (lote) guarda el código de lote y la fecha de consumo preferente impresos en los productos. Una línea puede tener varios lotes: pulsa **Add batch** y reparte la cantidad entre ellos. Al ubicar el stock, los lotes van a la estantería en el orden en que los escribiste, así el almacén sabe qué lote está en cada sitio y los informes de inventario pueden mostrar las fechas de consumo preferente. Las familias marcadas como **Batch tracked** (en la página de edición de la familia de stock) muestran un aviso hasta que cada SKO comprobado tenga lote, y señalan un lote sin fecha de consumo preferente. Nada bloquea la recepción, así que una entrega sin códigos impresos puede ir a la estantería igualmente. Un lote que ya está en una estantería no se puede bajar de lo que se ubicó; deshaz antes esa ubicación.
+
 ## Poniéndolo todo junto
 
 En resumen: cursa la orden contra el proveedor, envíala, espera a que el proveedor la confirme, y luego crea la entrega desde la orden confirmada. Marca la entrega como enviada cuando el proveedor la despache, como recibida cuando llegue, ve comprobando cada artículo y, por último, colócala - momento en el que el stock ya está en el almacén y listo para vender.

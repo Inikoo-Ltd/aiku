@@ -64,6 +64,8 @@ class IndexStockDeliveryItems extends OrgAction
         $query->where('stock_delivery_items.stock_delivery_id', $parent->id);
         $query->leftJoin('org_stocks', 'stock_delivery_items.org_stock_id', 'org_stocks.id');
         $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'stock_delivery_items.supplier_product_id');
+        $query->leftJoin('stocks', 'stocks.id', '=', 'org_stocks.stock_id');
+        $query->leftJoin('stock_families', 'stock_families.id', '=', 'stocks.stock_family_id');
         $query->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
@@ -92,6 +94,7 @@ class IndexStockDeliveryItems extends OrgAction
             'orgStock:id,slug,packed_in',
             'stockDelivery.currency',
             'sowings' => fn ($sowings) => $sowings->where('type', SowingTypeEnum::SOW)->orderBy('id')->with('location'),
+            'batches.batchCode',
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
@@ -130,6 +133,7 @@ class IndexStockDeliveryItems extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.has_been_in_warehouse',
+                DB::raw('coalesce(stock_families.is_batch_tracked, false) as is_batch_tracked'),
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])

@@ -56,6 +56,8 @@ The delivery then moves through its own states:
 
 Checking an item means confirming how much of each line actually arrived - not every order arrives complete, and short or extra quantities show up on the **Under/Over delivered items** tab so nothing gets lost in the gap between what you ordered and what showed up.
 
+Under the checked quantity, **Batch** records the batch code and best-before date printed on the goods. One line can hold several batches: press **Add batch** and split the quantity between them. When you place the stock, the batches go onto the shelf in the order you entered them, so the warehouse knows which batch sits where and the inventory reports can show best-before dates. Families marked **Batch tracked** (on the stock family's edit page) show a warning until every checked SKO has a batch, and flag a batch with no best-before. Nothing blocks the booking in, so a delivery without printed codes can still go on the shelf. A batch that is already on a shelf cannot be cut below what was put away; undo that put-away first.
+
 ## Putting it together
 
 In short: raise the order against the supplier, submit it, wait for the supplier to confirm, then create the delivery from the confirmed order. Mark the delivery dispatched when the supplier ships it, received when it lands, work through checking each item, and finally place it - at which point the stock is in the warehouse and ready to sell.

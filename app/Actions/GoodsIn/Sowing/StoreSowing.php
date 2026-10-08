@@ -85,8 +85,11 @@ class StoreSowing extends OrgAction
                 'user_id'  => $this->user?->id,
             ];
 
-            if ($parent instanceof StockDeliveryItem && $cost = $parent->orgStockMovementCost()) {
-                $movementData += $cost + ['org_amount' => round($cost['cost_per_sku'] * $sowing->quantity, 3)];
+            if ($parent instanceof StockDeliveryItem) {
+                if ($cost = $parent->orgStockMovementCost()) {
+                    $movementData += $cost + ['org_amount' => round($cost['cost_per_sku'] * $sowing->quantity, 3)];
+                }
+                $movementData['batches'] = $parent->unplacedBatches();
             }
 
             StoreOrgStockMovement::run(

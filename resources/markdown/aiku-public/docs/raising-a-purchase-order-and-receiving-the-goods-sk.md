@@ -56,6 +56,8 @@ Dodávka následne prechádza vlastnými stavmi:
 
 Kontrola položky znamená potvrdenie, koľko z každého riadku skutočne dorazilo - nie každá objednávka dorazí kompletná, a chýbajúce alebo prebytočné množstvá sa zobrazia na karte **Under/Over delivered items**, takže sa nič nestratí v rozdiele medzi tým, čo ste objednali, a tým, čo prišlo.
 
+Pod skontrolovaným množstvom **Batch** (dávka) zaznamená kód dávky a dátum minimálnej trvanlivosti vytlačené na tovare. Jeden riadok môže mať viac dávok: stlačte **Add batch** a rozdeľte množstvo medzi ne. Pri naskladnení idú dávky na regál v poradí, v akom ste ich zadali, takže sklad vie, ktorá dávka je kde, a inventárne prehľady môžu ukázať dátumy minimálnej trvanlivosti. Rodiny označené ako **Batch tracked** (na stránke úpravy rodiny skladových položiek) zobrazujú upozornenie, kým každé skontrolované SKO nemá dávku, a označia dávku bez dátumu minimálnej trvanlivosti. Nič neblokuje príjem, takže dodávka bez vytlačených kódov môže ísť na regál aj tak. Dávku, ktorá už je na regáli, nemožno znížiť pod naskladnené množstvo; najprv zrušte to naskladnenie.
+
 ## Ako to celé zapadá
 
 V skratke: vystavte objednávku voči dodávateľovi, odošlite ju, počkajte, kým ju dodávateľ potvrdí, potom z potvrdenej objednávky vytvorte dodávku. Označte dodávku ako odoslanú, keď ju dodávateľ odošle, ako prijatú, keď dorazí, prekontrolujte jednotlivé položky a nakoniec ju uložte na miesto - vtedy je tovar v sklade a pripravený na predaj.
