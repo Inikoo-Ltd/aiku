@@ -11,12 +11,15 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Http\Resources\Catalogue\FamilyResource;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Catalogue\ProductCategory;
 
 class DetachFamilyToSubDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $family): ProductCategory
     {
         return UpdateFamilyDepartment::make()->action($family, [

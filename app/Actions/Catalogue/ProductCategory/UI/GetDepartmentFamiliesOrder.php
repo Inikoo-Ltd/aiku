@@ -19,7 +19,7 @@ class GetDepartmentFamiliesOrder
     use AsObject;
     use WithFamiliesFromParentCollections;
 
-    public function handle(ProductCategory $department): array
+    public function handle(ProductCategory $department, bool $canEdit): array
     {
         $families           = $this->getFamilies($department);
         $collectionFamilies = $this->getCollectionFamilies($department);
@@ -30,7 +30,7 @@ class GetDepartmentFamiliesOrder
             'id'               => $department->id,
             'data'             => FamilyWebsiteOrderResource::collection($families),
             'collection_families' => FamilyWebsiteOrderResource::collection($collectionFamilies),
-            'editable'         => !$followsMaster,
+            'editable'         => $canEdit && !$followsMaster,
             'follows_master'   => $followsMaster,
             'number_uncurated' => $families->whereNull('website_position')->count(),
             'payload_key'      => 'families',

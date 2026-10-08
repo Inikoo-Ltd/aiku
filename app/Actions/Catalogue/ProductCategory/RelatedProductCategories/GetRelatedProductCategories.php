@@ -18,7 +18,7 @@ class GetRelatedProductCategories
 {
     use AsObject;
 
-    public function handle(ProductCategory $productCategory)
+    public function handle(ProductCategory $productCategory, bool $canEdit)
     {
         $shop         = $productCategory->shop;
         $organisation = $productCategory->organisation;
@@ -27,7 +27,7 @@ class GetRelatedProductCategories
         return [
             'id'               => $productCategory->id,
             'data'             => RelatedMasterProductsCategoriesResource::collection(GetProductCategorySiblingRecommendation::run($productCategory)),
-            'editable'         => !$isRelatedProductCategoryFollowMaster,
+            'editable'         => $canEdit && !$isRelatedProductCategoryFollowMaster,
             'sync_payload_key' => 'related_product_categories_id',
             'route_sync_related_products' => [
                 'name'       => 'grp.models.product_category.related_product_categories.sync',

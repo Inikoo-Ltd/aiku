@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -24,6 +25,7 @@ use Illuminate\Validation\Validator;
 
 class UpdateTradeUnitsForExternalProduct extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithActionUpdate;
     use WithProductHydrators;
     use WithNoStrictRules;

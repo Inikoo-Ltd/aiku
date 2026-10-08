@@ -328,6 +328,18 @@ class StoreProductCategoryDiscount extends OrgAction
     }
 
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo([
+            "discounts.{$this->shop->id}.edit",
+            "supervisor-discounts.{$this->shop->id}",
+        ]);
+    }
+
     /**
      * @throws \Throwable
      *

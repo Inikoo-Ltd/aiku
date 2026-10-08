@@ -59,6 +59,7 @@ const props = defineProps<{
         download_route: { xlsx: routeType; csv: routeType }
     }
     bulk_set_active_route?: routeType | null
+    can_edit?: boolean
     step_discount_shop_data?: {
         id: number
         slug: string
@@ -357,7 +358,7 @@ const replaceProps = (updatedData) => {
         :key="currentTab + key"
         :tab="currentTab"
         :data="localData[currentTab]"
-        v-bind="currentTab === 'index_ordering' ? { pasteLookupRoute: { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } } } : {}"
+        v-bind="currentTab === 'index_ordering' ? { pasteLookupRoute: { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } }, disabled: can_edit === false } : {}"
         :isCheckboxProducts="currentTab === 'bulk_unit' || isStepDiscountAvailable || isBulkSetActiveAvailable"
         :selectedProductsId="selectedProductsId"
         :variantSlugs="variantSlugs"

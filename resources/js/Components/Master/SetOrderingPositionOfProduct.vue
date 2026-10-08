@@ -236,7 +236,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
     <div :class="dense ? 'p-3' : 'p-4'">
         <div class="flex items-center justify-between" :class="dense ? 'mb-2' : 'mb-4'">
             <div class="flex items-center gap-4">
-                <div class="inline-flex rounded-lg border bg-gray-100 p-1">
+                <div v-if="!disabled" class="inline-flex rounded-lg border bg-gray-100 p-1">
                     <button v-for="option in sortOptions" :key="option.key" @click="applySort(option.key)"
                         class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === option.key
                             ? 'bg-white shadow text-gray-900'

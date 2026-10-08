@@ -148,6 +148,8 @@ const props = defineProps<{
         }
     }
     product_id: number
+    can_edit?: boolean
+    can_edit_offers?: boolean
     product_units?: number
     product_unit?: string
     not_follow_master_media?: boolean
@@ -346,7 +348,7 @@ const saveProductReview = async () => {
         </template>
         <template #otherBefore>
             <Action
-                v-if="currentTab === 'images'"
+                v-if="can_edit && currentTab === 'images'"
                 :action="{
                     key: 'repair-images',
                     type: 'button',
@@ -362,7 +364,7 @@ const saveProductReview = async () => {
                 }"
             />
 
-            <template v-if="currentTab === 'offers'">
+            <template v-if="can_edit_offers && currentTab === 'offers'">
                 <ModalCreateGiftOffers
                     v-tooltip="'Create New Offer'"
                     :shop_data="props.shop_data"

@@ -14,6 +14,8 @@ use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
+use App\Actions\Catalogue\ProductCategory\UI\WithCategoryOfferPermissions;
+use App\Actions\Catalogue\ProductCategory\UI\WithWebpageActions;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
@@ -64,6 +66,8 @@ class ShowProduct extends OrgAction
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
     use WithIndivisibleSet;
+    use WithWebpageActions;
+    use WithCategoryOfferPermissions;
 
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -314,7 +318,7 @@ class ShowProduct extends OrgAction
                     ]
                 ],
             ]);
-        } elseif (!$product->is_minion_variant && !$isExternalShop && !$product->isExclusive() && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
+        } elseif ($this->canCreateWebpage() && !$product->is_minion_variant && !$isExternalShop && !$product->isExclusive() && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
             $actions[] =
                 [
                     'type'  => 'button',
@@ -404,8 +408,8 @@ class ShowProduct extends OrgAction
 
 
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn () => GetProductImages::run($product)
-                    : Inertia::optional(fn () => GetProductImages::run($product)),
+                    fn () => GetProductImages::run($product, $this->canEdit)
+                    : Inertia::optional(fn () => GetProductImages::run($product, $this->canEdit)),
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
@@ -481,6 +485,8 @@ class ShowProduct extends OrgAction
                         ],
                     ])->all(),
                 'product_id'           => $product->id,
+                'can_edit'             => $this->canEdit,
+                'can_edit_offers'      => $this->canEditOffers($request),
                 'product_units'        => (int)$product->units,
                 'product_unit'         => $product->unit,
                 'shop_data'            => [

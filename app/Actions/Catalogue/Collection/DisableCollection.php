@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -27,6 +28,7 @@ use Illuminate\Validation\Validator;
 
 class DisableCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

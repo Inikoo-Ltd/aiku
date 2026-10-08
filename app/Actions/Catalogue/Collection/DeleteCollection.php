@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateRebelCollections;
 use App\Actions\Web\Webpage\DeleteWebpage;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use AsAction;
     use WithAttributes;
 
@@ -81,6 +83,7 @@ class DeleteCollection extends OrgAction
      */
     public function action(Collection $collection, bool $forceDelete = false, ?Command $command = null): Collection
     {
+        $this->asAction   = true;
         $this->collection = $collection;
 
         return $this->handle($collection, $forceDelete, $command);
@@ -92,7 +95,7 @@ class DeleteCollection extends OrgAction
     public function asController(Collection $collection, ActionRequest $request): Collection
     {
         $this->collection = $collection;
-        $this->initialisation($collection->organisation, $request);
+        $this->initialisationFromShop($collection->shop, $request);
 
         $forceDelete = $request->boolean('force_delete');
 

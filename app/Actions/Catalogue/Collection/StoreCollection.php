@@ -12,6 +12,7 @@ use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollec
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -34,6 +35,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithImageCatalogue;
     use WithNoStrictRules;
 

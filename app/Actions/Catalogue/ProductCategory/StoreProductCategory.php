@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategory extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithNoStrictRules;
     use WithImageCatalogue;
     use WithProductCategoryHydrators;

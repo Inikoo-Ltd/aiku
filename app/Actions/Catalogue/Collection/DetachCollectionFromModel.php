@@ -12,12 +12,16 @@ use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateParents;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use Lorisleiva\Actions\ActionRequest;
 
 class DetachCollectionFromModel extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(Shop|ProductCategory $parent, Collection $collection): Shop|ProductCategory
     {
         $oldParent = $collection->parent;
@@ -56,9 +60,9 @@ class DetachCollectionFromModel extends OrgAction
     }
 
 
-    public function asController(ProductCategory $productCategory, Collection $collection): ProductCategory
+    public function asController(ProductCategory $productCategory, Collection $collection, ActionRequest $request): ProductCategory
     {
-        $this->initialisationFromShop($productCategory->shop, []);
+        $this->initialisationFromShop($productCategory->shop, $request);
 
         return $this->handle($productCategory, $collection);
     }

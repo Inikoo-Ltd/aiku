@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetImagesFromTradeUnits;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class HydrateProductImagesFromTradeUnits extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public string $commandSignature = 'catalogue:product:hydrate-images-from-trade-units {parent?} {slug?}';
 
     public function handle(Product $product): void

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachModelsToCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     private Collection $collection;
 
     public function handle(Collection $collection, array $modelData): Collection

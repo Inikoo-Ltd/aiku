@@ -9,12 +9,15 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductImageAlt extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(Product $product, Media $media, array $modelData): Product
     {
         $product->images()->updateExistingPivot($media->id, [

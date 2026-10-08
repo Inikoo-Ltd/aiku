@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Catalogue\Product;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToProduct extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithUploadModelImages;
     use WithAttachMediaToModel;
 

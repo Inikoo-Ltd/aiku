@@ -11,13 +11,17 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateParents;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use Lorisleiva\Actions\ActionRequest;
 
 class AttachCollectionToModel extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(Shop|ProductCategory $parent, Collection $collection): Collection
     {
         if ($parent instanceof ProductCategory) {
@@ -73,9 +77,9 @@ class AttachCollectionToModel extends OrgAction
         return $this->handle($parent, $collection);
     }
 
-    public function asController(ProductCategory $productCategory, Collection $collection): Collection
+    public function asController(ProductCategory $productCategory, Collection $collection, ActionRequest $request): Collection
     {
-        $this->initialisationFromShop($productCategory->shop, []);
+        $this->initialisationFromShop($productCategory->shop, $request);
 
         return $this->handle($productCategory, $collection);
     }

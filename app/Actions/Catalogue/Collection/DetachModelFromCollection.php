@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateCollections;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachModelFromCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     private Collection $collection;
 
     public function handle(Collection $collection, Product|ProductCategory|Collection $model): Collection

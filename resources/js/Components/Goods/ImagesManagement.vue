@@ -26,6 +26,7 @@ const props = defineProps<{
     data: {
         editable?: boolean
         video_editable?: boolean
+        can_edit?: boolean
         id: {}
         images: any[]
         bucket_images?: boolean
@@ -51,8 +52,10 @@ const props = defineProps<{
 
 
 // State
-const editable = ref(props?.data?.editable ?? true)
-const video_editable = ref(props?.data?.video_editable ?? true)
+const canEdit = props?.data?.can_edit ?? true
+const followsSource = !(props?.data?.editable ?? true)
+const editable = ref(canEdit && !followsSource)
+const video_editable = ref(canEdit && (props?.data?.video_editable ?? true))
 const selectedDragImage = ref<DraggedImage | null>(null)
 const selectedImageToPlace = ref<DraggedImage | null>(null)
 const loadingSubmit = ref<null | number | string>(null)
@@ -437,7 +440,7 @@ function onDeleteFilesInList(categoryBox: any) {
 
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
-        <div v-if="!editable" class="lg:col-span-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div v-if="canEdit && followsSource" class="lg:col-span-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {{ ctrans("Images are inherited from the trade unit, so they can't be edited here. Upload them on the trade unit, or turn off \"follow trade unit media\" on this product to manage them here.") }}
         </div>
         <!-- Left: Drop Areas -->
@@ -647,7 +650,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                         <template v-if="item?.alt">{{ item?.alt }}</template>
                                         <span v-else class="not-italic">- {{ ctrans('not set') }}</span>
                                     </span>                                    
-                                    <button v-if="data?.update_image_alt_route" type="button"
+                                    <button v-if="canEdit && data?.update_image_alt_route" type="button"
                                         @click.stop="openEditAlt(item)"
                                         class="text-gray-400 hover:text-blue-600 transition"
                                         v-tooltip="ctrans('Edit alt text')">

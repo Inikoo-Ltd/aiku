@@ -38,6 +38,7 @@ class ShowSubDepartment extends OrgAction
     use WithCatalogueAuthorisation;
     use WithSubDepartmentSubNavigation;
     use WithWebpageActions;
+    use WithCategoryOfferPermissions;
     use WithSubDepartmentNavigation;
 
 
@@ -222,6 +223,8 @@ class ShowSubDepartment extends OrgAction
                     ],
                 ],
                 'product_category_id'                  => $subDepartment->id,
+                'can_edit'                             => $this->canEdit,
+                'can_edit_offers'                      => $this->canEditOffers($request),
 
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($subDepartment)
@@ -248,16 +251,16 @@ class ShowSubDepartment extends OrgAction
                     : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $subDepartment->shop, prefix: 'customers'))),
 
                 DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                    fn () => GetRelatedProductCategories::run($subDepartment)
-                    : Inertia::optional(fn () => GetRelatedProductCategories::run($subDepartment)),
+                    fn () => GetRelatedProductCategories::run($subDepartment, $this->canEdit)
+                    : Inertia::optional(fn () => GetRelatedProductCategories::run($subDepartment, $this->canEdit)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($subDepartment, DepartmentTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($subDepartment, DepartmentTabsEnum::HISTORY->value))),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
-                    fn () => GetProductCategoryImages::run($subDepartment)
-                    : Inertia::optional(fn () => GetProductCategoryImages::run($subDepartment)),
+                    fn () => GetProductCategoryImages::run($subDepartment, $this->canEdit)
+                    : Inertia::optional(fn () => GetProductCategoryImages::run($subDepartment, $this->canEdit)),
 
                 DepartmentTabsEnum::OFFERS->value => $this->tab == DepartmentTabsEnum::OFFERS->value ?
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $subDepartment, prefix: DepartmentTabsEnum::OFFERS->value))

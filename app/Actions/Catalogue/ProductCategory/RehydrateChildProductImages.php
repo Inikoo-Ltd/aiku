@@ -4,11 +4,14 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 
 class RehydrateChildProductImages extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $productCategory)
     {
         foreach ($productCategory->getProducts() as $product) {

@@ -91,6 +91,8 @@ const props = defineProps<{
     sales_analysis_teaser?: object
     salesData?: object
     product_category_id?: number
+    can_edit?: boolean
+    can_edit_offers?: boolean
     shop_data: {
         id:number
         slug: string
@@ -171,7 +173,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button @click="() => isOpenModalPortfolios = true" :label="ctrans('Add families')" icon="fas fa-plus" />
+            <Button v-if="can_edit" @click="() => isOpenModalPortfolios = true" :label="ctrans('Add families')" icon="fas fa-plus" />
         </template>
 
         <template #afterTitle>
@@ -186,7 +188,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         </template>
          <template #otherBefore>
             <ModalCreateCategoryOffers
-                v-if="currentTab === 'offers'"
+                v-if="can_edit_offers && currentTab === 'offers'"
                 :shop_data="props.shop_data"
                 :product_category_id="props.product_category_id"
             />

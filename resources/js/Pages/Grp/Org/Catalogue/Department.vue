@@ -85,6 +85,7 @@ const props = defineProps<{
     sales_analysis_teaser?: object
     salesData?: object
     product_category_id?: number
+    can_edit_offers?: boolean
     shop_data: {
         id: number
         slug: string
@@ -178,7 +179,7 @@ const component = computed(() => {
 
         <template #otherBefore>
             <ModalCreateCategoryOffers
-                v-if="currentTab === 'offers'"
+                v-if="can_edit_offers && currentTab === 'offers'"
                 :shop_data="props.shop_data"
                 :product_category_id="props.product_category_id"
             />

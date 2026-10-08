@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
+use App\Actions\Catalogue\ProductCategory\UI\WithCategoryOfferPermissions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithListingsColumns;
@@ -51,6 +52,7 @@ class IndexProductsInProductCategory extends OrgAction
     use WithCatalogueAuthorisation;
     use WithSubDepartmentSubNavigation;
     use WithListingsColumns;
+    use WithCategoryOfferPermissions;
 
 
     private ProductCategory $parent;
@@ -364,23 +366,24 @@ class IndexProductsInProductCategory extends OrgAction
                 'label' => __('Products')
             ];
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'secondary',
-                'tooltip' => __('Sync Product Images from Trade Units'),
-                'label'   => __('Repair Images'),
-                'icon'    => 'fal fa-tools',
-                'key'     => 'repair-image',
-                'route'   => [
-                    'name'          => 'grp.models.product_category.repair_product_images',
-                    'method'        => 'patch',
-                    'parameters'    => [
-                        'productCategory' => $productCategory->id
-                    ],
-                ]
-            ];
-
             if ($this->canEdit) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'tooltip' => __('Sync Product Images from Trade Units'),
+                    'label'   => __('Repair Images'),
+                    'icon'    => 'fal fa-tools',
+                    'key'     => 'repair-image',
+                    'route'   => [
+                        'name'          => 'grp.models.product_category.repair_product_images',
+                        'method'        => 'patch',
+                        'parameters'    => [
+                            'productCategory' => $productCategory->id
+                        ],
+                    ]
+                ];
+
+
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'create',
@@ -445,7 +448,8 @@ class IndexProductsInProductCategory extends OrgAction
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
                 'familyId'                      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? $productCategory->id : null,
-                'step_discount_shop_data'      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? [
+                'can_edit'                     => $this->canEdit,
+                'step_discount_shop_data'      => $productCategory->type === ProductCategoryTypeEnum::FAMILY && $this->canEditOffers($request) ? [
                     'id'            => $productCategory->shop_id,
                     'slug'          => $productCategory->shop->slug,
                     'organisation'  => $productCategory->organisation->slug,

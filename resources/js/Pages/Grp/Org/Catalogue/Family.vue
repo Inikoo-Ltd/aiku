@@ -97,6 +97,7 @@ const props = defineProps<{
         }
     }
     product_category_id: number
+    can_edit_offers?: boolean
     related_products? : object
     related_product_category?: object,
 
@@ -218,7 +219,7 @@ const showDialog = ref(false)
         </template>
 
         <template #otherBefore>
-            <template v-if="currentTab === 'offers'">
+            <template v-if="can_edit_offers && currentTab === 'offers'">
                 <ModalCreateCategoryOffers
                     :shop_data="props.shop_data"
                     :product_category_id="props.product_category_id"

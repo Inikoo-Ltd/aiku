@@ -5,6 +5,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
@@ -12,6 +13,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromProductCategory extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $productCategory, Media $media, bool $updateDependants = false): ProductCategory
     {
         $productCategory->images()->detach($media->id);

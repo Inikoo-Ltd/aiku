@@ -9,12 +9,14 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateProductCategoryTranslations extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use asAction;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
@@ -59,7 +61,7 @@ class UpdateProductCategoryTranslations extends OrgAction
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): void
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromShop($productCategory->shop, $request);
         $this->handle($productCategory, $this->validatedData);
     }
 

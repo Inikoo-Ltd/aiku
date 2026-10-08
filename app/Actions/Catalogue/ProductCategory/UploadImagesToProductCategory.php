@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Catalogue\ProductCategory;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToProductCategory extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithAttachMediaToModel;
     use WithUploadModelImages;
 
