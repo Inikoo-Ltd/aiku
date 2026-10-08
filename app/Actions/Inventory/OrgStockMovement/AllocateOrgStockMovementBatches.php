@@ -62,6 +62,38 @@ class AllocateOrgStockMovementBatches
     }
 
     /**
+     * A stock check counted batch by batch: afterwards each counted batch holds what was counted,
+     * every other batch on the location holds nothing, and the rest of the count has no batch recorded.
+     *
+     * @param  array<int, array{batch_code_id: int, quantity: float|string}>  $counted
+     */
+    public function count(OrgStockMovement $orgStockMovement, array $counted): void
+    {
+        OrgStockMovementBatch::where('org_stock_movement_id', $orgStockMovement->id)->delete();
+
+        $targets = [];
+        foreach ($counted as $batch) {
+            $targets[(int) $batch['batch_code_id']] = ($targets[(int) $batch['batch_code_id']] ?? 0) + (float) $batch['quantity'];
+        }
+
+        $rows = [];
+        foreach ($this->balances($orgStockMovement) as $batchCodeId => $balance) {
+            $difference = ($targets[$batchCodeId] ?? 0) - $balance['quantity'];
+            unset($targets[$batchCodeId]);
+            if (abs($difference) >= self::EPSILON) {
+                $rows[] = [$batchCodeId, $difference];
+            }
+        }
+        foreach ($targets as $batchCodeId => $quantity) {
+            if ($quantity >= self::EPSILON) {
+                $rows[] = [$batchCodeId, $quantity];
+            }
+        }
+
+        $this->insertRows($orgStockMovement, $rows);
+    }
+
+    /**
      * @param  array<int, array{0: int, 1: float}>  $rows
      */
     private function insertRows(OrgStockMovement $orgStockMovement, array $rows): void

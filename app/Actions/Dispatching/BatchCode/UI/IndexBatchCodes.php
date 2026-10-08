@@ -22,6 +22,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -62,11 +63,24 @@ class IndexBatchCodes extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(BatchCode::class)
+        $query = QueryBuilder::for(BatchCode::class)
             ->where('batch_codes.organisation_id', $organisation->id)
             ->when($orgStock, fn ($query) => $query->where('batch_codes.org_stock_id', $orgStock->id))
             ->leftJoin('org_stocks', 'batch_codes.org_stock_id', '=', 'org_stocks.id')
-            ->defaultSort('batch_codes.code')
+            ->leftJoinSub(self::onHandQuery(), 'on_hand', 'on_hand.batch_code_id', '=', 'batch_codes.id');
+
+        foreach ($this->getElementGroups() as $key => $elementGroup) {
+            $query->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $elementGroup['default'],
+            );
+        }
+
+        return $query
+            ->defaultSort('expiry_date')
             ->select([
                 'batch_codes.id',
                 'batch_codes.code',
@@ -76,11 +90,90 @@ class IndexBatchCodes extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
+                DB::raw('coalesce(on_hand.quantity, 0) as quantity_on_hand'),
+                DB::raw('coalesce(on_hand.number_locations, 0) as number_locations'),
             ])
-            ->allowedSorts(['code', 'expiry_date', 'org_stock_code', 'number_delivery_notes'])
+            ->allowedSorts(['code', 'expiry_date', 'org_stock_code', 'number_delivery_notes', 'quantity_on_hand', 'number_locations'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * SKOs of each batch on the shelves now and in how many locations, read off the stock movements.
+     */
+    public static function onHandQuery(): \Illuminate\Database\Query\Builder
+    {
+        $perLocation = DB::table('org_stock_movement_batches')
+            ->groupBy('batch_code_id', 'location_id')
+            ->havingRaw('sum(quantity) > 0.000001')
+            ->selectRaw('batch_code_id, sum(quantity) as quantity');
+
+        return DB::query()->fromSub($perLocation, 'per_location')
+            ->groupBy('batch_code_id')
+            ->selectRaw('batch_code_id, sum(quantity) as quantity, count(*) as number_locations');
+    }
+
+    /**
+     * Each location of the SKO with what it holds and which batches the stock says are there, for counting it batch by batch.
+     */
+    private function batchCount(OrgStock $orgStock): array
+    {
+        $batches = DB::table('org_stock_movement_batches')
+            ->join('batch_codes', 'batch_codes.id', '=', 'org_stock_movement_batches.batch_code_id')
+            ->where('org_stock_movement_batches.org_stock_id', $orgStock->id)
+            ->groupBy('org_stock_movement_batches.location_id', 'batch_codes.id', 'batch_codes.code', 'batch_codes.expiry_date')
+            ->havingRaw('sum(org_stock_movement_batches.quantity) > 0.000001')
+            ->orderByRaw('batch_codes.expiry_date asc nulls last, batch_codes.id')
+            ->selectRaw('org_stock_movement_batches.location_id, batch_codes.id as batch_code_id, batch_codes.code, batch_codes.expiry_date, sum(org_stock_movement_batches.quantity) as quantity')
+            ->get()
+            ->groupBy('location_id');
+
+        return [
+            'locations' => DB::table('location_org_stocks')
+                ->join('locations', 'locations.id', '=', 'location_org_stocks.location_id')
+                ->where('location_org_stocks.org_stock_id', $orgStock->id)
+                ->where('location_org_stocks.warehouse_id', $this->warehouse->id)
+                ->orderBy('locations.code')
+                ->get(['location_org_stocks.id', 'location_org_stocks.location_id', 'locations.code', 'location_org_stocks.quantity'])
+                ->map(fn ($location) => [
+                    'location_org_stock_id' => $location->id,
+                    'code'                  => $location->code,
+                    'quantity'              => (float) $location->quantity,
+                    'batches'               => $batches->get($location->location_id, collect())->map(fn ($batch) => [
+                        'batch_code_id' => $batch->batch_code_id,
+                        'code'          => $batch->code,
+                        'expiry_date'   => $batch->expiry_date,
+                        'quantity'      => (float) $batch->quantity,
+                    ])->values()->all(),
+                ])->all(),
+            'batch_codes' => $orgStock->batchCodes()->orderByDesc('id')->limit(200)->get(['id', 'code', 'expiry_date'])->map(fn ($batchCode) => [
+                'batch_code_id' => $batchCode->id,
+                'code'          => $batchCode->code,
+                'expiry_date'   => $batchCode->expiry_date?->toDateString(),
+            ])->all(),
+        ];
+    }
+
+    protected function getElementGroups(): array
+    {
+        return [
+            'stock' => [
+                'label'    => __('Stock'),
+                'default'  => 'on_hand',
+                'elements' => [
+                    'on_hand' => [__('On the shelves')],
+                    'empty'   => [__('None left')],
+                ],
+                'engine'   => function ($query, $elements) {
+                    if (in_array('on_hand', $elements)) {
+                        $query->whereNotNull('on_hand.batch_code_id');
+                    } else {
+                        $query->whereNull('on_hand.batch_code_id');
+                    }
+                },
+            ],
+        ];
     }
 
     public function tableStructure(bool $showOrgStockColumn = true, ?array $modelOperations = null, ?string $prefix = null): Closure
@@ -90,17 +183,29 @@ class IndexBatchCodes extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
+            foreach ($this->getElementGroups() as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'],
+                );
+            }
+
             $table
-                ->defaultSort('code')
+                ->defaultSort('expiry_date')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(['title' => __('No batch codes found')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'expiry_date', label: __('Expiry Date'), canBeHidden: false, sortable: true, type: 'date');
+                ->column(key: 'expiry_date', label: __('Best before'), canBeHidden: false, sortable: true, type: 'date');
 
             if ($showOrgStockColumn) {
                 $table->column(key: 'org_stock_code', label: __('SKO'), canBeHidden: false, sortable: true);
             }
+
+            $table->column(key: 'quantity_on_hand', label: __('On the shelves'), canBeHidden: false, sortable: true, type: 'number');
+            $table->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, type: 'number');
 
             $table->column(key: 'number_delivery_notes', label: __('Delivery Notes'), canBeHidden: false, sortable: true);
             $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
@@ -197,6 +302,7 @@ class IndexBatchCodes extends OrgAction
                     ],
                 ],
                 'allow_edit' => !$orgStock,
+                'batch_count' => $orgStock ? $this->batchCount($orgStock) : null,
                 'data' => BatchCodeResource::collection($batchCodes),
             ]
         )->table($this->tableStructure(!$orgStock));

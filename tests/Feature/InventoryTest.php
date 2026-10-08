@@ -4771,3 +4771,44 @@ test('stock movements keep track of the batches on each location', function ($wa
 
     expect(fn () => DeleteBatchCode::make()->handle($late))->toThrow(ValidationException::class);
 })->depends('create warehouse area');
+
+test('a location counted batch by batch and the best-before of what is on the shelves', function ($warehouseArea) {
+    $orgStock  = LocationOrgStock::first()->orgStock;
+    $warehouse = $warehouseArea->warehouse;
+    $slot      = StoreLocationOrgStock::make()->action(
+        $orgStock,
+        StoreLocation::make()->action($warehouseArea, Location::factory()->definition()),
+        ['type' => LocationStockTypeEnum::PICKING]
+    );
+    $early = StoreBatchCode::make()->action($warehouse, ['code' => 'COUNT-'.uniqid(), 'expiry_date' => '2027-01-01', 'org_stock_id' => $orgStock->id]);
+    StoreOrgStockMovement::make()->action($orgStock, $slot->location, ['type' => OrgStockMovementTypeEnum::PURCHASE, 'quantity' => 5, 'batches' => [['batch_code_id' => $early->id, 'quantity' => 5]]]);
+    StoreOrgStockMovement::make()->action($orgStock, $slot->location, ['type' => OrgStockMovementTypeEnum::FOUND, 'quantity' => 5]);
+
+    $soon     = now()->addDays(20)->toDateString();
+    $newCode  = 'LABEL-'.uniqid();
+    AuditLocationOrgStock::make()->action($slot->refresh(), ['quantity' => 10, 'batches' => [
+        ['batch_code_id' => $early->id, 'quantity' => 3],
+        ['code' => $newCode, 'expiry_date' => $soon, 'quantity' => 4],
+    ]], $this->user);
+
+    $labelled = \App\Models\Dispatching\BatchCode::where('org_stock_id', $orgStock->id)->where('code', $newCode)->firstOrFail();
+    $onShelf  = DB::table('org_stock_movement_batches')->where('location_id', $slot->location_id)->where('org_stock_id', $orgStock->id)
+        ->groupBy('batch_code_id')->havingRaw('sum(quantity) <> 0')->selectRaw('batch_code_id, sum(quantity)::float as quantity')->pluck('quantity', 'batch_code_id')->all();
+    expect($onShelf)->toEqual([$early->id => 3.0, $labelled->id => 4.0])
+        ->and((float) $slot->refresh()->quantity)->toBe(10.0);
+
+    $page = $this->withoutVite()->get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.batch_codes', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]))
+        ->assertOk()->viewData('page')['props'];
+    $listed = collect($page['data']['data'])->keyBy('id');
+    $counted = collect($page['batch_count']['locations'])->firstWhere('location_org_stock_id', $slot->id);
+    expect($listed[$labelled->id]['quantity_on_hand'])->toEqual(4)
+        ->and($listed[$labelled->id]['number_locations'])->toBe(1)
+        ->and($listed[$labelled->id]['days_left'])->toBe(20)
+        ->and(collect($counted['batches'])->pluck('quantity', 'batch_code_id')->all())->toEqual([$labelled->id => 4.0, $early->id => 3.0]);
+
+    $export = new \App\Exports\Inventory\OrgStocksExport($this->organisation);
+    $row    = $export->query()->where('org_stocks.id', $orgStock->id)->first();
+    $mapped = array_combine($export->headings(), $export->map($row));
+    expect($mapped['Earliest Best-before'])->toBe($soon)
+        ->and($mapped['Expiring within 30 days'])->toBe(4.0);
+})->depends('create warehouse area');
