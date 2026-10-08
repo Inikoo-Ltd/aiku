@@ -6,7 +6,6 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\Web\Webpage;
 use Carbon\CarbonInterface;
@@ -17,8 +16,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * How an advert page is performing, read from what the website already records: a row per page view
- * and a row per conversion. The window is the one PruneWebsitePageViews keeps, because older views
- * are deleted and a longer period would silently report on a shorter one.
+ * and a row per conversion, over the last DEFAULT_DAYS days. It must stay within what
+ * PruneWebsitePageViews keeps, because older views are deleted and a longer period would silently
+ * report on a shorter one.
  *
  * The totals are added up from the same daily rows the chart is drawn from, so a number in a tile
  * and the line above it can never disagree. A session that crosses midnight is therefore counted as
@@ -28,12 +28,14 @@ class GetWebpageEngagementMetrics
 {
     use AsAction;
 
+    public const int DEFAULT_DAYS = 30;
+
     /**
      * @return array{days: int, page_views: int, visitors: int, add_to_baskets: int, conversion_rate: float, bounces: int, bounce_rate: float, avg_time_on_page: int, timed_page_views: int, history: array<int, array{date: string, page_views: int, visitors: int, bounces: int, add_to_baskets: int, conversion_rate: ?float, bounce_rate: ?float, avg_time_on_page: ?int}>}
      */
     public function handle(Webpage $webpage, ?int $days = null): array
     {
-        $days ??= PruneWebsitePageViews::RETENTION_DAYS;
+        $days ??= self::DEFAULT_DAYS;
         $until = now()->startOfDay();
         $from  = $until->copy()->subDays($days - 1);
 
