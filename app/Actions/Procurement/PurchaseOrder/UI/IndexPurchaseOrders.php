@@ -191,6 +191,7 @@ class IndexPurchaseOrders extends OrgAction
                 ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
                 ->addSelect([
                     'organisations.name as organisation_name',
+                    'organisations.slug as organisation_slug',
                     'currencies.code as org_currency_code',
                 ]);
         } else {

@@ -22,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $parent_slug
  * @property mixed $org_total_cost
  * @property mixed $organisation_name
+ * @property mixed $organisation_slug
  * @property mixed $quantity_ordered
  * @property mixed $org_net_amount
  */
@@ -47,6 +48,7 @@ class PurchaseOrdersResource extends JsonResource
             'org_net_amount'    => $this->org_net_amount,
             'org_total_cost'    => $this->org_total_cost,
             'organisation_name' => $this->organisation_name,
+            'organisation_slug' => $this->organisation_slug,
         ];
     }
 

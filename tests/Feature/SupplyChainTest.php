@@ -1781,3 +1781,20 @@ test('procurement editors keep internal pictures on the supplier product, away f
     expect($supplierProduct->images()->count())->toBe(0)
         ->and($supplierProduct->refresh()->image_id)->toBeNull();
 });
+
+test('UI index purchase orders in supplier links each order to its organisation', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
+    StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $this->stocks[1]->id]));
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    $this->get(route('grp.supply-chain.suppliers.purchase_orders.index', [$supplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrders')
+            ->where('data.data.0.slug', $purchaseOrder->slug)
+            ->where('data.data.0.organisation_slug', $this->organisation->slug)
+            ->etc());
+});

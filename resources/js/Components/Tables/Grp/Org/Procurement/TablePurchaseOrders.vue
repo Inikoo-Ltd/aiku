@@ -63,7 +63,14 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 				purchaseOrder.slug,
 			])
 		default:
-			return null
+			if (!purchaseOrder.organisation_slug) {
+				return null
+			}
+
+			return route("grp.org.procurement.purchase_orders.show", [
+				purchaseOrder.organisation_slug,
+				purchaseOrder.slug,
+			])
 	}
 }
 
