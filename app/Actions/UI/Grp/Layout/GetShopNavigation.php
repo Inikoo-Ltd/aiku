@@ -134,6 +134,16 @@ class GetShopNavigation
                             ],
                         ] : null,
                         $shop->type !== ShopTypeEnum::EXTERNAL ? [
+                            "label" => __("Sub-departments"),
+                            "tooltip" => __("Sub-departments"),
+                            "icon" => ["fal", "fa-folder-download"],
+                            'root' => 'grp.org.shops.show.catalogue.sub_departments.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.sub_departments.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ] : null,
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Families"),
                             "tooltip" => __("Families"),
                             "icon" => ["fal", "fa-folder"],
