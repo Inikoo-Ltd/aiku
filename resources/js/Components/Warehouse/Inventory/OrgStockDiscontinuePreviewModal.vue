@@ -11,7 +11,8 @@ import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { computed, inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExpandAlt, faCompressAlt } from "@fal"
+import { faExpandAlt, faCompressAlt, faChevronDown, faInfoCircle } from "@fal"
+import { capitalize } from "@/Composables/capitalize"
 
 interface CountWithReferences {
     count: number
@@ -139,11 +140,13 @@ const locale = inject("locale", aikuLocaleStructure)
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
 const previews = ref<Preview[]>([])
+const expanded = ref<Record<string, boolean>>({})
 
 const loadPreview = async () => {
     isLoading.value = true
     errorMessage.value = null
     previews.value = []
+    expanded.value = {}
     try {
         const response = await axios.get(route(props.previewRoute.name, props.previewRoute.parameters), {
             params: { org_stock_ids: props.orgStockIds },
@@ -163,9 +166,80 @@ watch(() => props.isOpen, (isOpen) => {
     }
 }, { immediate: true })
 
-const references = (block: CountWithReferences) => block.references.join(", ")
-const platformSummary = (byPlatform: Record<string, number>) =>
-    Object.entries(byPlatform).map(([platform, count]) => `${platform} ${count}`).join(", ")
+interface DetailItem {
+    label: string
+    value?: string | number
+}
+
+interface DetailCell {
+    count: number
+    summary?: string
+    items: DetailItem[]
+}
+
+const stateClasses: Record<string, string> = {
+    active: "bg-green-50 text-green-700",
+    suspended: "bg-amber-50 text-amber-700",
+    discontinuing: "bg-red-50 text-red-700",
+    discontinued: "bg-gray-200 text-gray-700",
+}
+
+const detailColumns = computed(() => [
+    { key: "purchase_orders", label: ctrans("Purchase orders"), title: undefined },
+    { key: "stock_deliveries", label: ctrans("Deliveries"), title: undefined },
+    { key: "restock_requests", label: ctrans("Restock requests"), title: ctrans("Open warehouse restock requests, removed when the SKO is discontinued") },
+    { key: "portfolios", label: ctrans("Portfolios"), title: undefined },
+    { key: "external_shops", label: ctrans("Marketplaces"), title: undefined },
+    { key: "webpages", label: ctrans("Web pages"), title: undefined },
+    { key: "orders", label: ctrans("Customer orders"), title: undefined },
+])
+
+const referenceItems = (references: string[]): DetailItem[] => references.map((reference) => ({ label: reference }))
+
+const detailCell = (preview: Preview, key: string): DetailCell => {
+    switch (key) {
+        case "purchase_orders":
+            return { count: preview.purchase_orders.count, items: referenceItems(preview.purchase_orders.references) }
+        case "stock_deliveries":
+            return { count: preview.stock_deliveries.count, items: referenceItems(preview.stock_deliveries.references) }
+        case "restock_requests":
+            return { count: preview.restock_requests, summary: preview.restock_requests ? ctrans("will be removed") : undefined, items: [] }
+        case "portfolios":
+            return {
+                count: preview.portfolios.count,
+                summary: preview.portfolios.count ? ctrans(":count customers", { count: preview.portfolios.customers }) : undefined,
+                items: Object.entries(preview.portfolios.by_platform).map(([platform, count]) => ({ label: capitalize(platform), value: count })),
+            }
+        case "external_shops":
+            return {
+                count: preview.external_shops.length,
+                items: preview.external_shops.map((listing) => ({ label: `${listing.shop_name}: ${listing.code}`, value: listing.status })),
+            }
+        case "webpages":
+            return { count: preview.webpages.count, items: preview.webpages.urls.map((url) => ({ label: url })) }
+        default:
+            return {
+                count: preview.orders.count,
+                summary: preview.orders.count ? ctrans(":quantity units", { quantity: locale.number(preview.orders.quantity) }) : undefined,
+                items: referenceItems(preview.orders.references),
+            }
+    }
+}
+
+const expandableKeys = computed(() =>
+    previews.value.flatMap((preview) => [
+        ...(Object.keys(preview.organisations).length ? [`${preview.id}:organisations`] : []),
+        ...detailColumns.value.filter((column) => detailCell(preview, column.key).items.length).map((column) => `${preview.id}:${column.key}`),
+    ])
+)
+const allExpanded = computed(() => expandableKeys.value.length > 0 && expandableKeys.value.every((key) => expanded.value[key]))
+const isExpanded = (preview: Preview, key: string) => !!expanded.value[`${preview.id}:${key}`]
+const toggleExpanded = (preview: Preview, key: string) => {
+    expanded.value[`${preview.id}:${key}`] = !isExpanded(preview, key)
+}
+const toggleAllExpanded = () => {
+    expanded.value = allExpanded.value ? {} : Object.fromEntries(expandableKeys.value.map((key) => [key, true]))
+}
 </script>
 
 <template>
@@ -195,73 +269,93 @@ const platformSummary = (byPlatform: Record<string, number>) =>
 
             <div v-else-if="errorMessage" class="text-red-600 text-sm" :class="{ 'flex-1': isFullscreen }">{{ errorMessage }}</div>
 
-            <div v-else class="overflow-auto" :class="isFullscreen ? 'min-h-0 flex-1' : 'max-h-[65vh]'">
-                <table class="min-w-full text-sm">
-                    <thead class="text-left text-gray-500 border-b border-gray-200">
+            <div v-else class="overflow-auto rounded-md border border-gray-200" :class="isFullscreen ? 'min-h-0 flex-1' : 'max-h-[65vh]'">
+                <table class="w-full text-sm">
+                    <thead class="sticky top-0 z-10 bg-gray-50 text-left text-xs text-gray-600 shadow-[0_1px_0_theme(colors.gray.200)]">
                         <tr>
-                            <th class="py-2 pr-3">{{ ctrans("SKO") }}</th>
-                            <th class="py-2 pr-3 text-right">{{ ctrans("Stock") }}</th>
-                            <th class="py-2 pr-3 text-right">{{ ctrans("Cover") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Purchase orders") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Deliveries") }}</th>
-                            <th class="py-2 pr-3" :title="ctrans('Open warehouse restock requests, removed when the SKO is discontinued')">{{ ctrans("Restock requests") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Portfolios") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Marketplaces") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Web pages") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Customer orders") }}</th>
-                            <th class="py-2 pr-3">{{ ctrans("Flags") }}</th>
+                            <th class="px-3 py-2">
+                                <div class="flex items-center gap-2">
+                                    {{ ctrans("SKO") }}
+                                    <button
+                                        v-if="expandableKeys.length"
+                                        type="button"
+                                        class="rounded px-1.5 py-0.5 font-medium text-[--app-accent] transition-colors hover:bg-[--app-accent-soft]"
+                                        @click="toggleAllExpanded"
+                                    >
+                                        {{ allExpanded ? ctrans("Hide all details") : ctrans("Show all details") }}
+                                    </button>
+                                </div>
+                            </th>
+                            <th class="px-3 py-2 text-right">{{ ctrans("Stock") }}</th>
+                            <th class="px-3 py-2 text-right">{{ ctrans("Cover") }}</th>
+                            <th v-for="column in detailColumns" :key="column.key" class="px-3 py-2" :title="column.title">{{ column.label }}</th>
+                            <th class="px-3 py-2">{{ ctrans("Flags") }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="preview in previews" :key="preview.id" class="border-b border-gray-100 align-top">
-                            <td class="py-2 pr-3">
+                        <tr v-for="preview in previews" :key="preview.id" class="border-b border-gray-100 align-top last:border-b-0">
+                            <td class="min-w-[15rem] px-3 py-2">
                                 <div class="font-medium">{{ preview.code }} — {{ preview.name }}</div>
-                                <div class="text-gray-400">
-                                    {{ stateLabel(preview.state) }} → {{ stateLabel(newStateFor(preview)) }}
+                                <div class="mt-1 flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold">
+                                    <span class="rounded px-1.5 py-0.5" :class="stateClasses[preview.state]">{{ stateLabel(preview.state) }}</span>
+                                    <span class="text-gray-400" aria-hidden="true">→</span>
+                                    <span class="rounded px-1.5 py-0.5" :class="stateClasses[newStateFor(preview)]">{{ stateLabel(newStateFor(preview)) }}</span>
                                 </div>
-                                <div class="text-xs text-gray-400">
-                                    <span v-for="(state, organisation) in preview.organisations" :key="organisation" class="mr-2">{{ organisation }}: {{ stateLabel(state) }}</span>
-                                </div>
+                                <template v-if="Object.keys(preview.organisations).length">
+                                    <button
+                                        type="button"
+                                        class="mt-1.5 flex items-center gap-1 text-xs text-gray-500 transition-colors hover:text-[--app-accent]"
+                                        :aria-expanded="isExpanded(preview, 'organisations')"
+                                        @click="toggleExpanded(preview, 'organisations')"
+                                    >
+                                        {{ ctrans("Current organisation status") }}
+                                        <FontAwesomeIcon :icon="faChevronDown" class="text-[10px] transition-transform" :class="{ 'rotate-180': isExpanded(preview, 'organisations') }" aria-hidden="true" />
+                                    </button>
+                                    <ul v-if="isExpanded(preview, 'organisations')" class="mt-1 space-y-1 text-xs">
+                                        <li v-for="(state, organisation) in preview.organisations" :key="organisation" class="flex items-center gap-2">
+                                            <span class="w-14 font-medium text-gray-700">{{ organisation }}:</span>
+                                            <span class="rounded px-1.5 py-0.5 font-semibold" :class="stateClasses[state]">{{ stateLabel(state) }}</span>
+                                        </li>
+                                    </ul>
+                                </template>
                             </td>
-                            <td class="py-2 pr-3 text-right tabular-nums">{{ locale.number(preview.quantity) }}</td>
-                            <td class="py-2 pr-3 text-right tabular-nums">
+                            <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">{{ locale.number(preview.quantity) }}</td>
+                            <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">
                                 {{ preview.days_of_cover === null ? "-" : ctrans(":days days", { days: preview.days_of_cover }) }}
                             </td>
-                            <td class="py-2 pr-3" :class="preview.purchase_orders.count ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.purchase_orders.count }}
-                                <div v-if="preview.purchase_orders.count" class="text-xs text-gray-500">{{ references(preview.purchase_orders) }}</div>
+                            <td v-for="column in detailColumns" :key="column.key" class="max-w-[15rem] px-3 py-2">
+                                <span v-if="!detailCell(preview, column.key).count" class="text-gray-400">0</span>
+                                <template v-else>
+                                    <component
+                                        :is="detailCell(preview, column.key).items.length ? 'button' : 'div'"
+                                        :type="detailCell(preview, column.key).items.length ? 'button' : undefined"
+                                        class="flex items-center gap-1.5 whitespace-nowrap text-left"
+                                        :class="{ 'rounded transition-colors hover:text-[--app-accent]': detailCell(preview, column.key).items.length }"
+                                        :aria-expanded="detailCell(preview, column.key).items.length ? isExpanded(preview, column.key) : undefined"
+                                        :aria-label="detailCell(preview, column.key).items.length ? ctrans('Show :column', { column: column.label }) : undefined"
+                                        @click="detailCell(preview, column.key).items.length && toggleExpanded(preview, column.key)"
+                                    >
+                                        <span class="font-semibold text-amber-700">{{ detailCell(preview, column.key).count }}</span>
+                                        <span v-if="detailCell(preview, column.key).summary" class="text-xs text-gray-500">{{ detailCell(preview, column.key).summary }}</span>
+                                        <FontAwesomeIcon
+                                            v-if="detailCell(preview, column.key).items.length"
+                                            :icon="faChevronDown"
+                                            class="text-[10px] text-gray-400 transition-transform"
+                                            :class="{ 'rotate-180': isExpanded(preview, column.key) }"
+                                            aria-hidden="true"
+                                        />
+                                    </component>
+                                    <ul v-if="isExpanded(preview, column.key)" class="mt-1 min-w-[11rem] list-disc space-y-1 pl-4 text-xs text-gray-600">
+                                        <li v-for="(item, index) in detailCell(preview, column.key).items" :key="index">
+                                            <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                                                <span class="break-words">{{ item.label }}</span>
+                                                <span v-if="item.value !== undefined" class="whitespace-nowrap font-medium tabular-nums text-gray-800">{{ item.value }}</span>
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </template>
                             </td>
-                            <td class="py-2 pr-3" :class="preview.stock_deliveries.count ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.stock_deliveries.count }}
-                                <div v-if="preview.stock_deliveries.count" class="text-xs text-gray-500">{{ references(preview.stock_deliveries) }}</div>
-                            </td>
-                            <td class="py-2 pr-3" :class="preview.restock_requests ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.restock_requests }}
-                                <div v-if="preview.restock_requests" class="text-xs text-gray-500">{{ ctrans("will be removed") }}</div>
-                            </td>
-                            <td class="py-2 pr-3" :class="preview.portfolios.count ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.portfolios.count }}
-                                <div v-if="preview.portfolios.count" class="text-xs text-gray-500">
-                                    {{ ctrans(":count customers", { count: preview.portfolios.customers }) }} · {{ platformSummary(preview.portfolios.by_platform) }}
-                                </div>
-                            </td>
-                            <td class="py-2 pr-3" :class="preview.external_shops.length ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.external_shops.length }}
-                                <div v-for="listing in preview.external_shops" :key="listing.shop_code + listing.code" class="text-xs text-gray-500">
-                                    {{ listing.shop_name }}: {{ listing.code }} ({{ listing.status }})
-                                </div>
-                            </td>
-                            <td class="py-2 pr-3" :class="preview.webpages.count ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.webpages.count }}
-                                <div v-for="url in preview.webpages.urls" :key="url" class="text-xs text-gray-500 break-all">{{ url }}</div>
-                            </td>
-                            <td class="py-2 pr-3" :class="preview.orders.count ? 'text-amber-700' : 'text-gray-400'">
-                                {{ preview.orders.count }}
-                                <div v-if="preview.orders.count" class="text-xs text-gray-500">
-                                    {{ ctrans(":quantity units", { quantity: locale.number(preview.orders.quantity) }) }} · {{ references(preview.orders) }}
-                                </div>
-                            </td>
-                            <td class="py-2 pr-3 text-xs text-gray-500">
+                            <td class="px-3 py-2 text-xs text-gray-500">
                                 <div v-if="preview.is_exclusive" class="text-purple-700">{{ ctrans("Exclusive range") }}</div>
                                 <div v-if="!preview.number_products">{{ ctrans("No products") }}</div>
                                 <div v-if="!preview.mailshots.known" v-tooltip="preview.mailshots.reason">{{ ctrans("Mailshots: check by hand") }}</div>
@@ -284,7 +378,8 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                     <input v-model="form.effective_at" type="date" class="w-full rounded-md border-gray-300 text-sm" />
                 </label>
                 <div class="text-sm">
-                    <span class="block text-gray-500 mb-1">
+                    <span class="mb-1 inline-flex items-center gap-1.5 rounded bg-[--app-accent-soft] px-2 py-1 font-medium text-gray-900">
+                        <FontAwesomeIcon :icon="faInfoCircle" class="text-[--app-accent]" fixed-width aria-hidden="true" />
                         {{ canChangeGroup ? ctrans("Applies to every organisation carrying this product") : ctrans("Applies to :organisation only", { organisation: homeOrganisation }) }}
                     </span>
                     <div v-if="canChangeGroup" class="flex flex-wrap gap-2">
@@ -298,7 +393,11 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                     </div>
                 </div>
                 <div class="md:col-span-3 text-sm">
-                    <span class="block text-gray-500 mb-1">{{ form.state === "active" ? ctrans("Reason (optional)") : ctrans("Reason (required)") }}</span>
+                    <span class="block text-gray-500 mb-1">
+                        {{ ctrans("Reason") }}
+                        <span v-if="form.state === 'active'" class="text-gray-400">{{ ctrans("(optional)") }}</span>
+                        <span v-else v-tooltip="ctrans('This is required')" class="cursor-help font-semibold text-red-600" :aria-label="ctrans('This is required')">*</span>
+                    </span>
                     <PureTextarea v-model="form.reason" :rows="2" full :placeholder="ctrans('Why this SKO changes state')" />
                 </div>
                 <div v-if="submitError" class="md:col-span-3 text-sm text-red-600">{{ submitError }}</div>
