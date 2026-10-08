@@ -295,6 +295,21 @@ Then say where each one goes in the same request as the new steps:
 
 If you really want to drop the ingredients and add them later, say so: *"drop the ingredients, I will add the recipe later"*. If you change your mind, the change can be undone (see below).
 
+## Safety checks
+
+Some changes are easy to get wrong by accident, so aiku stops them until you have seen what they do. The assistant then shows you a warning and changes nothing. If you read it and still want the change, say so (*"yes, I know, go ahead"*) and only then does it save.
+
+| aiku stops and warns when… | Example | What to check |
+|---|---|---|
+| a recipe change would **remove raw materials** from artefacts | replacing PROD on ACLB-01 drops RAWM-03, RAWM-05, RAWM-06, BOKG-03, FLKG-06 and CST-427 | Did you mean to drop them, or should they move to the new steps? |
+| a **whole family** is changed | *"the ACLB family"* turns out to be 11 artefacts, listed one by one | Is that the right family, and are the testers left out? |
+| a number looks like a **typo** | units per artefact 1667 instead of 0.1667; a target of 2,160 an hour; 500 kg of a raw material per artefact | Is the decimal point in the right place? |
+| a **unit cost** moves by more than half | RAWM-90 from 6.40 to 64.00 | Per kilo or per gram? |
+| an artefact is **renamed** | ACLB-14 becomes ACLB-14M | Labels and sheets still carry the old code. |
+| an artefact still in **open job orders** is made dormant or discontinued | ACLB-05 is in two open job orders | Those job orders are not cancelled by this. |
+
+One mistake is always refused: giving an artefact a **SKO that another artefact already has**. One SKO belongs to one artefact. That is how a half-made ACLB-08 ended up next to the real ACLB-08_. Edit the artefact that already has the SKO instead.
+
 ## Undoing a change
 
 Every change the assistant makes is logged: who asked, when, your exact words, and what it was before and after.

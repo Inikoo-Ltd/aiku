@@ -5426,6 +5426,7 @@ test('the ai assistant sets up artefacts, raw materials, tasks and recipes only 
         $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'manufacture_task', 'code' => $code.$suffix, 'create' => true, 'fields' => ['name' => $code], 'request_text' => 'add the tasks'])->assertOk();
     }
 
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'fields' => ['unit_cost' => 80], 'request_text' => 'beeswax is 80 now'])->assertHasErrors(['cost_jump']);
     $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'fields' => ['unit_cost' => 10], 'request_text' => 'beeswax is 10 now'])->assertOk();
     $costChange = \App\Models\SysAdmin\McpChange::latest('id')->first();
     expect($costChange->type)->toBe(\App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCTION_RECORD);
@@ -5437,6 +5438,8 @@ test('the ai assistant sets up artefacts, raw materials, tasks and recipes only 
     $recipe([['task' => 'POUR'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => 216, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.01]]], ['task' => 'PACK'.$suffix, 'units_per_artefact' => 0.1667, 'target_per_hour' => 11]])
         ->assertOk()->assertSee(['"task":"POUR'.$suffix.'"', '"target_per_hour":216', '"units_per_artefact":0.1667', '"materials_cost":0.08']);
     expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['POUR'.$suffix, 'PACK'.$suffix]);
+    $recipe([['task' => 'PACK'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null]])->assertHasErrors(['drop_raw_materials', 'AIRM-'.$suffix]);
+    expect($artefact->manufactureTasks()->count())->toBe(2);
 
     \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
     expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
@@ -5446,7 +5449,7 @@ test('the ai assistant sets up artefacts, raw materials, tasks and recipes only 
     $artefact->update(['artefact_family_id' => $family->id]);
     $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['families' => ['AIF'.$suffix], 'steps' => [['task' => 'POUR'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null,
         'raw_materials'          => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.01]],
-        'artefact_raw_materials' => [['artefact' => 'AI-'.$suffix, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.02]]]]]], 'request_text' => 'the whole family'])
+        'artefact_raw_materials' => [['artefact' => 'AI-'.$suffix, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.02]]]]]], 'request_text' => 'the whole family', 'accept' => ['change_1_artefacts', 'drop_raw_materials']])
         ->assertOk()->assertSee(['"code":"AI-'.$suffix.'"', '"quantity":0.02']);
     $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['families' => ['AIF'.$suffix], 'except' => ['AI-'.$suffix]])->assertHasErrors(['No artefacts left']);
 

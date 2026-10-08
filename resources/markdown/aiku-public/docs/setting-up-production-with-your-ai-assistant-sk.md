@@ -315,6 +315,21 @@ Vrátenie sa odmietne v dvoch prípadoch:
 
 Vrátiť môžete zmeny urobené v továrňach, ktoré smiete nastavovať. Administrátori vidia a môžu vrátiť každú zmenu zo záznamu zmien AI (<b>AI changes</b>).
 
+## Bezpečnostné kontroly
+
+Niektoré zmeny sa dajú ľahko pokaziť omylom, preto ich aiku zastaví, kým neuvidíte, čo urobia. Asistent vám vtedy ukáže upozornenie a nič nezmení. Ak si ho prečítate a zmenu napriek tomu chcete, povedzte to (*"áno, viem, pokračuj"*) a až potom sa uloží.
+
+| aiku zastaví a upozorní, keď… | Príklad | Čo skontrolovať |
+|---|---|---|
+| zmena receptúry by artefaktom **odobrala suroviny** | nahradenie PROD pri ACLB-01 odoberie RAWM-03, RAWM-05, RAWM-06, BOKG-03, FLKG-06 a CST-427 | Chceli ste ich odobrať, alebo majú prejsť na nové kroky? |
+| mení sa **celá rodina** | *"rodina ACLB"* má 11 artefaktov, vypísaných jeden po druhom | Je to správna rodina a sú testery vynechané? |
+| číslo vyzerá ako **preklep** | jednotky na artefakt 1667 namiesto 0.1667; cieľ 2 160 za hodinu; 500 kg suroviny na artefakt | Je desatinná bodka na správnom mieste? |
+| **jednotková cena** sa zmení o viac ako polovicu | RAWM-90 zo 6.40 na 64.00 | Za kilogram alebo za gram? |
+| artefakt sa **premenuje** | z ACLB-14 bude ACLB-14M | Etikety a hárky stále nesú starý kód. |
+| artefakt, ktorý je ešte v **otvorených výrobných príkazoch**, sa nastaví ako dormant alebo discontinued | ACLB-05 je v dvoch otvorených výrobných príkazoch | Tieto príkazy sa tým nezrušia. |
+
+Jedna chyba sa odmietne vždy: priradiť artefaktu **SKO, ktoré už má iný artefakt**. Jedno SKO patrí jednému artefaktu. Práve tak vznikol nedokončený ACLB-08 vedľa skutočného ACLB-08_. Upravte radšej artefakt, ktorý toto SKO už má.
+
 ## Ako sa pýtať dobre
 
 | Namiesto | Povedzte | Prečo |
