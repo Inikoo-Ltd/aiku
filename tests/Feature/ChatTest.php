@@ -10669,6 +10669,39 @@ test('the customer picker for a new email only offers customers with an address'
         ->and($total([]) - $total(['filter[has_email]' => 1]))->toBe($withoutEmail);
 });
 
+test('searching the new email customer picker by an email does not match phones on the digits inside it', function () {
+    $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $owner->update(['email' => 'picker.tommy68@example.com', 'phone' => '+44 7700 900111']);
+    $phoneOnDigits = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $phoneOnDigits->update(['email' => 'unrelated.picker@example.com', 'phone' => '+689 87 12 34 56']);
+
+    actingAs($this->user);
+
+    $ids = fn (string $search) => collect($this->get(route('grp.json.shop.customers', [
+        'shop'           => $this->shop->id,
+        'filter[global]' => $search,
+    ]))->assertOk()->json('data'))->pluck('id');
+
+    expect($ids('picker.tommy68@example.com')->all())->toBe([$owner->id])
+        ->and($ids('68987')->all())->toContain($phoneOnDigits->id);
+});
+
+test('the new email customer picker lists word-start matches before names that only contain the search', function () {
+    $startsWithSearch = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $startsWithSearch->update(['name' => 'Older Shop', 'email' => 'zqpicker@example.com']);
+    $containsSearch = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $containsSearch->update(['name' => 'Pickerzq Holisticszq', 'email' => 'contains.zq@example.com']);
+
+    actingAs($this->user);
+
+    $ids = collect($this->get(route('grp.json.shop.customers', [
+        'shop'           => $this->shop->id,
+        'filter[global]' => 'zq',
+    ]))->assertOk()->json('data'))->pluck('id')->all();
+
+    expect(array_search($startsWithSearch->id, $ids))->toBeLessThan(array_search($containsSearch->id, $ids));
+});
+
 test('a customer replying to a closed email conversation puts it back in the waiting queue', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
 
