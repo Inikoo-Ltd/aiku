@@ -36,9 +36,19 @@ class IndexStaffTasks extends OrgAction
         return $request->user() !== null;
     }
 
+    protected function section(): ?string
+    {
+        return str_ends_with((string) request()->route()?->getName(), '.review') ? StaffTask::SECTION_REVIEW : null;
+    }
+
+    protected function sectionQuery(Group|Organisation $parent, User $viewer): \Illuminate\Database\Eloquent\Builder
+    {
+        return StaffTask::query()->within($parent)->visibleTo($viewer)->inSection($this->section());
+    }
+
     protected function getElementGroups(Group|Organisation $parent, User $viewer): array
     {
-        $base = StaffTask::query()->within($parent)->visibleTo($viewer);
+        $base = $this->sectionQuery($parent, $viewer);
 
         return [
             'status' => [
@@ -65,7 +75,7 @@ class IndexStaffTasks extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for($this->applyAssigneeFilter(StaffTask::query()->within($parent)->visibleTo($viewer), $viewer, $this->appliedAssigneeFilter()))
+        $queryBuilder = QueryBuilder::for($this->applyAssigneeFilter($this->sectionQuery($parent, $viewer), $viewer, $this->section() ? 'all' : $this->appliedAssigneeFilter()))
             ->with(['requester.image', 'assignee.image', 'collaborators', 'conversation']);
 
         foreach ($this->getElementGroups($parent, $viewer) as $key => $elementGroup) {
@@ -123,7 +133,13 @@ class IndexStaffTasks extends OrgAction
                 ->withLabelRecord([__('task'), __('tasks')])
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
-                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
+                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px');
+
+            if ($this->section()) {
+                $table->column(key: 'lines', label: __('To publish'), canBeHidden: false, className: 'whitespace-nowrap w-px text-right');
+            }
+
+            $table
                 ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center')
                 ->column(key: 'requester', label: __('Requester'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
                 ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
@@ -140,14 +156,16 @@ class IndexStaffTasks extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $staffTasks, ActionRequest $request): Response
     {
+        $title = $this->section() ? __('To review & publish') : __('All tasks');
+
         return Inertia::render(
             'Tasks/StaffTasksIndex',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('All tasks'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title' => __('All tasks'),
-                    'icon'  => ['fal', 'fa-tasks'],
+                    'title' => $title,
+                    'icon'  => $this->section() ? ['fal', 'fa-clipboard-check'] : ['fal', 'fa-tasks'],
                 ],
                 'data'        => StaffTasksResource::collection($staffTasks),
                 'listSummary' => $this->listSummary($this->tasksListParent(), $request->user()),
@@ -164,7 +182,7 @@ class IndexStaffTasks extends OrgAction
      */
     public function listSummary(Group|Organisation $parent, User $viewer): array
     {
-        $counts = StaffTask::query()->within($parent)->visibleTo($viewer)->toBase()
+        $counts = $this->sectionQuery($parent, $viewer)->toBase()
             ->selectRaw('staff_tasks.status, count(*) as total')
             ->groupBy('staff_tasks.status')
             ->pluck('total', 'status');
@@ -182,8 +200,8 @@ class IndexStaffTasks extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => $this->tasksRoute('list_all'),
-                        'label' => __('All'),
+                        'route' => $this->tasksRoute($this->section() ? 'review' : 'list_all'),
+                        'label' => $this->section() ? __('To review & publish') : __('All'),
                     ],
                 ],
             ]

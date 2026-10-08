@@ -821,6 +821,15 @@ class GetShopNavigation
                         ],
                     ],
                     [
+                        "label" => __("To review & publish"),
+                        "icon"  => ["fal", "fa-clipboard-check"],
+                        "root"  => "grp.org.shops.show.tasks.review",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.review",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
                         "label" => __("Board"),
                         "icon"  => ["fal", "fa-columns"],
                         "root"  => "grp.org.shops.show.tasks.board",

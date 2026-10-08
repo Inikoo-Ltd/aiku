@@ -13168,3 +13168,115 @@ test('the marketing folder lists what the shop sent its customers lately and sho
         ->assertOk()
         ->assertJsonPath('html', '<p>15% off incense</p>');
 });
+
+test('a change to a live page becomes a line on its shop review task for the shopkeeper, or the webmasters when the shopkeeper made it, and publishing ticks it off', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $shopkeeper   = $newColleague();
+    $changer      = $newColleague();
+    $settings     = $this->shop->settings;
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', $shopkeeper->id);
+    $this->shop->update(['settings' => $settings]);
+
+    \App\Models\Tasks\StaffTask::open()->where('data->kind', 'webpage_review')->where('data->shop_id', $this->shop->id)->update(['status' => 'cancelled', 'closed_at' => now()]);
+    [$home, $other] = \App\Models\Web\Webpage::where('shop_id', $this->shop->id)->orderBy('id')->take(2)->get()->all();
+    \App\Models\Web\Webpage::whereIn('id', [$home->id, $other->id])->update(['state' => \App\Enums\Web\Webpage\WebpageStateEnum::LIVE->value]);
+
+    $task = \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($home->fresh(), $changer);
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($home->fresh(), $changer);
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($other->fresh(), $shopkeeper);
+    $task->refresh();
+
+    expect($task->requester->username)->toBe(\App\Actions\Tasks\GetAikuAssistant::USERNAME)
+        ->and($task->requester->status)->toBeFalse()
+        ->and($task->isReview())->toBeTrue()
+        ->and($task->assignee_id)->toBe($shopkeeper->id)
+        ->and(collect($task->data['subtasks'])->pluck('status')->all())->toBe(['todo', 'todo']);
+
+    $badges = \App\Actions\Tasks\GetStaffTaskBadgeData::run($shopkeeper);
+    expect($badges['review']['open'])->toBe(2)
+        ->and(collect($badges['review']['tasks'])->pluck('reference'))->toContain($task->reference)
+        ->and($badges['mine']['todo']['count'])->toBe(0);
+
+    actingAs($shopkeeper);
+    get(route('grp.tasks.review'))->assertInertia(fn (AssertableInertia $page) => $page->where('title', 'To review & publish')->where('data.data.0.reference', $task->reference)->where('data.data.0.lines', '2 / 2'));
+    get(route('grp.tasks.list_all', ['filter' => ['assignee' => 'all']]))->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => !collect($rows)->contains('reference', $task->reference)));
+
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::make()->tickPublished($home->fresh());
+    expect(collect($task->fresh()->data['subtasks'])->pluck('status')->all())->toBe(['done', 'todo'])
+        ->and($task->fresh()->isOpen())->toBeTrue();
+
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::make()->tickPublished($other->fresh());
+    expect($task->fresh()->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::DONE);
+
+    $byShopkeeper = \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($home->fresh(), $shopkeeper);
+    expect($byShopkeeper->id)->not->toBe($task->id)
+        ->and($byShopkeeper->assignee_id)->toBeNull()
+        ->and($byShopkeeper->department)->toBe('webmaster');
+});
+
+test('daily sales tasks go to the shopkeeper in charge, or the webmasters, quietly, and replace the ones nobody started', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
+    \Illuminate\Support\Facades\Notification::fake();
+    $groupId    = $this->organisation->group_id;
+    $shopkeeper = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    $settings   = $this->shop->settings;
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', $shopkeeper->id);
+    $this->shop->update(['settings' => $settings]);
+
+    $customer = createCustomer($this->shop);
+    $basket   = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'BASKET-'.Str::random(6),
+        'date'             => now()->toDateString(),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \Illuminate\Support\Facades\DB::table('orders')->where('id', $basket->id)->update(['state' => 'creating', 'net_amount' => 1000000, 'org_net_amount' => 1000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
+
+    $first = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop, withAi: false);
+    $task  = \App\Models\Tasks\StaffTask::where('reference', $first['sales_open_baskets'])->firstOrFail();
+
+    expect($task->assignee_id)->toBe($shopkeeper->id)
+        ->and($task->department)->toBeNull()
+        ->and($task->requester->username)->toBe(\App\Actions\Tasks\GetAikuAssistant::USERNAME)
+        ->and($task->data['order_ids'][0])->toBe($basket->id)
+        ->and($task->description)->toContain($basket->reference)
+        ->and(\App\Actions\Tasks\GetStaffTaskBadgeData::run($shopkeeper)['mine']['todo']['count'])->toBeGreaterThanOrEqual(1);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($shopkeeper, \App\Notifications\StaffTaskNotification::class);
+
+    \App\Actions\Tasks\GenerateDailySalesTasks::make()->notifyMorning(array_values(array_filter($first)));
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($shopkeeper, \App\Notifications\StaffTaskNotification::class, 1);
+    \Illuminate\Support\Facades\Notification::assertSentTo($shopkeeper, \App\Notifications\StaffTaskNotification::class, fn ($notification) => str_contains($notification->title, 'sales task') && $notification->toArray($shopkeeper)['route'] === route('grp.tasks.index'));
+
+    if (!\Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'webmaster')->exists()) {
+        $webmaster = \App\Models\HumanResources\JobPosition::where('group_id', $groupId)->where('code', 'not like', '%-m')->orderBy('id')->firstOrFail()->replicate();
+        $webmaster->fill(['code' => 'gp-wm-t', 'slug' => 'gp-wm-t-'.$groupId, 'name' => 'Webmaster test', 'department' => 'webmaster'])->save();
+    }
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', null);
+    $this->shop->update(['settings' => $settings]);
+
+    $second   = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false);
+    $fallback = \App\Models\Tasks\StaffTask::where('reference', $second['sales_open_baskets'])->firstOrFail();
+    expect($task->fresh()->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::CANCELLED)
+        ->and($fallback->assignee_id)->toBeNull()
+        ->and($fallback->department)->toBe('webmaster');
+});
+
+test('a department task raised for one organisation reaches only that organisation\'s people in the department', function () {
+    $groupId  = $this->organisation->group_id;
+    $position = \App\Models\HumanResources\JobPosition::where('organisation_id', $this->organisation->id)->whereNotNull('department')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->where('code', 'not like', '%-m')->firstOrFail();
+    $member   = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    foreach ([$member, $outsider] as $user) {
+        \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $user->id, 'job_position_id' => $position->id, 'group_id' => $groupId, 'scopes' => '{}']);
+    }
+    \Illuminate\Support\Facades\DB::table('user_has_authorised_models')->insert(['user_id' => $member->id, 'model_type' => 'Organisation', 'model_id' => $this->organisation->id, 'org_id' => $this->organisation->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run(\App\Actions\Tasks\GetAikuAssistant::run($groupId), ['subject' => 'For one organisation', 'department' => $position->department, 'data' => ['organisation_id' => $this->organisation->id]]);
+    $sees = fn (\App\Models\SysAdmin\User $user) => \App\Models\Tasks\StaffTask::query()->visibleTo($user)->whereKey($task->id)->exists();
+
+    expect(\App\Models\Tasks\StaffTask::seesEveryTask($outsider))->toBeFalse()
+        ->and($sees($member))->toBeTrue()
+        ->and($sees($outsider))->toBeFalse();
+});

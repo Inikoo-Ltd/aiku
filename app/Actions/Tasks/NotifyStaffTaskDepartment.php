@@ -27,7 +27,7 @@ class NotifyStaffTaskDepartment
             return 0;
         }
 
-        $members = StaffTask::departmentMembers($task->requester ?? $actor, $task->department)
+        $members = StaffTask::departmentMembers($task->requester ?? $actor, $task->department, $task->data['organisation_id'] ?? null)
             ->reject(fn (User $member) => in_array($member->id, [$actor->id, $task->requester_id], true))
             ->filter(fn (User $member) => StaffTask::canBeAssigned($member))
             ->values();
