@@ -86,6 +86,9 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\OrgStock;
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -2129,6 +2132,63 @@ describe('calculate order discounts', function () {
         DB::table('transaction_has_offer_allowances')->whereIn('transaction_id', $giftTransactions->pluck('id'))->delete();
         $giftTransactions->each->forceDelete();
         $giftProduct->update(['state' => ProductStateEnum::ACTIVE]);
+    });
+
+    test('discontinued stock offer giving as many as it asks for needs the staff to accept responsibility', function () {
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->firstOrFail();
+        $giftProduct->update(['state' => ProductStateEnum::DISCONTINUING, 'available_quantity' => 5, 'is_for_sale' => true, 'exclusive_for_customer_id' => null, 'is_on_demand' => false]);
+        $offerData = [
+            'type'                       => 'quantity',
+            'trigger_data_item_quantity' => 1,
+            'free_quantity'              => 2,
+            'duration'                   => 'permanent',
+            'start_at'                   => now(),
+        ];
+
+        expect(fn () => StoreProductCategoryDiscount::make()->action($giftProduct->family, $offerData))->toThrow(ValidationException::class)
+            ->and(fn () => StoreProductCategoryDiscount::make()->action($giftProduct->family, [...$offerData, 'accept_responsibility' => 'yes']))->toThrow(ValidationException::class);
+
+        $offer = StoreProductCategoryDiscount::make()->action($giftProduct->family, [...$offerData, 'accept_responsibility' => ' i accept RESPONSIBILITY ']);
+
+        expect($offer->type)->toBe('Gift')
+            ->and($offer->status)->toBeTrue();
+
+        FinishOffer::run($offer, false);
+        $giftProduct->update(['state' => ProductStateEnum::ACTIVE]);
+    });
+
+    test('discontinued stock offer: an active product whose SKOs are all discontinuing is a candidate, unless not for sale, exclusive or on demand', function () {
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->firstOrFail();
+        $giftProduct->update([
+            'state'                     => ProductStateEnum::ACTIVE,
+            'available_quantity'        => 5,
+            'is_for_sale'               => true,
+            'exclusive_for_customer_id' => null,
+            'is_on_demand'              => false,
+        ]);
+        $orgStock = OrgStock::where('organisation_id', $this->shop->organisation_id)
+            ->where('state', OrgStockStateEnum::ACTIVE)
+            ->whereNotIn('id', $giftProduct->orgStocks()->pluck('org_stocks.id'))
+            ->orderByDesc('id')
+            ->firstOrFail();
+        $giftProduct->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+        $isCandidate = fn () => GetDiscontinuingProductsInFamily::run($giftProduct->family)->pluck('id')->contains($giftProduct->id);
+
+        expect($isCandidate())->toBeFalse();
+
+        $orgStock->update(['state' => OrgStockStateEnum::DISCONTINUING]);
+        expect($isCandidate())->toBeTrue();
+
+        $giftProduct->update(['is_for_sale' => false]);
+        expect($isCandidate())->toBeFalse();
+        $giftProduct->update(['is_for_sale' => true, 'exclusive_for_customer_id' => $this->customer->id]);
+        expect($isCandidate())->toBeFalse();
+        $giftProduct->update(['exclusive_for_customer_id' => null, 'is_on_demand' => true]);
+        expect($isCandidate())->toBeFalse();
+
+        $giftProduct->update(['is_on_demand' => false]);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $giftProduct->orgStocks()->detach($orgStock->id);
     });
 
     test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {

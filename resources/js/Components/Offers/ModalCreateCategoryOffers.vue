@@ -4,7 +4,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch, nextTick } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import { InputNumber, RadioButton, DatePicker, Select } from 'primevue'
+import { InputNumber, InputText, RadioButton, DatePicker, Select } from 'primevue'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from '@/Composables/useTrans'
@@ -14,10 +14,10 @@ import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import axios from 'axios'
 import {
-    faSpinner
+    faSpinner, faExclamationTriangle
 } from "@fas";
 library.add(
-    faSpinner
+    faSpinner, faExclamationTriangle
 );
 
 const props = defineProps<{
@@ -77,6 +77,11 @@ const selectedFamilyId = computed<number | null>(() => {
 const canOfferFreeStock = computed(() => !!selectedFamilyId.value && typeOffer.value === 'quantity')
 const isFreeStock = computed(() => canOfferFreeStock.value && discountMode.value === 'free_stock')
 
+const responsibilityPhrase = 'I accept responsibility'
+const acceptResponsibility = ref('')
+const isGivingAwayTooMuch = computed(() => isFreeStock.value && !!freeQuantity.value && (offerQtyItems.value ?? 0) <= freeQuantity.value)
+const hasAcceptedResponsibility = computed(() => acceptResponsibility.value.trim().toLowerCase() === responsibilityPhrase.toLowerCase())
+
 watch([isFreeStock, selectedFamilyId], () => {
     freeProductId.value = null
     discontinuingProducts.value = []
@@ -128,6 +133,7 @@ const submitCategoryOffer = () => {
             percentage_off: !isFreeStock.value && discountPercentage.value != null ? discountPercentage.value / 100 : null,
             free_quantity: isFreeStock.value ? freeQuantity.value : null,
             free_product_id: isFreeStock.value ? freeProductId.value : null,
+            accept_responsibility: isGivingAwayTooMuch.value ? acceptResponsibility.value : null,
             target_product_category_id: !isFreeStock.value && discountTarget.value === 'other' ? targetCategoryId.value : null,
             combine: isCombinedOffer.value,
             duration: dateType.value,
@@ -210,6 +216,7 @@ const resetForm = () => {
     discountMode.value = 'percentage'
     freeQuantity.value = null
     freeProductId.value = null
+    acceptResponsibility.value = ''
     offerQtyItems.value = 1
     offerAmount.value = 0
     categoryType.value = 'department'
@@ -230,6 +237,7 @@ const isFormInvalid = computed(() => {
 
     if (isFreeStock.value) {
         if (!freeQuantity.value || !discontinuingProducts.value.length) return true
+        if (isGivingAwayTooMuch.value && !hasAcceptedResponsibility.value) return true
     } else {
         if (!discountPercentage.value) return true
 
@@ -447,6 +455,26 @@ resetForm();
                         <Select v-else v-model="freeProductId" :options="discontinuingProducts" optionLabel="label"
                             optionValue="id" showClear class="w-full"
                             :placeholder="ctrans('Let the system choose, cheapest first')" />
+
+                        <div v-if="isGivingAwayTooMuch" class="rounded-lg border-2 border-red-500 bg-red-50 p-4 space-y-3 text-red-800">
+                            <div class="flex items-start gap-x-3">
+                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-3xl text-red-600 mt-1" fixed-width />
+                                <div class="space-y-2">
+                                    <div class="text-lg font-bold uppercase">{{ ctrans('Warning: you are about to give stock away') }}</div>
+                                    <div class="font-semibold">
+                                        {{ ctrans('Customers will get :free free products for buying only :quantity from this family. Almost every order with this family will get free products.', { free: String(freeQuantity), quantity: String(offerQtyItems ?? 0) }) }}
+                                    </div>
+                                    <div>
+                                        {{ ctrans('We strongly advise you not to do this. The minimum quantity should be much higher than the free quantity (for example buy 24, get 2 free).') }}
+                                    </div>
+                                    <div>
+                                        {{ ctrans('If you still want to save it, type :phrase below.', { phrase: responsibilityPhrase }) }}
+                                    </div>
+                                </div>
+                            </div>
+                            <InputText v-model="acceptResponsibility" fluid :placeholder="responsibilityPhrase"
+                                :invalid="!hasAcceptedResponsibility" />
+                        </div>
                     </div>
 
                 </div>
