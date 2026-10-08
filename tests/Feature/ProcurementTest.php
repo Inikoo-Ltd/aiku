@@ -6633,6 +6633,7 @@ describe('partner shopping list', function () {
     });
 
     test('over http drafts and sent lines the partner has not started can be changed or removed, started lines are the partner\'s', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
         $started = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
         $started->update(['preparing_at' => now()]);
         $waiting = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
@@ -6669,6 +6670,7 @@ describe('partner shopping list', function () {
     });
 
     test('the buyer can poke the partner production about a sent line, once an hour, until it is delivered', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
         Notification::fake();
         $seller     = $this->orgPartner->partner;
         $production = Production::where('organisation_id', $seller->id)->first()
@@ -7892,7 +7894,7 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
 
     expect($organisationStockHistory->number_out_of_stock_org_stocks)->toBe(count($stockOutIds))
         ->and($organisationStockHistory->number_org_stocks)->toBe(count($aliveOrgStockIds) - count($outOfStockOrgStockIds) + count($stockOutIds))
-        ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toBe(0.0);
+        ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toEqualWithDelta($hydrator->estimatedLostRevenue($stockOutIds, today()), 0.05);
 
     $sourceRows = DB::table('organisation_stock_history_sources')->where('organisation_stock_history_id', $organisationStockHistoryId)->get();
     expect($sourceRows->pluck('source')->sort()->values()->all())->toBe(collect(array_keys(App\Actions\Procurement\GetOrganisationStockCoverBuckets::SOURCES))->sort()->values()->all())

@@ -4979,6 +4979,7 @@ test('breaks belong to the artisan, are capped at their planned length and only 
 });
 
 test('a break clocks a clocked in artisan out and back in, and leaves one who is not clocked in alone', function () {
+    $this->travelTo(now($this->organisation->timezone?->name ?? 'UTC')->setTime(9, 0));
     $employee = StoreEmployee::make()->action($this->organisation, array_merge(Employee::factory()->definition(), [
         'worker_number'   => 'BRK-'.uniqid(),
         'alias'           => 'brk'.uniqid(),

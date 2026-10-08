@@ -71,7 +71,6 @@ use App\Models\Web\CruxRecord;
 use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
 use App\Actions\Web\Webpage\GetWebpageSeo;
-use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -2392,6 +2391,23 @@ test('ads testing webpage metrics are read from the page views already recorded'
         'updated_at'         => now(),
     ]);
 
+    DB::table('website_conversion_events')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $engagedVisitor,
+        'webpage_id'         => null,
+        'landing_webpage_id' => $adsTestingWebpage->id,
+        'event_type'         => WebsiteConversionEventTypeEnum::PURCHASE->value,
+        'quantity'           => 1,
+        'page_url'           => 'https://test/checkout',
+        'page_path'          => '/checkout',
+        'event_date'         => now()->toDateString(),
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
     $metrics = GetWebpageEngagementMetrics::run($adsTestingWebpage);
 
     expect($metrics['page_views'])->toBe(2)
@@ -2402,14 +2418,14 @@ test('ads testing webpage metrics are read from the page views already recorded'
         ->and($metrics['bounce_rate'])->toBe(50.0)
         ->and($metrics['timed_page_views'])->toBe(1)
         ->and($metrics['avg_time_on_page'])->toBe(40)
-        ->and($metrics['days'])->toBe(PruneWebsitePageViews::RETENTION_DAYS);
+        ->and($metrics['days'])->toBe(GetWebpageEngagementMetrics::DEFAULT_DAYS);
 
     // The chart is drawn from a row per day, including the days nothing happened on, and the last
     // one is today: a rate is left empty on a day with no views rather than drawn as nought.
     $today     = collect($metrics['history'])->last();
     $yesterday = collect($metrics['history'])->firstWhere('date', now()->subDay()->toDateString());
 
-    expect($metrics['history'])->toHaveCount(PruneWebsitePageViews::RETENTION_DAYS)
+    expect($metrics['history'])->toHaveCount(GetWebpageEngagementMetrics::DEFAULT_DAYS)
         ->and($today['date'])->toBe(now()->toDateString())
         ->and($today['page_views'])->toBe(2)
         ->and($today['conversion_rate'])->toBe(50.0)

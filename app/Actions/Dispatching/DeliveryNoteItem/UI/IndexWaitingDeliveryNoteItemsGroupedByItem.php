@@ -77,7 +77,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByItem extends OrgAction
             )
             ->allowedSorts(['org_stock_code', 'org_stock_name', 'picking_position'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

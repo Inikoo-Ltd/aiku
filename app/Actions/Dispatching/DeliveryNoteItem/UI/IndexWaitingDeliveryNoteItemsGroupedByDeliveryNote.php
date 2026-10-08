@@ -82,7 +82,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['delivery_note_reference'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

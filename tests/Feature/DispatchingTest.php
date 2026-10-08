@@ -1357,14 +1357,14 @@ test('UI dispatching item and courier index pages', function () {
 });
 
 test('waiting items list premium dispatch delivery notes first', function () {
-    $state = App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING;
+    $state = \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING;
 
     foreach (['warehouse', 'crm'] as $waitingType) {
-        $byDeliveryNote = App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->handle($this->warehouse, $waitingType, $state)
+        $byDeliveryNote = \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->handle($this->warehouse, $waitingType, $state)
             ->getCollection()->pluck('delivery_note_is_premium_dispatch')->map(fn ($isPremium) => (bool)$isPremium)->all();
-        $itemized = App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsItemized::make()->handle($this->warehouse, $waitingType, $state)
+        $itemized = \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsItemized::make()->handle($this->warehouse, $waitingType, $state)
             ->getCollection()->pluck('delivery_note_is_premium_dispatch')->map(fn ($isPremium) => (bool)$isPremium)->all();
-        $byItem = App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsGroupedByItem::make()->handle($this->warehouse, $waitingType, $state)
+        $byItem = \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsGroupedByItem::make()->handle($this->warehouse, $waitingType, $state)
             ->getCollection()->pluck('has_premium_dispatch')->map(fn ($isPremium) => (bool)$isPremium)->all();
 
         foreach ([$byDeliveryNote, $itemized, $byItem] as $flags) {
