@@ -8,7 +8,9 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +39,10 @@ class SplitPickingByBatch
             $lines = $this->linesByBatch($picking);
             if ($lines === []) {
                 return;
+            }
+
+            foreach (array_filter(array_column($lines, 'batch_code_id')) as $batchCodeId) {
+                BatchCodeHydrateDeliveryNotes::dispatch(BatchCode::find($batchCodeId))->afterCommit();
             }
 
             if (count($lines) === 1) {

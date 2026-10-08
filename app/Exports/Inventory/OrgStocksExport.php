@@ -27,7 +27,7 @@ class OrgStocksExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
     public function query(): Builder
     {
         $batchesOnHand = DB::table('org_stock_movement_batches')
-            ->groupBy('org_stock_id', 'batch_code_id')
+            ->groupBy('org_stock_id', 'batch_code_id', 'location_id')
             ->havingRaw('sum(quantity) > 0.000001')
             ->selectRaw('org_stock_id, batch_code_id, sum(quantity) as quantity');
 
