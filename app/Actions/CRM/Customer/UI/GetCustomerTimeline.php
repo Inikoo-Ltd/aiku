@@ -367,6 +367,19 @@ class GetCustomerTimeline
                             'quantity'   => $activity->quantity,
                         ],
                     ]),
+                    CustomerWebActivityTypeEnum::Checkout => $events->push([
+                        'id'        => "web_checkout_{$activity->id}",
+                        'type'      => 'checkout',
+                        'timestamp' => $timestamp,
+                        'datetime'  => $timestamp->toIso8601String(),
+                        'title'     => __('Checkout started'),
+                        'subtitle'  => $activity->page_path,
+                        'icon'      => ['fal', 'fa-cash-register'],
+                        'color'     => 'green',
+                        'metadata'  => [
+                            'page_path' => $activity->page_path,
+                        ],
+                    ]),
                     CustomerWebActivityTypeEnum::PageView => $events->push([
                         'id'        => "web_page_view_{$activity->id}",
                         'type'      => 'page_view',

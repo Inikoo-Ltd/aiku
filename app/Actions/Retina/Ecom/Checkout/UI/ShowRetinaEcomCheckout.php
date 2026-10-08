@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
 use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
+use App\Actions\Web\WebsiteConversionEvent\RecordOrderCheckoutConversionEvent;
 use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning;
@@ -89,6 +90,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
             ];
         } else {
             CaptureOrderGoogleAnalyticsClient::run($order, $request);
+            RecordOrderCheckoutConversionEvent::run($order, $request);
 
             return $this->handle($this->customer);
         }
