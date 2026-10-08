@@ -6,7 +6,8 @@ import { faCopy, faCheck } from "@fal"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import DialogButton from "@/Components/Websites/WebsiteDialog/Templates/DialogButton.vue"
-import { hasText, useDialogTemplate } from "@/Components/Websites/WebsiteDialog/Templates/useDialogTemplate"
+import DialogText from "@/Components/Websites/WebsiteDialog/Templates/DialogText.vue"
+import { useDialogTemplate } from "@/Components/Websites/WebsiteDialog/Templates/useDialogTemplate"
 import type { WebsiteDialogTemplateData } from "@/types/WebsiteDialog"
 
 library.add(faCopy, faCheck)
@@ -46,17 +47,17 @@ const copyCode = async () => {
         <div class="h-1.5 w-full" :style="{ background: accent }" />
 
         <div class="flex flex-col items-center gap-y-3 px-8 pb-9 pt-8 text-center sm:px-10">
-            <div
-                v-if="hasText(fields.eyebrow?.text) || isEditable"
+            <DialogText
+                fieldKey="eyebrow"
+                :dialogData="dialogData"
+                :isEditable="isEditable"
                 class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
                 :style="{ background: accentSoft, color: accent }"
-                v-bind="editable('eyebrow')"
-                v-html="fields.eyebrow?.text || '&nbsp;'"
             />
 
-            <div v-if="hasText(fields.title?.text)" class="w-full text-2xl leading-tight sm:text-3xl" v-bind="editable('title')" v-html="fields.title?.text" />
+            <DialogText fieldKey="title" :dialogData="dialogData" :isEditable="isEditable" class="w-full text-2xl leading-tight sm:text-3xl" />
 
-            <div v-if="hasText(fields.description?.text)" class="w-full text-base leading-relaxed opacity-80" v-bind="editable('description')" v-html="fields.description?.text" />
+            <DialogText fieldKey="description" :dialogData="dialogData" :isEditable="isEditable" class="w-full text-base leading-relaxed opacity-80" />
 
             <div
                 v-if="fields.coupon?.code || isEditable"
@@ -88,7 +89,7 @@ const copyCode = async () => {
                 <DialogButton :button="fields.button" :screenType="screenType" :isEditable="isEditable" />
             </div>
 
-            <div v-if="hasText(fields.note?.text)" class="mt-1 w-full text-xs opacity-60" v-bind="editable('note')" v-html="fields.note?.text" />
+            <DialogText fieldKey="note" :dialogData="dialogData" :isEditable="isEditable" class="mt-1 w-full text-xs opacity-60" />
         </div>
     </div>
 </template>

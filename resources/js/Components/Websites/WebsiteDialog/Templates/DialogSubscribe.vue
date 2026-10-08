@@ -8,7 +8,8 @@ import { faCheckCircle } from "@fas"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { hasText, useDialogTemplate } from "@/Components/Websites/WebsiteDialog/Templates/useDialogTemplate"
+import DialogText from "@/Components/Websites/WebsiteDialog/Templates/DialogText.vue"
+import { useDialogTemplate } from "@/Components/Websites/WebsiteDialog/Templates/useDialogTemplate"
 import type { WebsiteDialogTemplateData } from "@/types/WebsiteDialog"
 
 library.add(faEnvelope, faCheckCircle)
@@ -73,17 +74,17 @@ const onSubmit = async () => {
                 <FontAwesomeIcon icon="fal fa-envelope" fixed-width aria-hidden="true" />
             </div>
 
-            <div
-                v-if="hasText(fields.eyebrow?.text) || isEditable"
+            <DialogText
+                fieldKey="eyebrow"
+                :dialogData="dialogData"
+                :isEditable="isEditable"
                 class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
                 :style="{ background: accentSoft, color: accent }"
-                v-bind="editable('eyebrow')"
-                v-html="fields.eyebrow?.text || '&nbsp;'"
             />
 
-            <div v-if="hasText(fields.title?.text)" class="w-full text-2xl leading-tight sm:text-3xl" v-bind="editable('title')" v-html="fields.title?.text" />
+            <DialogText fieldKey="title" :dialogData="dialogData" :isEditable="isEditable" class="w-full text-2xl leading-tight sm:text-3xl" />
 
-            <div v-if="hasText(fields.description?.text)" class="w-full text-base leading-relaxed opacity-80" v-bind="editable('description')" v-html="fields.description?.text" />
+            <DialogText fieldKey="description" :dialogData="dialogData" :isEditable="isEditable" class="w-full text-base leading-relaxed opacity-80" />
 
             <div v-if="state === 'success'" class="mt-3 flex flex-col items-center gap-y-2 text-green-600" role="status">
                 <FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
@@ -124,7 +125,7 @@ const onSubmit = async () => {
                 <p v-if="state === 'error'" class="mt-2 text-left text-sm text-red-600">{{ errorMessage }}</p>
             </form>
 
-            <div v-if="hasText(fields.note?.text)" class="mt-1 w-full text-xs opacity-60" v-bind="editable('note')" v-html="fields.note?.text" />
+            <DialogText fieldKey="note" :dialogData="dialogData" :isEditable="isEditable" class="mt-1 w-full text-xs opacity-60" />
         </div>
     </div>
 </template>

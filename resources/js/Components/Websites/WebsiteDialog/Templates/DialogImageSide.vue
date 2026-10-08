@@ -2,7 +2,8 @@
 import { getStyles } from "@/Composables/styles"
 import Image from "@common/Components/Image.vue"
 import DialogButton from "@/Components/Websites/WebsiteDialog/Templates/DialogButton.vue"
-import { hasText, useDialogTemplate } from "@/Components/Websites/WebsiteDialog/Templates/useDialogTemplate"
+import DialogText from "@/Components/Websites/WebsiteDialog/Templates/DialogText.vue"
+import { useDialogTemplate } from "@/Components/Websites/WebsiteDialog/Templates/useDialogTemplate"
 import type { WebsiteDialogTemplateData } from "@/types/WebsiteDialog"
 
 const props = defineProps<{
@@ -35,23 +36,23 @@ const { screenType, fields, accent, accentSoft, accentGradient, editable } = use
         </div>
 
         <div class="flex flex-col justify-center gap-y-3 p-8 sm:col-span-3 sm:p-10">
-            <div
-                v-if="hasText(fields.eyebrow?.text) || isEditable"
+            <DialogText
+                fieldKey="eyebrow"
+                :dialogData="dialogData"
+                :isEditable="isEditable"
                 class="w-fit rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
                 :style="{ background: accentSoft, color: accent }"
-                v-bind="editable('eyebrow')"
-                v-html="fields.eyebrow?.text || '&nbsp;'"
             />
 
-            <div v-if="hasText(fields.title?.text)" class="text-2xl leading-tight sm:text-3xl" v-bind="editable('title')" v-html="fields.title?.text" />
+            <DialogText fieldKey="title" :dialogData="dialogData" :isEditable="isEditable" class="text-2xl leading-tight sm:text-3xl" />
 
-            <div v-if="hasText(fields.description?.text)" class="text-base leading-relaxed opacity-80" v-bind="editable('description')" v-html="fields.description?.text" />
+            <DialogText fieldKey="description" :dialogData="dialogData" :isEditable="isEditable" class="text-base leading-relaxed opacity-80" />
 
             <div v-if="fields.button?.text" class="mt-3" v-bind="editable('button')">
                 <DialogButton :button="fields.button" :screenType="screenType" :isEditable="isEditable" />
             </div>
 
-            <div v-if="hasText(fields.note?.text)" class="mt-1 text-xs opacity-60" v-bind="editable('note')" v-html="fields.note?.text" />
+            <DialogText fieldKey="note" :dialogData="dialogData" :isEditable="isEditable" class="mt-1 text-xs opacity-60" />
         </div>
     </div>
 </template>
