@@ -63,6 +63,7 @@ use App\Actions\Ordering\Transaction\UpdateTransactionUnits;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
 use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
@@ -78,6 +79,7 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->middleware(
 });
 
 Route::patch('order/{order:id}/production-review', UpdateOrderProductionReview::class)->name('order.production_review');
+Route::post('order/{order:id}/email-chat', [StartCustomerEmailChat::class, 'inOrder'])->name('order.email_chat.store');
 Route::patch('organisation/{organisation:id}/orders/production-review', [UpdateOrderProductionReview::class, 'inOrganisation'])->name('organisation.orders.production_review');
 
 Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledInAurora::class, EnsurePreOrderIsUnlocked::class])->group(function () {

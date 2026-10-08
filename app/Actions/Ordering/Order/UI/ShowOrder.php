@@ -73,6 +73,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
+use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -440,6 +441,15 @@ class ShowOrder extends OrgAction
                 ] : null,
                 'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
+                'email_customer' => $order->customer && StartCustomerEmailChat::canBeStartedBy($request->user(), $order->customer) ? [
+                    'email'   => $order->customer->email,
+                    'subject' => __('Your order :reference', ['reference' => $order->reference]),
+                    'route'   => [
+                        'name'       => 'grp.models.order.email_chat.store',
+                        'parameters' => ['order' => $order->id],
+                    ],
+                ] : null,
+                'email_customer_out_of_stock_lines' => Inertia::optional(fn () => $this->getOutOfStockLines($order)),
                 'staff_chat'  => [
                     'context_type' => 'Order',
                     'context_id'   => $order->id,
@@ -809,6 +819,36 @@ class ShowOrder extends OrgAction
                     OrderTabsEnum::HISTORY->value
                 )
             );
+    }
+
+    /**
+     * Lines the customer will not get in full: short on the shelf before the warehouse reserves it, or
+     * failed by the warehouse once picked.
+     *
+     * @return array<int, array{code: string, name: string, quantity_ordered: float, quantity_short: float}>
+     */
+    public function getOutOfStockLines(Order $order): array
+    {
+        $isAwaitingPicking = in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED]);
+
+        return $order->transactions()
+            ->where('transactions.model_type', 'Product')
+            ->join('assets', 'transactions.asset_id', '=', 'assets.id')
+            ->join('products', 'assets.model_id', '=', 'products.id')
+            ->select(['assets.code', 'assets.name', 'transactions.quantity_ordered', 'transactions.quantity_fail', 'products.available_quantity'])
+            ->orderBy('transactions.id')
+            ->get()
+            ->map(fn ($line) => [
+                'code'             => $line->code,
+                'name'             => $line->name,
+                'quantity_ordered' => (float) $line->quantity_ordered,
+                'quantity_short'   => (float) ($line->quantity_fail > 0 || !$isAwaitingPicking
+                    ? $line->quantity_fail
+                    : max(0, $line->quantity_ordered - max(0, $line->available_quantity))),
+            ])
+            ->filter(fn (array $line) => $line['quantity_short'] > 0)
+            ->values()
+            ->all();
     }
 
     public function prepareForValidation(ActionRequest $request): void

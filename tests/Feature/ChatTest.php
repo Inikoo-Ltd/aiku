@@ -9978,6 +9978,56 @@ test('starting an email from the customer record opens an email conversation and
     expect(Arr::get($session->fresh()->metadata, 'gmail_references'))->toHaveCount(2);
 });
 
+test('emailing the customer from an order stays on the order and offers its out-of-stock lines', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $shop              = $this->customer->shop;
+    $settings          = $shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $shop->update(['settings' => $settings]);
+    $this->customer->update(['email' => 'buyer@example.com']);
+    $this->customer->refresh();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent10', 'threadId' => 't10']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $product     = Product::where('shop_id', $shop->id)->first() ?? createProduct($shop)[1];
+    $order       = createOrder($this->customer, $product);
+    $transaction = $order->transactions()->where('model_type', 'Product')->orderBy('id')->firstOrFail();
+    $originalFail = $transaction->quantity_fail;
+    $transaction->update(['quantity_fail' => 2]);
+
+    $lines = \App\Actions\Ordering\Order\UI\ShowOrder::make()->getOutOfStockLines($order);
+    expect(collect($lines)->firstWhere('code', $transaction->asset->code))->toMatchArray(['quantity_short' => 2.0]);
+
+    $transaction->update(['quantity_fail' => $originalFail]);
+
+    expect(\App\Actions\Chat\ChatSession\StartCustomerEmailChat::canBeStartedBy($this->user, $this->customer))->toBeTrue();
+
+    $sessionsBefore = ChatSession::where('shop_id', $shop->id)->count();
+
+    actingAs($this->user)
+        ->from('/order-page')
+        ->post(route('grp.models.order.email_chat.store', ['order' => $order->id]), [
+            'email'   => 'buyer@example.com',
+            'subject' => 'Your order '.$order->reference,
+            'message' => 'One item is out of stock',
+        ])
+        ->assertRedirect('/order-page');
+
+    $session = ChatSession::where('shop_id', $shop->id)->latest('id')->first();
+    expect(ChatSession::where('shop_id', $shop->id)->count())->toBe($sessionsBefore + 1)
+        ->and(Arr::get($session->metadata, 'email_from'))->toBe('buyer@example.com')
+        ->and(Arr::get($session->metadata, 'email_subject'))->toBe('Your order '.$order->reference);
+});
+
 test('a new email from the customer record carries the files the agent attached', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
 
