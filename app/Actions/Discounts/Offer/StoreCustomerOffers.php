@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreCustomerOffers extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     public function handle(Shop $shop, array $modelData): Offer
     {
         $customer = Customer::where('shop_id', $shop->id)->where('id', Arr::pull($modelData, 'customer_id'))->first();

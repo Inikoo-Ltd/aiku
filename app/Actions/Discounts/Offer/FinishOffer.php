@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer;
 use App\Actions\Comms\Email\SendFinishOfferEmailToSubscribers;
 use App\Actions\Discounts\Offer\Traits\HandlesOfferSideEffects;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\Offer;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class FinishOffer extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use AsAction;
     use HandlesOfferSideEffects;
 

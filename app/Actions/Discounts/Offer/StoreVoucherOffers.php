@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreVoucherOffers extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use AsAction;
 
     public const float MAX_AMOUNT_OFF_RATIO = 0.3;

@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreDiscountShipping extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use WithStoreOffer;
     use WithStoreOfferRules;
 

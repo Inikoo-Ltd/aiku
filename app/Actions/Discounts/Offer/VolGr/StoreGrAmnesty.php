@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer\VolGr;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\UpdateOfferStatusFromDates;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreGrAmnesty extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use AsAction;
 
     public function handle(OfferCampaign $offerCampaign, $modelData): Offer

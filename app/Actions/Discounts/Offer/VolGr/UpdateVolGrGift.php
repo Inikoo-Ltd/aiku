@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\Offer\VolGr;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateVolGrGift extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use AsAction;
 
     public function handle(Offer $offer, $modelData): Offer

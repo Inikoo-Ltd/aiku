@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreVolGrGift extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use AsAction;
 
     public function handle(OfferCampaign $offerCampaign, $modelData): Offer

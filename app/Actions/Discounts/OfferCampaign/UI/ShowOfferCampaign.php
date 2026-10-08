@@ -42,7 +42,10 @@ class ShowOfferCampaign extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit = $request->user()->authTo("discounts.{$this->shop->id}.edit");
+        $this->canEdit = $request->user()->authTo([
+            "discounts.{$this->shop->id}.edit",
+            "supervisor-discounts.{$this->shop->id}",
+        ]);
 
         return $request->user()->authTo("discounts.{$this->shop->id}.view");
     }
@@ -65,7 +68,7 @@ class ShowOfferCampaign extends OrgAction
 
     public function htmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
-        return match ($offerCampaign->type) {
+        $response = match ($offerCampaign->type) {
             OfferCampaignTypeEnum::VOLUME_DISCOUNT  => $this->getVolumeDiscountHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::FIRST_ORDER      => $this->getFirstOrderHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::CUSTOMER_OFFERS  => $this->getCustomerOffersHtmlResponse($offerCampaign, $request),
@@ -79,6 +82,8 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::ORDER_RECURSION  => $this->getOrderRecursionHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::VOUCHERS         => $this->getVoucherHtmlResponse($offerCampaign, $request),
         };
+
+        return $response->with('can_edit', $this->canEdit);
     }
 
     public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters, $suffix = null): array

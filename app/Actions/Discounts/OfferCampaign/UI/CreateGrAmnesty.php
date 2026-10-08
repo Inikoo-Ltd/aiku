@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateGrAmnesty extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     public function handle(OfferCampaign $offerCampaign): Response
     {
         return Inertia::render(

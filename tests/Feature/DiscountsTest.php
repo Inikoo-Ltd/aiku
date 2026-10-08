@@ -201,6 +201,24 @@ test('create offer', function () {
     return $offer;
 });
 
+test('an offer viewer sees offers and campaigns but cannot change them', function (Offer $offer) {
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+
+    $offerPage = get(route('grp.org.shops.show.discounts.campaigns.offer.show', [$this->organisation->slug, $this->shop->slug, $offer->offerCampaign->slug, $offer->slug]))->assertOk();
+    expect($offerPage->viewData('page')['props']['pageHead']['actions'])->toBeEmpty();
+
+    $campaignPage = get(route('grp.org.shops.show.discounts.campaigns.show', [$this->organisation->slug, $this->shop->slug, $offer->offerCampaign->slug]))->assertOk();
+    expect($campaignPage->viewData('page')['props']['can_edit'])->toBeFalse();
+
+    post(route('grp.models.shop_offer.store', ['shop' => $this->shop->id]), [])->assertForbidden();
+    post(route('grp.models.offer.finish', ['offer' => $offer->id]))->assertForbidden();
+    post(route('grp.models.offer.delete', ['offer' => $offer->id]))->assertForbidden();
+
+    actingAsUserWithRoles($user, $originalRoles);
+})->depends('create offer');
+
 test('offer orders table has a state filter', function (Offer $offer) {
     $tableStructure = new \App\InertiaTable\InertiaTable(request());
     \App\Actions\Ordering\Order\UI\IndexOrders::make()->tableStructure(parent: $offer, prefix: 'orders', bucket: 'offer')($tableStructure);

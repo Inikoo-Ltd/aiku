@@ -27,6 +27,7 @@ library.add(faCommentDollar, faInfoCircle, faBox)
 
 
 const props = defineProps<{
+    can_edit?: boolean
     title: string
     pageHead: PageHeadingTypes
     tabs: {
@@ -62,7 +63,7 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <ModalCreateProductOffers :shop_data="props.shop_data" />
+            <ModalCreateProductOffers v-if="can_edit" :shop_data="props.shop_data" />
         </template>
     </PageHeading>
 
