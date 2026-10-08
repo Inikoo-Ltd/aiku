@@ -12,12 +12,14 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -49,7 +51,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
             // $reason = Arr::pull($modelData, 'reason', null);
             // $note   = Arr::pull($modelData, 'note', null);
             // Source
-            $this->processStockMovement($currentLocationStock, [
+            $sourceMovement = $this->processStockMovement($currentLocationStock, [
                 'quantity'              => $currentLocationStock->quantity - $quantity,
                 // 'reason'                => $reason,
                 // 'note'                  => $note,
@@ -57,6 +59,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
             // Destination
             $this->processStockMovement($targetLocation, [
                 'quantity'  => $targetLocation->quantity + $quantity,
+                'batches'   => AllocateOrgStockMovementBatches::make()->movedBatches($sourceMovement),
                 // 'reason'                => $reason,
                 // 'note'                  => $note,
             ]);
@@ -72,7 +75,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         return $currentLocationStock;
     }
 
-    public function processStockMovement(LocationOrgStock $locationOrgStock, array $modelData): void
+    public function processStockMovement(LocationOrgStock $locationOrgStock, array $modelData): OrgStockMovement
     {
         $currentStock = $locationOrgStock->quantity;
         $newQuantity  = Arr::pull($modelData, 'quantity');
@@ -90,6 +93,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
             'org_amount'       => $stockDiff * $costPerSku,
             'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
             'user_id'          => $this->user?->id,
+            'batches'          => Arr::get($modelData, 'batches', []),
         ];
 
         // $reason = Arr::pull($modelData, 'reason', null);
@@ -103,7 +107,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         //     data_set($storedData, 'note', $note);
         // }
 
-        StoreOrgStockMovement::make()->action(
+        return StoreOrgStockMovement::make()->action(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             $storedData

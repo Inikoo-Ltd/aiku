@@ -59,15 +59,29 @@ class UpdateOrgStockMovement extends OrgAction
             data_set($modelData, 'flow', $flow);
         }
 
-        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $locationOrgStock, $oldQuantity) {
-            if ($locationOrgStock) {
-                LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('id');
-            }
+        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $locationOrgStock, &$oldQuantity) {
+            $lockedQuantity = $locationOrgStock
+                ? (float)LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('quantity')
+                : 0.0;
+
+            $oldQuantity = OrgStockMovement::whereKey($orgStockMovement->id)->value('quantity');
+            $orgStockMovement->quantity = $oldQuantity;
+
+            $previousBatches = AllocateOrgStockMovementBatches::make()->movedBatches($orgStockMovement);
 
             $orgStockMovement->update($modelData);
 
             if ($oldQuantity == $orgStockMovement->quantity || !$locationOrgStock) {
                 return null;
+            }
+
+            if ($this->strict) {
+                $keepsDirection = ((float)$oldQuantity < 0) === ((float)$orgStockMovement->quantity < 0);
+                AllocateOrgStockMovementBatches::run(
+                    $orgStockMovement,
+                    $lockedQuantity - (float)$oldQuantity,
+                    $keepsDirection ? $previousBatches : []
+                );
             }
 
             return AddToLocationOrgStockQuantity::run(
