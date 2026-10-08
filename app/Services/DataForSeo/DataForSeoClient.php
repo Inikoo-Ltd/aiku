@@ -135,7 +135,7 @@ class DataForSeoClient
         $statusCode = (int) $response->json('status_code');
         $cost       = $response->json('cost');
         $results    = collect($response->json('tasks') ?? []);
-        $rows       = (int) $results->sum(fn (array $task) => (int) Arr::get($task, 'result_count', 0));
+        $rows       = (int) $results->sum(fn (array $task) => collect(Arr::get($task, 'result') ?? [])->sum(fn ($result) => is_array($result) && array_key_exists('items_count', $result) ? (int) $result['items_count'] : 1));
 
         if ($statusCode !== self::SUCCESS) {
             $message = (string) ($response->json('status_message') ?: $response->reason());

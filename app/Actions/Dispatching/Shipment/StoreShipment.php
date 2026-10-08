@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\Shipment;
 
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Catalogue\Shop\External\Shopify\UpdateShippingShopifyOrder;
 use App\Actions\Catalogue\Shop\External\Wix\UpdateShippingWixOrder;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
@@ -149,9 +150,10 @@ class StoreShipment extends OrgAction
             $order = $parent->orders()->first();
             if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external) {
                 $faireFeedback = match ($order->shop->engine) {
-                    ShopEngineEnum::FAIRE => UpdateShippingFaireOrder::run($parent),
-                    ShopEngineEnum::WIX   => UpdateShippingWixOrder::run($parent),
-                    default               => null,
+                    ShopEngineEnum::FAIRE   => UpdateShippingFaireOrder::run($parent),
+                    ShopEngineEnum::WIX     => UpdateShippingWixOrder::run($parent),
+                    ShopEngineEnum::SHOPIFY => UpdateShippingShopifyOrder::run($parent),
+                    default                 => null,
                 };
             }
         }
