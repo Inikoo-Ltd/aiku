@@ -11,6 +11,7 @@ use Gnikyt\BasicShopifyAPI\Contracts\GraphRequester;
 use Gnikyt\BasicShopifyAPI\ResponseAccess;
 use Gnikyt\BasicShopifyAPI\Session;
 use Osiset\ShopifyApp\Contracts\ApiHelper as IApiHelper;
+use Osiset\ShopifyApp\Services\OfflineAccessTokenRefresher;
 use Illuminate\Support\Arr;
 use Throwable;
 
@@ -301,22 +302,26 @@ trait WithShopifyExternalShopApi
         return (bool) preg_match('/(^|})\s*mutation\b/i', $graphQL);
     }
 
-    private function sendShopifyExternalShopGraphQL(ShopifyUser $shopifyUser, string $graphQL, array $variables): array
+    /**
+     * A 401 usually means another process (the dropshipping channel shares the store's token) renewed the token
+     * after this one was loaded, so the call is tried once more with the token read again from the database.
+     */
+    private function sendShopifyExternalShopGraphQL(ShopifyUser $shopifyUser, string $graphQL, array $variables, bool $isRetry = false): array
     {
         if (app()->runningUnitTests()) {
             return ['message' => __('Shopify stores are never called from tests')];
         }
 
-        $client = $this->getShopifyExternalShopGraphClient($shopifyUser);
-
-        if (!$client) {
-            return ['message' => __('Could not connect to the Shopify store')];
+        try {
+            $response = $this->getShopifyExternalShopGraphClient($shopifyUser)->request($graphQL, $variables);
+        } catch (Throwable $e) {
+            return ['message' => __('Could not connect to the Shopify store: :error', ['error' => $e->getMessage()])];
         }
 
-        try {
-            $response = $client->request($graphQL, $variables);
-        } catch (Throwable $e) {
-            return ['message' => $e->getMessage()];
+        if (!$isRetry && (int) Arr::get($response, 'status') === 401) {
+            $shopifyUser->refresh();
+
+            return $this->sendShopifyExternalShopGraphQL($shopifyUser, $graphQL, $variables, true);
         }
 
         if (!empty($response['errors']) || !($response['body'] ?? null) instanceof ResponseAccess) {
@@ -333,28 +338,32 @@ trait WithShopifyExternalShopApi
     }
 
     /**
-     * In production the client may refresh or migrate the store's token, as it must to keep it valid. A copy of
-     * the database uses the stored token as it is: refreshing it there would rotate the token at Shopify and leave
-     * production with one that no longer works.
+     * Shopify's offline tokens last an hour, so in production the token is renewed right before a call whenever it
+     * is about to expire (the new token and refresh token are saved on the store), and every call is built on the
+     * current token. A copy of the database never renews: the renewal hands out a new refresh token, and once that
+     * one is used the refresh token production holds stops working.
+     *
+     * @throws \Throwable when the token could not be renewed
      */
-    protected function getShopifyExternalShopGraphClient(ShopifyUser $shopifyUser): ?GraphRequester
+    protected function getShopifyExternalShopGraphClient(ShopifyUser $shopifyUser): GraphRequester
     {
-        try {
-            $api = $this->isShopifyExternalShopWriteAllowed()
-                ? $shopifyUser->api()
-                : resolve(IApiHelper::class)->make(new Session($shopifyUser->getDomain()->toNative(), $shopifyUser->getAccessToken()->toNative()))->getApi();
-            $api->getOptions()->setGuzzleOptions([
-                'timeout'                  => 90.0,
-                'max_retry_attempts'       => 0,
-                'default_retry_multiplier' => 0.0,
-            ]);
-            $api->removeMiddleware(ShopifyThrottleRetryMiddleware::NAME)
-                ->addMiddleware(new ShopifyThrottleRetryMiddleware(), ShopifyThrottleRetryMiddleware::NAME);
-
-            return $api->getGraphClient();
-        } catch (Throwable) {
-            return null;
+        if ($this->isShopifyExternalShopWriteAllowed()) {
+            app(OfflineAccessTokenRefresher::class)->refreshIfNeeded($shopifyUser);
         }
+
+        $api = resolve(IApiHelper::class)
+            ->make(new Session($shopifyUser->getDomain()->toNative(), $shopifyUser->getAccessToken()->toNative()))
+            ->getApi();
+
+        $api->getOptions()->setGuzzleOptions([
+            'timeout'                  => 90.0,
+            'max_retry_attempts'       => 0,
+            'default_retry_multiplier' => 0.0,
+        ]);
+        $api->removeMiddleware(ShopifyThrottleRetryMiddleware::NAME)
+            ->addMiddleware(new ShopifyThrottleRetryMiddleware(), ShopifyThrottleRetryMiddleware::NAME);
+
+        return $api->getGraphClient();
     }
 
     protected function getShopifyExternalShopErrorMessage(array $response): string

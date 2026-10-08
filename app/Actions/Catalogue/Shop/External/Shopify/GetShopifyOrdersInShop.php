@@ -10,6 +10,10 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Sentry;
@@ -276,6 +280,40 @@ class GetShopifyOrdersInShop extends OrgAction
         return implode(' AND ', [
             'status:cancelled',
             "updated_at:>='".now()->subDays(self::CANCELLED_LOOKBACK_DAYS)->toIso8601ZuluString()."'",
+        ]);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo("orders.{$this->shop->id}.edit");
+    }
+
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        if ($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::SHOPIFY) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Not a Shopify shop'),
+                'description' => __('Orders can only be fetched for a Shopify external shop.'),
+            ]);
+        }
+
+        if ($blockedReason = $this->getShopifyExternalShopBlockedReason($this->getShopifyExternalShopUser($shop))) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Orders not fetched'),
+                'description' => $blockedReason,
+            ]);
+        }
+
+        GetShopifyOrdersInShop::dispatch($shop);
+
+        return Redirect::back()->with('notification', [
+            'status'      => 'success',
+            'title'       => __('Fetching Shopify orders'),
+            'description' => __('New orders appear in this list in a minute or two.'),
         ]);
     }
 
