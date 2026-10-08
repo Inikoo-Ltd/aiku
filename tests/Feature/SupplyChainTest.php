@@ -290,7 +290,7 @@ test('create supplier product in agent supplier', function ($supplier) {
         ->and($this->group->supplyChainStats->number_supplier_products_in_agents)->toBe(1);
 })->depends('create supplier in agent');
 
-function supplierProductUploadSheet(array $rows, array $extraHeadings = []): string
+function supplierProductUploadSheet(array $rows, array $extraHeadings = [], array $extraSheets = []): string
 {
     $headings = [...App\Exports\SupplyChain\SupplierProductTemplateExport::headings(), ...$extraHeadings];
 
@@ -304,6 +304,9 @@ function supplierProductUploadSheet(array $rows, array $extraHeadings = []): str
         $headings,
         ...array_map(fn (array $row) => array_map(fn (string $heading) => $row[$heading] ?? null, $headings), $rows),
     ]);
+    foreach ($extraSheets as $title => $sheetRows) {
+        $spreadsheet->createSheet()->setTitle($title)->fromArray($sheetRows);
+    }
     $path = sys_get_temp_dir().'/supplier_products_'.uniqid().'.xlsx';
     (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
 
@@ -1784,5 +1787,114 @@ test('UI index purchase orders in supplier links each order to its organisation'
             ->component('Procurement/PurchaseOrders')
             ->where('data.data.0.slug', $purchaseOrder->slug)
             ->where('data.data.0.organisation_slug', $this->organisation->slug)
+            ->etc());
+});
+
+test('the supplier product template has the v7 tabs and reads back without errors', function () {
+    $path = sys_get_temp_dir().'/supplier_products_template_'.uniqid().'.xlsx';
+    file_put_contents($path, Maatwebsite\Excel\Facades\Excel::raw(new App\Exports\SupplyChain\SupplierProductTemplateExport(), Maatwebsite\Excel\Excel::XLSX));
+
+    $sheet = App\Actions\SupplyChain\SupplierProduct\Upload\ReadSupplierProductSheet::run($path);
+
+    expect(PhpOffice\PhpSpreadsheet\IOFactory::load($path)->getSheetNames())->toBe(['Product data', 'Packaging components', 'Supplier declarations'])
+        ->and($sheet['errors'])->toBe([])
+        ->and($sheet['columns'])->toContain('eudr_geolocation')
+        ->and($sheet['packaging'])->toBe([])
+        ->and($sheet['declaration'])->toBeNull();
+});
+
+test('v7 supplier product upload keeps the GPSR and EUDR answers, shares one packaging family and stores the signed declaration', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $compliance = [
+        'Manufacturer (name, postal address, email)' => 'Sandya Crafts, Thamel, Kathmandu, sandya@example.com',
+        'Warnings and safety information'            => 'Not a toy. Decorative use only.',
+        'Toy status'                                 => 'Not a toy - not designed or intended for play',
+        'Material composition (% by weight)'         => 'Wool 90%, Cotton 5%',
+        'EUDR status'                                => 'Yes - wood, HS ch.44',
+        'EUDR species (scientific name)'             => 'Shorea robusta',
+    ];
+    $part = fn (string $code) => supplierProductUploadRow([
+        'Part reference'                     => $code,
+        "Supplier's product code"            => $code,
+        'Family'                             => 'UPL-V7',
+        'Unit barcode (EAN-13, for website)' => null,
+        ...$compliance,
+    ]);
+    $packaging = fn (string $code) => [
+        [$code, 'Primary - sales unit packaging', 'Polybag', 'PE-LD', 'PE-LD 4', 4, 1, '30%'],
+        [$code, 'Secondary - grouped SKO packaging', 'Header card', 'Folding boxboard / paperboard', 'PAP 21', 10, 1, null],
+        [$code, 'Tertiary - transport carton', 'Export carton', 'Corrugated board', 'PAP 20', 800, 1, null],
+    ];
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([$part('UPLV-01'), $part('UPLV-02')], [], [
+        'Packaging components'  => [
+            ['Part reference', 'Packaging level', 'Component', 'Material', 'Material code', 'Weight (g)', 'Quantity at this level', 'Recycled content %'],
+            ...$packaging('UPLV-01'),
+            ...$packaging('UPLV-02'),
+            ['UPLV-99', 'Primary - sales unit packaging', 'Polybag', 'PE-LD', 'PE-LD 4', 4, 1, null],
+            [null, 'Primary - sales unit packaging', 'Sticker', 'Paper', 'PAP 22', 1, 0, null],
+        ],
+        'Supplier declarations' => [
+            ['Company', 'Sandya Crafts'],
+            ['Signed by', 'Sandya Rai'],
+            ['Position', 'Owner'],
+            ['Date', '01/10/2026'],
+            [],
+            ['Statement', 'Answer'],
+            ['No packaging component contains lead, cadmium, mercury and hexavalent chromium above 100 mg/kg in total (PPWR Art 5)', 'Yes - confirmed, evidence attached'],
+            ['The materials and weights on the Packaging components tab are correct', 'Not known / not yet tested'],
+            ['We will tell AW before changing any material, packaging, factory or origin', null],
+        ],
+    ]));
+
+    $findings = collect($upload->records()->orderBy('row_number')->first()->data['findings'])->pluck('level', 'code');
+
+    expect($upload->data['packaging'])->toEqual(['rows' => 8, 'orphans' => [8, 9], 'unread' => false])
+        ->and($upload->data['declaration']['signed_by'])->toBe('Sandya Rai')
+        ->and($findings->get('eudr_incomplete'))->toBe('warning')
+        ->and($findings->get('material_composition_total'))->toBe('warning');
+
+    acceptSupplierProductUploadFindings($upload);
+    App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh());
+
+    $first  = TradeUnit::where('group_id', $this->group->id)->where('code', 'UPLV-01')->firstOrFail();
+    $second = TradeUnit::where('group_id', $this->group->id)->where('code', 'UPLV-02')->firstOrFail();
+    $family = $first->packagingFamily()->with('components')->firstOrFail();
+    $carton = $family->components->firstWhere('name', 'Export carton');
+    $bag    = $family->components->firstWhere('name', 'Polybag');
+
+    expect($first->gpsr_manufacturer)->toBe('Sandya Crafts, Thamel, Kathmandu, sandya@example.com')
+        ->and($first->gpsr_warnings)->toBe('Not a toy. Decorative use only.')
+        ->and($first->compliance['toy_status'])->toBe('Not a toy - not designed or intended for play')
+        ->and($first->compliance['eudr'])->toBe(['status' => 'Yes - wood, HS ch.44', 'species' => 'Shorea robusta'])
+        ->and($first->compliance['material_composition']['materials'])->toEqual([['material' => 'Wool', 'percentage' => 90.0], ['material' => 'Cotton', 'percentage' => 5.0]])
+        ->and($second->packaging_family_id)->toBe($first->packaging_family_id)
+        ->and($family->components)->toHaveCount(3)
+        ->and((float)$family->components->firstWhere('name', 'Header card')->pivot->quantity_per_unit)->toBe(0.5)
+        ->and((float)$carton->pivot->quantity_per_unit)->toBe(0.0125)
+        ->and($carton->material_category)->toBe(App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum::PAPER_CARDBOARD)
+        ->and($bag->material_category)->toBe(App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum::PLASTIC)
+        ->and((float)$bag->recycled_content_pct)->toBe(30.0);
+
+    $declaration = $supplier->declarations()->sole();
+    expect($declaration->signed_on->toDateString())->toBe('2026-10-01')
+        ->and($declaration->company)->toBe('Sandya Crafts')
+        ->and($declaration->answers)->toHaveCount(3)
+        ->and($declaration->answers[2]['answer'])->toBe('');
+
+    $this->get(route('grp.trade_units.units.show', [$first->slug, 'tab' => 'compliance']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.packaging.code', $family->code)
+            ->where('compliance.packaging.shared_with', 1)
+            ->where('compliance.packaging.weight_per_unit_g', fn ($grams) => (float)$grams === 19.0)
+            ->where('compliance.eudr.2.value', 'Shorea robusta')
+            ->etc());
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'declarations']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('declarations.0.signed_by', 'Sandya Rai')
+            ->where('declarations.0.answers.1.is_yes', false)
             ->etc());
 });

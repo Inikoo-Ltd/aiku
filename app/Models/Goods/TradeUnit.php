@@ -125,6 +125,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $art5_image_id
  * @property int|null $trade_unit_family_id
  * @property int|null $origin_country_id
+ * @property int|null $packaging_family_id
+ * @property array<array-key, mixed> $compliance
  * @property string|null $ufi_number
  * @property string|null $scpn_number
  * @property bool $is_for_sale
@@ -201,6 +203,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'marketing_dimensions' => 'array',
         'sources'              => 'array',
         'label_info'           => 'array',
+        'compliance'           => 'array',
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
     ];
@@ -210,6 +213,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'marketing_dimensions' => '{}',
         'sources'              => '{}',
         'label_info'           => '{}',
+        'compliance'           => '{}',
     ];
 
     protected $guarded = [];
@@ -541,6 +545,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function countryOrigin(): BelongsTo
     {
         return $this->belongsTo(Country::class, 'origin_country_id');
+    }
+
+    public function packagingFamily(): BelongsTo
+    {
+        return $this->belongsTo(PackagingFamily::class);
     }
 
 }

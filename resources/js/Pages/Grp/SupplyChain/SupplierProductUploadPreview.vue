@@ -63,6 +63,12 @@ const props = defineProps<{
         problems: string[]
         review: { status?: string; note?: string; partial?: boolean; summary?: string; rows?: Record<string, string> } | null
         ai: string | null
+        compliance?: {
+            packaging_rows: number
+            orphans: number[]
+            unread: boolean
+            declaration: { signed_by: string | null; signed_on: string | null; answers: number; not_yes: { question: string; answer: string }[] } | null
+        }
         purchase_orders: Record<string, { purchase_order?: string; organisation?: string | null; parent_name?: string | null; state?: string | null; route?: { name: string; parameters: Record<string, string> } | null; lines?: number; errors?: string[]; error?: string }> | null
     }
     supplier: { code: string; name: string; currency: string | null; products_route: RouteDef }
@@ -310,6 +316,27 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
             </ul>
         </div>
 
+        <div v-if="upload.compliance && (upload.compliance.packaging_rows || upload.compliance.declaration || upload.compliance.unread)" class="rounded border border-gray-200 p-3">
+            <div class="font-semibold">{{ ctrans("Compliance (v7)") }}</div>
+            <ul class="mt-1 space-y-0.5">
+                <li v-if="upload.compliance.packaging_rows">
+                    {{ ctrans(":count packaging component rows, saved on each trade unit at Import (only where it has no packaging yet).", { count: upload.compliance.packaging_rows }) }}
+                </li>
+                <li v-if="upload.compliance.unread" class="text-amber-700">
+                    {{ ctrans("The Packaging components tab has no \"Part reference\" heading in its first 20 rows, nothing on it was read.") }}
+                </li>
+                <li v-if="upload.compliance.orphans.length" class="text-amber-700">
+                    {{ ctrans("Packaging components rows :rows have no Part reference or one that is not on Product data, they will not be imported.", { rows: upload.compliance.orphans.join(", ") }) }}
+                </li>
+                <li v-if="upload.compliance.declaration">
+                    {{ ctrans("Supplier declaration signed by :name on :date, :count statements.", { name: upload.compliance.declaration.signed_by || ctrans("nobody"), date: upload.compliance.declaration.signed_on || ctrans("no date"), count: upload.compliance.declaration.answers }) }}
+                </li>
+                <li v-for="(answer, index) in upload.compliance.declaration?.not_yes ?? []" :key="index" class="text-amber-700">
+                    {{ answer.question }}: <span class="font-medium">{{ answer.answer || ctrans("not answered") }}</span>
+                </li>
+            </ul>
+        </div>
+
         <div v-if="!isAiRunning && upload.review?.summary" class="rounded border border-gray-200 bg-gray-50 p-3">
             <div class="font-semibold">{{ ctrans("AI review") }}<span v-if="upload.review.partial" class="font-normal text-gray-500"> · {{ ctrans("flagged rows only") }}</span></div>
             <p class="mt-1 whitespace-pre-line">{{ upload.review.summary }}</p>
@@ -472,6 +499,8 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     <span>{{ money(row.values.recommended_price_eur, "€") }} / {{ ctrans("RRP") }} {{ money(row.values.recommended_rrp_eur, "€") }}</span>
                     <span v-if="row.values.unit_barcode">{{ row.values.unit_barcode === "auto" ? ctrans("pool barcode") : row.values.unit_barcode }}</span>
                     <span v-for="(cartons, key) in row.values.order" :key="key">{{ key }} {{ cartons }} {{ ctrans("cartons") }}</span>
+                    <span v-if="row.values.packaging?.length">{{ ctrans(":count packaging components", { count: row.values.packaging.length }) }}</span>
+                    <span v-if="row.values.compliance?.eudr?.status">{{ ctrans("EUDR") }}: {{ row.values.compliance.eudr.status }}</span>
                 </div>
 
                 <div v-if="!isSkipped(row) && needsSkoName(row)" class="mt-2 flex items-center gap-2 text-xs">

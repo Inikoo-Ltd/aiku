@@ -18,6 +18,7 @@ use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Supplier\UI\GetSupplierDeclarations;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
 use App\Http\Resources\Procurement\SupplierMessagesResource;
@@ -107,6 +108,10 @@ class ShowOrgSupplier extends OrgAction
                 SupplierTabsEnum::INBOX->value => $this->tab == SupplierTabsEnum::INBOX->value ?
                     fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgSupplier, SupplierTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgSupplier)])
                     : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgSupplier, SupplierTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgSupplier)])),
+
+                SupplierTabsEnum::DECLARATIONS->value => $this->tab == SupplierTabsEnum::DECLARATIONS->value ?
+                    fn () => GetSupplierDeclarations::run($orgSupplier->supplier)
+                    : Inertia::optional(fn () => GetSupplierDeclarations::run($orgSupplier->supplier)),
 
                 SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($orgSupplier->supplier, SupplierTabsEnum::ATTACHMENTS->value))

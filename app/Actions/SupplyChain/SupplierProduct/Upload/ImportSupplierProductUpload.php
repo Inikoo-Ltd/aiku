@@ -3,6 +3,7 @@
 namespace App\Actions\SupplyChain\SupplierProduct\Upload;
 
 use App\Actions\Goods\Barcode\AssignNextBarcodeToTradeUnit;
+use App\Actions\Goods\Packaging\StorePackagingFamilyFromComponents;
 use App\Actions\Goods\Barcode\StoreBarcode;
 use App\Actions\Goods\Barcode\SyncBarcodeToTradeUnit;
 use App\Actions\Goods\Stock\StoreStock;
@@ -74,6 +75,7 @@ class ImportSupplierProductUpload
         }
 
         $this->createDraftPurchaseOrders($supplier, $upload, $records->filter(fn (UploadRecord $record) => Arr::get($record->data, 'supplier_product_id')));
+        $this->declaration($supplier, $upload);
 
         $upload->update([
             'state'          => UploadStateEnum::IMPORTED,
@@ -157,6 +159,7 @@ class ImportSupplierProductUpload
         $stockFamily     = $this->stockFamily($supplier, $values['family']);
         $tradeUnitFamily = $this->tradeUnitFamily($supplier, $values['family']);
         $tradeUnit       = $this->tradeUnit($supplier, $values);
+        $tradeUnit       = $this->compliance($supplier, $tradeUnit, $values);
 
         if (!$tradeUnit->trade_unit_family_id) {
             AttachTradeUnitsToTradeUnitFamily::make()->handle($tradeUnitFamily, ['trade_units' => [$tradeUnit->id]]);
@@ -210,6 +213,58 @@ class ImportSupplierProductUpload
         }
 
         return $tradeUnit;
+    }
+
+    /**
+     * The v7 compliance columns and packaging components. Like the rest of the row they only fill what the trade
+     * unit does not have yet: a GPSR text, a compliance answer or a packaging family already there is kept.
+     *
+     * @param array<string, mixed> $values
+     */
+    protected function compliance(Supplier $supplier, TradeUnit $tradeUnit, array $values): TradeUnit
+    {
+        $modelData = array_filter(Arr::get($values, 'gpsr', []), fn ($value, string $field) => blank($tradeUnit->{$field}), ARRAY_FILTER_USE_BOTH);
+
+        $filled     = fn (array $answers) => array_filter($answers, fn ($answer) => !blank($answer));
+        $current    = $tradeUnit->compliance ?? [];
+        $sheet      = Arr::get($values, 'compliance', []);
+        $compliance = $filled($current) + $sheet;
+        if (Arr::has($sheet, 'eudr')) {
+            $compliance['eudr'] = $filled(Arr::get($current, 'eudr', [])) + $sheet['eudr'];
+        }
+        if ($compliance != $current) {
+            $modelData['compliance'] = $compliance;
+        }
+
+        $packaging = Arr::get($values, 'packaging', []);
+        if (!$tradeUnit->packaging_family_id && $packaging !== []) {
+            $modelData['packaging_family_id'] = StorePackagingFamilyFromComponents::run($supplier->group, 'PF-'.$tradeUnit->code, $tradeUnit->name, $packaging)->id;
+        }
+
+        if ($modelData === []) {
+            return $tradeUnit;
+        }
+
+        return UpdateTradeUnit::make()->action($tradeUnit, $modelData, strict: false);
+    }
+
+    /**
+     * The signed Supplier declarations tab, kept once per upload.
+     */
+    protected function declaration(Supplier $supplier, Upload $upload): void
+    {
+        $declaration = Arr::get($upload->data, 'declaration');
+        if (!$declaration
+            || !$upload->records()->where('status', UploadRecordStatusEnum::COMPLETE)->exists()
+            || $supplier->declarations()->where('upload_id', $upload->id)->exists()) {
+            return;
+        }
+
+        $supplier->declarations()->create([
+            'group_id'  => $supplier->group_id,
+            'upload_id' => $upload->id,
+            ...Arr::only($declaration, ['company', 'signed_by', 'position', 'signed_on', 'answers']),
+        ]);
     }
 
     protected function barcode(Supplier $supplier, TradeUnit $tradeUnit, ?string $barcode): void

@@ -18,6 +18,7 @@ enum SupplierTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case INBOX       = 'inbox';
+    case DECLARATIONS = 'declarations';
     case ATTACHMENTS = 'attachments';
     case HISTORY     = 'history';
 
@@ -36,6 +37,10 @@ enum SupplierTabsEnum: string
             SupplierTabsEnum::INBOX => [
                 'title' => __('Inbox'),
                 'icon'  => 'fal fa-inbox',
+            ],
+            SupplierTabsEnum::DECLARATIONS => [
+                'title' => __('Declarations'),
+                'icon'  => 'fal fa-file-signature',
             ],
             SupplierTabsEnum::ATTACHMENTS => [
                 'title' => __('Attachments'),

@@ -41,6 +41,35 @@ A few rules that save most mistakes:
 - **Unit barcode**: a real EAN, or `auto` to take the next free barcode from the pool at Import. Empty means no barcode and needs a decision.
 - **Units per SKO, SKOs per carton and Minimum order** are whole numbers.
 
+## Compliance data (v7 template)
+
+The template has three tabs. **Product data** keeps every column above in place. After them come optional columns for GPSR, the product's regulatory category and EUDR. The two other tabs hold what one row per product cannot. All of it is optional: a file without these columns or tabs uploads exactly as before.
+
+| Where | What it becomes |
+| --- | --- |
+| **Product data**: Manufacturer, EU responsible person, Warnings and safety information, Instructions for use, Languages of warnings and instructions | The trade unit's GPSR fields, which the products selling it show and translate |
+| **Product data**: Brand, Batch traceability, Regulatory category, Toy status, Batteries / magnets, SVHC above 0.1%, SVHC substance, CLP signal word, Material composition (% by weight) | The trade unit's **Compliance** tab |
+| **Product data**: EUDR status, commodity, species (scientific name), country of production, region of production, plot geolocation, certification, legality evidence | The EUDR block on the trade unit's **Compliance** tab |
+| **Packaging components**: one row per component, per packaging level, per part | The trade unit's packaging family (PPWR, EPR returns) |
+| **Supplier declarations**: company, signed by, position, date and one answer per statement | A signed declaration on the supplier's **Declarations** tab |
+
+**Packaging components** columns: Part reference, Packaging level (Primary, Secondary, Tertiary, Pallet or Service), Component, Material, Material code (PAP 20, PE-LD 4 …), Weight (g), Quantity at this level, Recycled content %, Recycled content evidence, Recyclability, Separable, Marks on the packaging, National marks, Artwork owner, Notes. Quantity is how many of the component there are at its level: 2 labels on one bottle is 2. Aiku works out how much of it one sales unit carries. A Secondary component is shared by the units in the SKO, and a Tertiary carton by every unit in it. Pallet aids are not counted per unit.
+
+Packaging is entered once. Parts packed exactly the same way share one packaging family, and a component already known, such as the same bottle or carton, is shared rather than copied.
+
+As with the other columns, compliance data only fills what is empty. A trade unit that already has GPSR text, a compliance answer or a packaging family keeps it.
+
+The preview warns, without stopping the import, when:
+
+- EUDR status says Yes but the commodity, country of production, plot geolocation or legality evidence is missing. EUDR applies to AW from 30 Dec 2026, and AW files the due diligence statement, so it needs these.
+- Material composition does not add up to 100%.
+- An SVHC above 0.1% is declared without naming the substance.
+- A packaging row has no weight, or a level aiku does not know (the row is then left out).
+
+The preview also lists packaging rows with no Part reference, or one that is not on Product data, and any declaration statement not answered Yes, unanswered ones included.
+
+**Supplier declarations** reads Company, Signed by, Position and Date (each as a label with its value next to it), then a **Statement | Answer** heading with one statement per row. Dates are read day first: 01/10/2026 is 1 October. The declaration is kept when at least one row is imported, once per upload: uploading the file again keeps it again, dated by that upload.
+
 ## Uploading
 
 Open the supplier, go to **Products**, press **Attach file** and choose the file. A few seconds later the preview opens.

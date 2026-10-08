@@ -6,7 +6,10 @@ use App\Actions\Goods\Barcode\StoreBarcode;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
+use App\Enums\Goods\Packaging\PackagingLevelEnum;
+use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
+use App\Enums\SupplyChain\SupplierProductUpload\PackagingComponentSheetColumnEnum as PackagingColumn;
 use App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum as Column;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
@@ -67,7 +70,174 @@ class CheckSupplierProductSheet
 
         $this->checkAcrossRows($rows);
 
+        $packaging = collect(Arr::get($sheet, 'packaging', []))
+            ->groupBy(fn (array $packagingRow) => mb_strtolower((string)Arr::get($packagingRow, 'cells.'.PackagingColumn::PART_REFERENCE->value.'.text')));
+        foreach ($rows as $index => $row) {
+            $partReference = mb_strtolower((string)$row['values']['part_reference']);
+            $partRows      = $partReference === '' ? [] : $packaging->get($partReference, collect())->all();
+            $rows[$index]['values']['packaging'] = $this->packaging($partRows, $row['values'], $rows[$index]['findings']);
+        }
+
         return $rows;
+    }
+
+    /**
+     * Packaging components tab rows whose Part reference is not on the Product data tab: nothing would import them.
+     *
+     * @param array{packaging?: list<array{row: int, cells: array<string, array{value: mixed, text: ?string, currencies: list<string>}>}>} $sheet
+     * @param list<array{row: int, values: array<string, mixed>}> $rows
+     *
+     * @return list<int>
+     */
+    public function orphanPackagingRows(array $sheet, array $rows): array
+    {
+        $parts = collect($rows)->map(fn (array $row) => mb_strtolower((string)$row['values']['part_reference']))->filter()->all();
+
+        return collect(Arr::get($sheet, 'packaging', []))
+            ->reject(fn (array $packagingRow) => in_array(mb_strtolower((string)Arr::get($packagingRow, 'cells.'.PackagingColumn::PART_REFERENCE->value.'.text')), $parts, true))
+            ->pluck('row')->values()->all();
+    }
+
+    /**
+     * One part's packaging components, each with how much of it a single sales unit carries.
+     *
+     * @param list<array{row: int, cells: array<string, array{value: mixed, text: ?string, currencies: list<string>}>}> $packagingRows
+     * @param array<string, mixed> $values
+     * @param list<array{level: string, code: string, column: ?string, message: string}> $findings
+     *
+     * @return list<array<string, mixed>>
+     */
+    protected function packaging(array $packagingRows, array $values, array &$findings): array
+    {
+        $reader     = ReadSupplierProductSheet::make();
+        $components = [];
+        foreach ($packagingRows as $packagingRow) {
+            $text = fn (PackagingColumn $column): ?string => Arr::get($packagingRow['cells'], $column->value.'.text');
+            $warn = function (string $code, string $message) use (&$findings, $packagingRow): void {
+                $findings[] = ['level' => 'warning', 'code' => $code.'_'.$packagingRow['row'], 'column' => null, 'message' => __('Packaging components row :row: :message', ['row' => $packagingRow['row'], 'message' => $message])];
+            };
+
+            $level = PackagingLevelEnum::fromSheet($text(PackagingColumn::PACKAGING_LEVEL));
+            if (!$level) {
+                $warn('packaging_level', __('packaging level ":level" is not Primary, Secondary, Tertiary, Pallet or Service, the row is left out.', ['level' => $text(PackagingColumn::PACKAGING_LEVEL)]));
+
+                continue;
+            }
+
+            $weight = $text(PackagingColumn::WEIGHT) === null ? null : $reader->numberIn($text(PackagingColumn::WEIGHT));
+            if ($weight === null || $weight < 0) {
+                $warn('packaging_weight', __('no weight in grams, EPR returns need one.'));
+                $weight = null;
+            } elseif ($weight >= 1000000) {
+                $warn('packaging_weight', __('weight :value g is over a tonne, check it is in grams; left empty.', ['value' => $text(PackagingColumn::WEIGHT)]));
+                $weight = null;
+            }
+
+            $quantity = $text(PackagingColumn::QUANTITY) === null ? 1.0 : $reader->numberIn($text(PackagingColumn::QUANTITY));
+            if ($quantity === null || $quantity <= 0 || $quantity > 10000) {
+                $warn('packaging_quantity', __('quantity ":value" is not a number above 0, 1 is used.', ['value' => $text(PackagingColumn::QUANTITY)]));
+                $quantity = 1.0;
+            }
+
+            $recycled = $text(PackagingColumn::RECYCLED_CONTENT) === null ? null : $reader->numberIn($text(PackagingColumn::RECYCLED_CONTENT));
+            if ($recycled !== null && $recycled > 0 && $recycled <= 1 && !str_contains((string)$text(PackagingColumn::RECYCLED_CONTENT), '%')) {
+                $recycled *= 100;
+            }
+            if ($recycled !== null && ($recycled < 0 || $recycled > 100)) {
+                $warn('packaging_recycled', __('recycled content :value is not between 0 and 100%, left empty.', ['value' => $text(PackagingColumn::RECYCLED_CONTENT)]));
+                $recycled = null;
+            }
+
+            $components[] = [
+                'row'                       => $packagingRow['row'],
+                'packaging_level'           => $level->value,
+                'name'                      => $text(PackagingColumn::COMPONENT),
+                'material'                  => $text(PackagingColumn::MATERIAL),
+                'material_id_code'          => $text(PackagingColumn::MATERIAL_CODE),
+                'material_category'         => PackagingMaterialCategoryEnum::fromSheet($text(PackagingColumn::MATERIAL), $text(PackagingColumn::MATERIAL_CODE))->value,
+                'weight_g'                  => $weight,
+                'quantity'                  => $quantity,
+                'quantity_per_unit'         => round($level->quantityPerUnit($quantity, (int)$values['units_per_sko'], (int)$values['units_per_sko'] * (int)$values['skos_per_carton']), 6),
+                'recycled_content_pct'      => $recycled,
+                'recycled_content_evidence' => $text(PackagingColumn::RECYCLED_CONTENT_EVIDENCE),
+                'recyclability'             => $text(PackagingColumn::RECYCLABILITY),
+                'separable'                 => $text(PackagingColumn::SEPARABLE),
+                'marks'                     => $text(PackagingColumn::MARKS),
+                'national_marks'            => $text(PackagingColumn::NATIONAL_MARKS),
+                'artwork_owner'             => $text(PackagingColumn::ARTWORK_OWNER),
+                'notes'                     => $text(PackagingColumn::NOTES),
+            ];
+        }
+
+        return $components;
+    }
+
+    /**
+     * The v7 GPSR, regulatory and EUDR columns. GPSR text goes to the trade unit's own fields, the rest to its
+     * compliance data. Gaps the regulations care about are warnings: they never stop the import.
+     *
+     * @param array<string, array{value: mixed, text: ?string, currencies: list<string>}> $cells
+     * @param array<string, mixed> $values
+     */
+    protected function checkCompliance(array $cells, array &$values, callable $add): void
+    {
+        $values['gpsr']       = [];
+        $values['compliance'] = [];
+        foreach (Column::cases() as $column) {
+            $text = Arr::get($cells, $column->value.'.text');
+            if ($text === null) {
+                continue;
+            }
+            if ($column->tradeUnitField()) {
+                $values['gpsr'][$column->tradeUnitField()] = $text;
+            } elseif ($column->complianceKey()) {
+                Arr::set($values['compliance'], $column->complianceKey(), $text);
+            }
+        }
+
+        $composition = Arr::get($cells, Column::MATERIAL_COMPOSITION->value.'.text');
+        if ($composition !== null) {
+            $materials = $this->materialComposition($composition);
+            $values['compliance']['material_composition'] = ['text' => $composition, 'materials' => $materials];
+            $total = array_sum(array_column($materials, 'percentage'));
+            if ($materials !== [] && abs($total - 100) > 1) {
+                $add('warning', 'material_composition_total', Column::MATERIAL_COMPOSITION, __('Material composition adds up to :total%, not 100%.', ['total' => round($total, 1)]));
+            }
+        }
+
+        if (str_starts_with(mb_strtolower((string)Arr::get($values['compliance'], 'svhc')), 'yes') && blank(Arr::get($values['compliance'], 'svhc_substance'))) {
+            $add('warning', 'svhc_unnamed', Column::SVHC_SUBSTANCE, __('SVHC above 0.1% is declared but the substance is not named.'));
+        }
+
+        if (str_starts_with(mb_strtolower((string)Arr::get($values['compliance'], 'eudr.status')), 'yes')) {
+            $missing = collect([Column::EUDR_COMMODITY, Column::EUDR_COUNTRY, Column::EUDR_GEOLOCATION, Column::EUDR_LEGALITY_EVIDENCE])
+                ->filter(fn (Column $column) => blank(Arr::get($values['compliance'], $column->complianceKey())))
+                ->map(fn (Column $column) => $column->heading());
+            if ($missing->isNotEmpty()) {
+                $add('warning', 'eudr_incomplete', Column::EUDR_STATUS, __('EUDR applies to this product (from 30 Dec 2026) but :columns is missing. AW cannot file the due diligence statement without it.', ['columns' => $missing->implode(', ')]));
+            }
+        }
+    }
+
+    /**
+     * "Cotton 80%, Polyester 20%" or "80% cotton / 20% polyester" into materials with their percentage.
+     *
+     * @return list<array{material: string, percentage: float}>
+     */
+    public function materialComposition(string $text): array
+    {
+        $materials = [];
+        foreach (preg_split('/[,;\/\n+]+/', $text) as $part) {
+            if (!preg_match('/(\d+(?:[.,]\d+)?)\s*%/', $part, $matches)) {
+                continue;
+            }
+            $material = trim(preg_replace('/(\d+(?:[.,]\d+)?)\s*%/', '', $part), " \t-:()");
+            if ($material !== '') {
+                $materials[] = ['material' => $material, 'percentage' => (float)str_replace(',', '.', $matches[1])];
+            }
+        }
+
+        return $materials;
     }
 
     /**
@@ -165,6 +335,7 @@ class CheckSupplierProductSheet
 
         $values['order'] = $this->order($sheetRow['order'], $add);
 
+        $this->checkCompliance($cells, $values, $add);
         $this->checkFamily($values, $add);
         $this->checkPartReference($values, $add);
         $this->checkUnitName($values, $add);

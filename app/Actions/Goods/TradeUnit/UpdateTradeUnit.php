@@ -440,6 +440,11 @@ class UpdateTradeUnit extends OrgAction
             $rules = $this->noStrictUpdateRules($rules);
         }
 
+        if ($this->asAction) {
+            $rules['compliance']          = ['sometimes', 'array'];
+            $rules['packaging_family_id'] = ['sometimes', 'nullable', Rule::exists('packaging_families', 'id')->where('group_id', $this->group->id)];
+        }
+
         return $rules;
     }
 

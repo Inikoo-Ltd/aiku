@@ -66,6 +66,17 @@ class ShowSupplierProductUpload extends InertiaAction
                 'review'      => Arr::get($upload->data, 'review'),
                 'ai'          => Arr::get($upload->data, 'ai'),
                 'purchase_orders' => $this->purchaseOrders($upload),
+                'compliance'      => [
+                    'packaging_rows' => Arr::get($upload->data, 'packaging.rows', 0),
+                    'orphans'        => Arr::get($upload->data, 'packaging.orphans', []),
+                    'unread'         => (bool)Arr::get($upload->data, 'packaging.unread'),
+                    'declaration'    => Arr::get($upload->data, 'declaration') ? [
+                        'signed_by' => Arr::get($upload->data, 'declaration.signed_by'),
+                        'signed_on' => Arr::get($upload->data, 'declaration.signed_on'),
+                        'answers'   => count(Arr::get($upload->data, 'declaration.answers', [])),
+                        'not_yes'   => collect(Arr::get($upload->data, 'declaration.answers', []))->reject(fn (array $answer) => str_starts_with(mb_strtolower((string)($answer['answer'] ?? '')), 'yes'))->values()->all(),
+                    ] : null,
+                ],
             ],
             'supplier'    => [
                 'code'     => $supplier->code,
