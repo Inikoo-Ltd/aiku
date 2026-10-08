@@ -13234,6 +13234,16 @@ test('daily sales tasks go to the shopkeeper in charge, or the webmasters, quiet
     ]);
     \Illuminate\Support\Facades\DB::table('orders')->where('id', $basket->id)->update(['state' => 'creating', 'net_amount' => 1000000, 'org_net_amount' => 1000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
 
+    $staffCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => $shopkeeper->email ?? 'staff-'.Str::random(6).'@'.Str::after((string) $this->shop->email, '@')]);
+    $staffBasket = \App\Actions\Ordering\Order\StoreOrder::make()->action($staffCustomer, [
+        'reference'        => 'STAFF-'.Str::random(6),
+        'date'             => now()->toDateString(),
+        'customer_id'      => $staffCustomer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \Illuminate\Support\Facades\DB::table('orders')->where('id', $staffBasket->id)->update(['state' => 'creating', 'net_amount' => 2000000, 'org_net_amount' => 2000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
+
     $first = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop, withAi: false);
     $task  = \App\Models\Tasks\StaffTask::where('reference', $first['sales_open_baskets'])->firstOrFail();
 
@@ -13241,6 +13251,7 @@ test('daily sales tasks go to the shopkeeper in charge, or the webmasters, quiet
         ->and($task->department)->toBeNull()
         ->and($task->requester->username)->toBe(\App\Actions\Tasks\GetAikuAssistant::USERNAME)
         ->and($task->data['order_ids'][0])->toBe($basket->id)
+        ->and($task->data['order_ids'])->not->toContain($staffBasket->id)
         ->and($task->description)->toContain($basket->reference)
         ->and(\App\Actions\Tasks\GetStaffTaskBadgeData::run($shopkeeper)['mine']['todo']['count'])->toBeGreaterThanOrEqual(1);
     \Illuminate\Support\Facades\Notification::assertNotSentTo($shopkeeper, \App\Notifications\StaffTaskNotification::class);

@@ -52,11 +52,17 @@ class GenerateDailySalesTasks
     public const array KINDS = ['sales_drifting', 'sales_open_baskets', 'sales_target_gap', 'sales_back_in_stock'];
 
     /**
-     * Campaigns a customer can be told about. Volume discounts, step offers and one customer's own deals are always on and say nothing new.
+     * Campaigns a customer can be told about, and only offers with an end date: volume discounts, step offers,
+     * one customer's own deals and open-ended offers are always on and say nothing new.
      */
     public const array PROMOTION_CAMPAIGNS = ['category-offers', 'gift', 'vouchers', 'product-offers', 'order-recursion'];
 
     private bool $withAi = true;
+
+    /**
+     * @var array<int, array<int, int>>
+     */
+    private array $excludedCustomerIds = [];
 
     /**
      * @return array<string, string|null> task reference per kind, null when there was nothing to do
@@ -105,7 +111,7 @@ class GenerateDailySalesTasks
             ->where('customer_stats.last_invoiced_at', '>=', $today->copy()->subMonths(18))
             ->whereRaw("customer_stats.expected_date_of_next_order < ?::timestamptz - customer_stats.average_time_between_orders * interval '1 day'", [$today])
             ->whereNotIn('customers.id', $alreadyListed)
-            ->whereNotIn('customers.id', $this->partnerCustomerIds($shop))
+            ->whereNotIn('customers.id', $this->excludedCustomerIds($shop))
             ->whereNotExists(fn ($query) => $query->from('orders')
                 ->whereColumn('orders.customer_id', 'customers.id')
                 ->whereNull('orders.deleted_at')
@@ -157,7 +163,7 @@ class GenerateDailySalesTasks
             ->where('orders.net_amount', '>', 0)
             ->whereBetween('orders.updated_by_customer_at', [$today->copy()->subDays(14), $today->copy()->subDay()])
             ->whereNotIn('orders.id', $alreadyListed)
-            ->whereNotIn('orders.customer_id', $this->partnerCustomerIds($shop))
+            ->whereNotIn('orders.customer_id', $this->excludedCustomerIds($shop))
             ->orderByDesc('orders.org_net_amount')
             ->limit(self::LINES)
             ->get(['orders.id', 'orders.slug', 'orders.reference', 'orders.net_amount', 'orders.updated_by_customer_at', 'customers.name', 'customers.contact_name', 'customers.reference as customer_reference']);
@@ -213,14 +219,14 @@ class GenerateDailySalesTasks
             ->whereNull('offers.deleted_at')
             ->whereNull('offers.customer_id')
             ->whereIn('offer_campaigns.type', self::PROMOTION_CAMPAIGNS)
-            ->where(fn ($query) => $query->whereNull('offers.end_at')->orWhere('offers.end_at', '>=', $today))
-            ->orderByRaw('offers.end_at asc nulls last')
+            ->where('offers.end_at', '>=', $today)
+            ->orderBy('offers.end_at')
             ->limit(8)
             ->get(['offers.name', 'offers.end_at'])
             ->map(fn ($offer) => '• '.$offer->name.($offer->end_at ? ' ('.__('until :date', ['date' => Carbon::parse($offer->end_at)->toDateString()]).')' : ''));
 
         $customers = (new FilterDueToReorder())
-            ->whereDue(DB::table('customers')->where('customers.shop_id', $shop->id)->whereNull('customers.deleted_at')->whereNotIn('customers.id', $this->partnerCustomerIds($shop)))
+            ->whereDue(DB::table('customers')->where('customers.shop_id', $shop->id)->whereNull('customers.deleted_at')->whereNotIn('customers.id', $this->excludedCustomerIds($shop)))
             ->join('customer_stats', 'customer_stats.customer_id', '=', 'customers.id')
             ->orderByDesc('customer_stats.sales_org_currency_all')
             ->limit(self::LINES)
@@ -277,7 +283,7 @@ class GenerateDailySalesTasks
 
         $waiting = DB::table('back_in_stock_reminders')
             ->join('customers', 'customers.id', '=', 'back_in_stock_reminders.customer_id')
-            ->whereNotIn('customers.id', $this->partnerCustomerIds($shop))
+            ->whereNotIn('customers.id', $this->excludedCustomerIds($shop))
             ->whereIn('back_in_stock_reminders.product_id', $products->pluck('id'))
             ->where('back_in_stock_reminders.shop_id', $shop->id)
             ->whereNull('customers.deleted_at')
@@ -417,17 +423,36 @@ class GenerateDailySalesTasks
     }
 
     /**
-     * Our own organisations buying from us are partners, not customers to chase. Some are only
-     * plain customer accounts under an older company name, so a name starting like one of our
-     * organisations (legal suffix dropped) counts too.
+     * Customers that are really us. Our own organisations buying from us are partners, some only
+     * as plain accounts under an older company name, so a name starting like one of our
+     * organisations (legal suffix dropped) counts too. Staff test accounts use an email on one of
+     * our own domains (those of our shops and companies) or the email of an aiku user.
      */
-    private function partnerCustomerIds(Shop $shop): \Illuminate\Database\Query\Builder
+    /**
+     * @return array<int, int>
+     */
+    private function excludedCustomerIds(Shop $shop): array
     {
+        return $this->excludedCustomerIds[$shop->id] ??= $this->excludedCustomersQuery($shop)->pluck('customer_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function excludedCustomersQuery(Shop $shop): \Illuminate\Database\Query\Builder
+    {
+        $ourDomains = "select lower(split_part(email::text, '@', 2)) from shops where email is not null
+            union select lower(split_part(email::text, '@', 2)) from organisations where email is not null and type = 'shop'";
+
         // ponytail: name prefix match, a customer really called "AW Artisan ..." would be skipped too; a flag on the customer if that ever happens
         return DB::table('org_partners')->whereNotNull('customer_id')->select('customer_id')
             ->union(DB::table('customers as own')
                 ->join('organisations', fn ($join) => $join->whereRaw("own.name ilike regexp_replace(organisations.name, '\\s+(ltd|limited|s\\.r\\.o|s\\.l|sarl)\\.?$', '', 'i') || '%'"))
-                ->where('own.shop_id', $shop->id)->select('own.id'));
+                ->where('own.shop_id', $shop->id)->select('own.id'))
+            ->union(DB::table('customers as staff')
+                ->where('staff.shop_id', $shop->id)
+                ->whereNotNull('staff.email')
+                ->where(fn ($query) => $query
+                    ->whereRaw("lower(split_part(staff.email::text, '@', 2)) in ($ourDomains)")
+                    ->orWhereRaw('lower(staff.email::text) in (select lower(email::text) from users where email is not null)'))
+                ->select('staff.id'));
     }
 
     private function customerName(object $customer): string
