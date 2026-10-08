@@ -6438,6 +6438,7 @@ describe('partner shopping list', function () {
         $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
             'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
         ]);
+        DB::table('location_org_stocks')->where('org_stock_id', $sellerOrgStock->id)->where('id', '!=', $sourceSlot->id)->update(['quantity' => 0]);
         \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
         \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($sellerOrgStock->id);
 
@@ -6445,9 +6446,7 @@ describe('partner shopping list', function () {
         \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 2);
 
         \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot->refresh(), ['quantity' => 1]);
-        file_put_contents('/private/tmp/claude-501/dbg.txt', json_encode(['before' => $sellerOrgStock->refresh()->only(['quantity_available','quantity_in_locations','quantity_in_submitted_orders','quantity_to_be_picked']),'hub' => $seller->refresh()->is_manufacturing_hub,'aikusc' => $seller->is_aiku_stock_control,'promised' => DB::scalar('select '.\App\Models\Procurement\PartnerShoppingListItem::promisedNotStagedSql((string)$seller->id, (string)$sellerOrgStock->stock_id)),'slots' => DB::table('location_org_stocks')->where('org_stock_id', $sellerOrgStock->id)->get(['location_id','quantity'])]).PHP_EOL, FILE_APPEND);
         \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($sellerOrgStock->id);
-        file_put_contents('/private/tmp/claude-501/dbg.txt', json_encode(['after' => $sellerOrgStock->refresh()->only(['quantity_available','quantity_in_locations','quantity_in_submitted_orders','quantity_to_be_picked']),'hub' => $seller->refresh()->is_manufacturing_hub,'aikusc' => $seller->is_aiku_stock_control,'promised' => DB::scalar('select '.\App\Models\Procurement\PartnerShoppingListItem::promisedNotStagedSql((string)$seller->id, (string)$sellerOrgStock->stock_id)),'slots' => DB::table('location_org_stocks')->where('org_stock_id', $sellerOrgStock->id)->get(['location_id','quantity'])]).PHP_EOL, FILE_APPEND);
 
         $lines = \App\Models\Procurement\PartnerShoppingListItem::where('partner_organisation_id', $seller->id)
             ->where('stock_id', $sellerOrgStock->stock_id)
