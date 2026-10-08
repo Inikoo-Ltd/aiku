@@ -323,7 +323,10 @@ const openLabelModal = async (level: string) => {
     isLoadingLabelOptions.value = true
 
     try {
-        const { data } = await axios.get(route(orgStock.label_options_route.name, orgStock.label_options_route.parameters))
+        const { data } = await axios.get(route(orgStock.label_options_route.name, {
+            ...orgStock.label_options_route.parameters,
+            ...(props.data.carton ? { supplier_product: props.data.carton.supplier_product_id } : {}),
+        }))
 
         labelOptions.value = data.options
         labelRoute.value = props.data.carton

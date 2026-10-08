@@ -26,12 +26,14 @@ class GetOrgStockLabelOptions
     /**
      * @return array<string, mixed>
      */
-    public function handle(OrgStock $orgStock): array
+    public function handle(OrgStock $orgStock, ?int $supplierProductId = null): array
     {
+        $supplierProduct = GetOrgStockLabelData::make()->getSupplierProduct($orgStock, $supplierProductId);
+
         $labels = [
-            'sko'  => GetOrgStockLabelData::run($orgStock, 'sko'),
-            'unit'   => GetOrgStockLabelData::run($orgStock, 'unit'),
-            'carton' => GetOrgStockLabelData::run($orgStock, 'carton'),
+            'sko'    => GetOrgStockLabelData::run($orgStock, 'sko', $supplierProduct),
+            'unit'   => GetOrgStockLabelData::run($orgStock, 'unit', $supplierProduct),
+            'carton' => GetOrgStockLabelData::run($orgStock, 'carton', $supplierProduct),
         ];
 
         return [

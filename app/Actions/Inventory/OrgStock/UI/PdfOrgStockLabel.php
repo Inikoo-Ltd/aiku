@@ -10,7 +10,6 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
-use Illuminate\Support\Facades\DB;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -203,7 +202,7 @@ class PdfOrgStockLabel
     public function handle(OrgStock $orgStock, string $level, array $options): Response
     {
         $level = isset(self::LEVEL_FIELDS[$level]) ? $level : 'unit';
-        $label = GetOrgStockLabelData::run($orgStock, $level, $this->getSupplierProduct($orgStock, $level, $options));
+        $label = GetOrgStockLabelData::run($orgStock, $level, $this->getSupplierProduct($orgStock, $options));
 
         /* The unit label is built around its barcode, so without one there is nothing to print. The
            SKO label never carries one, and prints for a box that has not been given a number yet. */
@@ -373,18 +372,14 @@ class PdfOrgStockLabel
     }
 
     /**
-     * A stock can be bought from more than one supplier, each packing its own carton, so the page the
-     * label was asked from names the supplier product. It is only honoured when it supplies this stock.
+     * A stock can be bought from more than one supplier, each with its own pictures and carton, so
+     * the page the label was asked from names the supplier product.
      */
-    private function getSupplierProduct(OrgStock $orgStock, string $level, array $options): ?SupplierProduct
+    private function getSupplierProduct(OrgStock $orgStock, array $options): ?SupplierProduct
     {
-        if ($level !== 'carton' || blank($options['supplier_product'] ?? null) || !$orgStock->stock_id) {
-            return null;
-        }
+        $supplierProductId = $options['supplier_product'] ?? null;
 
-        return SupplierProduct::where('id', (int) $options['supplier_product'])
-            ->whereIn('id', DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id'))
-            ->first();
+        return blank($supplierProductId) ? null : GetOrgStockLabelData::make()->getSupplierProduct($orgStock, (int) $supplierProductId);
     }
 
     /**

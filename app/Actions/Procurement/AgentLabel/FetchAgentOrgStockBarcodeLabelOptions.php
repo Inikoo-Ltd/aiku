@@ -25,10 +25,10 @@ class FetchAgentOrgStockBarcodeLabelOptions extends OrgAction
     /**
      * @return array<string, mixed>
      */
-    public function handle(Organisation $organisation, OrgStock $orgStock): array
+    public function handle(Organisation $organisation, OrgStock $orgStock, ?int $supplierProductId = null): array
     {
         return [
-            'options'     => GetOrgStockLabelOptions::run($orgStock),
+            'options'     => GetOrgStockLabelOptions::run($orgStock, $supplierProductId),
             'label_route' => [
                 'name'       => 'grp.org.procurement.agent_labels.barcode_label',
                 'parameters' => [
@@ -56,6 +56,6 @@ class FetchAgentOrgStockBarcodeLabelOptions extends OrgAction
         $this->initialisation($organisation, $request);
         $this->ensureAgentBuysOrgStock($organisation, $orgStock);
 
-        return $this->handle($organisation, $orgStock);
+        return $this->handle($organisation, $orgStock, $request->integer('supplier_product') ?: null);
     }
 }

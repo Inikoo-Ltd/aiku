@@ -27,10 +27,10 @@ class FetchOrgStockLabelOptions extends OrgAction
     /**
      * @return array<string, mixed>
      */
-    public function handle(Warehouse $warehouse, OrgStock $orgStock): array
+    public function handle(Warehouse $warehouse, OrgStock $orgStock, ?int $supplierProductId = null): array
     {
         return [
-            'options'     => GetOrgStockLabelOptions::run($orgStock),
+            'options'     => GetOrgStockLabelOptions::run($orgStock, $supplierProductId),
             'label_route' => [
                 'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
                 'parameters' => [
@@ -64,6 +64,6 @@ class FetchOrgStockLabelOptions extends OrgAction
             403
         );
 
-        return $this->handle($warehouse, $orgStock);
+        return $this->handle($warehouse, $orgStock, $request->integer('supplier_product') ?: null);
     }
 }

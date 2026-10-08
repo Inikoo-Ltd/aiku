@@ -34,6 +34,8 @@ class GetOrgStockLabelData
         $tradeUnits = $orgStock->tradeUnits;
         $tradeUnit  = $tradeUnits->first();
         $barcode    = collect(GetOrgStockBarcodes::run($orgStock))->firstWhere('level', $level);
+        $supplierProduct ??= $this->getSupplierProduct($orgStock);
+        $imagePath  = $this->getSupplierProductImagePath($supplierProduct) ?? $this->getImagePath($tradeUnits);
 
         return [
             'code'            => $orgStock->code,
@@ -43,8 +45,8 @@ class GetOrgStockLabelData
             'manufactured_by' => $this->getManufacturedBy($tradeUnits),
             'weight'          => $this->getWeight($barcode['weight'] ?? null),
             'signature'       => $this->getSignature($orgStock->organisation),
-            'has_image'       => $tradeUnits->contains(fn (TradeUnit $tradeUnit) => (bool) $tradeUnit->image_id),
-            'image_path'      => $this->getImagePath($tradeUnits),
+            'has_image'       => filled($imagePath),
+            'image_path'      => $imagePath,
             'materials'       => $this->collapseWhitespace($this->getSharedTradeUnit($tradeUnits, 'marketing_ingredients')?->marketing_ingredients),
             'barcode'         => [
                 'number' => $barcode['number'] ?? null,
@@ -62,12 +64,6 @@ class GetOrgStockLabelData
      */
     private function getCartonData(OrgStock $orgStock, $tradeUnits, ?SupplierProduct $supplierProduct): array
     {
-        $supplierProduct ??= $orgStock->stock_id
-            ? SupplierProduct::whereIn('id', DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id'))
-                ->orderByRaw('units_per_carton is null')
-                ->first()
-            : null;
-
         $unitsPerPack   = $supplierProduct?->units_per_pack ?? (int) ($orgStock->packed_in ?? 1);
         $unitsPerCarton = $supplierProduct?->units_per_carton;
         $supplierCode   = $supplierProduct?->supplier?->code;
@@ -218,6 +214,45 @@ class GetOrgStockLabelData
      * live off has_image, because a developer whose box has no media synced still needs to be able
      * to turn the image on.
      */
+    /**
+     * The supplier product the label speaks for: the one asked for when it supplies this stock,
+     * otherwise the stock's supplier product with internal pictures and a carton size first.
+     */
+    public function getSupplierProduct(OrgStock $orgStock, ?int $supplierProductId = null): ?SupplierProduct
+    {
+        if (!$orgStock->stock_id) {
+            return null;
+        }
+
+        return SupplierProduct::whereIn('id', DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id'))
+            ->when($supplierProductId, fn ($query) => $query->where('id', $supplierProductId))
+            ->orderByRaw('image_id is null, units_per_carton is null')
+            ->first();
+    }
+
+    /**
+     * The label prints the supplier product's internal pictures, the main one first, so what is
+     * stuck on the goods matches what the warehouse photographed rather than the marketing shot.
+     */
+    private function getSupplierProductImagePath(?SupplierProduct $supplierProduct): ?string
+    {
+        if (!$supplierProduct) {
+            return null;
+        }
+
+        $images = $supplierProduct->images->sortByDesc(fn ($media) => $media->id === $supplierProduct->image_id);
+
+        foreach ($images as $media) {
+            $path = $media->getPath();
+
+            if ($path && is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
     private function getImagePath($tradeUnits): ?string
     {
         foreach ($tradeUnits as $tradeUnit) {
