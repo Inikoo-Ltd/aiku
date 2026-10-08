@@ -5790,6 +5790,54 @@ describe('partner shopping list', function () {
         $sellerOrgStock->update(['packed_in' => $packedIn]);
     });
 
+    test('the batches the seller picked arrive filled in on the buyer goods in, in the buyer SKOs', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $packedIn       = $sellerOrgStock->packed_in;
+        $sellerOrgStock->update(['packed_in' => 4]);
+
+        $item  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 12]);
+        $order = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]])['orders'][0];
+
+        $stockDelivery    = SendPartnerOrderToWarehouse::make()->action($order);
+        $deliveryNote     = $order->deliveryNotes()->first();
+        $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->first();
+
+        $warehouse        = $seller->warehouses()->first();
+        $location         = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $locationOrgStock = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $location, []);
+        $sellerBatch      = \App\Actions\Dispatching\BatchCode\StoreBatchCode::make()->action($warehouse, [
+            'code' => 'TEA-'.uniqid(), 'expiry_date' => '2027-05-31', 'org_stock_id' => $sellerOrgStock->id,
+        ]);
+        \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($sellerOrgStock, $location, [
+            'type' => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::ADJUSTMENT, 'quantity' => 5, 'batches' => [['batch_code_id' => $sellerBatch->id, 'quantity' => 5]],
+        ]);
+
+        \App\Actions\Dispatching\Picking\StorePicking::make()->action($deliveryNoteItem, $this->adminGuest->getUser(), [
+            'picker_user_id'        => $this->adminGuest->getUser()->id,
+            'location_org_stock_id' => $locationOrgStock->id,
+            'quantity'              => 2,
+        ]);
+        \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($deliveryNoteItem->pickings()->first()->id, $this->adminGuest->getUser()->id);
+        $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        $buyerItem    = $stockDelivery->items()->first()->refresh();
+        $buyerBatches = $buyerItem->batches()->with('batchCode')->get();
+        expect($buyerBatches)->toHaveCount(1)
+            ->and($buyerBatches->first()->batchCode->code)->toBe($sellerBatch->code)
+            ->and($buyerBatches->first()->batchCode->expiry_date->toDateString())->toBe('2027-05-31')
+            ->and($buyerBatches->first()->batchCode->organisation_id)->toBe($buyerItem->organisation_id)
+            ->and((float) $buyerBatches->first()->quantity)->toEqualWithDelta(8 / $buyerItem->unitsPerSko(), 0.0001);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+        $sellerOrgStock->update(['packed_in' => $packedIn]);
+    });
+
     test('send partner order to warehouse rejects non-creating order', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
