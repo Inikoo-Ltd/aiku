@@ -86,6 +86,7 @@ class ProcessOrderPurchaseConversionEvent implements ShouldBeUnique
                 'product_id'         => null,
                 'quantity'           => 1,
                 'net_amount'         => $order->net_amount,
+                'landing_webpage_id' => $checkoutEvent?->landing_webpage_id ?? GetVisitorLandingWebpage::run($visitor, $order->submitted_at),
                 'page_url'           => mb_substr($pageUrl, 0, 4096),
                 'page_path'          => mb_substr(parse_url($pageUrl, PHP_URL_PATH) ?: '/', 0, 2048),
                 'event_date'         => $order->submitted_at->toDateString(),

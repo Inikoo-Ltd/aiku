@@ -902,7 +902,7 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
         <div class="pt-3">
-            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="currentTab === 'conversions' ? { currencyCode: performance?.currency_code } : {}" />
+            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="['conversions', 'webpages'].includes(currentTab) ? { currencyCode: performance?.currency_code } : {}" />
         </div>
     </section>
 </template>

@@ -89,6 +89,9 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
                     'avg_time_on_page' => $avgTimeOnPage,
                     'add_to_baskets'   => $result->add_to_baskets,
                     'conversion_rate'  => round($conversionRate, 2),
+                    'checkouts'        => $result->checkouts,
+                    'purchases'        => $result->purchases,
+                    'revenue'          => $result->revenue,
                 ],
             ];
         }
@@ -125,12 +128,30 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             ->get()
             ->keyBy('date');
 
-        return $pageViewStats->keys()->merge($conversionStats->keys())->unique()->map(fn ($date) => (object) [
+        $landingStats = DB::connection('aiku_no_sticky')->table('website_conversion_events')
+            ->where('event_date', '>=', $from)
+            ->where('event_date', '<=', $to)
+            ->where('landing_webpage_id', $timeSeries->webpage_id)
+            ->whereIn('event_type', [WebsiteConversionEventTypeEnum::CHECKOUT->value, WebsiteConversionEventTypeEnum::PURCHASE->value])
+            ->select(
+                DB::raw('CAST(event_date AS DATE) as date'),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::CHECKOUT->value."' THEN 1 ELSE 0 END) as checkouts"),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::PURCHASE->value."' THEN 1 ELSE 0 END) as purchases"),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::PURCHASE->value."' THEN net_amount ELSE 0 END) as revenue")
+            )
+            ->groupBy(DB::raw('CAST(event_date AS DATE)'))
+            ->get()
+            ->keyBy('date');
+
+        return $pageViewStats->keys()->merge($conversionStats->keys())->merge($landingStats->keys())->unique()->map(fn ($date) => (object) [
             'date'             => $date,
             'visitors'         => $pageViewStats->get($date)?->visitors ?? 0,
             'page_views'       => $pageViewStats->get($date)?->page_views ?? 0,
             'avg_time_on_page' => $pageViewStats->get($date)?->avg_time_on_page ?? 0,
             'add_to_baskets'   => $conversionStats->get($date)?->add_to_baskets ?? 0,
+            'checkouts'        => $landingStats->get($date)?->checkouts ?? 0,
+            'purchases'        => $landingStats->get($date)?->purchases ?? 0,
+            'revenue'          => $landingStats->get($date)?->revenue ?? 0,
         ]);
     }
 
@@ -147,6 +168,9 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             DB::raw('SUM(page_views) as page_views'),
             DB::raw('SUM(add_to_baskets) as add_to_baskets'),
             DB::raw('SUM(avg_time_on_page * page_views) as total_duration'),
+            DB::raw('SUM(checkouts) as checkouts'),
+            DB::raw('SUM(purchases) as purchases'),
+            DB::raw('SUM(revenue) as revenue'),
         ];
 
         $query = DB::connection('aiku_no_sticky')->table('webpage_time_series_records')

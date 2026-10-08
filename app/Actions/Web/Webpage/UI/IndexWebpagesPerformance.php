@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\WebsiteConversionEvent\GetVisitorLandingWebpage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Web\Webpage;
@@ -49,6 +50,9 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw('SUM(webpage_time_series_records.visitors) as visitors')
             ->selectRaw('SUM(webpage_time_series_records.page_views) as page_views')
             ->selectRaw('SUM(webpage_time_series_records.add_to_baskets) as add_to_baskets')
+            ->selectRaw('SUM(webpage_time_series_records.checkouts) as checkouts')
+            ->selectRaw('SUM(webpage_time_series_records.purchases) as purchases')
+            ->selectRaw('SUM(webpage_time_series_records.revenue) as revenue')
             ->selectRaw('SUM(webpage_time_series_records.avg_time_on_page * webpage_time_series_records.page_views) as total_time_on_page');
 
         $search = DB::table('search_console_page_days')
@@ -89,12 +93,15 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw('COALESCE(performance.visitors, 0) as visitors')
             ->selectRaw('COALESCE(performance.page_views, 0) as page_views')
             ->selectRaw('COALESCE(performance.add_to_baskets, 0) as add_to_baskets')
+            ->selectRaw('COALESCE(performance.checkouts, 0) as checkouts')
+            ->selectRaw('COALESCE(performance.purchases, 0) as purchases')
+            ->selectRaw('COALESCE(performance.revenue, 0) as revenue')
             ->selectRaw('COALESCE(search.search_clicks, 0) as search_clicks')
             ->selectRaw('COALESCE(search.search_impressions, 0) as search_impressions')
             ->selectRaw('CASE WHEN search.search_impressions > 0 THEN ROUND(search.search_weighted_position / search.search_impressions, 1) END as search_position')
             ->selectRaw('CASE WHEN performance.page_views > 0 THEN ROUND(performance.total_time_on_page / performance.page_views) ELSE 0 END as avg_time_on_page')
             ->selectRaw('CASE WHEN performance.visitors > 0 THEN ROUND(performance.add_to_baskets * 100.0 / performance.visitors, 2) ELSE 0 END as conversion_rate')
-            ->allowedSorts(['code', 'title', 'visitors', 'page_views', 'avg_time_on_page', 'add_to_baskets', 'conversion_rate', 'search_clicks', 'search_impressions', 'search_position'])
+            ->allowedSorts(['code', 'title', 'visitors', 'page_views', 'avg_time_on_page', 'add_to_baskets', 'conversion_rate', 'checkouts', 'purchases', 'revenue', 'search_clicks', 'search_impressions', 'search_position'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -124,6 +131,9 @@ class IndexWebpagesPerformance extends OrgAction
                 ->column(key: 'avg_time_on_page', label: __('Avg. time on page'), tooltip: __('Measured until the visitor opens the next page, so the last page of a visit counts as 0 seconds'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'add_to_baskets', label: __('Add to baskets'), tooltip: __('Times a product was added to the basket on this page'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'conversion_rate', label: __('Conversion'), tooltip: __('Add to baskets per 100 visitors'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'checkouts', label: __('Checkouts'), tooltip: __('Checkouts by visitors who landed on this page, in the last visit that started on a website page in the :days days before', ['days' => GetVisitorLandingWebpage::LOOKBACK_DAYS]), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'purchases', label: __('Purchases'), tooltip: __('Orders submitted by visitors who landed on this page, in the last visit that started on a website page in the :days days before', ['days' => GetVisitorLandingWebpage::LOOKBACK_DAYS]), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'revenue', label: __('Revenue'), tooltip: __('Net amount of those orders, in the shop currency'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'search_clicks', label: __('Search clicks'), tooltip: __('Clicks from Google Search, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'search_impressions', label: __('Impressions'), tooltip: __('Times the page was shown in Google Search, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'search_position', label: __('Position'), tooltip: __('Average position in Google Search, weighted by impressions. 1 is the top result'), sortable: true, align: 'right', tooltipIcon: true)

@@ -25,6 +25,9 @@ type WebpagePerformanceRow = {
     avg_time_on_page: number
     add_to_baskets: number
     conversion_rate: number
+    checkouts: number
+    purchases: number
+    revenue: number
     search_clicks: number
     search_impressions: number
     search_position: number | null
@@ -33,6 +36,7 @@ type WebpagePerformanceRow = {
 defineProps<{
     data: object
     tab: string
+    currencyCode?: string | null
 }>()
 
 const locale = useLocaleStore()
@@ -79,6 +83,18 @@ const formatDuration = (totalSeconds: number) => {
 
         <template #cell(conversion_rate)="{ item: webpage }: { item: WebpagePerformanceRow }">
             <span class="tabular-nums">{{ locale.number(webpage.conversion_rate) }}%</span>
+        </template>
+
+        <template #cell(checkouts)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span class="tabular-nums">{{ locale.number(webpage.checkouts) }}</span>
+        </template>
+
+        <template #cell(purchases)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span class="tabular-nums">{{ locale.number(webpage.purchases) }}</span>
+        </template>
+
+        <template #cell(revenue)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span class="tabular-nums">{{ currencyCode ? locale.currencyFormat(currencyCode, webpage.revenue) : locale.number(webpage.revenue) }}</span>
         </template>
 
         <template #cell(search_clicks)="{ item: webpage }: { item: WebpagePerformanceRow }">
