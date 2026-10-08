@@ -11,4 +11,6 @@ enum WebsiteConversionEventTypeEnum: string
 {
     case ADD_TO_BASKET = 'add_to_basket';
     case REGISTRATION  = 'registration';
+    case CHECKOUT      = 'checkout';
+    case PURCHASE      = 'purchase';
 }

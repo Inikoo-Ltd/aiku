@@ -29,6 +29,7 @@ import {
     faEnvelopeOpenText,
     faCommentDots,
     faFileInvoiceDollar,
+    faCashRegister,
 } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { ctrans } from '@/Composables/useTrans'
@@ -36,7 +37,7 @@ import { ctrans } from '@/Composables/useTrans'
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
     faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe,
-    faEye, faShoppingCart, faUndo, faComments, faEnvelopeOpenText, faCommentDots, faFileInvoiceDollar
+    faEye, faShoppingCart, faUndo, faComments, faEnvelopeOpenText, faCommentDots, faFileInvoiceDollar, faCashRegister
 )
 
 interface NoteImage {
@@ -76,7 +77,7 @@ const filterOptions = [
     { key: 'account_update', label: ctrans('Account Changes'), types: ['account_update', 'note'] },
     { key: 'payment', label: ctrans('Payments'), types: ['payment', 'invoice_open'] },
     { key: 'email', label: ctrans('Emails'), types: ['email'] },
-    { key: 'web_activity', label: ctrans('Website Activity'), types: ['page_view', 'product_view', 'add_to_basket'] },
+    { key: 'web_activity', label: ctrans('Website Activity'), types: ['page_view', 'product_view', 'add_to_basket', 'checkout'] },
     { key: 'return', label: ctrans('Returns'), types: ['return'] },
 ]
 

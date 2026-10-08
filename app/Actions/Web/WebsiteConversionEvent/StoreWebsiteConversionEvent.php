@@ -9,6 +9,7 @@ namespace App\Actions\Web\WebsiteConversionEvent;
 
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
+use App\Models\Ordering\Order;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteConversionEvent;
@@ -30,8 +31,11 @@ class StoreWebsiteConversionEvent
         WebsiteConversionEventTypeEnum|string $eventType,
         string $url,
         ?int $productId = null,
-        int $quantity = 1
+        int $quantity = 1,
+        ?int $orderId = null
     ): void {
+        $eventType = $eventType instanceof WebsiteConversionEventTypeEnum ? $eventType : WebsiteConversionEventTypeEnum::from($eventType);
+
         $visitor = WebsiteVisitor::query()
             ->where('session_id', $sessionId)
             ->where('website_id', $websiteId)
@@ -54,7 +58,7 @@ class StoreWebsiteConversionEvent
 
         $webpage = $this->resolveWebpage($website, $path);
 
-        WebsiteConversionEvent::create([
+        $eventData = [
             'group_id'           => $visitor->group_id,
             'organisation_id'    => $visitor->organisation_id,
             'website_visitor_id' => $visitor->id,
@@ -67,7 +71,30 @@ class StoreWebsiteConversionEvent
             'page_url'           => $url,
             'page_path'          => $path,
             'event_date'         => now()->toDateString(),
-        ]);
+        ];
+
+        if ($eventType === WebsiteConversionEventTypeEnum::CHECKOUT) {
+            $order = $orderId ? Order::find($orderId) : null;
+
+            if (!$order) {
+                return;
+            }
+
+            WebsiteConversionEvent::firstOrCreate(
+                [
+                    'order_id'           => $order->id,
+                    'website_visitor_id' => $visitor->id,
+                    'event_type'         => $eventType,
+                ],
+                array_merge($eventData, [
+                    'net_amount' => $order->net_amount,
+                ])
+            );
+
+            return;
+        }
+
+        WebsiteConversionEvent::create($eventData);
     }
 
     protected function resolveWebpage(Website $website, string $path): ?Webpage
