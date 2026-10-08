@@ -27,6 +27,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
+use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\HumanResources\Employee\StoreEmployee;
@@ -464,6 +465,7 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
         ->and((int)$stock->packed_in)->toBe(2)
         ->and($stock->gross_weight)->toBe(550)
         ->and($stock->dimensions)->toEqual(['l' => 30, 'w' => 20, 'h' => 10])
+        ->and($stock->orgStocks()->pluck('unit_barcode')->unique()->all())->toBe(['4006381333931'])
         ->and((float)$supplierProduct->cost)->toBe(1.5)
         ->and($supplierProduct->units_per_carton)->toBe(80)
         ->and($supplierProduct->carton_weight)->toBe(23000)
@@ -480,12 +482,71 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
 
     expect(App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder::make()->estimatedExpenses($purchaseOrder))->toEqual(24.0);
 
+    $orderColumn = strtoupper($this->organisation->code);
+    $this->get(route('grp.supply-chain.suppliers.supplier_products.uploads.show', [$supplier->slug, $upload->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where("upload.purchase_orders.$orderColumn.purchase_order", $purchaseOrder->reference)
+            ->where("upload.purchase_orders.$orderColumn.organisation", $this->organisation->name)
+            ->where("upload.purchase_orders.$orderColumn.route.name", 'grp.org.procurement.purchase_orders.show')
+            ->where("upload.purchase_orders.$orderColumn.route.parameters.purchaseOrder", $purchaseOrder->slug)
+            ->etc());
+
+    $this->get(route('grp.supply-chain.suppliers.supplier_products.index', [$supplier->slug, 'tab' => 'uploads']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('SupplyChain/SupplierProducts')
+            ->where('tabs.current', 'uploads')
+            ->where('uploads.data.0.id', $upload->id)
+            ->where('uploads.data.0.preview_route.name', 'grp.supply-chain.suppliers.supplier_products.uploads.show')
+            ->etc());
+
     $again = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit cost (Sup Cur)' => 3])]));
     $againFindings = collect($again->records()->first()->data['findings'])->pluck('level', 'code');
 
     expect($againFindings->all())->toMatchArray(['link_trade_unit' => 'link', 'update_supplier_product' => 'block', 'cost_change' => 'block']);
 });
 
+
+test('supplier product upload for a supplier in an agent puts the lines on the org agent draft with its agent supplier purchase order', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    $supplier = StoreSupplier::make()->action(parent: $agent, modelData: Supplier::factory()->definition());
+    $orderColumn = 'Order Cartons '.$this->organisation->code;
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow([
+            $orderColumn                         => 2,
+            'Family'                             => 'UPL-AGT',
+            'Part reference'                     => 'UPLA-01',
+            "Supplier's product code"            => 'UPLA-01',
+            'Unit barcode (EAN-13, for website)' => '5901234123457',
+        ]),
+    ], [$orderColumn]));
+
+    acceptSupplierProductUploadFindings($upload);
+    App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh());
+
+    $purchaseOrder              = PurchaseOrder::where('parent_type', 'OrgAgent')->where('parent_id', $orgAgent->id)->firstOrFail();
+    $agentSupplierPurchaseOrder = App\Models\SupplyChain\AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)->where('supplier_id', $supplier->id)->firstOrFail();
+
+    expect($purchaseOrder->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($agentSupplierPurchaseOrder->state)->toBe(App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->purchaseOrderTransactions()->where('agent_supplier_purchase_order_id', $agentSupplierPurchaseOrder->id)->count())->toBe(1);
+
+    $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.name', 'grp.models.purchase-order.submit')
+            ->where('pageHead.actions.0.route.parameters.purchaseOrder', $purchaseOrder->id)
+            ->etc());
+
+    $this->patch(route('grp.models.purchase-order.submit', ['purchaseOrder' => $purchaseOrder->id]))->assertRedirect();
+
+    expect($agentSupplierPurchaseOrder->refresh()->state)->toBe(App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::SUBMITTED)
+        ->and($purchaseOrder->refresh()->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED);
+
+    $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.style', 'edit')->etc());
+});
 
 test('supplier product upload AI checks add Jev findings and the final review, and stop when the monthly budget is spent', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
@@ -569,6 +630,94 @@ test('UI supplier product upload preview shows the rows and saves decisions', fu
 
     $this->post(route('grp.models.supplier_product_upload.cancel', ['upload' => $upload->id]))->assertRedirect();
     expect($upload->refresh()->state)->toBe(App\Enums\Helpers\Import\UploadStateEnum::CANCELLED);
+});
+
+function supplierProductFormInput(array $overrides = []): array
+{
+    return collect(supplierProductUploadRow())
+        ->mapWithKeys(fn ($value, string $heading) => [App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum::fromHeading($heading)->value => (string)$value])
+        ->merge($overrides)
+        ->all();
+}
+
+test('UI new supplier product form checks like an upload row and creates the trade unit, barcode, SKO and supplier product', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $input    = supplierProductFormInput([
+        'family'         => 'UPL-FORM',
+        'part_reference' => 'UPLF-01',
+        'supplier_code'  => '',
+        'unit_label'     => '20x',
+        'unit_barcode'   => '5901234123464',
+    ]);
+
+    $this->withoutVite()
+        ->get(route('grp.supply-chain.suppliers.supplier_products.create', ['supplier' => $supplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('SupplyChain/SupplierProductCreate')
+            ->has('sections', 4)
+            ->where('sections.0.fields.0.key', 'family'));
+
+    $checkRoute = route('grp.models.supplier.supplier-product.check_form', ['supplier' => $supplier->id]);
+    $storeRoute = route('grp.models.supplier.supplier-product.store_from_form', ['supplier' => $supplier->id]);
+
+    $check    = $this->postJson($checkRoute, $input)->assertOk();
+    $findings = collect($check->json('findings'))->pluck('level', 'code');
+
+    expect($findings->all())->toMatchArray([
+        'family_new'                        => 'warning',
+        'supplier_code_from_part_reference' => 'warning',
+        'unit_label_odd'                    => 'block',
+        'sko_name_suggested'                => 'warning',
+    ])
+        ->and($check->json('values.sko_name'))->toBe('Pack of 2 Hemp Forest Bag')
+        ->and($check->json('review'))->toBeNull();
+
+    $this->post($storeRoute, $input + ['accepted' => ['unit_label_odd']])->assertSessionHasErrors('review');
+
+    App\Actions\Helpers\AI\AskJev::shouldRun()->once()->andReturn(['unit_name_is_pack' => ['noul' => 0.9]]);
+    $reviewed = $this->postJson($checkRoute, $input + ['start_review' => true])->assertOk();
+    $reviewId = $reviewed->json('review.id');
+    $findings = collect($reviewed->json('findings'))->pluck('level', 'code');
+
+    expect($reviewed->json('review.status'))->toBe('done')
+        ->and($findings->all())->toMatchArray(['jev_unit_name_pack' => 'block', 'unit_label_odd' => 'block']);
+
+    $renamed = collect($this->postJson($checkRoute, ['unit_name' => 'Hemp Forest Tote', 'review' => $reviewId] + $input)->json('findings'))->keyBy('code');
+    expect($renamed['jev_unit_name_pack']['message'])->toStartWith('About the earlier value:')
+        ->and($renamed)->toHaveKey('unit_label_odd');
+
+    $this->post($storeRoute, ['part_reference' => 'UPLF-99', 'supplier_code' => 'UPLF-99', 'review' => $reviewId, 'accepted' => ['unit_label_odd', 'jev_unit_name_pack']] + $input)
+        ->assertSessionHasErrors('review');
+
+    $this->post($storeRoute, $input + ['review' => $reviewId, 'accepted' => ['unit_label_odd']])->assertSessionHasErrors('findings');
+    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'UPLF-01')->exists())->toBeFalse();
+
+    $this->post($storeRoute, $input + [
+        'review'   => $reviewId,
+        'sko_name' => 'Pair of Hemp Forest Bags',
+        'accepted' => $findings->filter(fn (string $level) => in_array($level, ['block', 'link']))->keys()->all(),
+    ])->assertSessionHasNoErrors()->assertRedirect();
+
+    $this->post($storeRoute, $input + ['review' => $reviewId])->assertSessionHasErrors('review');
+
+    $tradeUnit       = TradeUnit::where('group_id', $this->group->id)->where('code', 'UPLF-01')->firstOrFail();
+    $stock           = $tradeUnit->stocks()->firstOrFail();
+    $supplierProduct = SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'UPLF-01')->firstOrFail();
+
+    expect($tradeUnit->barcode)->toBe('5901234123464')
+        ->and($tradeUnit->type)->toBe('20x')
+        ->and($tradeUnit->tradeUnitFamily?->code)->toBe('UPL-FORM')
+        ->and($stock->name)->toBe('Pair of Hemp Forest Bags')
+        ->and($stock->stockFamily?->code)->toBe('UPL-FORM')
+        ->and((int)$stock->packed_in)->toBe(2)
+        ->and($supplierProduct->units_per_carton)->toBe(80)
+        ->and($supplierProduct->data['seed']['recommended_price'])->toEqual(8.5)
+        ->and($supplierProduct->tradeUnits()->pluck('trade_units.id')->all())->toBe([$tradeUnit->id])
+        ->and($supplierProduct->orgSupplierProducts()->count())->toBe($supplier->orgSuppliers()->count());
+
+    $again = collect($this->postJson($checkRoute, $input)->json('findings'))->pluck('level', 'code');
+    expect($again->all())->toMatchArray(['link_trade_unit' => 'link', 'update_supplier_product' => 'block']);
 });
 
 test('UI show suppliers product in supplier', function (SupplierProduct $supplierProduct) {
@@ -1032,10 +1181,10 @@ test('UI create suppliers product in supplier', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('CreateModel')
+            ->component('SupplyChain/SupplierProductCreate')
             ->has('title')
             ->has('pageHead')
-            ->has('formData')
+            ->has('sections')
             ->has('breadcrumbs', 5);
     });
 });
@@ -1581,4 +1730,36 @@ test('purchase order journey rows query runs for both views', function () {
 
     expect($rows(true))->toBeArray()
         ->and($rows(false))->toBeArray();
+});
+
+test('procurement editors keep internal pictures on the supplier product, away from its trade units', function () {
+    setPermissionsTeamId($this->group->id);
+    $supplier        = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $this->stocks[0]->id]));
+    $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->firstOrFail();
+    $tradeUnitMediaCount = fn () => $supplierProduct->tradeUnits->sum(fn ($tradeUnit) => $tradeUnit->images()->count());
+    $tradeUnitMediaBefore = $tradeUnitMediaCount();
+    $newUser = fn (array $permissions) => tap(
+        \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser()
+    )->givePermissionTo($permissions);
+    $picture = fn () => ['images' => [\Illuminate\Http\UploadedFile::fake()->image('packing.jpg', 50, 50)]];
+
+    actingAs($newUser(["procurement.{$orgSupplierProduct->organisation_id}.view"]));
+    $this->post(route('grp.models.org_supplier_product.upload_images', ['orgSupplierProduct' => $orgSupplierProduct->id]), $picture())->assertForbidden();
+
+    actingAs($newUser(["procurement.{$orgSupplierProduct->organisation_id}.edit"]));
+    $this->post(route('grp.models.org_supplier_product.upload_images', ['orgSupplierProduct' => $orgSupplierProduct->id]), $picture())->assertSessionHasNoErrors();
+    $this->post(route('grp.models.supplier-product.upload_images', ['supplierProduct' => $supplierProduct->id]), $picture())->assertForbidden();
+
+    $supplierProduct->refresh();
+    $media = $supplierProduct->images()->firstOrFail();
+    expect($supplierProduct->images()->count())->toBe(1)
+        ->and($supplierProduct->image_id)->toBe($media->id)
+        ->and($tradeUnitMediaCount())->toBe($tradeUnitMediaBefore)
+        ->and(GetOrgSupplierProductShowcase::run($orgSupplierProduct)['internal_images']['images'])->toHaveCount(1);
+
+    $this->delete(route('grp.models.org_supplier_product.detach_image', ['orgSupplierProduct' => $orgSupplierProduct->id, 'media' => $media->id]))->assertSuccessful();
+
+    expect($supplierProduct->images()->count())->toBe(0)
+        ->and($supplierProduct->refresh()->image_id)->toBeNull();
 });

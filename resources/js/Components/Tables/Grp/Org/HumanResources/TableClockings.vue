@@ -278,11 +278,20 @@ const submitAddClocking = async (): Promise<void> => {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
+                            {{ ctrans("Date") }}
+                        </label>
+                        <div class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-500">
+                            {{ useFormatTime(timesheetDate ?? selectedClocking?.clocked_at) }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
                             {{ ctrans("Clocked At") }}
                         </label>
                         <DatePicker
                             v-model="clockedAt"
-                            showTime
+                            timeOnly
                             showSeconds
                             hourFormat="24"
                             showIcon

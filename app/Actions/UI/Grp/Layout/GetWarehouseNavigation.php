@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Inventory\WarehouseTeam\UI\ShowWarehouseTeam;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -349,6 +350,18 @@ class GetWarehouseNavigation
             ];
         }
 
+        if (ShowWarehouseTeam::canManageWarehouseTeam($user, $warehouse)) {
+            $navigation['team'] = [
+                'root'    => 'grp.org.warehouses.show.team.',
+                'label'   => __('Team'),
+                'icon'    => ['fal', 'fa-user-hard-hat'],
+                'route'   => [
+                    'name'       => 'grp.org.warehouses.show.team.dashboard',
+                    'parameters' => [$warehouse->organisation->slug, $warehouse->slug],
+                ],
+                'topMenu' => [],
+            ];
+        }
 
         return $navigation;
     }

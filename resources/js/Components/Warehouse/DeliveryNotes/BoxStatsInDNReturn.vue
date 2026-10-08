@@ -2,6 +2,7 @@
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { parcelPresets, findParcelPreset, applyParcelPreset } from "@/Composables/useParcelPresets"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -300,29 +301,6 @@ const onSubmitParcels = () => {
 
 const listError = inject('listError', {})
 
-const parcelPresets = [
-    { label: '40 × 40 × 40 cm', weight: null, dimensions: [40, 40, 40] },
-    { label: '60 × 40 × 30 cm', weight: null, dimensions: [60, 40, 30] },
-    { label: '60 × 50 × 40 cm', weight: null, dimensions: [60, 50, 40] },
-    { label: '60 × 60 × 40 cm', weight: null, dimensions: [60, 60, 40] },
-    { label: '41 × 24 × 31 cm', weight: null, dimensions: [41, 24, 31] },
-    { label: '94 × 48 × 37 cm', weight: null, dimensions: [94, 48, 37] },
-    { label: '94 × 48 × 43 cm', weight: null, dimensions: [94, 48, 43] },
-    { label: '22 × 19 × 17 cm', weight: null, dimensions: [22, 19, 17] },
-    { label: '68 × 68 × 44 cm', weight: null, dimensions: [68, 68, 44] },
-]
-
-const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: { dimensions: any; weight: any }) => {
-
-    if (!preset) return
-
-    parcel.dimensions = [...preset.dimensions]
-
-    if (preset.weight) {
-        parcel.weight = preset.weight
-    }
-
-}
 
 const refundRoute = (refund) => {
 	switch(route().current()) {
@@ -820,12 +798,10 @@ const replacementRoute = (replacement) => {
 
                                  <div class="col-span-3 sm:col-span-5 pl-1 sm:pl-0">
                                     <Select
-                                        :modelValue="parcelPresets.find(p =>
-                                            p.dimensions.every((d,i)=>d===parcel.dimensions[i])
-                                        )"
+                                        :modelValue="findParcelPreset(parcel.dimensions)"
                                         :options="parcelPresets"
                                         optionLabel="label"
-                                        placeholder="Preset Size"
+                                        :placeholder="ctrans('Preset size')"
                                         class="w-20 sm:w-full text-xs sm:text-sm"
                                         @change="(e)=>applyParcelPreset(parcel,e.value)"
                                     />

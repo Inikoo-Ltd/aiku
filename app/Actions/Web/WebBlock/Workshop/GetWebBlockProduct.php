@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Workshop;
 
+use App\Actions\Catalogue\Variant\LocaliseVariantData;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductAttachments;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
@@ -62,7 +63,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.is_label_info_approved', $this->isProductLabelInfoApproved($product));
 
         if ($variant) {
-            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant->only(['id', 'data']));
+            data_set($webBlock, 'web_block.layout.data.fieldValue.variant', ['id' => $variant->id, 'data' => LocaliseVariantData::run($variant->data, $variant->option_translations)]);
         }
 
         return $webBlock;

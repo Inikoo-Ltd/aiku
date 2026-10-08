@@ -39,6 +39,7 @@ import {
 	faRepeat,
 	faListUl,
 	faThList,
+	faUpload,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -77,6 +78,7 @@ library.add(
 	faLayerGroup,
 	faSortShapesUpAlt,
 	faThList,
+	faUpload,
 )
 
 const layoutStore = inject("layout", layoutStructure)
@@ -353,20 +355,27 @@ const placeMobileTabOptions = () => {
 								icon="fad fa-spinner-third"
 								class="animate-spin h-5 w-5"
 								fixed-width aria-hidden="true" />
-							<FontAwesomeIcon
-								v-else-if="tab.icon"
-								:icon="tab.icon"
-								class="h-5 w-5"
-								fixed-width aria-hidden="true"
-								:class="
-									tabIconClass(
-										tabSlug === currentTab,
-										tab.type,
-										tab.align,
-										tab.iconClass || ''
-									)
-								"
-							/>
+							<span v-else-if="tab.icon" class="relative inline-flex">
+								<FontAwesomeIcon
+									:icon="tab.icon"
+									class="h-5 w-5"
+									fixed-width aria-hidden="true"
+									:class="
+										tabIconClass(
+											tabSlug === currentTab,
+											tab.type,
+											tab.align,
+											tab.iconClass || ''
+										)
+									"
+								/>
+								<FontAwesomeIcon
+									v-if="tab.icon_badge"
+									:icon="tab.icon_badge"
+									class="absolute -bottom-1 -right-1.5 rounded-full bg-white text-[10px]"
+									fixed-width aria-hidden="true"
+								/>
+							</span>
 							<span v-if="tab.type !== 'icon'" class="whitespace-nowrap">{{
 								tab.title
 							}}</span>

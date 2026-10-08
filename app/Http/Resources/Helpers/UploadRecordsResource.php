@@ -24,6 +24,7 @@ class UploadRecordsResource extends JsonResource
             'id'          => $record->id,
             'original_filename'  => $record->excel->original_filename,
             'row_number'  => $record->row_number,
+            'values'      => $record->values,
             'errors'      => $record->errors,
             'fail_column' => $record->fail_column,
             'status'      => $record->status,

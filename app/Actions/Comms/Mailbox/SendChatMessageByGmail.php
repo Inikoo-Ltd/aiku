@@ -317,10 +317,23 @@ class SendChatMessageByGmail
      * The same markers the chat bubble renders (formatWhatsappMarkup in useWhatsappMarkup.ts),
      * so the customer's mail reads as the agent saw it. The text is escaped before any tag is
      * put back, and a marker only counts where it touches a word, so snake_case and 2*3*4
-     * are left alone.
+     * are left alone. Links are lifted out first, so a marker inside a URL never opens a tag,
+     * and go back as anchors with trailing punctuation left outside them.
      */
     public static function markupToHtml(string $text): string
     {
+        $links = [];
+        $text  = str_replace("\0", "", $text);
+        $text  = preg_replace_callback('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', function (array $match) use (&$links): string {
+            $url = preg_replace('/[.,;:!?\'")\]*_~]+$/u', '', $match[0]) ?? $match[0];
+            while (strlen($match[0]) > strlen($url) && $match[0][strlen($url)] === ')' && substr_count($url, '(') > substr_count($url, ')')) {
+                $url .= ')';
+            }
+            $links[] = $url;
+
+            return "\0".(count($links) - 1)."\0".substr($match[0], strlen($url));
+        }, $text) ?? $text;
+
         $html = preg_replace('/```([\s\S]+?)```/u', '<code style="font-family:monospace">$1</code>', e($text)) ?? e($text);
 
         foreach (['__' => 'u', '*' => 'strong', '_' => 'em', '~' => 's'] as $marker => $tag) {
@@ -331,6 +344,13 @@ class SendChatMessageByGmail
                 $html
             ) ?? $html;
         }
+
+        $html = preg_replace_callback('/\0(\d+)\0/', function (array $match) use ($links): string {
+            $url  = $links[(int) $match[1]];
+            $href = preg_match('/^www\./i', $url) ? 'https://'.$url : $url;
+
+            return '<a href="'.e($href).'" target="_blank" rel="noopener noreferrer">'.e($url).'</a>';
+        }, $html) ?? $html;
 
         return nl2br($html);
     }

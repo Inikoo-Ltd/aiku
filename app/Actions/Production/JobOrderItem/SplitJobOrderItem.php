@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrderItem;
 
 use App\Actions\OrgAction;
+use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Database\Eloquent\Collection;
@@ -67,6 +68,8 @@ class SplitJobOrderItem extends OrgAction
                 $droppedSubJob->delete();
             }
         });
+
+        BroadcastManufactureFloorChanged::dispatch($line->jobOrder->production_id);
 
         return $line;
     }

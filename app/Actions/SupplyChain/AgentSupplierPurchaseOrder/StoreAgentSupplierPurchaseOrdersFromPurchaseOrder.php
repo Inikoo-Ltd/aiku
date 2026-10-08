@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 
 use App\Actions\OrgAction;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
@@ -21,6 +22,7 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
     /**
      * The agent internally buys from each of its suppliers: split the organisation's
      * purchase order into one AgentSupplierPurchaseOrder per supplier and link the lines.
+     * While the purchase order is a draft its agent supplier purchase orders stay in process.
      *
      * @return Collection<int, AgentSupplierPurchaseOrder>
      */
@@ -69,13 +71,17 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
 
             $submittedAt = $agentSupplierPurchaseOrder->submitted_at ?? now();
 
-            if (!$agentSupplierPurchaseOrder->state || $agentSupplierPurchaseOrder->state == AgentSupplierPurchaseOrderStateEnum::IN_PROCESS) {
+            if ($purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS) {
+                if (in_array($agentSupplierPurchaseOrder->state, [null, AgentSupplierPurchaseOrderStateEnum::IN_PROCESS, AgentSupplierPurchaseOrderStateEnum::SUBMITTED], true)) {
+                    $updateData['state'] = AgentSupplierPurchaseOrderStateEnum::IN_PROCESS;
+                }
+            } elseif (!$agentSupplierPurchaseOrder->state || $agentSupplierPurchaseOrder->state == AgentSupplierPurchaseOrderStateEnum::IN_PROCESS) {
                 $updateData['state']        = AgentSupplierPurchaseOrderStateEnum::SUBMITTED;
                 $updateData['date']         = $submittedAt;
                 $updateData['submitted_at'] = $submittedAt;
             }
 
-            if ($agentSupplierPurchaseOrder->estimated_received_at === null) {
+            if ($purchaseOrder->state != PurchaseOrderStateEnum::IN_PROCESS && $agentSupplierPurchaseOrder->estimated_received_at === null) {
                 $deliveryDays = $agentSupplierPurchaseOrder->estimated_delivery_days ?? $transactions->max('delivery_time');
 
                 if ($deliveryDays !== null) {

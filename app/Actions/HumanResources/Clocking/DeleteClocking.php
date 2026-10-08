@@ -47,6 +47,11 @@ class DeleteClocking extends OrgAction
                 'status'          => TimeTrackerStatusEnum::OPEN,
             ]);
 
+            TimeTracker::where('timesheet_id', $clocking->timesheet_id)
+                ->whereNull('start_clocking_id')
+                ->whereNull('end_clocking_id')
+                ->delete();
+
             $clocking->forceDelete();
 
             if ($timesheet) {

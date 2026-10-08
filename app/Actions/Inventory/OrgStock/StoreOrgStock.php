@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
@@ -117,7 +118,9 @@ class StoreOrgStock extends OrgAction
             SetTradeUnitStatus::dispatch($tradeUnit);
         }
 
+        $orgStock = ModelHydrateSingleTradeUnits::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
+        FillOrgStockWithTradeUnitsBarcodes::run($orgStock);
 
         return $orgStock;
     }

@@ -39,6 +39,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
@@ -312,6 +313,7 @@ Route::get('workshop/product-category/{productCategory:id}/products', GetProduct
 Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
 Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+Route::get('product-category/{productCategory:id}/discontinuing-products', GetDiscontinuingProductsInFamily::class)->name('product_category.discontinuing_products.index');
 
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
 Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');

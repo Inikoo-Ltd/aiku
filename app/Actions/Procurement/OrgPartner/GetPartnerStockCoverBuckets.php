@@ -33,6 +33,8 @@ class GetPartnerStockCoverBuckets
 
     public const int MAXIMUM_COVER_DAYS = 180;
 
+    public const int MAXIMUM_CARTON_COVER_DAYS = 365;
+
     public const BUCKETS = [
         'out'    => ['label' => 'Out of stock', 'tone' => 'red-deep'],
         'w1'     => ['label' => 'Doomed: gone before any delivery lands', 'tone' => 'red'],
@@ -395,7 +397,27 @@ class GetPartnerStockCoverBuckets
             return "(ceil($quantity / $quantum) * $quantum)";
         }
 
-        return $quantity;
+        $carton      = $this->partnerCartonSkos();
+        $inCartons   = "(ceil($quantity / $carton) * $carton)";
+        $cartonLimit = "least(coalesce($spare, $inCartons), greatest($quantity, ceil(s.predicted_daily_usage * ".self::MAXIMUM_CARTON_COVER_DAYS.')))';
+
+        return "(case when $carton > 1 and $inCartons <= $cartonLimit then $inCartons else $quantity end)";
+    }
+
+    /**
+     * The carton the partner buys this SKO in from its primary supplier, in our SKOs, so its pickers
+     * hand over whole cartons. Cartons are often wrong, so rescueQuantity only rounds up to them while
+     * the partner can spare it and it stays within a year of our sales.
+     */
+    private function partnerCartonSkos(): string
+    {
+        return "coalesce((select ceil(sp.units_per_carton / nullif(greatest(os.packed_in, 1), 0))
+            from org_stock_has_org_supplier_products link
+            join org_supplier_products osp on osp.id = link.org_supplier_product_id
+            join supplier_products sp on sp.id = osp.supplier_product_id
+            where link.org_stock_id = p.id and link.status
+            order by link.local_priority
+            limit 1), 1)";
     }
 
     /**

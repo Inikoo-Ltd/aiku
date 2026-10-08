@@ -63,7 +63,8 @@ export const useEchoRetinaPersonal = defineStore("echo-retina-personal", {
                         // Add data to recentlyUploaded, to show in history
                         this.recentlyUploaded.push(this.progressBars[eventData.action_type][eventData.action_id])
 
-                        // Delete data in 4 seconds after finish
+                        if (eventData.action_type === 'Upload' && eventData.data?.number_fails > 0) return
+
                         setTimeout(() => {
                             delete this.progressBars[eventData.action_type][eventData.action_id]
 

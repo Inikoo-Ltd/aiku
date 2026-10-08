@@ -20,7 +20,8 @@ import { InputNumber } from "primevue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { acceptAnyDecimalSeparator } from "@/Composables/useAnyDecimalSeparator"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import {
     useLowStockAuditBroadcast,
@@ -95,8 +96,8 @@ function auditLocation(location: LowStockAuditLocation, quantity: number | null 
                 newQuantities.value[location.id] = null
                 releaseTypingLock(location)
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully audited stock location (:xlocation)", {
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully audited stock location (:xlocation)", {
                         xlocation: location.code,
                     }),
                     type: "success",
@@ -104,8 +105,8 @@ function auditLocation(location: LowStockAuditLocation, quantity: number | null 
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to audit the stock location"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to audit the stock location"),
                     type: "error",
                 })
             },
@@ -192,8 +193,8 @@ const setTypingLock = async (location: LowStockAuditLocation, isLocking: boolean
         newQuantities.value[location.id] = null
 
         notify({
-            title: trans("Being audited somewhere else"),
-            text: trans("Location :location is already being counted", {
+            title: ctrans("Being audited somewhere else"),
+            text: ctrans("Location :location is already being counted", {
                 location: location.code,
             }),
             type: "warning",
@@ -273,8 +274,8 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                         v-if="isLocationBusy(location)"
                         v-tooltip="
                             loadingLocations.includes(location.id)
-                                ? trans('Setting as audited')
-                                : trans('Being audited somewhere else')
+                                ? ctrans('Setting as audited')
+                                : ctrans('Being audited somewhere else')
                         "
                         class="text-gray-400"
                     >
@@ -285,10 +286,10 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                         v-else
                         v-tooltip="
                             location.audited_at
-                                ? trans('Last audit :date, mark as audited again with the same stock', {
+                                ? ctrans('Last audit :date, mark as audited again with the same stock', {
                                       date: useFormatTime(new Date(location.audited_at)),
                                   })
-                                : trans('Mark as audited with the same stock')
+                                : ctrans('Mark as audited with the same stock')
                         "
                         @click="() => auditLocation(location)"
                         class="cursor-pointer text-gray-400 hover:text-green-500"
@@ -303,11 +304,13 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                     <div class="w-28">
                         <InputNumber
                             v-model="newQuantities[location.id]"
-                            v-tooltip="trans('Set a new stock quantity for this location')"
-                            :placeholder="trans('New qty')"
+                            v-tooltip="ctrans('Set a new stock quantity for this location')"
+                            :placeholder="ctrans('New qty')"
                             :min="0"
                             :step="1"
+                            :maxFractionDigits="3"
                             :disabled="isLocationBusy(location)"
+                            @keypress.capture="acceptAnyDecimalSeparator"
                             @input="(event: { value: any }) => onQuantityTyping(location, event?.value)"
                             @blur="() => onQuantityBlur(location)"
                             @keyup.enter="() => submitNewQuantity(location)"
@@ -319,7 +322,7 @@ function submitNewQuantity(location: LowStockAuditLocation) {
 
                     <Button
                         v-if="newQuantities[location.id] !== null && newQuantities[location.id] !== undefined"
-                        v-tooltip="trans('Save the new quantity and mark as audited')"
+                        v-tooltip="ctrans('Save the new quantity and mark as audited')"
                         :type="'save'"
                         :loading="loadingLocations.includes(location.id)"
                         :disabled="isLocationBusy(location)"

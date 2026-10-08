@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Upload\UI;
 
 use App\Http\Resources\Helpers\UploadRecordsResource;
 use App\InertiaTable\InertiaTable;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Models\Helpers\Upload;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,13 +28,14 @@ class IndexUploadRecords
 
     private bool $asAction = false;
 
-    public function handle(Upload $upload, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Upload $upload, ?string $prefix = null, ?UploadRecordStatusEnum $status = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for($upload->records());
+        $queryBuilder = QueryBuilder::for($upload->records())
+            ->when($status, fn ($query) => $query->where('upload_records.status', $status));
 
         /*
         foreach ($this->elementGroups as $key => $elementGroup) {
@@ -93,6 +95,7 @@ class IndexUploadRecords
                 )
                 ->column(key: 'original_filename', label: __('filename'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'row_number', label: __('row number'), canBeHidden: false, searchable: true)
+                ->column(key: 'values', label: __('row details'), canBeHidden: false)
                 ->column(key: 'errors', label: __('errors'), canBeHidden: false, searchable: true)
                 ->column(key: 'fail_column', label: __('fail column'), canBeHidden: false, searchable: true)
                 ->column(key: 'status', label: __('status'), canBeHidden: false, searchable: true)
@@ -127,6 +130,6 @@ class IndexUploadRecords
 
     public function asController(Upload $upload, ActionRequest $request): LengthAwarePaginator
     {
-        return $this->handle($upload);
+        return $this->handle($upload, status: UploadRecordStatusEnum::tryFrom((string) $request->input('status')));
     }
 }
