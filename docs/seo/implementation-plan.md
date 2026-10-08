@@ -509,7 +509,7 @@ comparison with an earlier period.
 | Decision | Needed before |
 | --- | --- |
 | Who adds the service account to the properties that are still missing | Phase 1 |
-| SERP provider and monthly budget | Phase 2 |
+| SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
 | Apply for Google Ads Basic access, or pick a keyword data provider | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency | Phase 2 |
 | Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |

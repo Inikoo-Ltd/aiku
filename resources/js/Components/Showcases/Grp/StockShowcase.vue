@@ -481,7 +481,7 @@ const saveBarcode = (value: string | null) => {
                             {{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}
                         </div>
 
-                        <button v-if="barcode.number && barcode.level !== 'carton' && data.label_route && data.label_options"
+                        <button v-if="barcode.number && data.label_route && data.label_options"
                             type="button"
                             v-tooltip="ctrans('Print PDF label')"
                             class="min-w-0 max-w-full justify-self-start transition hover:opacity-60"
@@ -648,7 +648,7 @@ const saveBarcode = (value: string | null) => {
         <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
             <div class="flex flex-col gap-4 p-2">
                 <div class="flex justify-between items-center">
-                    <div class="text-lg font-semibold">{{ editingLevel === "unit" ? ctrans("Unit EAN13 barcode") : ctrans("SKO (outer packing) barcode") }}</div>
+                    <div class="text-lg font-semibold">{{ { unit: ctrans("Unit EAN13 barcode"), carton: ctrans("Carton barcode") }[editingLevel] ?? ctrans("SKO (outer packing) barcode") }}</div>
                     <div class="text-3xl">
                         <FontAwesomeIcon icon='fal fa-barcode' class='' fixed-width aria-hidden='true' />
                     </div>

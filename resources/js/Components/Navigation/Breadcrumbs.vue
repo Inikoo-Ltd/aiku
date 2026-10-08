@@ -364,7 +364,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
-                    :title="props.navigation.previous?.label"
+                    v-tooltip="props.navigation.previous?.label"
                     :aria-label="ctrans('Previous')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
@@ -380,7 +380,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcUp' ? '' : props.navigation?.up?.url ? props.navigation?.up?.url : props.navigation?.up?.route?.name ? route(props.navigation.up?.route.name, props.navigation.up?.route.parameters) + urlParameter : '#'"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
-                    :title="props.navigation.up?.label"
+                    v-tooltip="props.navigation.up?.label"
                     :aria-label="ctrans('Up')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcUp'" />
@@ -394,7 +394,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
-                    :title="props.navigation.next?.label"
+                    v-tooltip="props.navigation.next?.label"
                     :aria-label="ctrans('Next')"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >

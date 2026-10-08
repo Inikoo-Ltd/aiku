@@ -8,6 +8,7 @@ cancelled. Written on 7 October 2026. Nothing in the plan is built yet apart fro
 | --- | --- |
 | [implementation-plan.md](implementation-plan.md) | Engineers. Data sources, tables, jobs, screens and the order to build them in. |
 | [status.md](status.md) | Everyone. What is done, skipped or not started, and the steps after deploying. |
+| [budget.md](budget.md) | Everyone. What the data providers would cost against Semrush, and the proposed monthly cap. |
 
 ## What the team uses Semrush for
 
