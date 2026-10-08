@@ -17,7 +17,7 @@ class TakeOverShopifyFulfilmentService extends OrgAction
 {
     use WithShopifyExternalShopApi;
 
-    public string $commandSignature = 'external_shop:shopify_take_over_fulfilment_service {shop} {--close-channel : Close the dropshipping channel of the store first, keeping its Shopify connection} {--revert : Send the fulfilment requests back to dropshipping} {--force : Do not ask for confirmation}';
+    public string $commandSignature = 'external_shop:shopify_take_over_fulfilment_service {shop} {--stop-channel : Set the dropshipping channel of the store to inactive first: it takes no new orders and still ships the ones it has} {--revert : Send the fulfilment requests back to dropshipping} {--force : Do not ask for confirmation}';
 
     /**
      * A store moving from a dropshipping channel keeps its fulfilment location, its stock and its order routing;
@@ -25,7 +25,7 @@ class TakeOverShopifyFulfilmentService extends OrgAction
      *
      * @return string|null why it could not be done
      */
-    public function handle(Shop $shop, ?Command $command = null, bool $closeChannel = false): ?string
+    public function handle(Shop $shop, ?Command $command = null, bool $stopChannel = false): ?string
     {
         $isWriteAllowed = $this->isShopifyExternalShopWriteAllowed();
 
@@ -33,8 +33,8 @@ class TakeOverShopifyFulfilmentService extends OrgAction
             $command?->warn($this->getShopifyExternalShopWriteBlockedMessage().'. Everything else runs on this database only.');
         }
 
-        if ($closeChannel) {
-            $this->closeDropshippingChannel($shop, $command);
+        if ($stopChannel) {
+            $this->stopDropshippingChannel($shop, $command);
         }
 
         [$shopifyUser, $fulfilmentServiceId, $error] = $this->getFulfilmentServiceToMove($shop);
@@ -114,7 +114,7 @@ class TakeOverShopifyFulfilmentService extends OrgAction
         data_forget($settings, 'shopify.location_name');
         $shop->update(['settings' => $settings]);
 
-        $command?->info('Fulfilment requests go to dropshipping again; reopen the dropshipping channel to process them there');
+        $command?->info('Fulfilment requests go to dropshipping again; set the dropshipping channel back to open to process them there');
 
         return null;
     }
@@ -129,10 +129,10 @@ class TakeOverShopifyFulfilmentService extends OrgAction
     }
 
     /**
-     * Only the channel is closed: closing it the usual way also deletes the Shopify connection and its fulfilment
-     * service, which this shop takes over.
+     * The channel is set inactive, not closed: every dropshipping Shopify job only serves open channels, so it takes
+     * no new orders, while its Shopify connection stays so the orders it already has are still shipped and fulfilled.
      */
-    private function closeDropshippingChannel(Shop $shop, ?Command $command): void
+    private function stopDropshippingChannel(Shop $shop, ?Command $command): void
     {
         $customerSalesChannelId = $this->getShopifyExternalShopUser($shop)?->customer_sales_channel_id;
 
@@ -140,15 +140,12 @@ class TakeOverShopifyFulfilmentService extends OrgAction
             return;
         }
 
-        $closed = CustomerSalesChannel::where('id', $customerSalesChannelId)
-            ->where('status', '!=', CustomerSalesChannelStatusEnum::CLOSED)
-            ->update([
-                'status'    => CustomerSalesChannelStatusEnum::CLOSED,
-                'closed_at' => now(),
-            ]);
+        $stopped = CustomerSalesChannel::where('id', $customerSalesChannelId)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->update(['status' => CustomerSalesChannelStatusEnum::INACTIVE]);
 
-        if ($closed) {
-            $command?->info("Dropshipping channel $customerSalesChannelId closed, its Shopify connection kept");
+        if ($stopped) {
+            $command?->info("Dropshipping channel $customerSalesChannelId set inactive: no new orders, its open orders still ship");
         }
     }
 
@@ -168,9 +165,9 @@ class TakeOverShopifyFulfilmentService extends OrgAction
         }
 
         if ($shopifyUser->customer_sales_channel_id && CustomerSalesChannel::where('id', $shopifyUser->customer_sales_channel_id)
-            ->where('status', '!=', CustomerSalesChannelStatusEnum::CLOSED)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->exists()) {
-            return [null, null, __('Close the dropshipping channel of this store first, so it stops taking its orders')];
+            return [null, null, __('The dropshipping channel of this store is still open; run with --stop-channel so it takes no new orders')];
         }
 
         if (!$fulfilmentServiceId = $shopifyUser->shopify_fulfilment_service_id) {
@@ -187,7 +184,7 @@ class TakeOverShopifyFulfilmentService extends OrgAction
 
         $question = match (true) {
             $revert                            => "Send the Shopify fulfilment requests of $shop->name back to dropshipping?",
-            $command->option('close-channel') => "Close the dropshipping channel of this store and send its Shopify fulfilment requests to $shop->name?",
+            $command->option('stop-channel')  => "Stop the dropshipping channel of this store taking new orders and send its Shopify fulfilment requests to $shop->name?",
             default                            => "Send the Shopify fulfilment requests of $shop->name to this shop instead of dropshipping?",
         };
 
@@ -195,7 +192,7 @@ class TakeOverShopifyFulfilmentService extends OrgAction
             return 1;
         }
 
-        $error = $revert ? $this->revert($shop, $command) : $this->handle($shop, $command, (bool) $command->option('close-channel'));
+        $error = $revert ? $this->revert($shop, $command) : $this->handle($shop, $command, (bool) $command->option('stop-channel'));
 
         if ($error) {
             $command->error($error);

@@ -81,9 +81,9 @@ trait WithShopifyExternalShopApi
         }
 
         if ($shopifyUser->customer_sales_channel_id && CustomerSalesChannel::where('id', $shopifyUser->customer_sales_channel_id)
-            ->where('status', '!=', CustomerSalesChannelStatusEnum::CLOSED)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->exists()) {
-            return __('This Shopify store is still an open dropshipping channel, close that channel before using it as an external shop');
+            return __('This Shopify store is still an open dropshipping channel, stop it taking new orders before using it as an external shop');
         }
 
         if ($shopifyUser->customer_id && $shopifyUser->shopify_fulfilment_service_id

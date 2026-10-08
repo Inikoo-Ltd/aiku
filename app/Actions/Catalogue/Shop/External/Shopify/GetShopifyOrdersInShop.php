@@ -174,7 +174,7 @@ class GetShopifyOrdersInShop extends OrgAction
 
     /**
      * An order still being prepared is cancelled and the request accepted; one already on its way is refused.
-     * A request for an order dropshipping took before the switch is left for a person to decide.
+     * A request for an order the dropshipping channel took before the switch is its own and is left untouched.
      *
      * @param array<string, int> $summary
      * @return array<string, int>
@@ -192,14 +192,14 @@ class GetShopifyOrdersInShop extends OrgAction
 
             $order = Order::where('shop_id', $shop->id)->where('marketplace_id', Arr::get($fulfillmentOrder, 'order.id'))->first();
 
+            if (!$order && $dropshippingOrder = Order::where('platform_order_id', $fulfillmentOrderId)->first()) {
+                $this->reportDropshippingCancellationRequest($shop, $shopifyUser, $dropshippingOrder, $command);
+                $summary['cancellation_left_to_dropshipping'] = ($summary['cancellation_left_to_dropshipping'] ?? 0) + 1;
+
+                continue;
+            }
+
             if (!$order) {
-                if (Order::where('platform_order_id', $fulfillmentOrderId)->exists()) {
-                    Sentry::captureMessage("Shopify cancellation request $fulfillmentOrderId is for a dropshipping order, answer it by hand ($shop->slug)");
-                    $summary['cancellation_needs_review'] = ($summary['cancellation_needs_review'] ?? 0) + 1;
-
-                    continue;
-                }
-
                 $result = $this->acceptShopifyExternalShopCancellationRequest($shopifyUser, $fulfillmentOrderId);
             } elseif ($order->state === OrderStateEnum::CANCELLED || CancelOrderFromShopifyExternalShop::run($order)) {
                 $result = $this->acceptShopifyExternalShopCancellationRequest($shopifyUser, $fulfillmentOrderId);
@@ -216,6 +216,18 @@ class GetShopifyOrdersInShop extends OrgAction
         }
 
         return $summary;
+    }
+
+    /**
+     * Shopify now tells this shop, not the dropshipping channel, about every cancellation, so the dropshipping
+     * channel is pointed to the one waiting for it; it answers only for its own orders.
+     */
+    private function reportDropshippingCancellationRequest(Shop $shop, ShopifyUser $shopifyUser, Order $order, ?Command $command): void
+    {
+        $message = "Shopify cancellation request for dropshipping order $order->reference is waiting; answer it with: php artisan shopify:retrieve_cancelled_orders ".($shopifyUser->customerSalesChannel?->slug ?? $shopifyUser->customer_sales_channel_id);
+
+        $command?->warn($message);
+        Sentry::captureMessage("$message ($shop->slug)");
     }
 
     private function importOrder(Shop $shop, array $shopifyOrder, ?Command $command): string
