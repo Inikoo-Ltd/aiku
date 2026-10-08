@@ -56,6 +56,8 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
 
         $this->whereDeliveryNotesChannel($query, $shopType);
 
+        $query->orderByRaw('delivery_note_is_premium_dispatch DESC NULLS LAST');
+
         return $query->defaultSort('delivery_notes.id')
             ->distinct()
             ->select([

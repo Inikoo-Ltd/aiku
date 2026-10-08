@@ -239,6 +239,9 @@ const props = defineProps<{
             page_url: string
             conversion_rate: number
             total_conversions: number
+            checkouts: number
+            add_to_baskets: number
+            entrances: number
             total_visits: number
             avg_time_spent: number
             trend: {
@@ -598,32 +601,36 @@ watch(value, handleSelectChange)
 				</div>
 
                 <div v-if="props.data.pageConversionAnalytics" class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ ctrans("Page Conversion Rate") }}</h2>
+                    <h2 class="text-xl font-semibold text-gray-800">{{ ctrans("Page Conversion Rate") }}</h2>
+                    <p class="mb-4 mt-1 text-sm text-gray-600">{{ ctrans("Purchases per 100 entrances, the visitors whose visit started on the page. A purchase counts for the page the buyer last landed on in the 30 days before; a visit that continues one from the last 30 minutes, such as after signing in, is not a new entrance.") }}</p>
                     <DataTable :value="props.data.pageConversionAnalytics" paginator :rows="10" :rowsPerPageOptions="[10, 20, 50]" sortMode="multiple" tableStyle="min-width: 50rem">
                         <Column field="page_url" :header="ctrans('Page URL')" sortable style="width: 30%">
                             <template #body="{ data }">
-                                <a :href="data.page_url" target="_blank" class="text-blue-600 hover:underline truncate block max-w-xs" :title="data.page_url">{{ data.page_url }}</a>
+                                <a :href="data.page_url" target="_blank" class="text-[--app-accent] hover:underline truncate block max-w-xs" :title="data.page_url">{{ data.page_url }}</a>
                             </template>
                         </Column>
-                        <Column field="conversion_rate" :header="ctrans('Conversion Rate')" sortable style="width: 20%">
+                        <Column field="conversion_rate" :header="ctrans('Conversion Rate')" sortable style="width: 15%">
                             <template #body="{ data }">
-                                <div class="flex ite	ms-center gap-2">
+                                <div class="flex items-center gap-2">
                                     <span class="font-bold">{{ data.conversion_rate }}%</span>
-                                    <span v-if="data.trend.direction === 'up'" class="text-green-500" :title="`Up ${data.trend.value}% from ${data.trend.prev_rate}%`">
+                                    <span v-if="data.trend.direction === 'up'" class="text-green-600" :title="ctrans('Up :value pts from :rate%', { value: data.trend.value, rate: data.trend.prev_rate })">
                                         <font-awesome-icon :icon="['fal', 'arrow-up']" fixed-width />
                                     </span>
-                                    <span v-else-if="data.trend.direction === 'down'" class="text-red-500" :title="`Down ${data.trend.value}% from ${data.trend.prev_rate}%`">
+                                    <span v-else-if="data.trend.direction === 'down'" class="text-red-600" :title="ctrans('Down :value pts from :rate%', { value: data.trend.value, rate: data.trend.prev_rate })">
                                         <font-awesome-icon :icon="['fal', 'arrow-down']" fixed-width />
                                     </span>
-                                    <span v-else class="text-gray-400" title="No change">
+                                    <span v-else class="text-gray-400" :title="ctrans('No change')">
                                         <font-awesome-icon :icon="['fal', 'minus']" fixed-width />
                                     </span>
                                 </div>
                             </template>
                         </Column>
-                        <Column field="total_conversions" :header="ctrans('Add to Basket')" sortable style="width: 15%"></Column>
-                        <Column field="total_visits" :header="ctrans('Visits')" sortable style="width: 15%"></Column>
-                        <Column field="avg_time_spent" :header="ctrans('Avg Time')" sortable style="width: 20%">
+                        <Column field="total_conversions" :header="ctrans('Purchases')" sortable style="width: 10%"></Column>
+                        <Column field="checkouts" :header="ctrans('Checkouts')" sortable style="width: 10%"></Column>
+                        <Column field="entrances" :header="ctrans('Entrances')" sortable style="width: 10%"></Column>
+                        <Column field="add_to_baskets" :header="ctrans('Add to Basket')" sortable style="width: 10%"></Column>
+                        <Column field="total_visits" :header="ctrans('Visits')" sortable style="width: 10%"></Column>
+                        <Column field="avg_time_spent" :header="ctrans('Avg Time')" sortable style="width: 5%">
                             <template #body="{ data }">
                                 {{ data.avg_time_spent }}s
                             </template>

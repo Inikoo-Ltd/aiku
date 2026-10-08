@@ -19,10 +19,12 @@ use App\Actions\Web\Webpage\UI\IndexWebpagesPerformance;
 use App\Actions\Web\WebVital\GetWebsitePageSpeedSummary;
 use App\Actions\Web\WebVital\UI\IndexWebpagesPageSpeed;
 use App\Actions\Web\Website\GetWebsitePerformanceStats;
+use App\Actions\Web\WebsiteConversionEvent\UI\IndexWebsiteConversionCustomers;
 use App\Enums\UI\Web\SeoDashboardTabsEnum;
 use App\Http\Resources\Web\SearchConsoleQueryResource;
 use App\Http\Resources\Web\WebpagePageSpeedResource;
 use App\Http\Resources\Web\WebpagePerformanceResource;
+use App\Http\Resources\Web\WebsiteConversionCustomerResource;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -106,6 +108,12 @@ class ShowSeoDashboard extends OrgAction
                     fn (Website $website) => WebpagePerformanceResource::collection(IndexWebpagesPerformance::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::WEBPAGES->value))
                 ),
 
+                SeoDashboardTabsEnum::CONVERSIONS->value => $this->tabProp(
+                    SeoDashboardTabsEnum::CONVERSIONS,
+                    $shop->website,
+                    fn (Website $website) => WebsiteConversionCustomerResource::collection(IndexWebsiteConversionCustomers::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::CONVERSIONS->value))
+                ),
+
                 SeoDashboardTabsEnum::SEARCH_QUERIES->value => $this->tabProp(
                     SeoDashboardTabsEnum::SEARCH_QUERIES,
                     $shop->website,
@@ -129,6 +137,7 @@ class ShowSeoDashboard extends OrgAction
         if ($shop->website) {
             $inertiaResponse
                 ->table(IndexWebpagesPerformance::make()->tableStructure(prefix: SeoDashboardTabsEnum::WEBPAGES->value))
+                ->table(IndexWebsiteConversionCustomers::make()->tableStructure(prefix: SeoDashboardTabsEnum::CONVERSIONS->value))
                 ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_QUERIES->value))
                 ->table(IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value, lowCtrOnly: true))
                 ->table(IndexWebpagesPageSpeed::make()->tableStructure($shop->website, prefix: SeoDashboardTabsEnum::PAGE_SPEED->value));

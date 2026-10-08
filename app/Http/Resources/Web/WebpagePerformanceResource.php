@@ -28,6 +28,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $avg_time_on_page
  * @property mixed $add_to_baskets
  * @property mixed $conversion_rate
+ * @property mixed $checkouts
+ * @property mixed $purchases
+ * @property mixed $entrances
  * @property mixed $search_clicks
  * @property mixed $search_impressions
  * @property mixed $search_position
@@ -54,9 +57,12 @@ class WebpagePerformanceResource extends JsonResource
             ],
             'visitors'           => (int) $this->visitors,
             'page_views'         => (int) $this->page_views,
+            'entrances'          => (int) $this->entrances,
             'avg_time_on_page'   => (int) $this->avg_time_on_page,
             'add_to_baskets'     => (int) $this->add_to_baskets,
             'conversion_rate'    => (float) $this->conversion_rate,
+            'checkouts'          => (int) $this->checkouts,
+            'purchases'          => (int) $this->purchases,
             'search_clicks'      => (int) $this->search_clicks,
             'search_impressions' => (int) $this->search_impressions,
             'search_position'    => $this->search_position !== null ? (float) $this->search_position : null,

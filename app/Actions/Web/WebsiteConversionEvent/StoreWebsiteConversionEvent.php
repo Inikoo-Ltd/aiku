@@ -86,8 +86,9 @@ class StoreWebsiteConversionEvent
                     'website_visitor_id' => $visitor->id,
                     'event_type'         => $eventType,
                 ],
-                array_merge($eventData, [
-                    'net_amount' => $order->net_amount,
+                fn () => array_merge($eventData, [
+                    'net_amount'         => $order->net_amount,
+                    'landing_webpage_id' => GetVisitorLandingWebpage::run($visitor),
                 ])
             );
 

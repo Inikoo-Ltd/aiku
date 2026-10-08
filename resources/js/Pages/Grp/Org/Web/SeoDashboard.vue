@@ -12,6 +12,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TableWebpagesPerformance from "@/Components/Tables/Grp/Org/Web/TableWebpagesPerformance.vue"
+import TableWebsiteConversionCustomers from "@/Components/Tables/Grp/Org/Web/TableWebsiteConversionCustomers.vue"
 import TableSearchConsoleQueries from "@/Components/Tables/Grp/Org/Web/TableSearchConsoleQueries.vue"
 import TableWebpagesPageSpeed from "@/Components/Tables/Grp/Org/Web/TableWebpagesPageSpeed.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -28,15 +29,33 @@ import { Intervals, Settings } from "@/types/Components/Dashboard"
 import { routeType } from "@/types/route"
 import { Navigation } from "@/types/Tabs"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBrowser, faSearch, faMousePointer, faTachometerAltFast } from "@fal"
+import { faBrowser, faSearch, faMousePointer, faTachometerAltFast, faCashRegister } from "@fal"
 
-library.add(faBrowser, faSearch, faMousePointer, faTachometerAltFast)
+library.add(faBrowser, faSearch, faMousePointer, faTachometerAltFast, faCashRegister)
 
 type DailyTraffic = {
     day: string
     visitors: number
     page_views: number
+    add_to_baskets: number
+    checkouts: number
+    purchases: number
+    revenue: number
 }
+
+type ConversionComparison = {
+    from: string
+    to: string
+    days_with_data: number
+    visitors: number
+    add_to_baskets: number
+    checkouts: number
+    purchases: number
+    revenue: number
+    conversion_rate: number
+}
+
+type ComparisonKey = "previous_period" | "previous_year"
 
 type WebsitePerformance = {
     days_with_data: number
@@ -53,6 +72,15 @@ type WebsitePerformance = {
     sessions_desktop: number
     sessions_mobile: number
     sessions_tablet: number
+    add_to_baskets: number
+    checkouts: number
+    purchases: number
+    revenue: number
+    conversion_rate: number
+    average_order_value: number
+    currency_code: string | null
+    conversions_tracked_since: string | null
+    comparisons: Partial<Record<ComparisonKey, ConversionComparison>>
     daily: DailyTraffic[]
 }
 
@@ -113,6 +141,7 @@ const props = defineProps<{
         navigation: Navigation
     }
     webpages?: object | null
+    conversions?: object | null
     search_queries?: object | null
     search_opportunities?: object | null
 }>()
@@ -122,6 +151,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tabComponent = computed(() => ({
     webpages: TableWebpagesPerformance,
+    conversions: TableWebsiteConversionCustomers,
     search_queries: TableSearchConsoleQueries,
     search_opportunities: TableSearchConsoleQueries,
     page_speed: TableWebpagesPageSpeed,
@@ -354,6 +384,148 @@ const dailyChartOptions = {
     },
 }
 
+type ConversionMetricKey = "add_to_baskets" | "checkouts" | "purchases" | "revenue" | "conversion_rate" | "average_order_value"
+
+const comparisonLabels: Record<ComparisonKey, string> = {
+    previous_period: ctrans("Previous period"),
+    previous_year: ctrans("Same period last year"),
+}
+
+const formatMoney = (amount: number) => props.performance?.currency_code
+    ? String(locale.currencyFormat(props.performance.currency_code, amount))
+    : locale.number(amount)
+
+const metricValue = (source: Pick<ConversionComparison, "add_to_baskets" | "checkouts" | "purchases" | "revenue" | "conversion_rate">, key: ConversionMetricKey) => {
+    if (key === "average_order_value") {
+        return source.purchases > 0 ? source.revenue / source.purchases : 0
+    }
+
+    return source[key]
+}
+
+const isTrackedSinceEventStart = (key: ConversionMetricKey) => key !== "add_to_baskets"
+
+const comparisonText = (key: ConversionMetricKey, comparisonKey: ComparisonKey) => {
+    const performance = props.performance
+    const comparison = performance?.comparisons?.[comparisonKey]
+
+    if (!performance || !comparison) {
+        return null
+    }
+
+    const trackedSince = performance.conversions_tracked_since
+    const isBeforeTracking = isTrackedSinceEventStart(key) && (!trackedSince || comparison.from < trackedSince)
+
+    if (comparison.days_with_data === 0 || isBeforeTracking) {
+        return { text: ctrans("No data"), tone: "text-gray-500" }
+    }
+
+    const current = metricValue(performance, key)
+    const previous = metricValue(comparison, key)
+
+    if (key === "conversion_rate") {
+        const points = current - previous
+
+        return {
+            text: ctrans(":change pts", { change: `${points > 0 ? "+" : ""}${locale.number(Math.round(points * 100) / 100)}` }),
+            tone: points > 0 ? "text-green-700" : points < 0 ? "text-red-700" : "text-gray-500",
+        }
+    }
+
+    if (previous === 0) {
+        return current > 0
+            ? { text: ctrans("New"), tone: "text-green-700" }
+            : { text: ctrans("No change"), tone: "text-gray-500" }
+    }
+
+    const change = (current - previous) / previous * 100
+
+    return {
+        text: `${change > 0 ? "+" : ""}${change.toFixed(1)}%`,
+        tone: change > 0 ? "text-green-700" : change < 0 ? "text-red-700" : "text-gray-500",
+    }
+}
+
+const comparisonRange = (comparisonKey: ComparisonKey) => {
+    const comparison = props.performance?.comparisons?.[comparisonKey]
+
+    return comparison
+        ? ctrans(":from to :to", { from: formatDay(comparison.from, "mdy"), to: formatDay(comparison.to, "mdy") })
+        : ""
+}
+
+const availableComparisons = computed(() => (Object.keys(comparisonLabels) as ComparisonKey[])
+    .filter((comparisonKey) => props.performance?.comparisons?.[comparisonKey]))
+
+const conversionMetrics = computed(() => {
+    const performance = props.performance
+
+    if (!performance) {
+        return []
+    }
+
+    return [
+        { key: "add_to_baskets" as const, label: ctrans("Add to basket"), value: locale.number(performance.add_to_baskets) },
+        { key: "checkouts" as const, label: ctrans("Checkouts"), value: locale.number(performance.checkouts) },
+        { key: "purchases" as const, label: ctrans("Purchases"), value: locale.number(performance.purchases) },
+        { key: "revenue" as const, label: ctrans("Revenue"), value: formatMoney(performance.revenue) },
+        { key: "conversion_rate" as const, label: ctrans("Conversion rate"), hint: ctrans("Purchases per 100 visitors"), value: `${locale.number(performance.conversion_rate)}%` },
+        { key: "average_order_value" as const, label: ctrans("Avg. order value"), value: formatMoney(performance.average_order_value) },
+    ]
+})
+
+const conversionsTrackedText = computed(() => props.performance?.conversions_tracked_since
+    ? ctrans("Checkouts and purchases recorded since :date", { date: formatDay(props.performance.conversions_tracked_since, "mdy") })
+    : ctrans("No checkout or purchase recorded yet"))
+
+const dailyConversions = computed(() => fillCalendar(props.performance?.daily ?? [], ["add_to_baskets", "checkouts", "purchases"]))
+
+const conversionChartData = computed(() => {
+    const pointRadius = dailyConversions.value.length > 45 ? 0 : 2
+
+    return {
+        labels: dailyConversions.value.map((record) => formatDay(record.day, "d MMM")),
+        datasets: [
+            {
+                label: ctrans("Purchases"),
+                data: dailyConversions.value.map((record) => record.purchases),
+                spanGaps: false,
+                borderColor: accentColor(),
+                backgroundColor: accentColor(),
+                borderWidth: 2,
+                pointRadius,
+                tension: 0.25,
+            },
+            {
+                label: ctrans("Checkouts"),
+                data: dailyConversions.value.map((record) => record.checkouts),
+                spanGaps: false,
+                borderColor: "#4b5563",
+                backgroundColor: "#4b5563",
+                borderWidth: 1.5,
+                pointRadius,
+                tension: 0.25,
+            },
+            {
+                label: ctrans("Add to basket"),
+                data: dailyConversions.value.map((record) => record.add_to_baskets),
+                spanGaps: false,
+                borderColor: "#9ca3af",
+                backgroundColor: "#9ca3af",
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                pointRadius,
+                tension: 0.25,
+            },
+        ],
+    }
+})
+
+const conversionChartSummary = computed(() => ctrans("Add to basket, checkouts and purchases per day, :from to :to", {
+    from: props.performance?.first_day ? formatDay(props.performance.first_day, "mdy") : "",
+    to: props.performance?.last_day ? formatDay(props.performance.last_day, "mdy") : "",
+}))
+
 const isSearchConnected = computed(() => props.search?.is_connected ?? false)
 
 const hasSearchData = computed(() => (props.search?.days_with_data ?? 0) > 0)
@@ -561,6 +733,45 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
     </section>
 
     <section
+        v-if="performance && hasData"
+        :aria-label="ctrans('Conversions')"
+        :aria-busy="isLoadingOnTable"
+        class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
+        <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
+            <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
+        </div>
+
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
+            <span class="text-sm font-medium text-gray-900">{{ ctrans("Conversions") }}</span>
+            <span class="text-xs text-gray-500">{{ conversionsTrackedText }}</span>
+        </div>
+
+        <div v-if="showDailyChart" class="px-5 pt-4">
+            <div class="h-48 sm:h-56" role="img" :aria-label="conversionChartSummary">
+                <Chart type="line" :data="conversionChartData" :options="dailyChartOptions" class="h-full" />
+            </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-6">
+            <div
+                v-for="metric in conversionMetrics"
+                :key="metric.key"
+                class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
+                <dt class="text-xs text-gray-500" v-tooltip="metric.hint">{{ metric.label }}</dt>
+                <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
+                <dd
+                    v-for="comparisonKey in availableComparisons"
+                    :key="comparisonKey"
+                    class="mt-0.5 flex flex-wrap gap-x-1 text-xs"
+                    v-tooltip="comparisonRange(comparisonKey)">
+                    <span class="text-gray-500">{{ comparisonLabels[comparisonKey] }}</span>
+                    <span class="tabular-nums" :class="comparisonText(metric.key, comparisonKey)?.tone">{{ comparisonText(metric.key, comparisonKey)?.text }}</span>
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section
         v-if="search"
         :aria-label="ctrans('Google Search performance')"
         :aria-busy="isLoadingOnTable"
@@ -691,7 +902,7 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
         <div class="pt-3">
-            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" />
+            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="currentTab === 'conversions' ? { currencyCode: performance?.currency_code } : {}" />
         </div>
     </section>
 </template>
