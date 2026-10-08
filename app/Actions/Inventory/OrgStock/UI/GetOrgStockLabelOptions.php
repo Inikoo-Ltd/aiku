@@ -36,10 +36,7 @@ class GetOrgStockLabelOptions
         return [
             'sizes'         => $this->getSizes(),
             'default_size'  => PdfOrgStockLabel::DEFAULT_SIZE,
-            'layouts'       => [
-                ['key' => 'single', 'label' => __('Single')],
-                ['key' => 'sheet', 'label' => __('A4 27 labels (EU30161)')],
-            ],
+            'layouts'       => $this->getLayouts(),
             'fields'        => $this->getFields($labels),
             'levels'        => $this->getLevels($labels),
             'custom_text_max_length' => 255,
@@ -64,6 +61,31 @@ class GetOrgStockLabelOptions
         }
 
         return $sizes;
+    }
+
+    /**
+     * Every size prints one label at a time or on the A4 sheet that size is die cut on.
+     *
+     * @return array<string, array<int, array<string, string>>>
+     */
+    private function getLayouts(): array
+    {
+        $layouts = [];
+
+        foreach (PdfOrgStockLabel::SHEETS as $size => $sheet) {
+            $layouts[$size] = [
+                ['key' => 'single', 'label' => __('Single')],
+                [
+                    'key'   => 'sheet',
+                    'label' => __('A4 :count labels (:code)', [
+                        'count' => $sheet['columns'] * $sheet['rows'],
+                        'code'  => $sheet['code'],
+                    ]),
+                ],
+            ];
+        }
+
+        return $layouts;
     }
 
     /**

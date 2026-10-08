@@ -58,18 +58,96 @@ class PdfOrgStockLabel
     ];
 
     /**
-     * EU30161: 27 labels of 63.5 x 29.6mm on A4, three across and nine down. The margins are what
-     * is left of the page once the die cuts are placed, split evenly between the two edges.
+     * The A4 sheet each label size is die cut on, copied from Aurora's labels data so a box of sheets
+     * bought for the old system prints straight out of this one. Each size has exactly one sheet, so
+     * picking the size is what picks the sheet. EU30161 keeps the 2.5mm column gap and centred
+     * margins it was first measured with here.
      */
-    private const SHEET = [
-        'columns'      => 3,
-        'rows'         => 9,
-        'cell_width'   => 63.5,
-        'cell_height'  => 29.6,
-        'column_gap'   => 2.5,
-        'row_gap'      => 0.0,
-        'page_width'   => 210.0,
-        'page_height'  => 297.0,
+    public const SHEETS = [
+        '63x29.6'   => [
+            'code'        => 'EU30161',
+            'columns'     => 3,
+            'rows'        => 9,
+            'cell_width'  => 63.5,
+            'cell_height' => 29.6,
+            'margin_top'  => 15.3,
+            'margin_left' => 7.25,
+            'column_gap'  => 2.5,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '63.5x29.6' => [
+            'code'        => 'SK06302900',
+            'columns'     => 3,
+            'rows'        => 9,
+            'cell_width'  => 63.5,
+            'cell_height' => 29.6,
+            'margin_top'  => 15.3,
+            'margin_left' => 9.75,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '70x29.7'   => [
+            'code'        => 'EU30040',
+            'columns'     => 3,
+            'rows'        => 10,
+            'cell_width'  => 70.0,
+            'cell_height' => 29.7,
+            'margin_top'  => 0.0,
+            'margin_left' => 0.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '70x30'     => [
+            'code'        => 'ES0027D',
+            'columns'     => 3,
+            'rows'        => 9,
+            'cell_width'  => 70.0,
+            'cell_height' => 30.0,
+            'margin_top'  => 13.5,
+            'margin_left' => 0.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 0.0,
+            'orientation' => 'P',
+        ],
+        '125x37'    => [
+            'code'        => 'EU30140',
+            'columns'     => 1,
+            'rows'        => 7,
+            'cell_width'  => 125.0,
+            'cell_height' => 37.0,
+            'margin_top'  => 10.0,
+            'margin_left' => 42.5,
+            'column_gap'  => 0.0,
+            'row_gap'     => 3.0,
+            'orientation' => 'P',
+        ],
+        '130x60'    => [
+            'code'        => 'EU30137',
+            'columns'     => 2,
+            'rows'        => 3,
+            'cell_width'  => 130.0,
+            'cell_height' => 60.0,
+            'margin_top'  => 10.0,
+            'margin_left' => 16.0,
+            'column_gap'  => 5.0,
+            'row_gap'     => 5.0,
+            'orientation' => 'L',
+        ],
+        '140x90'    => [
+            'code'        => 'EU30129',
+            'columns'     => 1,
+            'rows'        => 3,
+            'cell_width'  => 140.0,
+            'cell_height' => 90.0,
+            'margin_top'  => 11.5,
+            'margin_left' => 35.0,
+            'column_gap'  => 0.0,
+            'row_gap'     => 2.0,
+            'orientation' => 'P',
+        ],
     ];
 
     private const CELL_PADDING = 1.5;
@@ -105,13 +183,14 @@ class PdfOrgStockLabel
 
         $show     = $this->getVisibleFields($options, $label, $level);
         $isSheet  = ($options['layout'] ?? 'single') === 'sheet';
-        $size     = $this->getSize($options, $level);
-        $filename = 'label-'.$orgStock->code.'-'.$level.($isSheet ? '-a4' : '').'.pdf';
+        $sizeKey  = $this->getSizeKey($options, $level);
+        $size     = self::SIZES[$sizeKey];
+        $filename = 'label-'.$orgStock->code.'-'.$level.($isSheet ? '-'.self::SHEETS[$sizeKey]['code'] : '').'.pdf';
 
         $withBarcode = filled($label['barcode']['number']);
 
         $pdf = $isSheet
-            ? $this->getSheetPdf($label, $show, $options, $level, $withBarcode, $filename)
+            ? $this->getSheetPdf(self::SHEETS[$sizeKey], $label, $show, $options, $level, $withBarcode, $filename)
             : $this->getSingleLabelPdf($label, $show, $options, $size, $level, $withBarcode, $filename);
 
         return response($pdf->output(), 200)
@@ -146,10 +225,8 @@ class PdfOrgStockLabel
     /**
      * @throws \Mpdf\MpdfException
      */
-    private function getSheetPdf(array $label, array $show, array $options, string $level, bool $withBarcode, string $filename)
+    private function getSheetPdf(array $sheet, array $label, array $show, array $options, string $level, bool $withBarcode, string $filename)
     {
-        $sheet = self::SHEET;
-
         return PDF::loadView('labels.templates.pdf.org_stock.label_sheet', [
             'label'       => $label,
             'show'        => $show,
@@ -166,7 +243,7 @@ class PdfOrgStockLabel
         ], [], [
             'title'         => $filename,
             'format'        => 'A4',
-            'orientation'   => 'P',
+            'orientation'   => $sheet['orientation'],
             'margin_left'   => 0,
             'margin_right'  => 0,
             'margin_top'    => 0,
@@ -181,16 +258,13 @@ class PdfOrgStockLabel
      */
     private function getCells(array $sheet): array
     {
-        $leftMargin = ($sheet['page_width'] - $sheet['columns'] * $sheet['cell_width'] - ($sheet['columns'] - 1) * $sheet['column_gap']) / 2;
-        $topMargin  = ($sheet['page_height'] - $sheet['rows'] * $sheet['cell_height'] - ($sheet['rows'] - 1) * $sheet['row_gap']) / 2;
-
         $cells = [];
 
         for ($row = 0; $row < $sheet['rows']; $row++) {
             for ($column = 0; $column < $sheet['columns']; $column++) {
                 $cells[] = [
-                    'left' => $leftMargin + $column * ($sheet['cell_width'] + $sheet['column_gap']),
-                    'top'  => $topMargin + $row * ($sheet['cell_height'] + $sheet['row_gap']),
+                    'left' => $sheet['margin_left'] + $column * ($sheet['cell_width'] + $sheet['column_gap']),
+                    'top'  => $sheet['margin_top'] + $row * ($sheet['cell_height'] + $sheet['row_gap']),
                 ];
             }
         }
@@ -253,18 +327,15 @@ class PdfOrgStockLabel
         return $customText === '' ? null : $customText;
     }
 
-    /**
-     * @return array{width: float, height: float}
-     */
-    private function getSize(array $options, string $level): array
+    private function getSizeKey(array $options, string $level): string
     {
         $size = $options['size'] ?? null;
 
         if (is_string($size) && in_array($size, self::LEVEL_SIZES[$level], true)) {
-            return self::SIZES[$size];
+            return $size;
         }
 
-        return self::SIZES[self::DEFAULT_SIZE];
+        return self::DEFAULT_SIZE;
     }
 
     /**
