@@ -27,7 +27,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreSupplierProduct extends OrgAction
 {
@@ -139,17 +138,6 @@ class StoreSupplierProduct extends OrgAction
         }
 
         return $rules;
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(Supplier $supplier, ActionRequest $request): SupplierProduct
-    {
-        $this->supplier_id = $supplier->id;
-        $this->initialisationFromGroup($supplier->group, $request);
-
-        return $this->handle($supplier, $this->validatedData);
     }
 
     /**

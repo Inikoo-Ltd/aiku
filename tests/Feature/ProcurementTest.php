@@ -1277,6 +1277,25 @@ test('purchase order needs a product available in both the supplier product and 
     DeletePurchaseOrder::make()->action($purchaseOrder);
 });
 
+test('a supplier product without any SKO is refused on a purchase order with how to create its SKO', function () {
+    $supplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'NOSKO-1',
+        'name'             => 'Made before the new supplier product form',
+        'cost'             => 400,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 1,
+    ]);
+    $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->where('org_supplier_id', $orgSupplier->id)->sole();
+    $purchaseOrder      = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    expect(fn () => StorePurchaseOrderTransaction::make()->addOrgSupplierProduct($purchaseOrder, $orgSupplierProduct, ['quantity_ordered' => 1]))
+        ->toThrow(ValidationException::class, 'NOSKO-1 has no SKO yet');
+
+    DeletePurchaseOrder::make()->action($purchaseOrder);
+});
+
 test('delete purchase order', function () {
     $supplier    = StoreSupplier::make()->action(
         parent: $this->group,

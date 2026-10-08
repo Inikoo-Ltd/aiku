@@ -245,7 +245,7 @@ class StorePurchaseOrderTransaction extends OrgAction
         $orgStock = ResolveOrgStockForSupplierProduct::run($purchaseOrder->organisation, $orgSupplierProduct->supplierProduct);
 
         if (!$orgStock) {
-            throw ValidationException::withMessages(['org_supplier_product' => __(':code cannot be ordered: its SKO is discontinued, or it is not linked to any SKO', ['code' => $orgSupplierProduct->supplierProduct->code])]);
+            throw ValidationException::withMessages(['org_supplier_product' => __(':code has no SKO yet. Open New supplier product for its supplier, enter :code as the supplier code and save: that creates its SKO.', ['code' => $orgSupplierProduct->supplierProduct->code])]);
         }
 
         if (in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED])) {

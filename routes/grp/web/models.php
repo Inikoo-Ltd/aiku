@@ -526,7 +526,6 @@ use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
 use App\Actions\SupplyChain\SupplierProduct\Upload\UpdateSupplierProductUploadRecord;
-use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDeposit;
@@ -1534,7 +1533,6 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
-    Route::post('supplier-product', StoreSupplierProduct::class)->name('supplier-product.store');
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
