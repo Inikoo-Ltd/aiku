@@ -7945,7 +7945,11 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $generated   = noiseTestEmailSession($this->shop->fresh(), 'ooh.robot@example.com', 'Your ticket', 'Received', ['email_headers' => ['auto_submitted' => 'auto-generated']]);
     $noReply     = noiseTestEmailSession($this->shop->fresh(), 'no-reply@example.com', 'Your invoice', 'Attached');
 
-    foreach ([$sameAddress, $outOfOffice, $newsletter, $generated, $noReply] as $session) {
+    $fromSpam = noiseTestEmailSession($this->shop->fresh(), 'ooh.spam.'.Str::lower(Str::random(8)).'@example.com', 'Re:- care@shop.test', 'I am still waiting for your reply');
+    $fromSpam->update(['noise_verdict' => \App\Enums\CRM\Livechat\ChatNoiseVerdictEnum::GENUINE->value]);
+    $fromSpam->messages()->update(['is_rescued_from_spam' => true, 'spam_rescue_kind' => 'customer_request']);
+
+    foreach ([$sameAddress, $outOfOffice, $newsletter, $generated, $noReply, $fromSpam] as $session) {
         expect($answered($session))->toBeFalse()
             ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->exists())->toBeFalse();
     }
@@ -12616,10 +12620,44 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel($session))->toBe('openai/gpt-5.6-luna');
 
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
+    config(['chat.suggestion_shadow_shops' => [$this->shop->slug]]);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And the teapot lid is cracked.']);
+    $shadow = \App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh());
+
+    expect(data_get($shadow?->facts, 'shadow'))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::isShadow('another-shop', $shadow->facts))->toBeFalse();
+    \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastChatAiDraft::class);
+    config(['chat.suggestion_shadow_shops' => []]);
+
+    $shadow->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     $reply = 'Hello, your order GB123456 will be replaced. [[agent: confirm]]';
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Also one candle holder is chipped.']);
 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
+
+    $session->forceDelete();
+});
+
+test('suggestions staff answered after are scored against the real reply once, per shop with shadow apart', function () {
+    $session  = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::ACTIVE, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id]);
+    $customer = ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Do you ship to Spain?']);
+    $staff    = ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT, 'message_text' => 'Yes, every day.']);
+    $day      = now('UTC')->subYears(3)->startOfDay();
+    $draft    = \App\Models\Chat\ChatAiDraft::create([
+        'group_id'         => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'chat_session_id'  => $session->id, 'trigger_message_id' => $customer->id, 'topic' => \App\Enums\CRM\Livechat\ChatTopicEnum::OTHER,
+        'facts'            => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION, 'shadow' => true], 'text' => 'Yes, we ship to Spain daily.',
+        'status'           => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'reply_message_id' => $staff->id, 'decided_at' => $day->copy()->addHours(10),
+    ]);
+
+    \App\Actions\Chat\ChatSession\JudgeChatSuggestion::mock()->shouldReceive('nearMatch')->once()
+        ->with('Do you ship to Spain?', 'Yes, every day.', 'Yes, we ship to Spain daily.')
+        ->andReturn(['score' => 3, 'label' => 'nearly the same']);
+
+    expect(\App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day))->toBe([$this->shop->slug.' (shadow)' => ['scored' => 1, 'close' => 1]])
+        ->and(data_get($draft->refresh()->facts, 'near_match.score'))->toBe(3)
+        ->and(\App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day))->toBe([]);
 
     $session->forceDelete();
 });
@@ -12710,7 +12748,7 @@ test('a weak suggestion is rewritten by the rewrite model from the critic notes,
         ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::withoutSentence("Hi Anna, [[x]]\nThanks", '[[x]]'))->toBe("Hi Anna,\nThanks");
 
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
-    [$covered, $reviews, $prompts] = [1, -10, []];
+    [$covered, $reviews, $prompts] = [0, -10, []];
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And a candle holder is chipped too.']);
 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
