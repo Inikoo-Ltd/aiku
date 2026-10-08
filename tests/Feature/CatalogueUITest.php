@@ -1828,6 +1828,42 @@ test('warehouse page opens on its own operations tab', function () {
         ->assertJsonCount(1, 'warehouses');
 });
 
+test('operations dashboard numbers open lists holding exactly what was counted', function () {
+    $warehouse = createWarehouse();
+    actingAs($this->user);
+
+    $figures = getJson(route('grp.dashboard.operations', ['warehouse' => $warehouse->id, 'remember' => 0]))->assertOk()->json();
+
+    $counted = [
+        'age_under_4h'      => $figures['age_buckets']['under_4h'],
+        'age_4_24h'         => $figures['age_buckets']['h4_24'],
+        'age_1_2d'          => $figures['age_buckets']['d1_2'],
+        'age_over_2d'       => $figures['age_buckets']['over_2d'],
+        'dispatched'        => $figures['time_to_dispatch']['records'],
+        'not_counted'       => $figures['stock']['not_audited_90d'],
+        'picked_today'      => $figures['people']['pickers']['records'],
+        'short_today'       => $figures['people']['pickers']['short_records'],
+        'packed_today'      => $figures['people']['packers']['records'],
+    ];
+
+    foreach ($counted as $list => $tile) {
+        $listRoute = $tile['breakdown'][0]['route'];
+        expect($listRoute['parameters']['list'])->toBe($list);
+        get(route($listRoute['name'], $listRoute['parameters']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Warehouse/OperationsRecords')->where('data.meta.total', $tile['count']));
+    }
+
+    expect($figures['returns']['processed']['breakdown'][0]['route']['parameters']['list'])->toBe('returns_processed');
+    foreach (['returns_processed', 'return_reasons'] as $list) {
+        get(route('grp.org.warehouses.show.operations.records', [$warehouse->organisation->slug, $warehouse->slug, $list, 'reason' => 'damaged']))->assertOk();
+    }
+
+    $unrelated = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    actingAs($unrelated);
+    get(route('grp.org.warehouses.show.operations.records', [$warehouse->organisation->slug, $warehouse->slug, 'not_counted']))->assertForbidden();
+});
+
 test('operations dashboard: warehouse staff land on it, only see their warehouse and no money', function () {
     $warehouse = createWarehouse();
     setPermissionsTeamId($this->group->id);
@@ -1849,7 +1885,13 @@ test('operations dashboard: warehouse staff land on it, only see their warehouse
         ->and($response->json('pipeline.unassigned.amount'))->toBeNull()
         ->and($response->json('pipeline.unassigned.count'))->toBe(DB::table('delivery_notes')->where('warehouse_id', $warehouse->id)->whereNull('deleted_at')->where('state', 'unassigned')->count())
         ->and($response->json('sales.rows.0.value_today'))->toBeNull()
-        ->and(array_keys($response->json('attention')))->toBe(['urgent', 'at_risk', 'blocked', 'customer_service', 'out_of_stock', 'replenishment', 'overdue', 'stock_errors']);
+        ->and(array_keys($response->json('attention')))->toBe(['urgent', 'at_risk', 'blocked', 'customer_service', 'out_of_stock', 'replenishment', 'overdue', 'stock_errors'])
+        ->and($response->json('attention.blocked.breakdown.0.route.name'))->toBe('grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes')
+        ->and($response->json('goods_in.counts.to_book_in.breakdown.0.route.name'))->toBe('grp.org.warehouses.show.incoming.stock_deliveries.index')
+        ->and($response->json('goods_in.overdue.breakdown.0.route.name'))->toBe('grp.org.warehouses.show.incoming.stock_deliveries.index')
+        ->and($response->json('stock.negative.breakdown.0.route.name'))->toBe('grp.org.warehouses.show.inventory.org_stocks.negative_stocks.index')
+        ->and($response->json('stock.replenishment.breakdown.0.route.name'))->toBe('grp.org.warehouses.show.inventory.org_stocks.replenishments.index')
+        ->and($response->json('returns.received.breakdown.0.route.name'))->toBe('grp.org.warehouses.show.incoming.returns.index');
 
     getJson(route('grp.dashboard.operations', ['channel' => 'b2b', 'period' => 7, 'remember' => 1]))
         ->assertOk()

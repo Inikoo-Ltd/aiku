@@ -726,7 +726,6 @@ class GetOperationsDashboardData
             ->groupByRaw('lower(trim(return_reason))')
             ->selectRaw('min(trim(return_reason)) as reason, count(*) as total')
             ->orderByDesc('total')
-            ->limit(5)
             ->get();
 
         $toProcess = collect(['received', 'returning'])->map(fn ($state) => $returnDeliveryNotes->get($state));
@@ -767,7 +766,14 @@ class GetOperationsDashboardData
             ...$extra,
         ];
 
-        $dispatching = fn (string $routeKey) => fn (Warehouse $warehouse) => $this->dispatchingRoute($warehouse, $routeKey, $channel);
+        $dispatching     = fn (string $routeKey) => fn (Warehouse $warehouse) => $this->dispatchingRoute($warehouse, $routeKey, $channel);
+        $warehouseRoute  = fn (string $routeName, array $parameters = []) => fn (Warehouse $warehouse) => ['name' => $routeName, 'parameters' => [...$this->warehouseParameters($warehouse), ...$parameters]];
+        $stockDeliveries = $warehouseRoute('grp.org.warehouses.show.incoming.stock_deliveries.index');
+        $records         = fn (string $list, array $query = []) => fn (Warehouse $warehouse) => [
+            'name'       => 'grp.org.warehouses.show.operations.records',
+            'parameters' => [...$this->warehouseParameters($warehouse), 'list' => $list, ...array_filter(['channel' => $channel, ...$query])],
+        ];
+        $period = $perWarehouse->first()['time_to_dispatch']['period'] ?? 30;
 
         $pipeline = [];
         foreach ([...array_keys(self::STAGES), 'dispatched'] as $stage) {
@@ -807,13 +813,13 @@ class GetOperationsDashboardData
                 ]),
                 'customer_service' => $tile('attention.customer_service.count', 'attention.customer_service.oldest', $dispatching('waiting_crm_items')),
                 'out_of_stock'     => $tile('attention.out_of_stock.count', null, $dispatching('waiting_items'), ['delivery_notes' => (int) $sum('attention.out_of_stock.delivery_notes')]),
-                'replenishment'    => $tile('attention.replenishment.count', null, fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index', 'parameters' => $this->warehouseParameters($warehouse)]),
-                'overdue'          => $tile('attention.overdue.count', 'attention.overdue.oldest_eta', fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.incoming.stock_deliveries.index', 'parameters' => $this->warehouseParameters($warehouse)]),
-                'stock_errors'     => $tile('attention.stock_errors.count', null, fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.inventory.org_stocks.negative_stocks.index', 'parameters' => $this->warehouseParameters($warehouse)]),
+                'replenishment'    => $tile('attention.replenishment.count', null, $warehouseRoute('grp.org.warehouses.show.inventory.org_stocks.replenishments.index')),
+                'overdue'          => $tile('attention.overdue.count', 'attention.overdue.oldest_eta', $stockDeliveries),
+                'stock_errors'     => $tile('attention.stock_errors.count', null, $warehouseRoute('grp.org.warehouses.show.inventory.org_stocks.negative_stocks.index')),
             ],
             'pipeline'         => $pipeline,
             'waiting_split'    => collect(['pickable', 'partly', 'no_stock', 'premium', 'normal'])->mapWithKeys(fn ($key) => [$key => (int) $sum("waiting_split.$key")])->all(),
-            'age_buckets'      => collect(['under_4h', 'h4_24', 'd1_2', 'over_2d'])->mapWithKeys(fn ($key) => [$key => (int) $sum("age_buckets.$key")])->all(),
+            'age_buckets'      => collect(['under_4h' => 'age_under_4h', 'h4_24' => 'age_4_24h', 'd1_2' => 'age_1_2d', 'over_2d' => 'age_over_2d'])->map(fn ($list, $key) => $tile("age_buckets.$key", null, $records($list)))->all(),
             'time_to_dispatch' => [
                 'period'           => $timeToDispatch->first()['period'] ?? 30,
                 'dispatched'       => (int) $dispatched,
@@ -822,6 +828,7 @@ class GetOperationsDashboardData
                 'same_day_percent' => $dispatched ? round($timeToDispatch->sum(fn ($row) => ($row['same_day_percent'] ?? 0) * $row['dispatched']) / $dispatched, 1) : null,
                 'is_combined'      => !$single,
                 'by_warehouse'     => $breakdown(fn ($figures) => $figures['time_to_dispatch']),
+                'records'          => $tile('time_to_dispatch.dispatched', null, $records('dispatched', ['period' => $period])),
             ],
             'people'           => collect(['pickers', 'packers'])->mapWithKeys(fn ($team) => [$team => [
                 'today'            => (int) $sum("people.$team.today"),
@@ -832,10 +839,12 @@ class GetOperationsDashboardData
                 'last_hour_people' => (int) $sum("people.$team.last_hour_people"),
                 'per_person_hour'  => $this->weightedAverage($perWarehouse->pluck("people.$team"), 'per_person_hour', 'today'),
                 'short'            => $team === 'pickers' ? (int) $sum('people.pickers.short') : null,
+                'records'          => $tile("people.$team.today", null, $records($team === 'pickers' ? 'picked_today' : 'packed_today')),
+                'short_records'    => $team === 'pickers' ? $tile('people.pickers.short', null, $records('short_today')) : null,
             ]])->all(),
             'goods_in'         => [
-                'counts'        => collect(['on_the_way', 'to_book_in', 'booking_in', 'without_eta', 'without_po'])->mapWithKeys(fn ($key) => [$key => (int) $sum("goods_in.counts.$key")])->all(),
-                'overdue'       => (int) $sum('attention.overdue.count'),
+                'counts'        => collect(['on_the_way', 'to_book_in', 'booking_in', 'without_eta', 'without_po'])->mapWithKeys(fn ($key) => [$key => $tile("goods_in.counts.$key", null, $stockDeliveries)])->all(),
+                'overdue'       => $tile('attention.overdue.count', null, $stockDeliveries),
                 'dock_to_stock' => [
                     'deliveries'     => (int) $sum('goods_in.dock_to_stock.deliveries'),
                     'median_seconds' => $this->weightedAverage($perWarehouse->pluck('goods_in.dock_to_stock'), 'median_seconds', 'deliveries'),
@@ -849,14 +858,13 @@ class GetOperationsDashboardData
                 ], $perWarehouse[$warehouse->id]['goods_in']['deliveries']))
                     ->sortBy(fn ($delivery) => [$delivery['is_overdue'] ? 0 : 1, -$delivery['releases'], $delivery['eta'] ?? '9999-12-31'])
                     ->values()->take(15)->all(),
-                'routes'        => $breakdown(fn ($figures) => (int) data_get($figures, 'goods_in.counts.on_the_way', 0), fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.incoming.stock_deliveries.index', 'parameters' => $this->warehouseParameters($warehouse)]),
             ],
             'stock'            => [
                 'locations'       => (int) $sum('stock.locations'),
-                'empty_locations' => $tile('stock.empty_locations', null, fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.infrastructure.locations.index', 'parameters' => $this->warehouseParameters($warehouse)]),
-                'not_audited_90d' => (int) $sum('stock.not_audited_90d'),
-                'negative'        => (int) $sum('attention.stock_errors.negative'),
-                'replenishment'   => (int) $sum('attention.replenishment.count'),
+                'empty_locations' => $tile('stock.empty_locations', null, $warehouseRoute('grp.org.warehouses.show.infrastructure.locations.index')),
+                'not_audited_90d' => $tile('stock.not_audited_90d', null, $warehouseRoute('grp.org.warehouses.show.operations.records', ['list' => 'not_counted'])),
+                'negative'        => $tile('attention.stock_errors.negative', null, $warehouseRoute('grp.org.warehouses.show.inventory.org_stocks.negative_stocks.index')),
+                'replenishment'   => $tile('attention.replenishment.count', null, $warehouseRoute('grp.org.warehouses.show.inventory.org_stocks.replenishments.index')),
                 'out_of_stock'    => $warehouses->flatMap(fn (Warehouse $warehouse) => array_map(fn ($orgStock) => [
                     ...$orgStock,
                     'warehouse'     => $warehouse->code ?: $warehouse->slug,
@@ -865,13 +873,23 @@ class GetOperationsDashboardData
                     ->sortByDesc('delivery_notes')->values()->take(10)->all(),
             ],
             'returns'          => [
-                'to_process'        => $tile('returns.to_process', 'returns.to_process_oldest', fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received', 'parameters' => $this->warehouseParameters($warehouse)]),
+                'to_process'        => $tile('returns.to_process', 'returns.to_process_oldest', $warehouseRoute('grp.org.warehouses.show.incoming.return_delivery_notes.state.received')),
                 'expected'          => (int) $sum('returns.expected'),
-                'received'          => $tile('returns.received', 'returns.received_oldest', fn (Warehouse $warehouse) => ['name' => 'grp.org.warehouses.show.incoming.returns.index', 'parameters' => $this->warehouseParameters($warehouse)]),
+                'received'          => $tile('returns.received', 'returns.received_oldest', $warehouseRoute('grp.org.warehouses.show.incoming.returns.index')),
                 'outcomes'          => collect(['restocked', 'damaged', 'not_returned'])->mapWithKeys(fn ($key) => [$key => (int) $sum("returns.outcomes.$key")])->all(),
+                'processed'         => [
+                    'breakdown' => $breakdown(fn ($figures) => (int) array_sum($figures['returns']['outcomes']), $records('returns_processed')),
+                ],
                 'reasons'           => $perWarehouse->flatMap(fn ($figures) => $figures['returns']['reasons'])
                     ->groupBy(fn ($row) => mb_strtolower($row['reason']))
-                    ->map(fn ($rows) => ['reason' => $rows->first()['reason'], 'count' => $rows->sum('count')])
+                    ->map(fn ($rows) => [
+                        'reason'    => $rows->first()['reason'],
+                        'count'     => $rows->sum('count'),
+                        'breakdown' => $breakdown(
+                            fn ($figures) => (int) (collect($figures['returns']['reasons'])->first(fn ($row) => mb_strtolower($row['reason']) === mb_strtolower($rows->first()['reason']))['count'] ?? 0),
+                            $records('return_reasons', ['reason' => $rows->first()['reason']])
+                        ),
+                    ])
                     ->sortByDesc('count')->values()->take(5)->all(),
             ],
         ];
