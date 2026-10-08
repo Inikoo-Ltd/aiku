@@ -188,6 +188,8 @@ class PdfOrgStockLabel
      */
     private const TOP_PADDING = 0.8;
 
+    private const WIDE_RATIO = 3.0;
+
     private const CODE128_MODULE_MM = 0.3804;
 
     private const CODE128_HEIGHT_MM = 10.05;
@@ -439,6 +441,10 @@ class PdfOrgStockLabel
             ];
         }
 
+        if ($width / $height >= self::WIDE_RATIO) {
+            return $this->getWideUnitScale($width, $height, $factor, $withImage, $withBarcode);
+        }
+
         [$textWidth, $barcodeWidth, $imageWidth] = match (true) {
             $withImage && $withBarcode => [40.0, 32.0, 28.0],
             $withBarcode               => [55.0, 45.0, 0.0],
@@ -447,7 +453,16 @@ class PdfOrgStockLabel
         };
 
         $barcodeMm = $width * $barcodeWidth / 100;
-        $imageMm   = $width * $imageWidth / 100;
+        $imageMm   = min($width * $imageWidth / 100 * 0.92, $height * 0.55);
+
+        /* On a long, low stock such as 125 x 37 the picture is held back by the height, not by its
+           column, and the unused column opened a wide gap between the barcode and the picture. The
+           column is trimmed to the picture and what is left goes to the wording. */
+        if ($withImage) {
+            $fittedImageWidth = round($imageMm / 0.92 / $width * 100, 2);
+            $textWidth        = round($textWidth + $imageWidth - $fittedImageWidth, 2);
+            $imageWidth       = $fittedImageWidth;
+        }
 
         return [
             'code'           => round(5.0 * $factor, 2),
@@ -459,9 +474,43 @@ class PdfOrgStockLabel
             'image_width'    => $imageWidth,
             'barcode'        => round(min(max($barcodeMm * 0.85 / 39, 0.30), 1.15), 2),
             'barcode_height' => round(min(max($height * 0.018, 0.70), 1.70), 2),
-            'image'          => round(min($imageMm * 0.92, $height * 0.55) * 3.78).'px',
+            'image'          => round($imageMm * 3.78).'px',
             'gap'            => round(0.5 * $factor, 2),
             'line_gap'       => round(0.30 * ($factor - 1) + 0.15, 2),
+        ];
+    }
+
+    /**
+     * A long, low unit label such as 125 x 37 is laid out as Aurora printed it: the wording runs
+     * down the left with the rule under the name only, a small barcode stands in the middle, and
+     * the picture takes the full height of the label on the right.
+     *
+     * @return array<string, float|int|string>
+     */
+    private function getWideUnitScale(float $width, float $height, float $factor, bool $withImage, bool $withBarcode): array
+    {
+        $innerHeight = $height - self::TOP_PADDING - self::CELL_PADDING;
+        $imageMm     = $withImage ? $innerHeight * 0.9 : 0.0;
+        $imageWidth  = $withImage ? round(($imageMm + 2.0) / $width * 100, 2) : 0.0;
+
+        $barcodeWidth = $withBarcode ? 18.0 : 0.0;
+        $barcodeSize  = round($width * $barcodeWidth / 100 * 0.82 / self::EAN13_WIDTH_MM, 2);
+        $barcodeMm    = $height * 0.42;
+
+        return [
+            'layout'         => 'wide',
+            'code'           => round(7.6 * $factor, 2),
+            'name'           => round(6.4 * $factor, 2),
+            'body'           => round(4.2 * $factor, 2),
+            'signature'      => round(4.0 * $factor, 2),
+            'text_width'     => round(100 - $barcodeWidth - $imageWidth, 2),
+            'barcode_width'  => $barcodeWidth,
+            'image_width'    => $imageWidth,
+            'barcode'        => $barcodeSize,
+            'barcode_height' => $withBarcode ? round($barcodeMm / (self::EAN13_HEIGHT_MM * $barcodeSize), 2) : 0.0,
+            'image'          => round($imageMm * 3.78).'px',
+            'gap'            => round(0.6 * $factor, 2),
+            'line_gap'       => round(0.25 * $factor, 2),
         ];
     }
 
