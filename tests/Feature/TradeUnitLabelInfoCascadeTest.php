@@ -19,6 +19,7 @@ use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitGpsr;
 use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitLabelInfo;
+use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitWeightDimensions;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\SysAdmin\Guest\StoreGuest;
@@ -1001,3 +1002,60 @@ test('product and master product pages send the slug of their trade unit', funct
         ->where('trade_unit_slug', $isTradeUnitSlug)
         ->etc());
 });
+
+test('bulk editing weight and dimensions sets them on the selected trade units and skips empty fields', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['marketing_weight' => 90]);
+    $plugGrossWeight = $this->plug->refresh()->gross_weight;
+    $dimensions      = ['h' => 0.1, 'l' => 0.2, 'w' => 0.05, 'type' => 'rectangular', 'units' => 'cm'];
+
+    $this->patch(route('grp.models.trade_units.bulk_update_weight_dimensions'), [
+        'gross_weight'         => 120,
+        'marketing_weight'     => null,
+        'marketing_dimensions' => $dimensions,
+        'trade_units'          => [$this->bottle->id],
+    ])->assertSessionHasNoErrors();
+
+    $this->bottle->refresh();
+    expect($this->bottle->gross_weight)->toBe(120)
+        ->and($this->bottle->marketing_weight)->toBe(90)
+        ->and($this->bottle->marketing_dimensions)->toBe($dimensions)
+        ->and($this->plug->refresh()->gross_weight)->toBe($plugGrossWeight);
+});
+
+test('bulk editing weight and dimensions refuses a save with every field empty', function () {
+    UpdateBulkTradeUnitWeightDimensions::make()->action(group(), [
+        'gross_weight' => null,
+        'trade_units'  => [$this->bottle->id],
+    ]);
+})->throws(Illuminate\Validation\ValidationException::class);
+
+test('the trade units index offers a fresh bulk edit weight and dimensions form', function () {
+    get(route('grp.trade_units.units.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('bulk_edit.sections.weight_dimensions.updateRoute.name', 'grp.models.trade_units.bulk_update_weight_dimensions')
+            ->where('bulk_edit.sections.weight_dimensions.fields.gross_weight.value', null)
+            ->where('bulk_edit.sections.weight_dimensions.fields.marketing_weight.value', null)
+            ->where('bulk_edit.sections.weight_dimensions.fields.marketing_dimensions.value', null)
+            ->etc());
+});
+
+test('bulk editing weight and dimensions leaves dimensions alone when only their shape was picked', function () {
+    $dimensions = ['h' => 0.1, 'l' => 0.2, 'w' => 0.05, 'type' => 'rectangular', 'units' => 'cm'];
+    UpdateTradeUnit::make()->action($this->bottle, ['marketing_dimensions' => $dimensions]);
+
+    UpdateBulkTradeUnitWeightDimensions::make()->action(group(), [
+        'gross_weight'         => 150,
+        'marketing_dimensions' => ['h' => 0, 'l' => 0, 'w' => 0, 'type' => 'cylinder', 'units' => 'mm'],
+        'trade_units'          => [$this->bottle->id],
+    ]);
+
+    expect($this->bottle->refresh()->marketing_dimensions)->toBe($dimensions)
+        ->and($this->bottle->gross_weight)->toBe(150);
+});
+
+test('bulk editing weight and dimensions refuses dimensions of an unknown shape', function () {
+    UpdateBulkTradeUnitWeightDimensions::make()->action(group(), [
+        'marketing_dimensions' => ['h' => 'abc', 'type' => 'x', 'units' => 'mm'],
+        'trade_units'          => [$this->bottle->id],
+    ]);
+})->throws(Illuminate\Validation\ValidationException::class);
