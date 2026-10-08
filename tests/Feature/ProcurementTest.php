@@ -4988,6 +4988,34 @@ describe('partner shopping list', function () {
             ->and((float) $item->quantity)->toBe(25.0);
     });
 
+    test('what a received job order did not make is freed at cut-off, while a job order still running keeps it', function () {
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+
+        $leftoverOf = function (\App\Enums\Production\JobOrder\JobOrderStateEnum $state) use ($production) {
+            PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->delete();
+            $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrder::make()->action($production, []);
+            $jobOrder->update(['state' => $state]);
+            $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 10]);
+            $item->update(['job_order_id' => $jobOrder->id]);
+
+            CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id, 'quantity' => 8]]);
+
+            $leftover = PartnerShoppingListItem::where('parent_id', $item->id)->first();
+            $leftover->forceDelete();
+
+            return [$leftover, $jobOrder];
+        };
+
+        [$fromReceived]           = $leftoverOf(\App\Enums\Production\JobOrder\JobOrderStateEnum::RECEIVED);
+        [$fromRunning, $running]  = $leftoverOf(\App\Enums\Production\JobOrder\JobOrderStateEnum::CONFIRMED);
+
+        expect((float) $fromReceived->quantity)->toBe(2.0)
+            ->and($fromReceived->job_order_id)->toBeNull()
+            ->and($fromRunning->job_order_id)->toBe($running->id);
+    });
+
     test('a deleted partner order line joins the open line left by a partial pick', function () {
         $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 30,
@@ -6113,6 +6141,80 @@ describe('partner shopping list', function () {
             ->and($taskFor())->toBeNull()
             ->and((float) $lines->whereNotNull('pre_picked_at')->sum('quantity'))->toBe(2.0)
             ->and((float) $lines->whereNull('pre_picked_at')->sum('quantity'))->toBe($toMove - 2);
+    });
+
+    test('an audit that finds the hub shelf short sends the uncovered pre-pick to be produced', function () {
+        $seller        = $this->orgPartner->partner;
+        $wasHub        = $seller->is_manufacturing_hub;
+        $seller->update(['is_manufacturing_hub' => true]);
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($sellerOrgStock->id);
+
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 2);
+
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot->refresh(), ['quantity' => 1]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($sellerOrgStock->id);
+
+        $lines = \App\Models\Procurement\PartnerShoppingListItem::where('partner_organisation_id', $seller->id)
+            ->where('stock_id', $sellerOrgStock->stock_id)
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->select('*')
+            ->selectRaw(\App\Models\Procurement\PartnerShoppingListItem::shortfallSql().' as shortfall')
+            ->get();
+
+        $released = $lines->whereNull('pre_picked_at');
+
+        $seller->update(['is_manufacturing_hub' => $wasHub]);
+
+        expect((float) $lines->whereNotNull('pre_picked_at')->sum('quantity'))->toBe(3.0)
+            ->and((float) $released->sum('quantity'))->toBe(2.0)
+            ->and((float) $released->sum('shortfall'))->toBe(2.0);
+    });
+
+    test('the cut-off runs the day before a partner shipment and moves the next one on', function () {
+        $seller        = $this->orgPartner->partner;
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $today = \Illuminate\Support\Carbon::parse('2026-10-08');
+        $raise = \App\Actions\Production\PartnerShippingList\RaiseScheduledPartnerOrders::make();
+
+        $sellerPartner->update(['next_shipment_on' => '2026-10-12', 'shipment_every_days' => 3]);
+        expect($raise->handle($sellerPartner, $today))->toBeNull()
+            ->and($sellerPartner->refresh()->next_shipment_on->toDateString())->toBe('2026-10-12');
+
+        $sellerPartner->update(['next_shipment_on' => '2026-10-02']);
+        $result = $raise->handle($sellerPartner, $today);
+        expect($result['orders'])->toBe(0)
+            ->and($result['skipped'])->not->toBeEmpty()
+            ->and($sellerPartner->refresh()->next_shipment_on->toDateString())->toBe('2026-10-11');
+
+        $sellerPartner->update(['next_shipment_on' => '2026-10-09', 'shipment_every_days' => null]);
+        $raise->handle($sellerPartner, $today);
+        expect($sellerPartner->refresh()->next_shipment_on)->toBeNull();
     });
 
     test('staging refuses a partner with no goods out location and more stock than the shelf holds', function () {

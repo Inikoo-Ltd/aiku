@@ -23,6 +23,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePartnerOrderFromBay extends OrgAction
 {
+    /** @var array<int, string> lines left on the list, why */
+    public array $skippedReasons = [];
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -59,11 +62,14 @@ class StorePartnerOrderFromBay extends OrgAction
             throw ValidationException::withMessages(['order' => EnsurePartnerOrderPackedInMatches::make()->mismatches($orgPartner, $mismatchedStockIds)]);
         }
 
-        return DB::transaction(function () use ($orgPartner, $lines) {
+        $packedInMismatches = $mismatchedStockIds ? EnsurePartnerOrderPackedInMatches::make()->mismatches($orgPartner, $mismatchedStockIds) : [];
+
+        return DB::transaction(function () use ($orgPartner, $lines, $packedInMismatches) {
             $picked = CherryPickPartnerShoppingListItems::make()->action($orgPartner->organisation, $lines);
 
-            if ($picked['skipped']) {
-                throw ValidationException::withMessages(['order' => collect($picked['skipped'])->pluck('reason')->unique()->implode(', ')]);
+            $this->skippedReasons = collect($picked['skipped'])->pluck('reason')->merge($packedInMismatches)->unique()->values()->all();
+            if (!$picked['orders']) {
+                throw ValidationException::withMessages(['order' => implode(', ', $this->skippedReasons)]);
             }
 
             foreach ($picked['orders'] as $order) {
@@ -105,6 +111,14 @@ class StorePartnerOrderFromBay extends OrgAction
 
     public function htmlResponse(): RedirectResponse
     {
-        return Redirect::back();
+        if (!$this->skippedReasons) {
+            return Redirect::back();
+        }
+
+        return Redirect::back()->with('notification', [
+            'status'      => 'warning',
+            'title'       => __('Some lines stayed on the list'),
+            'description' => collect($this->skippedReasons)->map(fn (string $reason) => __($reason))->implode('; '),
+        ]);
     }
 }

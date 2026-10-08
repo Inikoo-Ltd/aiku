@@ -13,6 +13,7 @@ use App\Actions\Dispatching\FulfilmentGate\ReleaseCoverableOrdersAtGate;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLowStockAudits;
 use App\Actions\Ordering\PreOrder\AllocatePreOrderStock;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateReplenishments;
+use App\Actions\Production\PartnerShippingList\ReleaseUncoveredPrePicks;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\RawMaterial;
@@ -91,6 +92,10 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
             if ($quantityAvailable > $oldQuantityAvailable && AllocatePreOrderStock::make()->hasWaitingPreOrders($orgStock->id)) {
                 AllocatePreOrderStock::dispatch($orgStock->id)->delay(5);
+            }
+
+            if ($quantityAvailable < $oldQuantityAvailable && $orgStock->organisation->is_manufacturing_hub) {
+                ReleaseUncoveredPrePicks::run($orgStock);
             }
 
             //            DB::table('debug_stock_updates')->insert([

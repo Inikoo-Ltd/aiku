@@ -1480,6 +1480,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('production:raise_scheduled_partner_orders')->dailyAt('06:00')->timezone('Europe/London')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RaiseScheduledPartnerOrders',
+                ),
+                name: 'RaiseScheduledPartnerOrders',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 
