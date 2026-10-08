@@ -1912,9 +1912,10 @@ test('completed job order is received into stock with a batch code', function ()
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
 
     $artefact = StoreArtefact::make()->action($this->production, [
-        'code'         => 'RECEIVEART1',
-        'name'         => 'Receivable artefact',
-        'org_stock_id' => $orgStock->id,
+        'code'            => 'RECEIVEART1',
+        'name'            => 'Receivable artefact',
+        'org_stock_id'    => $orgStock->id,
+        'shelf_life_days' => 365,
     ]);
     $artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
@@ -1981,7 +1982,10 @@ test('completed job order is received into stock with a batch code', function ()
 
     $batchCode = \App\Models\Dispatching\BatchCode::where('org_stock_id', $orgStock->id)->first();
     expect($batchCode)->not->toBeNull()
-        ->and($batchCode->code)->toBe($jobOrder->reference.'-'.$artefact->code);
+        ->and($batchCode->code)->toBe($jobOrder->reference.'-'.$artefact->code)
+        ->and($batchCode->expiry_date->toDateString())->toBe(now()->addDays(365)->toDateString())
+        ->and(\App\Models\Inventory\OrgStockMovementBatch::where('org_stock_movement_id', $movement->id)->get(['batch_code_id', 'quantity'])->toArray())
+        ->toEqual([['batch_code_id' => $batchCode->id, 'quantity' => '10.000000']]);
 
     $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)
         ->where('org_stock_id', $orgStock->id)->first();

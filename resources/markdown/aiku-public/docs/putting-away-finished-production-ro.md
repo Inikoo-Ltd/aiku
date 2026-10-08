@@ -41,6 +41,8 @@ Dacă ordinul de lucru a fost făcut pentru stoc, pentru un client propriu, sau 
 
 Asta înregistrează marfa în locație, îi dă un cod de lot făcut din referința ordinului de lucru și codul produsului, scade materiile prime pe care rețeta spune că le-a folosit, și marchează ordinul de lucru ca primit. Rândul dispare, iar pe panoul fabricii linia iese din coloana <b>Done</b>.
 
+Lotul primește și data de valabilitate: cea scrisă pentru tură pe panoul fabricii, altfel ziua în care e pus la loc plus termenul de valabilitate al artefactului. Un artefact fără termen de valabilitate rămâne fără dată de valabilitate, așa că completează termenul la fiecare artefact. Dacă mai târziu pui la loc mai mult din aceeași linie a ordinului de lucru, se adaugă la același lot. Stocul știe acum ce lot e în fiecare locație, iar de acolo citesc rapoartele de inventar datele de valabilitate.
+
 Cantitatea înregistrată e ce au făcut efectiv meșteșugarii, nu ce s-a cerut. Un ordin de lucru care a cerut 25 și a primit 19 înregistrează 19.
 
 ## Ce urmează

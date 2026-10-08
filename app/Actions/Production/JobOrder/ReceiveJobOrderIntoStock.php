@@ -27,6 +27,8 @@ use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use App\Models\Dispatching\BatchCode;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -103,16 +105,13 @@ class ReceiveJobOrderIntoStock extends OrgAction
                     StoreLocationOrgStock::make()->action($orgStock, $location, []);
                 }
 
-                StoreBatchCode::make()->action($location->warehouse, [
-                    'code'         => Arr::get($item->data, 'batch_code') ?: $jobOrder->reference.'-'.$item->artefact->code,
-                    'expiry_date'  => Arr::get($item->data, 'expiry_date'),
-                    'org_stock_id' => $orgStock->id,
-                ]);
+                $batchCode = $this->batchCode($jobOrder, $item, $orgStock, $location);
 
                 StoreOrgStockMovement::make()->action($orgStock, $location, [
                     'quantity' => $producedSkos,
                     'type'     => OrgStockMovementTypeEnum::PRODUCTION,
                     'user_id'  => $userId,
+                    'batches'  => [['batch_code_id' => $batchCode->id, 'quantity' => $producedSkos]],
                 ]);
 
                 $this->deductRawMaterials($item, $producedUnits, $userId);
@@ -152,6 +151,33 @@ class ReceiveJobOrderIntoStock extends OrgAction
      * Whole artefacts the last task produced, never more than the item asked for: the artisan
      * works in artefact units, the stock is kept in SKOs, packed_in is the only bridge.
      */
+    /**
+     * One batch per job order line, however many times it is received. Its best-before is the
+     * one typed for the run, else the date it was first received plus the artefact's shelf life,
+     * else left blank: a best-before is never guessed.
+     */
+    private function batchCode(JobOrder $jobOrder, JobOrderItem $item, OrgStock $orgStock, Location $location): BatchCode
+    {
+        $code       = Arr::get($item->data, 'batch_code') ?: $jobOrder->reference.'-'.$item->artefact->code;
+        $bestBefore = Arr::get($item->data, 'expiry_date');
+
+        if (!$bestBefore) {
+            $received = BatchCode::where('org_stock_id', $orgStock->id)->where('code', $code)->orderBy('id')->first();
+            if ($received) {
+                return $received;
+            }
+
+            $shelfLifeDays = $item->artefact->shelf_life_days;
+            $bestBefore    = $shelfLifeDays ? now()->addDays($shelfLifeDays)->toDateString() : null;
+        }
+
+        return StoreBatchCode::make()->action($location->warehouse, [
+            'code'         => $code,
+            'expiry_date'  => $bestBefore,
+            'org_stock_id' => $orgStock->id,
+        ]);
+    }
+
     private function producedQuantity(JobOrderItem $item): float
     {
         $lastTask = $item->tasks->last();

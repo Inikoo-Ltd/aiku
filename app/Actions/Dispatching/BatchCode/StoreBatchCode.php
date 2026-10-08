@@ -14,6 +14,7 @@ use App\Models\Dispatching\BatchCode;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -24,7 +25,10 @@ class StoreBatchCode extends OrgAction
         data_set($modelData, 'group_id', $warehouse->group_id);
         data_set($modelData, 'organisation_id', $warehouse->organisation_id);
 
-        $batchCode = BatchCode::create($modelData);
+        $batchCode = BatchCode::firstOrCreate(
+            Arr::only($modelData, ['organisation_id', 'org_stock_id', 'code', 'expiry_date']) + ['expiry_date' => null],
+            $modelData
+        );
 
         OrgStockHydrateCurrentBatchCodes::run(OrgStock::find($batchCode->org_stock_id));
 
