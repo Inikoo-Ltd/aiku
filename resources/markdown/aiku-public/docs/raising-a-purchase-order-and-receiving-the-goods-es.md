@@ -2,7 +2,7 @@
 title: Cursar una orden de compra y recibir la mercancía
 summary: Compra a un proveedor ordinario - cursa la orden de compra, consigue que se confirme, y luego convierte la entrega en stock que puedas vender.
 date: 2026-09-01
-source_date: 2026-09-01
+source_date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 ---
@@ -15,7 +15,7 @@ Cuando compras a un proveedor ordinario - no a una organización socia, que tien
 
 Cada proveedor al que tu organización compra directamente vive en **Procurement → Suppliers**. La página de cada proveedor te da un botón **Purchase Order** para iniciar una orden nueva, más un menú lateral con **Products**, **Purchase Orders** y **Stock Deliveries** hasta la fecha.
 
-Algunos proveedores solo son accesibles a través de un **agente** - una persona o empresa que compra en tu nombre en lugar de enviarte directamente. Los agentes tienen su propia lista en **Procurement → Agents**, y funcionan de la misma manera: las órdenes de compra y entregas contra un agente se registran en la página del agente en lugar de en la del proveedor.
+Algunos proveedores solo son accesibles a través de un **agente** - una persona o empresa que compra en tu nombre en lugar de enviarte directamente. Los agentes tienen su propia lista en **Procurement → Agents**. Un pedido a través de un agente sigue siendo una orden de compra por proveedor, enviada al agente, y los pedidos que haces juntos forman un único **pedido de agente** (agent order). Ver [Hacer un pedido a través de un agente](/docs/placing-an-order-through-an-agent-es).
 
 ## Cursar una orden de compra
 

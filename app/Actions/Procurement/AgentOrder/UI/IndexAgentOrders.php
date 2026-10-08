@@ -93,6 +93,7 @@ class IndexAgentOrders extends OrgAction
 
     public function asController(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
     {
+        abort_unless($orgAgent->organisation_id === $organisation->id, 404);
         $this->orgAgent = $orgAgent;
         $this->initialisation($organisation, $request);
 

@@ -1,7 +1,7 @@
 ---
 title: Raising a purchase order and receiving the goods
 summary: Buy from an ordinary supplier - raise the purchase order, get it confirmed, then turn the delivery into stock you can sell.
-date: 2026-09-01
+date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 help_routes: grp.org.procurement.org_suppliers, grp.org.procurement.purchase_orders, grp.org.procurement.stock_deliveries
@@ -15,7 +15,7 @@ When you buy from an ordinary supplier - not a partner organisation, which has i
 
 Every supplier your organisation buys from directly lives in **Procurement → Suppliers**. Each supplier's page gives you a **Purchase Order** button to start a new order, plus a side menu with **Products**, **Purchase Orders** and **Stock Deliveries** so far.
 
-Some suppliers are only reachable through an **agent** - a person or company who buys on your behalf rather than shipping to you directly. Agents have their own list under **Procurement → Agents**, and work the same way: purchase orders and deliveries against an agent are recorded on the agent's page instead of the supplier's.
+Some suppliers are only reachable through an **agent** - a person or company who buys on your behalf rather than shipping to you directly. Agents have their own list under **Procurement → Agents**. An order through an agent is still one purchase order per supplier, sent to the agent, and the orders you place together form one **agent order**. See [placing an order through an agent](/docs/placing-an-order-through-an-agent).
 
 ## Raising a purchase order
 

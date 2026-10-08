@@ -2135,6 +2135,42 @@ test('products added on the agent order go on their supplier order in it', funct
         ->toThrow(ValidationException::class);
 });
 
+test('an agent order of another organisation cannot be opened through this organisation', function () {
+    $otherOrganisation = Organisation::where('id', '!=', $this->organisation->id)->where('group_id', $this->group->id)->orderBy('id')->firstOrFail();
+    $agent             = StoreAgent::make()->action($this->group, Agent::factory()->definition());
+    $foreignOrgAgent   = StoreOrgAgent::make()->action($otherOrganisation, $agent, []);
+
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.index', [$this->organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.show', [$this->organisation->slug, $foreignOrgAgent->slug, 'ANY-REF']))->assertNotFound();
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.pdf', [$this->organisation->slug, $foreignOrgAgent->slug, 'ANY-REF']))->assertNotFound();
+});
+
+test('a supplier order submitted on its own leaves the rest of the agent order open', function () {
+    $orgAgent                                 = createFreshOrgAgent($this);
+    [$orgSupplierOne, $orgSupplierProductOne] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$orgSupplierTwo, $orgSupplierProductTwo] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[0], $orgSupplierProductOne);
+    AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[1], $orgSupplierProductTwo);
+    $reference = StoreAgentOrder::make()->handle($orgAgent);
+
+    $lineOne = StoreAgentOrderLine::make()->action($orgAgent, $reference, $orgSupplierProductOne, ['quantity_ordered' => 10]);
+    UpdatePurchaseOrderStateToSubmitted::make()->action($lineOne->purchaseOrder->refresh());
+
+    StoreAgentOrderLine::make()->action($orgAgent, $reference, $orgSupplierProductTwo, ['quantity_ordered' => 20]);
+    expect(fn () => StoreAgentOrderLine::make()->action($orgAgent, $reference, $orgSupplierProductOne, ['quantity_ordered' => 5]))
+        ->toThrow(ValidationException::class);
+
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.show', [$this->organisation->slug, $orgAgent->slug, $reference]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('agent_order.can_edit', true)
+            ->where('submit.reference', $reference));
+
+    Queue::fake();
+    $submitted = SubmitAgentOrder::make()->action($orgAgent, $reference);
+    expect($submitted)->toHaveCount(1)
+        ->and(PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $reference)->where('state', PurchaseOrderStateEnum::SUBMITTED)->count())->toBe(2);
+});
+
 test('a supplier order through an agent links to its whole agent order', function () {
     $orgAgent      = createFreshOrgAgent($this);
     [$orgSupplier] = createAgentOrgSupplierWithProduct($this, $orgAgent);

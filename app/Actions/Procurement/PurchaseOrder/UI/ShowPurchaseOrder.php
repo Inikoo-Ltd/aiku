@@ -148,10 +148,10 @@ class ShowPurchaseOrder extends OrgAction
             ];
         } elseif ($purchaseOrder->parent instanceof OrgSupplier) {
             $orderer = OrgSupplierResource::make($purchaseOrder->parent)->toArray($request);
-            if ($purchaseOrder->isAgentOrder() && $purchaseOrder->parent->orgAgent) {
+            if ($purchaseOrder->isAgentOrder() && $orgAgent = $purchaseOrder->orgAgentOfOrder()) {
                 $orderer['via_agent'] = [
-                    'name' => $purchaseOrder->parent->orgAgent->agent->name,
-                    'slug' => $purchaseOrder->parent->orgAgent->slug,
+                    'name' => $orgAgent->agent->name,
+                    'slug' => $orgAgent->slug,
                 ];
             }
             $productListRoute = [
@@ -184,7 +184,7 @@ class ShowPurchaseOrder extends OrgAction
                         'label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
                     ],
                     'actions' => [
-                        $purchaseOrder->isAgentOrder() && $purchaseOrder->agent_order_reference && ($orgAgent = $purchaseOrder->parent->orgAgent) && $orgAgent->organisation_id === $this->organisation->id ? [
+                        $purchaseOrder->isAgentOrder() && $purchaseOrder->agent_order_reference && $purchaseOrder->organisation_id === $this->organisation->id && ($orgAgent = $purchaseOrder->orgAgentOfOrder()) ? [
                             'type'    => 'button',
                             'style'   => 'tertiary',
                             'icon'    => 'fal fa-boxes',
@@ -922,7 +922,7 @@ class ShowPurchaseOrder extends OrgAction
                     'name'       => $routeName,
                     'parameters' => [
                         'organisation'  => $this->organisation->slug,
-                        'orgAgent'      => $purchaseOrder->parent->orgAgent->slug,
+                        'orgAgent'      => $purchaseOrder->orgAgentOfOrder()?->slug,
                         'purchaseOrder' => $purchaseOrder->slug,
                     ],
                 ],

@@ -4,7 +4,7 @@ summary: For agents — the four dates you record on each order to a supplier (d
 date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
-help_routes: grp.org.procurement.agent_supplier_purchase_orders
+help_routes: grp.org.procurement.purchase_orders
 series: PO journey
 order: 2
 ---

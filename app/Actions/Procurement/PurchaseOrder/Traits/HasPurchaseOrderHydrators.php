@@ -29,9 +29,9 @@ trait HasPurchaseOrderHydrators
         if (class_basename($parent) == 'OrgSupplier') {
             OrgSupplierHydratePurchaseOrders::dispatch($parent);
             SupplierHydratePurchaseOrders::dispatch($parent->supplier);
-            if ($parent->orgAgent) {
-                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent);
-                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent);
+            if ($orgAgent = $purchaseOrder->orgAgentOfOrder()) {
+                OrgAgentHydratePurchaseOrders::dispatch($orgAgent);
+                AgentHydratePurchaseOrders::dispatch($orgAgent->agent);
             }
         } elseif (class_basename($parent) == 'OrgPartner') {
             OrgPartnerHydratePurchaseOrders::dispatch($parent);

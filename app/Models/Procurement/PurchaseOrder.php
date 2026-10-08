@@ -310,6 +310,19 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     }
 
     /**
+     * The org agent this order was placed through. Read from the order, not from its supplier, which
+     * may have moved to another agent or become independent since.
+     */
+    public function orgAgentOfOrder(): ?OrgAgent
+    {
+        if (!$this->agent_id) {
+            return null;
+        }
+
+        return OrgAgent::where('organisation_id', $this->organisation_id)->where('agent_id', $this->agent_id)->first();
+    }
+
+    /**
      * The supplier orders placed together with this one through the same agent.
      */
     public function agentOrderPurchaseOrders(): Builder

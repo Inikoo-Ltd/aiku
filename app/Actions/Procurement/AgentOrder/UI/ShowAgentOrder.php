@@ -47,6 +47,7 @@ class ShowAgentOrder extends OrgAction
 
     public function asController(Organisation $organisation, OrgAgent $orgAgent, string $agentOrderReference, ActionRequest $request): Collection
     {
+        abort_unless($orgAgent->organisation_id === $organisation->id, 404);
         $this->orgAgent = $orgAgent;
         $this->initialisation($organisation, $request);
 
@@ -56,9 +57,10 @@ class ShowAgentOrder extends OrgAction
     public function htmlResponse(Collection $purchaseOrders, ActionRequest $request): Response
     {
         $reference    = $request->route('agentOrderReference');
-        $isOpen       = $purchaseOrders->every(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS);
+        $drafts       = $purchaseOrders->filter(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS);
+        $isOpen       = $purchaseOrders->isEmpty() || $drafts->isNotEmpty();
         $canEditLines = $this->canEdit && $isOpen;
-        $canSubmit    = $canEditLines && $purchaseOrders->contains(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->purchaseOrderTransactions->isNotEmpty());
+        $canSubmit    = $canEditLines && $drafts->contains(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->purchaseOrderTransactions->isNotEmpty());
         $state        = IndexAgentOrders::stateOf($purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->state->value)->unique()->values()->all());
 
         return Inertia::render(
@@ -105,7 +107,7 @@ class ShowAgentOrder extends OrgAction
                     'is_open'                => $isOpen,
                     'can_edit'               => $canEditLines,
                 ],
-                'supplier_orders' => $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $this->supplierOrder($purchaseOrder, $canEditLines))->values()->all(),
+                'supplier_orders' => $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $this->supplierOrder($purchaseOrder, $canEditLines && $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS))->values()->all(),
                 'products_list'   => $canEditLines ? [
                     'name'       => 'grp.json.org-agent.agent-order.org-supplier-products',
                     'parameters' => ['orgAgent' => $this->orgAgent->id, 'agentOrderReference' => $reference],

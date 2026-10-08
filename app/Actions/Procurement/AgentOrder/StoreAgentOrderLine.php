@@ -14,6 +14,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransacti
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -38,13 +39,19 @@ class StoreAgentOrderLine extends OrgAction
                 $fail(__('This product is not bought through :agent', ['agent' => $orgAgent->agent->name]));
             }
 
-            $agentOrder = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference);
-            if ((clone $agentOrder)->where('state', '!=', PurchaseOrderStateEnum::IN_PROCESS)->exists()) {
-                $fail(__(':reference has been submitted, new products go on the next agent order', ['reference' => $agentOrderReference]));
-            }
+            $orgSupplier = OrgSupplier::whereKey($orgSupplierProduct->org_supplier_id)->lockForUpdate()->firstOrFail();
 
-            $orgSupplier   = $orgSupplierProduct->orgSupplier;
-            $purchaseOrder = (clone $agentOrder)->where('parent_id', $orgSupplier->id)->lockForUpdate()->first();
+            $supplierOrders = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)
+                ->where('parent_id', $orgSupplier->id)
+                ->get();
+            $purchaseOrder = $supplierOrders->firstWhere('state', PurchaseOrderStateEnum::IN_PROCESS);
+
+            if (!$purchaseOrder && $supplierOrders->isNotEmpty()) {
+                $fail(__('The order to :supplier in :reference has been submitted, add the product to the next agent order', [
+                    'supplier'  => $orgSupplier->supplier->code,
+                    'reference' => $agentOrderReference,
+                ]));
+            }
 
             if (!$purchaseOrder) {
                 $openDraft = $orgSupplier->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first();

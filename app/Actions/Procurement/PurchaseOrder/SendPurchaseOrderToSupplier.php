@@ -218,9 +218,9 @@ class SendPurchaseOrderToSupplier
     /**
      * An order to a supplier behind an agent goes to the agent, who places it with the supplier.
      */
-    public static function counterpart(PurchaseOrder $purchaseOrder): OrgSupplier|OrgAgent|OrgPartner
+    public static function counterpart(PurchaseOrder $purchaseOrder): OrgSupplier|OrgAgent|OrgPartner|null
     {
-        return $purchaseOrder->isAgentOrder() ? $purchaseOrder->parent->orgAgent : $purchaseOrder->parent;
+        return $purchaseOrder->isAgentOrder() ? $purchaseOrder->orgAgentOfOrder() : $purchaseOrder->parent;
     }
 
     private static function counterpartName(OrgSupplier|OrgAgent|OrgPartner $counterpart, bool $contact = false): string

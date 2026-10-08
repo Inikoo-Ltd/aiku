@@ -63,7 +63,8 @@ class StorePurchaseOrder extends OrgAction
             data_set($modelData, 'data.delivery_address', $deliveryAddress);
         }
 
-        if ($parent instanceof OrgSupplier && $parent->orgAgent) {
+        $isDraft = in_array(Arr::get($modelData, 'state', PurchaseOrderStateEnum::IN_PROCESS), [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::IN_PROCESS->value], true);
+        if ($parent instanceof OrgSupplier && $parent->orgAgent && $isDraft) {
             $modelData = $this->prepareAgentOrderFields($parent, $modelData);
         }
 

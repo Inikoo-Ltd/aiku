@@ -10,7 +10,6 @@ namespace App\Actions\Maintenance\Procurement;
 
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
-use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
@@ -73,13 +72,18 @@ class SplitAgentPurchaseOrders
         'lines_left_unattributed'   => 0,
         'purchase_orders_kept'      => 0,
         'with_extra_costs'          => 0,
-        'totals_from_aspo'          => 0,
         'stock_delivery_links'      => 0,
         'audits_copied'             => 0,
         'deposits_moved'            => 0,
         'in_process_beside_another' => 0,
         'empty_drafts_deleted'      => 0,
+        'failed'                    => 0,
     ];
+
+    /**
+     * @var array<int, string>
+     */
+    public array $failures = [];
 
     /**
      * @return array<string, int>
@@ -94,7 +98,25 @@ class SplitAgentPurchaseOrders
 
         $touchedOrgSuppliers = [];
         $touchedOrgAgents    = [];
-        foreach ($query->get() as $purchaseOrder) {
+        try {
+            $this->splitAll($query->get(), $dryRun, $touchedOrgSuppliers, $touchedOrgAgents);
+        } finally {
+            if (!$dryRun) {
+                $this->hydrate(array_keys($touchedOrgSuppliers), array_keys($touchedOrgAgents));
+            }
+        }
+
+        return $this->report;
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Collection<int, PurchaseOrder>  $purchaseOrders
+     * @param  array<int, bool>  $touchedOrgSuppliers
+     * @param  array<int, bool>  $touchedOrgAgents
+     */
+    private function splitAll($purchaseOrders, bool $dryRun, array &$touchedOrgSuppliers, array &$touchedOrgAgents): void
+    {
+        foreach ($purchaseOrders as $purchaseOrder) {
             $groups = $this->groupLinesBySupplier($purchaseOrder);
             if ($groups->isEmpty()) {
                 if ($purchaseOrder->state->value === 'in_process') {
@@ -118,6 +140,11 @@ class SplitAgentPurchaseOrders
             PurchaseOrder::disableAuditing();
             try {
                 $splits = DB::transaction(fn () => $this->split($purchaseOrder, $groups));
+            } catch (Throwable $e) {
+                $this->report['failed']++;
+                $this->failures[] = $purchaseOrder->reference.': '.$e->getMessage();
+
+                continue;
             } finally {
                 PurchaseOrder::enableAuditing();
             }
@@ -127,12 +154,6 @@ class SplitAgentPurchaseOrders
                 $touchedOrgSuppliers[$split->parent_id] = true;
             }
         }
-
-        if (!$dryRun) {
-            $this->hydrate(array_keys($touchedOrgSuppliers), array_keys($touchedOrgAgents));
-        }
-
-        return $this->report;
     }
 
     /**
@@ -220,7 +241,8 @@ class SplitAgentPurchaseOrders
 
             DB::table('purchase_order_transactions')->whereIn('id', $lines->pluck('id'))->update(['purchase_order_id' => $split->id]);
 
-            $this->setTotals($split, $aspos->get($supplierId));
+            $itemsNet = (float) DB::table('purchase_order_transactions')->whereIn('id', $lines->pluck('id'))->whereNull('deleted_at')->sum('net_amount');
+            $split->updateQuietly(['cost_items' => $itemsNet, 'cost_total' => $itemsNet]);
             PurchaseOrderHydrateTransactions::run($split);
 
             $this->report['split_into']++;
@@ -230,15 +252,32 @@ class SplitAgentPurchaseOrders
             $splits[] = $split;
         }
 
-        if ($this->hasExtraCosts($purchaseOrder)) {
-            $this->report['with_extra_costs']++;
-            if (!$leftOnOrder) {
-                $this->spreadExtraCosts($purchaseOrder, $splits);
-            }
+        if (!$splits) {
+            return [];
         }
 
-        $purchaseOrder->data = array_merge($purchaseOrder->data ?? [], ['split_into' => array_merge(Arr::get($purchaseOrder->data, 'split_into', []), Arr::pluck($splits, 'id'))]);
+        $preSplit = $purchaseOrder->only(['cost_items', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax', 'cost_total']);
+        $purchaseOrder->data = array_merge(
+            $purchaseOrder->data ?? [],
+            ['split_into' => array_merge(Arr::get($purchaseOrder->data, 'split_into', []), Arr::pluck($splits, 'id'))],
+            Arr::has($purchaseOrder->data, 'pre_split') ? [] : ['pre_split' => $preSplit]
+        );
+
+        if ($leftOnOrder) {
+            $remainingItems = (float) $purchaseOrder->purchaseOrderTransactions()->sum('net_amount');
+            $purchaseOrder->cost_items = $remainingItems;
+            $purchaseOrder->cost_total = $remainingItems;
+        }
+
+        if ($this->hasExtraCosts($purchaseOrder)) {
+            $this->report['with_extra_costs']++;
+            $this->spreadExtraCosts($preSplit, $leftOnOrder ? [...$splits, $purchaseOrder] : $splits);
+        }
+
         $purchaseOrder->saveQuietly();
+        if ($leftOnOrder) {
+            PurchaseOrderHydrateTransactions::run($purchaseOrder);
+        }
 
         if ($leftOnOrder) {
             $this->report['lines_left_unattributed'] += $leftOnOrder;
@@ -323,52 +362,33 @@ class SplitAgentPurchaseOrders
     }
 
     /**
-     * Live orders are totalled from their lines like any other order; when an exchange rate is
-     * missing the agent supplier purchase order's own total is kept.
-     */
-    private function setTotals(PurchaseOrder $split, ?AgentSupplierPurchaseOrder $aspo): void
-    {
-        try {
-            CalculatePurchaseOrderTotalAmounts::run($split);
-        } catch (Throwable) {
-            $split->updateQuietly([
-                'cost_items' => $aspo?->cost_items ?? $aspo?->cost_total ?? 0,
-                'cost_total' => $aspo?->cost_total ?? 0,
-            ]);
-            $this->report['totals_from_aspo']++;
-        }
-    }
-
-    /**
-     * The order's extra costs (mostly the agent's charge) go to each split by its share of the items,
-     * rounded to cents with the last split taking the remainder, so the splits add up to the original.
-     * An order that keeps unattributed lines keeps its extra costs too.
+     * The order's extra costs (mostly the agent's charge) go to each order by its share of the items,
+     * rounded to cents with the last order taking the remainder, so they add up to the original. A
+     * kept original takes its share too.
      *
-     * @param array<int, PurchaseOrder> $splits
+     * @param  array<string, mixed>  $preSplit
+     * @param  array<int, PurchaseOrder>  $orders
      */
-    private function spreadExtraCosts(PurchaseOrder $purchaseOrder, array $splits): void
+    private function spreadExtraCosts(array $preSplit, array $orders): void
     {
-        if (!$splits) {
-            return;
-        }
-
-        $itemsTotal = array_sum(array_map(fn (PurchaseOrder $split) => (float) $split->cost_items, $splits));
+        $itemsTotal = array_sum(array_map(fn (PurchaseOrder $order) => (float) $order->cost_items, $orders));
         $fields     = ['cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax'];
         $allocated  = array_fill_keys($fields, 0.0);
-        $last       = count($splits) - 1;
+        $last       = count($orders) - 1;
 
-        foreach (array_values($splits) as $index => $split) {
-            $share   = $itemsTotal > 0 ? (float) $split->cost_items / $itemsTotal : ($index === 0 ? 1 : 0);
+        foreach (array_values($orders) as $index => $order) {
+            $share   = $itemsTotal > 0 ? (float) $order->cost_items / $itemsTotal : ($index === 0 ? 1 : 0);
             $amounts = [];
             foreach ($fields as $field) {
-                $total            = (float) $purchaseOrder->{$field};
-                $amounts[$field]  = $index === $last ? round($total - $allocated[$field], 2) : round($total * $share, 2);
+                $total             = (float) ($preSplit[$field] ?? 0);
+                $amounts[$field]   = $index === $last ? round($total - $allocated[$field], 2) : round($total * $share, 2);
                 $allocated[$field] += $amounts[$field];
             }
 
-            $split->updateQuietly(array_merge($amounts, [
-                'cost_total' => round((float) $split->cost_items + array_sum($amounts), 2),
-            ]));
+            $order->fill(array_merge($amounts, ['cost_total' => round((float) $order->cost_items + array_sum($amounts), 2)]));
+            if ($order->exists && $order->isDirty()) {
+                $order->saveQuietly();
+            }
         }
     }
 

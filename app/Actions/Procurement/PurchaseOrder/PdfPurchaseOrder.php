@@ -85,9 +85,13 @@ class PdfPurchaseOrder extends OrgAction
 
     public function inAgentOrder(Organisation $organisation, OrgAgent $orgAgent, string $agentOrderReference, ActionRequest $request): Response
     {
+        abort_unless($orgAgent->organisation_id === $organisation->id, 404);
         $this->initialisation($organisation, $request);
 
-        $purchaseOrders = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)->orderBy('parent_code')->get();
+        $purchaseOrders = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)
+            ->with(['organisation.address', 'currency', 'parent', 'agent', 'purchaseOrderTransactions.supplierProduct.currency', 'purchaseOrderTransactions.orgStock'])
+            ->orderBy('parent_code')
+            ->get();
         abort_if($purchaseOrders->isEmpty(), 404);
 
         return response($this->handleMany($purchaseOrders), 200)

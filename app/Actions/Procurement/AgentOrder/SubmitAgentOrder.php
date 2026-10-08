@@ -19,6 +19,7 @@ use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -37,21 +38,23 @@ class SubmitAgentOrder extends OrgAction
      */
     public function handle(OrgAgent $orgAgent, string $agentOrderReference, ?string $sendVia = null): Collection
     {
-        $drafts = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)
-            ->where('state', PurchaseOrderStateEnum::IN_PROCESS)
-            ->withCount('purchaseOrderTransactions')
-            ->orderBy('reference')
-            ->get();
+        $submitted = DB::transaction(function () use ($orgAgent, $agentOrderReference) {
+            $drafts = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $agentOrderReference)
+                ->where('state', PurchaseOrderStateEnum::IN_PROCESS)
+                ->orderBy('reference')
+                ->lockForUpdate()
+                ->get();
 
-        [$withProducts, $empty] = $drafts->partition(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->purchase_order_transactions_count > 0);
+            [$withProducts, $empty] = $drafts->partition(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->purchaseOrderTransactions()->exists());
 
-        if ($withProducts->isEmpty()) {
-            throw ValidationException::withMessages(['agent_order' => __('Add products before submitting :reference', ['reference' => $agentOrderReference])]);
-        }
+            if ($withProducts->isEmpty()) {
+                throw ValidationException::withMessages(['agent_order' => __('Add products before submitting :reference', ['reference' => $agentOrderReference])]);
+            }
 
-        $empty->each(fn (PurchaseOrder $purchaseOrder) => DeletePurchaseOrder::make()->action($purchaseOrder));
+            $empty->each(fn (PurchaseOrder $purchaseOrder) => DeletePurchaseOrder::make()->action($purchaseOrder));
 
-        $submitted = $withProducts->map(fn (PurchaseOrder $purchaseOrder) => UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder))->values();
+            return $withProducts->map(fn (PurchaseOrder $purchaseOrder) => UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder))->values();
+        });
 
         if ($sendVia && in_array($sendVia, array_column(SendPurchaseOrderToSupplier::channels($submitted->first()), 'channel'), true)) {
             SendAgentOrderToAgent::dispatch($submitted->pluck('id')->all(), $agentOrderReference, $sendVia);

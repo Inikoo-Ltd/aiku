@@ -36,10 +36,16 @@ class ResolveAgentOrderReference
             ->where('organisation_id', $orgAgent->organisation_id)
             ->where('agent_id', $orgAgent->agent_id)
             ->where('parent_type', 'OrgSupplier')
+            ->where('state', PurchaseOrderStateEnum::IN_PROCESS)
             ->whereNotNull('agent_order_reference')
-            ->groupBy('agent_order_reference')
-            ->havingRaw('bool_and(state = ?)', [PurchaseOrderStateEnum::IN_PROCESS->value])
-            ->orderByRaw('max(id) desc')
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('purchase_orders as sent')
+                ->whereColumn('sent.organisation_id', 'purchase_orders.organisation_id')
+                ->whereColumn('sent.agent_id', 'purchase_orders.agent_id')
+                ->whereColumn('sent.agent_order_reference', 'purchase_orders.agent_order_reference')
+                ->where('sent.state', '!=', PurchaseOrderStateEnum::IN_PROCESS->value)
+                ->whereNull('sent.deleted_at'))
+            ->orderByDesc('id')
             ->value('agent_order_reference');
     }
 

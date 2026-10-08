@@ -88,7 +88,10 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 ]);
             }
 
-            $deliveryParent = $purchaseOrder->isAgentOrder() ? $purchaseOrder->parent->orgAgent : $purchaseOrder->parent;
+            $deliveryParent = $purchaseOrder->isAgentOrder() ? $purchaseOrder->orgAgentOfOrder() : $purchaseOrder->parent;
+            if (!$deliveryParent) {
+                throw ValidationException::withMessages(['purchase_order_transaction_ids' => __('This organisation no longer buys through the agent of this order')]);
+            }
 
             if ($stockDeliveryId = Arr::get($modelData, 'stock_delivery_id')) {
                 $stockDelivery = StockDelivery::whereKey($stockDeliveryId)->lockForUpdate()->firstOrFail();
@@ -212,13 +215,14 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
      */
     public static function openAgentDeliveries(PurchaseOrder $purchaseOrder): Collection
     {
-        if (!$purchaseOrder->isAgentOrder() || !$purchaseOrder->parent?->org_agent_id) {
+        $orgAgent = $purchaseOrder->isAgentOrder() ? $purchaseOrder->orgAgentOfOrder() : null;
+        if (!$orgAgent) {
             return new Collection();
         }
 
         return StockDelivery::query()
             ->where('parent_type', 'OrgAgent')
-            ->where('parent_id', $purchaseOrder->parent->org_agent_id)
+            ->where('parent_id', $orgAgent->id)
             ->where('state', StockDeliveryStateEnum::IN_PROCESS)
             ->where('currency_id', $purchaseOrder->currency_id)
             ->orderByDesc('id')
