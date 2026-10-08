@@ -9,6 +9,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateTimeSeriesNumberRecords;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteTimeSeries;
@@ -94,6 +95,10 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
                     'visitors_desktop'     => $result->visitors_desktop,
                     'visitors_mobile'      => $result->visitors_mobile,
                     'visitors_tablet'      => $result->visitors_tablet,
+                    'add_to_baskets'       => $result->add_to_baskets,
+                    'checkouts'            => $result->checkouts,
+                    'purchases'            => $result->purchases,
+                    'revenue'              => $result->revenue,
                 ]
             ];
         }
@@ -103,7 +108,7 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
 
     protected function fetchDailyResults(WebsiteTimeSeries $timeSeries, string $from, string $to): Collection
     {
-        return DB::connection('aiku_no_sticky')->table('website_visitors')
+        $visitorStats = DB::connection('aiku_no_sticky')->table('website_visitors')
             ->where('first_seen_at', '>=', $from)
             ->where('first_seen_at', '<=', $to)
             ->where('website_id', $timeSeries->website_id)
@@ -121,7 +126,46 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
                 DB::raw("SUM(CASE WHEN LOWER(device_type) = 'tablet' THEN 1 ELSE 0 END) as visitors_tablet")
             )
             ->groupBy(DB::raw('CAST(first_seen_at AS DATE)'))
-            ->get();
+            ->get()
+            ->keyBy('date');
+
+        $conversionStats = DB::connection('aiku_no_sticky')->table('website_conversion_events')
+            ->where('event_date', '>=', $from)
+            ->where('event_date', '<=', $to)
+            ->where('website_id', $timeSeries->website_id)
+            ->select(
+                DB::raw('CAST(event_date AS DATE) as date'),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value."' THEN 1 ELSE 0 END) as add_to_baskets"),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::CHECKOUT->value."' THEN 1 ELSE 0 END) as checkouts"),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::PURCHASE->value."' THEN 1 ELSE 0 END) as purchases"),
+                DB::raw("SUM(CASE WHEN event_type = '".WebsiteConversionEventTypeEnum::PURCHASE->value."' THEN net_amount ELSE 0 END) as revenue")
+            )
+            ->groupBy(DB::raw('CAST(event_date AS DATE)'))
+            ->get()
+            ->keyBy('date');
+
+        return $visitorStats->keys()->merge($conversionStats->keys())->unique()->map(function ($date) use ($visitorStats, $conversionStats) {
+            $visitorStat    = $visitorStats->get($date);
+            $conversionStat = $conversionStats->get($date);
+
+            return (object) [
+                'date'                 => $date,
+                'visitors'             => $visitorStat->visitors ?? 0,
+                'sessions'             => $visitorStat->sessions ?? 0,
+                'page_views'           => $visitorStat->page_views ?? 0,
+                'avg_session_duration' => $visitorStat->avg_session_duration ?? 0,
+                'bounces'              => $visitorStat->bounces ?? 0,
+                'pages_per_session'    => $visitorStat->pages_per_session ?? 0,
+                'new_visitors'         => $visitorStat->new_visitors ?? 0,
+                'visitors_desktop'     => $visitorStat->visitors_desktop ?? 0,
+                'visitors_mobile'      => $visitorStat->visitors_mobile ?? 0,
+                'visitors_tablet'      => $visitorStat->visitors_tablet ?? 0,
+                'add_to_baskets'       => $conversionStat->add_to_baskets ?? 0,
+                'checkouts'            => $conversionStat->checkouts ?? 0,
+                'purchases'            => $conversionStat->purchases ?? 0,
+                'revenue'              => $conversionStat->revenue ?? 0,
+            ];
+        })->values();
     }
 
     protected function fetchAggregatedResults(WebsiteTimeSeries $timeSeries, string $from, string $to): Collection
@@ -143,6 +187,10 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
             DB::raw('SUM(visitors_desktop) as visitors_desktop'),
             DB::raw('SUM(visitors_mobile) as visitors_mobile'),
             DB::raw('SUM(visitors_tablet) as visitors_tablet'),
+            DB::raw('SUM(add_to_baskets) as add_to_baskets'),
+            DB::raw('SUM(checkouts) as checkouts'),
+            DB::raw('SUM(purchases) as purchases'),
+            DB::raw('SUM(revenue) as revenue'),
         ];
 
         $query = DB::connection('aiku_no_sticky')->table('website_time_series_records')
