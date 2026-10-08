@@ -13105,3 +13105,33 @@ test('a customer chasing an unanswered email keeps their place in the queue', fu
 
     expect($queue)->toBe([$chaser->id, $patient->id]);
 });
+
+test('the marketing folder lists what the shop sent its customers lately and shows the email', function () {
+    actingAs($this->user);
+    $outbox = $this->shop->outboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::MARKETING)->first();
+    $make   = function (array $data) use ($outbox) {
+        $mailshot = \App\Actions\Comms\Mailshot\StoreMailshot::make()->action($outbox, \App\Models\Comms\Mailshot::factory()->definition());
+        $mailshot->update($data);
+
+        return $mailshot;
+    };
+
+    $sent     = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::SENT, 'type' => \App\Enums\Comms\Mailshot\MailshotTypeEnum::MARKETING, 'sent_at' => now()->subDay()]);
+    $old      = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::SENT, 'sent_at' => now()->subDays(40)]);
+    $draft    = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::IN_PROCESS]);
+    $invite   = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::SENT, 'type' => \App\Enums\Comms\Mailshot\MailshotTypeEnum::INVITE, 'sent_at' => now()]);
+    $snapshot = $sent->email->unpublishedSnapshot;
+    $snapshot->update(['compiled_layout' => '<p>15% off incense</p>']);
+    $sent->email->update(['live_snapshot_id' => $snapshot->id]);
+
+    $ids = collect(getJson(route('grp.org.chat.marketing.index', [$this->organisation->slug]).'?shop_ids[]='.$this->shop->id)->assertOk()->json())->pluck('id');
+
+    expect($ids)->toContain($sent->id)
+        ->not->toContain($old->id)
+        ->not->toContain($draft->id)
+        ->not->toContain($invite->id);
+
+    getJson(route('grp.org.chat.marketing.show', [$this->organisation->slug, $sent->id]))
+        ->assertOk()
+        ->assertJsonPath('html', '<p>15% off incense</p>');
+});
