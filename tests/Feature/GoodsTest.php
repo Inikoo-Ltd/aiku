@@ -20,6 +20,7 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
@@ -692,6 +693,34 @@ test("UI Create Stock in Group", function () {
                 fn (AssertableInertia $page) => $page->where("title", 'New SKO')->etc()
             );
     });
+});
+
+test('UI create stock form posts units and trade unit description', function () {
+    $response = get(route('grp.goods.stocks.create'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->where('formData.blueprint.0.fields.units.value', 1)
+            ->where('formData.blueprint.0.fields', fn ($fields) => collect($fields)->keys()->all() === ['code', 'name', 'units', 'trade_unit.description']);
+    });
+
+    $code = 'UIST-'.Str::upper(Str::random(6));
+
+    $this->postJson(route('grp.models.stock.store'), [
+        'code'                   => $code,
+        'name'                   => 'UI stock',
+        'units'                  => 1,
+    ])->assertUnprocessable()->assertJsonValidationErrors(['trade_unit.description']);
+
+    $this->postJson(route('grp.models.stock.store'), [
+        'code'                   => $code,
+        'name'                   => 'UI stock',
+        'units'                  => 6,
+        'trade_unit.description' => 'UI stock trade unit',
+    ])->assertRedirect();
+
+    $stock = Stock::where('code', $code)->firstOrFail();
+    expect($stock->tradeUnits)->toHaveCount(1)
+        ->and($stock->tradeUnits->first()->description)->toBe('UI stock trade unit')
+        ->and((float) $stock->tradeUnits->first()->pivot->quantity)->toBe(6.0);
 });
 
 test('UI index goods ingredients', function () {
