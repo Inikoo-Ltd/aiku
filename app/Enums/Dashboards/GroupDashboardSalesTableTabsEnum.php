@@ -177,7 +177,12 @@ enum GroupDashboardSalesTableTabsEnum: string
             'header' => $header,
             'body'   => $body,
             'totals' => $totals
-        ], array_values($rows), true, $this === self::INVOICE_CATEGORIES ? self::invoiceCategoryBacklogRouteTarget(...) : null);
+        ], array_values($rows), true, $bool ? null : match ($this) {
+            self::INVOICE_CATEGORIES                => self::invoiceCategoryBacklogRouteTarget(...),
+            self::SHOPS, self::GLOBAL_DROPSHIPPING  => AddDashboardBacklogColumns::shopRouteTarget(...),
+            self::ORGANISATIONS                     => AddDashboardBacklogColumns::organisationRouteTarget(...),
+            default                                 => null,
+        });
     }
 
     private static function invoiceCategoryBacklogRouteTarget(array $row): array

@@ -1445,6 +1445,18 @@ test('shop month sales target defaults to last year plus growth until management
         ->and($block['gap'])->toBe(round(max(0, 123456.78 - $block['sales_so_far'] - $block['pipeline']['amount']), 2));
 });
 
+test('sales targets count the invoices issued so far, partners included', function () {
+    $shop       = $this->shop;
+    $today      = Carbon::parse('2032-03-10', 'UTC');
+    $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY]);
+    foreach (['2032-01-20' => [4, 0], '2032-03-02' => [3, 2], '2032-03-15' => [7, 0]] as $period => [$invoices, $invoicesInternal]) {
+        $timeSeries->records()->updateOrCreate(['period' => $period, 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()], ['invoices' => $invoices, 'invoices_internal' => $invoicesInternal]);
+    }
+
+    expect(GetShopMonthSalesTarget::run($shop, null, $today)['invoices'])->toBe(5)
+        ->and(GetShopYearSalesTarget::run($shop, null, $today, false)['invoices'])->toBe(9);
+});
+
 test('shop year sales target compares the same days last year, January included, and sums monthly targets', function () {
     $shop  = $this->shop;
     $today = Carbon::parse('2031-03-10', 'UTC');
