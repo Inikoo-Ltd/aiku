@@ -147,8 +147,10 @@ class GetOrgSupplierProductShowcase
      */
     private function getAgentOrgStocks(OrgSupplierProduct $orgSupplierProduct, Agent $agent): Collection
     {
-        return GetAgentOrgStocks::run($agent)
-            ->whereIn('org_stocks.stock_id', $orgSupplierProduct->supplierProduct->stocks->pluck('id'))
+        $stockIds = $orgSupplierProduct->supplierProduct->stocks->pluck('id')->all();
+
+        return GetAgentOrgStocks::run($agent, stockIds: $stockIds)
+            ->whereIn('org_stocks.stock_id', $stockIds)
             ->with('organisation')
             ->get();
     }
