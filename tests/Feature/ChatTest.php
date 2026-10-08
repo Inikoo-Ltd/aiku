@@ -10549,6 +10549,7 @@ test('the widget goes offline on a bank holiday even though the week says open',
     $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
     $this->shop->update(['timezone_id' => $tz->id, 'opening_hours' => []]);
     $this->web->update(['settings' => array_merge($this->web->settings ?? [], ['enable_chat' => true])]);
+    $this->shop->workSchedules()->update(['is_active' => false]);
 
     $schedule = \App\Models\HumanResources\WorkSchedule::create([
         'name'             => 'Widget cover',

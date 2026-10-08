@@ -6179,6 +6179,7 @@ describe('partner shopping list', function () {
 
         $lines = \App\Models\Procurement\PartnerShoppingListItem::where('partner_organisation_id', $seller->id)
             ->where('stock_id', $sellerOrgStock->stock_id)
+            ->where('id', '>=', $item->id)
             ->where('state', ShoppingListItemStateEnum::OPEN)
             ->select('*')
             ->selectRaw(\App\Models\Procurement\PartnerShoppingListItem::shortfallSql().' as shortfall')
@@ -6799,7 +6800,7 @@ describe('partner shopping list', function () {
             expect($waiting->refresh()->poked_at)->not->toBeNull()
                 ->and($waiting->poked_by_user_id)->toBe($poker->id);
 
-            $board = collect(get(route('grp.org.productions.show.to_produce.list', [$seller->slug, $production->slug]))->viewData('page')['props']['data']['data'])->keyBy('id');
+            $board = collect(get(route('grp.org.productions.show.to_produce.list', [$seller->slug, $production->slug, 'perPage' => 1000]))->viewData('page')['props']['data']['data'])->keyBy('id');
             expect($board[$waiting->id]['poked_at'])->not->toBeNull();
 
             $waiting->update(['poked_at' => now()->subHours(2)]);
