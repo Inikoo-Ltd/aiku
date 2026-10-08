@@ -117,6 +117,7 @@ use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
+use App\Actions\CRM\Customer\StoreCustomerProductFromArtefact;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
@@ -1407,6 +1408,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('email-chat', StartCustomerEmailChat::class)->name('email_chat.store');
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('submitted-order', StoreSubmittedOrder::class)->name('submitted_order.store');
+    Route::post('product-from-artefact', StoreCustomerProductFromArtefact::class)->name('product_from_artefact.store');
     Route::post('tags/store', [StoreTag::class, 'inCustomer'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inCustomer'])->name('tags.update');
     Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inCustomer'])->name('tags.delete');

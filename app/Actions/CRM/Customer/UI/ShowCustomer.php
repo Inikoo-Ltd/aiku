@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\CRM\Customer\StoreCustomerProductFromArtefact;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
@@ -128,6 +129,7 @@ class ShowCustomer extends OrgAction
         }
 
         $grData = $this->getGrData($customer);
+        $canMakeCustomProduct = $request->user()->authTo("crm.{$this->shop->id}.edit") && $customer->organisation->productions()->exists();
 
         return Inertia::render(
             'Org/Shop/CRM/Customer',
@@ -144,6 +146,9 @@ class ShowCustomer extends OrgAction
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
                 'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer),
+                'can_make_custom_product' => $canMakeCustomProduct,
+                'custom_product_artefacts' => Inertia::optional(fn () => $canMakeCustomProduct ? StoreCustomerProductFromArtefact::artefactOptions($customer) : []),
+                'custom_product_artefact_id' => $request->integer('custom_product_artefact') ?: null,
                 'customer_email'     => $customer->email,
                 'emailCustomerRoute' => [
                     'name'       => 'grp.models.customer.email_chat.store',

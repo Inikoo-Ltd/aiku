@@ -47,6 +47,7 @@ import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
+import ModalCreateCustomerProductFromArtefact from "@/Components/CRM/ModalCreateCustomerProductFromArtefact.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
@@ -76,6 +77,9 @@ const props = defineProps<{
     sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
     can_add_order: boolean
     can_email_customer?: boolean
+    can_make_custom_product?: boolean
+    custom_product_artefacts?: Array<{ id: number, code: string, name: string | null }>
+    custom_product_artefact_id?: number | null
     emailCustomerRoute?: routeType
     customer_email?: string | null
     products?: {}
@@ -196,6 +200,9 @@ const layout = inject('layout')
                 icon="upload" />
             <Button v-if="can_email_customer" @click="isEmailModalOpen = true" :label="ctrans('New email')" style="secondary"
                 icon="fal fa-envelope" />
+            <ModalCreateCustomerProductFromArtefact v-if="can_make_custom_product" :customer-id="shop_data.customer_id"
+                :currency-code="shop_data.currency_code" :artefacts="custom_product_artefacts"
+                :preselected-artefact-id="custom_product_artefact_id" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
                 icon="plus" />
             <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />

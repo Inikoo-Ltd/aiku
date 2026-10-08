@@ -5392,3 +5392,77 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
 
     expect($otherStock->refresh()->is_made_in_house)->toBeTrue();
 });
+
+test('a custom product is made for one customer from an artefact waiting for its trade unit', function () {
+    list($organisation, , $shop) = createShop();
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+    $other    = \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+
+    $production = $organisation->productions()->first()
+        ?? StoreProduction::make()->action($organisation, ['code' => 'CUSPRD', 'name' => 'Custom production']);
+
+    $suffix   = strtoupper(\Illuminate\Support\Str::random(6));
+    $artefact = StoreArtefact::make()->action($production, ['code' => 'CUS-'.$suffix, 'name' => 'Engraved plaque '.$suffix]);
+
+    expect(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->toContain($artefact->id);
+
+    get(route('grp.org.productions.show.crafts.artefacts.show', [$organisation->slug, $production->slug, $artefact->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('customer_product.artefact_id', $artefact->id)
+            ->where('customer_product.shops', fn ($shops) => collect($shops)->contains('id', $shop->id)));
+
+    get(route('grp.json.shop.customers', ['shop' => $shop->id, 'filter[global]' => $customer->reference]))
+        ->assertOk()
+        ->assertJsonFragment(['slug' => $customer->slug]);
+
+    get(route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $shop->slug, $customer->slug, 'custom_product_artefact' => $artefact->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('can_make_custom_product', true)
+            ->where('custom_product_artefact_id', $artefact->id));
+
+    $product = \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [
+        'artefact_id' => $artefact->id,
+        'code'        => 'CUS-'.$suffix,
+        'name'        => 'Engraved plaque '.$suffix,
+        'price'       => 1200,
+        'units'       => 2,
+    ]);
+    $artefact->refresh();
+
+    expect($artefact->trade_unit_id)->not->toBeNull()
+        ->and($artefact->orgStock->organisation_id)->toBe($organisation->id)
+        ->and($artefact->orgStock->stock->code)->toBe('CUS-'.$suffix)
+        ->and($product->shop_id)->toBe($shop->id)
+        ->and($product->exclusive_for_customer_id)->toBe($customer->id)
+        ->and($product->tradeUnits()->pluck('trade_units.id')->all())->toBe([$artefact->trade_unit_id])
+        ->and((float) $product->tradeUnits()->first()->pivot->quantity)->toBe(2.0)
+        ->and($product->orgStocks()->pluck('org_stocks.id')->all())->toContain($artefact->org_stock_id)
+        ->and(\App\Models\Catalogue\Product::whereKey($product->id)->sellableToCustomer($customer->id)->exists())->toBeTrue()
+        ->and(\App\Models\Catalogue\Product::whereKey($product->id)->sellableToCustomer($other->id)->exists())->toBeFalse()
+        ->and(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->not->toContain($artefact->id);
+
+    expect(fn () => \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [
+        'artefact_id' => $artefact->id,
+        'code'        => 'CUS-'.$suffix.'B',
+        'name'        => 'Again',
+        'price'       => 1,
+        'units'       => 1,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Goods\Stock\StoreStock::make()->action($organisation->group, ['code' => 'OLD-'.$suffix, 'name' => 'Old part', 'units' => 1, 'trade_unit' => ['description' => 'Old part']]);
+    $oldPart = StoreArtefact::make()->action($production, ['code' => 'old-'.$suffix, 'name' => 'Old part never linked']);
+
+    expect(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->not->toContain($oldPart->id)
+        ->and(fn () => \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [
+            'artefact_id' => $oldPart->id,
+            'code'        => 'CUS-OLD-'.$suffix,
+            'name'        => 'Old part',
+            'price'       => 1,
+            'units'       => 1,
+        ]))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($oldPart->refresh()->trade_unit_id)->toBeNull()
+        ->and(\App\Models\Catalogue\Product::where('shop_id', $shop->id)->where('code', 'CUS-OLD-'.$suffix)->exists())->toBeFalse();
+
+    get(route('grp.org.productions.show.crafts.artefacts.show', [$organisation->slug, $production->slug, $artefact->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('customer_product', null));
+});

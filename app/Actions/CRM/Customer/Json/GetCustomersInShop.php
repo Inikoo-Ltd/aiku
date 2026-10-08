@@ -15,7 +15,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetCustomersInShop extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithCatalogueAuthorisation {
+        authorize as catalogueAuthorize;
+    }
 
     private Shop $parent;
 
@@ -67,6 +69,11 @@ class GetCustomersInShop extends OrgAction
             ->allowedFilters([$globalSearch, $hasPhoneFilter, $hasEmailFilter, $phoneFilter])
             ->withPaginator($prefix)
             ->withQueryString();
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->catalogueAuthorize($request) || $request->user()->authTo("crm.{$this->shop->id}.view");
     }
 
     public function jsonResponse(LengthAwarePaginator $customers): AnonymousResourceCollection

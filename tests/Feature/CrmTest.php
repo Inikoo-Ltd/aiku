@@ -782,7 +782,9 @@ test('UI show customer', function () {
                     ->where('title', $customer->name)
                     ->etc()
             )
-            ->has('tabs');
+            ->has('tabs')
+            ->has('can_make_custom_product')
+            ->missing('custom_product_artefacts');
     });
 });
 
