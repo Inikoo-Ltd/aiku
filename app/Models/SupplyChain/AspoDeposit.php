@@ -10,6 +10,7 @@ namespace App\Models\SupplyChain;
 
 use App\Enums\SupplyChain\AspoDeposit\AspoDepositStateEnum;
 use App\Models\Helpers\Currency;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +22,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $id
  * @property int $group_id
  * @property int $agent_id
- * @property int $agent_supplier_purchase_order_id
+ * @property int|null $agent_supplier_purchase_order_id legacy
+ * @property int|null $purchase_order_id
  * @property string|null $reference
  * @property numeric $amount
  * @property int $currency_id
@@ -31,7 +33,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $cancelled_at
  * @property string|null $notes
  * @property-read Agent $agent
- * @property-read AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder
+ * @property-read PurchaseOrder|null $purchaseOrder
  * @property-read Currency $currency
  */
 class AspoDeposit extends Model implements Auditable
@@ -61,9 +63,9 @@ class AspoDeposit extends Model implements Auditable
         return $this->belongsTo(Agent::class);
     }
 
-    public function agentSupplierPurchaseOrder(): BelongsTo
+    public function purchaseOrder(): BelongsTo
     {
-        return $this->belongsTo(AgentSupplierPurchaseOrder::class);
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     public function currency(): BelongsTo

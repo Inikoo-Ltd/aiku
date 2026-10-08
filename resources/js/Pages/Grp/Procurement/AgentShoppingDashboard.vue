@@ -9,7 +9,7 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import { ref, computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -42,7 +42,7 @@ type OrderCapacity = {
     currency: string
     blocked: { at_capacity: boolean, warehouse_full: boolean }
 }
-type SupplierPurchaseOrder = { id: number, slug: string, reference: string, state: string, supplier_code: string | null, supplier_id: number | null, date: string, days_old: number, days_late: number | null, no_eta: boolean }
+type AgentPurchaseOrder = { id: number, slug: string, reference: string, state: string, supplier_code: string | null, supplier_id: number | null, date: string, days_old: number, days_late: number | null, no_eta: boolean }
 type OpenStockDelivery = { id: number, slug: string, reference: string, state: string, supplier_code: string | null, items: number, days_in_transit: number | null, date: string, days_old: number }
 
 const props = defineProps<{
@@ -51,14 +51,14 @@ const props = defineProps<{
     orgAgent: { id: number, slug: string, name: string, currency: string }
     shoppingListRoute: routeType
     stockDeliveriesRoute: routeType
-    supplierPurchaseOrdersRoute: routeType
+    agentPurchaseOrdersRoute: routeType
     stats: { open_items_count: number, oldest_item_at: string | null, estimated_total: number }
     coverBuckets: CoverBucket[]
     coverTotal: number
     leadTime: LeadTime
     orderCapacity: OrderCapacity
     suppliers: SupplierRow[]
-    openSupplierPurchaseOrders: SupplierPurchaseOrder[]
+    openAgentPurchaseOrders: AgentPurchaseOrder[]
     openStockDeliveries: OpenStockDelivery[]
 }>()
 
@@ -133,26 +133,26 @@ const ageClasses = (daysOld: number) =>
 
 const stockDeliveryColumns = computed(() =>
     [
-        { key: "being_prepared", label: trans("Being prepared"), states: ["in_process", "confirmed"], dot: "bg-indigo-200", badge: "bg-indigo-50 text-indigo-600" },
-        { key: "ready_to_ship", label: trans("Ready to ship"), states: ["ready_to_ship"], dot: "bg-indigo-300", badge: "bg-indigo-50 text-indigo-600" },
-        { key: "in_transit", label: trans("In transit"), states: ["dispatched"], dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
-        { key: "arrived", label: trans("Arrived, booking in"), states: ["received", "checked", "booking_in"], dot: "bg-indigo-700", badge: "bg-indigo-100 text-indigo-700" },
+        { key: "being_prepared", label: ctrans("Being prepared"), states: ["in_process", "confirmed"], dot: "bg-indigo-200", badge: "bg-indigo-50 text-indigo-600" },
+        { key: "ready_to_ship", label: ctrans("Ready to ship"), states: ["ready_to_ship"], dot: "bg-indigo-300", badge: "bg-indigo-50 text-indigo-600" },
+        { key: "in_transit", label: ctrans("In transit"), states: ["dispatched"], dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
+        { key: "arrived", label: ctrans("Arrived, booking in"), states: ["received", "checked", "booking_in"], dot: "bg-indigo-700", badge: "bg-indigo-100 text-indigo-700" },
     ].map((column) => ({
         ...column,
         deliveries: props.openStockDeliveries.filter((sd) => column.states.includes(sd.state)),
     }))
 )
 
-const lateSupplierOrders = computed(() => props.openSupplierPurchaseOrders.filter((order) => order.days_late !== null))
+const lateSupplierOrders = computed(() => props.openAgentPurchaseOrders.filter((order) => order.days_late !== null))
 
 const latestSuppliers = computed(() => props.suppliers.filter((supplier) => supplier.open_orders > 0 || supplier.list_lines > 0 || supplier.open_deliveries > 0))
 
 const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
     source === "measured"
-        ? trans("measured from :samples deliveries", { samples })
+        ? ctrans("measured from :samples deliveries", { samples })
         : source === "estimate"
-          ? trans("estimate from supplier product settings")
-          : trans("no data — house default")
+          ? ctrans("estimate from supplier product settings")
+          : ctrans("no data — house default")
 </script>
 
 <template>
@@ -162,8 +162,8 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
     <div class="mx-4 mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
-                <span>{{ trans("Order budget used") }}</span>
-                <span v-if="orderCapacity.blocked.at_capacity" class="font-medium text-red-600">{{ trans("at capacity") }}</span>
+                <span>{{ ctrans("Order budget used") }}</span>
+                <span v-if="orderCapacity.blocked.at_capacity" class="font-medium text-red-600">{{ ctrans("at capacity") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
                 {{ locale.currencyFormat(orgAgent.currency, stats.estimated_total) }}
@@ -177,29 +177,29 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                 </div>
                 <div class="mt-1 text-xs text-gray-500">
                     <template v-if="orderCapacity.agent_capacity.source === 'measured'">
-                        {{ trans("one order cycle of what they historically land for us, measured from :n deliveries", { n: orderCapacity.agent_capacity.samples }) }}
+                        {{ ctrans("one order cycle of what they historically land for us, measured from :n deliveries", { n: orderCapacity.agent_capacity.samples }) }}
                     </template>
                     <template v-else>
-                        {{ trans("budget = one order cycle (:days days) of what we actually sell of their products", { days: leadTime.days + 7 }) }}
+                        {{ ctrans("budget = one order cycle (:days days) of what we actually sell of their products", { days: leadTime.days + 7 }) }}
                     </template>
                 </div>
             </template>
             <div v-else class="mt-2 text-xs text-gray-500">
-                {{ trans("No budget: no delivery history and no forecast data yet — the list is uncapped.") }}
+                {{ ctrans("No budget: no delivery history and no forecast data yet — the list is uncapped.") }}
             </div>
             <div class="mt-1 text-xs text-gray-400">
-                {{ trans("all sub-supplier currencies converted to :currency", { currency: orgAgent.currency }) }}
+                {{ ctrans("all sub-supplier currencies converted to :currency", { currency: orgAgent.currency }) }}
             </div>
         </div>
 
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
-                <span>{{ trans("Warehouse space") }}</span>
-                <span v-if="orderCapacity.blocked.warehouse_full" class="font-medium text-red-600">{{ trans("full") }}</span>
+                <span>{{ ctrans("Warehouse space") }}</span>
+                <span v-if="orderCapacity.blocked.warehouse_full" class="font-medium text-red-600">{{ ctrans("full") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
                 {{ orderCapacity.warehouse.empty_locations.toLocaleString() }}
-                <span class="text-sm font-normal text-gray-400">/ {{ orderCapacity.warehouse.total_locations.toLocaleString() }} {{ trans("locations free") }}</span>
+                <span class="text-sm font-normal text-gray-400">/ {{ orderCapacity.warehouse.total_locations.toLocaleString() }} {{ ctrans("locations free") }}</span>
             </div>
             <div class="mt-2 flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-gray-100">
                 <div class="h-1.5 bg-gray-400" :style="{ width: warehouseSegment(orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations) }" />
@@ -207,34 +207,34 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                 <div class="h-1.5 bg-violet-400" :style="{ width: warehouseSegment(orderCapacity.list.lines) }" />
             </div>
             <div class="mt-1 flex flex-wrap gap-x-3 text-xs tabular-nums text-gray-500">
-                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-gray-400" />{{ (orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations).toLocaleString() }} {{ trans("in use") }}</span>
-                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-indigo-400" />{{ orderCapacity.warehouse.inbound_open_po_lines.toLocaleString() }} {{ trans("inbound PO/SD lines") }}</span>
-                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />{{ orderCapacity.list.lines }} {{ trans("this shopping list") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-gray-400" />{{ (orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations).toLocaleString() }} {{ ctrans("in use") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-indigo-400" />{{ orderCapacity.warehouse.inbound_open_po_lines.toLocaleString() }} {{ ctrans("inbound PO/SD lines") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />{{ orderCapacity.list.lines }} {{ ctrans("this shopping list") }}</span>
             </div>
             <div class="mt-1 text-xs text-gray-500">
-                {{ trans("new products from this agent: :used of :limit free slots (their fair share)", { used: orderCapacity.warehouse.agent_share_used, limit: orderCapacity.warehouse.agent_share_limit }) }}
+                {{ ctrans("new products from this agent: :used of :limit free slots (their fair share)", { used: orderCapacity.warehouse.agent_share_used, limit: orderCapacity.warehouse.agent_share_limit }) }}
             </div>
         </div>
 
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
                 <span>{{ orgAgent.name }}</span>
-                <span v-if="lateSupplierOrders.length" class="font-medium text-red-600">{{ lateSupplierOrders.length }} {{ trans("late") }}</span>
+                <span v-if="lateSupplierOrders.length" class="font-medium text-red-600">{{ lateSupplierOrders.length }} {{ ctrans("late") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
-                {{ suppliers.length }} <span class="text-sm font-normal text-gray-400">{{ trans("sub-suppliers, each on its own clock") }}</span>
+                {{ suppliers.length }} <span class="text-sm font-normal text-gray-400">{{ ctrans("sub-suppliers, each on its own clock") }}</span>
             </div>
             <div class="mt-2 text-xs text-gray-500">
-                {{ trans("agent roll-up :days days order → booked in", { days: leadTime.days }) }} · {{ leadSourceLabel(leadTime.source, leadTime.samples) }}
+                {{ ctrans("agent roll-up :days days order → booked in", { days: leadTime.days }) }} · {{ leadSourceLabel(leadTime.source, leadTime.samples) }}
             </div>
             <div v-if="lateSupplierOrders.length" class="mt-1 text-xs text-red-600">
-                {{ trans("worst delay :days days (:supplier)", { days: lateSupplierOrders[0].days_late ?? 0, supplier: lateSupplierOrders[0].supplier_code ?? "—" }) }}
+                {{ ctrans("worst delay :days days (:supplier)", { days: lateSupplierOrders[0].days_late ?? 0, supplier: lateSupplierOrders[0].supplier_code ?? "—" }) }}
             </div>
-            <div class="mt-1 text-xs text-gray-400">{{ trans(":total products across their suppliers", { total: coverTotal.toLocaleString() }) }}</div>
+            <div class="mt-1 text-xs text-gray-400">{{ ctrans(":total products across their suppliers", { total: coverTotal.toLocaleString() }) }}</div>
         </div>
     </div>
 
-    <div class="mx-4 mt-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/40 p-4">
+    <div class="mx-4 mt-4 rounded-xl border-2 border-[--app-accent-muted] bg-[--app-accent-soft] p-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <Link
                 v-for="bucket in coverBuckets"
@@ -248,37 +248,37 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                     <span v-if="bucket.bucket === 'dead'" class="ml-auto text-xs tabular-nums opacity-70">
                         {{ locale.currencyFormat(orgAgent.currency, bucket.stock_value) }}
                     </span>
-                    <span v-if="shouldNotBeOrdered(bucket)" class="ml-auto text-xs font-medium tabular-nums text-red-600" :title="trans('On the shopping list but not short of stock')">
+                    <span v-if="shouldNotBeOrdered(bucket)" class="ml-auto text-xs font-medium tabular-nums text-red-600" :title="ctrans('On the shopping list but not short of stock')">
                         <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
-                        {{ bucket.on_list }} {{ trans("on list") }}
+                        {{ bucket.on_list }} {{ ctrans("on list") }}
                         <button
                             v-if="bucket.bucket !== 'gone'"
                             type="button"
                             class="ml-0.5 rounded border border-red-300 px-1 text-[10px] hover:bg-red-100"
                             @click.prevent.stop="removeMisplaced(bucket.bucket)"
                         >
-                            {{ trans("remove") }}
+                            {{ ctrans("remove") }}
                         </button>
                     </span>
                     <span v-else-if="needsAction(bucket)" class="ml-auto text-xs font-medium tabular-nums">
-                        {{ trans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
+                        {{ ctrans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
                     </span>
                     <span v-else-if="bucket.count && !notOrderable.includes(bucket.bucket)" class="ml-auto text-xs tabular-nums opacity-70">
-                        {{ trans("all handled") }}
+                        {{ ctrans("all handled") }}
                     </span>
                 </div>
                 <div class="text-xs leading-4">{{ bucket.label }}</div>
                 <div v-if="bucket.suppliers" class="text-[10px] tabular-nums opacity-60">
-                    {{ trans("across :n suppliers", { n: bucket.suppliers }) }}
+                    {{ ctrans("across :n suppliers", { n: bucket.suppliers }) }}
                 </div>
                 <div v-if="(bucket.on_the_way || bucket.on_list) && !notOrderable.includes(bucket.bucket)" class="mt-1.5 flex h-1 w-full gap-px overflow-hidden rounded-full bg-gray-100">
-                    <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="trans('on the way')" />
-                    <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="trans('on the shopping list')" />
+                    <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="ctrans('on the way')" />
+                    <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="ctrans('on the shopping list')" />
                 </div>
                 <div v-if="(bucket.on_the_way || bucket.on_list) && !notOrderable.includes(bucket.bucket)" class="mt-0.5 text-[10px] tabular-nums opacity-70">
-                    <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ trans("on the way") }}</span>
+                    <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ ctrans("on the way") }}</span>
                     <span v-if="bucket.on_the_way && bucket.on_list"> · </span>
-                    <span v-if="bucket.on_list">{{ bucket.on_list }} {{ trans("on list") }}</span>
+                    <span v-if="bucket.on_list">{{ bucket.on_list }} {{ ctrans("on list") }}</span>
                 </div>
                 <div v-if="bucket.ranks.length" class="mt-auto flex gap-2 pt-1.5 text-xs tabular-nums">
                     <Link
@@ -295,10 +295,10 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                         v-if="!notOrderable.includes(bucket.bucket) && bucket.ranks.some((rank) => rank.count > rank.on_list)"
                         type="button"
                         class="ml-auto rounded border border-current px-1 text-[10px] opacity-60 hover:opacity-100"
-                        :title="trans('Fill the shopping list from this bucket')"
+                        :title="ctrans('Fill the shopping list from this bucket')"
                         @click.prevent.stop="openAutoFill(bucket.bucket, bucket.label)"
                     >
-                        + {{ trans("fill") }}
+                        + {{ ctrans("fill") }}
                     </button>
                 </div>
             </Link>
@@ -308,7 +308,7 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
     <div class="mx-4 mt-6">
         <h3 class="text-sm font-semibold text-gray-700">
             <Link class="hover:underline" :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)">
-                {{ trans("Order pipeline") }}
+                {{ ctrans("Order pipeline") }}
             </Link>
         </h3>
         <div class="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-6">
@@ -316,15 +316,15 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                 <div class="mb-2 flex items-center justify-between px-1">
                     <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                         <span class="h-2 w-2 rounded-full bg-indigo-100 ring-1 ring-indigo-300" />
-                        {{ trans("On shopping list") }}
+                        {{ ctrans("On shopping list") }}
                     </span>
-                    <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium tabular-nums text-indigo-600">{{ stats.open_items_count }}</span>
+                    <span class="rounded-full bg-[--app-accent-soft] px-2 py-0.5 text-xs font-medium tabular-nums text-[--app-accent-strong]">{{ stats.open_items_count }}</span>
                 </div>
-                <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)" class="block rounded-md bg-white p-2 shadow-sm hover:bg-indigo-50">
-                    <div class="text-sm font-bold text-gray-900">{{ stats.open_items_count }} {{ trans("items") }}</div>
-                    <div class="text-xs text-gray-500">{{ locale.currencyFormat(orgAgent.currency, stats.estimated_total) }} {{ trans("waiting to be ordered") }}</div>
+                <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)" class="block rounded-md bg-white p-2 shadow-sm hover:bg-[--app-accent-soft]">
+                    <div class="text-sm font-bold text-gray-900">{{ stats.open_items_count }} {{ ctrans("items") }}</div>
+                    <div class="text-xs text-gray-500">{{ locale.currencyFormat(orgAgent.currency, stats.estimated_total) }} {{ ctrans("waiting to be ordered") }}</div>
                     <div v-if="stats.oldest_item_at" class="mt-1 text-xs text-gray-500">
-                        {{ trans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
+                        {{ ctrans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
                     </div>
                 </Link>
             </div>
@@ -333,15 +333,15 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                 <div class="mb-2 flex items-center justify-between px-1">
                     <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                         <span class="h-2 w-2 rounded-full bg-purple-300" />
-                        {{ trans("With the suppliers") }}
+                        {{ ctrans("With the suppliers") }}
                     </span>
-                    <span class="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium tabular-nums text-purple-700">{{ openSupplierPurchaseOrders.length }}</span>
+                    <span class="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium tabular-nums text-purple-700">{{ openAgentPurchaseOrders.length }}</span>
                 </div>
                 <div class="flex flex-col gap-2">
                     <Link
-                        v-for="order in openSupplierPurchaseOrders.slice(0, 12)"
+                        v-for="order in openAgentPurchaseOrders.slice(0, 12)"
                         :key="order.id"
-                        :href="route('grp.org.procurement.agent_supplier_purchase_orders.show', [route().params.organisation, order.slug])"
+                        :href="route('grp.org.procurement.purchase_orders.show', [route().params.organisation, order.slug])"
                         class="block rounded-md border-l-2 p-2 shadow-sm hover:ring-1 hover:ring-purple-300"
                         :class="order.days_late && order.days_late > problemThreshold() ? 'border-red-400 bg-red-50' : ['bg-white', order.days_late ? 'border-amber-400' : 'border-transparent']"
                     >
@@ -351,18 +351,18 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                         </div>
                         <div class="text-xs text-gray-500">{{ order.reference }}</div>
                         <div v-if="order.days_late" class="mt-1 text-xs font-semibold tabular-nums text-red-600">
-                            {{ order.days_late }} {{ trans("days late") }}
-                            <span v-if="order.no_eta" class="font-normal text-gray-400">· {{ trans("no ETA") }}</span>
+                            {{ order.days_late }} {{ ctrans("days late") }}
+                            <span v-if="order.no_eta" class="font-normal text-gray-400">· {{ ctrans("no ETA") }}</span>
                         </div>
                     </Link>
                     <Link
-                        v-if="openSupplierPurchaseOrders.length > 12"
-                        :href="route(supplierPurchaseOrdersRoute.name, supplierPurchaseOrdersRoute.parameters)"
-                        class="px-1 py-1 text-xs text-indigo-600 hover:underline"
+                        v-if="openAgentPurchaseOrders.length > 12"
+                        :href="route(agentPurchaseOrdersRoute.name, agentPurchaseOrdersRoute.parameters)"
+                        class="px-1 py-1 text-xs text-[--app-accent] hover:underline"
                     >
-                        {{ trans("and :n more", { n: openSupplierPurchaseOrders.length - 12 }) }}
+                        {{ ctrans("and :n more", { n: openAgentPurchaseOrders.length - 12 }) }}
                     </Link>
-                    <div v-if="!openSupplierPurchaseOrders.length" class="px-1 py-2 text-xs text-gray-400">—</div>
+                    <div v-if="!openAgentPurchaseOrders.length" class="px-1 py-2 text-xs text-gray-400">—</div>
                 </div>
             </div>
 
@@ -373,7 +373,7 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                         {{ column.label }}
                     </span>
                     <span class="flex items-center gap-1">
-                        <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge" :title="trans('deliveries')">{{ column.deliveries.length }}</span>
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge" :title="ctrans('deliveries')">{{ column.deliveries.length }}</span>
                     </span>
                 </div>
                 <div class="flex flex-col gap-2">
@@ -381,7 +381,7 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                         v-for="sd in column.deliveries"
                         :key="sd.id"
                         :href="route('grp.org.procurement.stock_deliveries.show', [route().params.organisation, sd.slug])"
-                        class="block rounded-md border-l-2 p-2 shadow-sm hover:ring-1 hover:ring-indigo-300"
+                        class="block rounded-md border-l-2 p-2 shadow-sm hover:ring-1 hover:ring-[--app-accent-muted]"
                         :class="sd.days_old > problemThreshold() ? 'border-red-400 bg-red-50' : ['bg-white', sd.days_old > agingThreshold() ? 'border-amber-400' : 'border-transparent']"
                     >
                         <div class="flex items-baseline justify-between gap-2">
@@ -389,14 +389,14 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                             <span class="whitespace-nowrap text-xs tabular-nums" :class="ageClasses(sd.days_old)">{{ useFormatTime(sd.date, { formatTime: "mdy" }) }}</span>
                         </div>
                         <div class="text-xs text-gray-500">
-                            <span v-if="sd.supplier_code" class="font-medium">{{ sd.supplier_code }} · </span>{{ sd.items }} {{ trans("items") }}
+                            <span v-if="sd.supplier_code" class="font-medium">{{ sd.supplier_code }} · </span>{{ sd.items }} {{ ctrans("items") }}
                         </div>
                         <div
                             v-if="column.key === 'in_transit' && sd.days_in_transit !== null"
                             class="mt-1 text-xs font-semibold tabular-nums"
                             :class="sd.days_in_transit > 45 ? 'text-amber-600' : 'text-gray-600'"
                         >
-                            {{ sd.days_in_transit }} {{ trans("days in transit") }}
+                            {{ sd.days_in_transit }} {{ ctrans("days in transit") }}
                         </div>
                     </Link>
                     <div v-if="!column.deliveries.length" class="px-1 py-2 text-xs text-gray-400">—</div>
@@ -407,18 +407,18 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
 
     <div v-if="latestSuppliers.length" class="mx-4 mb-8 mt-6">
         <h3 class="text-sm font-semibold text-gray-700">
-            {{ trans("Sub-suppliers behind this agent") }}
+            {{ ctrans("Sub-suppliers behind this agent") }}
         </h3>
         <div class="mt-2 overflow-x-auto rounded-lg border border-gray-200 bg-white">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
-                        <th class="px-4 py-2 font-normal">{{ trans("Supplier") }}</th>
-                        <th class="px-4 py-2 text-right font-normal">{{ trans("Lead time") }}</th>
-                        <th class="px-4 py-2 text-right font-normal">{{ trans("Open orders") }}</th>
-                        <th class="px-4 py-2 text-right font-normal">{{ trans("Late") }}</th>
-                        <th class="px-4 py-2 text-right font-normal">{{ trans("In the pipeline") }}</th>
-                        <th class="px-4 py-2 text-right font-normal">{{ trans("On list") }}</th>
+                        <th class="px-4 py-2 font-normal">{{ ctrans("Supplier") }}</th>
+                        <th class="px-4 py-2 text-right font-normal">{{ ctrans("Lead time") }}</th>
+                        <th class="px-4 py-2 text-right font-normal">{{ ctrans("Open orders") }}</th>
+                        <th class="px-4 py-2 text-right font-normal">{{ ctrans("Late") }}</th>
+                        <th class="px-4 py-2 text-right font-normal">{{ ctrans("In the pipeline") }}</th>
+                        <th class="px-4 py-2 text-right font-normal">{{ ctrans("On list") }}</th>
                         <th class="px-4 py-2"></th>
                     </tr>
                 </thead>
@@ -429,14 +429,14 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                             <span class="ml-2 text-xs text-gray-500">{{ supplier.name }}</span>
                         </td>
                         <td class="px-4 py-2 text-right tabular-nums">
-                            {{ supplier.days }}<span class="text-xs text-gray-400">{{ trans("d") }}</span>
+                            {{ supplier.days }}<span class="text-xs text-gray-400">{{ ctrans("d") }}</span>
                             <div class="text-[10px] text-gray-400">{{ leadSourceLabel(supplier.source, supplier.samples) }}</div>
                         </td>
                         <td class="px-4 py-2 text-right tabular-nums text-gray-700">{{ supplier.open_orders || "—" }}</td>
                         <td class="px-4 py-2 text-right tabular-nums" :class="supplier.late_orders ? 'font-medium text-red-600' : 'text-gray-400'">
                             <template v-if="supplier.late_orders">
                                 {{ supplier.late_orders }}
-                                <div class="text-[10px] font-normal">{{ trans("worst :days days", { days: supplier.worst_days_late ?? 0 }) }}</div>
+                                <div class="text-[10px] font-normal">{{ ctrans("worst :days days", { days: supplier.worst_days_late ?? 0 }) }}</div>
                             </template>
                             <template v-else>—</template>
                         </td>
@@ -447,10 +447,10 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                                 v-if="worstBucket"
                                 type="button"
                                 class="rounded border border-gray-300 px-1.5 text-[10px] text-gray-500 hover:bg-gray-50 hover:text-gray-800"
-                                :title="trans('Fill the shopping list from this supplier')"
+                                :title="ctrans('Fill the shopping list from this supplier')"
                                 @click="fillFromSupplier(supplier)"
                             >
-                                + {{ trans("fill") }}
+                                + {{ ctrans("fill") }}
                             </button>
                         </td>
                     </tr>

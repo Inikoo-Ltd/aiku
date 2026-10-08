@@ -10,8 +10,8 @@ namespace App\Actions\Procurement\OrgAgent;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
-use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -21,16 +21,16 @@ class GetAgentSupplierPerformance
     use AsObject;
 
     public const OPEN_STATES = [
-        AgentSupplierPurchaseOrderStateEnum::SUBMITTED->value,
-        AgentSupplierPurchaseOrderStateEnum::CONFIRMED->value,
+        PurchaseOrderStateEnum::SUBMITTED->value,
+        PurchaseOrderStateEnum::CONFIRMED->value,
     ];
 
     public const CLOSED_DELIVERY_STATES = [
-        AgentSupplierPurchaseOrderDeliveryStateEnum::RECEIVED->value,
-        AgentSupplierPurchaseOrderDeliveryStateEnum::CHECKED->value,
-        AgentSupplierPurchaseOrderDeliveryStateEnum::PLACED->value,
-        AgentSupplierPurchaseOrderDeliveryStateEnum::CANCELLED->value,
-        AgentSupplierPurchaseOrderDeliveryStateEnum::NOT_RECEIVED->value,
+        PurchaseOrderDeliveryStateEnum::RECEIVED->value,
+        PurchaseOrderDeliveryStateEnum::CHECKED->value,
+        PurchaseOrderDeliveryStateEnum::PLACED->value,
+        PurchaseOrderDeliveryStateEnum::CANCELLED->value,
+        PurchaseOrderDeliveryStateEnum::NOT_RECEIVED->value,
     ];
 
     public const OPEN_DELIVERY_STATES = [
@@ -77,22 +77,21 @@ class GetAgentSupplierPerformance
 
     private function openOrders(OrgAgent $orgAgent)
     {
-        return DB::table('agent_supplier_purchase_orders as aspo')
-            ->join('purchase_orders as po', 'po.id', 'aspo.purchase_order_id')
-            ->where('po.parent_type', 'OrgAgent')
-            ->where('po.parent_id', $orgAgent->id)
+        return DB::table('purchase_orders as po')
+            ->where('po.organisation_id', $orgAgent->organisation_id)
+            ->where('po.agent_id', $orgAgent->agent_id)
+            ->where('po.parent_type', 'OrgSupplier')
             ->whereNull('po.deleted_at')
-            ->whereNull('aspo.deleted_at')
-            ->whereIn('aspo.state', self::OPEN_STATES)
-            ->whereNotIn('aspo.delivery_state', self::CLOSED_DELIVERY_STATES)
-            ->whereRaw("(aspo.data -> 'housekeeping') is null")
-            ->groupBy('aspo.supplier_id')
-            ->selectRaw("aspo.supplier_id,
+            ->whereIn('po.state', self::OPEN_STATES)
+            ->whereNotIn('po.delivery_state', self::CLOSED_DELIVERY_STATES)
+            ->whereRaw("(po.data -> 'housekeeping') is null")
+            ->groupBy('po.supplier_id')
+            ->selectRaw("po.supplier_id,
                 count(*) as open_orders,
-                count(*) filter (where coalesce(aspo.estimated_received_at, aspo.submitted_at) < now()) as late_orders,
-                count(*) filter (where aspo.estimated_received_at is null) as no_eta_orders,
-                max(extract(day from now() - coalesce(aspo.estimated_received_at, aspo.submitted_at))::int)
-                    filter (where coalesce(aspo.estimated_received_at, aspo.submitted_at) < now()) as worst_days_late")
+                count(*) filter (where coalesce(po.estimated_received_at, po.submitted_at) < now()) as late_orders,
+                count(*) filter (where po.estimated_received_at is null) as no_eta_orders,
+                max(extract(day from now() - coalesce(po.estimated_received_at, po.submitted_at))::int)
+                    filter (where coalesce(po.estimated_received_at, po.submitted_at) < now()) as worst_days_late")
             ->get()
             ->keyBy('supplier_id');
     }

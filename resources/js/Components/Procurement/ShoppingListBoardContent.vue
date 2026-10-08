@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { router } from "@inertiajs/vue3"
 import { computed, reactive } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewPill.vue"
@@ -35,10 +35,12 @@ interface Product {
     oldest_created_at: string
 }
 
-interface OpenAgentSupplierPurchaseOrder {
+interface OpenAgentPurchaseOrder {
     id: number
     reference: string
     slug: string
+    organisation_slug: string
+    organisation_code: string
 }
 
 interface Supplier {
@@ -47,7 +49,7 @@ interface Supplier {
     slug: string
     estimated_value: number
     products: Product[]
-    open_agent_supplier_purchase_order: OpenAgentSupplierPurchaseOrder | null
+    open_agent_purchase_orders: OpenAgentPurchaseOrder[]
 }
 
 interface AgentGroup {
@@ -83,9 +85,9 @@ const stats = computed(() => {
     }
 
     return [
-        { label: trans("Suppliers"), description: "", icon: "fal fa-person-dolly", value: suppliers, tone: "indigo", route: selfRoute.value, metrics: [] },
-        { label: trans("Open lines"), description: "", icon: "fal fa-boxes", value: lines, tone: "amber", route: selfRoute.value, metrics: [] },
-        { label: trans("Estimated value"), description: "", icon: "fal fa-box-usd", value: Math.round(value), tone: "emerald", route: selfRoute.value, metrics: [] },
+        { label: ctrans("Suppliers"), description: "", icon: "fal fa-person-dolly", value: suppliers, tone: "indigo", route: selfRoute.value, metrics: [] },
+        { label: ctrans("Open lines"), description: "", icon: "fal fa-boxes", value: lines, tone: "amber", route: selfRoute.value, metrics: [] },
+        { label: ctrans("Estimated value"), description: "", icon: "fal fa-box-usd", value: Math.round(value), tone: "emerald", route: selfRoute.value, metrics: [] },
     ]
 })
 
@@ -105,7 +107,7 @@ function submitCherryPick() {
 }
 
 function proposeDismiss(line: OrgLine) {
-    const reason = window.prompt(trans("Reason for proposing dismissal") + " (" + line.organisation_code + ")")
+    const reason = window.prompt(ctrans("Reason for proposing dismissal") + " (" + line.organisation_code + ")")
     if (!reason) return
 
     router.post(route("grp.org.procurement.shopping_list.propose_dismiss", [route().params["organisation"], line.id]), { dismiss_reason: reason }, { preserveScroll: true })
@@ -118,10 +120,10 @@ function proposeDismiss(line: OrgLine) {
             <ProcurementOverviewPill v-for="card in stats" :key="card.label" :card="card" />
         </div>
 
-        <div v-if="editable && Object.keys(selected).length" class="sticky top-0 z-10 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
-            <span>{{ Object.keys(selected).length }} {{ trans("lines selected") }}</span>
-            <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="submitCherryPick">
-                {{ trans("Create purchase orders") }}
+        <div v-if="editable && Object.keys(selected).length" class="sticky top-0 z-10 flex items-center justify-between rounded-lg bg-[--app-accent] px-4 py-2 text-[--app-accent-text]">
+            <span>{{ Object.keys(selected).length }} {{ ctrans("lines selected") }}</span>
+            <button type="button" class="rounded bg-white px-3 py-1 text-[--app-accent] hover:bg-[--app-accent-soft]" @click="submitCherryPick">
+                {{ ctrans("Create purchase orders") }}
             </button>
         </div>
 
@@ -133,13 +135,14 @@ function proposeDismiss(line: OrgLine) {
                     <h3 class="text-sm font-semibold tracking-widest uppercase">{{ supplier.code }}</h3>
                     <div class="flex items-center gap-3 text-xs">
                         <a
-                            v-if="supplier.open_agent_supplier_purchase_order"
-                            :href="route('grp.supply-chain.agent_supplier_purchase_orders.show', [supplier.open_agent_supplier_purchase_order.slug])"
+                            v-for="purchaseOrder in supplier.open_agent_purchase_orders"
+                            :key="purchaseOrder.id"
+                            :href="route('grp.org.procurement.purchase_orders.show', [purchaseOrder.organisation_slug, purchaseOrder.slug])"
                             class="secondaryLink"
                         >
-                            {{ trans("Open ASPO") }}: {{ supplier.open_agent_supplier_purchase_order.reference }}
+                            {{ ctrans("Open purchase order") }}: {{ purchaseOrder.reference }} ({{ purchaseOrder.organisation_code }})
                         </a>
-                        <span class="text-gray-500 tabular-nums">{{ trans("Estimated value") }}: {{ useLocaleStore().number(supplier.estimated_value) }}</span>
+                        <span class="text-gray-500 tabular-nums">{{ ctrans("Estimated value") }}: {{ useLocaleStore().number(supplier.estimated_value) }}</span>
                     </div>
                 </div>
                 <div class="my-3 border-t border-dashed border-gray-300" />
@@ -152,7 +155,7 @@ function proposeDismiss(line: OrgLine) {
                         </div>
                         <div v-if="product.minimum_carton_order" class="w-40">
                             <div class="h-2 rounded bg-gray-200">
-                                <div class="h-2 rounded" :class="(product.moq_progress ?? 0) >= 100 ? 'bg-green-500' : 'bg-indigo-400'" :style="{ width: Math.min(product.moq_progress ?? 0, 100) + '%' }" />
+                                <div class="h-2 rounded" :class="(product.moq_progress ?? 0) >= 100 ? 'bg-green-500' : 'bg-[--app-accent]'" :style="{ width: Math.min(product.moq_progress ?? 0, 100) + '%' }" />
                             </div>
                             <div class="text-xs text-gray-500">MOQ {{ product.moq_progress }}% ({{ product.minimum_carton_order }} ctn)</div>
                         </div>
@@ -164,16 +167,16 @@ function proposeDismiss(line: OrgLine) {
                         <input v-if="editable && line.id in selected" v-model.number="selected[line.id]" type="number" step="0.001" :max="line.units" min="0.001" class="w-24 rounded border-gray-300" />
                         <span v-else>{{ line.units }} u</span>
                         <span class="text-gray-400">{{ line.priority }}</span>
-                        <span v-if="line.state === 'dismiss_proposed'" class="text-warning-600">{{ trans("dismissal proposed") }}: {{ line.dismiss_reason }}</span>
+                        <span v-if="line.state === 'dismiss_proposed'" class="text-warning-600">{{ ctrans("dismissal proposed") }}: {{ line.dismiss_reason }}</span>
                         <span class="text-gray-400">{{ useFormatTime(line.created_at) }}</span>
                         <button v-if="editable && line.state === 'open'" type="button" class="secondaryLink ml-auto" @click="proposeDismiss(line)">
-                            {{ trans("Propose dismissal") }}
+                            {{ ctrans("Propose dismissal") }}
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div v-if="!agents.length" class="text-gray-500">{{ trans("Nothing on the shopping list") }}</div>
+        <div v-if="!agents.length" class="text-gray-500">{{ ctrans("Nothing on the shopping list") }}</div>
     </div>
 </template>

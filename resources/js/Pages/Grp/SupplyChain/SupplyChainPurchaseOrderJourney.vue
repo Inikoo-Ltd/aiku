@@ -4,7 +4,7 @@ import { computed, ref, shallowRef, watch } from "vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
 import { useElementSize } from "@vueuse/core"
 import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
-import { Popover, Select, SelectButton, Checkbox, IconField, InputIcon, InputText } from "primevue"
+import { Popover, Select, Checkbox, IconField, InputIcon, InputText } from "primevue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
@@ -26,7 +26,6 @@ interface FacetOption {
 type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
 
 const props = defineProps<{
-    view: "supplier_orders" | "purchase_orders"
     title: string
     pageHead: object
     groupCurrency: string
@@ -83,11 +82,6 @@ const pagination = lastLoaded(() => props.pagination)
 
 const isLoaded = computed(() => !!summary.value && !!filters.value && !!active.value)
 
-const viewOptions = computed(() => [
-    { value: "supplier_orders", label: ctrans("Orders to suppliers") },
-    { value: "purchase_orders", label: ctrans("Agent POs") }
-])
-
 const dropdownOptions = (group: FilterGroup) => [
     { value: null, label: ctrans("All") },
     ...(filters.value?.[group] ?? []).map((option) => ({ value: option.value, label: `${option.label} (${option.count})` }))
@@ -123,14 +117,14 @@ const isChangingPage = ref(false)
 
 function visit(changes: Record<string, string | number | boolean | null>): void {
     const params: Record<string, string | number | boolean> = {}
-    const merged = { ...active.value, view: props.view === "supplier_orders" ? null : props.view, page: null, ...changes }
+    const merged = { ...active.value, page: null, ...changes }
     for (const [key, value] of Object.entries(merged)) {
         if (value !== null && value !== "" && value !== false) {
             params[key] = value
         }
     }
     router.get(route("grp.supply-chain.dashboard"), params, {
-        only: ["view", "filters", "active", "summary", "blockages", "quickStats", "ribbons", "pagination"],
+        only: ["filters", "active", "summary", "blockages", "quickStats", "ribbons", "pagination"],
         preserveState: true,
         preserveScroll: true,
         onStart: () => (isChangingPage.value = true),
@@ -259,15 +253,6 @@ function saveMark(date: string | null): void {
     </div>
 
     <div class="mx-4 mt-3 flex flex-wrap items-center gap-2">
-        <SelectButton
-            :modelValue="view"
-            :options="viewOptions"
-            optionLabel="label"
-            optionValue="value"
-            :allowEmpty="false"
-            size="small"
-            class="journey-view-toggle"
-            @update:modelValue="(value) => visit({ view: value === 'supplier_orders' ? null : value })" />
         <template v-for="filter in inlineFilters" :key="filter.group">
         <PillFilterBar
             v-if="showFilter(filter.group)"
@@ -514,11 +499,6 @@ function saveMark(date: string | null): void {
 .journey-table thead th:first-child {
     z-index: 3;
     box-shadow: inset 0 -2px 0 #d1d5db, 1px 0 0 #e5e7eb;
-}
-
-.journey-view-toggle :deep(.p-togglebutton-checked .p-togglebutton-content) {
-    background-color: var(--app-accent);
-    color: var(--app-accent-text);
 }
 
 .journey-select {

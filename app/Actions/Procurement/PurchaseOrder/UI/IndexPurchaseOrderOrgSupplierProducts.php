@@ -25,7 +25,6 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -45,7 +44,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 {
     use WithProcurementAuthorisation;
-    public function handle(Organisation|OrgAgent|OrgSupplier $parent, PurchaseOrder $purchaseOrder, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|OrgSupplier $parent, PurchaseOrder $purchaseOrder, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -85,10 +84,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 ->where('purchase_order_transactions.purchase_order_id', $purchaseOrder->id);
         });
 
-        if (class_basename($parent) == 'OrgAgent') {
-            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id)
-                ->orderBy('suppliers.name');
-        } elseif (class_basename($parent) == 'OrgSupplier') {
+        if (class_basename($parent) == 'OrgSupplier') {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } else {
             $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
@@ -163,13 +159,6 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 ->column(key: 'actions', label: 'Actions', canBeHidden: false, align: 'right')
                 ->defaultSort('code');
         };
-    }
-
-    public function inOrgAgent(OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($orgAgent->organisation, $request);
-
-        return $this->handle($orgAgent, $purchaseOrder);
     }
 
     public function inOrgSupplier(OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator

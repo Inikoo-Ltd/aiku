@@ -2,7 +2,7 @@
 title: Zaznamenávanie postupu objednávky ako agent
 summary: Pre agentov — štyri dátumy, ktoré zaznamenávate na každej objednávke dodávateľovi (zaplatená záloha, schválená vzorka, dokončená výroba, navrhovaný dátum pripravenosti), kedy ich zaznamenať, čo namiesto toho zaznamenáva nakupujúca spoločnosť, a prečo sa chýbajúci dátum zobrazuje ako meškanie.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -50,7 +50,7 @@ Toto sú fakty, z ktorých sa počíta vaše <a href="/docs/your-clean-handover-
 
 <aside class="wayfinder">
 <b>Kde kliknúť v aiku</b><br>
-Prihláste sa → <b>Supplier Purchase Orders</b> → otvorte objednávku → <b>Edit</b>. <b>Deposit paid</b> a <b>Deposit amount</b> sú v prvej sekcii. <b>Sample approved</b> a <b>Production done</b> sú v sekcii <b>Production</b>. <b>Proposed ready date (agent)</b> je v sekcii <b>Clean handover</b>.
+Prihláste sa → <b>Purchase Orders</b> → otvorte objednávku → <b>Edit</b>. Každá objednávka je pre jedného z vašich dodávateľov. <b>Deposit paid</b> a <b>Deposit amount</b> sú v sekcii <b>Payments</b>. <b>Sample approved</b> a <b>Production done</b> sú v sekcii <b>Production</b>. <b>Proposed ready date</b> je v sekcii <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">

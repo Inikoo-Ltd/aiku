@@ -108,7 +108,6 @@ class PurchaseOrderTransactionImport implements ToCollection, WithHeadingRow, Sk
     {
         $parentColumn = match ($this->purchaseOrder->parent_type) {
             'OrgSupplier' => 'org_supplier_id',
-            'OrgAgent'    => 'org_agent_id',
             default       => null,
         };
 

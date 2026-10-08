@@ -26,7 +26,6 @@ return [
      */
     'allowed_fetchers' => [
         'Agents',
-        'AgentSupplierPurchaseOrders',
         'Histories',
         'HistoricSupplierProducts',
         'JobOrders',

@@ -17,7 +17,6 @@ use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurchaseOrders;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -39,7 +38,7 @@ class DeletePurchaseOrder extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder): bool
     {
-        /** @var OrgSupplier|OrgAgent|OrgPartner $parent */
+        /** @var OrgSupplier|OrgPartner $parent */
         $parent = $purchaseOrder->parent;
 
         $purchaseOrder->purchaseOrderTransactions()->delete();
@@ -48,9 +47,10 @@ class DeletePurchaseOrder extends OrgAction
         if (class_basename($parent) == 'OrgSupplier') {
             OrgSupplierHydratePurchaseOrders::dispatch($parent);
             SupplierHydratePurchaseOrders::dispatch($parent->supplier);
-        } elseif (class_basename($parent) == 'OrgAgent') {
-            OrgAgentHydratePurchaseOrders::dispatch($parent);
-            AgentHydratePurchaseOrders::dispatch($parent->agent);
+            if ($parent->orgAgent) {
+                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent);
+                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent);
+            }
         }
 
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group);

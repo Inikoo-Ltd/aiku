@@ -13,6 +13,7 @@ use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Models\Helpers\Currency;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Production\Production;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +35,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Parent Key'}
         );
 
-        if ($orgParent instanceof Production) {
+        if ($orgParent instanceof Production || $orgParent instanceof OrgAgent) {
             return;
         }
 

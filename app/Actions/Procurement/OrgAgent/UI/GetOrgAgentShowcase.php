@@ -67,7 +67,7 @@ class GetOrgAgentShowcase
                     'icon'  => 'fal fa-clipboard-list',
                     'count' => $orgAgent->stats->number_purchase_orders,
                     'route' => [
-                        'name'       => 'grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index',
+                        'name'       => 'grp.org.procurement.org_agents.show.purchase-orders.index',
                         'parameters' => [$viewingOrganisation->slug, $orgAgent->slug],
                     ],
                 ],

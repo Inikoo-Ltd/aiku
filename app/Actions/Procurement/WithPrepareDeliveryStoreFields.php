@@ -18,6 +18,7 @@ trait WithPrepareDeliveryStoreFields
 
         if (class_basename($parent) == 'OrgSupplier') {
             data_set($modelData, 'supplier_id', $parent->supplier_id);
+            data_set($modelData, 'agent_id', $parent->orgAgent?->agent_id, false);
             data_set($modelData, 'parent_code', $parent->supplier->code, false);
             data_set($modelData, 'parent_name', $parent->supplier->name, false);
             data_set($modelData, 'currency_id', $parent->supplier->currency_id, false);

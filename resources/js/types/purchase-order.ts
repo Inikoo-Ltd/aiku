@@ -16,7 +16,9 @@ export interface PurchaseOrder {
     parent_type: string
     parent_name: string
     parent_slug: string
+    agent_name: string | null
     agent_slug: string | null
+    org_agent_slug: string | null
     supplier_slug: string | null
     organisation_slug?: string | null
 }

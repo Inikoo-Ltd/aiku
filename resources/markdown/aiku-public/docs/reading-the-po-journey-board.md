@@ -1,7 +1,7 @@
 ---
 title: Reading the PO journey board
 summary: For buyers and management — how every open purchase order becomes one ribbon, what each colour and date means, where the targets come from, how to mark the stages nobody else records, and how to find the orders that need you.
-date: 2026-09-25
+date: 2026-10-08
 tags: procurement, supply-chain, agents
 category: procurement
 help_routes: grp.supply-chain.dashboard
@@ -21,7 +21,7 @@ Every order that is still on its way is on the board:
 
 - **Orders to direct suppliers.**
 - **Orders between AW companies**, for example one company buying from the factory.
-- **Orders through agents.** These are shown as the agent's order to each supplier, because that is where production, quality checks and delays really happen. Switch **Orders to suppliers** to **Agent POs** at the top left to see each agent order as one row instead. An agent order the agent has not yet split by supplier shows as one row with a small *not split* tag.
+- **Orders through agents.** An order through an agent is placed for one supplier behind the agent, because that is where production, quality checks and delays really happen. Its row shows the agent and the supplier.
 
 An order leaves the board once its goods are placed in the warehouse and every product from it is on sale. Orders finished in the last 60 days stay visible as **Completed**, so you can see what came in. Orders more than a year old that never finished are set aside and do not show.
 

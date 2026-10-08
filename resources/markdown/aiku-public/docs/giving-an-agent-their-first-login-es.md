@@ -2,7 +2,7 @@
 title: Dar a un agente su primer acceso
 summary: Para la empresa compradora — cómo crear la única cuenta que necesita un agente de compras para empezar en aiku, tras lo cual gestiona a su propia gente.
 date: 2026-09-30
-source_date: 2026-09-30
+source_date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -17,7 +17,7 @@ Los agentes son organizaciones en aiku, igual que una tienda, y su gente entra e
 
 Todo agente de compras es una organización de tipo *agent*. Cuando alguien de esa organización entra, solo ve su propia organización y solo su trabajo:
 
-- el menú **Procurement**: las **Purchase Orders** que le envían tus organizaciones, las **Supplier Purchase Orders** que hace a cada proveedor y los depósitos que paga por ellas, las **Stock Deliveries** que te envía, sus propios **Suppliers** y su **Inbox** de proveedores;
+- el menú **Procurement**: las **Purchase Orders** que le envían tus organizaciones, una por cada uno de sus proveedores, con los depósitos que paga por ellas, las **Stock Deliveries** que te envía, sus propios **Suppliers** y su **Inbox** de proveedores;
 - el menú **HR**, para su propia gente;
 - **Tickets**, para pedir ayuda a tu servicio de ayuda.
 

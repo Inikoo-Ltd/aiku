@@ -26,11 +26,8 @@ export interface JourneySegment {
 export interface JourneyRibbon {
     key: string
     id: number
-    is_supplier_order: boolean
-    is_split_pending: boolean
     slug: string
     reference: string
-    purchase_order_reference: string
     supplier_code: string | null
     supplier_name: string | null
     mark_route: routeType
@@ -202,9 +199,6 @@ function isMarkable(segment: JourneySegment): boolean {
                     <span>→</span>
                     <span class="font-medium text-gray-600" :title="ribbon.supplier_name ?? ''">{{ ribbon.supplier_code }}</span>
                 </template>
-                <span v-else-if="ribbon.is_split_pending" v-tooltip="ctrans('The agent has not split this order by supplier yet')" class="rounded bg-amber-50 px-1 text-[10px] text-amber-700">
-                    {{ ctrans("not split") }}
-                </span>
             </div>
             <div class="mt-0.5 flex items-center gap-2 text-xs">
                 <span class="text-gray-400">{{ ribbon.buyer_name ? `${ctrans("by")} ${ribbon.buyer_name}` : ctrans("buyer unknown") }}</span>

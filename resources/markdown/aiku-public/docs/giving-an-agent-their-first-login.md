@@ -1,7 +1,7 @@
 ---
 title: Giving an agent their first login
 summary: For the buying company — how to create the one account a sourcing agent needs to get started in aiku, after which they look after their own people.
-date: 2026-09-30
+date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -17,7 +17,7 @@ Agents are organisations in aiku, just like a shop, and their people log in exac
 
 Every sourcing agent is an organisation of type *agent*. When someone from that organisation logs in, they see only their own organisation and only their job:
 
-- the **Procurement** menu: the **Purchase Orders** your organisations send them, the **Supplier Purchase Orders** they place with each supplier and the deposits they pay on them, the **Stock Deliveries** they ship to you, their own **Suppliers** and their supplier **Inbox**;
+- the **Procurement** menu: the **Purchase Orders** your organisations send them, one for each of their suppliers, with the deposits they pay on them, the **Stock Deliveries** they ship to you, their own **Suppliers** and their supplier **Inbox**;
 - the **HR** menu, for their own people;
 - **Tickets**, to ask your help desk for help.
 

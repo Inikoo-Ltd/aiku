@@ -511,7 +511,7 @@ test('confirmed supplier product upload creates families, trade unit, SKO, suppl
 });
 
 
-test('supplier product upload for a supplier in an agent puts the lines on the org agent draft with its agent supplier purchase order', function () {
+test('supplier product upload for a supplier in an agent puts the lines on the org supplier draft, sent through the agent', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
@@ -531,26 +531,19 @@ test('supplier product upload for a supplier in an agent puts the lines on the o
     acceptSupplierProductUploadFindings($upload);
     App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload->refresh());
 
-    $purchaseOrder              = PurchaseOrder::where('parent_type', 'OrgAgent')->where('parent_id', $orgAgent->id)->firstOrFail();
-    $agentSupplierPurchaseOrder = App\Models\SupplyChain\AgentSupplierPurchaseOrder::where('purchase_order_id', $purchaseOrder->id)->where('supplier_id', $supplier->id)->firstOrFail();
+    $orgSupplier   = App\Models\Procurement\OrgSupplier::where('organisation_id', $this->organisation->id)->where('supplier_id', $supplier->id)->firstOrFail();
+    $purchaseOrder = PurchaseOrder::where('parent_type', 'OrgSupplier')->where('parent_id', $orgSupplier->id)->firstOrFail();
 
-    expect($purchaseOrder->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::IN_PROCESS)
-        ->and($agentSupplierPurchaseOrder->state)->toBe(App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::IN_PROCESS)
-        ->and($purchaseOrder->purchaseOrderTransactions()->where('agent_supplier_purchase_order_id', $agentSupplierPurchaseOrder->id)->count())->toBe(1);
-
-    $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pageHead.actions.0.route.name', 'grp.models.purchase-order.submit')
-            ->where('pageHead.actions.0.route.parameters.purchaseOrder', $purchaseOrder->id)
-            ->etc());
+    expect($orgSupplier->org_agent_id)->toBe($orgAgent->id)
+        ->and($purchaseOrder->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->isAgentOrder())->toBeTrue()
+        ->and($purchaseOrder->agent_id)->toBe($agent->id)
+        ->and($purchaseOrder->purchaseOrderTransactions()->count())->toBe(1)
+        ->and(PurchaseOrder::where('parent_type', 'OrgAgent')->where('parent_id', $orgAgent->id)->exists())->toBeFalse();
 
     $this->patch(route('grp.models.purchase-order.submit', ['purchaseOrder' => $purchaseOrder->id]))->assertRedirect();
 
-    expect($agentSupplierPurchaseOrder->refresh()->state)->toBe(App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum::SUBMITTED)
-        ->and($purchaseOrder->refresh()->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED);
-
-    $this->get(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.style', 'edit')->etc());
+    expect($purchaseOrder->refresh()->state)->toBe(App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED);
 });
 
 test('supplier product upload AI checks add Jev findings and the final review, and stop when the monthly budget is spent', function () {
@@ -1064,16 +1057,15 @@ test('UI supply chain overview', function () {
             ->component('SupplyChain/SupplyChainDashboard')
             ->has('title')
             ->has('pageHead')
-            ->has('dashboardCards', 6)
+            ->has('dashboardCards', 5)
             ->where('dashboardCards.0.route.name', 'grp.supply-chain.agents.index')
             ->where('dashboardCards.1.route.name', 'grp.supply-chain.suppliers.index')
             ->where('dashboardCards.1.metrics.0.route.name', 'grp.supply-chain.agent_suppliers.index')
             ->missing('dashboardCards.1.route.parameters._query.elements[type]')
             ->missing('dashboardCards.1.metrics.0.route.parameters._query.elements[type]')
             ->where('dashboardCards.2.route.name', 'grp.supply-chain.supplier_products.index')
-            ->where('dashboardCards.3.route.name', 'grp.supply-chain.agent_supplier_purchase_orders.index')
-            ->where('dashboardCards.4.route.name', 'grp.supply-chain.control.dashboard')
-            ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
+            ->where('dashboardCards.3.route.name', 'grp.supply-chain.control.dashboard')
+            ->where('dashboardCards.4.route.name', 'grp.supply-chain.shopping_list.board')
             ->missing('staleOrders')
             ->missing('search_demand')
             ->missing('poJourney')
@@ -1143,9 +1135,10 @@ test('UI supply chain control', function () {
             ->has('title')
             ->has('pageHead')
             ->has('breadcrumbs', 3)
-            ->has('stalled_aspos')
+            ->has('stalled_purchase_orders')
             ->has('deposits_at_risk')
-            ->has('pos_without_action')
+            ->missing('stalled_aspos')
+            ->missing('pos_without_action')
             ->has('agent_scorecard');
     });
 });
@@ -1257,7 +1250,7 @@ test('UI show free supplier has direct procurement navigation', function () {
     });
 });
 
-test('UI show agent supplier lists its purchase orders and its agent purchase orders', function () {
+test('UI show agent supplier lists its purchase orders', function () {
     $agent = StoreAgent::make()->action(
         group: $this->group,
         modelData: Agent::factory()->definition(),
@@ -1270,7 +1263,7 @@ test('UI show agent supplier lists its purchase orders and its agent purchase or
     $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
-            ->where('pageHead.subNavigation.4.route.name', 'grp.supply-chain.suppliers.agent_supplier_purchase_orders.index')
+            ->missing('pageHead.subNavigation.4')
             ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
             ->etc());
 
@@ -1298,33 +1291,6 @@ test('UI index purchase orders in free supplier', function () {
             ->has('title')
             ->has('breadcrumbs')
             ->has('data'));
-});
-
-test('UI index agent supplier purchase orders in supplier', function () {
-    $supplier = Supplier::first();
-    $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.suppliers.agent_supplier_purchase_orders.index', [$supplier->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('SupplyChain/AgentSupplierPurchaseOrders')
-            ->has('title')
-            ->has('breadcrumbs')
-            ->has('data');
-    });
-});
-
-test('UI index agent supplier purchase orders in agent', function () {
-    $agent = Agent::first();
-    $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.agents.show.agent_supplier_purchase_orders.index', [$agent->slug]));
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('SupplyChain/AgentSupplierPurchaseOrders')
-            ->has('title')
-            ->has('breadcrumbs')
-            ->has('data')
-            ->has('pageHead.subNavigation');
-    });
 });
 
 test('UI index stock deliveries in agent', function () {
@@ -1759,18 +1725,17 @@ test('agent organisation procurement editors can edit internal pictures of their
         ))->toBeFalse();
 });
 
-test('purchase order journey rows query runs for both views', function () {
+test('purchase order journey rows query runs', function () {
     $journey = \App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney::make();
     $group   = $this->group;
 
-    $rows = fn (bool $splitAgentOrders) => (function () use ($group, $splitAgentOrders) {
+    $rows = (function () use ($group) {
         $this->group = $group;
 
-        return $this->rows($splitAgentOrders);
+        return $this->rows();
     })->call($journey);
 
-    expect($rows(true))->toBeArray()
-        ->and($rows(false))->toBeArray();
+    expect($rows)->toBeArray();
 });
 
 test('procurement editors keep internal pictures on the supplier product, away from its trade units', function () {

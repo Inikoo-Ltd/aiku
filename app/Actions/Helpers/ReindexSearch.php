@@ -57,7 +57,6 @@ use App\Actions\Procurement\PurchaseOrder\Search\ReindexPurchaseOrderSearch;
 use App\Actions\GoodsIn\StockDelivery\Search\ReindexStockDeliverySearch;
 use App\Actions\SupplyChain\Agent\Search\ReindexAgentSearch;
 use App\Actions\SupplyChain\SupplierProduct\Search\ReindexSupplierProductSearch;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\Search\ReindexAgentSupplierPurchaseOrderSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
 use App\Actions\Traits\WithOrganisationsArgument;
@@ -327,7 +326,6 @@ class ReindexSearch extends HydrateModel
         ReindexSupplierSearch::run(reset: $command->option('reset'));
         ReindexAgentSearch::run(reset: $command->option('reset'));
         ReindexSupplierProductSearch::run(reset: $command->option('reset'));
-        ReindexAgentSupplierPurchaseOrderSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexProduction(Command $command): void
