@@ -6,6 +6,9 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\Procurement\AgentOrder\StoreAgentOrder;
+use App\Actions\Procurement\AgentOrder\StoreAgentOrderLine;
+use App\Actions\Procurement\AgentOrder\SubmitAgentOrder;
 use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
 use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
@@ -1594,6 +1597,11 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgSupplier'])->name('purchase-order.store');
 });
+Route::name('org-agent.agent-order.')->prefix('org-agent/{orgAgent:id}/agent-order')->group(function () {
+    Route::post('', StoreAgentOrder::class)->name('store');
+    Route::post('line/{orgSupplierProduct:id}', StoreAgentOrderLine::class)->name('line.store')->withoutScopedBindings();
+    Route::patch('submit', SubmitAgentOrder::class)->name('submit');
+});
 Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgPartner'])->name('purchase-order.store');
     Route::post('rescue-purchase-order', StoreRescuePurchaseOrder::class)->name('rescue_purchase_order.store');
@@ -1603,9 +1611,9 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
-    Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
+    Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');
     Route::post('note', [StoreProcurementNote::class, 'inPurchaseOrder'])->name('note.store');
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');

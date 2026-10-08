@@ -134,6 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $chs_excluded
  * @property string|null $chs_exclusion_reason
  * @property int|null $agent_supplier_purchase_order_id legacy agent supplier purchase order this order was split from
+ * @property string|null $agent_order_reference the agent order this supplier order belongs to: the orders of one agent sharing it were placed together
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -306,6 +307,23 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function isAgentOrder(): bool
     {
         return $this->agent_id !== null && $this->parent_type === 'OrgSupplier';
+    }
+
+    /**
+     * The supplier orders placed together with this one through the same agent.
+     */
+    public function agentOrderPurchaseOrders(): Builder
+    {
+        return self::inAgentOrder($this->organisation_id, (int) $this->agent_id, (string) $this->agent_order_reference);
+    }
+
+    public static function inAgentOrder(int $organisationId, int $agentId, string $agentOrderReference): Builder
+    {
+        return self::query()
+            ->where('organisation_id', $organisationId)
+            ->where('agent_id', $agentId)
+            ->where('parent_type', 'OrgSupplier')
+            ->where('agent_order_reference', $agentOrderReference);
     }
 
     public function deposits(): HasMany

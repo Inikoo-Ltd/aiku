@@ -184,6 +184,17 @@ class ShowPurchaseOrder extends OrgAction
                         'label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
                     ],
                     'actions' => [
+                        $purchaseOrder->isAgentOrder() && $purchaseOrder->agent_order_reference && ($orgAgent = $purchaseOrder->parent->orgAgent) && $orgAgent->organisation_id === $this->organisation->id ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'icon'    => 'fal fa-boxes',
+                            'label'   => __('Whole agent order'),
+                            'tooltip' => __('See :reference with the orders to all its suppliers', ['reference' => $purchaseOrder->agent_order_reference]),
+                            'route'   => [
+                                'name'       => 'grp.org.procurement.org_agents.show.agent_orders.show',
+                                'parameters' => [$this->organisation->slug, $orgAgent->slug, $purchaseOrder->agent_order_reference],
+                            ],
+                        ] : false,
                         $this->canEdit || $this->agentCanEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',

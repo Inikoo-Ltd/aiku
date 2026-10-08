@@ -66,6 +66,19 @@ trait WithOrgAgentSubNavigation
                 ],
                 "number"   => $parent->stats->number_org_supplier_products,
             ],
+            ...($this->organisation->type === OrganisationTypeEnum::AGENT ? [] : [
+                [
+                    "label"    => __("Agent orders"),
+                    "route"    => [
+                        "name"       => "grp.org.procurement.org_agents.show.agent_orders.index",
+                        "parameters" => [$this->organisation->slug, $parent->slug],
+                    ],
+                    "leftIcon" => [
+                        "icon"    => ["fal", "fa-boxes"],
+                        "tooltip" => __("Agent orders, each with the orders to its suppliers"),
+                    ],
+                ],
+            ]),
             [
                 "label"    => __("Purchase Orders"),
                 "route"    => [

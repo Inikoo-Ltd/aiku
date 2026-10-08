@@ -36,7 +36,8 @@ use Throwable;
  * lines (its agent supplier purchase order, else the line's supplier product, else the only supplier
  * of that SKO under the same agent). The new order keeps the original order's state, dates,
  * currency and exchanges, takes the agent supplier purchase order's reference, dates and handover
- * fields, its lines, a copy of its history and the stock deliveries holding its lines. The original
+ * fields, its lines, a copy of its history and the stock deliveries holding its lines, and keeps
+ * the original reference as its agent order reference, so the splits still open as one agent order. The original
  * order is soft deleted and keeps the ids of its splits in data->split_into. Lines no supplier can be
  * found for stay on the original order, which is then kept.
  */
@@ -275,6 +276,7 @@ class SplitAgentPurchaseOrders
             'supplier_id' => $supplier->id,
             'agent_id'    => $purchaseOrder->agent_id ?? OrgAgent::find($purchaseOrder->parent_id)?->agent_id,
             'reference'   => $this->uniqueReference($purchaseOrder, $aspo?->reference ?: $purchaseOrder->reference.'-'.$supplier->code),
+            'agent_order_reference' => $purchaseOrder->reference,
             'cost_extra'    => 0,
             'cost_shipping' => 0,
             'cost_duties'   => 0,

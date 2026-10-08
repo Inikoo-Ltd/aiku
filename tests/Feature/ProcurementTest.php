@@ -8,6 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Procurement\AgentOrder\SendAgentOrderToAgent;
+use App\Actions\Procurement\AgentOrder\SubmitAgentOrder;
+use App\Actions\Procurement\AgentOrder\StoreAgentOrderLine;
+use App\Actions\Procurement\AgentOrder\StoreAgentOrder;
 use Illuminate\Support\Facades\Event;
 use App\Events\BroadcastPurchaseOrderLastEdited;
 use App\Actions\Goods\Stock\StoreStock;
@@ -562,9 +566,9 @@ test('agent login can propose a ready date but not set management-only clean han
     ]);
     expect($agentUser->hasGroupAccess())->toBeFalse();
 
+    actingAs($agentUser);
     $notes = $purchaseOrder->refresh()->notes;
 
-    actingAs($agentUser);
 
     $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), [
         'proposed_ready_at'  => '2026-10-01',
@@ -714,9 +718,9 @@ test('PO journey board marks stages on an agent purchase order and keeps handove
     $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertForbidden();
     actingAs($this->adminGuest->getUser());
 
+    $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
     expect($purchaseOrder->refresh()->handed_over_at->toDateString())->toBe('2026-09-21');
 
-    $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
     expect($purchaseOrder->refresh()->handed_over_at)->toBeNull();
 })->depends('create purchase order through an agent');
 
@@ -804,8 +808,8 @@ test('clean handover score', function () {
     );
 
     $calculator = GetAgentCleanHandoverScore::make();
-    $quarterKey = now()->subDays(10)->year.'-Q'.now()->subDays(10)->quarter;
 
+    $quarterKey = now()->subDays(10)->year.'-Q'.now()->subDays(10)->quarter;
     expect($calculator->isCleanHandover($updated))->toBeTrue();
 
     $score        = $calculator->handle($agent);
@@ -902,8 +906,8 @@ test('an agent purchase order line keeps its amounts in the organisation and gro
         ->and((float)$purchaseOrderTransaction->grp_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->grp_exchange ?? 1));
 })->depends('add item to agent purchase order');
 
-test('a delivery date typed on a purchase order is the date everywhere', function (PurchaseOrder $purchaseOrder) {
     $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['estimated_receiving_date' => '2027-03-15']);
+test('a delivery date typed on a purchase order is the date everywhere', function (PurchaseOrder $purchaseOrder) {
 
     expect($purchaseOrder->estimated_received_at->toDateString())->toBe('2027-03-15')
         ->and($purchaseOrder->estimatedReceivingDate())->toBe('2027-03-15');
@@ -955,9 +959,9 @@ test('UI edit agent purchase order has the clean handover section', function (Pu
 
     $props = json_encode($this->get(route('grp.org.procurement.purchase_orders.edit', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))->viewData('page')['props']);
 
+
     expect($props)->toContain('proposed_ready_at');
 })->depends('add item to agent purchase order');
-
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {
     /** @var OrgSupplier $orgSupplier */
     $orgSupplier = $purchaseOrder->parent;
@@ -1989,6 +1993,7 @@ test('purchase order with an open aurora stock delivery refuses a second one', f
 })->depends('create stock delivery from purchase order');
 
 
+test('purchase order products are downloaded as excel and uploaded from a spreadsheet', function () {
 function createConfirmedAgentOrder(object $test, OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, int $orgStockIndex, int $quantity): PurchaseOrder
 {
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
@@ -2041,6 +2046,106 @@ test('stock delivery from a confirmed agent order is created under the org agent
         ->and($deliveryOne->refresh()->number_purchase_orders)->toBe(2)
         ->and($deliveryOne->items()->count())->toBe(2)
         ->and($orderTwo->stockDeliveries()->pluck('stock_deliveries.id')->all())->toBe([$deliveryOne->id]);
+});
+
+test('supplier orders through the same agent join the agent order being prepared and the next one starts after it is submitted', function () {
+    $orgAgent                                 = createFreshOrgAgent($this);
+    [$orgSupplierOne, $orgSupplierProductOne] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$orgSupplierTwo]                         = createAgentOrgSupplierWithProduct($this, $orgAgent);
+
+    $orderOne = StorePurchaseOrder::make()->action($orgSupplierOne, []);
+    $orderTwo = StorePurchaseOrder::make()->action($orgSupplierTwo, []);
+
+    expect($orderOne->agent_order_reference)->not->toBeNull()
+        ->and($orderTwo->agent_order_reference)->toBe($orderOne->agent_order_reference)
+        ->and($orderOne->reference)->toBe($orderOne->agent_order_reference.'-'.$orgSupplierOne->supplier->code)
+        ->and($orderOne->agentOrderPurchaseOrders()->count())->toBe(2);
+
+    StorePurchaseOrderTransaction::make()->action(
+        $orderOne,
+        $orgSupplierProductOne->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 12])
+    );
+
+    Queue::fake();
+    $submitted = SubmitAgentOrder::make()->action($orgAgent, $orderOne->agent_order_reference);
+
+    expect($submitted->pluck('id')->all())->toBe([$orderOne->id])
+        ->and($orderOne->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
+        ->and(PurchaseOrder::find($orderTwo->id))->toBeNull();
+    Queue::assertNotPushed(SendAgentOrderToAgent::class);
+
+    $nextOrder = StorePurchaseOrder::make()->action($orgSupplierTwo, []);
+
+    expect($nextOrder->agent_order_reference)->not->toBeNull()
+        ->and($nextOrder->agent_order_reference)->not->toBe($orderOne->agent_order_reference);
+});
+
+test('products added on the agent order go on their supplier order in it', function () {
+    $orgAgent                                 = createFreshOrgAgent($this);
+    [$orgSupplierOne, $orgSupplierProductOne] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$orgSupplierTwo, $orgSupplierProductTwo] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $reference                                = StoreAgentOrder::make()->handle($orgAgent);
+    AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[0], $orgSupplierProductOne);
+    AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[1], $orgSupplierProductTwo);
+
+    StoreAgentOrderLine::make()->action($orgAgent, $reference, $orgSupplierProductOne, ['quantity_ordered' => 100]);
+    StoreAgentOrderLine::make()->action($orgAgent, $reference, $orgSupplierProductTwo, ['quantity_ordered' => 200]);
+
+    $orders = PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $reference)->get()->keyBy('parent_id');
+
+    expect($orders)->toHaveCount(2)
+        ->and($orders[$orgSupplierOne->id]->purchaseOrderTransactions()->sole()->quantity_ordered)->toEqual(100)
+        ->and($orders[$orgSupplierTwo->id]->purchaseOrderTransactions()->sole()->quantity_ordered)->toEqual(200)
+        ->and($orders[$orgSupplierOne->id]->isAgentOrder())->toBeTrue();
+
+    [, $otherAgentProduct] = createAgentOrgSupplierWithProduct($this);
+    expect(fn () => StoreAgentOrderLine::make()->action($orgAgent, $reference, $otherAgentProduct, ['quantity_ordered' => 1]))
+        ->toThrow(ValidationException::class);
+
+    $this->get(route('grp.json.org-agent.agent-order.org-supplier-products', ['orgAgent' => $orgAgent->id, 'agentOrderReference' => $reference]))
+        ->assertOk();
+
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.show', [$this->organisation->slug, $orgAgent->slug, $reference]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/AgentOrder')
+            ->where('agent_order.reference', $reference)
+            ->where('agent_order.can_edit', true)
+            ->has('supplier_orders', 2)
+            ->where('submit.reference', $reference)
+            ->where('products_list.name', 'grp.json.org-agent.agent-order.org-supplier-products'));
+
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.index', [$this->organisation->slug, $orgAgent->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/AgentOrders')
+            ->where('data.data.0.reference', $reference)
+            ->where('data.data.0.number_supplier_orders', 2));
+
+    $this->get(route('grp.org.procurement.org_agents.show.agent_orders.pdf', [$this->organisation->slug, $orgAgent->slug, $reference]))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+
+    Queue::fake();
+    $this->patch(route('grp.models.org-agent.agent-order.submit', ['orgAgent' => $orgAgent->id]), ['agent_order_reference' => $reference])
+        ->assertRedirect();
+
+    expect(PurchaseOrder::inAgentOrder($orgAgent->organisation_id, $orgAgent->agent_id, $reference)->where('state', PurchaseOrderStateEnum::SUBMITTED)->count())->toBe(2);
+    expect(fn () => StoreAgentOrderLine::make()->action($orgAgent, $reference, $orgSupplierProductOne, ['quantity_ordered' => 5]))
+        ->toThrow(ValidationException::class);
+});
+
+test('a supplier order through an agent links to its whole agent order', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, []);
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions', fn ($actions) => collect($actions)->contains(
+                fn ($action) => ($action['route']['name'] ?? null) === 'grp.org.procurement.org_agents.show.agent_orders.show'
+                    && end($action['route']['parameters']) === $purchaseOrder->agent_order_reference
+            )));
 });
 
 test('split agent purchase orders turns an org agent order into one order per supplier', function () {
@@ -2158,7 +2263,6 @@ test('a legacy agent supplier purchase order link redirects to the purchase orde
         ->assertNotFound();
 });
 
-test('purchase order products are downloaded as excel and uploaded from a spreadsheet', function () {
     $supplier    = StoreSupplier::make()->action(
         parent: $this->group,
         modelData: Supplier::factory()->definition()
@@ -4515,8 +4619,8 @@ describe('supplier deposits', function () {
             array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'ASPO-DEP-'.uniqid()]),
             strict: false
         );
-    });
 
+    });
     test('deposit store on an agent purchase order records the deposit against the order', function () {
         $this->post(route('grp.models.purchase-order.deposit.store', $this->depositPurchaseOrder->id), ['amount' => 50, 'reference' => 'DEP-ROUTE'])
             ->assertSessionHasNoErrors();
@@ -4538,6 +4642,7 @@ describe('supplier deposits', function () {
             array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'NO-AGENT-DEP-'.uniqid()]),
             strict: false
         );
+    });
 
         expect($independentOrder->isAgentOrder())->toBeFalse();
 
@@ -4546,7 +4651,6 @@ describe('supplier deposits', function () {
 
         expect(fn () => StoreAspoDeposit::make()->action($independentOrder, ['amount' => 50]))->toThrow(ValidationException::class)
             ->and($independentOrder->deposits()->count())->toBe(0);
-    });
 
     test('deposit lifecycle: pending to paid to supplier', function () {
         $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, [
@@ -6341,7 +6445,9 @@ describe('partner shopping list', function () {
         \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 2);
 
         \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot->refresh(), ['quantity' => 1]);
+        file_put_contents('/private/tmp/claude-501/dbg.txt', json_encode(['before' => $sellerOrgStock->refresh()->only(['quantity_available','quantity_in_locations','quantity_in_submitted_orders','quantity_to_be_picked']),'hub' => $seller->refresh()->is_manufacturing_hub,'aikusc' => $seller->is_aiku_stock_control,'promised' => DB::scalar('select '.\App\Models\Procurement\PartnerShoppingListItem::promisedNotStagedSql((string)$seller->id, (string)$sellerOrgStock->stock_id)),'slots' => DB::table('location_org_stocks')->where('org_stock_id', $sellerOrgStock->id)->get(['location_id','quantity'])]).PHP_EOL, FILE_APPEND);
         \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($sellerOrgStock->id);
+        file_put_contents('/private/tmp/claude-501/dbg.txt', json_encode(['after' => $sellerOrgStock->refresh()->only(['quantity_available','quantity_in_locations','quantity_in_submitted_orders','quantity_to_be_picked']),'hub' => $seller->refresh()->is_manufacturing_hub,'aikusc' => $seller->is_aiku_stock_control,'promised' => DB::scalar('select '.\App\Models\Procurement\PartnerShoppingListItem::promisedNotStagedSql((string)$seller->id, (string)$sellerOrgStock->stock_id)),'slots' => DB::table('location_org_stocks')->where('org_stock_id', $sellerOrgStock->id)->get(['location_id','quantity'])]).PHP_EOL, FILE_APPEND);
 
         $lines = \App\Models\Procurement\PartnerShoppingListItem::where('partner_organisation_id', $seller->id)
             ->where('stock_id', $sellerOrgStock->stock_id)
