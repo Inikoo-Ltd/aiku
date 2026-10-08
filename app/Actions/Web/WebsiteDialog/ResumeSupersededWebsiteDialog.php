@@ -4,7 +4,6 @@ namespace App\Actions\Web\WebsiteDialog;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\BreakWebsiteIrisCache;
-use App\Enums\Web\WebsiteDialog\WebsiteDialogStatusEnum;
 use App\Models\Web\WebsiteDialog;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -28,7 +27,7 @@ class ResumeSupersededWebsiteDialog
         }
 
         $this->update($websiteDialog, [
-            'status'                      => WebsiteDialogStatusEnum::ACTIVE,
+            'status'                      => $websiteDialog->statusForOwnDates(),
             'paused_by_website_dialog_id' => null,
             'paused_until'                => null,
         ]);

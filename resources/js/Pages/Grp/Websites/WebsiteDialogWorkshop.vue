@@ -106,9 +106,9 @@ let saveController: AbortController | null = null
 const draftPayload = () => pick(dialogData, ["template_code", "component", "fields", "container_properties", "settings"])
 let lastSavedDraft = JSON.stringify(draftPayload())
 
-const onSave = async () => {
+const onSave = async (): Promise<boolean> => {
     if (!dialogData.component) {
-        return
+        return true
     }
 
     saveController?.abort()
@@ -121,10 +121,12 @@ const onSave = async () => {
         const response = await axios.patch(routeUrl(props.routes_list.update_route), payload, { signal: saveController.signal })
         lastSavedDraft = JSON.stringify(payload)
         applyServerState(response.data.data)
+        return true
     } catch (error: any) {
         if (!axios.isCancel(error)) {
             notifyRequestError(error, ctrans("Failed to save the dialog"))
         }
+        return false
     } finally {
         isLoadingSave.value = false
     }
@@ -173,7 +175,10 @@ const onPublish = async (popover?: { close: Function }) => {
     isLoadingPublish.value = true
 
     try {
-        await onSave()
+        if (!await onSave()) {
+            isLoadingPublish.value = false
+            return
+        }
 
         const response = await axios.get(routeUrl(props.routes_list.fetch_clashing_dialogs_route), {
             params: {

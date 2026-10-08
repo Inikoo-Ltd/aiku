@@ -117,15 +117,20 @@ class WebsiteDialog extends Model implements HasMedia
     }
 
     /**
-     * Active dialogs of the same website that pop up by themselves during a window overlapping the
-     * given one, as a website only ever pops up one dialog at a time. Dialogs opened by a button
-     * never clash. A null $until means the window never ends.
+     * Dialogs of the same website that pop up by themselves during a window overlapping the given
+     * one, as a website only ever pops up one dialog at a time: the active ones and the published
+     * ones waiting for their start date. Dialogs opened by a button never clash. A null $until
+     * means the window never ends.
      */
     public function scopeClashingWith(Builder $query, int $websiteId, Carbon $from, ?Carbon $until): Builder
     {
         $query
             ->where('website_id', $websiteId)
-            ->where('status', WebsiteDialogStatusEnum::ACTIVE)
+            ->where(
+                fn ($query) => $query
+                    ->where('status', WebsiteDialogStatusEnum::ACTIVE)
+                    ->orWhere(fn ($query) => $query->waitingForStart())
+            )
             ->whereRaw("coalesce(published_layout->'settings'->>'trigger', ?) = ?", [WebsiteDialogTriggerEnum::AUTOMATIC->value, WebsiteDialogTriggerEnum::AUTOMATIC->value])
             ->where(
                 fn ($query) => $query
@@ -138,6 +143,33 @@ class WebsiteDialog extends Model implements HasMedia
         }
 
         return $query;
+    }
+
+    public function scopeWaitingForStart(Builder $query): Builder
+    {
+        return $query
+            ->where('status', WebsiteDialogStatusEnum::INACTIVE)
+            ->where('state', WebsiteDialogStateEnum::READY)
+            ->whereNull('paused_by_website_dialog_id')
+            ->where('live_at', '>', now());
+    }
+
+    public function isWaitingForStart(): bool
+    {
+        return $this->status === WebsiteDialogStatusEnum::INACTIVE
+            && $this->state === WebsiteDialogStateEnum::READY
+            && !$this->paused_by_website_dialog_id
+            && $this->live_at?->isFuture();
+    }
+
+    /**
+     * The status the dialog's own dates call for right now, ignoring any pause.
+     */
+    public function statusForOwnDates(): WebsiteDialogStatusEnum
+    {
+        return ($this->live_at?->isFuture() || $this->schedule_finish_at?->isPast())
+            ? WebsiteDialogStatusEnum::INACTIVE
+            : WebsiteDialogStatusEnum::ACTIVE;
     }
 
     /**

@@ -21,7 +21,7 @@ class PauseSupersededWebsiteDialog
     {
         $pausedBy = WebsiteDialog::find($pausedByWebsiteDialogId);
 
-        if (!$pausedBy || $websiteDialog->status !== WebsiteDialogStatusEnum::ACTIVE) {
+        if (!$pausedBy || ($websiteDialog->status !== WebsiteDialogStatusEnum::ACTIVE && !$websiteDialog->isWaitingForStart())) {
             return;
         }
 

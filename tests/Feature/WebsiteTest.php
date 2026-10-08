@@ -116,6 +116,7 @@ use App\Models\Web\Announcement;
 use App\Actions\Web\Announcement\ResumeSupersededAnnouncement;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Middleware\HandleIrisInertiaRequests;
+use App\Actions\Web\WebsiteDialog\ApplyWebsiteDialogSchedule;
 use App\Actions\Web\WebsiteDialog\DeleteWebsiteDialog;
 use App\Actions\Web\WebsiteDialog\PublishWebsiteDialog;
 use App\Actions\Web\WebsiteDialog\ResetWebsiteDialog;
@@ -123,6 +124,7 @@ use App\Actions\Web\WebsiteDialog\ResumeSupersededWebsiteDialog;
 use App\Actions\Web\WebsiteDialog\StoreWebsiteDialog;
 use App\Actions\Web\WebsiteDialog\ToggleWebsiteDialog;
 use App\Actions\Web\WebsiteDialog\UpdateWebsiteDialog;
+use App\Actions\Web\WebsiteDialog\UI\GetClashingWebsiteDialogs;
 use App\Actions\Web\WebsiteDialog\UI\GetIrisWebsiteDialogs;
 use App\Enums\Web\WebsiteDialog\WebsiteDialogStateEnum;
 use App\Enums\Web\WebsiteDialog\WebsiteDialogStatusEnum;
@@ -2534,6 +2536,7 @@ function turnOffWebsiteDialogs(Website $website): void
         'paused_by_website_dialog_id' => null,
         'paused_until'                => null,
     ]);
+    $website->websiteDialogs()->where('live_at', '>', now())->update(['live_at' => now()->subMinute()]);
     Cache::forget("irisData:website:$website->id:dialogs");
 }
 
@@ -2674,6 +2677,46 @@ test('superseding pauses the other website dialog and it comes back by itself', 
 
     expect($running->status)->toBe(WebsiteDialogStatusEnum::ACTIVE)
         ->and($running->paused_by_website_dialog_id)->toBeNull();
+})->depends('create b2b website');
+
+test('a website dialog waiting for its start date clashes and stays off once superseded', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    Queue::fake();
+    $startsAt = now()->addWeek();
+
+    $scheduled  = publishWebsiteDialog(draftWebsiteDialog($website, 'scheduled'), $this->user, ['schedule_at' => $startsAt]);
+    $challenger = draftWebsiteDialog($website, 'challenger');
+
+    expect(fn () => publishWebsiteDialog($challenger, $this->user))->toThrow(ValidationException::class)
+        ->and(GetClashingWebsiteDialogs::make()->handle($challenger, now(), null)->pluck('id')->all())->toContain($scheduled->id);
+
+    $challenger = publishWebsiteDialog($challenger, $this->user, ['supersede' => true]);
+    $scheduled->refresh();
+
+    expect($scheduled->paused_by_website_dialog_id)->toBe($challenger->id);
+
+    $this->travelTo($startsAt->copy()->addSecond());
+    ApplyWebsiteDialogSchedule::run($scheduled);
+    $this->travelBack();
+
+    expect($scheduled->refresh()->status)->toBe(WebsiteDialogStatusEnum::INACTIVE);
+})->depends('create b2b website');
+
+test('a released website dialog takes the status its own dates call for', function (Website $website) {
+    turnOffWebsiteDialogs($website);
+    Queue::fake();
+
+    $ending     = publishWebsiteDialog(draftWebsiteDialog($website, 'ending'), $this->user, ['schedule_finish_at' => now()->addHour()]);
+    $challenger = publishWebsiteDialog(draftWebsiteDialog($website, 'challenger'), $this->user, ['supersede' => true]);
+
+    expect($ending->refresh()->paused_by_website_dialog_id)->toBe($challenger->id);
+
+    $this->travelTo(now()->addHours(2));
+    DeleteWebsiteDialog::make()->handle($challenger);
+    $this->travelBack();
+
+    expect($ending->refresh()->status)->toBe(WebsiteDialogStatusEnum::INACTIVE)
+        ->and($ending->paused_by_website_dialog_id)->toBeNull();
 })->depends('create b2b website');
 
 test('deleting a website dialog gives the website back to the one it paused', function (Website $website) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, onMounted, provide, ref } from "vue"
 import axios from "axios"
-import { cloneDeep } from "lodash-es"
+import { cloneDeep, set } from "lodash-es"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
@@ -61,6 +61,10 @@ const applyTemplate = (selectedTemplate: WebsiteDialogTemplate) => {
     dialogData.component = template.component
     dialogData.container_properties = template.container_properties
     dialogData.fields = hasContent ? { ...template.fields, ...dialogData.fields } : template.fields
+
+    if (template.component === "dialog-subscribe") {
+        set(dialogData, "settings.target_users.auth_state", "logged_out")
+    }
 
     emits("afterSubmit")
 }

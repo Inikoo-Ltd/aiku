@@ -5,7 +5,6 @@ namespace App\Actions\Web\WebsiteDialog;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Web\WebsiteDialog\WebsiteDialogStateEnum;
-use App\Enums\Web\WebsiteDialog\WebsiteDialogStatusEnum;
 use App\Models\Web\WebsiteDialog;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,9 +24,7 @@ class ApplyWebsiteDialogSchedule
             return;
         }
 
-        $status = ($websiteDialog->live_at?->isFuture() || $websiteDialog->schedule_finish_at?->isPast())
-            ? WebsiteDialogStatusEnum::INACTIVE
-            : WebsiteDialogStatusEnum::ACTIVE;
+        $status = $websiteDialog->statusForOwnDates();
 
         if ($websiteDialog->status === $status) {
             return;
