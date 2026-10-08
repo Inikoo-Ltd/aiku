@@ -260,7 +260,7 @@ test('the SKO label offers only its own fields and its own four sizes', function
         ->toBe(['with_image', 'with_made_in', 'with_manufactured_by', 'with_weight', 'with_custom_text', 'with_account_signature'])
         ->and(collect($options['sizes']['sko'])->pluck('key')->all())
         ->toBe(['63x29.6', '63.5x29.6', '70x29.7', '130x60'])
-        ->and($options['sizes']['unit'])->toHaveCount(7);
+        ->and($options['sizes']['unit'])->toHaveCount(8);
 });
 
 test('an SKO label prints for a box that has no barcode at all', function () {

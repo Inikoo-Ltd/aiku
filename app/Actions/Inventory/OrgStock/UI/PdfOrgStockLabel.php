@@ -26,7 +26,8 @@ class PdfOrgStockLabel
 
     /**
      * The label stocks Aurora offered, kept to the millimetre so a roll bought for the old system
-     * still prints straight out of this one.
+     * still prints straight out of this one. 105 x 37 is the exception: it is cut by hand from plain
+     * A5 by those who found the 125 x 37 label too wide.
      */
     public const SIZES = [
         '63x29.6'   => ['width' => 63.0, 'height' => 29.6],
@@ -34,6 +35,7 @@ class PdfOrgStockLabel
         '70x29.7'   => ['width' => 70.0, 'height' => 29.7],
         '70x30'     => ['width' => 70.0, 'height' => 30.0],
         '125x37'    => ['width' => 125.0, 'height' => 37.0],
+        '105x37'    => ['width' => 105.0, 'height' => 37.0],
         '130x60'    => ['width' => 130.0, 'height' => 60.0],
         '140x90'    => ['width' => 140.0, 'height' => 90.0],
         '97x69'     => ['width' => 97.0, 'height' => 69.0],
@@ -45,7 +47,7 @@ class PdfOrgStockLabel
      * the four stocks that suit a box, and those are the only ones offered here.
      */
     public const LEVEL_SIZES = [
-        'unit' => ['63x29.6', '63.5x29.6', '70x29.7', '70x30', '125x37', '130x60', '140x90'],
+        'unit' => ['63x29.6', '63.5x29.6', '70x29.7', '70x30', '125x37', '105x37', '130x60', '140x90'],
         'sko'    => ['63x29.6', '63.5x29.6', '70x29.7', '130x60'],
         'carton' => ['97x69', '105x74.25'],
     ];
@@ -129,6 +131,19 @@ class PdfOrgStockLabel
             'row_gap'     => 3.0,
             'orientation' => 'P',
         ],
+        '105x37'    => [
+            'code'        => 'A5-105x37',
+            'paper'       => 'A5',
+            'columns'     => 1,
+            'rows'        => 5,
+            'cell_width'  => 105.0,
+            'cell_height' => 37.0,
+            'margin_top'  => 6.5,
+            'margin_left' => 21.5,
+            'column_gap'  => 0.0,
+            'row_gap'     => 3.0,
+            'orientation' => 'P',
+        ],
         '130x60'    => [
             'code'        => 'EU30137',
             'columns'     => 2,
@@ -188,7 +203,7 @@ class PdfOrgStockLabel
      */
     private const TOP_PADDING = 0.8;
 
-    private const WIDE_RATIO = 3.0;
+    private const WIDE_RATIO = 2.75;
 
     private const CODE128_MODULE_MM = 0.3804;
 
@@ -275,7 +290,7 @@ class PdfOrgStockLabel
             'cutGuides'   => filter_var($options['cut_guides'] ?? false, FILTER_VALIDATE_BOOLEAN),
         ], [], [
             'title'         => $filename,
-            'format'        => 'A4',
+            'format'        => $sheet['paper'] ?? 'A4',
             'orientation'   => $sheet['orientation'],
             'margin_left'   => 0,
             'margin_right'  => 0,
@@ -493,8 +508,8 @@ class PdfOrgStockLabel
         $imageMm     = $withImage ? $innerHeight * 0.9 : 0.0;
         $imageWidth  = $withImage ? round(($imageMm + 2.0) / $width * 100, 2) : 0.0;
 
-        $barcodeWidth = $withBarcode ? 18.0 : 0.0;
-        $barcodeSize  = round($width * $barcodeWidth / 100 * 0.82 / self::EAN13_WIDTH_MM, 2);
+        $barcodeWidth = $withBarcode ? round(22.5 / $width * 100, 2) : 0.0;
+        $barcodeSize  = round(22.5 * 0.82 / self::EAN13_WIDTH_MM, 2);
         $barcodeMm    = $height * 0.42;
 
         return [

@@ -55,6 +55,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyProducts;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixProducts;
 use App\Actions\Catalogue\Product\UI\IndexExclusiveProducts;
 use App\Actions\Catalogue\Product\UI\IndexExclusiveProductsCustomers;
@@ -82,6 +83,7 @@ Route::prefix('products')->as('products.')
 
             Route::get('faire-products', GetFaireProducts::class)->name('faire_products.index');
             Route::get('wix-products', GetWixProducts::class)->name('wix_products.index');
+            Route::get('shopify-products', GetShopifyProducts::class)->name('shopify_products.index');
 
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');

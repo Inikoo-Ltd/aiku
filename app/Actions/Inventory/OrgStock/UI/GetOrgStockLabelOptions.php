@@ -67,7 +67,8 @@ class GetOrgStockLabelOptions
     }
 
     /**
-     * Every size prints one label at a time or on the A4 sheet that size is die cut on.
+     * Every size prints one label at a time or on the sheet that size is die cut on, which is A4
+     * except for the sizes cut by hand from plain A5.
      *
      * @return array<string, array<int, array<string, string>>>
      */
@@ -80,7 +81,8 @@ class GetOrgStockLabelOptions
                 ['key' => 'single', 'label' => __('Single')],
                 [
                     'key'   => 'sheet',
-                    'label' => __('A4 :count labels (:code)', [
+                    'label' => __(':paper :count labels (:code)', [
+                        'paper' => $sheet['paper'] ?? 'A4',
                         'count' => $sheet['columns'] * $sheet['rows'],
                         'code'  => $sheet['code'],
                     ]),

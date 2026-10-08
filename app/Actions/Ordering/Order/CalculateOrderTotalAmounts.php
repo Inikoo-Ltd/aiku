@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithLineTaxCategories;
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
@@ -134,7 +135,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             }
 
 
-            if ($calculateCharges) {
+            if ($calculateCharges && $order->charges_engine != OrderChargesEngineEnum::MANUAL) {
                 CalculateOrderHangingCharges::run($order);
             }
 
