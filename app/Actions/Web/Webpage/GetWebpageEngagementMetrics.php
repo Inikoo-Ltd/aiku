@@ -6,6 +6,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Web\WebsitePageView\GetWebsiteEntryPageViews;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\Web\Webpage;
 use Carbon\CarbonInterface;
@@ -31,7 +32,7 @@ class GetWebpageEngagementMetrics
     public const int DEFAULT_DAYS = 30;
 
     /**
-     * @return array{days: int, page_views: int, visitors: int, add_to_baskets: int, conversion_rate: float, bounces: int, bounce_rate: float, avg_time_on_page: int, timed_page_views: int, history: array<int, array{date: string, page_views: int, visitors: int, bounces: int, add_to_baskets: int, conversion_rate: ?float, bounce_rate: ?float, avg_time_on_page: ?int}>}
+     * @return array{days: int, page_views: int, visitors: int, add_to_baskets: int, entrances: int, checkouts: int, purchases: int, conversion_rate: float, bounces: int, bounce_rate: float, avg_time_on_page: int, timed_page_views: int, history: array<int, array{date: string, page_views: int, visitors: int, bounces: int, add_to_baskets: int, entrances: int, checkouts: int, purchases: int, conversion_rate: ?float, bounce_rate: ?float, avg_time_on_page: ?int}>}
      */
     public function handle(Webpage $webpage, ?int $days = null): array
     {
@@ -42,6 +43,8 @@ class GetWebpageEngagementMetrics
         $views        = $this->dailyViews($webpage, $from);
         $bounces      = $this->dailyBounces($webpage, $from);
         $addToBaskets = $this->dailyAddToBaskets($webpage, $from);
+        $entrances    = $this->dailyEntrances($webpage, $from);
+        $landings     = $this->dailyLandingConversions($webpage, $from);
 
         $history = [];
         $totals  = [
@@ -51,6 +54,9 @@ class GetWebpageEngagementMetrics
             'timed_duration'   => 0,
             'bounces'          => 0,
             'add_to_baskets'   => 0,
+            'entrances'        => 0,
+            'checkouts'        => 0,
+            'purchases'        => 0,
         ];
 
         for ($date = $from->copy(); $date <= $until; $date->addDay()) {
@@ -63,6 +69,9 @@ class GetWebpageEngagementMetrics
             $dayTimedDuration  = (int)($dayViews->timed_duration ?? 0);
             $dayBounces        = (int)($bounces->get($day)?->bounces ?? 0);
             $dayAddToBaskets   = (int)($addToBaskets->get($day)?->add_to_baskets ?? 0);
+            $dayEntrances      = (int)($entrances->get($day)?->entrances ?? 0);
+            $dayCheckouts      = (int)($landings->get($day)?->checkouts ?? 0);
+            $dayPurchases      = (int)($landings->get($day)?->purchases ?? 0);
 
             $totals['page_views']       += $dayPageViews;
             $totals['visitors']         += $dayVisitors;
@@ -70,6 +79,9 @@ class GetWebpageEngagementMetrics
             $totals['timed_duration']   += $dayTimedDuration;
             $totals['bounces']          += $dayBounces;
             $totals['add_to_baskets']   += $dayAddToBaskets;
+            $totals['entrances']        += $dayEntrances;
+            $totals['checkouts']        += $dayCheckouts;
+            $totals['purchases']        += $dayPurchases;
 
             $history[] = [
                 'date'             => $day,
@@ -77,7 +89,10 @@ class GetWebpageEngagementMetrics
                 'visitors'         => $dayVisitors,
                 'bounces'          => $dayBounces,
                 'add_to_baskets'   => $dayAddToBaskets,
-                'conversion_rate'  => $dayPageViews > 0 ? $this->rate($dayAddToBaskets, $dayPageViews) : null,
+                'entrances'        => $dayEntrances,
+                'checkouts'        => $dayCheckouts,
+                'purchases'        => $dayPurchases,
+                'conversion_rate'  => $dayEntrances > 0 ? $this->rate($dayPurchases, $dayEntrances) : null,
                 'bounce_rate'      => $dayVisitors > 0 ? $this->rate($dayBounces, $dayVisitors) : null,
                 'avg_time_on_page' => $dayTimedPageViews > 0 ? (int)round($dayTimedDuration / $dayTimedPageViews) : null,
             ];
@@ -88,7 +103,10 @@ class GetWebpageEngagementMetrics
             'page_views'       => $totals['page_views'],
             'visitors'         => $totals['visitors'],
             'add_to_baskets'   => $totals['add_to_baskets'],
-            'conversion_rate'  => $this->rate($totals['add_to_baskets'], $totals['page_views']),
+            'entrances'        => $totals['entrances'],
+            'checkouts'        => $totals['checkouts'],
+            'purchases'        => $totals['purchases'],
+            'conversion_rate'  => $this->rate($totals['purchases'], $totals['entrances']),
             'bounces'          => $totals['bounces'],
             'bounce_rate'      => $this->rate($totals['bounces'], $totals['visitors']),
             'avg_time_on_page' => $totals['timed_page_views'] > 0
@@ -159,6 +177,41 @@ class GetWebpageEngagementMetrics
                     event_date as date,
                     COUNT(id) as add_to_baskets
                 ')
+                ->groupBy('event_date')
+                ->get()
+        );
+    }
+
+    private function dailyEntrances(Webpage $webpage, CarbonInterface $from): Collection
+    {
+        return $this->keyByDate(
+            GetWebsiteEntryPageViews::run()
+                ->where('entry_views.webpage_id', $webpage->id)
+                ->where('entry_views.view_date', '>=', $from->toDateString())
+                ->selectRaw('
+                    entry_views.view_date as date,
+                    COUNT(DISTINCT entry_visitors.visitor_hash) as entrances
+                ')
+                ->groupBy('entry_views.view_date')
+                ->get()
+        );
+    }
+
+    private function dailyLandingConversions(Webpage $webpage, CarbonInterface $from): Collection
+    {
+        $checkout = WebsiteConversionEventTypeEnum::CHECKOUT->value;
+        $purchase = WebsiteConversionEventTypeEnum::PURCHASE->value;
+
+        return $this->keyByDate(
+            DB::connection('aiku_no_sticky')->table('website_conversion_events')
+                ->where('landing_webpage_id', $webpage->id)
+                ->whereIn('event_type', [$checkout, $purchase])
+                ->where('event_date', '>=', $from->toDateString())
+                ->selectRaw("
+                    event_date as date,
+                    COUNT(id) FILTER (WHERE event_type = '$checkout') as checkouts,
+                    COUNT(id) FILTER (WHERE event_type = '$purchase') as purchases
+                ")
                 ->groupBy('event_date')
                 ->get()
         );

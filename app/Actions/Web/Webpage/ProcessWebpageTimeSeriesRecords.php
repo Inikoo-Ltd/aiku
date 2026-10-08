@@ -8,6 +8,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateTimeSeriesNumberRecords;
+use App\Actions\Web\WebsitePageView\GetWebsiteEntryPageViews;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
@@ -65,13 +66,11 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            if ($timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY) {
-                $avgTimeOnPage  = round($result->avg_time_on_page);
-                $conversionRate = $result->page_views > 0 ? ($result->add_to_baskets / $result->page_views) * 100 : 0;
-            } else {
-                $avgTimeOnPage  = $result->page_views > 0 ? round($result->total_duration / $result->page_views) : 0;
-                $conversionRate = $result->visitors > 0 ? ($result->add_to_baskets / $result->visitors) * 100 : 0;
-            }
+            $avgTimeOnPage = $timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY
+                ? round($result->avg_time_on_page)
+                : ($result->page_views > 0 ? round($result->total_duration / $result->page_views) : 0);
+
+            $conversionRate = $result->entrances > 0 ? ($result->purchases / $result->entrances) * 100 : 0;
 
             if ($conversionRate > 999.99) {
                 $conversionRate = 999.99;
@@ -86,6 +85,7 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
                     'to'               => $periodTo,
                     'visitors'         => $result->visitors,
                     'page_views'       => $result->page_views,
+                    'entrances'        => $result->entrances,
                     'avg_time_on_page' => $avgTimeOnPage,
                     'add_to_baskets'   => $result->add_to_baskets,
                     'conversion_rate'  => round($conversionRate, 2),
@@ -112,6 +112,18 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
                 DB::raw('AVG(duration_seconds) as avg_time_on_page')
             )
             ->groupBy(DB::raw('CAST(view_date AS DATE)'))
+            ->get()
+            ->keyBy('date');
+
+        $entranceStats = GetWebsiteEntryPageViews::run()
+            ->where('entry_views.view_date', '>=', $from)
+            ->where('entry_views.view_date', '<=', $to)
+            ->where('entry_views.webpage_id', $timeSeries->webpage_id)
+            ->select(
+                DB::raw('CAST(entry_views.view_date AS DATE) as date'),
+                DB::raw('COUNT(DISTINCT entry_visitors.visitor_hash) as entrances')
+            )
+            ->groupBy(DB::raw('CAST(entry_views.view_date AS DATE)'))
             ->get()
             ->keyBy('date');
 
@@ -147,6 +159,7 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             'date'             => $date,
             'visitors'         => $pageViewStats->get($date)?->visitors ?? 0,
             'page_views'       => $pageViewStats->get($date)?->page_views ?? 0,
+            'entrances'        => $entranceStats->get($date)?->entrances ?? 0,
             'avg_time_on_page' => $pageViewStats->get($date)?->avg_time_on_page ?? 0,
             'add_to_baskets'   => $conversionStats->get($date)?->add_to_baskets ?? 0,
             'checkouts'        => $landingStats->get($date)?->checkouts ?? 0,
@@ -166,6 +179,7 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
         $selects = [
             DB::raw('SUM(visitors) as visitors'),
             DB::raw('SUM(page_views) as page_views'),
+            DB::raw('SUM(entrances) as entrances'),
             DB::raw('SUM(add_to_baskets) as add_to_baskets'),
             DB::raw('SUM(avg_time_on_page * page_views) as total_duration'),
             DB::raw('SUM(checkouts) as checkouts'),

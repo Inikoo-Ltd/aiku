@@ -20,7 +20,7 @@ class GetWebsitePerformanceStats
     use AsObject;
 
     /**
-     * @return array{days_with_data: int, first_day: string|null, last_day: string|null, visitors: int, sessions: int, page_views: int, pages_per_session: float, avg_session_duration: int, bounce_rate: float, new_visitors: int, returning_visitors: int, sessions_desktop: int, sessions_mobile: int, sessions_tablet: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float, average_order_value: float, currency_code: string|null, conversions_tracked_since: string|null, comparisons: array<string, array{from: string, to: string, days_with_data: int, sessions: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float}>, daily: array<int, array{day: string, visitors: int, page_views: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float}>}|null
+     * @return array{days_with_data: int, first_day: string|null, last_day: string|null, visitors: int, sessions: int, page_views: int, pages_per_session: float, avg_session_duration: int, bounce_rate: float, new_visitors: int, returning_visitors: int, sessions_desktop: int, sessions_mobile: int, sessions_tablet: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float, average_order_value: float, currency_code: string|null, conversions_tracked_since: string|null, comparisons: array<string, array{from: string, to: string, days_with_data: int, visitors: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float}>, daily: array<int, array{day: string, visitors: int, page_views: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float}>}|null
      */
     public function handle(Website $website, ?string $fromDate = null, ?string $toDate = null): ?array
     {
@@ -98,7 +98,7 @@ class GetWebsitePerformanceStats
             'checkouts'                 => (int) $totals->checkouts,
             'purchases'                 => $purchases,
             'revenue'                   => $revenue,
-            'conversion_rate'           => $this->conversionRate($purchases, $sessions),
+            'conversion_rate'           => $this->conversionRate($purchases, (int) $totals->visitors),
             'average_order_value'       => $purchases > 0 ? round($revenue / $purchases, 2) : 0,
             'currency_code'             => $website->shop->currency?->code,
             'conversions_tracked_since' => $conversionsTrackedSince,
@@ -142,7 +142,7 @@ class GetWebsitePerformanceStats
     }
 
     /**
-     * @return array{from: string, to: string, days_with_data: int, sessions: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float}
+     * @return array{from: string, to: string, days_with_data: int, visitors: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float}
      */
     private function comparisonTotals(int $timeSeriesId, Carbon $from, Carbon $to): array
     {
@@ -152,17 +152,17 @@ class GetWebsitePerformanceStats
             'from'           => $from->toDateString(),
             'to'             => $to->toDateString(),
             'days_with_data' => (int) $totals->days_with_data,
-            'sessions'       => (int) $totals->sessions,
+            'visitors'       => (int) $totals->visitors,
             'add_to_baskets' => (int) $totals->add_to_baskets,
             'checkouts'      => (int) $totals->checkouts,
             'purchases'      => (int) $totals->purchases,
             'revenue'        => (float) $totals->revenue,
-            'conversion_rate' => $this->conversionRate((int) $totals->purchases, (int) $totals->sessions),
+            'conversion_rate' => $this->conversionRate((int) $totals->purchases, (int) $totals->visitors),
         ];
     }
 
-    private function conversionRate(int $purchases, int $sessions): float
+    private function conversionRate(int $purchases, int $visitors): float
     {
-        return $sessions > 0 ? round(($purchases / $sessions) * 100, 2) : 0;
+        return $visitors > 0 ? round(($purchases / $visitors) * 100, 2) : 0;
     }
 }

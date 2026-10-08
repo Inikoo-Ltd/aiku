@@ -47,7 +47,7 @@ type ConversionComparison = {
     from: string
     to: string
     days_with_data: number
-    sessions: number
+    visitors: number
     add_to_baskets: number
     checkouts: number
     purchases: number
@@ -469,7 +469,7 @@ const conversionMetrics = computed(() => {
         { key: "checkouts" as const, label: ctrans("Checkouts"), value: locale.number(performance.checkouts) },
         { key: "purchases" as const, label: ctrans("Purchases"), value: locale.number(performance.purchases) },
         { key: "revenue" as const, label: ctrans("Revenue"), value: formatMoney(performance.revenue) },
-        { key: "conversion_rate" as const, label: ctrans("Conversion rate"), value: `${locale.number(performance.conversion_rate)}%` },
+        { key: "conversion_rate" as const, label: ctrans("Conversion rate"), hint: ctrans("Purchases per 100 visitors"), value: `${locale.number(performance.conversion_rate)}%` },
         { key: "average_order_value" as const, label: ctrans("Avg. order value"), value: formatMoney(performance.average_order_value) },
     ]
 })
@@ -757,7 +757,7 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                 v-for="metric in conversionMetrics"
                 :key="metric.key"
                 class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
-                <dt class="text-xs text-gray-500">{{ metric.label }}</dt>
+                <dt class="text-xs text-gray-500" v-tooltip="metric.hint">{{ metric.label }}</dt>
                 <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
                 <dd
                     v-for="comparisonKey in availableComparisons"
@@ -902,7 +902,7 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
         <div class="pt-3">
-            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="['conversions', 'webpages'].includes(currentTab) ? { currencyCode: performance?.currency_code } : {}" />
+            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="currentTab === 'conversions' ? { currencyCode: performance?.currency_code } : {}" />
         </div>
     </section>
 </template>

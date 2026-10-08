@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\WebsiteConversionEvent;
 
+use App\Actions\Web\WebsiteVisitor\UpdateWebsiteVisitor;
 use App\Models\Web\WebsiteVisitor;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class GetVisitorLandingWebpage
     {
         $at ??= now();
 
-        $sessionIds = WebsiteVisitor::query()
+        $sessions = WebsiteVisitor::query()
             ->where('website_id', $visitor->website_id)
             ->where(function ($query) use ($visitor) {
                 $query->where('id', $visitor->id)
@@ -38,6 +39,10 @@ class GetVisitorLandingWebpage
             ->where('first_seen_at', '>=', $at->copy()->subDays(self::LOOKBACK_DAYS))
             ->orderByDesc('first_seen_at')
             ->limit(self::MAX_SESSIONS)
+            ->get(['id', 'website_id', 'visitor_hash', 'first_seen_at', 'last_seen_at']);
+
+        $sessionIds = $sessions
+            ->reject(fn (WebsiteVisitor $session) => $this->continuesPreviousSession($session))
             ->pluck('id');
 
         if ($sessionIds->isEmpty()) {
@@ -59,5 +64,16 @@ class GetVisitorLandingWebpage
         }
 
         return null;
+    }
+
+    private function continuesPreviousSession(WebsiteVisitor $session): bool
+    {
+        return WebsiteVisitor::query()
+            ->where('website_id', $session->website_id)
+            ->where('visitor_hash', $session->visitor_hash)
+            ->where('id', '!=', $session->id)
+            ->where('first_seen_at', '<', $session->first_seen_at)
+            ->where('last_seen_at', '>=', $session->first_seen_at->copy()->subSeconds(UpdateWebsiteVisitor::MAX_IDLE_SECONDS))
+            ->exists();
     }
 }
