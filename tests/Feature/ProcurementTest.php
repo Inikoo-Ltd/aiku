@@ -566,9 +566,9 @@ test('agent login can propose a ready date but not set management-only clean han
     ]);
     expect($agentUser->hasGroupAccess())->toBeFalse();
 
-    actingAs($agentUser);
     $notes = $purchaseOrder->refresh()->notes;
 
+    actingAs($agentUser);
 
     $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), [
         'proposed_ready_at'  => '2026-10-01',
@@ -718,9 +718,9 @@ test('PO journey board marks stages on an agent purchase order and keeps handove
     $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertForbidden();
     actingAs($this->adminGuest->getUser());
 
-    $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
     expect($purchaseOrder->refresh()->handed_over_at->toDateString())->toBe('2026-09-21');
 
+    $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
     expect($purchaseOrder->refresh()->handed_over_at)->toBeNull();
 })->depends('create purchase order through an agent');
 
@@ -808,8 +808,8 @@ test('clean handover score', function () {
     );
 
     $calculator = GetAgentCleanHandoverScore::make();
-
     $quarterKey = now()->subDays(10)->year.'-Q'.now()->subDays(10)->quarter;
+
     expect($calculator->isCleanHandover($updated))->toBeTrue();
 
     $score        = $calculator->handle($agent);
@@ -906,8 +906,8 @@ test('an agent purchase order line keeps its amounts in the organisation and gro
         ->and((float)$purchaseOrderTransaction->grp_net_amount)->toBe(360.0 * ($purchaseOrderTransaction->grp_exchange ?? 1));
 })->depends('add item to agent purchase order');
 
-    $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['estimated_receiving_date' => '2027-03-15']);
 test('a delivery date typed on a purchase order is the date everywhere', function (PurchaseOrder $purchaseOrder) {
+    $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['estimated_receiving_date' => '2027-03-15']);
 
     expect($purchaseOrder->estimated_received_at->toDateString())->toBe('2027-03-15')
         ->and($purchaseOrder->estimatedReceivingDate())->toBe('2027-03-15');
@@ -959,9 +959,9 @@ test('UI edit agent purchase order has the clean handover section', function (Pu
 
     $props = json_encode($this->get(route('grp.org.procurement.purchase_orders.edit', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))->viewData('page')['props']);
 
-
     expect($props)->toContain('proposed_ready_at');
 })->depends('add item to agent purchase order');
+
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {
     /** @var OrgSupplier $orgSupplier */
     $orgSupplier = $purchaseOrder->parent;
@@ -1993,7 +1993,6 @@ test('purchase order with an open aurora stock delivery refuses a second one', f
 })->depends('create stock delivery from purchase order');
 
 
-test('purchase order products are downloaded as excel and uploaded from a spreadsheet', function () {
 function createConfirmedAgentOrder(object $test, OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, int $orgStockIndex, int $quantity): PurchaseOrder
 {
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
@@ -2263,6 +2262,7 @@ test('a legacy agent supplier purchase order link redirects to the purchase orde
         ->assertNotFound();
 });
 
+test('purchase order products are downloaded as excel and uploaded from a spreadsheet', function () {
     $supplier    = StoreSupplier::make()->action(
         parent: $this->group,
         modelData: Supplier::factory()->definition()
@@ -4619,8 +4619,8 @@ describe('supplier deposits', function () {
             array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'ASPO-DEP-'.uniqid()]),
             strict: false
         );
-
     });
+
     test('deposit store on an agent purchase order records the deposit against the order', function () {
         $this->post(route('grp.models.purchase-order.deposit.store', $this->depositPurchaseOrder->id), ['amount' => 50, 'reference' => 'DEP-ROUTE'])
             ->assertSessionHasNoErrors();
@@ -4642,7 +4642,6 @@ describe('supplier deposits', function () {
             array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'NO-AGENT-DEP-'.uniqid()]),
             strict: false
         );
-    });
 
         expect($independentOrder->isAgentOrder())->toBeFalse();
 
@@ -4651,6 +4650,7 @@ describe('supplier deposits', function () {
 
         expect(fn () => StoreAspoDeposit::make()->action($independentOrder, ['amount' => 50]))->toThrow(ValidationException::class)
             ->and($independentOrder->deposits()->count())->toBe(0);
+    });
 
     test('deposit lifecycle: pending to paid to supplier', function () {
         $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, [

@@ -1611,9 +1611,9 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
+    Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
-    Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');
     Route::post('note', [StoreProcurementNote::class, 'inPurchaseOrder'])->name('note.store');
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');
