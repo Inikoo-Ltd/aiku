@@ -3717,3 +3717,28 @@ test('only human resources editors can change a clocking time or notes from the 
 
     expect($clocking->refresh()->notes)->toBe('Forgot badge');
 });
+
+test('a job position whose roles are reseeded passes them to the people already holding it', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+    $jobPosition = $this->organisation->jobPositions()->where('code', 'hr-v')->firstOrFail();
+    $roleName    = RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_VIEWER->value, $this->organisation);
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+    ]);
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'reseed-'.$employee->id,
+        'password' => 'secret123',
+    ]);
+    $employee->jobPositions()->attach($jobPosition->id, ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'scopes' => []]);
+
+    $jobPosition->roles()->detach();
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->refresh()->hasRole($roleName))->toBeFalse();
+
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($this->organisation);
+
+    expect($user->refresh()->hasRole($roleName))->toBeTrue();
+});
