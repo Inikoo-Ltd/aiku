@@ -554,6 +554,11 @@ use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Crawl\StartSiteAudit;
+use App\Actions\Web\Seo\DeleteSeoCompetitor;
+use App\Actions\Web\Seo\DeleteSeoTrackedKeyword;
+use App\Actions\Web\Seo\StoreSeoCompetitor;
+use App\Actions\Web\Seo\StoreSeoTrackedKeyword;
+use App\Actions\Web\Seo\UpdateSeoTrackedKeyword;
 use App\Actions\Web\WebsiteNotFoundPath\UpdateWebsiteNotFoundPathIgnored;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
@@ -1188,6 +1193,8 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
+    Route::post('seo/tracked-keywords', StoreSeoTrackedKeyword::class)->name('seo.tracked_keyword.store');
+    Route::post('seo/competitors', StoreSeoCompetitor::class)->name('seo.competitor.store');
     Route::post('email-chat', [StartCustomerEmailChat::class, 'inShop'])->name('email_chat.store');
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
@@ -1300,6 +1307,9 @@ Route::prefix('fulfilment-customer-space/{fulfilmentCustomer:id}')->as('fulfilme
 Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('organisation.store');
 
 Route::patch('website-not-found-path/{websiteNotFoundPath:id}/ignored', UpdateWebsiteNotFoundPathIgnored::class)->name('website_not_found_path.ignored.update');
+Route::patch('seo-tracked-keyword/{seoTrackedKeyword:id}', UpdateSeoTrackedKeyword::class)->name('seo_tracked_keyword.update');
+Route::delete('seo-tracked-keyword/{seoTrackedKeyword:id}', DeleteSeoTrackedKeyword::class)->name('seo_tracked_keyword.delete');
+Route::delete('seo-competitor/{seoCompetitor:id}', DeleteSeoCompetitor::class)->name('seo_competitor.delete');
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
