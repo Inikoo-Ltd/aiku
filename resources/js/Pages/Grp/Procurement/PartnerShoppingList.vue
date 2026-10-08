@@ -438,7 +438,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 <template>
 	<Head :title="capitalize(title)" />
 	<DefineLineActions v-slot="{ item }">
-		<div class="flex shrink-0 items-center gap-1 mr-2 border-r border-gray-300 pr-2">
+		<div class="flex shrink-0 items-center gap-1 border-r border-gray-300 mr-3 pr-3">
 			<Button
 				v-if="isEditable(item)"
 				icon="fal fa-trash-alt"
@@ -544,7 +544,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				type="button"
 				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 				:class="selectedFilters(group.key).includes(option.value)
-					? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+					? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 					: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
 				@click="toggleFilter(group.key, option.value)">
 				<span>{{ option.label }}</span>
@@ -686,8 +686,8 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 							:icon="priorityIcons[item.priority]"
 							class="text-xs"
 							:class="priorityTextClass(item.priority)"
-							fixed-width
-							:aria-label="ctrans(capitalize(item.priority))" />
+							:aria-label="ctrans(capitalize(item.priority))"
+							fixed-width />
 					</div>
 				</div>
 			</div>
