@@ -2276,8 +2276,8 @@ test('UI Show org stock in family has valid sub navigation routes', function () 
 })->depends('create warehouse', 'create org stock');
 
 test('UI Show org stock labels and compliance tabs', function () {
-    $warehouse = Warehouse::first();
-    $orgStock  = OrgStock::first();
+    $warehouse = Warehouse::where('organisation_id', $this->organisation->id)->orderBy('id')->firstOrFail();
+    $orgStock  = OrgStock::where('organisation_id', $this->organisation->id)->whereHas('stock')->orderBy('id')->firstOrFail();
     $this->withoutExceptionHandling();
     $route = fn (string $tab) => route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.labels', [
         $this->organisation->slug, $warehouse->slug, $orgStock->slug, 'tab' => $tab,
