@@ -831,6 +831,129 @@ test('uploading a sku that already has an offer on eBay replaces that offer inst
     sentEbayRequest('POST', '/sell/inventory/v1/offer/offer-existing/publish');
 });
 
+test('uploading a sku whose offer on eBay points at an old postage policy moves the offer onto the channel policies', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    $existing = [
+        'offerId'             => 'offer-existing',
+        'sku'                 => $portfolio->sku,
+        'status'              => 'UNPUBLISHED',
+        'merchantLocationKey' => 'old-location',
+        'listingPolicies'     => ['fulfillmentPolicyId' => 'fp-deleted', 'paymentPolicyId' => 'pp-1', 'returnPolicyId' => 'rp-1'],
+    ];
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(offersForSku: [$existing], offerById: $existing),
+    ]);
+
+    StoreEbayProduct::run($ebayUser, $portfolio);
+
+    $replaced = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-existing')->data();
+
+    expect($replaced['listingPolicies'])->toBe(['fulfillmentPolicyId' => 'fp-1', 'paymentPolicyId' => 'pp-1', 'returnPolicyId' => 'rp-1'])
+        ->and($replaced['merchantLocationKey'])->toBe('aw-warehouse-gb');
+});
+
+function fulfilmentPolicyRefusal(): array
+{
+    return ['errors' => [[
+        'errorId'  => 25007,
+        'domain'   => 'API_INVENTORY',
+        'category' => 'REQUEST',
+        'message'  => 'The eBay listing associated with the inventory item, or the unpublished offer, has invalid data in the associated fulfilment policy. Please add at least one valid postage service option to your listing.',
+    ]]];
+}
+
+function publishRefusedOnceForPolicy(int &$publishCalls): Closure
+{
+    return function () use (&$publishCalls) {
+        $publishCalls++;
+
+        return $publishCalls === 1
+            ? Http::response(fulfilmentPolicyRefusal(), 400)
+            : Http::response(['listingId' => '555000111']);
+    };
+}
+
+test('a publish refused for a postage policy the seller deleted swaps in a usable policy and publishes', function () {
+    $ebayUser     = ebayChannel($this, ['fulfillment_policy_id' => 'fp-deleted']);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForPolicy($publishCalls)] + ebayCatalogueRoutes() + Arr::only(ebayAccountRoutes(), ['/sell/account/v1/fulfillment_policy']) + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-1')
+        ->and(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-new')->data()['listingPolicies']['fulfillmentPolicyId'])->toBe('fp-1')
+        ->and($publishCalls)->toBe(2)
+        ->and($portfolio->platform_product_variant_id)->toBe('555000111')
+        ->and($portfolio->upload_warning)->toBeNull();
+});
+
+test('a publish refused for a postage policy when the seller has none usable left recreates it from the channel postage settings', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => 'fp-deleted']);
+    $ebayUser->update(['settings' => array_merge($ebayUser->settings, ['shipping' => ['price' => '2.50', 'max_dispatch_time' => 3]])]);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForPolicy($publishCalls)] + ebayCatalogueRoutes() + [
+        '/sell/account/v1/fulfillment_policy' => fn (Request $request) => $request->method() === 'GET'
+            ? Http::response(['fulfillmentPolicies' => [], 'total' => 0])
+            : Http::response(['fulfillmentPolicyId' => 'fp-recreated'], 201),
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    StoreEbayProduct::run($ebayUser, $portfolio);
+
+    $created = sentEbayRequest('POST', '/sell/account/v1/fulfillment_policy')->data();
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-recreated')
+        ->and($created['shippingOptions'][0]['shippingServices'][0]['shippingCost']['value'])->toBe('2.50')
+        ->and($created['handlingTime']['value'])->toBe(3)
+        ->and($publishCalls)->toBe(2);
+});
+
+test('a publish refused for a postage policy eBay still lists as usable is left for the seller to fix', function () {
+    $ebayUser     = ebayChannel($this);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForPolicy($publishCalls)] + ebayCatalogueRoutes() + Arr::only(ebayAccountRoutes(), ['/sell/account/v1/fulfillment_policy']) + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_ends_with(parse_url($request->url(), PHP_URL_PATH), '/fulfillment_policy'));
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-1')
+        ->and($publishCalls)->toBe(1)
+        ->and($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->upload_warning)->toContain('valid postage service');
+});
+
+test('uploading with a token eBay no longer accepts shows the authorisation error and never publishes', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/identity/v1/oauth2/token' => fn () => Http::response(['error' => 'invalid_grant', 'error_description' => 'the provided authorization refresh token is invalid'], 400),
+        '/sell/inventory/v1/offer'  => fn () => Http::response(['errors' => [['errorId' => 1001, 'domain' => 'OAuth', 'category' => 'REQUEST', 'message' => 'Invalid access token']]], 401),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/publish'));
+
+    expect($portfolio->upload_warning)->toBe('Invalid access token')
+        ->and($portfolio->platform_product_id)->toBeNull()
+        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
+});
+
 test('bulk upload queues one upload job per selected active portfolio and counts progress', function () {
     Queue::fake();
 
