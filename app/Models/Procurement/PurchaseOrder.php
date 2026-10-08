@@ -12,6 +12,8 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Address;
+use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\AspoDeposit;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -126,11 +128,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $produced_at
  * @property \Illuminate\Support\Carbon|null $qc_passed_at
  * @property \Illuminate\Support\Carbon|null $handed_over_at
+ * @property \Illuminate\Support\Carbon|null $proposed_ready_at
+ * @property \Illuminate\Support\Carbon|null $approved_ready_at
+ * @property \Illuminate\Support\Carbon|null $compliance_complete_at
+ * @property bool $chs_excluded
+ * @property string|null $chs_exclusion_reason
+ * @property int|null $agent_supplier_purchase_order_id legacy agent supplier purchase order this order was split from
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Agent|null $agent
  * @property-read Currency $currency
+ * @property-read Collection<int, AspoDeposit> $deposits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
@@ -182,6 +192,10 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'produced_at'           => 'datetime',
         'qc_passed_at'          => 'datetime',
         'handed_over_at'        => 'datetime',
+        'proposed_ready_at'      => 'datetime',
+        'approved_ready_at'      => 'datetime',
+        'compliance_complete_at' => 'datetime',
+        'chs_excluded'           => 'boolean',
     ];
 
 
@@ -227,6 +241,11 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'produced_at',
         'qc_passed_at',
         'handed_over_at',
+        'proposed_ready_at',
+        'approved_ready_at',
+        'compliance_complete_at',
+        'chs_excluded',
+        'chs_exclusion_reason',
     ];
 
     public function estimatedReceivingDate(): ?string
@@ -277,6 +296,21 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function stockDeliveries(): BelongsToMany
     {
         return $this->belongsToMany(StockDelivery::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function isAgentOrder(): bool
+    {
+        return $this->agent_id !== null && $this->parent_type === 'OrgSupplier';
+    }
+
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(AspoDeposit::class);
     }
 
     public function buyer(): BelongsTo

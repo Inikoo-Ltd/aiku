@@ -2,7 +2,7 @@
 title: Mencatat kemajuan pesanan sebagai agen
 summary: Untuk agen — empat tanggal yang Anda catat pada setiap pesanan ke pemasok (deposit paid, sample approved, production done, proposed ready date), kapan mencatatnya, apa yang dicatat oleh perusahaan pembeli sebagai gantinya, dan mengapa tanggal yang hilang tampak sebagai keterlambatan.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -50,7 +50,7 @@ Fakta-fakta inilah yang menjadi dasar perhitungan <a href="/docs/your-clean-hand
 
 <aside class="wayfinder">
 <b>Di mana mengekliknya di aiku</b><br>
-Masuk → <b>Supplier Purchase Orders</b> (Pesanan Pembelian ke Pemasok) → buka pesanan → <b>Edit</b>. <b>Deposit paid</b> dan <b>Deposit amount</b> ada di bagian pertama. <b>Sample approved</b> dan <b>Production done</b> ada di bagian <b>Production</b>. <b>Proposed ready date (agent)</b> ada di bagian <b>Clean handover</b>.
+Masuk → <b>Purchase Orders</b> (Pesanan Pembelian) → buka pesanan → <b>Edit</b>. Setiap pesanan pembelian ditujukan kepada salah satu pemasok Anda. <b>Deposit paid</b> dan <b>Deposit amount</b> ada di bagian <b>Payments</b>. <b>Sample approved</b> dan <b>Production done</b> ada di bagian <b>Production</b>. <b>Proposed ready date</b> ada di bagian <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">

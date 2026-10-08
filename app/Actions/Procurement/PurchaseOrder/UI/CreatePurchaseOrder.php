@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\OrgAction;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
@@ -19,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreatePurchaseOrder extends OrgAction
 {
-    public function handle(OrgSupplier|OrgAgent|OrgPartner $parent, ActionRequest $request): Response
+    public function handle(OrgSupplier|OrgPartner $parent, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
@@ -56,10 +55,6 @@ class CreatePurchaseOrder extends OrgAction
                     'route'     => match (class_basename($parent)) {
                         'OrgSupplier' => [
                             'name'       => 'grp.models.org-supplier.purchase-order.store',
-                            'parameters' => [$parent->id],
-                        ],
-                        'OrgAgent' => [
-                            'name'       => 'grp.models.org-agent.purchase-order.store',
                             'parameters' => [$parent->id],
                         ],
                         'OrgPartner' => [

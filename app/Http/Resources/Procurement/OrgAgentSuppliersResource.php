@@ -17,7 +17,7 @@ class OrgAgentSuppliersResource extends JsonResource
             'agent_code'                            => $this->agent_code,
             'agent_name'                            => $this->agent_name,
             'number_org_supplier_products'          => $this->number_org_supplier_products,
-            'number_agent_supplier_purchase_orders' => $this->number_agent_supplier_purchase_orders,
+            'number_purchase_orders'                => $this->number_purchase_orders,
             'number_supplier_deliveries'            => $this->number_supplier_deliveries,
         ];
     }

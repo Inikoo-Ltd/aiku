@@ -8,23 +8,23 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\OrgAction;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class RedirectAgentSupplierPurchaseOrderLink extends OrgAction
+class RedirectAgentSupplierPurchaseOrderLink
 {
-    public function handle(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder): RedirectResponse
+    use AsAction;
+
+    public function authorize(ActionRequest $request): bool
     {
-        return Redirect::to(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]));
+        return $request->user() !== null;
     }
 
     public function asController(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): RedirectResponse
     {
-        $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle($agentSupplierPurchaseOrder);
+        return ShowAgentSupplierPurchaseOrder::make()->handle($agentSupplierPurchaseOrder, $request);
     }
 }

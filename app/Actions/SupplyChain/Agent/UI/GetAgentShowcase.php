@@ -55,15 +55,6 @@ class GetAgentShowcase
                     ],
                 ],
                 [
-                    'label' => __('Purchase Orders'),
-                    'icon'  => 'fal fa-clipboard-list',
-                    'count' => $agent->stats->number_purchase_orders,
-                    'route' => [
-                        'name'       => 'grp.supply-chain.agents.show.agent_supplier_purchase_orders.index',
-                        'parameters' => [$agent->slug],
-                    ],
-                ],
-                [
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
                     'count' => $agent->stats->number_stock_deliveries,
@@ -82,10 +73,10 @@ class GetAgentShowcase
     {
         $pendingDeposits = $agent->deposits()
             ->where('state', 'pending')
-            ->with('agentSupplierPurchaseOrder.purchaseOrder.organisation')
+            ->with('purchaseOrder.organisation')
             ->get()
             ->map(function ($deposit) {
-                $organisation = $deposit->agentSupplierPurchaseOrder?->purchaseOrder?->organisation;
+                $organisation = $deposit->purchaseOrder?->organisation;
 
                 return [
                     'id'                => $deposit->id,

@@ -49,7 +49,7 @@ class SendPurchaseOrderToSupplier
         }
 
         /** @var OrgSupplier|OrgAgent|OrgPartner $counterpart */
-        $counterpart  = $purchaseOrder->parent;
+        $counterpart  = self::counterpart($purchaseOrder);
         $organisation = $purchaseOrder->organisation;
         $mailbox      = Arr::get($organisation->settings, 'procurement.gmail.email');
 
@@ -136,7 +136,7 @@ class SendPurchaseOrderToSupplier
                 'reference'    => $purchaseOrder->reference,
                 'organisation' => $purchaseOrder->organisation->name,
             ]),
-            counterpart: $purchaseOrder->parent,
+            counterpart: self::counterpart($purchaseOrder),
             document: [
                 'content'  => PdfPurchaseOrder::make()->handle($purchaseOrder),
                 'filename' => PdfPurchaseOrder::make()->filename($purchaseOrder),
@@ -162,7 +162,7 @@ class SendPurchaseOrderToSupplier
      */
     public static function recipientPhone(PurchaseOrder $purchaseOrder): ?string
     {
-        $parent = $purchaseOrder->parent;
+        $parent = self::counterpart($purchaseOrder);
 
         $phone = trim((string) match (true) {
             $parent instanceof OrgSupplier => $parent->supplier?->phone,
@@ -178,7 +178,7 @@ class SendPurchaseOrderToSupplier
 
     public static function recipientEmail(PurchaseOrder $purchaseOrder): ?string
     {
-        $parent = $purchaseOrder->parent;
+        $parent = self::counterpart($purchaseOrder);
 
         $email = trim((string) match (true) {
             $parent instanceof OrgSupplier => $parent->supplier?->email,
@@ -188,6 +188,14 @@ class SendPurchaseOrderToSupplier
         });
 
         return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+    }
+
+    /**
+     * An order to a supplier behind an agent goes to the agent, who places it with the supplier.
+     */
+    public static function counterpart(PurchaseOrder $purchaseOrder): OrgSupplier|OrgAgent|OrgPartner
+    {
+        return $purchaseOrder->isAgentOrder() ? $purchaseOrder->parent->orgAgent : $purchaseOrder->parent;
     }
 
     private static function counterpartName(OrgSupplier|OrgAgent|OrgPartner $counterpart, bool $contact = false): string

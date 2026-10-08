@@ -28,6 +28,7 @@ class PdfPurchaseOrder extends OrgAction
         $purchaseOrder->loadMissing(['organisation.address', 'currency', 'parent', 'purchaseOrderTransactions.supplierProduct.currency', 'purchaseOrderTransactions.orgStock']);
 
         $counterparty = match (true) {
+            $purchaseOrder->isAgentOrder()                => $purchaseOrder->agent,
             $purchaseOrder->parent instanceof OrgSupplier => $purchaseOrder->parent->supplier,
             $purchaseOrder->parent instanceof OrgAgent    => $purchaseOrder->parent->agent,
             $purchaseOrder->parent instanceof OrgPartner  => $purchaseOrder->parent->partner,

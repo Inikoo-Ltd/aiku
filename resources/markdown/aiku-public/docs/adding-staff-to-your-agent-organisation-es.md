@@ -2,7 +2,7 @@
 title: Añadir personal a tu organización de agente
 summary: Para responsables de agente — cómo dar a tus compañeros su propio acceso a aiku, elegir qué pueden hacer, y cerrar una cuenta cuando alguien se marcha.
 date: 2026-09-30
-source_date: 2026-09-30
+source_date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -17,7 +17,7 @@ Para el responsable (Manager) de una organización de agente. Una vez que puedes
 
 Todos en tu organización ven solo tu organización y el trabajo que haces para la empresa compradora:
 
-- **Procurement**: las **Purchase Orders** que te envían las organizaciones de la empresa compradora, las **Supplier Purchase Orders** que haces a cada uno de tus proveedores y los depósitos que pagas por ellas, las **Stock Deliveries** que envías de vuelta, tus **Suppliers** y tu **Inbox** de proveedores. Los Managers también ven los **Settings** de procurement.
+- **Procurement**: las **Purchase Orders** que te envían las organizaciones de la empresa compradora, una por cada uno de tus proveedores, con los depósitos que pagas por ellas, las **Stock Deliveries** que envías de vuelta, tus **Suppliers** y tu **Inbox** de proveedores. Los Managers también ven los **Settings** de procurement.
 - **HR**, solo para Managers: tu propia gente.
 - **Tickets**, para pedir ayuda al servicio de ayuda de la empresa compradora.
 
@@ -28,7 +28,7 @@ Nadie en tu organización puede ver las tiendas, los clientes o las cuentas de l
 Abre **HR → Employees** y pulsa **Create Employee**. El formulario es una sola página; las partes que te importan son:
 
 - **Employment**: un **worker number** y un **alias**, ambos únicos dentro de tu organización (los nombres de pila valen), y el estado **Working**.
-- **Job → Position**: en **Agent**, elige qué puede hacer la persona. **Clerk** es para alguien que trabaja con órdenes de compra, órdenes de compra a proveedores, depósitos y entregas. **Manager** puede hacer todo eso y además añadir y quitar compañeros en **HR**. El puesto **Organisation Administrator** no se te ofrece: sigue en manos de la empresa compradora.
+- **Job → Position**: en **Agent**, elige qué puede hacer la persona. **Clerk** es para alguien que trabaja con órdenes de compra, depósitos y entregas. **Manager** puede hacer todo eso y además añadir y quitar compañeros en **HR**. El puesto **Organisation Administrator** no se te ofrece: sigue en manos de la empresa compradora.
 - **User credentials**: déjalo vacío para alguien que no necesita entrar. Rellena un **username** y una **password** y podrá entrar de inmediato; aiku le pide elegir su propia contraseña la primera vez.
 
 Guarda, y pásale el usuario y la contraseña inicial.

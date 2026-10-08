@@ -8,8 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -26,13 +26,12 @@ class GetAgentCleanHandoverScore
     {
         $from = Carbon::now()->subQuarters(3)->startOfQuarter();
 
-        $purchaseOrders = AgentSupplierPurchaseOrder::query()
-            ->join('suppliers', 'suppliers.id', '=', 'agent_supplier_purchase_orders.supplier_id')
-            ->where('suppliers.agent_id', $agent->id)
-            ->whereNotNull('agent_supplier_purchase_orders.approved_ready_at')
-            ->where('agent_supplier_purchase_orders.approved_ready_at', '>=', $from)
-            ->whereNull('agent_supplier_purchase_orders.cancelled_at')
-            ->select('agent_supplier_purchase_orders.*')
+        $purchaseOrders = PurchaseOrder::query()
+            ->where('agent_id', $agent->id)
+            ->where('parent_type', 'OrgSupplier')
+            ->whereNotNull('approved_ready_at')
+            ->where('approved_ready_at', '>=', $from)
+            ->whereNull('cancelled_at')
             ->get();
 
         $quarters = [];
@@ -91,13 +90,13 @@ class GetAgentCleanHandoverScore
         ];
     }
 
-    public function isCleanHandover(AgentSupplierPurchaseOrder $purchaseOrder): bool
+    public function isCleanHandover(PurchaseOrder $purchaseOrder): bool
     {
         if (!$purchaseOrder->handed_over_at || !$purchaseOrder->approved_ready_at) {
             return false;
         }
 
-        // ponytail: quantity test proxied by not_received_at flag; upgrade to per-line ordered-vs-received when receipts are reconciled to ASPOs
+        // ponytail: quantity test proxied by not_received_at flag; upgrade to per-line ordered-vs-received when receipts are reconciled to purchase orders
         return $purchaseOrder->handed_over_at->lte($purchaseOrder->approved_ready_at->copy()->addDays(self::HANDOVER_TOLERANCE_DAYS))
             && $purchaseOrder->qc_passed_at !== null
             && $purchaseOrder->compliance_complete_at !== null

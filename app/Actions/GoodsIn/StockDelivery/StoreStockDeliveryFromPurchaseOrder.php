@@ -21,6 +21,7 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder;
@@ -87,19 +88,25 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 ]);
             }
 
-            $stockDelivery = StoreStockDelivery::make()->action(
-                $purchaseOrder->parent,
-                array_merge([
-                    'reference'   => $this->newProcurementReference($purchaseOrder->parent, SerialReferenceModelEnum::STOCK_DELIVERY),
-                    'state'       => StockDeliveryStateEnum::IN_PROCESS,
-                    'date'        => now(),
-                    'currency_id' => $purchaseOrder->currency_id,
-                    'data'        => $this->getStockDeliveryData($purchaseOrder),
-                ], $this->getExchanges($purchaseOrder)),
-                strict: false
-            );
+            $deliveryParent = $purchaseOrder->isAgentOrder() ? $purchaseOrder->parent->orgAgent : $purchaseOrder->parent;
 
-            $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
+            if ($stockDeliveryId = Arr::get($modelData, 'stock_delivery_id')) {
+                $stockDelivery = StockDelivery::whereKey($stockDeliveryId)->lockForUpdate()->firstOrFail();
+            } else {
+                $stockDelivery = StoreStockDelivery::make()->action(
+                    $deliveryParent,
+                    array_merge([
+                        'reference'   => $this->newProcurementReference($deliveryParent, SerialReferenceModelEnum::STOCK_DELIVERY),
+                        'state'       => StockDeliveryStateEnum::IN_PROCESS,
+                        'date'        => now(),
+                        'currency_id' => $purchaseOrder->currency_id,
+                        'data'        => $this->getStockDeliveryData($purchaseOrder),
+                    ], $this->getExchanges($purchaseOrder)),
+                    strict: false
+                );
+            }
+
+            $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
             $stockDelivery->update([
                 'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
             ]);
@@ -188,7 +195,34 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                         ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED->value)
                 ),
             ],
+            'stock_delivery_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::in(self::openAgentDeliveries($this->purchaseOrder)->pluck('id')->all()),
+            ],
         ];
+    }
+
+    /**
+     * An agent ships the orders of many of its suppliers in one container, so an agent order can
+     * join a delivery the agent already has in process, as long as both are in the same currency.
+     *
+     * @return Collection<int, StockDelivery>
+     */
+    public static function openAgentDeliveries(PurchaseOrder $purchaseOrder): Collection
+    {
+        if (!$purchaseOrder->isAgentOrder() || !$purchaseOrder->parent?->org_agent_id) {
+            return new Collection();
+        }
+
+        return StockDelivery::query()
+            ->where('parent_type', 'OrgAgent')
+            ->where('parent_id', $purchaseOrder->parent->org_agent_id)
+            ->where('state', StockDeliveryStateEnum::IN_PROCESS)
+            ->where('currency_id', $purchaseOrder->currency_id)
+            ->orderByDesc('id')
+            ->get(['id', 'reference', 'slug', 'date', 'number_purchase_orders']);
     }
 
     public function action(PurchaseOrder $purchaseOrder, array $modelData = []): StockDelivery
