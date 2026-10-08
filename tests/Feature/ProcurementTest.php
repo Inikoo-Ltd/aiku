@@ -6217,6 +6217,13 @@ describe('partner shopping list', function () {
 
         [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
         $sellerOrgStock = $product->orgStocks()->first();
+        $sellerOrgStock->update([
+            'quantity_in_submitted_orders'        => 0,
+            'quantity_to_be_picked'               => 0,
+            'quantity_reserved_for_pre_orders'    => 0,
+            'source_quantity_in_submitted_orders' => 0,
+            'source_quantity_to_be_picked'        => 0,
+        ]);
         $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
 
         $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
@@ -6853,6 +6860,7 @@ describe('partner shopping list', function () {
         $delivered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
         $delivered->update(['state' => ShoppingListItemStateEnum::ORDERED]);
         $waiting = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        OrgStock::where('organisation_id', $seller->id)->where('stock_id', $this->buyerOrgStock->stock_id)->update(['quantity_available' => 0]);
         $poke = fn (PartnerShoppingListItem $item, ?OrgPartner $orgPartner = null) => $this->postJson(route('grp.org.procurement.org_partners.show.shopping_list.poke', [$this->organisation->slug, ($orgPartner ?? $this->orgPartner)->id, $item->id]));
 
         try {
