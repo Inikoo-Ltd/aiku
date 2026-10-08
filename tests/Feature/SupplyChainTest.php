@@ -1718,6 +1718,24 @@ test('only supply chain editors attach and detach agent and supplier documents',
         ->and($supplier->attachments()->count())->toBeGreaterThan(0);
 });
 
+test('agent organisation procurement editors can edit internal pictures of their clients supplier products', function () {
+    $agent = new Agent(['organisation_id' => 801]);
+    $orgAgent = (new \App\Models\Procurement\OrgAgent())->setRelation('agent', $agent);
+    $orgSupplierProduct = (new \App\Models\Procurement\OrgSupplierProduct(['organisation_id' => 802]))->setRelation('orgAgent', $orgAgent);
+    $userWith = fn (array $permissions) => Mockery::mock(\App\Models\SysAdmin\User::class)->makePartial()
+        ->shouldReceive('authTo')->andReturnUsing(fn (string $permission) => in_array($permission, $permissions))->getMock();
+    $canEdit = fn (array $permissions) => \App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct::canEditOrgSupplierProductPictures($userWith($permissions), $orgSupplierProduct);
+
+    expect($canEdit(['procurement.802.edit']))->toBeTrue()
+        ->and($canEdit(['procurement.801.edit']))->toBeTrue()
+        ->and($canEdit(['procurement.803.edit']))->toBeFalse()
+        ->and($canEdit([]))->toBeFalse()
+        ->and(\App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct::canEditOrgSupplierProductPictures(
+            $userWith(['procurement.801.edit']),
+            new \App\Models\Procurement\OrgSupplierProduct(['organisation_id' => 802])
+        ))->toBeFalse();
+});
+
 test('purchase order journey rows query runs for both views', function () {
     $journey = \App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney::make();
     $group   = $this->group;
