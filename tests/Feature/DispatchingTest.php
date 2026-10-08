@@ -2044,6 +2044,48 @@ test('lowering a quantity on a packed delivery note unpacks it', function () {
         ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
 });
 
+test('lowering a short picked line to what was picked keeps a packed delivery note packed', function () {
+    /*
+     * HELP-3746, vrps5avapg: a line of 3 was short picked at 2, the note was packed, and Faire then
+     * lowered the line to 2. Nothing left the tote, yet the refresh unpacked the note back to packing.
+     */
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)->whereKeyNot($item->id)->delete();
+
+    $item->update(['quantity_required' => 15]);
+    StoreNotPickPicking::run($item->refresh(), $this->user, ['quantity' => 5]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($deliveryNote);
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED);
+
+    $transaction = $item->transaction;
+    $product     = $transaction->model;
+    $product->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 10]]);
+    $transaction->update(['quantity_ordered' => 1, 'quantity_bonus' => 0]);
+
+    $syncer = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+
+        public int $hydratorsDelay = 0;
+
+        public function sync($deliveryNote, $transaction, $orgStocks): void
+        {
+            $this->syncDeliveryNote($deliveryNote, $transaction, $orgStocks, null);
+        }
+    };
+
+    $syncer->sync($deliveryNote, $transaction->refresh(), $product->fresh()->orgStocks->keyBy('id'));
+
+    expect((float)$item->fresh()->quantity_required)->toEqual(10.0)
+        ->and((float)$item->fresh()->quantity_packed)->toEqual(10.0)
+        ->and($item->fresh()->is_dirty)->toBeFalse()
+        ->and($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::PACKED);
+});
+
 test('releasing a blocked delivery note brings its order back to handling', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

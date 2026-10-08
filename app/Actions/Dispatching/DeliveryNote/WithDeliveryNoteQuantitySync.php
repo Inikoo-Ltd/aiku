@@ -41,7 +41,6 @@ trait WithDeliveryNoteQuantitySync
     protected function syncDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, Collection $orgStocks, ?User $user): void
     {
         $goBackToPicking = false;
-        $quantityLowered = false;
 
         $deliveryNoteItems = $transaction
             ->deliveryNoteItems()
@@ -76,14 +75,11 @@ trait WithDeliveryNoteQuantitySync
             if (abs($quantity - (float)$deliveryNoteItem->quantity_picked) > 0.000001) {
                 $goBackToPicking = true;
             }
-            if ($quantity < $oldRequiredQuantity) {
-                $quantityLowered = true;
-            }
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
         }
 
-        $this->walkDeliveryNoteBackToPicking($deliveryNote, $goBackToPicking, $quantityLowered, $user);
+        $this->walkDeliveryNoteBackToPicking($deliveryNote, $goBackToPicking, $user);
 
         /** A line the marketplace took down to nothing has no work left on it and must not block. */
         $this->ignoreZeroQuantityItems($deliveryNote, $user);
@@ -99,10 +95,14 @@ trait WithDeliveryNoteQuantitySync
     /**
      * Undoing the packing is what deletes the packings and frees the parcels; a raw state change
      * would leave that physical work recorded against quantities that no longer exist.
+     *
+     * Only a line that no longer matches what is in the tote walks the note back. A quantity lowered
+     * onto exactly what was picked - the usual Faire edit after a line is short picked - leaves the
+     * packing true, and unpacking it sent a packed note back to packing for nothing (HELP-3746).
      */
-    protected function walkDeliveryNoteBackToPicking(DeliveryNote $deliveryNote, bool $goBackToPicking, bool $quantityLowered, ?User $user): void
+    protected function walkDeliveryNoteBackToPicking(DeliveryNote $deliveryNote, bool $goBackToPicking, ?User $user): void
     {
-        if (!$goBackToPicking && !$quantityLowered) {
+        if (!$goBackToPicking) {
             return;
         }
 
@@ -110,41 +110,39 @@ trait WithDeliveryNoteQuantitySync
             $deliveryNote = UnpackDeliveryNote::make()->action($deliveryNote, $user);
         }
 
-        if ($goBackToPicking) {
-            if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-                $deliveryNote = UndoPackingDeliveryNote::make()->action($deliveryNote, $user);
-            }
-            if ($deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
-                UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, $user);
-            }
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
+            $deliveryNote = UndoPackingDeliveryNote::make()->action($deliveryNote, $user);
+        }
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
+            UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, $user);
+        }
+
+        /*
+         * A blocked note is waiting on its own items, but the line that just changed still has
+         * to be walked to, so the note is released to handling and picking recomputes the block
+         * when it finishes. Auto finish waiting refuses to release a note holding an unhandled
+         * line, so nothing here can carry an unpicked line through to a short shipment.
+         */
+        if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING_BLOCKED) {
+            $oldState = $deliveryNote->state;
+            $deliveryNote->update([
+                'state'               => DeliveryNoteStateEnum::HANDLING->value,
+                'handling_blocked_at' => null,
+            ]);
 
             /*
-             * A blocked note is waiting on its own items, but the line that just changed still has
-             * to be walked to, so the note is released to handling and picking recomputes the block
-             * when it finishes. Auto finish waiting refuses to release a note holding an unhandled
-             * line, so nothing here can carry an unpicked line through to a short shipment.
+             * The order comes with it, for the reason StartHandlingDeliveryNote does the same:
+             * a note released to handling under an order still reading blocked leaves the
+             * warehouse picking something the ordering side holds, and nothing later puts the
+             * two back in step - mxdpk8yece sat that way after Faire withdrew one of its lines.
              */
-            if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING_BLOCKED) {
-                $oldState = $deliveryNote->state;
-                $deliveryNote->update([
-                    'state'               => DeliveryNoteStateEnum::HANDLING->value,
-                    'handling_blocked_at' => null,
-                ]);
-
-                /*
-                 * The order comes with it, for the reason StartHandlingDeliveryNote does the same:
-                 * a note released to handling under an order still reading blocked leaves the
-                 * warehouse picking something the ordering side holds, and nothing later puts the
-                 * two back in step - mxdpk8yece sat that way after Faire withdrew one of its lines.
-                 */
-                $order = $deliveryNote->orders->first();
-                if ($order && $order->state == OrderStateEnum::HANDLING_BLOCKED) {
-                    UpdateOrderStateToHandling::make()->action($order);
-                }
-
-                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+            $order = $deliveryNote->orders->first();
+            if ($order && $order->state == OrderStateEnum::HANDLING_BLOCKED) {
+                UpdateOrderStateToHandling::make()->action($order);
             }
+
+            $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+            $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
         }
     }
 }
