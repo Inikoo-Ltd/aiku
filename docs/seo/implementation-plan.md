@@ -232,15 +232,18 @@ Built on 8 October 2026 on DataForSEO, so it does not wait for Google Ads Basic 
   `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD`). Every call is logged in `seo_api_requests` with the
   cost DataForSEO reports, and no call is made once the month's spend reaches
   `DATAFORSEO_MONTHLY_BUDGET` (default 250 USD).
-- `GetKeywordIdeas` (`app/Actions/Web/Seo/`) takes up to 20 seed keywords, a URL, or both, with a
-  country and a language. Seeds go to Labs `keyword_overview` (their own figures) and `keyword_ideas`
-  (related keywords); a URL goes to Labs `ranked_keywords` (what the page ranks for in Google). The
+- `GetKeywordIdeas` (`app/Actions/Web/Seo/`) takes up to 5 seed keywords, a URL, or both, with a
+  country and a language. Each seed goes to Labs `keyword_suggestions` (its own figures and the
+  keywords that contain it, like Semrush's Keyword Magic Tool), with the 300 rows shared between the
+  seeds, so a search costs about $0.05 for one seed and $0.10 for five. `keyword_ideas` was tried
+  first and dropped: it returns keywords from the same product category, so "incense sticks" brought
+  "asda kettles". A URL goes to Labs `ranked_keywords` (what the page ranks for in Google). The
   country maps to DataForSEO's location through the free `locations_and_languages` list, cached 30
   days, which also says which languages each country has data for.
 - Results (top 300, seeds first) are cached 24 hours per search and upserted into `seo_keywords`:
   average and 12 monthly volumes (Google Ads data), ad competition, CPC and top of page bids in USD,
-  keyword difficulty (0 to 100, DataForSEO's estimate), intent and secondary intents with
-  `intent_source`.
+  keyword difficulty (1 to 100, DataForSEO's estimate; DataForSEO sends 0 when it has none, which is
+  stored as null and shown as a dash), intent and secondary intents with `intent_source`.
 - Not built yet: the monthly refresh of saved keywords, with 2.2.
 
 **Screen.** SEO > Keywords, tab Research: keywords or a URL, country and language (defaulting to the

@@ -25,13 +25,14 @@ class GetKeywordIdeas
 
     public const int MAX_IDEAS = 300;
 
-    public const int MAX_SEED_KEYWORDS = 20;
+    public const int MAX_SEED_KEYWORDS = 5;
 
     private const int CACHE_HOURS = 24;
 
     /**
-     * Seed keywords bring their own figures and related keyword ideas; a URL brings the keywords
-     * that page ranks for in Google.
+     * Each seed keyword brings its own figures and the keywords that contain it, sharing the
+     * MAX_IDEAS rows between the seeds so the cost of a search stays the same; a URL brings the
+     * keywords that page ranks for in Google.
      *
      * @param  array<int, string>  $seedKeywords
      * @return array{ideas: array<int, array>}
@@ -39,7 +40,7 @@ class GetKeywordIdeas
      */
     public function handle(Shop $shop, array $seedKeywords, ?string $url, string $countryCode, string $languageCode): array
     {
-        $seedKeywords = array_values(array_slice(array_unique(array_filter(array_map(fn ($keyword) => Str::lower(trim($keyword)), $seedKeywords))), 0, self::MAX_SEED_KEYWORDS));
+        $seedKeywords = array_values(array_unique(array_filter(array_map(fn ($keyword) => Str::lower(trim($keyword)), $seedKeywords))));
         $url          = $url ? trim($url) : null;
         $countryCode  = strtoupper($countryCode);
         $languageCode = strtolower($languageCode);
@@ -48,13 +49,17 @@ class GetKeywordIdeas
             throw ValidationException::withMessages(['seed' => __('Enter at least one keyword or a URL.')]);
         }
 
+        if (count($seedKeywords) > self::MAX_SEED_KEYWORDS) {
+            throw ValidationException::withMessages(['seed' => __('Search up to :max keywords at a time.', ['max' => self::MAX_SEED_KEYWORDS])]);
+        }
+
         $client = DataForSeoClient::make();
 
         if (!$client) {
             throw ValidationException::withMessages(['seed' => __('DataForSEO is not set up. Add DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD to the environment.')]);
         }
 
-        $cacheKey = 'seo:keyword_ideas:'.md5(json_encode([$seedKeywords, $url, $countryCode, $languageCode]));
+        $cacheKey = 'seo:keyword_suggestions:'.md5(json_encode([$seedKeywords, $url, $countryCode, $languageCode]));
 
         try {
             $ideas = Cache::get($cacheKey);
@@ -107,11 +112,20 @@ class GetKeywordIdeas
         $location = ['location_code' => $locationCode, 'language_code' => $languageCode];
         $items    = [];
 
-        if ($seedKeywords) {
-            $items = [
-                ...Arr::get($client->live('dataforseo_labs/google/keyword_overview/live', [...$location, 'keywords' => $seedKeywords, 'include_serp_info' => false], $shop->website), '0.items') ?? [],
-                ...Arr::get($client->live('dataforseo_labs/google/keyword_ideas/live', [...$location, 'keywords' => $seedKeywords, 'limit' => self::MAX_IDEAS, 'order_by' => ['keyword_info.search_volume,desc']], $shop->website), '0.items') ?? [],
-            ];
+        foreach ($seedKeywords as $seedKeyword) {
+            $suggestions = Arr::first($client->live('dataforseo_labs/google/keyword_suggestions/live', [
+                ...$location,
+                'keyword'              => $seedKeyword,
+                'include_seed_keyword' => true,
+                'limit'                => intdiv(self::MAX_IDEAS, count($seedKeywords)),
+                'order_by'             => ['keyword_info.search_volume,desc'],
+            ], $shop->website)) ?? [];
+
+            if (Arr::get($suggestions, 'seed_keyword_data')) {
+                $items[] = [...$suggestions['seed_keyword_data'], 'keyword' => $seedKeyword];
+            }
+
+            array_push($items, ...Arr::get($suggestions, 'items') ?? []);
         }
 
         if ($url) {
@@ -154,7 +168,7 @@ class GetKeywordIdeas
             'cpc'                  => Arr::get($item, 'keyword_info.cpc'),
             'low_top_of_page_bid'  => Arr::get($item, 'keyword_info.low_top_of_page_bid'),
             'high_top_of_page_bid' => Arr::get($item, 'keyword_info.high_top_of_page_bid'),
-            'keyword_difficulty'   => Arr::get($item, 'keyword_properties.keyword_difficulty'),
+            'keyword_difficulty'   => Arr::get($item, 'keyword_properties.keyword_difficulty') ?: null,
             'intent'               => Arr::get($item, 'search_intent_info.main_intent'),
             'secondary_intents'    => array_values(array_filter(Arr::wrap(Arr::get($item, 'search_intent_info.foreign_intent')))),
         ];

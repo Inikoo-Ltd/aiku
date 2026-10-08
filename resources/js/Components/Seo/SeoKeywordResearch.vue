@@ -11,6 +11,7 @@ import InputText from "primevue/inputtext"
 import Select from "primevue/select"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
+import Tag from "primevue/tag"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -118,9 +119,19 @@ const tablePt = {
 }
 
 const numericColumnPt = {
-    headerCell: { class: "text-right" },
     columnHeaderContent: { class: "justify-end" },
-    bodyCell: { class: "text-right tabular-nums" },
+    bodyCell: { class: "!text-right tabular-nums" },
+}
+
+const centeredColumnPt = {
+    columnHeaderContent: { class: "justify-center" },
+    bodyCell: { class: "!text-center" },
+}
+
+const competitionSeverities: Record<string, string> = {
+    LOW: "success",
+    MEDIUM: "warn",
+    HIGH: "danger",
 }
 
 const difficultyClass = (difficulty: number) => difficulty >= 70 ? "text-red-700" : difficulty >= 40 ? "text-amber-700" : "text-green-700"
@@ -142,7 +153,7 @@ const trendBars = (idea: KeywordIdea) => {
         <form class="grid grid-cols-1 gap-3 rounded-xl bg-white p-4 ring-1 ring-gray-200 lg:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end" @submit.prevent="search">
             <label class="flex flex-col gap-1 text-sm">
                 <span class="font-medium text-gray-700">{{ ctrans("Keywords") }}</span>
-                <InputText v-model="form.seed" class="h-10 w-full" :placeholder="ctrans('Comma separated, for example: incense sticks, aroma oil')" />
+                <InputText v-model="form.seed" class="h-10 w-full" :placeholder="ctrans('Up to 5, comma separated, for example: incense sticks, aroma oil')" />
             </label>
             <label class="flex flex-col gap-1 text-sm">
                 <span class="font-medium text-gray-700">{{ ctrans("Or a URL") }}</span>
@@ -160,7 +171,7 @@ const trendBars = (idea: KeywordIdea) => {
         </form>
 
         <p v-if="!data" class="text-sm text-gray-600">
-            {{ ctrans("Enter keywords or a URL to see how often people search for them, how hard they are to rank for, and which related keywords exist. Each search costs a few cents of DataForSEO credit; the same search is free again for 24 hours.") }}
+            {{ ctrans("Enter keywords or a URL to see how often people search for them, how hard they are to rank for, and the longer keywords that contain them. Each search costs a few cents of DataForSEO credit; the same search is free again for 24 hours.") }}
         </p>
 
         <template v-else>
@@ -220,7 +231,7 @@ const trendBars = (idea: KeywordIdea) => {
                     </Column>
                     <Column field="keyword_difficulty" sortable :pt="numericColumnPt">
                         <template #header>
-                            <span v-tooltip="ctrans('How hard it is to reach the top 10 organically, 0 to 100, estimated by DataForSEO from the pages that rank now')">{{ ctrans("Difficulty") }}</span>
+                            <span v-tooltip="ctrans('How hard it is to reach the top 10 organically, 1 to 100, estimated by DataForSEO from the pages that rank now. A dash means DataForSEO has no estimate')">{{ ctrans("Difficulty") }}</span>
                         </template>
                         <template #body="{ data: idea }">
                             <span v-if="idea.keyword_difficulty !== null" :class="difficultyClass(idea.keyword_difficulty)">{{ idea.keyword_difficulty }}</span>
@@ -235,15 +246,16 @@ const trendBars = (idea: KeywordIdea) => {
                             {{ idea.cpc === null ? "-" : locale.number(idea.cpc) }}
                         </template>
                     </Column>
-                    <Column field="competition">
+                    <Column field="competition" :pt="centeredColumnPt">
                         <template #header>
                             <span v-tooltip="ctrans('How many advertisers bid on the keyword. Not the same as how hard it is to rank organically')">{{ ctrans("Ad competition") }}</span>
                         </template>
                         <template #body="{ data: idea }">
-                            {{ idea.competition ? competitionLabels[idea.competition] ?? idea.competition : "-" }}
+                            <Tag v-if="idea.competition" :value="competitionLabels[idea.competition] ?? idea.competition" :severity="competitionSeverities[idea.competition] ?? 'secondary'" />
+                            <span v-else>-</span>
                         </template>
                     </Column>
-                    <Column :pt="{ bodyCell: { class: 'text-right' } }">
+                    <Column :pt="{ bodyCell: { class: '!text-right' } }">
                         <template #body="{ data: idea }">
                             <span v-if="idea.is_tracked" class="text-xs text-gray-500">{{ ctrans("Tracked") }}</span>
                             <Button v-else-if="canEdit" type="tertiary" size="xs" :label="ctrans('Track')" :loading="trackingKeyword === idea.keyword" @click="track(idea.keyword)" />
