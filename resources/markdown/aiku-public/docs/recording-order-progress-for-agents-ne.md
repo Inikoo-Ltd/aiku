@@ -2,7 +2,7 @@
 title: एजेन्टको रूपमा आदेश प्रगति अभिलेख गर्ने
 summary: एजेन्टहरूका लागि — आपूर्तिकर्तालाई गरिने हरेक आदेशमा तपाईंले अभिलेख गर्नुपर्ने चार मिति (डिपोजिट भुक्तान, नमूना स्वीकृत, उत्पादन सकिएको, प्रस्तावित तयारी मिति), ती कहिले भर्ने, खरिदकर्ता कम्पनीले सट्टामा के अभिलेख गर्छ, र किन नभएको मिति ढिलाइजस्तै देखिन्छ भन्ने कुरा।
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -51,7 +51,7 @@ order: 2
 <aside class="wayfinder">
 <b>aiku मा कहाँ क्लिक गर्ने</b><br>
 कृपया ध्यान दिनुहोस्: aiku को इन्टरफेस अङ्ग्रेजीमा छ, त्यसैले बटनका नाम तल अङ्ग्रेजीमै दिइएका छन्।<br>
-लग इन गर्नुहोस् → <b>Supplier Purchase Orders</b> → आदेश खोल्नुहोस् → <b>Edit</b>। <b>Deposit paid</b> र <b>Deposit amount</b> पहिलो सेक्सनमा छन्। <b>Sample approved</b> र <b>Production done</b> <b>Production</b> सेक्सनमा छन्। <b>Proposed ready date (agent)</b> <b>Clean handover</b> सेक्सनमा छ।
+लग इन गर्नुहोस् → <b>Purchase Orders</b> → आदेश खोल्नुहोस् → <b>Edit</b>। प्रत्येक खरिद आदेश तपाईंका आपूर्तिकर्ताहरूमध्ये कुनै एकका लागि हुन्छ। <b>Deposit paid</b> र <b>Deposit amount</b> <b>Payments</b> सेक्सनमा छन्। <b>Sample approved</b> र <b>Production done</b> <b>Production</b> सेक्सनमा छन्। <b>Proposed ready date</b> <b>Clean handover</b> सेक्सनमा छ।
 </aside>
 
 <aside class="wayfinder">

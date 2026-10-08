@@ -526,8 +526,6 @@ use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
 use App\Actions\SupplyChain\SupplierProduct\Upload\UpdateSupplierProductUploadRecord;
-use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDeposit;
 use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState;
@@ -1443,9 +1441,6 @@ Route::post('/supplier-product/{supplierProduct:id}/upload-images', UploadImages
 Route::delete('/supplier-product/{supplierProduct:id}/detach-image/{media:id}', DeleteImageFromSupplierProduct::class)->name('supplier-product.detach_image')->withoutScopedBindings();
 Route::post('/org-supplier-product/{orgSupplierProduct:id}/upload-images', [UploadImagesToSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.upload_images');
 Route::delete('/org-supplier-product/{orgSupplierProduct:id}/detach-image/{media:id}', [DeleteImageFromSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.detach_image')->withoutScopedBindings();
-Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', UpdateAgentSupplierPurchaseOrder::class)->name('agent_supplier_purchase_order.update');
-Route::post('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/deposit', StoreAspoDeposit::class)->name('agent_supplier_purchase_order.deposit.store');
-Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/journey-stage', [UpdatePurchaseOrderJourneyStage::class, 'inAgentSupplierPurchaseOrder'])->name('agent_supplier_purchase_order.journey_stage');
 
 Route::name('aspo-deposit.')->prefix('aspo-deposit/{aspoDeposit:id}')->group(function () {
     Route::patch('update', UpdateAspoDeposit::class)->name('update');
@@ -1534,7 +1529,6 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
-    Route::post('supplier-product', StoreSupplierProduct::class)->name('supplier-product.store');
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
@@ -1600,9 +1594,6 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgSupplier'])->name('purchase-order.store');
 });
-Route::name('org-agent.')->prefix('org-agent/{orgAgent:id}')->group(function () {
-    Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgAgent'])->name('purchase-order.store');
-});
 Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgPartner'])->name('purchase-order.store');
     Route::post('rescue-purchase-order', StoreRescuePurchaseOrder::class)->name('rescue_purchase_order.store');
@@ -1612,6 +1603,7 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
+    Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
     Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');

@@ -55,9 +55,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     public function handle(ActionRequest $request): array
     {
         $today       = now()->startOfDay();
-        $view        = $request->query('view') === 'purchase_orders' ? 'purchase_orders' : 'supplier_orders';
         $this->rates = $this->latestRates();
-        $ribbons = collect($this->rows($view === 'supplier_orders'))->map(fn (object $row) => $this->toRibbon($row, $today));
+        $ribbons     = collect($this->rows())->map(fn (object $row) => $this->toRibbon($row, $today));
 
         $active = collect(self::FILTER_GROUPS)->mapWithKeys(fn (string $group) => [$group => $request->query($group) ?: null])->all();
 
@@ -80,7 +79,6 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         $page     = min($page, $lastPage);
 
         return [
-            'view'       => $view,
             'filters'    => $this->facets($ribbons, $active),
             'active'     => $active,
             'summary'    => [
@@ -109,47 +107,22 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     /**
      * @return array<int, object>
      */
-    private function rows(bool $splitAgentOrders): array
+    private function rows(): array
     {
         $finishedSince = now()->subDays(self::FINISHED_WINDOW_DAYS);
-        $bindings      = [
-            'group_id'                => $this->group->id,
-            'finished_since'          => $finishedSince,
-            'finished_since_unlinked' => $finishedSince,
-        ];
 
-        $splitCondition = $splitAgentOrders
-            ? "and not (po.parent_type = 'OrgAgent' and exists (
-                    select 1 from agent_supplier_purchase_orders split
-                    where split.purchase_order_id = po.id
-                        and split.deleted_at is null
-                        and (split.data -> 'housekeeping') is null
-                        and split.state not in ('cancelled', 'not_received')
-                        and exists (
-                            select 1 from purchase_order_transactions split_lines
-                            where split_lines.agent_supplier_purchase_order_id = split.id
-                                and split_lines.state not in ('cancelled', 'not_received')
-                                and split_lines.delivery_state not in ('cancelled', 'not_received')
-                        )
-                ))"
-            : '';
-
-        $purchaseOrders = DB::select(
-            "select 'po' as row_type, po.id, po.slug, po.reference, po.parent_type, po.state, po.delivery_state, po.data,
+        return DB::select(
+            "select po.id, po.slug, po.reference, po.parent_type, po.agent_id, po.state, po.delivery_state, po.data,
                 po.cost_total, po.cost_items, po.grp_exchange, po.created_at, po.submitted_at, po.settled_at,
                 po.deposit_amount, po.deposit_paid_at, po.sample_approved_at, po.produced_at, po.qc_passed_at,
-                po.handed_over_at,
-                po.reference as purchase_order_reference, po.slug as purchase_order_slug,
+                po.handed_over_at, po.approved_ready_at,
                 {$this->sharedColumns()},
                 suppliers.slug as supplier_slug, suppliers.code as supplier_code, suppliers.name as supplier_name,
                 suppliers.data as supplier_data,
                 partners.slug as partner_slug, partners.code as partner_code, partners.name as partner_name,
                 countries.code as country_code, countries.name as country_name,
                 {$this->deliveryColumns()},
-                coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
-                aspo.deposit_paid_at as aspo_deposit_paid_at, aspo.approved_ready_at,
-                aspo.qc_passed_at as aspo_qc_passed_at, aspo.handed_over_at as aspo_handed_over_at,
-                line_suppliers.suppliers as line_suppliers
+                coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at
             from purchase_orders po
             {$this->sharedJoins()}
             left join currencies on currencies.id = po.currency_id
@@ -158,94 +131,21 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             left join addresses on addresses.id = coalesce(suppliers.address_id, agent_organisations.address_id, partners.address_id)
             left join countries on countries.id = coalesce(addresses.country_id, partners.country_id)
             {$this->deliveryLateral()}
-            left join lateral (
-                select
-                    case when bool_and(asp.deposit_paid_at is not null) filter (where asp.deposit_amount > 0) then max(asp.deposit_paid_at) end as deposit_paid_at,
-                    max(asp.approved_ready_at) as approved_ready_at,
-                    case when bool_and(asp.qc_passed_at is not null) then max(asp.qc_passed_at) end as qc_passed_at,
-                    case when bool_and(asp.handed_over_at is not null) then max(asp.handed_over_at) end as handed_over_at
-                from agent_supplier_purchase_orders asp
-                where asp.purchase_order_id = po.id and asp.deleted_at is null
-            ) aspo on true
             {$this->linesLateral('purchase_order_transactions.purchase_order_id = po.id')}
-            left join lateral (
-                select json_agg(distinct jsonb_build_object('slug', line_supplier.slug, 'code', line_supplier.code)) as suppliers
-                from purchase_order_transactions
-                join supplier_products on supplier_products.id = purchase_order_transactions.supplier_product_id
-                join suppliers line_supplier on line_supplier.id = supplier_products.supplier_id
-                where purchase_order_transactions.purchase_order_id = po.id
-            ) line_suppliers on true
-            where {$this->openPurchaseOrderCondition()}
-                {$splitCondition}",
-            $bindings
+            where {$this->openPurchaseOrderCondition()}",
+            [
+                'group_id'                => $this->group->id,
+                'finished_since'          => $finishedSince,
+                'finished_since_unlinked' => $finishedSince,
+            ]
         );
-
-        if (!$splitAgentOrders) {
-            return $purchaseOrders;
-        }
-
-        $supplierOrders = DB::select(
-            "select 'aspo' as row_type, asp.id, asp.slug, asp.reference, 'OrgAgent' as parent_type, po.state,
-                progress.delivery_state, po.data,
-                progress.lines_amount as cost_total, null as cost_items, po.grp_exchange,
-                po.created_at, po.submitted_at, null as settled_at,
-                asp.deposit_amount, asp.deposit_paid_at, asp.sample_approved_at, asp.produced_at, asp.qc_passed_at,
-                asp.handed_over_at,
-                coalesce(delivery.estimated_arrival, asp.estimated_received_at::date::text, po.estimated_received_at::date::text) as estimated_received_at,
-                po.reference as purchase_order_reference, po.slug as purchase_order_slug,
-                {$this->sharedColumns()},
-                suppliers.slug as supplier_slug, suppliers.code as supplier_code, suppliers.name as supplier_name,
-                suppliers.data as supplier_data,
-                null as partner_slug, null as partner_code, null as partner_name,
-                countries.code as country_code, countries.name as country_name,
-                {$this->deliveryColumns()},
-                null as aspo_deposit_paid_at, asp.approved_ready_at,
-                null as aspo_qc_passed_at, null as aspo_handed_over_at,
-                null as line_suppliers
-            from agent_supplier_purchase_orders asp
-            join purchase_orders po on po.id = asp.purchase_order_id
-            {$this->sharedJoins()}
-            left join currencies on currencies.id = asp.currency_id
-            left join suppliers on suppliers.id = asp.supplier_id
-            left join addresses on addresses.id = coalesce(suppliers.address_id, agent_organisations.address_id)
-            left join countries on countries.id = addresses.country_id
-            left join lateral (
-                select count(*) as active_lines,
-                    sum(purchase_order_transactions.net_amount) as lines_amount,
-                    case
-                        when bool_and(purchase_order_transactions.delivery_state = 'settled') then 'placed'
-                        when bool_and(purchase_order_transactions.delivery_state in ('received', 'checked', 'settled')) then 'received'
-                        when bool_and(purchase_order_transactions.delivery_state in ('dispatched', 'received', 'checked', 'settled')) then 'dispatched'
-                        else 'in_process'
-                    end as delivery_state
-                from purchase_order_transactions
-                where purchase_order_transactions.agent_supplier_purchase_order_id = asp.id
-                    and purchase_order_transactions.state not in ('cancelled', 'not_received')
-                    and purchase_order_transactions.delivery_state not in ('cancelled', 'not_received')
-            ) progress on true
-            {$this->deliveryLateral('and exists (
-                        select 1 from stock_delivery_items
-                        join purchase_order_transactions on purchase_order_transactions.org_stock_id = stock_delivery_items.org_stock_id
-                        where stock_delivery_items.stock_delivery_id = stock_deliveries.id
-                            and purchase_order_transactions.agent_supplier_purchase_order_id = asp.id
-                    )')}
-            {$this->linesLateral('purchase_order_transactions.agent_supplier_purchase_order_id = asp.id')}
-            where asp.deleted_at is null
-                and (asp.data -> 'housekeeping') is null
-                and asp.state not in ('cancelled', 'not_received')
-                and progress.active_lines > 0
-                and {$this->openPurchaseOrderCondition()}",
-            $bindings
-        );
-
-        return array_merge($purchaseOrders, $supplierOrders);
     }
 
     /**
      * A stage counts as reached only once every live delivery of the order has reached it, and only then does it
      * carry a date; the delivery's own arrival estimate is kept while it is still on its way.
      */
-    private function deliveryLateral(string $deliveryFilter = ''): string
+    private function deliveryLateral(): string
     {
         return "left join lateral (
                 select count(*) as deliveries,
@@ -261,7 +161,6 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
                 where purchase_order_stock_delivery.purchase_order_id = po.id
                     and stock_deliveries.state not in ('cancelled', 'not_received')
-                    {$deliveryFilter}
             ) delivery on true";
     }
 
@@ -377,12 +276,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
      */
     private function toRibbon(object $row, Carbon $today): array
     {
-        $isSupplierOrder = $row->row_type === 'aspo';
-
-        $journey = match ($row->parent_type) {
-            'OrgAgent'   => 'agent',
-            'OrgPartner' => 'partner',
-            default      => 'supplier',
+        $journey = match (true) {
+            $row->agent_id !== null && $row->parent_type === 'OrgSupplier' => 'agent',
+            $row->parent_type === 'OrgPartner'                              => 'partner',
+            default                                                         => 'supplier',
         };
 
         $data          = json_decode((string) $row->data, true) ?: [];
@@ -401,10 +298,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'is_npo'                  => (bool) $row->is_npo,
             'has_deposit'             => (float) $row->deposit_amount > 0,
             'sample_approved_at'      => $row->sample_approved_at,
-            'deposit_paid_at'         => $row->deposit_paid_at ?: $row->aspo_deposit_paid_at,
+            'deposit_paid_at'         => $row->deposit_paid_at,
             'produced_at'             => $row->produced_at,
-            'qc_passed_at'            => $row->qc_passed_at ?: $row->aspo_qc_passed_at,
-            'handed_over_at'          => $row->handed_over_at ?: $row->aspo_handed_over_at,
+            'qc_passed_at'            => $row->qc_passed_at,
+            'handed_over_at'          => $row->handed_over_at,
             'estimated_production_at' => Arr::get($data, 'estimated_production_date'),
             'approved_ready_at'       => $row->approved_ready_at,
             'estimated_received_at'   => $row->estimated_received_at,
@@ -419,24 +316,20 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'stage_days'              => $journey === 'agent' ? Arr::get($agentSettings, 'journey_stage_days', []) : [],
         ], $today);
 
-        $suppliers = match (true) {
-            $isSupplierOrder, $journey === 'supplier' => $row->supplier_slug ? [['slug' => $row->supplier_slug, 'code' => $row->supplier_code]] : [],
-            $journey === 'partner' => $row->partner_slug ? [['slug' => 'partner-'.$row->partner_slug, 'code' => $row->partner_code]] : [],
-            default => json_decode((string) $row->line_suppliers, true) ?: [],
+        $suppliers = match ($journey) {
+            'partner' => $row->partner_slug ? [['slug' => 'partner-'.$row->partner_slug, 'code' => $row->partner_code]] : [],
+            default   => $row->supplier_slug ? [['slug' => $row->supplier_slug, 'code' => $row->supplier_code]] : [],
         };
 
         $amount = $row->cost_items ?? $row->cost_total;
 
         return [
-            'key'               => $row->row_type.'-'.$row->id,
+            'key'               => 'po-'.$row->id,
             'id'                => $row->id,
-            'is_supplier_order' => $isSupplierOrder,
-            'is_split_pending'  => $journey === 'agent' && !$isSupplierOrder,
             'slug'              => $row->slug,
             'reference'         => $row->reference,
-            'purchase_order_reference' => $row->purchase_order_reference,
-            'supplier_code'     => $isSupplierOrder ? $row->supplier_code : null,
-            'supplier_name'     => $isSupplierOrder ? $row->supplier_name : null,
+            'supplier_code'     => $journey === 'agent' ? $row->supplier_code : null,
+            'supplier_name'     => $journey === 'agent' ? $row->supplier_name : null,
             'organisation_slug' => $row->organisation_slug,
             'organisation_code' => $row->organisation_code,
             'journey'           => $journey,
@@ -460,21 +353,14 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'days_overdue'      => $journeyData['days_overdue'],
             'eta'               => $journeyData['eta'],
             'segments'          => $journeyData['segments'],
-            'route'             => $isSupplierOrder
-                ? [
-                    'name'       => 'grp.supply-chain.agent_supplier_purchase_orders.show',
-                    'parameters' => ['agentSupplierPurchaseOrder' => $row->slug],
-                ]
-                : [
-                    'name'       => 'grp.org.procurement.purchase_orders.show',
-                    'parameters' => [
-                        'organisation'  => $row->organisation_slug,
-                        'purchaseOrder' => $row->slug,
-                    ],
+            'route'             => [
+                'name'       => 'grp.org.procurement.purchase_orders.show',
+                'parameters' => [
+                    'organisation'  => $row->organisation_slug,
+                    'purchaseOrder' => $row->slug,
                 ],
-            'mark_route'        => $isSupplierOrder
-                ? ['name' => 'grp.models.agent_supplier_purchase_order.journey_stage', 'parameters' => ['agentSupplierPurchaseOrder' => $row->id]]
-                : ['name' => 'grp.models.purchase-order.journey_stage', 'parameters' => ['purchaseOrder' => $row->id]],
+            ],
+            'mark_route'        => ['name' => 'grp.models.purchase-order.journey_stage', 'parameters' => ['purchaseOrder' => $row->id]],
         ];
     }
 
@@ -578,7 +464,6 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         if ($active['search'] !== null) {
             $haystack = mb_strtolower(implode(' ', [
                 $ribbon['reference'],
-                $ribbon['purchase_order_reference'],
                 $ribbon['parent_code'],
                 $ribbon['parent_name'],
                 $ribbon['buyer_name'],
@@ -724,7 +609,6 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                     ],
                     'title' => __('PO journey'),
                 ],
-                'view'          => $request->query('view') === 'purchase_orders' ? 'purchase_orders' : 'supplier_orders',
                 'groupCurrency' => $this->group->currency->code,
                 'canMark'       => $this->canEdit,
                 'stages'        => collect(PurchaseOrderJourneyStageEnum::cases())->map(fn (PurchaseOrderJourneyStageEnum $stage) => [

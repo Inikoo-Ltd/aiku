@@ -2,7 +2,7 @@
 title: Čítanie tabule postupu objednávok (PO journey board)
 summary: Pre nákupcov a manažment — ako sa každá otvorená objednávka (PO) stáva jednou stužkou, čo znamenajú jednotlivé farby a dátumy, odkiaľ pochádzajú termíny, ako označiť fázy, ktoré nikto iný nezaznamenáva, a ako nájsť objednávky, ktoré potrebujú vašu pozornosť.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, supply-chain, agents
 category: procurement
 series: PO journey
@@ -21,7 +21,7 @@ Na tabuli je každá objednávka, ktorá je ešte na ceste:
 
 - **Objednávky priamym dodávateľom.**
 - **Objednávky medzi spoločnosťami AW**, napríklad keď jedna spoločnosť nakupuje od továrne.
-- **Objednávky cez agentov.** Tie sa zobrazujú ako agentova objednávka pre každého dodávateľa, pretože práve tam sa naozaj odohráva výroba, kontrola kvality a meškania. Prepnutím <b>Orders to suppliers</b> na <b>Agent POs</b> vľavo hore zobrazíte namiesto toho každú agentovu objednávku ako jeden riadok. Agentova objednávka, ktorú agent ešte nerozdelil podľa dodávateľa, sa zobrazuje ako jeden riadok s malým označením *nerozdelené*.
+- **Objednávky cez agentov.** Objednávka cez agenta sa zadáva pre jedného dodávateľa za agentom, pretože práve tam sa naozaj odohráva výroba, kontrola kvality a meškania. Jej riadok zobrazuje agenta a dodávateľa.
 
 Objednávka z tabule zmizne, len čo je jej tovar uložený v sklade a každý produkt z nej je v predaji. Objednávky dokončené za posledných 60 dní zostávajú viditeľné ako <b>Completed</b>, aby ste videli, čo prišlo. Objednávky staršie ako rok, ktoré sa nikdy nedokončili, sa odložia bokom a nezobrazujú sa.
 

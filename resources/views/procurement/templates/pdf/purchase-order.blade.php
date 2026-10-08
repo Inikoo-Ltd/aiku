@@ -56,8 +56,9 @@
 <table class="blocks">
     <tr>
         <td>
-            <div class="label">Supplier</div>
+            <div class="label">{{ $purchaseOrder->isAgentOrder() ? 'Agent' : 'Supplier' }}</div>
             <strong>{{ $counterparty?->name ?? $purchaseOrder->parent_name }}</strong><br>
+            @if($purchaseOrder->isAgentOrder())For supplier {{ $purchaseOrder->parent_code }} {{ $purchaseOrder->parent_name }}<br>@endif
             @if($counterparty?->contact_name && $counterparty->contact_name !== $counterparty->name){{ $counterparty->contact_name }}<br>@endif
             @if($counterparty?->address){!! nl2br(e($counterparty->address->formatted_address)) !!}<br>@endif
             @if($counterparty?->email){{ $counterparty->email }}<br>@endif

@@ -138,7 +138,7 @@ class ShowStockDelivery extends OrgAction
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
-                'purchase_order'   => $this->getPurchaseOrderLink($stockDelivery),
+                'purchase_orders'  => $this->getPurchaseOrderLinks($stockDelivery),
                 'box_stats'        => $this->getBoxStats($stockDelivery, $request),
                 'tabs'             => [
                     'current'    => $this->tab,
@@ -214,24 +214,26 @@ class ShowStockDelivery extends OrgAction
         return new StockDeliveryResource($this->stockDelivery);
     }
 
-    public function getPurchaseOrderLink(StockDelivery $stockDelivery): ?array
+    /**
+     * @return array<int, array{reference: string, route: array<string, mixed>}>
+     */
+    public function getPurchaseOrderLinks(StockDelivery $stockDelivery): array
     {
-        $purchaseOrder = $stockDelivery->purchaseOrders()->first();
+        $organisationSlug = (request()->route('organisation') ?? $stockDelivery->organisation)->slug;
 
-        if (!$purchaseOrder) {
-            return null;
-        }
-
-        return [
-            'reference' => $purchaseOrder->reference,
-            'route'     => [
-                'name'       => 'grp.org.procurement.purchase_orders.show',
-                'parameters' => [
-                    'organisation'  => (request()->route('organisation') ?? $stockDelivery->organisation)->slug,
-                    'purchaseOrder' => $purchaseOrder->slug,
+        return $stockDelivery->purchaseOrders()
+            ->orderBy('purchase_orders.id')
+            ->get(['purchase_orders.id', 'purchase_orders.reference', 'purchase_orders.slug'])
+            ->map(fn (PurchaseOrder $purchaseOrder) => [
+                'reference' => $purchaseOrder->reference,
+                'route'     => [
+                    'name'       => 'grp.org.procurement.purchase_orders.show',
+                    'parameters' => [
+                        'organisation'  => $organisationSlug,
+                        'purchaseOrder' => $purchaseOrder->slug,
+                    ],
                 ],
-            ],
-        ];
+            ])->all();
     }
 
     public function getPurchaseOrderTimeline(PurchaseOrder $purchaseOrder): array

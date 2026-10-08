@@ -2,7 +2,7 @@
 title: एजेंट के रूप में आदेश की प्रगति दर्ज करना
 summary: एजेंटों के लिए — आपूर्तिकर्ता को दिए गए हर आदेश पर दर्ज होने वाली चार तिथियाँ (डिपॉज़िट भुगतान, नमूना स्वीकृत, उत्पादन पूर्ण, प्रस्तावित तैयारी तिथि), उन्हें कब दर्ज करें, ख़रीदार कंपनी इसके बदले क्या दर्ज करती है, और कोई तिथि दर्ज न होने पर वह देरी जैसी क्यों दिखती है।
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -51,7 +51,7 @@ order: 2
 <aside class="wayfinder">
 <b>aiku में कहाँ क्लिक करें</b><br>
 कृपया ध्यान दें: aiku का इंटरफ़ेस अंग्रेज़ी में है, इसलिए बटनों के नाम नीचे अंग्रेज़ी में दिए गए हैं।<br>
-लॉग इन करें → <b>Supplier Purchase Orders</b> → आदेश खोलें → <b>Edit</b>। <b>Deposit paid</b> और <b>Deposit amount</b> पहले सेक्शन में हैं। <b>Sample approved</b> और <b>Production done</b>, <b>Production</b> सेक्शन में हैं। <b>Proposed ready date (agent)</b>, <b>Clean handover</b> सेक्शन में है।
+लॉग इन करें → <b>Purchase Orders</b> → आदेश खोलें → <b>Edit</b>। हर purchase order आपके किसी एक आपूर्तिकर्ता के लिए होता है। <b>Deposit paid</b> और <b>Deposit amount</b>, <b>Payments</b> सेक्शन में हैं। <b>Sample approved</b> और <b>Production done</b>, <b>Production</b> सेक्शन में हैं। <b>Proposed ready date</b>, <b>Clean handover</b> सेक्शन में है।
 </aside>
 
 <aside class="wayfinder">

@@ -105,7 +105,7 @@ Import waits for them. If the AI cannot run, each row asks for **I accept respon
 
 The **Order Cartons UK / SK / ES / Aroma** columns order cartons for each organisation. The preview shows, per organisation, how many cartons and lines will be ordered and on which order:
 
-- if the organisation already has an **open draft** for this supplier (or for its agent, when it buys through an agent), the lines are added to it and the sheet sets the quantity;
+- if the organisation already has an **open draft** for this supplier (sent through the agent when the supplier has one), the lines are added to it and the sheet sets the quantity;
 - otherwise a new draft is made. Tick **New draft instead** to always get a new one.
 
 Lines already on the draft that are not in the sheet are left alone. The orders stay drafts until someone submits them.

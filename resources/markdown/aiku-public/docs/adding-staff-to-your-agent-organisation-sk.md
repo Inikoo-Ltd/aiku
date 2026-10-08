@@ -2,7 +2,7 @@
 title: Pridávanie personálu do vašej agentskej organizácie
 summary: Pre manažérov agentov — ako dať svojim kolegom vlastné prihlásenie do aiku, zvoliť, čo smú robiť, a zrušiť účet, keď niekto odíde.
 date: 2026-09-30
-source_date: 2026-09-30
+source_date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -17,7 +17,7 @@ Pre manažéra agentskej organizácie. Keď sa už viete prihlásiť, na pridáv
 
 Každý vo vašej organizácii vidí len vašu organizáciu a prácu, ktorú robíte pre nákupnú spoločnosť:
 
-- **Procurement**: **Purchase Orders**, ktoré vám posielajú organizácie nákupnej spoločnosti, **Supplier Purchase Orders**, ktoré zadávate každému zo svojich dodávateľov, a zálohy, ktoré na ne platíte, **Stock Deliveries**, ktoré posielate späť, vaši **Suppliers** a vaša dodávateľská **Inbox**. Manažéri vidia aj **Settings** obstarávania.
+- **Procurement**: **Purchase Orders**, ktoré vám posielajú organizácie nákupnej spoločnosti, po jednej pre každého z vašich dodávateľov, so zálohami, ktoré na ne platíte, **Stock Deliveries**, ktoré posielate späť, vaši **Suppliers** a vaša dodávateľská **Inbox**. Manažéri vidia aj **Settings** obstarávania.
 - **HR**, len pre manažérov: vaši vlastní ľudia.
 - **Tickets**, na žiadosť o pomoc u helpdesku nákupnej spoločnosti.
 
@@ -28,7 +28,7 @@ Nikto vo vašej organizácii nevidí obchody, zákazníkov ani účty nákupnej 
 Otvorte **HR → Employees** a stlačte **Create Employee**. Formulár je jedna stránka; časti, ktoré sú pre vás dôležité:
 
 - **Employment**: **worker number** a **alias**, obe jedinečné v rámci vašej organizácie (krstné mená sú v poriadku), a stav **Working**.
-- **Job → Position**: pod **Agent** vyberte, čo daná osoba smie robiť. **Clerk** je pre niekoho, kto pracuje s purchase orders, supplier purchase orders, zálohami a dodávkami. **Manager** zvládne to všetko a navyše pridáva a odoberá kolegov v **HR**. Pozícia **Organisation Administrator** sa vám nezobrazuje: zostáva pri nakupujúcej spoločnosti.
+- **Job → Position**: pod **Agent** vyberte, čo daná osoba smie robiť. **Clerk** je pre niekoho, kto pracuje s purchase orders, zálohami a dodávkami. **Manager** zvládne to všetko a navyše pridáva a odoberá kolegov v **HR**. Pozícia **Organisation Administrator** sa vám nezobrazuje: zostáva pri nakupujúcej spoločnosti.
 - **User credentials**: nechajte prázdne pre niekoho, kto sa nepotrebuje prihlasovať. Vyplňte **username** a **password** a bude sa môcť prihlásiť ihneď; aiku ho pri prvom vstupe požiada, aby si zvolil vlastné heslo.
 
 Uložte a odovzdajte mu username a počiatočné heslo.

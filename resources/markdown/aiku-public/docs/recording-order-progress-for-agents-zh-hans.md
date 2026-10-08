@@ -2,7 +2,7 @@
 title: 代理商如何记录订单进度
 summary: 面向代理商 — 您需要在每张发给供应商的订单上记录的四个日期（定金已付、样品已核准、生产完成、建议就绪日期）、记录时机、采购方另外记录哪些内容，以及缺失日期为何会显示为延误。
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -50,7 +50,7 @@ order: 2
 
 <aside class="wayfinder">
 <b>在 aiku 中的位置</b><br>
-登录 → <b>Supplier Purchase Orders</b>（供应商采购订单）→ 打开该订单 → <b>Edit</b>（编辑）。<b>Deposit paid</b> 和 <b>Deposit amount</b> 在第一部分。<b>Sample approved</b> 和 <b>Production done</b> 在 <b>Production</b>（生产）部分。<b>Proposed ready date (agent)</b> 在 <b>Clean handover</b>（干净交接）部分。
+登录 → <b>Purchase Orders</b>（采购订单）→ 打开该订单 → <b>Edit</b>（编辑）。每份采购订单对应您的一家供应商。<b>Deposit paid</b> 和 <b>Deposit amount</b> 在 <b>Payments</b>（付款）部分。<b>Sample approved</b> 和 <b>Production done</b> 在 <b>Production</b>（生产）部分。<b>Proposed ready date</b> 在 <b>Clean handover</b>（干净交接）部分。
 </aside>
 
 <aside class="wayfinder">

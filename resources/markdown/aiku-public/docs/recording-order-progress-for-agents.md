@@ -1,7 +1,7 @@
 ---
 title: Recording order progress as an agent
 summary: For agents — the four dates you record on each order to a supplier (deposit paid, sample approved, production done, proposed ready date), when to record them, what the buying company records instead, and why a missing date shows as a delay.
-date: 2026-09-25
+date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 help_routes: grp.org.procurement.agent_supplier_purchase_orders
@@ -50,7 +50,7 @@ These are the facts your <a href="/docs/your-clean-handover-score">Clean Handove
 
 <aside class="wayfinder">
 <b>Where to click in aiku</b><br>
-Log in → <b>Supplier Purchase Orders</b> → open the order → <b>Edit</b>. <b>Deposit paid</b> and <b>Deposit amount</b> are in the first section. <b>Sample approved</b> and <b>Production done</b> are in the <b>Production</b> section. <b>Proposed ready date (agent)</b> is in the <b>Clean handover</b> section.
+Log in → <b>Purchase Orders</b> → open the order → <b>Edit</b>. Each purchase order is to one of your suppliers. <b>Deposit paid</b> and <b>Deposit amount</b> are in the <b>Payments</b> section. <b>Sample approved</b> and <b>Production done</b> are in the <b>Production</b> section. <b>Proposed ready date</b> is in the <b>Clean handover</b> section.
 </aside>
 
 <aside class="wayfinder">

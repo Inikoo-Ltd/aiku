@@ -23,7 +23,6 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliv
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
@@ -141,11 +140,6 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
         }
 
-        if ($parent->parent instanceof OrgAgent) {
-            $query->leftJoin('suppliers', 'suppliers.id', '=', 'sp.supplier_id')
-                ->orderBy('suppliers.name');
-        }
-
         if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $query->whereElementGroup(
@@ -204,7 +198,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
             ->whereColumn('link.org_stock_id', 'seller.id')
             ->where('link.status', true)
-            ->orderBy('link.local_priority')
+            ->orderByDesc('link.local_priority')
             ->select('sp.units_per_carton')
             ->limit(1);
 

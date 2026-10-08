@@ -18,7 +18,6 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\SupplyChain\Agent;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -142,14 +141,6 @@ class ShowSupplyChainDashboard extends OrgAction
                     $this->dashboardMetric(__('Discontinuing'), $stats->number_supplier_products_state_discontinuing, 'grp.supply-chain.supplier_products.index', ['elements[state]' => 'discontinuing']),
                 ],
                 ['elements[state]' => 'active,discontinuing']
-            ),
-            $this->dashboardCard(
-                __('Agent Supplier Purchase Orders'),
-                __('Purchase orders'),
-                'fal fa-clipboard-list',
-                AgentSupplierPurchaseOrder::where('group_id', $this->group->id)->count(),
-                'indigo',
-                'grp.supply-chain.agent_supplier_purchase_orders.index'
             ),
             $this->dashboardCard(
                 __('Command & Control'),

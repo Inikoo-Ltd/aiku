@@ -26,7 +26,6 @@ class GetAgentOrganisationNavigation
             $subSections = [
                 $this->procurementSubSection(__('Dashboard'), 'fa-chart-network', 'grp.org.procurement.dashboard', 'grp.org.procurement.dashboard', $organisation),
                 $this->procurementSubSection(__('Purchase Orders'), 'fa-clipboard-list', 'grp.org.procurement.purchase_orders.', 'grp.org.procurement.purchase_orders.index', $organisation),
-                $this->procurementSubSection(__('Supplier Purchase Orders'), 'fa-clipboard-list', 'grp.org.procurement.agent_supplier_purchase_orders.', 'grp.org.procurement.agent_supplier_purchase_orders.index', $organisation),
                 $this->procurementSubSection(__('Stock Deliveries'), 'fa-truck-container', 'grp.org.procurement.stock_deliveries.', 'grp.org.procurement.stock_deliveries.index', $organisation),
                 $this->procurementSubSection(__('Suppliers'), 'fa-person-dolly', 'grp.org.procurement.org_suppliers.', 'grp.org.procurement.org_suppliers.index', $organisation),
                 $this->procurementSubSection(__('Supplier Products'), 'fa-box-usd', 'grp.org.procurement.org_supplier_products.', 'grp.org.procurement.org_supplier_products.index', $organisation),

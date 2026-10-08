@@ -25,7 +25,6 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -49,9 +48,9 @@ class StorePurchaseOrder extends OrgAction
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
 
-    private OrgSupplier|OrgAgent|OrgPartner $parent;
+    private OrgSupplier|OrgPartner $parent;
 
-    public function handle(OrgSupplier|OrgAgent|OrgPartner $parent, array $modelData): PurchaseOrder
+    public function handle(OrgSupplier|OrgPartner $parent, array $modelData): PurchaseOrder
     {
         $modelData = $this->prepareDeliveryStoreFields($parent, $modelData);
         $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run(
@@ -87,9 +86,10 @@ class StorePurchaseOrder extends OrgAction
         if ($parent instanceof OrgSupplier) {
             OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
             SupplierHydratePurchaseOrders::dispatch($parent->supplier)->delay($this->hydratorsDelay);
-        } elseif ($parent instanceof OrgAgent) {
-            OrgAgentHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
-            AgentHydratePurchaseOrders::dispatch($parent->agent)->delay($this->hydratorsDelay);
+            if ($parent->orgAgent) {
+                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent)->delay($this->hydratorsDelay);
+                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent)->delay($this->hydratorsDelay);
+            }
         } elseif ($parent instanceof OrgPartner) {
             OrgPartnerHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
         }
@@ -164,14 +164,11 @@ class StorePurchaseOrder extends OrgAction
             ->where('is_available', true)
             ->whereHas('supplierProduct', fn ($query) => $query->where('is_available', true))
             ->doesntExist()) {
-            $message = $this->parent instanceof OrgAgent
-                ? __("Agent don't have any product")
-                : __("Supplier don't have any product");
-            $validator->errors()->add('purchase_order', $message);
+            $validator->errors()->add('purchase_order', __("Supplier don't have any product"));
         }
     }
 
-    public function action(OrgAgent|OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder
+    public function action(OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder
     {
         if (!$audit) {
             PurchaseOrder::disableAuditing();
@@ -184,15 +181,6 @@ class StorePurchaseOrder extends OrgAction
 
 
         return $this->handle($parent, $this->validatedData);
-    }
-
-    public function inOrgAgent(OrgAgent $orgAgent, ActionRequest $request): PurchaseOrder
-    {
-        $this->parent = $orgAgent;
-
-        $this->initialisation($orgAgent->organisation, $request);
-
-        return $this->handle($orgAgent, $this->validatedData);
     }
 
     public function inOrgSupplier(OrgSupplier $orgSupplier, ActionRequest $request): PurchaseOrder
@@ -224,9 +212,7 @@ class StorePurchaseOrder extends OrgAction
 
     public function htmlResponse(PurchaseOrder $purchaseOrder): RedirectResponse
     {
-        if ($this->parent instanceof OrgAgent) {
-            return Redirect::route('grp.org.procurement.org_agents.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
-        } elseif ($this->parent instanceof OrgSupplier) {
+        if ($this->parent instanceof OrgSupplier) {
             return Redirect::route('grp.org.procurement.org_suppliers.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
         } else {
             return Redirect::route('grp.org.procurement.org_partners.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->id, $purchaseOrder->slug]);

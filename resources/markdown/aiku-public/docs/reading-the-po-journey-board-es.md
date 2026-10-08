@@ -2,7 +2,7 @@
 title: Leer el panel de PO journey
 summary: Para compradores y dirección — cómo cada pedido de compra abierto se convierte en una franja, qué significa cada color y cada fecha, de dónde vienen los plazos previstos, cómo marcar las etapas que nadie más registra, y cómo encontrar los pedidos que necesitan tu atención.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, supply-chain, agents
 category: procurement
 series: PO journey
@@ -21,7 +21,7 @@ Todo pedido que sigue en camino aparece en el panel:
 
 - **Pedidos a proveedores directos.**
 - **Pedidos entre empresas AW**, por ejemplo una empresa que compra a la fábrica.
-- **Pedidos a través de agentes.** Estos se muestran como el pedido del agente a cada proveedor, porque es ahí donde realmente ocurren la producción, los controles de calidad y los retrasos. Cambia **Orders to suppliers** por **Agent POs** arriba a la izquierda para ver en su lugar cada pedido de agente como una sola fila. Un pedido de agente que el agente todavía no ha repartido por proveedor aparece como una sola fila con una pequeña etiqueta *not split*.
+- **Pedidos a través de agentes.** Un pedido a través de un agente se hace para un proveedor que está detrás del agente, porque es ahí donde realmente ocurren la producción, los controles de calidad y los retrasos. Su fila muestra al agente y al proveedor.
 
 Un pedido sale del panel en cuanto su mercancía se coloca en el almacén y todos sus productos están a la venta. Los pedidos terminados en los últimos 60 días siguen visibles como **Completed**, para que puedas ver lo que ha entrado. Los pedidos de más de un año que nunca se terminaron se apartan y no se muestran.
 

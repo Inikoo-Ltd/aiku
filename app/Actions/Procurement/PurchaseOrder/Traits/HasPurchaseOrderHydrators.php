@@ -15,7 +15,6 @@ use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurchaseOrders;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -24,15 +23,16 @@ trait HasPurchaseOrderHydrators
 {
     public function purchaseOrderHydrate(PurchaseOrder $purchaseOrder): void
     {
-        /** @var OrgSupplier|OrgAgent|OrgPartner $parent */
+        /** @var OrgSupplier|OrgPartner $parent */
         $parent = $purchaseOrder->parent;
 
         if (class_basename($parent) == 'OrgSupplier') {
             OrgSupplierHydratePurchaseOrders::dispatch($parent);
             SupplierHydratePurchaseOrders::dispatch($parent->supplier);
-        } elseif (class_basename($parent) == 'OrgAgent') {
-            OrgAgentHydratePurchaseOrders::dispatch($parent);
-            AgentHydratePurchaseOrders::dispatch($parent->agent);
+            if ($parent->orgAgent) {
+                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent);
+                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent);
+            }
         } elseif (class_basename($parent) == 'OrgPartner') {
             OrgPartnerHydratePurchaseOrders::dispatch($parent);
         }

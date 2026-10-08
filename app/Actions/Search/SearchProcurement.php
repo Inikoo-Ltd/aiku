@@ -11,7 +11,6 @@ namespace App\Actions\Search;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
@@ -54,11 +53,6 @@ class SearchProcurement
             $supplierProductsQuery->where('organisation_ids', $organisationId);
         }
 
-        $agentSupplierPurchaseOrdersQuery = AgentSupplierPurchaseOrder::search($query);
-        if ($organisationId) {
-            $agentSupplierPurchaseOrdersQuery->where('organisation_ids', $organisationId);
-        }
-
         $mapReferenceState = static fn (array $document) => [
             'id'        => (int)$document['id'],
             'reference' => $document['reference'] ?? null,
@@ -80,7 +74,6 @@ class SearchProcurement
                 'agents'                           => array_map($mapCodeNameState, $this->rawDocuments($agentsQuery)),
                 'suppliers'                        => array_map($mapCodeNameState, $this->rawDocuments($suppliersQuery)),
                 'supplier_products'                => array_map($mapCodeNameState, $this->rawDocuments($supplierProductsQuery)),
-                'agent_supplier_purchase_orders'   => array_map($mapReferenceState, $this->rawDocuments($agentSupplierPurchaseOrdersQuery)),
             ],
         ];
     }

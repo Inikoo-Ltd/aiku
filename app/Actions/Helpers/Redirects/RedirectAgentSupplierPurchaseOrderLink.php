@@ -8,30 +8,33 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\OrgAction;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class RedirectAgentSupplierPurchaseOrderLink extends OrgAction
+class RedirectAgentSupplierPurchaseOrderLink
 {
-    use WithAgentOrganisationRedirect;
+    use AsAction;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user() !== null;
+    }
 
     public function handle(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ?User $user = null): RedirectResponse
     {
-        if ($user && !$user->authTo('supply-chain.view') && $organisation = $this->getAgentOrganisationForUser($user, $agentSupplierPurchaseOrder->supplier?->agent_id)) {
-            return Redirect::to(route('grp.org.procurement.agent_supplier_purchase_orders.show', [$organisation->slug, $agentSupplierPurchaseOrder->slug]));
-        }
+        $purchaseOrder = PurchaseOrder::where('agent_supplier_purchase_order_id', $agentSupplierPurchaseOrder->id)->first();
 
-        return Redirect::to(route('grp.supply-chain.agent_supplier_purchase_orders.show', [$agentSupplierPurchaseOrder->slug]));
+        abort_if(!$purchaseOrder, 404);
+
+        return RedirectPurchaseOrderLink::make()->handle($purchaseOrder, $user);
     }
 
     public function asController(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): RedirectResponse
     {
-        $this->initialisationFromGroup(group(), $request);
-
         return $this->handle($agentSupplierPurchaseOrder, $request->user());
     }
 }

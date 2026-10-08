@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Helpers\Address\HydrateAddress;
 use App\Actions\Helpers\Address\ParseCountryID;
@@ -137,7 +138,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(16)
+        ->and($group->roles()->count())->toBe(17)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -145,14 +146,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(15)
+    expect($group->jobPositions()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(15)
+    expect($group->jobPositions()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -205,7 +206,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(10)
-        ->and($group->roles()->count())->toBe(26)
+        ->and($group->roles()->count())->toBe(27)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -2067,6 +2068,29 @@ test('compliance job positions: the worker drafts, the supervisor publishes, onl
 
     UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
     expect($user->refresh()->authTo('compliance.view'))->toBeFalse();
+})->depends('SetUserAuthorisedModels command');
+
+test('supply chain job positions: the worker views and edits, only the manager discontinues', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    $expectedPermissions = [
+        'gp-sc-w' => ['supply-chain.view' => true, 'supply-chain.edit' => true, 'supply-chain' => false],
+        'gp-sc'   => ['supply-chain.view' => true, 'supply-chain.edit' => true, 'supply-chain' => true],
+    ];
+
+    foreach ($expectedPermissions as $code => $permissions) {
+        UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => [$code]]);
+        $user->refresh();
+
+        foreach ($permissions as $permission => $isGranted) {
+            expect($user->authTo($permission))->toBe($isGranted, "$code $permission");
+        }
+        expect(DiscontinueOrgStocks::canChangeGroupStatus($user))->toBe($permissions['supply-chain'], "$code discontinue");
+    }
+
+    UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
+    expect($user->refresh()->authTo('supply-chain.view'))->toBeFalse();
 })->depends('SetUserAuthorisedModels command');
 
 test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {

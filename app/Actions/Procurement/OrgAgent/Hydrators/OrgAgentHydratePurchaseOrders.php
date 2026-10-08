@@ -38,7 +38,7 @@ class OrgAgentHydratePurchaseOrders implements ShouldBeUnique
             enum: PurchaseOrderStateEnum::class,
             models: PurchaseOrder::class,
             where: function ($q) use ($orgAgent) {
-                $q->where('parent_id', $orgAgent->id)->where('parent_type', 'OrgAgent');
+                $q->where('agent_id', $orgAgent->agent_id)->where('organisation_id', $orgAgent->organisation_id);
             }
         ));
 
@@ -48,7 +48,7 @@ class OrgAgentHydratePurchaseOrders implements ShouldBeUnique
             enum: PurchaseOrderDeliveryStateEnum::class,
             models: PurchaseOrder::class,
             where: function ($q) use ($orgAgent) {
-                $q->where('parent_id', $orgAgent->id)->where('parent_type', 'OrgAgent');
+                $q->where('agent_id', $orgAgent->agent_id)->where('organisation_id', $orgAgent->organisation_id);
             }
         ));
 
