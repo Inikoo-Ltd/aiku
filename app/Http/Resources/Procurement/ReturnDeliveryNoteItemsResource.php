@@ -95,7 +95,8 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
             && ($returnDeliveryNoteItem->total_item_damaged > 0 || $returnDeliveryNoteItem->total_item_returned > 0)
         ) {
             $transaction        = $returnDeliveryNoteItem->transaction;
-            $originalItemPrice  = (float) $transaction->net_amount > 0 ? (float) $transaction->net_amount / $returnDeliveryNoteItem->dn_dispatched_qty : 0;
+            $dispatchedQty      = (float) ($returnDeliveryNoteItem->dn_dispatched_qty ?? 0);
+            $originalItemPrice  = (float) $transaction->net_amount > 0 && $dispatchedQty > 0 ? (float) $transaction->net_amount / $dispatchedQty : 0;
             $qtyAvailReturn     = $returnDeliveryNoteItem->total_item_damaged + $returnDeliveryNoteItem->total_item_returned;
             $maxAmtReturn       = round($qtyAvailReturn * $originalItemPrice, 2);
 
