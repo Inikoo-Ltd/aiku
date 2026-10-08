@@ -59,7 +59,9 @@ class UpdateOrgStockMovement extends OrgAction
             data_set($modelData, 'flow', $flow);
         }
 
-        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $locationOrgStock, &$oldQuantity) {
+        $batches = Arr::pull($modelData, 'batches');
+
+        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $batches, $locationOrgStock, &$oldQuantity) {
             $lockedQuantity = $locationOrgStock
                 ? (float)LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('quantity')
                 : 0.0;
@@ -71,17 +73,23 @@ class UpdateOrgStockMovement extends OrgAction
 
             $orgStockMovement->update($modelData);
 
-            if ($oldQuantity == $orgStockMovement->quantity || !$locationOrgStock) {
+            if (!$locationOrgStock) {
                 return null;
             }
 
-            if ($this->strict) {
+            $quantityChanged = $oldQuantity != $orgStockMovement->quantity;
+
+            if ($batches !== null || ($quantityChanged && ($this->strict || $previousBatches !== []))) {
                 $keepsDirection = ((float)$oldQuantity < 0) === ((float)$orgStockMovement->quantity < 0);
                 AllocateOrgStockMovementBatches::run(
                     $orgStockMovement,
                     $lockedQuantity - (float)$oldQuantity,
-                    $keepsDirection ? $previousBatches : []
+                    $batches ?? ($keepsDirection ? $previousBatches : [])
                 );
+            }
+
+            if (!$quantityChanged) {
+                return null;
             }
 
             return AddToLocationOrgStockQuantity::run(
@@ -114,7 +122,10 @@ class UpdateOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity' => ['sometimes', 'numeric'],
+            'quantity'                => ['sometimes', 'numeric'],
+            'batches'                 => ['sometimes', 'array'],
+            'batches.*.batch_code_id' => ['required', 'integer', 'exists:batch_codes,id'],
+            'batches.*.quantity'      => ['required', 'numeric', 'gt:0'],
         ];
 
         if (!$this->strict) {

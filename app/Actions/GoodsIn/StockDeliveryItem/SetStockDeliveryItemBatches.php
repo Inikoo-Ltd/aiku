@@ -57,14 +57,12 @@ class SetStockDeliveryItemBatches extends OrgAction
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
-        $warehouse = $stockDeliveryItem->organisation->warehouses()->first();
-
-        DB::transaction(function () use ($stockDeliveryItem, $modelData, $warehouse) {
+        DB::transaction(function () use ($stockDeliveryItem, $modelData) {
             StockDeliveryItem::lockForUpdate()->find($stockDeliveryItem->id);
 
             $quantities = [];
             foreach ($modelData['batches'] as $batch) {
-                $batchCode = StoreBatchCode::make()->action($warehouse, [
+                $batchCode = StoreBatchCode::make()->inOrganisation($stockDeliveryItem->organisation, [
                     'code'         => trim($batch['code']),
                     'expiry_date'  => $batch['expiry_date'] ?? null,
                     'org_stock_id' => $stockDeliveryItem->org_stock_id,

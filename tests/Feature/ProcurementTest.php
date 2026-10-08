@@ -10386,7 +10386,7 @@ test('goods in records the batches a delivery line arrived in and puts them away
     $this->patch(route('grp.models.stock-delivery-item.batches', $stockDeliveryItem->id), ['batches' => [
         ['code' => 'LOT-A', 'expiry_date' => '2027-03-01', 'quantity' => $checkedSkos * 0.6],
         ['code' => 'LOT-B', 'expiry_date' => null, 'quantity' => $checkedSkos * 0.4],
-    ]])->assertSessionHasNoErrors();
+    ]])->assertSessionHasNoErrors()->assertRedirect();
 
     $batches = $stockDeliveryItem->batches()->with('batchCode')->get();
     expect($batches->pluck('batchCode.code')->all())->toBe(['LOT-A', 'LOT-B'])

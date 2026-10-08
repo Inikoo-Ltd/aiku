@@ -36,6 +36,10 @@ Pressing **Start picking** on a note moves it to **Handling** and records who is
 
 While a note is being picked, a line can turn out to need a decision the picker cannot make on the bench — for example a replacement or a release from the warehouse. When that happens the whole note moves to **Waiting** rather than letting picking continue around the problem. Once nothing is genuinely waiting any more, an **Auto Finish Waiting** button appears, and pressing it checks the note over and, if every line really is resolved, carries it on to **Picked**.
 
+## Batches
+
+For products whose stock has batches, each pick shows the batch it was taken from. You do not have to choose it: the system takes the batch with the earliest best-before date on that location, after any stock that has no batch recorded. When one pick needs more than that batch holds, the pick splits into one line per batch, for example 4 from one batch and 2 from the next, so the delivery note, the invoice and the receiving warehouse see every batch that left the shelf. If you picked from a different batch, open the batch on the pick and change it. Deleting a pick puts its batch back on the shelf, and returned goods go back as the batches that were picked. The delivery note PDF lists the batch, best-before date and quantity under each item.
+
 ## Sets sold only complete
 
 Some products are made of several parts that are useless apart, like a salt lamp with its bulb and cable. On the master product's **Composition** page these have **Sold only as a complete set** switched on. A shop product set not to follow its master's parts has the same switch on its own **Composition** page, and the master lists it among the shops that differ.

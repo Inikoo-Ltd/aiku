@@ -20,6 +20,7 @@ use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -216,5 +217,30 @@ class DeliveryNoteItem extends Model
     public function returnDeliveryNoteItems(): HasMany
     {
         return $this->hasMany(ReturnDeliveryNoteItem::class, 'delivery_note_items_id');
+    }
+
+    /**
+     * The batches picked for this line, as recorded by the stock taken off the shelves, falling
+     * back to the batch typed on a pick made before stock knew its batches.
+     *
+     * @return array<int, array{batch_code_id: int, quantity: float}>
+     */
+    public function pickedBatches(): array
+    {
+        $batches = [];
+        foreach ($this->pickings()->orderBy('id')->get(['id', 'quantity', 'batch_code_id', 'org_stock_movement_id']) as $picking) {
+            $moved = $picking->org_stock_movement_id
+                ? DB::table('org_stock_movement_batches')->where('org_stock_movement_id', $picking->org_stock_movement_id)->where('quantity', '<', 0)->orderBy('id')->get(['batch_code_id', 'quantity'])
+                : collect();
+
+            if ($moved->isEmpty() && $picking->batch_code_id) {
+                $batches[] = ['batch_code_id' => $picking->batch_code_id, 'quantity' => (float) $picking->quantity];
+            }
+            foreach ($moved as $row) {
+                $batches[] = ['batch_code_id' => $row->batch_code_id, 'quantity' => -(float) $row->quantity];
+            }
+        }
+
+        return $batches;
     }
 }

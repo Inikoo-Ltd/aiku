@@ -44,6 +44,28 @@ class AllocateOrgStockMovementBatches
             ? $this->stockIn($quantity, $batches)
             : $this->stockOut($orgStockMovement, -$quantity, $locationQuantityBefore, $batches);
 
+        $this->insertRows($orgStockMovement, $rows);
+    }
+
+    /**
+     * Sets a movement's batches outright, for when a movement is cut into several without the
+     * stock on the shelf changing (a pick split one line per batch).
+     *
+     * @param  array<int, array{batch_code_id: int, quantity: float}>  $batches  quantities as positive amounts
+     */
+    public function replace(OrgStockMovement $orgStockMovement, array $batches): void
+    {
+        OrgStockMovementBatch::where('org_stock_movement_id', $orgStockMovement->id)->delete();
+
+        $sign = (float) $orgStockMovement->quantity < 0 ? -1 : 1;
+        $this->insertRows($orgStockMovement, array_map(fn (array $batch) => [(int) $batch['batch_code_id'], $sign * (float) $batch['quantity']], $batches));
+    }
+
+    /**
+     * @param  array<int, array{0: int, 1: float}>  $rows
+     */
+    private function insertRows(OrgStockMovement $orgStockMovement, array $rows): void
+    {
         if ($rows === []) {
             return;
         }
