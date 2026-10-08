@@ -48,18 +48,20 @@ class ShowOrgSupplierProduct extends OrgAction
         return $this->handle($orgSupplierProduct);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
+        abort_unless($orgSupplierProduct->org_agent_id === $orgAgent->id, 404);
+
         $this->initialisation($organisation, $request)->withTab($this->getTabs());
         $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
+        abort_unless($orgSupplierProduct->org_supplier_id === $orgSupplier->id, 404);
+
         $this->initialisation($organisation, $request)->withTab($this->getTabs());
         $this->authorizeProcurementRecord($orgSupplierProduct);
 
