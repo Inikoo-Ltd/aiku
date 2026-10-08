@@ -65,6 +65,7 @@ class ShowSupplierProductUpload extends InertiaAction
                 'problems'    => $upload->state === UploadStateEnum::WAITING_CONFIRMATION ? ImportSupplierProductUpload::make()->problems($upload) : [],
                 'review'      => Arr::get($upload->data, 'review'),
                 'ai'          => Arr::get($upload->data, 'ai'),
+                'sourcing'    => Arr::get($upload->data, 'sourcing'),
                 'purchase_orders' => $this->purchaseOrders($upload),
                 'compliance'      => [
                     'packaging_rows' => Arr::get($upload->data, 'packaging.rows', 0),
@@ -95,6 +96,7 @@ class ShowSupplierProductUpload extends InertiaAction
                 'findings'  => Arr::get($record->data, 'findings', []),
                 'decisions' => Arr::get($record->data, 'decisions', []),
                 'skip'      => (bool)Arr::get($record->data, 'skip'),
+                'sourcing'  => Arr::get($record->data, 'sourcing'),
                 'errors'    => $record->errors,
             ])->values(),
             'draft_orders' => $upload->state === UploadStateEnum::WAITING_CONFIRMATION ? $this->draftOrders($supplier, $upload) : [],

@@ -594,6 +594,66 @@ test('supplier product upload is not left waiting when the AI checks crash', fun
         ->and(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make()->problems($upload))->not->toContain('The AI checks are still running.');
 });
 
+test('supplier product upload from a supplier in China compares new rows with sourcing websites, caches by name and stops at the AI budget', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    config(['services.openrouter.api_key' => 'test-key']);
+    DB::table('ai_usages')->whereIn('feature', ['ReviewSupplierProductUpload', 'CheckSupplierProductUploadSourcingPrices'])->where('created_at', '>=', now()->startOfMonth())->delete();
+    App\Actions\Helpers\AI\AskJev::shouldRun()->andReturn([]);
+    App\Actions\SupplyChain\SupplierProduct\Upload\CheckSupplierProductUploadSourcingPrices::partialMock()->shouldReceive('sourcingDomains')->andReturn(['wholesale.example']);
+    Illuminate\Support\Facades\Http::fake(fn (Illuminate\Http\Client\Request $request) => isset($request->data()['tools'])
+        ? Illuminate\Support\Facades\Http::response([
+            'choices' => [['message' => [
+                'content'     => json_encode(['low' => 0.8, 'high' => 1.1, 'note' => 'Same tray, 100 to 1000 pieces.', 'links' => [
+                    ['url' => 'https://www.wholesale.example/item/1', 'title' => 'Bamboo tray', 'price' => 0.9],
+                    ['url' => 'https://www.wholesale.example/item/made-up', 'title' => 'Not in the search results', 'price' => 0.5],
+                    ['url' => 'https://elsewhere.example/item/2', 'title' => 'Another website', 'price' => 0.7],
+                ]]),
+                'annotations' => [['type' => 'url_citation', 'url_citation' => ['url' => 'https://www.wholesale.example/item/1']], ['type' => 'url_citation', 'url_citation' => ['url' => 'https://elsewhere.example/item/2']]],
+            ]]],
+            'usage'   => ['prompt_tokens' => 4000, 'completion_tokens' => 300, 'cost' => 0.1],
+        ])
+        : Illuminate\Support\Facades\Http::response([
+            'choices' => [['message' => ['content' => '{"summary": "Fine.", "rows": {}}']]],
+            'usage'   => ['prompt_tokens' => 1000, 'completion_tokens' => 100, 'cost' => 0.02],
+        ]));
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: array_merge(Supplier::factory()->definition(), [
+        'address' => array_merge(App\Models\Helpers\Address::factory()->definition(), ['country_id' => App\Models\Helpers\Country::where('code', 'CN')->value('id'), 'country_code' => 'CN']),
+    ]));
+    $name = 'Bamboo Serving Tray '.Str::random(6);
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Unit recommended description (website)' => $name, 'Unit barcode (EAN-13, for website)' => 'auto'])]));
+    $sourcing = $upload->records()->first()->data['sourcing'];
+
+    expect($upload->data['sourcing'])->toBe('done')
+        ->and($upload->data['review']['cost'])->toBe(0.02)
+        ->and($sourcing)->toMatchArray(['status' => 'overpaying', 'low' => 0.8, 'high' => 1.1, 'currency' => 'USD', 'note' => 'Same tray, 100 to 1000 pieces.'])
+        ->and(collect($sourcing['links'])->pluck('url')->all())->toBe(['https://www.wholesale.example/item/1'])
+        ->and(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make()->problems($upload))->not->toContain('The AI checks are still running.');
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Part reference' => 'UPLB-03', "Supplier's product code" => 'UPLB-03', 'Unit recommended description (website)' => $name, 'Unit cost (Sup Cur)' => 0.95, 'Unit barcode (EAN-13, for website)' => 'auto'])]));
+
+    expect($upload->records()->first()->data['sourcing']['status'])->toBe('ok')
+        ->and(Illuminate\Support\Facades\Http::recorded(fn ($request) => isset($request->data()['tools']))->count())->toBe(1);
+
+    DB::table('ai_usages')->insert(['created_at' => now(), 'feature' => 'CheckSupplierProductUploadSourcingPrices', 'provider' => 'openrouter', 'model' => 'anthropic/claude-fable-5.1', 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 40]);
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([supplierProductUploadRow(['Part reference' => 'UPLB-04', "Supplier's product code" => 'UPLB-04', 'Unit recommended description (website)' => $name.' XL', 'Unit barcode (EAN-13, for website)' => 'auto'])]));
+
+    expect($upload->data['review']['status'])->toBe('off')
+        ->and($upload->data['sourcing'])->toBe('budget')
+        ->and($upload->records()->first()->data)->not->toHaveKey('sourcing');
+
+    DB::table('ai_usages')->whereIn('feature', ['ReviewSupplierProductUpload', 'CheckSupplierProductUploadSourcingPrices'])->where('created_at', '>=', now()->startOfMonth())->delete();
+});
+
+test('sourcing price verdict: within range, more than 30% above, well below, nothing found', function () {
+    $verdict = fn (?float $low, ?float $high, float $cost) => App\Actions\SupplyChain\SupplierProduct\Upload\CheckSupplierProductUploadSourcingPrices::verdict(['low' => $low, 'high' => $high, 'links' => [], 'note' => null], $cost, 'USD')['status'];
+
+    expect($verdict(1.0, 2.0, 2.5))->toBe('ok')
+        ->and($verdict(1.0, 2.0, 2.7))->toBe('overpaying')
+        ->and($verdict(1.0, 2.0, 0.4))->toBe('cheap')
+        ->and($verdict(null, null, 1.0))->toBe('unknown');
+});
+
 test('supplier product upload import errors shown to staff never carry urls or keys', function () {
     $errorText = fn (Throwable $e) => (fn () => $this->errorText($e))->call(App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::make());
 

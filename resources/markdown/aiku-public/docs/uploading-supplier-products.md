@@ -132,6 +132,18 @@ While you read the preview, two AI checks run in the background and the page upd
 
 Import waits for them. If the AI cannot run, each row asks for **I accept responsibility** instead, so an upload is never stuck.
 
+### Sourcing prices (suppliers in China)
+
+When the supplier's address is in China, the AI then looks up each new product on the sourcing websites and shows, under the row, the price range it found for one unit, with links to the items it compared:
+
+- **Within the sourcing price range**: the cost is fair.
+- **More than 30% above**: we may be overpaying; ask the supplier for a better price.
+- **Well below**: check the quality and the specification before ordering.
+
+Wholesale prices depend on the quantity ordered, so treat the range as a guide. Only the first 20 new rows are looked up, and a product name already looked up in the last 30 days reuses that answer. This check is advice only: Import does not wait for it. It shares the AI review's spending limits, and stops when they are reached.
+
+The sourcing websites are the competitors set to sell to **Factory** on a master shop's Competitors page. Without any, this check does not run.
+
 ## Draft purchase orders
 
 The **Order Cartons UK / SK / ES / Aroma** columns order cartons for each organisation. The preview shows, per organisation, how many cartons and lines will be ordered and on which order:
