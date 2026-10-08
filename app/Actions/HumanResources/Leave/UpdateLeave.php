@@ -97,10 +97,6 @@ class UpdateLeave extends OrgAction
             $leave->update($updates);
         }
 
-        if ((isset($updates['start_date']) || isset($updates['end_date'])) && $leave->coverEmployee) {
-            SyncLeaveCoverRoles::run($leave->coverEmployee);
-        }
-
         $this->syncAttachments($leave, $modelData);
 
         return $leave->refresh();

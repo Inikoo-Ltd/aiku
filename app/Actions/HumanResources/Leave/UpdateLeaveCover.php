@@ -36,10 +36,6 @@ class UpdateLeaveCover extends OrgAction
         ]);
         $leave->load('coverEmployee');
 
-        foreach (collect([$previousCover, $leave->coverEmployee])->filter()->unique('id') as $coverEmployee) {
-            SyncLeaveCoverRoles::run($coverEmployee);
-        }
-
         if ($leave->coverEmployee && $leave->coverEmployee->id !== $previousCover?->id) {
             Notification::send(
                 $leave->coverEmployee->users()->wherePivot('status', true)->get(),

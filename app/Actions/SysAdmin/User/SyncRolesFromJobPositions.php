@@ -13,22 +13,17 @@ use App\Actions\SysAdmin\CleanUserCaches;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
-use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
-use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
-use App\Models\HumanResources\Leave;
 use App\Models\Inventory\Warehouse;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -45,15 +40,8 @@ class SyncRolesFromJobPositions
         $roles       = [];
 
         if ($user->status) {
-            $employees = $user->employees()->wherePivot('status', true)->where('employees.state', '!=', EmployeeStateEnum::LEFT)->get();
-            foreach ($employees as $employee) {
+            foreach ($user->employees()->wherePivot('status', true)->where('employees.state', '!=', EmployeeStateEnum::LEFT)->get() as $employee) {
                 foreach ($employee->jobPositions as $jobPosition) {
-                    $roles = $this->getRoles($roles, $jobPosition);
-                }
-            }
-
-            foreach ($this->absentEmployeesCoveredWithPermissionsToday($employees->pluck('id')) as $absentEmployee) {
-                foreach ($absentEmployee->jobPositions as $jobPosition) {
                     $roles = $this->getRoles($roles, $jobPosition);
                 }
             }
@@ -133,29 +121,6 @@ class SyncRolesFromJobPositions
         }
     }
 
-
-    /**
-     * @param Collection<int, int> $coverEmployeeIds
-     * @return EloquentCollection<int, Employee>
-     */
-    private function absentEmployeesCoveredWithPermissionsToday(Collection $coverEmployeeIds): EloquentCollection
-    {
-        if ($coverEmployeeIds->isEmpty()) {
-            return new EloquentCollection();
-        }
-
-        $today = now()->toDateString();
-
-        return Employee::whereIn(
-            'id',
-            Leave::where('status', LeaveStatusEnum::APPROVED)
-                ->where('cover_has_permissions', true)
-                ->whereIn('cover_employee_id', $coverEmployeeIds)
-                ->whereDate('start_date', '<=', $today)
-                ->whereDate('end_date', '>=', $today)
-                ->select('employee_id')
-        )->get();
-    }
 
     /**
      * Admins are given everything below them, so positions held alongside are dropped: a customer

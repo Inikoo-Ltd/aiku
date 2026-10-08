@@ -45,6 +45,6 @@ class LeaveCoverNotification extends Notification
             return $period;
         }
 
-        return $period.'. '.__('You have their permissions during this period.');
+        return $period.'. '.__('You can use their permissions during this period from the Impersonate button.');
     }
 }
