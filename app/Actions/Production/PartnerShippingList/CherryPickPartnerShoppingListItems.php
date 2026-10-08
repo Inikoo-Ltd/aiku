@@ -109,7 +109,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             if ($skosPerProductUnit <= 0) {
                 $skosPerProductUnit = 1;
             }
-            $productUnits = round($quantityPicked / $skosPerProductUnit, 3);
+            $productUnits = round($quantityPicked / $skosPerProductUnit, 6);
             $amount       = round($productUnits * (float) $product->price, 2);
 
             $transaction = StoreTransaction::make()->action(

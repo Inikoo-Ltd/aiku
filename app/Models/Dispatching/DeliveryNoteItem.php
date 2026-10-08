@@ -243,4 +243,17 @@ class DeliveryNoteItem extends Model
 
         return $batches;
     }
+
+    /**
+     * SKOs a line needs for an order quantity of the product. A partner order that names a whole
+     * number of SKOs stores the product quantity as a rounded fraction (100 SKOs of a pack of 3 is
+     * 33.333333), so a product of that comes back a hair off the whole number and is snapped to it.
+     */
+    public static function requiredQuantity(float $skosPerProduct, float $productQuantity): float
+    {
+        $quantity = $skosPerProduct * $productQuantity;
+        $whole    = round($quantity);
+
+        return $whole >= 1 && abs($quantity - $whole) < 0.00001 ? $whole : $quantity;
+    }
 }

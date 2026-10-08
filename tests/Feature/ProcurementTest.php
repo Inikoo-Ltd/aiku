@@ -5515,6 +5515,23 @@ describe('partner shopping list', function () {
         expect(GetPartnerLandedCost::run([$sellerOrgStock->id])[$sellerOrgStock->id])->toEqualWithDelta($fifoPerSko, 0.0001);
         $sellerOrgStock->update(['current_supplier_sku_cost' => $originalSupplierCost]);
 
+        $originalSkosPerProduct = $sellerOrgStock->pivot->quantity;
+        $originalPackedIn       = $sellerOrgStock->packed_in;
+        DB::table('product_has_org_stocks')->where('product_id', $this->sellerProduct->id)->where('org_stock_id', $sellerOrgStock->id)->update(['quantity' => 3]);
+        $sellerOrgStock->update(['packed_in' => 1]);
+        $this->buyerOrgStock->update(['packed_in' => 1]);
+
+        $skosNotInWholePacks = StorePurchaseOrder::make()->action($this->orgPartner, []);
+        StorePurchaseOrderTransaction::make()->addPartnerOrgStock($skosNotInWholePacks, $this->buyerOrgStock->refresh(), ['quantity_ordered' => 100]);
+        UpdatePurchaseOrderStateToSubmitted::make()->action($skosNotInWholePacks->refresh());
+        $sellerOrder = \App\Models\Ordering\Order::find(data_get($skosNotInWholePacks->refresh()->data, 'seller_order_id'));
+
+        expect((float) $sellerOrder->deliveryNotes()->first()->deliveryNoteItems()->first()->quantity_required)->toBe(100.0);
+
+        DB::table('product_has_org_stocks')->where('product_id', $this->sellerProduct->id)->where('org_stock_id', $sellerOrgStock->id)->update(['quantity' => $originalSkosPerProduct]);
+        $sellerOrgStock->update(['packed_in' => $originalPackedIn]);
+        $this->buyerOrgStock->update(['packed_in' => $originalPackedIn]);
+
         DB::table('org_stock_histories')->where('organisation_stock_history_id', $organisationStockHistoryId)->delete();
         DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
 

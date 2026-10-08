@@ -119,7 +119,7 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                     );
 
                     foreach ($product->orgStocks as $orgStock) {
-                        $quantity = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                        $quantity = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
                         if ($quantity > 0) {
                             $deliveryNoteItemData = [
                                 'org_stock_id'               => $orgStock->id,
