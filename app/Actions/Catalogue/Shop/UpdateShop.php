@@ -1055,6 +1055,7 @@ class UpdateShop extends OrgAction
             'family_order_follow_master'                              => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
+            'zero_tax_invoice_footer'                                 => ['sometimes', 'nullable', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'boolean'],
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],

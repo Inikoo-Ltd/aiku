@@ -569,6 +569,13 @@ class EditShop extends OrgAction
                             'full'  => true,
                             'value' => $shop->invoice_footer
                         ],
+                        'zero_tax_invoice_footer' => [
+                            'type'        => 'textEditor',
+                            'label'       => __('Invoice footer when no VAT is charged'),
+                            'information' => __('Optional. Used instead of the invoice footer on invoices with 0 VAT, e.g. a reverse charge note. When empty, every invoice uses the invoice footer.'),
+                            'full'        => true,
+                            'value'       => $shop->zero_tax_invoice_footer
+                        ],
                     ],
                 ],
                 ...(PdfCustomerLetterOfAuthorisation::isOffered($shop) ? [[

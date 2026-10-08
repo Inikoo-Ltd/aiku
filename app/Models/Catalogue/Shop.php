@@ -152,6 +152,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $delete_comment
  * @property string|null $source_id
  * @property string|null $invoice_footer
+ * @property string|null $zero_tax_invoice_footer
  * @property string|null $colour
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
