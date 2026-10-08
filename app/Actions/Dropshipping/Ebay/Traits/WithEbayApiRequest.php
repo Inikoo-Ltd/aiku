@@ -833,6 +833,35 @@ trait WithEbayApiRequest
         return $fallback;
     }
 
+    /**
+     * @return array{fulfillmentPolicyId: ?string, paymentPolicyId: ?string, returnPolicyId: ?string}
+     */
+    public function channelListingPolicies(): array
+    {
+        return [
+            'fulfillmentPolicyId' => $this->fulfillment_policy_id,
+            'paymentPolicyId'     => $this->payment_policy_id,
+            'returnPolicyId'      => $this->return_policy_id,
+        ];
+    }
+
+    /**
+     * eBay answers 25007 when the offer's postage policy is gone or has no service it can use, and spells it
+     * "fulfilment" or "fulfillment" depending on the marketplace.
+     */
+    public function isFulfilmentPolicyError(mixed $errorResponse): bool
+    {
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!is_array($errors)) {
+            return false;
+        }
+
+        return collect(Arr::get($errors, 'errors', []))
+            ->contains(fn ($error) => (int) Arr::get($error, 'errorId') === 25007
+                || preg_match('/fulfil+ment polic/i', (string) Arr::get($error, 'message')));
+    }
+
     public function getMissingListingPolicy(): ?string
     {
         $requiredListingPolicies = [
@@ -1184,12 +1213,10 @@ trait WithEbayApiRequest
                         $data
                     );
 
-                if ($response->successful()) {
-                    return $response->json();
-                }
-            } else {
-                return $response->json();
+                return $response->json() ?? [];
             }
+
+            return $response->json();
         } catch (Exception $e) {
             Log::error('eBay Token Error: '.$e->getMessage());
 
@@ -1342,11 +1369,7 @@ trait WithEbayApiRequest
                     "currency" => $currency
                 ]
             ],
-            "listingPolicies"     => [
-                "fulfillmentPolicyId" => $this->fulfillment_policy_id,
-                "paymentPolicyId"     => $this->payment_policy_id,
-                "returnPolicyId"      => $this->return_policy_id,
-            ],
+            "listingPolicies"     => $this->channelListingPolicies(),
             "categoryId"          => Arr::get($offerData, 'category_id'),
             "merchantLocationKey" => $this->location_key,
         ];
@@ -1566,16 +1589,14 @@ trait WithEbayApiRequest
                 data_set($data, 'format', 'FIXED_PRICE');
             }
 
-            if (blank(Arr::get($data, 'merchantLocationKey'))) {
+            $useChannelPolicies = (bool) Arr::get($offerData, 'use_channel_policies');
+
+            if ($useChannelPolicies || blank(Arr::get($data, 'merchantLocationKey'))) {
                 data_set($data, 'merchantLocationKey', $this->location_key);
             }
 
-            if (blank(Arr::get($data, 'listingPolicies'))) {
-                data_set($data, 'listingPolicies', [
-                    'fulfillmentPolicyId' => $this->fulfillment_policy_id,
-                    'paymentPolicyId'     => $this->payment_policy_id,
-                    'returnPolicyId'      => $this->return_policy_id,
-                ]);
+            if ($useChannelPolicies || blank(Arr::get($data, 'listingPolicies'))) {
+                data_set($data, 'listingPolicies', $this->channelListingPolicies());
             }
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
