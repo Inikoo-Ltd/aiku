@@ -28,8 +28,8 @@ class ConnectShopifyExternalShop extends OrgAction
     public string $commandSignature = 'external_shop:shopify_connect {shop} {store}';
 
     /**
-     * Links a Shopify store to an existing external shop; the store finishes the link by installing the app
-     * from the returned authentication url.
+     * Links a Shopify store to an existing external shop. A store with no token yet finishes the link by installing
+     * the app from the returned authentication url.
      *
      * @throws \Throwable
      */
@@ -48,12 +48,6 @@ class ConnectShopifyExternalShop extends OrgAction
         return DB::transaction(function () use ($shop, $domain) {
             $shopifyUser = ShopifyUser::where('name', $domain)->first();
 
-            if ($shopifyUser?->customer_id) {
-                throw ValidationException::withMessages([
-                    'shopify_store' => __('This Shopify store is a dropshipping channel, close that channel before connecting it to this shop')
-                ]);
-            }
-
             if ($shopifyUser?->external_shop_id && $shopifyUser->external_shop_id !== $shop->id) {
                 throw ValidationException::withMessages(['shopify_store' => __('This Shopify store is already connected to another shop')]);
             }
@@ -62,26 +56,42 @@ class ConnectShopifyExternalShop extends OrgAction
                 ->where('name', '!=', $domain)
                 ->update(['external_shop_id' => null]);
 
-            $shopifyUser ??= new ShopifyUser([
-                'name'     => $domain,
-                'username' => Str::random(4),
-                'password' => Str::random(8),
-            ]);
-
-            $shopifyUser->forceFill([
-                'group_id'         => $shop->group_id,
-                'organisation_id'  => $shop->organisation_id,
-                'platform_id'      => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->value('id'),
-                'external_shop_id' => $shop->id,
-            ])->save();
+            if ($shopifyUser) {
+                $shopifyUser->forceFill(['external_shop_id' => $shop->id])->save();
+            } else {
+                $shopifyUser = ShopifyUser::create([
+                    'name'             => $domain,
+                    'username'         => Str::random(4),
+                    'password'         => Str::random(8),
+                    'group_id'         => $shop->group_id,
+                    'organisation_id'  => $shop->organisation_id,
+                    'platform_id'      => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->value('id'),
+                    'external_shop_id' => $shop->id,
+                ]);
+            }
 
             $settings = $shop->settings ?? [];
             data_set($settings, 'shopify.shop_url', $domain);
-            data_set($settings, 'shopify.auth_url', $this->getAuthUrl($shopifyUser));
+
+            if ($this->isShopifyStoreInstalled($shopifyUser)) {
+                data_forget($settings, 'shopify.auth_url');
+            } else {
+                data_set($settings, 'shopify.auth_url', $this->getAuthUrl($shopifyUser));
+            }
+
             $shop->update(['settings' => $settings]);
 
             return $shopifyUser;
         });
+    }
+
+    /**
+     * A store already serving a dropshipping channel, or linked before, holds a token: it is linked as it is and
+     * needs no new app install.
+     */
+    public function isShopifyStoreInstalled(ShopifyUser $shopifyUser): bool
+    {
+        return !$shopifyUser->trashed() && str_starts_with((string) $shopifyUser->password, self::SHOPIFY_ACCESS_TOKEN_PREFIX);
     }
 
     public function getAuthUrl(ShopifyUser $shopifyUser): string
@@ -162,6 +172,10 @@ class ConnectShopifyExternalShop extends OrgAction
 
     public function htmlResponse(ShopifyUser $shopifyUser): RedirectResponse
     {
+        if ($this->isShopifyStoreInstalled($shopifyUser)) {
+            return Redirect::back();
+        }
+
         return Redirect::back()->with('redirect', [
             'url'    => $this->getAuthUrl($shopifyUser),
             'target' => '_blank',
@@ -181,8 +195,11 @@ class ConnectShopifyExternalShop extends OrgAction
         }
 
         $command->info("Shopify store $shopifyUser->name linked to $shop->name.");
-        $command->line('Open this link, logged in as the store owner, to install the app and finish the connection:');
-        $command->line($this->getAuthUrl($shopifyUser));
+
+        if (!$this->isShopifyStoreInstalled($shopifyUser)) {
+            $command->line('Open this link, logged in as the store owner, to install the app and finish the connection:');
+            $command->line($this->getAuthUrl($shopifyUser));
+        }
 
         return 0;
     }
