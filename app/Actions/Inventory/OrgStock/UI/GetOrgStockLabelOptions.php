@@ -30,7 +30,8 @@ class GetOrgStockLabelOptions
     {
         $labels = [
             'sko'  => GetOrgStockLabelData::run($orgStock, 'sko'),
-            'unit' => GetOrgStockLabelData::run($orgStock, 'unit'),
+            'unit'   => GetOrgStockLabelData::run($orgStock, 'unit'),
+            'carton' => GetOrgStockLabelData::run($orgStock, 'carton'),
         ];
 
         return [
@@ -99,11 +100,15 @@ class GetOrgStockLabelOptions
     {
         $levels = [];
 
-        foreach (['sko' => __('SKO'), 'unit' => __('Unit')] as $level => $label) {
+        foreach (['sko' => __('SKO'), 'unit' => __('Unit'), 'carton' => __('Carton')] as $level => $label) {
             $levels[] = [
                 'key'       => $level,
                 'label'     => $label,
-                'printable' => $level === 'sko' || filled($labels[$level]['barcode']['number']),
+                'printable' => match ($level) {
+                    'sko'    => true,
+                    'unit'   => filled($labels[$level]['barcode']['number']),
+                    'carton' => filled($labels[$level]['barcode']['number']) || filled($labels[$level]['carton']['units_per_carton']),
+                },
             ];
         }
 
@@ -125,6 +130,7 @@ class GetOrgStockLabelOptions
             'with_weight'            => [__('With weight'), 'weight', __('This item has no weight'), true],
             'with_custom_text'       => [__('With custom text'), null, null, false],
             'with_account_signature' => [__('With account signature'), 'signature', __('This organisation has no address'), false],
+            'with_ingredients'       => [__('With ingredients/materials'), 'materials', __('This item has no materials'), true],
         ];
 
         foreach ($labels as $level => $label) {

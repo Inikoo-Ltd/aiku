@@ -122,6 +122,7 @@ class StoreSupplierProduct extends OrgAction
             'cbm'                  => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'extra_costs'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'carton_weight'        => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'carton_net_weight'    => ['sometimes', 'nullable', 'integer', 'min:0'],
 
             'trade_units'          => ['sometimes', 'nullable', 'array'],
             'trade_units.*'        => ['integer', 'exists:trade_units,id'],

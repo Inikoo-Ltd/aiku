@@ -11,6 +11,8 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\SupplierProduct;
+use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -27,7 +29,7 @@ class GetOrgStockLabelData
     /**
      * @return array<string, mixed>
      */
-    public function handle(OrgStock $orgStock, string $level = 'unit'): array
+    public function handle(OrgStock $orgStock, string $level = 'unit', ?SupplierProduct $supplierProduct = null): array
     {
         $tradeUnits = $orgStock->tradeUnits;
         $tradeUnit  = $tradeUnits->first();
@@ -43,10 +45,44 @@ class GetOrgStockLabelData
             'signature'       => $this->getSignature($orgStock->organisation),
             'has_image'       => $tradeUnits->contains(fn (TradeUnit $tradeUnit) => (bool) $tradeUnit->image_id),
             'image_path'      => $this->getImagePath($tradeUnits),
+            'materials'       => $this->collapseWhitespace($this->getSharedTradeUnit($tradeUnits, 'marketing_ingredients')?->marketing_ingredients),
             'barcode'         => [
                 'number' => $barcode['number'] ?? null,
                 'type'   => $this->getBarcodeType($barcode['number'] ?? ''),
             ],
+            'carton'          => $level === 'carton' ? $this->getCartonData($orgStock, $tradeUnits, $supplierProduct) : null,
+        ];
+    }
+
+    /**
+     * The carton is the supplier's outer box, so what it holds and what it weighs come off the
+     * supplier product, and the batch code defaults to the supplier code and the month, as Aurora did.
+     *
+     * @return array<string, mixed>
+     */
+    private function getCartonData(OrgStock $orgStock, $tradeUnits, ?SupplierProduct $supplierProduct): array
+    {
+        $supplierProduct ??= $orgStock->stock_id
+            ? SupplierProduct::whereIn('id', DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id'))
+                ->orderByRaw('units_per_carton is null')
+                ->first()
+            : null;
+
+        $unitsPerPack   = $supplierProduct?->units_per_pack ?? (int) ($orgStock->packed_in ?? 1);
+        $unitsPerCarton = $supplierProduct?->units_per_carton;
+        $supplierCode   = $supplierProduct?->supplier?->code;
+
+        return [
+            'commercialised_by' => $orgStock->organisation->name,
+            'description'       => $supplierProduct?->name ?? $tradeUnits->first()?->name ?? $orgStock->name,
+            'units_per_pack'    => $unitsPerPack,
+            'packs_per_carton'  => $unitsPerCarton && $unitsPerPack ? trimDecimalZeros(round($unitsPerCarton / $unitsPerPack, 2)) : null,
+            'units_per_carton'  => $unitsPerCarton,
+            'batch_code'        => $supplierCode ? $supplierCode.now()->format('Ym') : null,
+            'net_weight'        => $this->getKilograms($supplierProduct?->carton_net_weight),
+            'gross_weight'      => $this->getKilograms($supplierProduct?->carton_weight),
+            'origin'            => strtoupper((string) $this->getSharedTradeUnit($tradeUnits, 'country_of_origin')?->country_of_origin) ?: null,
+            'signature'         => ($signature = $this->getSignature($orgStock->organisation)) ? str_replace("\n", ', ', $signature) : null,
         ];
     }
 
@@ -115,6 +151,11 @@ class GetOrgStockLabelData
      * Weights are held in grams, and a label reads better in the unit that keeps it under four
      * digits, which is how the rest of the inventory screens show them.
      */
+    private function getKilograms(?int $grams): ?string
+    {
+        return $grams ? trimDecimalZeros(round($grams / 1000, 3)).' kg' : null;
+    }
+
     private function getWeight(int|float|null $grams): ?string
     {
         if (blank($grams) || $grams <= 0) {

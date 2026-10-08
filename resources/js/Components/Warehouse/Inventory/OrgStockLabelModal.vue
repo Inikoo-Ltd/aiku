@@ -82,6 +82,12 @@ watch(() => [props.isOpen, props.level], ([isOpen]) => {
 
 watch(activeLevel, resetFromOptions)
 
+const levelTitles = computed<Record<string, string>>(() => ({
+    sko: ctrans("SKO label"),
+    unit: ctrans("Unit label"),
+    carton: ctrans("Carton label"),
+}))
+
 const customTextField = computed(() => fields.value.find((field) => field.key === "with_custom_text"))
 
 const pdfUrl = computed(() => {
@@ -120,7 +126,7 @@ const optionClass = (isActive: boolean) => [
         <div class="flex flex-col gap-4 p-2">
             <div class="flex items-center justify-between gap-3">
                 <div class="text-lg font-semibold">
-                    {{ activeLevel === "unit" ? ctrans("Unit label") : ctrans("SKO label") }}
+                    {{ levelTitles[activeLevel] ?? ctrans("SKO label") }}
                 </div>
                 <div v-if="printableLevels.length > 1" class="flex gap-1.5">
                     <button

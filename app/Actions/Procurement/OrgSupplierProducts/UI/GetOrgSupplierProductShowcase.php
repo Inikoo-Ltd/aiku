@@ -51,9 +51,39 @@ class GetOrgSupplierProductShowcase
                     (bool) request()->user()?->authTo("procurement.{$orgSupplierProduct->organisation_id}.edit"),
                     $orgSupplierProduct
                 ),
+                'carton'              => $this->getCartonData($orgSupplierProduct),
             ],
             $this->getBarcodesData($orgSupplierProduct)
         );
+    }
+
+    /**
+     * @return array{supplier_product_id: int, net_weight: int|null, gross_weight: int|null, update_route: array<string, mixed>|null}
+     */
+    private function getCartonData(OrgSupplierProduct $orgSupplierProduct): array
+    {
+        $supplierProduct     = $orgSupplierProduct->supplierProduct;
+        $viewingOrganisation = request()->route('organisation');
+
+        $canEdit = $viewingOrganisation instanceof Organisation
+            && request()->user()?->authTo("procurement.{$viewingOrganisation->id}.edit")
+            && ($orgSupplierProduct->organisation_id === $viewingOrganisation->id
+                || ($viewingOrganisation->type === OrganisationTypeEnum::AGENT && $orgSupplierProduct->orgAgent?->agent_id === $viewingOrganisation->agent?->id));
+
+        return [
+            'supplier_product_id' => $supplierProduct->id,
+            'net_weight'   => $supplierProduct->carton_net_weight,
+            'gross_weight' => $supplierProduct->carton_weight,
+            'update_route' => $canEdit
+                ? [
+                    'name'       => 'grp.models.org.org_supplier_product.carton_weights.update',
+                    'parameters' => [
+                        'organisation'       => $viewingOrganisation->id,
+                        'orgSupplierProduct' => $orgSupplierProduct->id,
+                    ],
+                ]
+                : null,
+        ];
     }
 
     /**
