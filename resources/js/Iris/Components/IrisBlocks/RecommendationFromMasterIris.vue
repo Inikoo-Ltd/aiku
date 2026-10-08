@@ -93,7 +93,6 @@ onMounted(()=>{
 </script>
 
 <template>
-  asdasd
   <div v-if="shouldShowComponent" :id="componentId" class="w-full pb-6 related-product" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
