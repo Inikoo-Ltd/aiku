@@ -41,7 +41,7 @@ class GetPartnerSellingProduct
 
         foreach ($sellerOrgStocks as $sellerOrgStock) {
             $products = $sellerOrgStock->products();
-            PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery(), $shopIds);
+            PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery(), $shopIds, $orgPartner->id);
             if ($product = $products->first()) {
                 return $product;
             }

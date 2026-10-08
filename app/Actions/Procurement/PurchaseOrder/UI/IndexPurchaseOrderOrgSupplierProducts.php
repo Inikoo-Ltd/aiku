@@ -211,7 +211,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             });
         });
 
-        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
+        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id);
         $buyingPricePerSko = GetPartnerLandedCost::appliesTo($orgPartner)
             ? 'coalesce('.GetPartnerLandedCost::perSkoSql('seller_org_stocks.id').", $pricePerSko)"
             : "$pricePerSko * ".GetPartnerBuyingPriceFactor::run($orgPartner);

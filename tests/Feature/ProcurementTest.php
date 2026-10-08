@@ -5589,10 +5589,13 @@ describe('partner shopping list', function () {
         }
     });
 
-    test('a cheaper special label sharing the SKO does not replace the product named after it', function () {
-        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
-        $originalCode   = $sellerOrgStock->code;
-        $sellerOrgStock->update(['code' => strtoupper($this->sellerProduct->code)]);
+    test('another customer\'s exclusive products are off limits to a partner', function () {
+        $sellerOrgStock      = $this->sellerProduct->orgStocks()->first();
+        $outsideCustomer     = StoreCustomer::make()->action($this->sellerShop, Customer::factory()->definition());
+        $originalPartnerData = $this->orgPartner->refresh()->data;
+        $makeExclusive       = fn (\App\Models\Catalogue\Product $product, int $customerId) => DB::table('product_has_exclusive_customers')->insert([
+            'product_id' => $product->id, 'customer_id' => $customerId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
 
         $specialLabel        = $this->sellerProduct->replicate();
         $specialLabel->code  = 'SC-'.$this->sellerProduct->id;
@@ -5602,16 +5605,30 @@ describe('partner shopping list', function () {
         DB::table('product_has_org_stocks')->insert([
             'product_id' => $specialLabel->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => $sellerOrgStock->pivot->quantity,
         ]);
+        $makeExclusive($specialLabel, $outsideCustomer->id);
 
         try {
-            $pricePerSko = DB::query()->selectRaw(PartnerSkoPrice::pricePerSkoSql((string) $sellerOrgStock->id, [$this->sellerShop->id]).' as price')->value('price');
+            $pricePerSko = fn () => DB::query()->selectRaw(PartnerSkoPrice::pricePerSkoSql((string) $sellerOrgStock->id, [$this->sellerShop->id], (string) $this->orgPartner->id).' as price')->value('price');
 
-            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id)
-                ->and(round((float) $pricePerSko, 4))->toBe(round((float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity, 4));
+            expect(GetPartnerSellingProduct::run($this->orgPartner, $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id)
+                ->and(round((float) $pricePerSko(), 4))->toBe(round((float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity, 4))
+                ->and(PartnerSkoPrice::isOffLimitsToPartner($this->orgPartner, $sellerOrgStock->stock_id))->toBeFalse();
+
+            $makeExclusive($this->sellerProduct, $outsideCustomer->id);
+
+            expect(GetPartnerSellingProduct::run($this->orgPartner, $sellerOrgStock->stock_id))->toBeNull()
+                ->and(PartnerSkoPrice::isOffLimitsToPartner($this->orgPartner, $sellerOrgStock->stock_id))->toBeTrue()
+                ->and(fn () => StorePartnerShoppingListItem::make()->action($this->orgPartner, $sellerOrgStock, ['quantity' => 1]))->toThrow(ValidationException::class, 'another customer');
+
+            $this->orgPartner->update(['data' => array_replace_recursive($originalPartnerData ?? [], ['intercompany_customers' => ['test-'.$outsideCustomer->id => $outsideCustomer->id]])]);
+
+            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($specialLabel->id)
+                ->and(PartnerSkoPrice::isOffLimitsToPartner($this->orgPartner, $sellerOrgStock->stock_id))->toBeFalse();
         } finally {
+            $this->orgPartner->update(['data' => $originalPartnerData]);
+            DB::table('product_has_exclusive_customers')->whereIn('product_id', [$specialLabel->id, $this->sellerProduct->id])->where('customer_id', $outsideCustomer->id)->delete();
             DB::table('product_has_org_stocks')->where('product_id', $specialLabel->id)->delete();
             $specialLabel->forceDelete();
-            $sellerOrgStock->update(['code' => $originalCode]);
         }
     });
 

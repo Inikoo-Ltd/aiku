@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\OrgPartner;
 
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Enums\Catalogue\HealthRankEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -100,7 +99,8 @@ class GetPartnerStockCoverBuckets
             ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('p.organisation_id', $orgPartner->partner_id)
             ->where('p.state', OrgStockStateEnum::ACTIVE->value)
-            ->whereRaw('coalesce(os.is_on_demand, false) = false');
+            ->whereRaw('coalesce(os.is_on_demand, false) = false')
+            ->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('p.id', $orgPartner));
     }
 
     private function onShoppingListExpression(OrgPartner $orgPartner): string
@@ -368,13 +368,7 @@ class GetPartnerStockCoverBuckets
         $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
         $landed  = GetPartnerLandedCost::appliesTo($orgPartner) ? GetPartnerLandedCost::perSkoSql('p.id').', ' : '';
 
-        return "coalesce($landed(select pr.price / nullif(phos.quantity, 0)
-            from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id in (".implode(',', $shopIds).")
-            where phos.org_stock_id = p.id
-                and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
-            order by ".PartnerSkoPrice::shopPositionSql($shopIds, 'pr.shop_id').", phos.quantity, pr.price
-            limit 1), 0)";
+        return "coalesce($landed".PartnerSkoPrice::pricePerSkoSql('p.id', $shopIds, (string) $orgPartner->id).', 0)';
     }
 
     /**
