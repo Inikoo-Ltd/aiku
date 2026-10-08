@@ -1566,15 +1566,15 @@ test('expected month and year end add the TimesFM forecast of the days left, dra
 
     expect(ForecastShopSales::run($today))->toBeGreaterThanOrEqual(1);
 
-    Http::assertSent(fn ($request) => $request['horizon'] === 22 && $request->hasHeader('Authorization', 'Bearer secret'));
-    Http::assertSent(fn ($request) => $request['horizon'] === 34);
+    Http::assertSent(fn ($request) => $request['horizon'] === 34 && $request->hasHeader('Authorization', 'Bearer secret'));
+    Http::assertSentCount(1);
 
     $variance = round((220 / 2.563) ** 2, 2);
     $forecast = $shop->stats->fresh()->sales_forecast;
     expect($forecast['version'])->toBe('3')
         ->and($forecast['from'])->toBe('2036-05-10')
         ->and($forecast['org'])->toHaveCount(22 + 214)
-        ->and($forecast['org']['2036-05-10'])->toEqual([102.22, $variance])
+        ->and($forecast['org']['2036-05-10'])->toEqual([14.6, round($variance / 7, 2)])
         ->and($forecast['org']['2036-06-01'])->toEqual([14.6, round($variance / 7, 2)])
         ->and(array_key_last($forecast['org']))->toBe('2036-12-31');
 
@@ -1582,22 +1582,22 @@ test('expected month and year end add the TimesFM forecast of the days left, dra
     $block      = GetShopMonthSalesTarget::run($shop, null, $today);
     $line       = $block['chart']['forecast'];
     expect($block['sales_so_far'])->toEqual($salesSoFar)
-        ->and($block['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
+        ->and($block['expected'])->toEqualWithDelta($salesSoFar + 21 * 14.6, 0.01)
         ->and($line['expected'][8])->toBeNull()
         ->and($line['expected'][9])->toEqual($salesSoFar)
         ->and($line['expected'][30])->toEqualWithDelta($block['expected'], 0.01)
         ->and($line['low'][30])->toBeGreaterThan($salesSoFar)->toBeLessThan($line['expected'][30])
-        ->and($line['high'][30])->toEqualWithDelta($line['expected'][30] + 1.2816 * 1.5 * sqrt(21 * $variance), 0.05);
+        ->and($line['high'][30])->toEqualWithDelta($line['expected'][30] + 1.2816 * 1.5 * sqrt(21 * round($variance / 7, 2)), 0.05);
 
     $year = GetShopYearSalesTarget::run($shop, null, $today);
-    expect($year['expected'])->toEqualWithDelta($year['sales_so_far'] + 21 * 102.22 + 214 * 14.6, 0.05)
+    expect($year['expected'])->toEqualWithDelta($year['sales_so_far'] + 235 * 14.6, 0.05)
         ->and($year['chart']['forecast']['expected'][3])->toEqual(round($year['sales_so_far'] - $salesSoFar, 2))
         ->and($year['chart']['forecast']['expected'][11])->toEqualWithDelta($year['expected'], 0.05)
         ->and($year['chart']['forecast']['high'][11])->toBeGreaterThan($year['expected']);
 
     $shopChild = collect(GetShopMonthSalesTarget::run($this->organisation, null, $today)['children'])->firstWhere('key', (string) $shop->id);
     $nextMonth = GetShopMonthSalesTarget::run($shop, null, Carbon::parse('2036-06-02', 'UTC'));
-    expect($shopChild['expected'])->toEqualWithDelta($salesSoFar + 21 * 102.22, 0.01)
+    expect($shopChild['expected'])->toEqualWithDelta($salesSoFar + 21 * 14.6, 0.01)
         ->and($nextMonth['expected'])->toEqual(0)
         ->and($nextMonth['chart']['forecast'])->toBeNull();
 
@@ -1605,6 +1605,35 @@ test('expected month and year end add the TimesFM forecast of the days left, dra
     expect(ForecastShopSales::run($today))->toBe(0);
 
     $shop->stats->update(['sales_forecast' => null, 'sales_forecast_hydrated_at' => null]);
+});
+
+test('the shop sales forecast averages TimesFM with last year on the recent trend', function () {
+    $shop  = $this->shop;
+    $today = Carbon::parse('2041-05-10', 'UTC');
+
+    $daily = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => TimeSeriesFrequencyEnum::DAILY]);
+    for ($day = Carbon::parse('2040-04-01'); $day->lt($today); $day->addDay()) {
+        $daily->records()->updateOrCreate(
+            ['period' => $day->toDateString(), 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+            ['sales_org_currency_external' => $day->year === 2041 ? 50 : 25, 'sales_grp_currency_external' => 40]
+        );
+    }
+
+    config(['services.timesfm.url' => 'http://timesfm.test', 'services.timesfm.token' => 'secret']);
+    Http::fake(['timesfm.test/forecast' => fn ($request) => Http::response([
+        'version' => '3',
+        'deciles' => array_fill(0, count($request['series']), array_fill(0, $request['horizon'], [-20, 40, 60, 80, 100, 120, 140, 160, 220])),
+    ])]);
+
+    ForecastShopSales::run($today);
+
+    $forecast = $shop->stats->fresh()->sales_forecast;
+    expect($forecast['org']['2041-05-10'][0])->toEqual(round((14.6 + 25 * 2) / 2, 2))
+        ->and($forecast['org']['2041-12-31'][0])->toEqual(round((14.6 + 50 * 2) / 2, 2))
+        ->and($forecast['grp']['2041-05-10'][0])->toEqual(round((14.6 + 40) / 2, 2));
+
+    $shop->stats->update(['sales_forecast' => null, 'sales_forecast_hydrated_at' => null]);
+    config(['services.timesfm.url' => null]);
 });
 
 test('group target adds up every organisation in the group currency', function () {
