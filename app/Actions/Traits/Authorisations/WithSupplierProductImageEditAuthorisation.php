@@ -8,6 +8,8 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Models\Procurement\OrgSupplierProduct;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithSupplierProductImageEditAuthorisation
@@ -18,10 +20,30 @@ trait WithSupplierProductImageEditAuthorisation
             return true;
         }
 
-        if (isset($this->organisation)) {
-            return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $orgSupplierProduct = $request->route('orgSupplierProduct');
+        if ($orgSupplierProduct instanceof OrgSupplierProduct) {
+            return self::canEditOrgSupplierProductPictures($request->user(), $orgSupplierProduct);
         }
 
         return $request->user()->authTo(['supply-chain.edit', 'goods.edit']);
+    }
+
+    /**
+     * The buying organisation's procurement staff, and the procurement staff of the agent organisation
+     * whose warehouse handles the goods.
+     */
+    public static function canEditOrgSupplierProductPictures(?User $user, OrgSupplierProduct $orgSupplierProduct): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->authTo("procurement.{$orgSupplierProduct->organisation_id}.edit")) {
+            return true;
+        }
+
+        $agentOrganisationId = $orgSupplierProduct->orgAgent?->agent?->organisation_id;
+
+        return $agentOrganisationId && $user->authTo("procurement.$agentOrganisationId.edit");
     }
 }

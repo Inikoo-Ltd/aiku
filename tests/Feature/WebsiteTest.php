@@ -1481,6 +1481,30 @@ test('create catalogue webpages', function (Website $website) {
     return compact('department', 'family', 'subDepartment', 'product', 'departmentWebpage', 'familyWebpage', 'subDepartmentWebpage', 'productWebpage', 'blogWebpage');
 })->depends('launch website');
 
+test('a blog offers a page speed report only once it is live', function (Website $website, array $catalogueWebpages) {
+    $this->withoutExceptionHandling();
+
+    /** @var Webpage $blogWebpage */
+    $blogWebpage   = $catalogueWebpages['blogWebpage'];
+    $originalState = $blogWebpage->state;
+    $showBlog      = fn () => get(route('grp.org.shops.show.web.blogs.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $blogWebpage->slug
+    ]));
+
+    $blogWebpage->update(['state' => WebpageStateEnum::IN_PROCESS]);
+    $notLiveResponse = $showBlog();
+    $notLiveResponse->assertInertia(fn (AssertableInertia $page) => $page->where('real_user_speed', null)->etc());
+    expect($notLiveResponse->original->getData()['page']['deferredProps'] ?? [])->not->toHaveKey('real_user_speed');
+
+    $blogWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect($showBlog()->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('real_user_speed');
+
+    $blogWebpage->update(['state' => $originalState]);
+})->depends('launch website', 'create catalogue webpages');
+
 test('update website search boosts', function (Website $website) {
     $website->refresh();
     createProduct($this->shop);

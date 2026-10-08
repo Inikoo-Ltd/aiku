@@ -14,6 +14,7 @@ use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
+use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\OrgStock;
@@ -48,7 +49,7 @@ class GetOrgSupplierProductShowcase
                 'supplierProductInfo' => $this->supplierProductInfo($orgSupplierProduct->supplierProduct),
                 'internal_images'     => $this->getSupplierProductInternalImages(
                     $orgSupplierProduct->supplierProduct,
-                    (bool) request()->user()?->authTo("procurement.{$orgSupplierProduct->organisation_id}.edit"),
+                    UploadImagesToSupplierProduct::canEditOrgSupplierProductPictures(request()->user(), $orgSupplierProduct),
                     $orgSupplierProduct
                 ),
                 'carton'              => $this->getCartonData($orgSupplierProduct),

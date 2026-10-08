@@ -85,6 +85,7 @@ class ShowBlogWebpage extends OrgAction
                 'webpage_sub_type' => $webpage->sub_type,
                 'webpage_canonical_url' => $webpage->canonical_url,
                 'lock' => GetWebpageLock::run($webpage, $request->user()),
+                'real_user_speed' => ShowWebpage::make()->realUserSpeedProp($webpage, $this->tab),
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
