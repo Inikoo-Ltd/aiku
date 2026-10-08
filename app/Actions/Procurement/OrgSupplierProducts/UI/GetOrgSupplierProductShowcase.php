@@ -14,6 +14,7 @@ use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
+use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\OrgStock;
@@ -48,12 +49,42 @@ class GetOrgSupplierProductShowcase
                 'supplierProductInfo' => $this->supplierProductInfo($orgSupplierProduct->supplierProduct),
                 'internal_images'     => $this->getSupplierProductInternalImages(
                     $orgSupplierProduct->supplierProduct,
-                    (bool) request()->user()?->authTo("procurement.{$orgSupplierProduct->organisation_id}.edit"),
+                    UploadImagesToSupplierProduct::canEditOrgSupplierProductPictures(request()->user(), $orgSupplierProduct),
                     $orgSupplierProduct
                 ),
+                'carton'              => $this->getCartonData($orgSupplierProduct),
             ],
             $this->getBarcodesData($orgSupplierProduct)
         );
+    }
+
+    /**
+     * @return array{supplier_product_id: int, net_weight: int|null, gross_weight: int|null, update_route: array<string, mixed>|null}
+     */
+    private function getCartonData(OrgSupplierProduct $orgSupplierProduct): array
+    {
+        $supplierProduct     = $orgSupplierProduct->supplierProduct;
+        $viewingOrganisation = request()->route('organisation');
+
+        $canEdit = $viewingOrganisation instanceof Organisation
+            && request()->user()?->authTo("procurement.{$viewingOrganisation->id}.edit")
+            && ($orgSupplierProduct->organisation_id === $viewingOrganisation->id
+                || ($viewingOrganisation->type === OrganisationTypeEnum::AGENT && $orgSupplierProduct->orgAgent?->agent_id === $viewingOrganisation->agent?->id));
+
+        return [
+            'supplier_product_id' => $supplierProduct->id,
+            'net_weight'   => $supplierProduct->carton_net_weight,
+            'gross_weight' => $supplierProduct->carton_weight,
+            'update_route' => $canEdit
+                ? [
+                    'name'       => 'grp.models.org.org_supplier_product.carton_weights.update',
+                    'parameters' => [
+                        'organisation'       => $viewingOrganisation->id,
+                        'orgSupplierProduct' => $orgSupplierProduct->id,
+                    ],
+                ]
+                : null,
+        ];
     }
 
     /**
@@ -116,8 +147,10 @@ class GetOrgSupplierProductShowcase
      */
     private function getAgentOrgStocks(OrgSupplierProduct $orgSupplierProduct, Agent $agent): Collection
     {
-        return GetAgentOrgStocks::run($agent)
-            ->whereIn('org_stocks.stock_id', $orgSupplierProduct->supplierProduct->stocks->pluck('id'))
+        $stockIds = $orgSupplierProduct->supplierProduct->stocks->pluck('id')->all();
+
+        return GetAgentOrgStocks::run($agent, stockIds: $stockIds)
+            ->whereIn('org_stocks.stock_id', $stockIds)
             ->with('organisation')
             ->get();
     }

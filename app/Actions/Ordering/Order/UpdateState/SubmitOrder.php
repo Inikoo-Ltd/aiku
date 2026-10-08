@@ -20,6 +20,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Order\SendOrderPurchaseToGoogleAnalytics;
+use App\Actions\Web\WebsiteConversionEvent\ProcessOrderPurchaseConversionEvent;
 use App\Actions\Ordering\Order\SendNewOrderAlert;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\PreOrder\MoveOrderExcessPaymentToPreOrder;
@@ -257,6 +258,14 @@ class SubmitOrder extends OrgAction
         if ($order->ga_client_id) {
             SendOrderPurchaseToGoogleAnalytics::dispatch($order->id)->afterCommit();
         }
+
+        $isWebsiteRequest = request()->hasSession() && request()->input('website');
+
+        ProcessOrderPurchaseConversionEvent::dispatch(
+            $order->id,
+            $isWebsiteRequest ? request()->session()->getId() : null,
+            $isWebsiteRequest ? (request()->header('referer') ?? request()->fullUrl()) : null
+        )->afterCommit();
 
         /** Tells any other browser tab still showing this order's checkout to redirect away,
          * so a stale card widget cannot take a second payment */

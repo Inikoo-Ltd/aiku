@@ -56,6 +56,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $units_per_carton units per carton
  * @property numeric|null $cbm carton cubic meters
  * @property int|null $carton_weight grams
+ * @property int|null $carton_net_weight grams
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
  * @property string|null $activated_at
@@ -170,6 +171,7 @@ class SupplierProduct extends Model implements HasMedia, Auditable
             'state'            => $this->state?->value,
             'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
             'organisation_ids' => $this->orgSupplierProducts()->pluck('organisation_id')->all(),
+            'agent_id'         => $this->agent_id,
         ];
     }
 

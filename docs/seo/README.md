@@ -21,10 +21,12 @@ to replace all of them before the subscription goes.
 | Page speed and Core Web Vitals | Phase 1 | CrUX and our visitors' web vitals (HELP-3303 replaced the lab test) |
 | Keyword Overview, Keyword Magic Tool | Phase 2 | Google Ads Keyword Planner, through the Google Ads connection shops already have |
 | Position Tracking | Phase 2 | A SERP data provider, plus Search Console for the positions Google reports itself |
-| Backlink Analytics, Backlink Gap | Phase 3 | A backlink data provider |
-| Domain Overview, Organic Research (competitors), Keyword Gap | Phase 3 | A competitor data provider |
+| Keyword intent | Phase 2 | The keyword data provider, or a classification prompt through our AI gateway |
+| Backlink Analytics (authority, referring domains, new, lost and broken backlinks), Backlink Gap | Phase 3 | A backlink data provider, checked against our own crawl and 404 log for broken links |
+| Domain Overview, Compare Domains, Organic Research (competitors), Keyword Gap | Phase 3 | A competitor data provider |
+| Top Pages (our own sites) | Phase 3, traffic part any time | Aiku's tracking and Search Console now; referring domains and AI citations per page with Phase 3 |
 | Traffic Analytics (competitor domains) | Phase 3 | Similarweb estimates, through an Apify actor or the Similarweb API |
-| AI visibility (ChatGPT, Gemini, Perplexity, AI Overviews) | Phase 3 | Prompts sent to the models through our AI gateway, and AI Overviews from the SERP provider |
+| AI visibility (ChatGPT, Gemini, Claude, Perplexity, AI Overviews) | Phase 3 | Prompts sent to the models with web search on through our AI gateway, and AI Overviews from the SERP provider |
 
 Two things Semrush shows cannot be rebuilt from our own data or from the SEO providers above: total
 traffic of a competitor's domain (Semrush gets it from clickstream panels) and search volumes
@@ -49,7 +51,8 @@ Already in Aiku and used by the plan:
    Organic Research for our own sites can be done in Aiku.
 2. **Keywords.** Keyword research through Keyword Planner and daily or weekly rank tracking for a
    chosen list of keywords per shop, with competitor positions read from the same results.
-3. **The outside world.** Backlinks, competitor domains, keyword gaps and AI visibility.
+3. **The outside world.** Backlinks, competitor domains, domain comparison, keyword and backlink
+   gaps, AI visibility, and top pages with their change against the previous period.
 
 Semrush is cancelled after Phase 3 has run alongside it long enough to compare the figures. The
 exit checks are in [implementation-plan.md](implementation-plan.md#cancelling-semrush).

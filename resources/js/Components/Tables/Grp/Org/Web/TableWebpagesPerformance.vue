@@ -4,10 +4,13 @@
   -->
 
 <script setup lang="ts">
+import { ref } from "vue"
 import { Link } from "@inertiajs/vue3"
+import Popover from "primevue/popover"
 import { route } from "ziggy-js"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -22,9 +25,12 @@ type WebpagePerformanceRow = {
     route: routeType
     visitors: number
     page_views: number
+    entrances: number
     avg_time_on_page: number
     add_to_baskets: number
     conversion_rate: number
+    checkouts: number
+    purchases: number
     search_clicks: number
     search_impressions: number
     search_position: number | null
@@ -36,6 +42,25 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore()
+
+const funnelPopover = ref<InstanceType<typeof Popover> | null>(null)
+const funnelWebpage = ref<WebpagePerformanceRow | null>(null)
+
+const showFunnel = (event: Event, webpage: WebpagePerformanceRow) => {
+    funnelWebpage.value = webpage
+    funnelPopover.value?.show(event)
+}
+
+const hideFunnel = () => funnelPopover.value?.hide()
+
+const ratePer100 = (part: number, whole: number) => whole > 0 ? `${locale.number(Math.round(part / whole * 10000) / 100)}%` : "-"
+
+const funnelSteps = (webpage: WebpagePerformanceRow) => [
+    { label: ctrans("Entrances"), count: webpage.entrances, rate: null, hint: ctrans("Visitors whose visit started on this page") },
+    { label: ctrans("Added to basket on this page"), count: webpage.add_to_baskets, rate: ratePer100(webpage.add_to_baskets, webpage.visitors), hint: ctrans("Per 100 visitors of the page") },
+    { label: ctrans("Checkouts after landing here"), count: webpage.checkouts, rate: ratePer100(webpage.checkouts, webpage.entrances), hint: ctrans("Per 100 entrances") },
+    { label: ctrans("Purchases after landing here"), count: webpage.purchases, rate: ratePer100(webpage.purchases, webpage.entrances), hint: ctrans("Per 100 entrances") },
+]
 
 const formatDuration = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60)
@@ -73,12 +98,17 @@ const formatDuration = (totalSeconds: number) => {
             <span class="tabular-nums">{{ formatDuration(webpage.avg_time_on_page) }}</span>
         </template>
 
-        <template #cell(add_to_baskets)="{ item: webpage }: { item: WebpagePerformanceRow }">
-            <span class="tabular-nums">{{ locale.number(webpage.add_to_baskets) }}</span>
-        </template>
-
         <template #cell(conversion_rate)="{ item: webpage }: { item: WebpagePerformanceRow }">
-            <span class="tabular-nums">{{ locale.number(webpage.conversion_rate) }}%</span>
+            <button
+                type="button"
+                class="tabular-nums underline decoration-dotted underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]"
+                :aria-label="ctrans('Conversion funnel of :page', { page: webpage.code })"
+                @mouseenter="showFunnel($event, webpage)"
+                @mouseleave="hideFunnel"
+                @focus="showFunnel($event, webpage)"
+                @blur="hideFunnel">
+                {{ locale.number(webpage.conversion_rate) }}%
+            </button>
         </template>
 
         <template #cell(search_clicks)="{ item: webpage }: { item: WebpagePerformanceRow }">
@@ -94,4 +124,19 @@ const formatDuration = (totalSeconds: number) => {
             <span v-else class="text-gray-400">-</span>
         </template>
     </Table>
+
+    <Popover ref="funnelPopover">
+        <dl v-if="funnelWebpage" class="w-72 space-y-2 text-sm">
+            <div v-for="step in funnelSteps(funnelWebpage)" :key="step.label" class="flex items-baseline gap-3">
+                <div class="min-w-0">
+                    <dt class="text-gray-700">{{ step.label }}</dt>
+                    <dd class="text-xs text-gray-500">{{ step.hint }}</dd>
+                </div>
+                <dd class="ml-auto text-right tabular-nums text-gray-900">
+                    {{ locale.number(step.count) }}
+                    <span v-if="step.rate" class="ml-1.5 inline-block w-14 text-gray-500">{{ step.rate }}</span>
+                </dd>
+            </div>
+        </dl>
+    </Popover>
 </template>

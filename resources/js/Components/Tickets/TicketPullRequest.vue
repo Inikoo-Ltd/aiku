@@ -149,7 +149,9 @@ const save = () => {
 
 const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" }) : "")
 
-const openedOn = computed(() => formatDate(pullRequest.value?.created_at ?? null))
+const formatDateTime = (value: string) => new Date(value).toLocaleString([], { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+
+const openedOn =computed(() => formatDate(pullRequest.value?.created_at ?? null))
 
 const readStoredFlag = (key: string, offValue: string) => {
     try {
@@ -364,7 +366,7 @@ const toggleDeployedCommit = (hash: string) => {
                         <a v-if="commit.url" :href="commit.url" target="_blank" rel="noopener noreferrer" class="font-mono text-[--app-accent-strong] hover:underline">{{ commit.hash.slice(0, 8) }}</a>
                         <span v-else class="font-mono">{{ commit.hash.slice(0, 8) }}</span>
                         <template v-if="commit.version || commit.deployed_at"> · {{ commit.version || ctrans("deployed") }}</template>
-                        <template v-if="commit.deployed_at"> {{ formatDate(commit.deployed_at) }}</template>
+                        <template v-if="commit.deployed_at">{{ " · " + formatDateTime(commit.deployed_at) }}</template>
                     </p>
                 </li>
             </ol>

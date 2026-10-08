@@ -19,6 +19,7 @@ enum SeoDashboardTabsEnum: string
     use HasTabs;
 
     case WEBPAGES             = 'webpages';
+    case CONVERSIONS          = 'conversions';
     case SEARCH_QUERIES       = 'search_queries';
     case SEARCH_OPPORTUNITIES = 'search_opportunities';
     case PAGE_SPEED           = 'page_speed';
@@ -30,6 +31,11 @@ enum SeoDashboardTabsEnum: string
                 'title'   => __('Webpages'),
                 'icon'    => 'fal fa-browser',
                 'tooltip' => __('Each webpage with its visits from Aiku tracking and its Google Search clicks from Search Console, for the selected period.'),
+            ],
+            SeoDashboardTabsEnum::CONVERSIONS => [
+                'title'   => __('Conversions'),
+                'icon'    => 'fal fa-cash-register',
+                'tooltip' => __('Customers who opened the checkout or submitted an order on the website in the selected period, with the revenue of their orders.'),
             ],
             SeoDashboardTabsEnum::SEARCH_QUERIES => [
                 'title'   => __('Search queries'),

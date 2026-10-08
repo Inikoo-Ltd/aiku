@@ -11,7 +11,7 @@ class PruneWebsiteConversionEvents
 {
     use AsAction;
 
-    public const int RETENTION_DAYS = 30;
+    public const int RETENTION_DAYS = 730;
 
     public function handle(): void
     {
