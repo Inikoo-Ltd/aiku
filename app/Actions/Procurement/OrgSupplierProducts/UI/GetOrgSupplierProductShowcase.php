@@ -58,6 +58,16 @@ class GetOrgSupplierProductShowcase
         );
     }
 
+    private function canEditCarton(OrgSupplierProduct $orgSupplierProduct): bool
+    {
+        $viewingOrganisation = request()->route('organisation');
+
+        return $viewingOrganisation instanceof Organisation
+            && request()->user()?->authTo("procurement.{$viewingOrganisation->id}.edit")
+            && ($orgSupplierProduct->organisation_id === $viewingOrganisation->id
+                || ($viewingOrganisation->type === OrganisationTypeEnum::AGENT && $orgSupplierProduct->orgAgent?->agent_id === $viewingOrganisation->agent?->id));
+    }
+
     /**
      * @return array{supplier_product_id: int, net_weight: int|null, gross_weight: int|null, update_route: array<string, mixed>|null}
      */
@@ -65,11 +75,7 @@ class GetOrgSupplierProductShowcase
     {
         $supplierProduct     = $orgSupplierProduct->supplierProduct;
         $viewingOrganisation = request()->route('organisation');
-
-        $canEdit = $viewingOrganisation instanceof Organisation
-            && request()->user()?->authTo("procurement.{$viewingOrganisation->id}.edit")
-            && ($orgSupplierProduct->organisation_id === $viewingOrganisation->id
-                || ($viewingOrganisation->type === OrganisationTypeEnum::AGENT && $orgSupplierProduct->orgAgent?->agent_id === $viewingOrganisation->agent?->id));
+        $canEdit             = $this->canEditCarton($orgSupplierProduct);
 
         return [
             'supplier_product_id' => $supplierProduct->id,
@@ -108,6 +114,8 @@ class GetOrgSupplierProductShowcase
             ? $this->getAgentOrgStocks($orgSupplierProduct, $agent)
             : $this->getOwnOrgStocks($orgSupplierProduct);
 
+        $canEditCarton = $this->canEditCarton($orgSupplierProduct);
+
         $labelOrgStocks = $orgStocks
             ->sortBy(fn (OrgStock $orgStock) => $orgStock->organisation->code)
             ->map(fn (OrgStock $orgStock) => [
@@ -115,6 +123,14 @@ class GetOrgSupplierProductShowcase
                 'code'                => $orgStock->code,
                 'organisation_code'   => $orgStock->organisation->code,
                 'barcodes'            => GetOrgStockBarcodes::run($orgStock),
+                'carton_barcode_update_route' => $canEditCarton && $orgStock->stock_id ? [
+                    'name'       => 'grp.models.org.org_supplier_product.carton_barcode.update',
+                    'parameters' => [
+                        'organisation'       => $viewingOrganisation->id,
+                        'orgSupplierProduct' => $orgSupplierProduct->id,
+                        'orgStock'           => $orgStock->id,
+                    ],
+                ] : null,
                 'label_options_route' => $agent
                     ? [
                         'name'       => 'grp.org.procurement.agent_labels.barcode_label_options',
