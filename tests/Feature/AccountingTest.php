@@ -1751,7 +1751,9 @@ test('refund pdf lines include shipping and charge refunds', function () {
         return view('invoices.templates.pdf.invoice', $viewData)->render();
     };
 
-    expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>');
+    expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>')
+        ->and(PdfInvoice::make()->processDataExportPdf($invoice)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$invoice->slug.'-invoice.pdf"')
+        ->and(PdfInvoice::make()->processDataExportPdf($refund)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$refund->slug.'-credit-note.pdf"');
 });
 
 test('refunding a line already refunded in full totals the refund at zero and refuses to finalise it', function () {
