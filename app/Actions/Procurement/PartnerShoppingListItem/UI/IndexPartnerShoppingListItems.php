@@ -180,7 +180,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         return [
             'priority' => [
                 'label'    => __('Priority'),
-                'elements' => collect(array_reverse(ShoppingListItemPriorityEnum::cases()))->mapWithKeys(
+                'elements' => collect(ShoppingListItemPriorityEnum::cases())->mapWithKeys(
                     fn (ShoppingListItemPriorityEnum $priority) => [
                         $priority->value => [
                             ShoppingListItemPriorityEnum::labels()[$priority->value],
