@@ -8367,10 +8367,25 @@ test('UI agent shopping dashboard renders', function () {
             ->where('coverBuckets.8.bucket', 'never')
             ->where('coverTotal', fn ($total) => $total === collect($page->toArray()['props']['coverBuckets'])->sum('count'))
             ->has('leadTime.days')
+            ->has('orderCapacity.warehouse')
+            ->missing('openAgentPurchaseOrders')
+            ->missing('suppliers');
+    });
+});
+
+test('UI agent order pipeline renders', function () {
+    $response = $this->get(route('grp.org.procurement.org_agents.show.order_pipeline', [$this->organisation->slug, $this->orgAgent->slug]));
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/AgentOrderPipeline')
+            ->has('title')
+            ->has('shoppingList.open_items_count')
+            ->has('leadTime.days')
             ->has('suppliers')
             ->has('openAgentPurchaseOrders')
             ->has('openStockDeliveries')
-            ->has('orderCapacity.warehouse')
             ->has('stockDeliveriesRoute.name')
             ->has('agentPurchaseOrdersRoute.name');
     });

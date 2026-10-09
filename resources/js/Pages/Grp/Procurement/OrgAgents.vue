@@ -19,7 +19,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faPeopleArrows,
 	faShoppingBasket,
-	faTruckContainer,
+	faShip,
+	faChevronDown,
+	faChevronUp,
 	faBoxes,
 	faClipboardList,
 	faWarehouse,
@@ -27,7 +29,9 @@ import {
 library.add(
 	faPeopleArrows,
 	faShoppingBasket,
-	faTruckContainer,
+	faShip,
+	faChevronDown,
+	faChevronUp,
 	faBoxes,
 	faClipboardList,
 	faWarehouse
@@ -135,20 +139,16 @@ const stateClass = (item: CurrentItem) => {
 	return "bg-gray-100 text-gray-700"
 }
 
-const ROWS_SHOWN = 5
-
-const groups: { type: CurrentItem["type"]; title: string; empty: string; icon: string }[] = [
+const groups: { type: CurrentItem["type"]; title: string; icon: string }[] = [
 	{
 		type: "next_container",
 		title: ctrans("Next container, at the agent"),
-		empty: ctrans("Nothing recorded at the agent yet"),
 		icon: "fal fa-warehouse",
 	},
 	{
 		type: "stock_delivery",
 		title: ctrans("Containers on the way"),
-		empty: ctrans("No containers on the way"),
-		icon: "fal fa-truck-container",
+		icon: "fal fa-ship",
 	},
 ]
 
@@ -173,9 +173,6 @@ const isExpanded = (agent: AgentCard, type: string) => !!expanded.value[agent.id
 
 const toggle = (agent: AgentCard, type: string) =>
 	(expanded.value[agent.id + type] = !isExpanded(agent, type))
-
-const visibleItems = (agent: AgentCard, type: CurrentItem["type"]) =>
-	isExpanded(agent, type) ? itemsOf(agent, type) : itemsOf(agent, type).slice(0, ROWS_SHOWN)
 </script>
 
 <template>
@@ -336,7 +333,7 @@ const visibleItems = (agent: AgentCard, type: CurrentItem["type"]) =>
 						:href="
 							agentUrl(
 								agent,
-								'grp.org.procurement.org_agents.show.agent_orders.index'
+								'grp.org.procurement.org_agents.show.order_pipeline'
 							)
 						"
 						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 hover:bg-gray-100">
@@ -403,18 +400,28 @@ const visibleItems = (agent: AgentCard, type: CurrentItem["type"]) =>
 					v-for="group in groups"
 					:key="group.type"
 					class="overflow-hidden rounded-md ring-1 ring-gray-200">
-					<div
-						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
+					<button
+						type="button"
+						class="flex w-full items-center gap-2 bg-gray-50 px-2 py-1.5 text-left text-xs enabled:hover:bg-gray-100"
+						:class="{ 'border-b border-gray-200': isExpanded(agent, group.type) }"
+						:disabled="!itemsOf(agent, group.type).length"
+						:aria-expanded="isExpanded(agent, group.type)"
+						@click="toggle(agent, group.type)">
 						<FontAwesomeIcon :icon="group.icon" class="text-gray-500" fixed-width />
 						<span class="font-medium text-gray-600">{{ group.title }}</span>
 						<span class="tabular-nums text-gray-500">{{
 							locale.number(itemsOf(agent, group.type).length)
 						}}</span>
-					</div>
-					<template v-if="itemsOf(agent, group.type).length">
+						<FontAwesomeIcon
+							v-if="itemsOf(agent, group.type).length"
+							:icon="isExpanded(agent, group.type) ? 'fal fa-chevron-up' : 'fal fa-chevron-down'"
+							class="ml-auto text-gray-400"
+							fixed-width />
+					</button>
+					<template v-if="isExpanded(agent, group.type)">
 						<ul class="divide-y divide-gray-100">
 							<li
-								v-for="item in visibleItems(agent, group.type)"
+								v-for="item in itemsOf(agent, group.type)"
 								:key="item.reference">
 								<Link
 									:href="item.url"
@@ -454,23 +461,7 @@ const visibleItems = (agent: AgentCard, type: CurrentItem["type"]) =>
 								</Link>
 							</li>
 						</ul>
-						<button
-							v-if="itemsOf(agent, group.type).length > ROWS_SHOWN"
-							type="button"
-							class="w-full border-t border-gray-100 px-2 py-1 text-left text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-							@click="toggle(agent, group.type)">
-							{{
-								isExpanded(agent, group.type)
-									? ctrans("Show less")
-									: ctrans("Show all :count", {
-											count: itemsOf(agent, group.type).length,
-										})
-							}}
-						</button>
 					</template>
-					<div v-else class="px-2 py-2 text-xs text-gray-500">
-						{{ group.empty }}
-					</div>
 					<div
 						v-if="group.type === 'next_container' && readyToShip(agent)"
 						class="flex border-t border-gray-100 px-2 py-1.5 text-xs tabular-nums">
