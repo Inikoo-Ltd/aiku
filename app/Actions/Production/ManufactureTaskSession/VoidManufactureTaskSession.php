@@ -29,7 +29,9 @@ class VoidManufactureTaskSession extends OrgAction
 
         $session->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
 
-        CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+        if (!$session->isNonProductive()) {
+            CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+        }
 
         return $session;
     }

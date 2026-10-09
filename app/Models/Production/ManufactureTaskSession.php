@@ -24,8 +24,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $group_id
  * @property int $organisation_id
  * @property int $production_id
- * @property int $job_order_item_task_id
- * @property int $manufacture_task_id
+ * @property int|null $job_order_item_task_id
+ * @property int|null $manufacture_task_id
+ * @property int|null $job_order_id
  * @property int $user_id
  * @property int|null $employee_id
  * @property ManufactureTaskSessionStateEnum $state
@@ -57,7 +58,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Employee|null $employee
  * @property-read Group|null $group
- * @property-read \App\Models\Production\JobOrderItemTask $jobOrderItemTask
+ * @property-read \App\Models\Production\JobOrderItemTask|null $jobOrderItemTask
+ * @property-read \App\Models\Production\JobOrder|null $jobOrder
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
  * @property-read \App\Models\Production\ManufacturePayBand|null $payBand
  * @property-read Organisation $organisation
@@ -87,6 +89,19 @@ class ManufactureTaskSession extends Model
         'under_target_reason'      => ManufactureTaskSessionUnderTargetReasonEnum::class,
         'under_target_reviewed_at' => 'datetime',
     ];
+
+    /**
+     * Preparation and cleaning: timed and paid at the base rate, with no step, quantity or target.
+     */
+    public function isNonProductive(): bool
+    {
+        return $this->job_order_item_task_id === null;
+    }
+
+    public function activityLabel(): string
+    {
+        return ManufactureTaskSessionActivityTypeEnum::labels()[$this->activity_type->value];
+    }
 
     public function paidHours(): float
     {
@@ -132,6 +147,11 @@ class ManufactureTaskSession extends Model
     public function jobOrderItemTask(): BelongsTo
     {
         return $this->belongsTo(JobOrderItemTask::class);
+    }
+
+    public function jobOrder(): BelongsTo
+    {
+        return $this->belongsTo(JobOrder::class);
     }
 
     public function manufactureTask(): BelongsTo

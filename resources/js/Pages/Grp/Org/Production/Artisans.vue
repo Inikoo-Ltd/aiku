@@ -6,7 +6,11 @@
 
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { computed, ref } from "vue"
+import DatePicker from "primevue/datepicker"
+import Select from "primevue/select"
+import Checkbox from "primevue/checkbox"
+import InputText from "primevue/inputtext"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -48,6 +52,32 @@ interface ArtisanJobStep {
     sessions: ArtisanSession[]
 }
 
+interface NonProductiveGroup {
+    key: string
+    label: string | null
+    hours: Record<string, number>
+}
+
+interface NonProductiveSummary {
+    hours: number
+    pay: number | null
+    activities: Record<string, number>
+    days: NonProductiveGroup[]
+    weeks: NonProductiveGroup[]
+    job_orders: NonProductiveGroup[]
+    sessions: {
+        id: number
+        state: string
+        activity: string
+        job_order_reference: string | null
+        started_at: string
+        ended_at: string
+        break_minutes: number
+        pay: number | null
+        void_route: null | { name: string, parameters: object }
+    }[]
+}
+
 interface ArtisanJob {
     job_order_item_id: number
     job_order_reference: string
@@ -67,6 +97,7 @@ const props = defineProps<{
     manufacture_tasks: { id: number, name: string }[]
     under_target: boolean
     under_target_reasons: Record<string, string>
+    non_productive_activities: { value: string, label: string }[]
     artisans: {
         user_id: number
         worker: string
@@ -76,12 +107,31 @@ const props = defineProps<{
         quantity_rejected: number
         earned: number
         under_target_open: number
+        non_productive: NonProductiveSummary
         jobs: ArtisanJob[]
     }[]
 }>()
 
 const from = ref(props.period.from)
 const to = ref(props.period.to)
+
+const fromIsoDate = (iso: string): Date => {
+    const [year, month, day] = iso.split("-").map(Number)
+    return new Date(year, month - 1, day)
+}
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+const dateModel = (target: typeof from) =>
+    computed<Date | null>({
+        get: () => (target.value ? fromIsoDate(target.value) : null),
+        set: (value) => {
+            if (value) target.value = toLocalIsoDate(value)
+        },
+    })
+const fromDate = dateModel(from)
+const toDate = dateModel(to)
+const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const stepOptions = computed(() => [{ id: null, name: ctrans('All steps') }, ...props.manufacture_tasks])
+const reasonOptions = computed(() => Object.entries(props.under_target_reasons).map(([value, label]) => ({ value, label })))
 const manufactureTaskId = ref<number | null>(props.manufacture_task_id)
 const underTargetOnly = ref(props.under_target)
 const reviewing = ref<number | null>(null)
@@ -107,9 +157,22 @@ function toggle(userId: number) {
     expanded.value = new Set(expanded.value)
 }
 
-function voidSession(session: ArtisanSession) {
+function hoursLabel(hours: number) {
+    const h = Math.floor(hours)
+    const m = Math.round((hours - h) * 60)
+    return h ? `${h}h ${m}m` : `${m}m`
+}
+
+function activitySummary(summary: NonProductiveSummary) {
+    return props.non_productive_activities
+        .filter(activity => summary.activities[activity.value])
+        .map(activity => `${activity.label} ${hoursLabel(summary.activities[activity.value])}`)
+        .join(' · ')
+}
+
+function voidSession(session: { void_route: null | { name: string, parameters: object }, quantity_made?: number }) {
     if (!session.void_route) return
-    if (!window.confirm(ctrans('Void this entry?') + ` ${session.quantity_made}`)) return
+    if (!window.confirm(ctrans('Void this entry?') + (session.quantity_made !== undefined ? ` ${session.quantity_made}` : ''))) return
     processing.value = true
     router.patch(
         route(session.void_route.name, session.void_route.parameters),
@@ -138,7 +201,7 @@ function saveReview(session: ArtisanSession) {
     )
 }
 
-function sessionDuration(session: ArtisanSession) {
+function sessionDuration(session: { started_at: string, ended_at: string, break_minutes: number }) {
     const seconds = Math.max(0, (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 1000 - session.break_minutes * 60)
     const h = Math.floor(seconds / 3600)
     const m = Math.round((seconds % 3600) / 60)
@@ -154,24 +217,21 @@ function sessionDuration(session: ArtisanSession) {
         <div class="mb-6 flex items-end gap-3">
             <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('From') }}</label>
-                <input type="date" v-model="from" class="rounded border-gray-300 text-sm" />
+                <DatePicker v-model="fromDate" :maxDate="toDate ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :aria-label="ctrans('From')" />
             </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('To') }}</label>
-                <input type="date" v-model="to" class="rounded border-gray-300 text-sm" />
+                <DatePicker v-model="toDate" :minDate="fromDate ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :aria-label="ctrans('To')" />
             </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Step') }}</label>
-                <select v-model="manufactureTaskId" class="rounded border-gray-300 text-sm">
-                    <option :value="null">{{ ctrans('All steps') }}</option>
-                    <option v-for="task in manufacture_tasks" :key="task.id" :value="task.id">{{ task.name }}</option>
-                </select>
+                <Select v-model="manufactureTaskId" :options="stepOptions" optionLabel="name" optionValue="id" filter :class="fieldFocusClass" />
             </div>
             <label class="flex items-center gap-2 pb-2 text-sm text-gray-600">
-                <input type="checkbox" v-model="underTargetOnly" class="rounded border-gray-300" />
+                <Checkbox v-model="underTargetOnly" binary />
                 {{ ctrans('Under target only') }}
             </label>
-            <button type="button" class="rounded bg-indigo-600 text-white text-sm px-3 py-2" @click="applyPeriod">
+            <button type="button" class="rounded bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong] text-sm px-3 py-2" @click="applyPeriod">
                 {{ ctrans('Apply') }}
             </button>
         </div>
@@ -188,6 +248,7 @@ function sessionDuration(session: ArtisanSession) {
                     <span>{{ artisan.hours_worked }} h</span>
                     <span>{{ artisan.quantity_made }} {{ ctrans('units') }}</span>
                     <span v-if="artisan.quantity_rejected" class="text-red-500">{{ artisan.quantity_rejected }} {{ ctrans('rejected') }}</span>
+                    <span v-if="artisan.non_productive.hours" class="text-gray-500">{{ activitySummary(artisan.non_productive) }}</span>
                     <span v-if="artisan.under_target_open" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
                         {{ artisan.under_target_open }} {{ ctrans('under target') }}
                     </span>
@@ -197,6 +258,72 @@ function sessionDuration(session: ArtisanSession) {
             </button>
 
             <div v-if="expanded.has(artisan.user_id)" class="border-t border-gray-100 px-4 py-2">
+                <div v-if="artisan.non_productive.sessions.length" class="py-2 border-b border-gray-100">
+                    <div class="flex items-center justify-between gap-3 text-sm font-medium text-gray-700">
+                        <div>{{ ctrans('Preparation and cleaning') }} <span class="font-normal text-gray-400">· {{ ctrans('paid at base rate, not in units per hour') }}</span></div>
+                        <div class="flex items-center gap-4 shrink-0 tabular-nums">
+                            <span class="text-gray-400">{{ hoursLabel(artisan.non_productive.hours) }}</span>
+                            <span class="w-16 text-right">{{ artisan.non_productive.pay === null ? '—' : artisan.non_productive.pay.toFixed(2) }}</span>
+                        </div>
+                    </div>
+
+                    <table class="mt-2 w-full text-xs tabular-nums">
+                        <thead>
+                            <tr class="text-left text-gray-400">
+                                <th class="py-1 font-medium">{{ ctrans('Day') }}</th>
+                                <th v-for="activity in non_productive_activities" :key="activity.value" class="py-1 font-medium text-right">{{ activity.label }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="day in artisan.non_productive.days" :key="day.key" class="border-t border-gray-50 text-gray-600">
+                                <td class="py-1">{{ useFormatTime(day.key) }}</td>
+                                <td v-for="activity in non_productive_activities" :key="activity.value" class="py-1 text-right">{{ day.hours[activity.value] ? hoursLabel(day.hours[activity.value]) : '—' }}</td>
+                            </tr>
+                            <tr v-for="week in artisan.non_productive.weeks" :key="'w' + week.key" class="border-t border-gray-100 font-medium text-gray-700">
+                                <td class="py-1">{{ ctrans('Week of :date', { date: useFormatTime(week.key) }) }}</td>
+                                <td v-for="activity in non_productive_activities" :key="activity.value" class="py-1 text-right">{{ hoursLabel(week.hours[activity.value]) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="mt-2 w-full text-xs tabular-nums">
+                        <thead>
+                            <tr class="text-left text-gray-400">
+                                <th class="py-1 font-medium">{{ ctrans('Job order') }}</th>
+                                <th v-for="activity in non_productive_activities" :key="activity.value" class="py-1 font-medium text-right">{{ activity.label }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="jobOrder in artisan.non_productive.job_orders" :key="jobOrder.key" class="border-t border-gray-50 text-gray-600">
+                                <td class="py-1">{{ jobOrder.label ?? ctrans('General, no job order') }}</td>
+                                <td v-for="activity in non_productive_activities" :key="activity.value" class="py-1 text-right">{{ jobOrder.hours[activity.value] ? hoursLabel(jobOrder.hours[activity.value]) : '—' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div v-for="session in artisan.non_productive.sessions" :key="session.id"
+                        class="py-1 flex items-center justify-between gap-3 text-sm"
+                        :class="session.state == 'voided' ? 'opacity-40 line-through' : ''">
+                        <span class="flex items-center gap-2 text-gray-400">
+                            {{ useFormatTime(session.ended_at) }}
+                            <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ session.activity }}</span>
+                            <span class="text-xs">{{ session.job_order_reference ?? ctrans('General') }}</span>
+                        </span>
+                        <div class="flex items-center gap-4 shrink-0 tabular-nums text-gray-700">
+                            <span class="text-gray-400">
+                                {{ sessionDuration(session) }}
+                                <span v-if="session.break_minutes">({{ session.break_minutes }}m {{ ctrans('break') }})</span>
+                            </span>
+                            <span class="w-16 text-right">{{ session.pay === null ? '—' : session.pay.toFixed(2) }}</span>
+                            <button v-if="session.void_route" type="button"
+                                class="text-xs text-red-600 hover:underline disabled:opacity-40"
+                                :disabled="processing" @click="voidSession(session)">
+                                {{ ctrans('Void') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div v-for="job in artisan.jobs" :key="job.job_order_item_id" class="py-2 border-b border-gray-100 last:border-0">
                     <div class="flex items-center justify-between gap-3 text-sm font-medium text-gray-700">
                         <div class="truncate">{{ job.artefact_code }} · {{ job.job_order_reference }}</div>
@@ -245,7 +372,7 @@ function sessionDuration(session: ArtisanSession) {
                                 <button
                                     v-if="session.review_route && reviewing !== session.id"
                                     type="button"
-                                    class="text-xs text-indigo-600 hover:underline"
+                                    class="text-xs font-medium text-gray-700 hover:underline"
                                     @click="openReview(session)"
                                 >
                                     {{ session.under_target_review ? ctrans('Change reason') : ctrans('Log reason') }}
@@ -266,12 +393,9 @@ function sessionDuration(session: ArtisanSession) {
                             <span v-if="session.under_target_review.reviewed_by">— {{ session.under_target_review.reviewed_by }}</span>
                         </div>
                         <div v-if="reviewing === session.id" class="mb-2 flex flex-wrap items-end gap-2 rounded border border-amber-200 bg-amber-50 p-2 text-sm">
-                            <select v-model="reviewReason" class="rounded border-gray-300 text-sm">
-                                <option :value="null" disabled>{{ ctrans('Reason') }}</option>
-                                <option v-for="(label, value) in under_target_reasons" :key="value" :value="value">{{ label }}</option>
-                            </select>
-                            <input v-model="reviewNote" type="text" maxlength="1000" :placeholder="ctrans('Notes (optional)')" class="min-w-0 flex-1 rounded border-gray-300 text-sm" />
-                            <button type="button" class="rounded bg-indigo-600 px-3 py-1.5 text-white disabled:opacity-40" :disabled="!reviewReason || processing" @click="saveReview(session)">
+                            <Select v-model="reviewReason" :options="reasonOptions" optionLabel="label" optionValue="value" :placeholder="ctrans('Reason')" :class="fieldFocusClass" />
+                            <InputText v-model="reviewNote" maxlength="1000" :placeholder="ctrans('Notes (optional)')" class="min-w-0 flex-1" />
+                            <button type="button" class="rounded bg-[--app-accent] px-3 py-1.5 text-[--app-accent-text] hover:bg-[--app-accent-strong] disabled:opacity-40" :disabled="!reviewReason || processing" @click="saveReview(session)">
                                 {{ ctrans('Save') }}
                             </button>
                             <button type="button" class="text-xs text-gray-500 hover:underline" @click="reviewing = null">

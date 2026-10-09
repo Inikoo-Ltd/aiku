@@ -142,6 +142,7 @@ class ShowJobOrder extends OrgAction
                     'employee_id'  => $jobOrder->employee_id,
                     'artisan'      => $jobOrder->employee?->contact_name,
                     'overproductions' => $jobOrder->data['overproductions'] ?? [],
+                    'non_productive'  => $this->nonProductive($jobOrder, $currencySymbol),
                 ],
                 'artisan_options' => $this->canEdit ? Employee::where('organisation_id', $this->organisation->id)
                     ->where('state', EmployeeStateEnum::WORKING)
@@ -209,6 +210,27 @@ class ShowJobOrder extends OrgAction
                 ];
             })
             ->sortBy('position')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Preparation and clean-down booked to this job order, so the batch shows its full labour cost.
+     *
+     * @return array<int, array{activity: string, hours: float, pay: string|null}>
+     */
+    private function nonProductive(JobOrder $jobOrder, string $currencySymbol): array
+    {
+        return ManufactureTaskSession::where('job_order_id', $jobOrder->id)
+            ->whereNull('job_order_item_task_id')
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->get()
+            ->groupBy(fn (ManufactureTaskSession $session) => $session->activity_type->value)
+            ->map(fn (Collection $sessions) => [
+                'activity' => $sessions->first()->activityLabel(),
+                'hours'    => round($sessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2),
+                'pay'      => $sessions->whereNotNull('pay')->isEmpty() ? null : $currencySymbol.number_format((float) $sessions->sum('pay'), 2),
+            ])
             ->values()
             ->all();
     }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Production\UI;
 
+use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
@@ -169,8 +170,8 @@ class ShowOperationsDashboard extends OrgAction
                     ],
                     'open_session' => ($openSession = ManufactureTaskSession::where('user_id', $request->user()->id)
                         ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-                        ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask'])
-                        ->first()) ? [
+                        ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
+                        ->first()) ? ($openSession->isNonProductive() ? ShowManufactureFloor::serializeNonProductiveSession($openSession) : [
                             'id'         => $openSession->id,
                             'started_at' => $openSession->started_at,
                             'task'       => [
@@ -186,37 +187,37 @@ class ShowOperationsDashboard extends OrgAction
                                 'name'       => 'grp.models.manufacture-task-session.close',
                                 'parameters' => ['manufactureTaskSession' => $openSession->id],
                             ],
-                        ] : null,
+                        ]) : null,
                     'working_now' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
                         ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::OPEN)
-                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
                         ->orderBy('started_at')
                         ->get()
                         ->map(fn (ManufactureTaskSession $session) => [
                             'id'                  => $session->id,
                             'worker'              => $session->user->contact_name ?: $session->user->username,
-                            'task_name'           => $session->manufactureTask->name,
-                            'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
-                            'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
-                            'job_order_slug'      => $session->jobOrderItemTask->jobOrder->slug,
+                            'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+                            'artefact_code'       => $session->jobOrderItemTask?->jobOrderItem->artefact->code,
+                            'job_order_reference' => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->reference,
+                            'job_order_slug'      => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->slug,
                             'started_at'          => $session->started_at,
-                            'quantity_made'       => (float)$session->jobOrderItemTask->quantity_made,
-                            'quantity_required'   => (float)$session->jobOrderItemTask->quantity_required,
+                            'quantity_made'       => (float)$session->jobOrderItemTask?->quantity_made,
+                            'quantity_required'   => (float)$session->jobOrderItemTask?->quantity_required,
                         ]),
                     'today_sessions' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
                         ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
                         ->whereDate('ended_at', now()->toDateString())
-                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
                         ->orderByDesc('ended_at')
                         ->limit(30)
                         ->get()
                         ->map(fn (ManufactureTaskSession $session) => [
                             'id'            => $session->id,
                             'worker'        => $session->user->contact_name ?: $session->user->username,
-                            'task_name'     => $session->manufactureTask->name,
-                            'artefact_code' => $session->jobOrderItemTask->jobOrderItem->artefact->code,
-                            'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
-                            'job_order_slug'      => $session->jobOrderItemTask->jobOrder->slug,
+                            'task_name'     => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+                            'artefact_code' => $session->jobOrderItemTask?->jobOrderItem->artefact->code,
+                            'job_order_reference' => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->reference,
+                            'job_order_slug'      => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->slug,
                             'ended_at'      => $session->ended_at,
                             'quantity_made' => (float)$session->quantity_made,
                             'void_route'    => [

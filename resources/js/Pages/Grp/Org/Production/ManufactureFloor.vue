@@ -11,6 +11,7 @@ import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
+import Select from 'primevue/select'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -64,9 +65,15 @@ const props = defineProps<{
         is_clocked_out: boolean
         end_route: { name: string, parameters: object }
     }
+    non_productive: {
+        route: { name: string, parameters: object }
+        activities: { value: string, label: string }[]
+        job_orders: { id: number, label: string }[]
+    }
     open_session: null | {
         id: number
         started_at: string
+        activity?: { type: string, label: string }
         task: FloorTask
         close_route: { name: string, parameters: object }
         band_feedback: null | {
@@ -83,10 +90,11 @@ const props = defineProps<{
         id: number
         ended_at: string
         seconds: number
+        is_non_productive: boolean
         task_name: string
         artefact_code: string
-        artefact_name: string
-        job_order_reference: string
+        artefact_name: string | null
+        job_order_reference: string | null
         quantity_made: number
         quantity_rejected: number
     }[]
@@ -101,6 +109,28 @@ const processing = ref(false)
 const page = usePage()
 const startError = computed(() => (page.props.errors as Record<string, string> | undefined)?.job_order_item_task_id)
 const breakError = computed(() => (page.props.errors as Record<string, string> | undefined)?.break)
+const activityError = computed(() => {
+    const errors = page.props.errors as Record<string, string> | undefined
+    return errors?.activity_type ?? errors?.job_order_id
+})
+
+const pendingActivity = ref<{ value: string, label: string } | null>(null)
+const activityJobOrderId = ref<number | null>(null)
+
+function chooseActivity(activity: { value: string, label: string }) {
+    pendingActivity.value = activity
+    activityJobOrderId.value = null
+}
+
+function startActivity() {
+    if (!pendingActivity.value) return
+    processing.value = true
+    router.post(
+        route(props.non_productive.route.name, props.non_productive.route.parameters),
+        { activity_type: pendingActivity.value.value, job_order_id: activityJobOrderId.value },
+        { preserveScroll: true, onSuccess: () => pendingActivity.value = null, onFinish: () => processing.value = false }
+    )
+}
 
 const deviceClockOffset = computed(() => Date.parse(props.server_time) - Date.now())
 const now = ref(Date.now() + deviceClockOffset.value)
@@ -240,7 +270,7 @@ function startTask(task: FloorTask) {
                 <button v-for="task in section.tasks" :key="task.id" type="button"
                     class="w-full text-left px-3 py-2.5 border-b border-gray-200 hover:bg-white"
                     :class="[
-                        selectedTaskId == task.id ? 'bg-indigo-50 ring-1 ring-inset ring-indigo-200' : '',
+                        selectedTaskId == task.id ? 'bg-[--app-accent-soft] ring-1 ring-inset ring-[--app-accent-muted]' : '',
                         open_session?.task.id == task.id ? 'bg-amber-50 ring-1 ring-inset ring-amber-200' : ''
                     ]"
                     @click="selectedTaskId = task.id">
@@ -271,13 +301,13 @@ function startTask(task: FloorTask) {
             <div v-for="session in finished_today" :key="session.id"
                 class="px-3 py-2 border-b border-gray-200 flex justify-between gap-2 text-sm">
                 <div class="min-w-0">
-                    <div class="font-semibold truncate">{{ session.artefact_code }}</div>
+                    <div class="font-semibold truncate">{{ session.is_non_productive ? session.task_name : session.artefact_code }}</div>
                     <div class="text-xs text-gray-500 truncate">
-                        {{ session.task_name }} · {{ formatDuration(session.seconds) }}
+                        {{ session.is_non_productive ? session.artefact_code : session.task_name }} · {{ formatDuration(session.seconds) }}
                         <span v-if="session.quantity_rejected" class="text-red-600">· {{ session.quantity_rejected }} {{ ctrans('rejected') }}</span>
                     </div>
                 </div>
-                <div class="font-semibold tabular-nums text-green-700 shrink-0">{{ session.quantity_made }}</div>
+                <div v-if="!session.is_non_productive" class="font-semibold tabular-nums text-green-700 shrink-0">{{ session.quantity_made }}</div>
             </div>
         </aside>
 
@@ -320,6 +350,37 @@ function startTask(task: FloorTask) {
                 </button>
             </div>
 
+            <template v-if="!open_break && !open_session">
+                <div v-if="activityError" class="w-full max-w-5xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{{ activityError }}</div>
+
+                <div v-if="pendingActivity" class="w-full max-w-5xl rounded-lg border border-gray-300 bg-gray-50 p-4">
+                    <div class="text-2xl">{{ ctrans('Start :activity', { activity: pendingActivity.label }) }}</div>
+                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                        <Select v-model="activityJobOrderId" :options="non_productive.job_orders" optionLabel="label" optionValue="id"
+                            filter showClear :placeholder="ctrans('General, no job order')"
+                            class="min-w-[20rem] flex-1 text-xl" />
+                        <button type="button" class="rounded-lg bg-[--app-accent] text-[--app-accent-text] text-xl font-semibold px-8 py-4 disabled:opacity-40"
+                            :disabled="processing" @click="startActivity">
+                            {{ ctrans('START') }}
+                        </button>
+                        <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold px-6 py-4"
+                            @click="pendingActivity = null">
+                            {{ ctrans('Cancel') }}
+                        </button>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-500">{{ ctrans('Pick the job order this is for, or leave it empty for general setup or end-of-day cleaning') }}</div>
+                </div>
+
+                <div v-else class="w-full max-w-5xl flex items-center gap-3">
+                    <span class="text-lg text-gray-600">{{ ctrans('Other work') }}:</span>
+                    <button v-for="activity in non_productive.activities" :key="activity.value" type="button"
+                        class="rounded-lg border-2 border-gray-300 bg-white text-gray-800 text-xl font-semibold px-6 py-3 hover:bg-gray-50"
+                        @click="chooseActivity(activity)">
+                        {{ activity.label }}
+                    </button>
+                </div>
+            </template>
+
             <div v-if="open_break" class="flex-1 flex items-center text-gray-400 text-lg">{{ ctrans('Finish your break to continue working') }}</div>
 
             <ManufactureWorkingCard v-else-if="open_session" :session="open_session" :server-time="server_time" class="w-full max-w-5xl" />
@@ -339,7 +400,7 @@ function startTask(task: FloorTask) {
                 </div>
                 <div v-else-if="selectedTask.working_on_by.length" class="text-amber-600 font-medium mb-2">{{ ctrans('Working') }}: {{ selectedTask.working_on_by.join(', ') }}</div>
                 <button v-if="selectedTask.can_start" type="button"
-                    class="rounded-xl bg-indigo-600 text-white text-2xl font-semibold px-16 py-5 disabled:opacity-40"
+                    class="rounded-xl bg-[--app-accent] text-[--app-accent-text] text-2xl font-semibold px-16 py-5 disabled:opacity-40"
                     :disabled="processing"
                     @click="startTask(selectedTask)">
                     {{ ctrans('START') }}
@@ -352,7 +413,7 @@ function startTask(task: FloorTask) {
                     </div>
                     <button v-for="step in selectedTask.steps" :key="step.id" type="button"
                         class="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 text-left disabled:cursor-default"
-                        :class="step.id == selectedTask.id ? 'bg-indigo-50' : 'hover:bg-gray-50'"
+                        :class="step.id == selectedTask.id ? 'bg-[--app-accent-soft]' : 'hover:bg-gray-50'"
                         :disabled="!tasks.some(task => task.id == step.id)"
                         @click="selectedTaskId = step.id">
                         <FontAwesomeIcon v-if="step.state == 'done'" icon="fas fa-check-circle" fixed-width class="text-green-600" aria-hidden="true" />

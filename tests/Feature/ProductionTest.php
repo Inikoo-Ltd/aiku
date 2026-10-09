@@ -59,6 +59,7 @@ use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\RecipeStepRawMaterial;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
+use App\Actions\Production\ManufactureTaskSession\StartManufactureNonProductiveSession;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -5534,4 +5535,91 @@ test('a custom product is made for one customer from an artefact waiting for its
 
     get(route('grp.org.productions.show.crafts.artefacts.show', [$organisation->slug, $production->slug, $artefact->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('customer_product', null));
+});
+
+test('preparation and cleaning are timed at the base rate, never overlap production and stay out of performance figures', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    \App\Models\Production\ManufactureBreak::where('user_id', $user->id)->where(fn ($query) => $query->whereNull('ended_at')->orWhere('ended_at', '>', now()->subMinute()))->delete();
+    $bandAttributes = ['group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'effective_from' => now()->subYear()];
+    $band0 = \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(['production_id' => $this->production->id, 'code' => '0'], ['name' => 'Band 0', 'hourly_rate' => 12.71] + $bandAttributes);
+    \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(['production_id' => $this->production->id, 'code' => '1'], ['name' => 'Band 1', 'hourly_rate' => 13, 'target_multiplier' => 0.0001] + $bandAttributes);
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $jobOrderItem->tasks()->first();
+
+    expect(fn () => StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'production']))
+        ->toThrow(ValidationException::class);
+
+    $this->freezeSecond();
+    $preparation = StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'preparation', 'job_order_id' => $jobOrder->id]);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $task))->toThrow(ValidationException::class)
+        ->and(fn () => StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'cleaning']))->toThrow(ValidationException::class);
+
+    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('open_session.activity.type', 'preparation')
+            ->where('open_session.task.job_order_reference', $jobOrder->reference)
+            ->has('non_productive.activities', 2)
+            ->where('non_productive.job_orders', fn ($jobOrders) => collect($jobOrders)->contains('id', $jobOrder->id))
+            ->etc());
+
+    $this->travel(20)->minutes();
+    $break = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 20]);
+    $this->travel(10)->minutes();
+    \App\Actions\Production\ManufactureBreak\EndManufactureBreak::make()->action($break);
+    $this->travel(10)->minutes();
+    $preparation = CloseManufactureTaskSession::make()->action($preparation, []);
+
+    expect($preparation->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+        ->and($preparation->break_minutes)->toBe(10)
+        ->and((float) $preparation->hours)->toBe(0.5)
+        ->and($preparation->band_code)->toBe('0')
+        ->and((float) $preparation->pay)->toBe(round(0.5 * (float) $band0->hourly_rate, 2))
+        ->and((float) $preparation->bonus)->toBe(0.0)
+        ->and($preparation->units_per_hour)->toBeNull()
+        ->and($preparation->is_under_target)->toBeFalse();
+
+    $production = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $task), ['quantity_made' => 10]);
+    $cleaning   = StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'cleaning']);
+    $this->travel(15)->minutes();
+    $cleaning = CloseManufactureTaskSession::make()->action($cleaning, []);
+
+    $artisan = collect(get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => now()->toDateString(), 'to' => now()->toDateString()]))
+        ->viewData('page')['props']['artisans'])->firstWhere('user_id', $user->id);
+    $sessionIdsInJobs = collect($artisan['jobs'])->flatMap(fn ($job) => collect($job['steps'])->flatMap(fn ($step) => collect($step['sessions'])->pluck('id')));
+    $preparationRow   = collect($artisan['non_productive']['job_orders'])->firstWhere('label', $jobOrder->reference);
+    $generalRow       = collect($artisan['non_productive']['job_orders'])->firstWhere('label', null);
+
+    expect($sessionIdsInJobs)->toContain($production->id)
+        ->not->toContain($preparation->id)
+        ->not->toContain($cleaning->id)
+        ->and(collect($artisan['non_productive']['sessions'])->pluck('id')->all())->toContain($preparation->id, $cleaning->id)
+        ->and($preparationRow['hours']['preparation'])->toEqual(0.5)
+        ->and($generalRow['hours']['cleaning'])->toBeGreaterThanOrEqual(0.25)
+        ->and($artisan['non_productive']['days'])->not->toBeEmpty();
+
+    get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $jobOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('job_order.non_productive.0.activity', 'Preparation')
+            ->where('job_order.non_productive.0.hours', 0.5)
+            ->etc());
+
+    get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))->assertOk();
+
+    $export = get(route('grp.org.productions.show.artisans.payroll.export', [$this->organisation->slug, $this->production->slug, 'from' => now()->toDateString(), 'to' => now()->toDateString()]));
+    ob_start();
+    $export->sendContent();
+    expect(ob_get_clean())->toContain('Preparation')->toContain('Cleaning');
+
+    VoidManufactureTaskSession::make()->action($cleaning);
+    expect($cleaning->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED);
+    $this->travelBack();
 });

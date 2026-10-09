@@ -8,6 +8,7 @@
 
 namespace App\Exports\Production;
 
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
@@ -53,7 +54,7 @@ class ManufacturePayrollExport implements FromArray, WithHeadings
     {
         return ManufactureTaskSession::query()
             ->join('users', 'users.id', 'manufacture_task_sessions.user_id')
-            ->join('manufacture_tasks', 'manufacture_tasks.id', 'manufacture_task_sessions.manufacture_task_id')
+            ->leftJoin('manufacture_tasks', 'manufacture_tasks.id', 'manufacture_task_sessions.manufacture_task_id')
             ->where('manufacture_task_sessions.production_id', $this->production->id)
             ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereBetween('manufacture_task_sessions.ended_at', [$this->from->startOfDay(), $this->to->endOfDay()])
@@ -98,7 +99,7 @@ class ManufacturePayrollExport implements FromArray, WithHeadings
             ->map(fn ($row) => [
                 $row->contact_name ?: $row->username,
                 $row->task_code,
-                $row->task_name,
+                $row->task_name ?? ($row->activity_type ? ManufactureTaskSessionActivityTypeEnum::labels()[$row->activity_type->value] : null),
                 (int)$row->number_sessions,
                 round($row->seconds_worked / 3600, 2),
                 (float)$row->quantity_made,

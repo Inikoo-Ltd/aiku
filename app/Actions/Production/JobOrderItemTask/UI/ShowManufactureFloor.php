@@ -14,8 +14,10 @@ use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
+use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufacturePayBand;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -78,7 +80,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
             ->first();
 
         $workingOnBy = ManufactureTaskSession::where('production_id', $production->id)
@@ -143,23 +145,25 @@ class ShowManufactureFloor extends OrgAction
         $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereDate('ended_at', now()->toDateString())
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
             ->orderByDesc('ended_at')
             ->get()
             ->map(fn (ManufactureTaskSession $session) => [
                 'id'                  => $session->id,
                 'ended_at'            => $session->ended_at,
                 'seconds'             => (int) $session->started_at->diffInSeconds($session->ended_at),
-                'task_name'           => $session->manufactureTask->name,
-                'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
-                'artefact_name'       => $session->jobOrderItemTask->jobOrderItem->artefact->name,
-                'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
+                'is_non_productive'   => $session->isNonProductive(),
+                'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+                'artefact_code'       => $session->isNonProductive() ? ($session->jobOrder?->reference ?? __('General')) : $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                'artefact_name'       => $session->jobOrderItemTask?->jobOrderItem->artefact->name,
+                'job_order_reference' => $session->isNonProductive() ? $session->jobOrder?->reference : $session->jobOrderItemTask->jobOrder->reference,
                 'quantity_made'       => (float) $session->quantity_made,
                 'quantity_rejected'   => (float) $session->quantity_rejected,
             ]);
 
         $todayTotals = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->whereNotNull('job_order_item_task_id')
             ->whereDate('ended_at', now()->toDateString())
             ->selectRaw('count(*) as sessions, coalesce(sum(quantity_made),0) as quantity_made, coalesce(sum(quantity_made * task_work_cost),0) as earned')
             ->first();
@@ -195,7 +199,19 @@ class ShowManufactureFloor extends OrgAction
                         'method'     => 'patch',
                     ],
                 ] : null,
-                'open_session' => $openSession ? [
+                'non_productive' => [
+                    'route'      => [
+                        'name'       => 'grp.models.production.non_productive_session.store',
+                        'parameters' => ['production' => $this->production->id],
+                        'method'     => 'post',
+                    ],
+                    'activities' => array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => [
+                        'value' => $activity->value,
+                        'label' => ManufactureTaskSessionActivityTypeEnum::labels()[$activity->value],
+                    ], ManufactureTaskSessionActivityTypeEnum::floorActivities()),
+                    'job_orders' => $this->nonProductiveJobOrderOptions($production),
+                ],
+                'open_session' => $openSession?->isNonProductive() ? self::serializeNonProductiveSession($openSession) : ($openSession ? [
                     'id'         => $openSession->id,
                     'can_reject' => $canPickOpenJobs,
                     'started_at' => $openSession->started_at,
@@ -207,7 +223,7 @@ class ShowManufactureFloor extends OrgAction
                     ],
                     'band_feedback' => $this->bandFeedback($openSession),
                     'break_minutes' => (int) $openSession->break_minutes,
-                ] : null,
+                ] : null),
                 'artisan'      => $this->employee?->contact_name,
                 'can_pick_open_jobs' => $canPickOpenJobs,
                 'tasks'        => $tasks,
@@ -219,6 +235,66 @@ class ShowManufactureFloor extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * The working card's shape, without a step or quantity: the card shows the activity and a FINISH button.
+     */
+    public static function serializeNonProductiveSession(ManufactureTaskSession $session): array
+    {
+        return [
+            'id'            => $session->id,
+            'started_at'    => $session->started_at,
+            'activity'      => [
+                'type'  => $session->activity_type->value,
+                'label' => $session->activityLabel(),
+            ],
+            'task'          => [
+                'task_name'           => $session->activityLabel(),
+                'artefact_code'       => null,
+                'artefact_name'       => null,
+                'job_order_reference' => $session->jobOrder?->reference,
+                'job_order_slug'      => $session->jobOrder?->slug,
+                'quantity_made'       => 0,
+                'quantity_required'   => 0,
+            ],
+            'close_route'   => [
+                'name'       => 'grp.models.manufacture-task-session.close',
+                'parameters' => ['manufactureTaskSession' => $session->id],
+                'method'     => 'patch',
+            ],
+            'band_feedback' => null,
+            'break_minutes' => (int) $session->break_minutes,
+        ];
+    }
+
+    /**
+     * Job orders on the floor, plus any worked in the last week, so a clean-down after the batch is finished or received can still be booked to it.
+     *
+     * @return array<int, array{id: int, label: string}>
+     */
+    protected function nonProductiveJobOrderOptions(Production $production): array
+    {
+        $workedRecently = JobOrderItemTask::whereIn(
+            'id',
+            ManufactureTaskSession::where('production_id', $production->id)
+                ->whereNotNull('job_order_item_task_id')
+                ->where('started_at', '>=', now()->subWeek())
+                ->select('job_order_item_task_id')
+        )->select('job_order_id');
+
+        return JobOrder::where('production_id', $production->id)
+            ->where(fn ($query) => $query->where('state', JobOrderStateEnum::CONFIRMED)->orWhereIn('id', $workedRecently))
+            ->with('jobOrderItems.artefact')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->map(fn (JobOrder $jobOrder) => [
+                'id'    => $jobOrder->id,
+                'label' => trim($jobOrder->reference.' · '.$jobOrder->jobOrderItems->pluck('artefact.code')->filter()->unique()->implode(', '), ' ·'),
+            ])
+            ->all();
     }
 
     protected function bandFeedback(ManufactureTaskSession $session): ?array

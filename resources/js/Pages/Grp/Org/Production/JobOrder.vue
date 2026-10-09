@@ -73,6 +73,7 @@ const props = defineProps<{
         employee_id: number | null
         artisan: string | null
         overproductions: { step: string, artefact_code: string, quantity: number, made_by: string, manager: string, method: 'qr' | 'pin', at: string }[]
+        non_productive: { activity: string, hours: number, pay: string | null }[]
     }
     artisan_options: { id: number, name: string }[]
     update_route: null | { name: string, parameters: object }
@@ -320,6 +321,14 @@ function receiveIntoStock() {
                     method: entry.method === 'qr' ? ctrans('QR scan') : ctrans('PIN'),
                 }) }}
                 <span class="text-gray-500">· {{ useFormatTime(entry.at, { formatTime: 'hm' }) }}</span>
+            </div>
+        </div>
+        <div v-if="job_order.non_productive?.length" class="mb-6 rounded border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <div class="font-semibold mb-1">{{ ctrans('Preparation and cleaning for this job') }}</div>
+            <div v-for="entry in job_order.non_productive" :key="entry.activity" class="flex gap-6 tabular-nums">
+                <span class="w-32">{{ entry.activity }}</span>
+                <span>{{ entry.hours }} h</span>
+                <span>{{ entry.pay ?? '—' }}</span>
             </div>
         </div>
         <div v-if="confirm_route" class="mb-6 -mt-3 text-sm text-amber-600">

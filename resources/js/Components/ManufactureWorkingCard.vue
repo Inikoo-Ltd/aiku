@@ -17,11 +17,12 @@ const props = defineProps<{
         id: number
         started_at: string
         can_reject?: boolean
+        activity?: { type: string, label: string }
         task: {
             task_name: string
-            artefact_code: string
-            artefact_name: string
-            job_order_reference: string
+            artefact_code: string | null
+            artefact_name: string | null
+            job_order_reference: string | null
             quantity_made: number
             quantity_required: number
         }
@@ -145,6 +146,15 @@ function confirmDone() {
     closeSession()
 }
 
+function finishActivity() {
+    processing.value = true
+    router.patch(
+        route(props.session.close_route.name, props.session.close_route.parameters),
+        {},
+        { preserveScroll: true, onFinish: () => { processing.value = false; confirming.value = false } }
+    )
+}
+
 function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager: { manager_code: string, manager_method: 'qr' | 'pin' } | null = null) {
     if (quantityMade.value === null) return
     askOutcome.value = false
@@ -180,7 +190,45 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
 </script>
 
 <template>
-    <div class="rounded-2xl border-2 border-[--app-accent] bg-[--app-accent-soft] p-10">
+    <div v-if="session.activity" class="rounded-2xl border-2 border-gray-400 bg-gray-50 p-10">
+        <div class="flex items-baseline justify-between">
+            <div>
+                <div class="text-xs uppercase tracking-wide text-gray-500">{{ ctrans('Not production · paid at base rate') }}</div>
+                <div class="text-5xl font-semibold mt-1">{{ session.activity.label }}</div>
+                <div class="text-xl text-gray-600 mt-2">
+                    {{ session.task.job_order_reference ? ctrans('Job order') + ' ' + session.task.job_order_reference : ctrans('General, no job order') }}
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-7xl font-mono tabular-nums text-gray-800">{{ elapsed }}</div>
+                <div v-if="session.break_minutes" class="text-sm text-gray-500">{{ session.break_minutes }} {{ ctrans('min on break') }}</div>
+            </div>
+        </div>
+
+        <div v-if="closeError" class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-lg text-red-700">{{ closeError }}</div>
+
+        <div v-if="confirming" class="mt-6 rounded-lg border border-green-300 bg-green-50 p-4">
+            <div class="text-2xl font-semibold">{{ ctrans('Finish :activity?', { activity: session.activity.label }) }}</div>
+            <div class="mt-2 text-lg text-gray-700">{{ ctrans('Time logged') }}: <b class="tabular-nums">{{ elapsed }}</b></div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4"
+                    @click="confirming = false">
+                    {{ ctrans('Cancel / Go back') }}
+                </button>
+                <button type="button" class="rounded-lg bg-green-600 text-white text-xl font-semibold py-4 disabled:opacity-40"
+                    :disabled="processing" @click="finishActivity">
+                    {{ ctrans('Confirm & finish') }}
+                </button>
+            </div>
+        </div>
+        <button v-else type="button"
+            class="mt-6 w-full rounded-lg bg-green-600 text-white text-4xl font-semibold py-6 disabled:opacity-40"
+            :disabled="processing" @click="confirming = true">
+            {{ ctrans('FINISH') }}
+        </button>
+    </div>
+
+    <div v-else class="rounded-2xl border-2 border-[--app-accent] bg-[--app-accent-soft] p-10">
         <div class="flex items-baseline justify-between">
             <div>
                 <div class="text-xs uppercase tracking-wide text-[--app-accent]">{{ ctrans('Working on') }}</div>

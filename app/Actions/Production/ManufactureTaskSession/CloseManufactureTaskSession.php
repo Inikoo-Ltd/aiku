@@ -52,6 +52,15 @@ class CloseManufactureTaskSession extends OrgAction
             }
             CalculateManufactureTaskSessionBreakMinutes::run($session, now());
 
+            if ($session->isNonProductive()) {
+                $session->update([
+                    'ended_at' => now(),
+                    'state'    => ManufactureTaskSessionStateEnum::CLOSED,
+                ]);
+
+                return CalculateManufactureTaskSessionPay::run($session);
+            }
+
             $manufactureTask = $session->manufactureTask;
 
             $task = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
@@ -204,12 +213,12 @@ class CloseManufactureTaskSession extends OrgAction
     public function rules(): array
     {
         return [
-            'quantity_made'          => ['required', 'numeric', 'min:0'],
+            'quantity_made'          => [Rule::requiredIf(fn () => !$this->manufactureTaskSession->isNonProductive()), 'nullable', 'numeric', 'min:0'],
             'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
             'outcome'                => ['sometimes', 'nullable', Rule::in(['complete', 'carry_over'])],
             'manager_code'           => ['sometimes', 'nullable', 'string', 'max:64'],
             'manager_method'         => ['sometimes', 'nullable', Rule::in(['qr', 'pin'])],
-            'activity_type'          => ['sometimes', Rule::enum(ManufactureTaskSessionActivityTypeEnum::class)],
+            'activity_type'          => ['sometimes', Rule::enum(ManufactureTaskSessionActivityTypeEnum::class)->except(ManufactureTaskSessionActivityTypeEnum::floorActivities())],
             'non_productive_reason'  => [
                 Rule::requiredIf(function () {
                     $activityType = $this->get('activity_type');
