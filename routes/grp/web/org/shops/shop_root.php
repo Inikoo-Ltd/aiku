@@ -14,6 +14,7 @@ use App\Actions\CRM\UI\ShowCrmDashboard;
 use App\Actions\Web\WebsitePageView\UI\IndexWebsitePageViews;
 use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
 use App\Actions\Web\Crawl\UI\ShowSiteAudit;
+use App\Actions\Web\Seo\ExportSeoTable;
 use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
 use App\Actions\Web\Seo\UI\ShowSeoBacklinks;
 use App\Actions\Web\Seo\UI\ShowSeoCompetitors;
@@ -124,6 +125,7 @@ Route::prefix('{shop}')->name('show.')
         Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
         Route::get('backlinks', ShowSeoBacklinks::class)->name('backlinks.show');
         Route::get('competitors', ShowSeoCompetitors::class)->name('competitors.show');
+        Route::get('export/{table}', ExportSeoTable::class)->name('export');
             });
 
         Route::prefix("settings")

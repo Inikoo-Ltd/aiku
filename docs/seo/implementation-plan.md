@@ -540,19 +540,29 @@ linked from every SEO dashboard: the figures and the budget are the group's.
 Found on 9 October 2026 by comparing this plan with the marketing team's research ("AIKU SEO
 Strategy (Research)", 8 October 2026). None is built; each needs the team's go-ahead.
 
-- **Position history and alerts.** `seo_keyword_rankings` keeps every check, but the Rankings tab
-  shows only the latest position and its change. Add a position chart per keyword (with the Search
-  Console position beside it), and alerts when a keyword the team marks as important drops out of
-  the top 10 or loses more than a set number of places, as a notification in Aiku and an email.
-  No API cost.
+- **Position history and alerts.** Built on 9 October 2026. In the Rankings tab a keyword opens its
+  position chart (`GetSeoKeywordHistory`): every check, the competitors from the same checks and the
+  Search Console average of the same query per day, position 1 at the top and a gap where the
+  website was not in the results read. Anyone can watch a keyword (the bell, `seo_keyword_watchers`).
+  After each check `StoreSerpResult` writes a `seo_ranking_alerts` row when the keyword left the top
+  10, dropped out of the results read, or fell 5 places or more (`SeoRankingAlert::DROP_PLACES`);
+  the row shows as a tag in the table, and once the checks are collected `NotifySeoRankingAlerts`
+  sends each watcher one notification per shop, in the bell and by email. No API cost.
 - **Tracking depth per keyword.** Checks read the top 30 weekly or the top 20 daily. The research
   recommends daily top 100, about $486 a month for 2,700 keywords, against about $65 for top 100
   weekly. Let the team choose the depth per keyword (20, 30 or 100), so positions 31 to 100 are
   seen where they matter; the cost shows on the API usage page.
-- **Export and scheduled reports.** Aiku tables already support export links
-  (`InertiaTable::withExportLinks`), but no SEO table uses them. Add Excel exports to the SEO tables,
-  and a scheduled report (weekly or monthly, per shop or for all) emailed to the team: visibility,
-  winners and losers, audit health, new and lost backlinks.
+- **Export and scheduled reports.** Built on 9 October 2026.
+  - An Excel button on every SEO table (Rankings, Tracked keywords, Top pages, Missing pages,
+    Referring domains, Backlinks, Keyword gap, SEO portfolio) downloads it with the filters and sort
+    it has on screen, up to 20,000 rows (`ExportSeoTable`, `ExportSeoPortfolio`, `SeoTableExport`).
+    The same index actions are read in pages of 2,000 for the request.
+  - Weekly report by email: anyone can turn it on per shop (SEO dashboard) or for every website (SEO
+    portfolio), kept in `seo_report_subscriptions`. `SendSeoWeeklyReports` (Mondays 07:00 UTC, after
+    the weekly checks) sends each subscriber the shop's week against the week before: visitors,
+    Google clicks, impressions and position, tracked keywords in the top 10 with the five biggest
+    winners and losers, site health, referring domains with new and lost, new 404 paths and the
+    suggested fixes waiting; the portfolio report lists every website.
 - **Portfolio view.** Built on 9 October 2026: Website (group menu) > SEO portfolio (`ShowSeoPortfolio`, `GetSeoPortfolio`), linked from every SEO dashboard,
   one row per live website: site health of the latest audit and its change, visitors and Google
   clicks of the last 28 days against the 28 before (Search Console ending on its own last day),

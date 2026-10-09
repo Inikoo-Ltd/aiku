@@ -11,7 +11,9 @@ use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Enums\Web\Seo\SeoKeywordFrequencyEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -40,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \App\Models\Web\Webpage|null $targetWebpage
  * @property-read \App\Models\Web\Webpage|null $rankingWebpage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, SeoKeywordRanking> $rankings
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $watchers
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SeoTrackedKeyword newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SeoTrackedKeyword newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SeoTrackedKeyword query()
@@ -81,5 +84,10 @@ class SeoTrackedKeyword extends Model
     public function rankings(): HasMany
     {
         return $this->hasMany(SeoKeywordRanking::class, 'tracked_keyword_id');
+    }
+
+    public function watchers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'seo_keyword_watchers', 'tracked_keyword_id', 'user_id')->withPivot('created_at');
     }
 }

@@ -41,6 +41,7 @@ use App\Http\Resources\Web\WebsiteConversionCustomerResource;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\SeoReportSubscription;
 use App\Models\Web\Website;
 use Closure;
 use Illuminate\Support\Arr;
@@ -109,6 +110,10 @@ class ShowSeoDashboard extends OrgAction
                         'parameters' => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                     ],
                 ] : null,
+                'reportSubscription' => [
+                    'is_subscribed' => SeoReportSubscription::where('user_id', $request->user()->id)->where('shop_id', $shop->id)->exists(),
+                    'route'         => ['name' => 'grp.models.shop.seo.report_subscription.toggle', 'parameters' => [$shop->id]],
+                ],
                 'groupLinks'  => $request->user()->hasGroupAccess() ? [
                     [
                         'label' => __('SEO portfolio'),

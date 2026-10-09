@@ -78,6 +78,10 @@ class CollectSerpTasks
             }
         } while ($trackedKeywords->isNotEmpty() && $readyTasks->count() >= self::READY_LIMIT);
 
+        if ($collected) {
+            NotifySeoRankingAlerts::dispatch();
+        }
+
         return $collected;
     }
 

@@ -10,6 +10,7 @@ import { route } from "ziggy-js"
 import Column from "primevue/column"
 import DataTable from "primevue/datatable"
 import { ctrans } from "@/Composables/useTrans"
+import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -104,7 +105,7 @@ const numericPt = { columnHeaderContent: { class: "justify-end" }, bodyCell: { c
 <template>
     <div v-if="data" class="space-y-4 px-4 py-4">
         <section :aria-label="ctrans('Portfolio totals')" class="rounded-xl bg-white ring-1 ring-gray-200">
-            <dl class="flex flex-wrap gap-x-10 gap-y-3 px-5 py-4">
+            <dl class="flex flex-wrap items-start gap-x-10 gap-y-3 px-5 py-4">
                 <div>
                     <dt class="text-xs text-gray-500">{{ ctrans("Live websites") }}</dt>
                     <dd class="mt-0.5 text-2xl font-semibold tabular-nums text-gray-900">{{ locale.number(data.websites.length) }}</dd>
@@ -121,6 +122,9 @@ const numericPt = { columnHeaderContent: { class: "justify-end" }, bodyCell: { c
                 <div>
                     <dt class="text-xs text-gray-500">{{ ctrans("Tracked keywords in the top 10") }}</dt>
                     <dd class="mt-0.5 text-2xl font-semibold tabular-nums text-gray-900">{{ ctrans(":top of :tracked", { top: locale.number(totals.top10), tracked: locale.number(totals.tracked) }) }}</dd>
+                </div>
+                <div class="ml-auto">
+                    <SeoExportButton routeName="grp.websites.seo.portfolio.export" />
                 </div>
             </dl>
             <p class="border-t border-gray-100 px-5 py-2 text-xs text-gray-500">
