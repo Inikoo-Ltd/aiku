@@ -555,7 +555,10 @@ use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Crawl\StartSiteAudit;
+use App\Actions\Web\Seo\AcceptSeoContentSuggestion;
 use App\Actions\Web\Seo\DeleteSeoCompetitor;
+use App\Actions\Web\Seo\DismissSeoContentSuggestion;
+use App\Actions\Web\Seo\RequestSeoContentSuggestions;
 use App\Actions\Web\Seo\DeleteSeoTrackedKeyword;
 use App\Actions\Web\Seo\RunSeoBacklinkFetch;
 use App\Actions\Web\Seo\RunSeoRankChecks;
@@ -1316,6 +1319,9 @@ Route::patch('website-not-found-path/{websiteNotFoundPath:id}/ignored', UpdateWe
 Route::patch('seo-tracked-keyword/{seoTrackedKeyword:id}', UpdateSeoTrackedKeyword::class)->name('seo_tracked_keyword.update');
 Route::delete('seo-tracked-keyword/{seoTrackedKeyword:id}', DeleteSeoTrackedKeyword::class)->name('seo_tracked_keyword.delete');
 Route::delete('seo-competitor/{seoCompetitor:id}', DeleteSeoCompetitor::class)->name('seo_competitor.delete');
+Route::post('webpage/{webpage:id}/seo-content-suggestions', RequestSeoContentSuggestions::class)->name('webpage.seo_content_suggestions.store')->withoutScopedBindings();
+Route::patch('seo-content-suggestion/{seoContentSuggestion:id}/accept', AcceptSeoContentSuggestion::class)->name('seo_content_suggestion.accept');
+Route::patch('seo-content-suggestion/{seoContentSuggestion:id}/dismiss', DismissSeoContentSuggestion::class)->name('seo_content_suggestion.dismiss');
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');

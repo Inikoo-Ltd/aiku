@@ -6,6 +6,10 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Web\Seo\GenerateSeoContentSuggestions;
+use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
+use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
+use App\Models\Web\SeoContentSuggestion;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -50,6 +54,33 @@ class GetWebpageSeo
             'structured_data'        => $this->structuredData($webpage),
             'structured_data_types'  => $this->structuredDataTypes($webpage),
             'hreflang'               => GetWebpageHreflangAlternates::run($webpage)['alternates'],
+            'content_suggestions'    => $this->contentSuggestions($webpage),
+        ];
+    }
+
+    private function contentSuggestions(Webpage $webpage): array
+    {
+        return [
+            'items'         => SeoContentSuggestion::where('webpage_id', $webpage->id)
+                ->where('state', SeoContentSuggestionStateEnum::PENDING)
+                ->orderBy('field')
+                ->get()
+                ->map(fn (SeoContentSuggestion $suggestion) => [
+                    'id'            => $suggestion->id,
+                    'field'         => $suggestion->field,
+                    'current_value' => $suggestion->current_value,
+                    'suggestion'    => $suggestion->suggestion,
+                    'reason'        => $suggestion->reason,
+                    'created_at'    => $suggestion->created_at?->toDateString(),
+                    'accept_route'  => ['name' => 'grp.models.seo_content_suggestion.accept', 'parameters' => [$suggestion->id]],
+                    'dismiss_route' => ['name' => 'grp.models.seo_content_suggestion.dismiss', 'parameters' => [$suggestion->id]],
+                ])
+                ->all(),
+            'request_route' => ['name' => 'grp.models.webpage.seo_content_suggestions.store', 'parameters' => [$webpage->id]],
+            'limits'        => [
+                'title'       => GenerateSeoContentSuggestions::make()->titleMaxLength($webpage),
+                'description' => CrawlIssueTypeEnum::META_DESCRIPTION_MAX_LENGTH,
+            ],
         ];
     }
 
