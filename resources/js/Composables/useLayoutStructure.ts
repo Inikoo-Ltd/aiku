@@ -36,6 +36,7 @@ export const layoutStructure = {
     digital_agency: null as {data: OrganisationsData[]} | null,
     group: null as Group | null,
     has_group_access: false,
+    can_view_devops: false,
     help_portal_url: null as string | null,
     leftSidebar: {
         show: true,
