@@ -42,6 +42,7 @@ class GetAgentOrganisationNavigation
                     $this->procurementSubSection(__('Current staged containers'), 'fa-box-open', 'grp.org.agent.stock_deliveries.current', 'grp.org.agent.stock_deliveries.current', $organisation),
                     $this->procurementSubSection(__('Board'), 'fa-columns', 'grp.org.agent.stock_deliveries.board', 'grp.org.agent.stock_deliveries.board', $organisation),
                     $this->procurementSubSection(__('Past containers'), 'fa-history', 'grp.org.agent.stock_deliveries.past', 'grp.org.agent.stock_deliveries.past', $organisation),
+                    $this->procurementSubSection(__('Invoices'), 'fa-file-invoice', 'grp.org.agent.accounting.invoices.', 'grp.org.agent.accounting.invoices.index', $organisation),
                 ],
                 'agent_accounting' => [
                     $this->procurementSubSection(__('Dashboard'), 'fa-chart-network', 'grp.org.agent.accounting.dashboard', 'grp.org.agent.accounting.dashboard', $organisation),
