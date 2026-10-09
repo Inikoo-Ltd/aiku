@@ -32,6 +32,15 @@ class IndexOrgAgents extends OrgAction
     private const COVER_BUCKETS = ['out', 'w1', 'w2', 'w3'];
 
     /**
+     * A stock delivery not dispatched yet is the next container being filled at the agent.
+     */
+    private const NEXT_CONTAINER_STATES = [
+        StockDeliveryStateEnum::IN_PROCESS->value,
+        StockDeliveryStateEnum::CONFIRMED->value,
+        StockDeliveryStateEnum::READY_TO_SHIP->value,
+    ];
+
+    /**
      * @return Collection<int, OrgAgent>
      */
     public function handle(Organisation $organisation): Collection
@@ -194,7 +203,7 @@ class IndexOrgAgents extends OrgAction
             ->orderByRaw('coalesce(date, created_at)')
             ->get()
             ->map(fn ($stockDelivery) => [
-                'type'        => 'stock_delivery',
+                'type'        => in_array($stockDelivery->state, self::NEXT_CONTAINER_STATES, true) ? 'next_container' : 'stock_delivery',
                 'reference'   => $stockDelivery->reference,
                 'state'       => $stockDelivery->state,
                 'state_label' => $stateLabels[$stockDelivery->state] ?? $stockDelivery->state,

@@ -25,11 +25,20 @@ import {
 	faTruckContainer,
 	faBoxes,
 	faClipboardList,
+	faWarehouse,
 } from "@fal"
-library.add(faPeopleArrows, faShoppingBasket, faPlus, faTruckContainer, faBoxes, faClipboardList)
+library.add(
+	faPeopleArrows,
+	faShoppingBasket,
+	faPlus,
+	faTruckContainer,
+	faBoxes,
+	faClipboardList,
+	faWarehouse
+)
 
 interface CurrentItem {
-	type: "agent_order" | "stock_delivery"
+	type: "agent_order" | "next_container" | "stock_delivery"
 	reference: string
 	state: string
 	state_label: string
@@ -136,8 +145,14 @@ const ROWS_SHOWN = 5
 
 const groups: { type: CurrentItem["type"]; title: string; empty: string; icon: string }[] = [
 	{
+		type: "next_container",
+		title: ctrans("Next container, at the agent"),
+		empty: ctrans("Nothing recorded at the agent yet"),
+		icon: "fal fa-warehouse",
+	},
+	{
 		type: "stock_delivery",
-		title: ctrans("Containers"),
+		title: ctrans("Containers on the way"),
 		empty: ctrans("No containers on the way"),
 		icon: "fal fa-truck-container",
 	},
@@ -145,6 +160,9 @@ const groups: { type: CurrentItem["type"]; title: string; empty: string; icon: s
 
 const openOrdersValue = (agent: AgentCard) =>
 	itemsOf(agent, "agent_order").reduce((total, item) => total + (item.value ?? 0), 0)
+
+const readyToShip = (agent: AgentCard) =>
+	agent.pipeline.stages.find((stage) => stage.stage === "ready_to_ship")
 
 const itemsOf = (agent: AgentCard, type: CurrentItem["type"]) =>
 	agent.current
@@ -363,7 +381,11 @@ const createAgentOrder = (agent: AgentCard) => {
 					</Link>
 					<table v-if="agent.pipeline.stages.length" class="w-full tabular-nums">
 						<tbody class="divide-y divide-gray-100">
-							<tr v-for="stage in agent.pipeline.stages" :key="stage.stage">
+							<tr
+								v-for="stage in agent.pipeline.stages.filter(
+									(stage) => stage.stage !== 'ready_to_ship'
+								)"
+								:key="stage.stage">
 								<td class="px-2 py-1 text-gray-600">{{ stage.label }}</td>
 								<td class="px-2 py-1 text-right text-gray-500">
 									{{
@@ -465,6 +487,18 @@ const createAgentOrder = (agent: AgentCard) => {
 					</template>
 					<div v-else class="px-2 py-2 text-xs text-gray-500">
 						{{ group.empty }}
+					</div>
+					<div
+						v-if="group.type === 'next_container' && readyToShip(agent)"
+						class="flex border-t border-gray-100 px-2 py-1.5 text-xs tabular-nums">
+						<span class="text-gray-600">{{
+							ctrans(":count supplier orders ready to ship", {
+								count: locale.number(readyToShip(agent)!.orders),
+							})
+						}}</span>
+						<span class="ml-auto font-medium text-gray-900">{{
+							wholeMoney(readyToShip(agent)!.value)
+						}}</span>
 					</div>
 				</section>
 			</div>
