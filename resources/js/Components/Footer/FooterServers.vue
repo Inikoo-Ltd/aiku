@@ -68,7 +68,7 @@ const servers = computed(() => {
             tooltip: isLive
                 ? `${slug} (${ctrans(role)}) · CPU ${cpu}% · ${ctrans('Memory')} ${Math.round(reading.memory)}%`
                 : `${slug} (${ctrans(role)}): ${ctrans('no live reading')}`,
-            textClass: cpu === null ? 'text-slate-600' : cpu >= 85 ? 'text-red-400' : cpu >= 60 ? 'text-amber-400' : '',
+            barClass: cpu === null ? '' : cpu >= 85 ? 'bg-red-500' : cpu >= 60 ? 'bg-amber-400' : 'bg-emerald-500',
         }
     })
 })
@@ -84,17 +84,17 @@ const deploy = computed(() => {
 
 <template>
     <Link v-if="hasReadings || deploy" :href="route('grp.devops.dashboard')" class="flex items-center gap-x-3 text-xs tabular-nums whitespace-nowrap hover:text-white">
-        <span v-if="hasReadings" class="flex items-center gap-x-1.5">
+        <span v-if="hasReadings" class="flex items-center gap-x-1">
             <FontAwesomeIcon icon="fal fa-server" fixed-width aria-hidden="true" />
-            <template v-for="(server, index) in servers" :key="server.slug">
-                <span v-if="index" class="text-slate-600">·</span>
-                <span v-tooltip="server.tooltip" :class="server.textClass">{{ server.cpu ?? '—' }}%</span>
-            </template>
+            <span v-for="server in servers" :key="server.slug" v-tooltip="server.tooltip" class="relative h-3 w-1.5 overflow-hidden rounded-sm bg-slate-700">
+                <span class="absolute inset-x-0 bottom-0 transition-[height,background-color] duration-700 ease-out" :class="server.barClass" :style="{ height: `${Math.max(server.cpu ?? 0, 8)}%` }" />
+            </span>
         </span>
 
         <span v-if="deploy" v-tooltip="deploy.head_message" class="flex items-center gap-x-1.5 text-amber-300">
             <FontAwesomeIcon icon="fal fa-rocket-launch" fixed-width class="animate-pulse" aria-hidden="true" />
-            {{ ctrans('Deploying') }}<template v-if="deploy.deploy_total"> {{ deploy.deploy_done }}/{{ deploy.deploy_total }}</template>
+            <span>{{ ctrans('New version coming') }}</span>
+            <span v-if="deploy.deploy_total">{{ deploy.deploy_done }}/{{ deploy.deploy_total }}</span>
             <span v-if="deploy.head_message" class="hidden xl:inline max-w-56 truncate text-slate-400">{{ deploy.head_message }}</span>
         </span>
     </Link>
