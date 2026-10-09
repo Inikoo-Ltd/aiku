@@ -116,6 +116,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('hr:add-leave-cover-collaborators')->hourly()->onOneServer()->withoutOverlapping();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         $schedule->command('sales-analysis:warm')->dailyAt('01:30')->onOneServer()->withoutOverlapping();
+        $schedule->command('epr:build-flow-lines')->dailyAt('03:15')->timezone('UTC')->onOneServer()->withoutOverlapping();
         $schedule->command('mailbox:fetch')->everyMinute()->onOneServer()->withoutOverlapping();
         $schedule->command('procurement-mailbox:fetch')->everyMinute()->onOneServer()->withoutOverlapping();
         /* Every five minutes: the run reads a counter per shop channel and writes only the ones that

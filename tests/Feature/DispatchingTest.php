@@ -5943,3 +5943,75 @@ test('a pick taken from two batches is cut into one line per batch and a deleted
     \App\Actions\Dispatching\Picking\DeletePicking::make()->action($lines[0]->refresh(), $this->user);
     expect($onShelf())->toEqual([$early->id => 2.0, $late->id => 10.0]);
 });
+
+test('EPR flow lines classify received stock deliveries and dispatched delivery notes by country, per trade unit with its packaging family', function () {
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $family    = \App\Actions\Goods\Packaging\StorePackagingFamilyFromComponents::run($this->group, 'EPR-'.Str::random(6), null, [
+        ['packaging_level' => 'primary', 'name' => 'Jar '.Str::random(6), 'material' => 'Glass', 'material_id_code' => 'GL 70', 'material_category' => 'glass', 'weight_g' => 120, 'quantity' => 1, 'quantity_per_unit' => 1],
+    ]);
+    $tradeUnit->update(['packaging_family_id' => $family->id]);
+
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 6]);
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+
+    $homeCountryId    = $this->organisation->country_id;
+    $foreignCountryId = \App\Models\Helpers\Country::whereKeyNot($homeCountryId)->orderBy('id')->value('id');
+
+    $supplier    = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, \App\Models\SupplyChain\Supplier::factory()->definition());
+    $supplier->address->update(['country_id' => $foreignCountryId]);
+    $orgSupplier = \App\Models\Procurement\OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+        ?? \App\Actions\Procurement\OrgSupplier\StoreOrgSupplier::make()->action($this->organisation, $supplier);
+    $stockDelivery     = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'EPR-'.uniqid(), 'date' => '2001-03-01'], strict: false);
+    $stockDeliveryItem = \App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, ['unit_quantity' => 30], strict: false);
+    $stockDelivery->update(['state' => 'placed', 'received_at' => '2001-03-04 10:00:00']);
+    $stockDeliveryItem->update(['state' => 'placed', 'unit_quantity_checked' => 30, 'unit_quantity_placed' => 30]);
+
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'EPR'.Str::random(6),
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => '2001-03-05',
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id,
+    ]);
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $this->order->transactions()->first()->id,
+        'quantity_required' => 4,
+    ]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => '2001-03-05 12:00:00', 'delivery_country_id' => $homeCountryId]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 4]);
+
+    $build = fn () => \App\Actions\Goods\Packaging\BuildEprFlowLines::run($this->organisation, \Illuminate\Support\Carbon::parse('2001-03-01'), \Illuminate\Support\Carbon::parse('2001-03-31'));
+    $lines = fn () => \App\Models\Goods\EprFlowLine::where('organisation_id', $this->organisation->id)->whereBetween('date', ['2001-03-01', '2001-03-31'])->get();
+
+    $build();
+    $purchase = $lines()->firstWhere('source_type', 'StockDeliveryItem');
+    $sale     = $lines()->firstWhere('source_type', 'DeliveryNoteItem');
+
+    expect($lines())->toHaveCount(2)
+        ->and($purchase->activity)->toBe(\App\Enums\Goods\Packaging\EprActivityEnum::IMPORTED)
+        ->and($purchase->source_id)->toBe($stockDeliveryItem->id)
+        ->and($purchase->counterparty_country_id)->toBe($foreignCountryId)
+        ->and($purchase->date->toDateString())->toBe('2001-03-04')
+        ->and((float)$purchase->sko_quantity)->toBe(5.0)
+        ->and((float)$purchase->quantity)->toBe(30.0)
+        ->and($purchase->trade_unit_id)->toBe($tradeUnit->id)
+        ->and($purchase->packaging_family_id)->toBe($family->id)
+        ->and($sale->activity)->toBe(\App\Enums\Goods\Packaging\EprActivityEnum::SOLD_DOMESTIC)
+        ->and($sale->source_id)->toBe($deliveryNoteItem->id)
+        ->and((float)$sale->sko_quantity)->toBe(4.0)
+        ->and((float)$sale->quantity)->toBe(24.0);
+
+    $deliveryNote->update(['delivery_country_id' => $foreignCountryId]);
+    $supplier->address->update(['country_id' => $homeCountryId]);
+    $build();
+
+    expect($lines())->toHaveCount(2)
+        ->and($lines()->firstWhere('source_type', 'DeliveryNoteItem')->activity)->toBe(\App\Enums\Goods\Packaging\EprActivityEnum::EXPORTED)
+        ->and($lines()->firstWhere('source_type', 'StockDeliveryItem')->activity)->toBe(\App\Enums\Goods\Packaging\EprActivityEnum::BOUGHT_DOMESTIC);
+});
