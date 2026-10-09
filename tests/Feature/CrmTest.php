@@ -18,6 +18,7 @@ use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\Outbox\DueToReorder\ProcessDueToReorderPerOutbox;
+use App\Actions\Comms\Outbox\GoldRewardReminder\ProcessGoldRewardReminderPerOutbox;
 use App\Actions\Comms\Outbox\DueToReorder\ProcessDueToReorderRecipients;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
@@ -2121,4 +2122,33 @@ test('customer page opens for normal and dropshipping customers, reorders tab on
     get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $dropshippingShop->slug, $dropshippingCustomer->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.reorders')->etc());
+});
+
+test('gold reward reminder skips a customer who already submitted an order since the last invoice', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $customer->id)->update(['last_invoiced_at' => now()->subDays(27)]);
+    DB::table('customer_comms')->where('customer_id', $customer->id)->update(['is_subscribed_to_gold_reward_reminder' => true]);
+
+    $outbox = Outbox::where('shop_id', $this->shop->id)->where('code', OutboxCodeEnum::GOLD_REWARD_REMINDER_1)->firstOrFail();
+    $originalDaysAfter = $outbox->days_after;
+    $outbox->update(['days_after' => 27]);
+
+    $isRecipient = fn () => ProcessGoldRewardReminderPerOutbox::make()->recipientsQuery($outbox->fresh())->pluck('customers.id')->contains($customer->id);
+
+    expect($isRecipient())->toBeTrue();
+
+    $order = StoreOrder::make()->action($customer, []);
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::SUBMITTED->value, 'submitted_at' => now()->subDays(2)]);
+
+    expect($isRecipient())->toBeFalse();
+
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::CREATING->value]);
+
+    expect($isRecipient())->toBeTrue();
+
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::CANCELLED->value]);
+
+    expect($isRecipient())->toBeTrue();
+
+    $outbox->update(['days_after' => $originalDaysAfter]);
 });
