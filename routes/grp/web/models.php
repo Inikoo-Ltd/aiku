@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Http\Middleware\EnsureHubPartnerOrderFromShoppingList;
 use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
@@ -1456,8 +1457,8 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
     Route::post('email-chat', StartCustomerEmailChat::class)->name('email_chat.store');
-    Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
-    Route::post('submitted-order', StoreSubmittedOrder::class)->name('submitted_order.store');
+    Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store')->middleware(EnsureHubPartnerOrderFromShoppingList::class);
+    Route::post('submitted-order', StoreSubmittedOrder::class)->name('submitted_order.store')->middleware(EnsureHubPartnerOrderFromShoppingList::class);
     Route::post('product-from-artefact', StoreCustomerProductFromArtefact::class)->name('product_from_artefact.store');
     Route::post('tags/store', [StoreTag::class, 'inCustomer'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inCustomer'])->name('tags.update');

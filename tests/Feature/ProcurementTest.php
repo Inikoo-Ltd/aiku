@@ -6422,6 +6422,43 @@ describe('partner shopping list', function () {
         $sellerOrgStock->update(['packed_in' => $packedIn]);
     });
 
+    test('a manufacturing hub takes its partners orders only from their shopping list', function () {
+        $seller = $this->orgPartner->partner;
+        $item   = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 6]);
+        $order  = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]])['orders'][0];
+        $transaction = $item->refresh()->transaction;
+
+        $middleware = new \App\Http\Middleware\EnsureHubPartnerOrderFromShoppingList();
+        $through    = function (string $routeName, array $parameters, array $input = []) use ($middleware) {
+            $request = \Illuminate\Http\Request::create('/hub-partner-order', 'PATCH', $input);
+            $route   = (new \Illuminate\Routing\Route('PATCH', '/hub-partner-order', []))->name($routeName)->bind($request);
+            foreach ($parameters as $name => $value) {
+                $route->setParameter($name, $value);
+            }
+            $request->setRouteResolver(fn () => $route);
+
+            return $middleware->handle($request, fn () => 'passed');
+        };
+
+        $quantity = (float) $transaction->quantity_ordered;
+
+        expect(fn () => $through('grp.models.customer.submitted_order.store', ['customer' => $order->customer]))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.customer.order.store', ['customer' => $order->customer]))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.order.transaction.store', ['order' => $order]))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.order.follow_up.store', ['order' => $order]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity]))->toBe('passed')
+            ->and(fn () => $through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity + 1]))->toThrow(ValidationException::class)
+            ->and(fn () => $through('grp.models.order.modification.save', ['order' => $order], ['transactions' => [$transaction->id => ['newQty' => $quantity + 1]]]))->toThrow(ValidationException::class)
+            ->and($through('grp.models.transaction.update_quantity_ordered', ['transaction' => $transaction], ['quantity_ordered' => $quantity - 1]))->toBe('passed')
+            ->and($through('grp.models.order.modification.save', ['order' => $order], ['transactions' => [$transaction->id => ['newQty' => 0]]]))->toBe('passed')
+            ->and($through('grp.models.transaction.delete', ['transaction' => $transaction]))->toBe('passed')
+            ->and($through('grp.models.order.update', ['order' => $order], ['internal_notes' => 'fragile']))->toBe('passed');
+
+        $seller->update(['is_manufacturing_hub' => false]);
+        expect($through('grp.models.order.transaction.store', ['order' => $order->refresh()]))->toBe('passed');
+        $seller->update(['is_manufacturing_hub' => true]);
+    });
+
     test('send partner order to warehouse rejects non-creating order', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
