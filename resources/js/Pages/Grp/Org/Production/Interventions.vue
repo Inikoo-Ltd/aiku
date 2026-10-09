@@ -102,7 +102,7 @@ const stateClass = (item: CurrentItem) => {
 					:src="'/flags/' + buyer.country_code.toLowerCase() + '.png'"
 					:alt="buyer.country_name ?? ''"
 					:title="buyer.country_name ?? ''"
-					class="h-4 rounded-sm ring-1 ring-gray-200" />
+					class="h-4 w-auto shrink-0" />
 				<div class="min-w-0 flex-1">
 					<div class="truncate font-semibold text-gray-900">{{ buyer.name }}</div>
 					<div class="text-xs text-gray-500">

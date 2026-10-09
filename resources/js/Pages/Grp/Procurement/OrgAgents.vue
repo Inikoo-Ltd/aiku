@@ -204,7 +204,7 @@ const createAgentOrder = (agent: AgentCard) => {
 					:src="'/flags/' + agent.country_code.toLowerCase() + '.png'"
 					:alt="agent.country_name ?? ''"
 					:title="agent.country_name ?? ''"
-					class="h-[11px] shrink-0" />
+					class="h-4 w-auto shrink-0" />
 				<div class="min-w-0 flex-1">
 					<Link
 						:href="agentUrl(agent)"
