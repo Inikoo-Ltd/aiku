@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import DatePicker from "@vuepic/vue-datepicker"
 import "@vuepic/vue-datepicker/dist/main.css"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
-import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import RejectLeaveModal from "@/Components/HumanResources/RejectLeaveModal.vue"
+import LeaveCoverSelect, { type LeaveCoverOption } from "@/Components/HumanResources/LeaveCoverSelect.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
+import Select from "primevue/select"
+import Textarea from "primevue/textarea"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { ctrans } from "@/Composables/useTrans"
+import { isOnLeaveDuring } from "@/Composables/useLeaveCovers"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip, faTrash, faPlus, faChartNetwork } from "@fal"
@@ -37,9 +40,48 @@ const props = defineProps<{
 	can_record: boolean
 	holidays: { date: string; label: string }[]
 	employee_options: Record<string, string>
+	employee_job_positions: Record<string, { id: number; name: string; department: string | null }[]>
+	employee_ids_with_group_access: number[]
+	employee_leave_periods: Record<string, [string, string][]>
 }>()
 
 const parsedEmployeeOptions = computed(() => props.employee_options ?? {})
+
+const employeeSelectOptions = computed(() =>
+	Object.entries(parsedEmployeeOptions.value).map(([value, label]) => ({ value, label }))
+)
+
+const employeeIdsWithGroupAccess = computed(() => new Set((props.employee_ids_with_group_access ?? []).map(String)))
+
+const coverOptionsFor = (absentEmployeeId: string | number, startDate: string, endDate: string): LeaveCoverOption[] => {
+	const absentHasGroupAccess = employeeIdsWithGroupAccess.value.has(String(absentEmployeeId))
+	const absentPositions = props.employee_job_positions?.[absentEmployeeId] ?? []
+	const absentPositionIds = new Set(absentPositions.map((position) => position.id))
+	const absentDepartments = new Set(absentPositions.map((position) => position.department).filter(Boolean))
+
+	return employeeSelectOptions.value
+		.filter((option) => option.value !== String(absentEmployeeId))
+		.map((option) => {
+			const positions = props.employee_job_positions?.[option.value] ?? []
+			const sharedRoles = positions.filter((position) => absentPositionIds.has(position.id)).map((position) => position.name)
+			const sharedDepartments = [...new Set(positions.map((position) => position.department).filter((department) => department && absentDepartments.has(department)))]
+
+			const lacksGroupAccess = absentHasGroupAccess && !employeeIdsWithGroupAccess.value.has(option.value)
+			const disabled = isOnLeaveDuring(props.employee_leave_periods?.[option.value], startDate, endDate)
+			const tooltip = disabled
+				? ctrans("On leave during this period")
+				: lacksGroupAccess
+				? ctrans("No group access: cannot reach the group-wide sections the absent employee works in")
+				: sharedRoles.length
+				? ctrans("Same organisation and same role: :roles", { roles: sharedRoles.join(", ") })
+				: sharedDepartments.length
+				? ctrans("Same organisation and same department: :departments", { departments: sharedDepartments.join(", ") })
+				: null
+
+			return { ...option, sharedRoles, sharedDepartments, lacksGroupAccess, disabled, tooltip }
+		})
+		.sort((a, b) => Number(a.disabled) - Number(b.disabled) || Number(a.lacksGroupAccess) - Number(b.lacksGroupAccess) || b.sharedRoles.length - a.sharedRoles.length || b.sharedDepartments.length - a.sharedDepartments.length)
+}
 
 const parsedTypeOptions = computed(() => {
 	return Object.entries(props.type_options ?? {}).map(([value, data]) => ({
@@ -79,6 +121,7 @@ const isEditModalOpen = ref(false)
 const isRecordModalOpen = ref(false)
 const isExportModalOpen = ref(false)
 const isRejectModalOpen = ref(false)
+const isApproveModalOpen = ref(false)
 const selectedLeave = ref<any>(null)
 const isSubmitting = ref(false)
 const isExporting = ref(false)
@@ -91,6 +134,7 @@ const editForm = useForm({
 	session: "Full",
 	reason: "",
 	attachments: [] as File[],
+	cover_employee_id: "" as string | number,
 })
 
 const recordForm = useForm({
@@ -99,7 +143,46 @@ const recordForm = useForm({
 	start_date: "",
 	end_date: "",
 	reason: "",
+	cover_employee_id: "" as string | number,
 })
+
+watch(
+	() => recordForm.employee_id,
+	() => (recordForm.cover_employee_id = "")
+)
+
+const recordCoverOptions = computed(() => coverOptionsFor(recordForm.employee_id, recordForm.start_date, recordForm.end_date))
+
+const editCoverOptions = computed(() => coverOptionsFor(selectedLeave.value?.employee_id ?? "", editForm.start_date, editForm.end_date))
+
+const approveForm = useForm({
+	cover_employee_id: "" as string | number,
+})
+
+const approveCoverOptions = computed(() =>
+	coverOptionsFor(selectedLeave.value?.employee_id ?? "", selectedLeave.value?.start_date ?? "", selectedLeave.value?.end_date ?? "")
+)
+
+const openApproveModal = (leave: any) => {
+	selectedLeave.value = leave
+	approveForm.clearErrors()
+	approveForm.cover_employee_id = leave.cover_employee_id ? String(leave.cover_employee_id) : ""
+	isApproveModalOpen.value = true
+}
+
+const closeApproveModal = () => {
+	isApproveModalOpen.value = false
+	selectedLeave.value = null
+}
+
+const submitApprove = () => {
+	if (!selectedLeave.value) return
+
+	approveForm.post(route("grp.org.hr.leaves.approve", { ...route().params, leave: selectedLeave.value.id }), {
+		preserveScroll: true,
+		onSuccess: closeApproveModal,
+	})
+}
 
 const submitRecord = () => {
 	recordForm.post(
@@ -277,6 +360,7 @@ const openEditModal = (leave: any) => {
 	editForm.session = leave.session ?? "Full"
 	editForm.reason = leave.reason ?? ""
 	editForm.attachments = []
+	editForm.cover_employee_id = leave.cover_employee_id ? String(leave.cover_employee_id) : ""
 	isEditModalOpen.value = true
 }
 
@@ -355,24 +439,25 @@ const closeRejectModal = () => {
 		<form @submit.prevent="submitRecord" class="space-y-4">
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Employee") }}</label>
-				<select
+				<Select
 					v-model="recordForm.employee_id"
-					required
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ ctrans("Select employee") }}</option>
-					<option v-for="(label, value) in parsedEmployeeOptions" :key="value" :value="value">{{ label }}</option>
-				</select>
+					:options="employeeSelectOptions"
+					optionLabel="label"
+					optionValue="value"
+					filter
+					:placeholder="ctrans('Select employee')"
+					class="mt-1 w-full" />
 			</div>
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Leave Type") }}</label>
-				<select
+				<Select
 					v-model="recordForm.type"
-					required
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option value="" disabled>{{ ctrans("Select type") }}</option>
-					<option v-for="option in parsedTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-				</select>
+					:options="parsedTypeOptions"
+					optionLabel="label"
+					optionValue="value"
+					:placeholder="ctrans('Select type')"
+					class="mt-1 w-full" />
 				<p v-if="recordForm.errors.type" class="mt-1 text-sm text-red-600">{{ recordForm.errors.type }}</p>
 			</div>
 
@@ -405,12 +490,17 @@ const closeRejectModal = () => {
 				</div>
 			</div>
 
+			<LeaveCoverSelect
+				v-model="recordForm.cover_employee_id"
+				:options="recordCoverOptions"
+				:error="recordForm.errors.cover_employee_id" />
+
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Reason") }}</label>
-				<textarea
+				<Textarea
 					v-model="recordForm.reason"
 					rows="2"
-					class="mt-1 block w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm" />
+					class="mt-1 w-full resize-none" />
 			</div>
 
 			<div class="mt-6 flex justify-end gap-2">
@@ -505,7 +595,7 @@ const closeRejectModal = () => {
 						:href="attachment.url"
 						target="_blank"
 						rel="noopener"
-						class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded">
+						class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-[--app-accent] bg-[--app-accent-soft] rounded">
 						<FontAwesomeIcon :icon="faPaperclip" class="mr-1" fixed-width />
 						{{ attachment.name }}
 					</a>
@@ -529,30 +619,13 @@ const closeRejectModal = () => {
                     <span v-if="leave.status !== 'pending'" class="text-gray-400 text-xs">
 						{{ ctrans("Processed") }}
 					</span>
-					<ModalConfirmation
+					<Button
 						v-if="leave.status === 'pending' && leave.can_approve_current_user"
-						:routeYes="{
-							name: 'grp.org.hr.leaves.approve',
-							parameters: { ...route().params, leave: leave.id },
-							method: 'post',
-						}">
-						<template #default="{ changeModel, isLoadingdelete }">
-							<Button
-								type="positive"
-								size="xs"
-								:icon="faCheck"
-								:label="ctrans('Approve')"
-								:loading="isLoadingdelete"
-								@click="changeModel" />
-						</template>
-						<template #btn-yes="{ clickYes, isLoadingdelete }">
-							<Button
-								:loading="isLoadingdelete"
-								@click="clickYes"
-								:label="ctrans('Yes, approve')"
-								type="positive" />
-						</template>
-					</ModalConfirmation>
+						type="positive"
+						size="xs"
+						:icon="faCheck"
+						:label="ctrans('Approve')"
+						@click="() => openApproveModal(leave)" />
 					<Button
 						v-if="leave.status === 'pending' && leave.can_approve_current_user"
 						type="warning"
@@ -594,16 +667,13 @@ const closeRejectModal = () => {
 				<label class="block text-sm font-medium text-gray-700">{{
 					ctrans("Leave Type")
 				}}</label>
-				<select
+				<Select
 					v-model="editForm.type"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-					<option
-						v-for="option in parsedTypeOptions"
-						:key="option.value"
-						:value="option.value">
-						{{ option.label }}
-					</option>
-				</select>
+					:options="parsedTypeOptions"
+					optionLabel="label"
+					optionValue="value"
+					:placeholder="ctrans('Select type')"
+					class="mt-1 w-full" />
 				<p v-if="editForm.errors.type" class="mt-1 text-sm text-red-600">
 					{{ editForm.errors.type }}
 				</p>
@@ -654,15 +724,21 @@ const closeRejectModal = () => {
 				<label class="block text-sm font-medium text-gray-700">{{
 					ctrans("Reason")
 				}}</label>
-				<textarea
+				<Textarea
 					v-model="editForm.reason"
 					rows="3"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm resize-none"
+					class="mt-1 w-full resize-none"
 					:placeholder="ctrans('Enter reason...')" />
 				<p v-if="editForm.errors.reason" class="mt-1 text-sm text-red-600">
 					{{ editForm.errors.reason }}
 				</p>
 			</div>
+
+			<LeaveCoverSelect
+				v-model="editForm.cover_employee_id"
+				:options="editCoverOptions"
+				:error="editForm.errors.cover_employee_id"
+				:hint="ctrans('The cover gets this employee\'s permissions from approval until the leave ends')" />
 
 			<div>
 				<label class="block text-sm font-medium text-gray-700">{{
@@ -677,7 +753,7 @@ const closeRejectModal = () => {
 						:href="att.url"
 						target="_blank"
 						rel="noopener"
-						class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded">
+						class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-[--app-accent] bg-[--app-accent-soft] rounded">
 						<FontAwesomeIcon :icon="faPaperclip" class="mr-1" fixed-width />
 						{{ att.name }}
 					</a>
@@ -863,6 +939,26 @@ const closeRejectModal = () => {
 			export-icon="fal fa-download"
 			@cancel="closeExportModal"
 			@export="submitExport" />
+	</Modal>
+
+	<Modal :isOpen="isApproveModalOpen" @onClose="closeApproveModal" width="w-full max-w-lg">
+		<h2 class="mb-1 text-lg font-semibold text-gray-800">{{ ctrans("Approve leave") }}</h2>
+		<p class="mb-4 text-sm text-gray-500">
+			{{ selectedLeave?.employee_name }} · {{ selectedLeave && formatDate(selectedLeave.start_date) }} – {{ selectedLeave && formatDate(selectedLeave.end_date) }}
+		</p>
+
+		<form @submit.prevent="submitApprove" class="space-y-4">
+			<LeaveCoverSelect
+				v-model="approveForm.cover_employee_id"
+				:options="approveCoverOptions"
+				:error="approveForm.errors.cover_employee_id"
+				:hint="ctrans('The cover gets this employee\'s permissions from approval until the leave ends')" />
+
+			<div class="mt-6 flex justify-end gap-2">
+				<Button @click="closeApproveModal" :label="ctrans('Cancel')" type="tertiary" />
+				<Button type="positive" nativeType="submit" :icon="faCheck" :label="ctrans('Yes, approve')" :loading="approveForm.processing" />
+			</div>
+		</form>
 	</Modal>
 
 	<RejectLeaveModal

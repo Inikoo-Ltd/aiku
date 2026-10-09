@@ -11,7 +11,9 @@ use App\Models\HumanResources\LeaveApprovalRecord;
 use App\Models\SysAdmin\Organisation;
 use App\Notifications\LeaveApprovedNotification;
 use App\Services\HumanResources\LeaveTypeResolver;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redirect;
@@ -19,7 +21,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ApproveLeave extends OrgAction
 {
-    public function handle(Leave $leave): Leave
+    private Leave $leave;
+
+    /**
+     * @param array{cover_employee_id?: int|null} $modelData
+     */
+    public function handle(Leave $leave, array $modelData = []): Leave
     {
         $user = Auth::user();
 
@@ -30,6 +37,10 @@ class ApproveLeave extends OrgAction
         $approvalLevel = $leave->approvalLevelForUser($user);
         if ($approvalLevel === null) {
             abort(403, 'You are not authorized to approve this leave at this level.');
+        }
+
+        if (array_key_exists('cover_employee_id', $modelData)) {
+            UpdateLeaveCover::make()->handle($leave, Arr::only($modelData, ['cover_employee_id']));
         }
 
         LeaveApprovalRecord::updateOrCreate(
@@ -58,6 +69,8 @@ class ApproveLeave extends OrgAction
             ]);
 
             $balance = $this->applyBalanceDeduction($leave);
+
+            UpdateLeaveCover::make()->startCover($leave);
 
             if ($leave->organisation->email) {
                 Notification::route('mail', $leave->organisation->email)
@@ -116,11 +129,25 @@ class ApproveLeave extends OrgAction
         return $balance;
     }
 
+    public function rules(): array
+    {
+        return UpdateLeaveCover::coverRules($this->organisation, $this->leave->employee_id);
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->get('cover_employee_id') && UpdateLeaveCover::isOnLeaveDuring((int) $this->get('cover_employee_id'), $this->leave->start_date, $this->leave->end_date)) {
+            $validator->errors()->add('cover_employee_id', __('This colleague is on leave during this period.'));
+        }
+    }
+
     public function asController(Organisation $organisation, Leave $leave, ActionRequest $request): Leave
     {
+        abort_unless($leave->organisation_id === $organisation->id, 404);
+        $this->leave = $leave;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($leave);
+        return $this->handle($leave, $this->validatedData);
     }
 
     public function htmlResponse(Leave $leave, ActionRequest $request): RedirectResponse

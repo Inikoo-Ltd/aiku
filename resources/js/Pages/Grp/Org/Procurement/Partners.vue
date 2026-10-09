@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Deferred, Head, Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -76,6 +76,7 @@ const props = defineProps<{
 	currency_code: string
 	can_create_purchase_orders?: boolean
 	partners: PartnerCard[]
+	rescuable?: Record<number, Rescuable>
 }>()
 
 const locale = useLocaleStore()
@@ -196,9 +197,13 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 			</div>
 
 			<div class="flex-1 space-y-3 px-4 py-3">
+				<Deferred data="rescuable">
+					<template #fallback>
+						<div class="h-40 animate-pulse rounded-md bg-gray-100" />
+					</template>
 				<PartnerRescuableSummary
-					v-if="partner.stats.rescuable"
-					:rescuable="partner.stats.rescuable"
+					v-if="rescuable?.[partner.id]"
+					:rescuable="rescuable[partner.id]"
 					:isHub="partner.is_hub"
 					:orgPartnerId="partner.id"
 					:partnerName="partner.name"
@@ -212,6 +217,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							? partnerUrl(partner, 'grp.org.procurement.org_partners.show.shopping.dashboard')
 							: null
 					" />
+				</Deferred>
 				<section class="overflow-hidden rounded-md ring-1 ring-gray-200">
 					<div
 						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
