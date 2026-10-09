@@ -135,10 +135,8 @@ const resetSwitch = (val: any) => {
         fetch2Fa()
     } else {
         resetSecret();
-        if(initialValue){
-            props.submit();
-            initialValue = false;
-        }
+        props.submit();
+        initialValue = false;
     }
 }
 
