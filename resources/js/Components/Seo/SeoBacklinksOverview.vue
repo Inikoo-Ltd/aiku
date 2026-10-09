@@ -104,7 +104,7 @@ const trendOptions = {
     <div class="pb-4">
         <section v-if="!data?.latest" class="mx-4 mt-4 rounded-xl bg-white px-5 py-6 text-sm text-gray-600 ring-1 ring-gray-200">
             <p class="font-medium text-gray-900">{{ ctrans("No backlink data for :domain yet.", { domain }) }}</p>
-            <p class="mt-1">{{ ctrans("Backlinks are fetched from DataForSEO every Monday for our website and the competitors set in SEO > Keywords.") }}</p>
+            <p class="mt-1">{{ ctrans("Backlinks are fetched from DataForSEO every Monday for our website and the competitors set in SEO > Competitors.") }}</p>
         </section>
 
         <template v-else>
@@ -193,7 +193,7 @@ const trendOptions = {
                             <td v-else colspan="4" class="px-5 py-2 text-right text-xs text-gray-500">{{ ctrans("Fetched on the next weekly run") }}</td>
                         </tr>
                         <tr v-if="!data.competitors.length">
-                            <td colspan="5" class="px-5 py-3 text-sm text-gray-600">{{ ctrans("No competitors yet. Add their domains in SEO > Keywords, Competitors tab.") }}</td>
+                            <td colspan="5" class="px-5 py-3 text-sm text-gray-600">{{ ctrans("No competitors yet. Add their domains in SEO > Competitors.") }}</td>
                         </tr>
                     </tbody>
                 </table>

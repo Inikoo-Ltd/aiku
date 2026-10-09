@@ -226,7 +226,7 @@ const urlPath = (url: string) => {
         <section v-if="!summary.tracked" class="mx-4 mt-4 rounded-xl bg-white px-5 py-6 text-sm text-gray-600 ring-1 ring-gray-200">
             <p class="font-medium text-gray-900">{{ ctrans("No keywords are tracked for this shop yet.") }}</p>
             <p class="mt-1">
-                {{ ctrans("Add keywords in the Tracked keywords tab, or with Track on a Research result, and competitor domains in the Competitors tab. Each keyword is checked in Google weekly or daily, and its position appears here.") }}
+                {{ ctrans("Add keywords in the Tracked keywords tab, or with Track on a Research result, and competitor domains in SEO > Competitors. Each keyword is checked in Google weekly or daily, and its position appears here.") }}
             </p>
         </section>
 
@@ -303,7 +303,7 @@ const urlPath = (url: string) => {
                         <h2 id="rankings-competitors" class="text-sm font-medium text-gray-900">{{ ctrans("Competitors on the same keywords") }}</h2>
                     </div>
                     <p v-if="!data.competitors.length" class="px-5 py-4 text-sm text-gray-600">
-                        {{ ctrans("No competitors yet. Add their domains in the Competitors tab, and their positions are read from the same checks at no extra cost.") }}
+                        {{ ctrans("No competitors yet. Add their domains in SEO > Competitors, and their positions are read from the same checks at no extra cost.") }}
                     </p>
                     <table v-else class="w-full text-sm">
                         <thead>

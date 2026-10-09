@@ -16,7 +16,6 @@ export type SeoKeywordOptions = {
 
 export type SeoKeywordRoutes = {
     track: routeType & { method: string }
-    add_competitor: routeType & { method: string }
 }
 
 export type SeoResearchQuery = {

@@ -19,7 +19,6 @@ enum SeoKeywordsTabsEnum: string
     case RESEARCH         = 'research';
     case TRACKED_KEYWORDS = 'tracked_keywords';
     case RANKINGS         = 'rankings';
-    case COMPETITORS      = 'competitors';
 
     public function blueprint(): array
     {
@@ -38,11 +37,6 @@ enum SeoKeywordsTabsEnum: string
                 'title'   => __('Rankings'),
                 'icon'    => 'fal fa-trophy',
                 'tooltip' => __('Google positions of the tracked keywords, with the competitors on the same keywords.'),
-            ],
-            SeoKeywordsTabsEnum::COMPETITORS => [
-                'title'   => __('Competitors'),
-                'icon'    => 'fal fa-users',
-                'tooltip' => __('Domains to compare against: their positions on the tracked keywords, and later their backlinks.'),
             ],
         };
     }
