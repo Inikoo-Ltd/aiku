@@ -38,7 +38,6 @@ defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     data: { usage: Usage, can_edit: boolean, budget_route: routeType }
-    tab: string
 }>()
 
 const usage = computed(() => props.data.usage)
@@ -65,7 +64,7 @@ const monthParam = (month: string, offset: number) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
 }
 
-const usageHref = (month: string) => `${window.location.pathname}?tab=${props.tab}&month=${month}`
+const usageHref = (month: string) => `${window.location.pathname}?month=${month}`
 
 const share = computed(() => usage.value.share ?? 0)
 
@@ -94,7 +93,6 @@ watch(() => usage.value.budget, (value) => budget.value = value)
 const saveBudget = () => {
     router.patch(route(props.data.budget_route.name, props.data.budget_route.parameters), { budget: budget.value }, {
         preserveScroll: true,
-        only: [props.tab],
         onStart: () => {
             isSaving.value = true
             budgetError.value = null

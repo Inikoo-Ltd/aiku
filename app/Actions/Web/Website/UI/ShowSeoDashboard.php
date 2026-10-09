@@ -20,7 +20,6 @@ use App\Actions\Web\WebVital\GetWebsitePageSpeedSummary;
 use App\Actions\Web\WebVital\UI\IndexWebpagesPageSpeed;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Crawl\AuditWebsite;
-use App\Actions\Web\Seo\GetSeoApiUsage;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\WebsiteNotFoundPath\PruneWebsiteNotFoundPaths;
@@ -110,6 +109,18 @@ class ShowSeoDashboard extends OrgAction
                         'parameters' => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                     ],
                 ] : null,
+                'groupLinks'  => $request->user()->hasGroupAccess() ? [
+                    [
+                        'label' => __('SEO portfolio'),
+                        'icon'  => 'fal fa-globe',
+                        'route' => ['name' => 'grp.websites.seo.portfolio', 'parameters' => []],
+                    ],
+                    [
+                        'label' => __('API usage'),
+                        'icon'  => 'fal fa-tachometer-alt',
+                        'route' => ['name' => 'grp.websites.seo.api_usage', 'parameters' => []],
+                    ],
+                ] : [],
                 'pageTabs'    => [
                     'current'    => $this->tab,
                     'navigation' => SeoDashboardPageTabsEnum::navigation(),
@@ -194,19 +205,6 @@ class ShowSeoDashboard extends OrgAction
                         'can_edit'       => $this->canEdit,
                     ]
                 ),
-
-                SeoDashboardPageTabsEnum::API_USAGE->value => $this->tabProp(
-                    SeoDashboardPageTabsEnum::API_USAGE,
-                    $shop->website,
-                    fn () => [
-                        'usage'        => GetSeoApiUsage::run($this->usageMonth($request)),
-                        'can_edit'     => $request->user()->authTo(['group-webmaster.edit', 'sysadmin.edit']),
-                        'budget_route' => [
-                            'name'       => 'grp.models.group.seo_api_budget.update',
-                            'parameters' => [],
-                        ],
-                    ]
-                ),
             ]
         );
 
@@ -233,13 +231,6 @@ class ShowSeoDashboard extends OrgAction
             },
             default                                 => null,
         };
-    }
-
-    private function usageMonth(ActionRequest $request): Carbon
-    {
-        $month = (string) $request->query('month');
-
-        return preg_match('/^\d{4}-\d{2}$/', $month) ? Carbon::createFromFormat('Y-m-d', $month.'-01') : now();
     }
 
     private function tabProp(SeoDashboardTabsEnum|SeoDashboardPageTabsEnum $tab, ?Website $website, Closure $resolver): mixed

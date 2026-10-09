@@ -28,9 +28,11 @@ are suggestions; rename them freely, but keep the boundaries.
 - **The SEO dashboard stays the entry point.** Its tabs, at the top like those of a website: Overview
   (the cards filtered by the dashboard interval and the table tabs Top pages, Conversions, Search
   queries, Low CTR queries and Page speed, switched with the `table` query parameter), Visitors,
-  Page views, Missing pages and API usage. Only the open table is built. The SEO menu holds the
-  tools with tabs of their own: Site audit, Keywords, Backlinks and Competitors; the old Visitors,
-  Page views and Missing pages addresses open their tab.
+  Page views and Missing pages. Only the open table is built. The SEO menu holds the tools with tabs
+  of their own: Site audit, Keywords, Backlinks and Competitors; the old Visitors, Page views and
+  Missing pages addresses open their tab. What covers all shops lives at group level, in the
+  Website menu: SEO portfolio and API usage, linked from the heading of every SEO dashboard for
+  users with group access.
 
 ## Phase 0: fix the data we already show
 
@@ -515,9 +517,9 @@ Built on 9 October 2026. The Webpages tab of the SEO dashboard is now Top pages
 
 ## API usage
 
-Built on 9 October 2026, once the providers were settled (DataForSEO and the AI gateway). A tab of
-the SEO dashboard (`GetSeoApiUsage`): the figures and the budget are the group's, so every shop
-shows the same.
+Built on 9 October 2026, once the providers were settled (DataForSEO and the AI gateway). Website >
+API usage at group level (`ShowSeoApiUsage`, `GetSeoApiUsage`), next to the SEO portfolio, and
+linked from every SEO dashboard: the figures and the budget are the group's.
 
 - **Budget setting.** The monthly cap for all SEO APIs together, default 250 USD, set on the page by
   someone with `group-webmaster.edit` or `sysadmin.edit` (`UpdateSeoApiBudget`) and kept in the
@@ -551,9 +553,12 @@ Strategy (Research)", 8 October 2026). None is built; each needs the team's go-a
   (`InertiaTable::withExportLinks`), but no SEO table uses them. Add Excel exports to the SEO tables,
   and a scheduled report (weekly or monthly, per shop or for all) emailed to the team: visibility,
   winners and losers, audit health, new and lost backlinks.
-- **Portfolio view.** Every SEO page is per shop. Add a group page with one row per website: site
-  health, Search Console clicks and their change, keywords in the top 10, referring domains, AI
-  mentions, so the 27 to 29 websites can be compared in one place.
+- **Portfolio view.** Built on 9 October 2026: Website (group menu) > SEO portfolio (`ShowSeoPortfolio`, `GetSeoPortfolio`), linked from every SEO dashboard,
+  one row per live website: site health of the latest audit and its change, visitors and Google
+  clicks of the last 28 days against the 28 before (Search Console ending on its own last day),
+  average position, tracked keywords in the top 10, referring domains with the week's new and lost,
+  and DataForSEO rank; totals above, each website opening its shop's SEO dashboard. From stored data
+  only. AI mentions join it with 3.3.
 - **Content briefs.** 3.4 only writes meta titles and descriptions. A brief for a keyword (the
   headings, length, questions and terms of the pages ranking in the top 10, read by our crawler from
   the SERP results of 2.2, written up through the AI gateway) is the part of Semrush's content tools

@@ -25,7 +25,6 @@ enum SeoDashboardPageTabsEnum: string
     case VISITORS      = 'visitors';
     case PAGE_VIEWS    = 'page_views';
     case MISSING_PAGES = 'missing_pages';
-    case API_USAGE     = 'api_usage';
 
     public function blueprint(): array
     {
@@ -49,11 +48,6 @@ enum SeoDashboardPageTabsEnum: string
                 'title'   => __('Missing pages'),
                 'icon'    => 'fal fa-unlink',
                 'tooltip' => __('Paths people opened that have no page (404), by hits, with the backlinks pointing at them and a Create redirect action.'),
-            ],
-            SeoDashboardPageTabsEnum::API_USAGE => [
-                'title'   => __('API usage'),
-                'icon'    => 'fal fa-tachometer-alt',
-                'tooltip' => __('What the paid SEO APIs cost this month for all shops together, against the monthly budget. Per calendar month.'),
             ],
         };
     }
