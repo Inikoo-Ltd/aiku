@@ -27,7 +27,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * invoiced for it, scaled to what was received; the agent's freight becomes the shipping and its other charges the
  * extras, which the costing spreads over the lines; and the invoice is marked received. The costing then completes
  * by itself once our organisation has entered the customs, and the shipping when the freight was not on the invoice.
- * It goes through the costing actions, so stock is revalued by the costing and never written here; it applies once.
+ * It goes through the costing actions, so stock is revalued by the costing and never written here; it applies once,
+ * and only after the paying organisation has approved the agent's charges.
  */
 class ApplyAgentInvoiceCosting
 {
@@ -42,6 +43,7 @@ class ApplyAgentInvoiceCosting
 
         if (!$agentInvoice
             || $agentInvoice->source === StockDeliveryInvoiceSourceEnum::ESTIMATED
+            || !ApproveAgentInvoiceCharges::isApproved($agentInvoice)
             || $stockDelivery->state !== StockDeliveryStateEnum::PLACED
             || $stockDelivery->is_costed
             || $agentInvoice->currency_id !== $stockDelivery->currency_id
@@ -121,6 +123,6 @@ class ApplyAgentInvoiceCosting
             return round((float) $line['amount'], 2);
         }
 
-        return round((float) $line['amount'] * $received / $invoiced, 2);
+        return round((float) $line['amount'] * min($received, $invoiced) / $invoiced, 2);
     }
 }

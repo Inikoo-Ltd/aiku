@@ -22,6 +22,7 @@ import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.
 import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliveryCostingChecklist.vue"
 import StockDeliveryInvoiceCosting from "@/Components/Procurement/StockDeliveryInvoiceCosting.vue"
 import StockDeliveryInvoiceEntry from "@/Components/Procurement/StockDeliveryInvoiceEntry.vue"
+import StockDeliveryAgentPayments from "@/Components/Procurement/StockDeliveryAgentPayments.vue"
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
@@ -139,6 +140,14 @@ const props = defineProps<{
 			total: number
 			paid: number | null
 			balance_due: number | null
+			agent: {
+				can_edit: boolean
+				charges_approved: boolean
+				approve_route: routeType
+				deposits: { type: string; reference: string | null; date: string | null; amount: number }[]
+				payments: { id: number; date: string; amount: number; reference: string | null; notes: string | null; delete_route: routeType }[]
+				payment_store_route: routeType
+			} | null
 		} | null
 	}
 	tabs: {
@@ -922,6 +931,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 					:currencyCode="box_stats.invoice?.currency ?? box_stats.third_block.currency ?? ''"
 				/>
 			</div>
+			<StockDeliveryAgentPayments
+				v-if="blockIndex === 0 && box_stats.invoice?.agent"
+				:agent="box_stats.invoice.agent"
+				:currency="box_stats.invoice.currency"
+				:hasCharges="box_stats.invoice.charges_list.length > 0"
+			/>
 			<div v-if="isCostingVisible && blockIndex === costBlocks.length - 1" class="mt-3 flex justify-end">
 				<Button
 					type="tertiary"

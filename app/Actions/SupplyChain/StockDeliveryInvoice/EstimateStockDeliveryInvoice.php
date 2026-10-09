@@ -19,8 +19,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Deliveries fetched from Aurora never had their paper invoice entered, so the agent or supplier invoice is estimated
- * from what the delivery recorded: its lines as the goods, its shipping as freight and its extra costs as other
- * charges. An invoice already there, estimated or not, is left alone, and the delivery's own costs are never touched.
+ * from what the delivery recorded: the goods only, at the goods cost Aurora recorded on the delivery, spread over its
+ * lines in proportion to their order amounts (or at the order amounts when Aurora recorded none). Shipping, extras and
+ * duties stay the receiving organisation's landed costs: they were paid in its own country and are not on the
+ * agent's or supplier's invoice. An invoice already there is left alone, and the delivery's costs are never touched.
  */
 class EstimateStockDeliveryInvoice
 {
@@ -34,12 +36,8 @@ class EstimateStockDeliveryInvoice
             return null;
         }
 
-        $lines = StoreAgentInvoice::invoiceLines($stockDelivery);
-
-        $charges = array_values(array_filter([
-            ['description' => __('Freight'), 'type' => 'freight', 'amount' => round((float) $stockDelivery->cost_shipping, 2)],
-            ['description' => __('Other costs'), 'type' => 'other', 'amount' => round((float) $stockDelivery->cost_extra, 2)],
-        ], fn (array $charge) => $charge['amount'] > 0));
+        $lines   = $this->scaledToRecordedGoodsCost(StoreAgentInvoice::invoiceLines($stockDelivery), (float) $stockDelivery->cost_items);
+        $charges = [];
 
         $goodsAmount   = round(array_sum(array_column($lines, 'amount')), 2);
         $chargesAmount = round(array_sum(array_column($charges, 'amount')), 2);
@@ -65,6 +63,33 @@ class EstimateStockDeliveryInvoice
         }
 
         return SupplierInvoice::create($invoiceData + ['supplier_id' => $stockDelivery->supplier_id]);
+    }
+
+    /**
+     * @param  array<int, array{quantity: float, unit_price: float, amount: float}>  $lines
+     * @return array<int, array{quantity: float, unit_price: float, amount: float}>
+     */
+    private function scaledToRecordedGoodsCost(array $lines, float $recordedGoodsCost): array
+    {
+        $orderAmount = array_sum(array_column($lines, 'amount'));
+
+        if ($recordedGoodsCost <= 0 || $orderAmount <= 0 || abs($recordedGoodsCost - $orderAmount) < 0.01) {
+            return $lines;
+        }
+
+        $factor = $recordedGoodsCost / $orderAmount;
+        foreach ($lines as $index => $line) {
+            $lines[$index]['amount'] = round($line['amount'] * $factor, 2);
+        }
+
+        $largest                    = array_search(max(array_column($lines, 'amount')), array_column($lines, 'amount'));
+        $lines[$largest]['amount'] = round($lines[$largest]['amount'] + round($recordedGoodsCost, 2) - array_sum(array_column($lines, 'amount')), 2);
+
+        foreach ($lines as $index => $line) {
+            $lines[$index]['unit_price'] = $line['quantity'] > 0 ? round($line['amount'] / $line['quantity'], 4) : 0.0;
+        }
+
+        return $lines;
     }
 
     public function asCommand(Command $command): int

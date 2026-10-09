@@ -29,6 +29,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase
 use App\Actions\Maintenance\Procurement\SplitAgentPurchaseOrders;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
+use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
@@ -4008,6 +4009,10 @@ test('an agent invoices a container from its lines, adds its charges, takes off 
 
     expect($summary)->toMatchArray(['kind' => 'agent', 'source' => 'agent', 'reference' => $again->reference, 'goods' => 140.0, 'charges' => 15.5, 'total' => 155.5, 'paid' => 50.0, 'balance_due' => 105.5])
         ->and($summary['org_currency'])->toBe($stockDelivery->organisation->currency->code);
+
+    $second->updateQuietly(['unit_quantity' => 5]);
+    $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasErrors('invoice');
+    $second->updateQuietly(['unit_quantity' => 4]);
 
     $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasNoErrors();
 
@@ -9655,11 +9660,16 @@ test('a placed agent container is costed from its agent invoice and completes it
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
     foreach ($stockDelivery->items()->orderBy('id')->get() as $index => $item) {
-        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $index === 0 ? 10 : 15]);
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $index === 0 ? 12 : 15]);
         SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($this, $item)->id]);
     }
 
     $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+
+    expect($stockDelivery->costs()->count())->toBe(0);
+
+    ApproveAgentInvoiceCharges::make()->handle($stockDelivery);
+    $stockDelivery = $stockDelivery->fresh();
     $items         = $stockDelivery->items()->orderBy('id')->get();
     $costs         = $stockDelivery->costs()->get();
 
@@ -11401,17 +11411,27 @@ test('UI show stock delivery lists its purchase orders in a tab', function () {
 test('an Aurora stock delivery gets an estimated supplier or agent invoice from what it recorded, once, and estimates never cost the container', function () {
     $supplierDelivery = createStockDeliveryWithItems($this, 'EST-SUP-'.Str::random(6), [10, 4]);
     $supplierDelivery->items()->orderBy('id')->get()->each(fn ($item, $index) => $item->updateQuietly(['net_amount' => [100, 40][$index]]));
-    $supplierDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null, 'cost_shipping' => 20, 'cost_extra' => 5]);
+    $supplierDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null, 'cost_items' => 0, 'cost_shipping' => 20, 'cost_extra' => 5]);
 
     $invoice = EstimateStockDeliveryInvoice::run($supplierDelivery->refresh());
 
     expect($invoice)->toBeInstanceOf(SupplierInvoice::class)
         ->and($invoice->source)->toBe(StockDeliveryInvoiceSourceEnum::ESTIMATED)
         ->and((float) $invoice->goods_amount)->toBe(140.0)
-        ->and((float) $invoice->charges_amount)->toBe(25.0)
-        ->and((float) $invoice->total_amount)->toBe(165.0)
+        ->and((float) $invoice->charges_amount)->toBe(0.0)
+        ->and((float) $invoice->total_amount)->toBe(140.0)
         ->and(EstimateStockDeliveryInvoice::run($supplierDelivery))->toBeNull()
-        ->and(ShowStockDelivery::make()->getInvoiceSummary($supplierDelivery))->toMatchArray(['kind' => 'supplier', 'source' => 'estimated', 'total' => 165.0, 'paid' => null]);
+        ->and(ShowStockDelivery::make()->getInvoiceSummary($supplierDelivery))->toMatchArray(['kind' => 'supplier', 'source' => 'estimated', 'total' => 140.0, 'paid' => null]);
+
+    $costedDelivery = createStockDeliveryWithItems($this, 'EST-COST-'.Str::random(6), [10, 4]);
+    $costedDelivery->items()->orderBy('id')->get()->each(fn ($item, $index) => $item->updateQuietly(['net_amount' => [100, 40][$index]]));
+    $costedDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null, 'cost_items' => 70, 'cost_extra' => 9]);
+
+    $costedInvoice = EstimateStockDeliveryInvoice::run($costedDelivery->refresh());
+
+    expect((float) $costedInvoice->goods_amount)->toBe(70.0)
+        ->and($costedInvoice->charges)->toBe([])
+        ->and(array_column($costedInvoice->lines, 'amount'))->toEqual([50, 20]);
 
     $agentDelivery = createStockDeliveryWithItems($this, 'EST-AGT-'.Str::random(6), [10]);
     $agentDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => $this->agent->id, 'state' => StockDeliveryStateEnum::PLACED, 'is_costed' => false]);

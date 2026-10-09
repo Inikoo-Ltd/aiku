@@ -9,20 +9,17 @@
 namespace App\Actions\SupplyChain\AgentPayment;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\WithAgentOrganisation;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\AgentPayment;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Records a payment one of our organisations made to an agent for a container without a deposit request.
+ * Records a payment one of our organisations made to an agent for a container without a deposit request. Only the
+ * paying organisation records it: the agent sees its payments but can not add or remove them.
  */
 class StoreAgentPayment extends OrgAction
 {
-    use WithAgentOrganisation;
-
     /**
      * @param  array{date: string, amount: float|string, reference?: string|null, notes?: string|null}  $modelData
      */
@@ -53,13 +50,13 @@ class StoreAgentPayment extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $request->user()->authTo(["procurement.{$this->organisation->id}.edit", "accounting.{$this->organisation->id}.edit"]);
     }
 
-    public function asController(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): AgentPayment
+    public function asController(StockDelivery $stockDelivery, ActionRequest $request): AgentPayment
     {
-        abort_unless($stockDelivery->agent_id && $organisation->agent?->id === $stockDelivery->agent_id, 404);
-        $this->initialisation($organisation, $request);
+        abort_unless($stockDelivery->agent_id, 404);
+        $this->initialisation($stockDelivery->organisation, $request);
 
         return $this->handle($stockDelivery, $this->validatedData);
     }

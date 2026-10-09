@@ -8,6 +8,8 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Models\SupplyChain\AgentPayment;
+use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
 use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
@@ -624,6 +626,21 @@ class ShowStockDelivery extends OrgAction
             'total'        => (float) $invoice->total_amount,
             'paid'         => $isAgentInvoice ? $invoice->paidAmount() : null,
             'balance_due'  => $isAgentInvoice ? $invoice->balanceDue() : null,
+            'agent'        => $isAgentInvoice && ($this->organisation ?? null)?->type !== OrganisationTypeEnum::AGENT ? [
+                'can_edit'            => $this->canEditPayments,
+                'charges_approved'    => ApproveAgentInvoiceCharges::isApproved($invoice),
+                'approve_route'       => ['name' => 'grp.models.stock-delivery.agent_invoice.approve_charges', 'parameters' => ['stockDelivery' => $stockDelivery->id]],
+                'deposits'            => array_values(array_filter($invoice->advancePayments(), fn (array $payment) => $payment['type'] === 'deposit')),
+                'payments'            => $stockDelivery->agentPayments()->orderBy('date')->get()->map(fn (AgentPayment $payment) => [
+                    'id'           => $payment->id,
+                    'date'         => $payment->date->toDateString(),
+                    'amount'       => (float) $payment->amount,
+                    'reference'    => $payment->reference,
+                    'notes'        => $payment->notes,
+                    'delete_route' => ['name' => 'grp.models.agent_payment.delete', 'parameters' => ['agentPayment' => $payment->id]],
+                ])->values()->all(),
+                'payment_store_route' => ['name' => 'grp.models.stock-delivery.agent_payment.store', 'parameters' => ['stockDelivery' => $stockDelivery->id]],
+            ] : null,
         ];
     }
 

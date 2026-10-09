@@ -68,8 +68,6 @@ use App\Actions\SupplyChain\AgentInvoice\PdfAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UI\IndexAgentInvoices;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
-use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
-use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
@@ -182,9 +180,7 @@ Route::prefix('agents/{orgAgent}')->as('org_agents.show')->group(function () {
 });
 
 Route::post('containers/{stockDelivery}/invoice', StoreAgentInvoice::class)->name('agent_invoices.store');
-Route::post('containers/{stockDelivery}/payments', StoreAgentPayment::class)->name('agent_payments.store');
 Route::prefix('agent-invoices/{agentInvoice}')->as('agent_invoices.')->group(function () {
     Route::patch('charges', UpdateAgentInvoiceCharges::class)->name('charges.update');
     Route::get('pdf', PdfAgentInvoice::class)->name('pdf');
 });
-Route::delete('agent-payments/{agentPayment}', DeleteAgentPayment::class)->name('agent_payments.destroy');

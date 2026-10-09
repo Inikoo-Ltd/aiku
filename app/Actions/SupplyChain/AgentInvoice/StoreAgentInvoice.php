@@ -95,6 +95,14 @@ class StoreAgentInvoice extends OrgAction
     /**
      * @return array<int, array{stock_delivery_item_id: int, org_stock_id: int|null, code: string|null, name: string|null, quantity: float, unit_price: float, amount: float}>
      */
+    public static function matchesContainer(AgentInvoice $agentInvoice, StockDelivery $stockDelivery): bool
+    {
+        $key = fn (array $line) => $line['stock_delivery_item_id'].':'.round((float) $line['quantity'], 4).':'.round((float) $line['amount'], 2);
+
+        return collect($agentInvoice->lines)->map($key)->sort()->values()->all()
+            === collect(self::invoiceLines($stockDelivery))->map($key)->sort()->values()->all();
+    }
+
     public static function invoiceLines(StockDelivery $stockDelivery): array
     {
         return $stockDelivery->items()
