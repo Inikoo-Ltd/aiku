@@ -4199,26 +4199,30 @@ describe('discontinue confirm', function () {
         expect($stock->refresh()->state)->toBe(StockStateEnum::ACTIVE);
     });
 
-    test('state repair fixes an active stock left behind and never touches a discontinued one', function () {
-        $stock      = $this->orgStocks[0]->stock;
-        $otherStock = $this->orgStocks[1]->stock;
+    test('state repair derives every stock from its skos, whatever state it was left in', function () {
+        [$retired, $stillSold, $sellingOff] = array_map(fn (OrgStock $orgStock) => $orgStock->stock, $this->orgStocks);
 
-        OrgStock::where('stock_id', $stock->id)->update(['state' => OrgStockStateEnum::DISCONTINUED]);
-        $stock->update(['state' => StockStateEnum::ACTIVE]);
-        $otherStock->update(['state' => StockStateEnum::DISCONTINUED]);
+        OrgStock::where('stock_id', $retired->id)->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        OrgStock::where('stock_id', $sellingOff->id)->update(['state' => OrgStockStateEnum::DISCONTINUING]);
+        $this->otherOrgStocks[2]->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        $retired->update(['state' => StockStateEnum::ACTIVE]);
+        $stillSold->update(['state' => StockStateEnum::DISCONTINUED]);
+        $sellingOff->update(['state' => StockStateEnum::DISCONTINUED]);
 
-        expect(RepairStocksStateFromOrgStocks::run($stock->refresh(), false))->toBe([StockStateEnum::ACTIVE, StockStateEnum::DISCONTINUED])
-            ->and($stock->refresh()->state)->toBe(StockStateEnum::ACTIVE)
-            ->and(RepairStocksStateFromOrgStocks::run($stock, true))->toBe([StockStateEnum::ACTIVE, StockStateEnum::DISCONTINUED])
-            ->and($stock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED)
-            ->and(RepairStocksStateFromOrgStocks::run($otherStock->refresh(), true))->toBeNull()
-            ->and($otherStock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED);
+        expect(RepairStocksStateFromOrgStocks::run($retired->refresh(), false))->toBe([StockStateEnum::ACTIVE, StockStateEnum::DISCONTINUED])
+            ->and($retired->refresh()->state)->toBe(StockStateEnum::ACTIVE)
+            ->and(RepairStocksStateFromOrgStocks::run($retired, true))->toBe([StockStateEnum::ACTIVE, StockStateEnum::DISCONTINUED])
+            ->and($retired->refresh()->state)->toBe(StockStateEnum::DISCONTINUED)
+            ->and(RepairStocksStateFromOrgStocks::run($stillSold->refresh(), true))->toBe([StockStateEnum::DISCONTINUED, StockStateEnum::ACTIVE])
+            ->and(RepairStocksStateFromOrgStocks::run($sellingOff->refresh(), true))->toBe([StockStateEnum::DISCONTINUED, StockStateEnum::DISCONTINUING])
+            ->and(RepairStocksStateFromOrgStocks::run($sellingOff->refresh(), true))->toBeNull();
+    });
 
-        OrgStock::where('stock_id', $otherStock->id)->update(['state' => OrgStockStateEnum::DISCONTINUING]);
+    test('a stock without skos keeps its state', function () {
+        $stock = StoreStock::make()->action($this->group, Stock::factory()->definition());
+        $stock->update(['state' => StockStateEnum::DISCONTINUED]);
 
-        expect(RepairStocksStateFromOrgStocks::run($otherStock->refresh(), true))->toBeNull()
-            ->and($otherStock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED)
-            ->and(RepairStocksStateFromOrgStocks::affectedStocks()->count())->toBeInt();
+        expect(StockHydrateStateFromOrgStocks::make()->getStockStateFromOrgStocks($stock->refresh()))->toBe(StockStateEnum::DISCONTINUED);
     });
 
     test('group routes preview and change org stocks picked across organisations in one request', function () {

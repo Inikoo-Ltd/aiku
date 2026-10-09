@@ -75,7 +75,7 @@ class StockHydrateStateFromOrgStocks implements ShouldBeUnique
         }
 
         if ($numberOrgStocks == 0) {
-            return StockStateEnum::IN_PROCESS;
+            return $stock->state;
         }
 
         if ($numberOrgStocks == $numberDiscontinuedOrgStocks) {

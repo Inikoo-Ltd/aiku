@@ -11,21 +11,16 @@ namespace App\Actions\Goods\Stock;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Models\Goods\Stock;
-use App\Models\Helpers\Audit;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * One-off repair for INI-070: from 11 Dec 2025 UpdateOrgStock handed the org stock id to the stock
- * state hydrator, so the stock behind an org stock whose state changed was never recalculated.
- * Only stocks with such an org stock state change are touched; a blanket hydrate:stocks would also
- * flip the thousands of stocks Aurora set discontinued while some organisation still sells them.
- *
- * Only stocks still active are repaired. A stock already discontinued is left alone whatever its
- * org stocks say: Aurora files its own 'Discontinuing' parts as discontinued, and whether a stock
- * stays discontinued while one organisation still sells it is not decided yet. Every write is
- * audited on the stock with its old state.
+ * One-off repair for INI-070. A stock's state is derived from its org stocks and nothing else:
+ * active while any organisation still has it live, discontinuing once none does but some are still
+ * selling it off, discontinued when all are. Aurora set it from one organisation's part status
+ * (and filed 'Discontinuing' as discontinued), and from 11 Dec 2025 org stock state changes never
+ * reached it, so this recalculates every stock once. Stocks without org stocks keep their state.
+ * Every write is audited on the stock with its old state.
  */
 class RepairStocksStateFromOrgStocks
 {
@@ -42,7 +37,7 @@ class RepairStocksStateFromOrgStocks
         $oldState = $stock->state;
         $newState = StockHydrateStateFromOrgStocks::make()->getStockStateFromOrgStocks($stock);
 
-        if ($oldState !== StockStateEnum::ACTIVE || $newState === StockStateEnum::ACTIVE) {
+        if ($oldState === $newState) {
             return null;
         }
 
@@ -53,24 +48,12 @@ class RepairStocksStateFromOrgStocks
         return [$oldState, $newState];
     }
 
-    public static function affectedStocks(): Builder
-    {
-        $changedOrgStockIds = Audit::query()
-            ->where('auditable_type', 'OrgStock')
-            ->where('event', 'updated')
-            ->where('created_at', '>=', '2025-12-11')
-            ->whereRaw("jsonb_exists(new_values::jsonb, 'state')")
-            ->select('auditable_id');
-
-        return Stock::where('state', StockStateEnum::ACTIVE)->whereHas('orgStocks', fn ($query) => $query->whereIn('org_stocks.id', $changedOrgStockIds));
-    }
-
     public function asCommand(Command $command): int
     {
         $apply   = (bool)$command->option('apply');
         $changes = [];
 
-        static::affectedStocks()->with('orgStocks')->chunkById(500, function ($stocks) use ($apply, &$changes, $command) {
+        Stock::with('orgStocks')->chunkById(500, function ($stocks) use ($apply, &$changes, $command) {
             foreach ($stocks as $stock) {
                 if ($change = $this->handle($stock, $apply)) {
                     [$oldState, $newState] = $change;

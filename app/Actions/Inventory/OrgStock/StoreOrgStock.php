@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
@@ -90,6 +91,7 @@ class StoreOrgStock extends OrgAction
 
 
         OrganisationHydrateOrgStocks::dispatch($organisation)->delay($this->hydratorsDelay);
+        StockHydrateStateFromOrgStocks::dispatch($orgStock->stock_id)->delay($this->hydratorsDelay);
 
         foreach ($organisation->warehouses as $warehouse) {
             WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse)->delay($this->hydratorsDelay);

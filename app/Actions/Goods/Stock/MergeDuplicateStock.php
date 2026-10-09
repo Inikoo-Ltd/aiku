@@ -7,6 +7,7 @@
 
 namespace App\Actions\Goods\Stock;
 
+use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -100,7 +101,7 @@ class MergeDuplicateStock
                  */
                 $retiredCode = $from->code.'-merged';
                 $from->update(['code' => $retiredCode, 'slug' => Str::slug($retiredCode)]);
-                $to->update(['code' => $rename, 'slug' => Str::slug($rename), 'state' => StockStateEnum::ACTIVE]);
+                $to->update(['code' => $rename, 'slug' => Str::slug($rename)]);
             }
 
             $from->update(['state' => StockStateEnum::DISCONTINUED]);
@@ -114,6 +115,9 @@ class MergeDuplicateStock
             OrgStock::whereIn('id', $plan['orphans']->pluck('id'))
                 ->update(['state' => OrgStockStateEnum::DISCONTINUED]);
         });
+
+        StockHydrateStateFromOrgStocks::run($to->id);
+        StockHydrateStateFromOrgStocks::run($from->id);
 
         foreach ($plan['products'] as $product) {
             ProductHydrateAvailableQuantity::run(SyncProductOrgStocksFromTradeUnits::run($product->refresh()));
