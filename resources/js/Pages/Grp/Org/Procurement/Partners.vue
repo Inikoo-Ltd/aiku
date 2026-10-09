@@ -29,6 +29,7 @@ import {
 	faClipboardList,
 	faIndustryAlt,
 	faHandshake,
+	faPaperPlane,
 } from "@fal"
 library.add(
 	faUsersClass,
@@ -38,7 +39,8 @@ library.add(
 	faTruckContainer,
 	faClipboardList,
 	faIndustryAlt,
-	faHandshake
+	faHandshake,
+	faPaperPlane
 )
 
 interface CurrentItem {
@@ -241,7 +243,9 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										item.type === 'stock_delivery'
 											? 'fal fa-truck-container'
 											: item.type === 'shopping_list'
-												? 'fal fa-shopping-basket'
+												? item.state === 'open'
+													? 'fal fa-paper-plane'
+													: 'fal fa-shopping-basket'
 												: 'fal fa-clipboard-list'
 									"
 									class="text-gray-500"
@@ -250,7 +254,9 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										item.type === 'stock_delivery'
 											? ctrans('Stock delivery')
 											: item.type === 'shopping_list'
-												? ctrans('Basket')
+												? item.state === 'open'
+													? ctrans('Orders')
+													: ctrans('Basket')
 												: ctrans('Purchase order')
 									" />
 								<div class="min-w-0 flex-1">
