@@ -7318,6 +7318,52 @@ describe('partner shopping list', function () {
             ->and((float) $lines->whereNull('pre_picked_at')->sum('quantity'))->toBe($toMove - 2);
     });
 
+    test('released pre-picks go back into the line already waiting for the partner instead of splitting into new ones', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $prePicked = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+
+        $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
+
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()
+            ->action($seller, [['id' => $prePicked->id]]);
+        $prePicked->refresh();
+        $prePickedQuantity = (float) $prePicked->quantity;
+
+        $waiting = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 3]);
+
+        $release = \App\Actions\Dispatching\PartnerStaging\ReleasePartnerStagingTask::make();
+        $release->releaseUnstaged($sellerPartner, $sellerOrgStock, 1);
+        $release->releaseUnstaged($sellerPartner, $sellerOrgStock, 1);
+
+        $waitingLines = fn () => \App\Models\Procurement\PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $buyerOrgStock->id)->get();
+
+        expect($waitingLines()->pluck('id')->all())->toBe([$waiting->id])
+            ->and((float) $waiting->refresh()->quantity)->toBe(5.0)
+            ->and((float) $prePicked->refresh()->quantity)->toBe($prePickedQuantity - 2);
+
+        $release->releaseUnstaged($sellerPartner, $sellerOrgStock);
+
+        expect($waitingLines()->pluck('id')->all())->toBe([$waiting->id])
+            ->and((float) $waiting->refresh()->quantity)->toBe(3 + $prePickedQuantity)
+            ->and(\App\Models\Procurement\PartnerShoppingListItem::find($prePicked->id))->toBeNull();
+    });
+
     test('an audit that finds the hub shelf short sends the uncovered pre-pick to be produced', function () {
         $seller        = $this->orgPartner->partner;
         $wasHub        = $seller->is_manufacturing_hub;

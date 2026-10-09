@@ -74,6 +74,32 @@ class ReleasePartnerStagingTask extends OrgAction
                 }
 
                 $quantity = (float) $item->quantity;
+                $giveBack = min($quantity, $remaining);
+                $canFold  = $item->org_partner_id && !$item->job_order_id && !$item->transaction_id
+                    && ($giveBack < $quantity || !PartnerShoppingListItem::where('parent_id', $item->id)->exists());
+                $openLine = $canFold
+                    ? PartnerShoppingListItem::openPartnerLineFor($item->org_partner_id, $item->org_stock_id)
+                        ->where('id', '!=', $item->id)
+                        ->where('priority', $item->priority)
+                        ->where('needed_by', $item->needed_by)
+                        ->whereNull('transaction_id')
+                        ->whereNull('preparing_at')
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->first()
+                    : null;
+
+                if ($openLine) {
+                    $openLine->increment('quantity', $giveBack);
+                    if ($giveBack < $quantity) {
+                        $item->update(['quantity' => round($quantity - $giveBack, 3)]);
+                    } else {
+                        $item->delete();
+                    }
+                    $remaining = round($remaining - $giveBack, 3);
+                    continue;
+                }
+
                 if ($quantity <= $remaining) {
                     $item->update(['pre_picked_at' => null]);
                     $remaining = round($remaining - $quantity, 3);
