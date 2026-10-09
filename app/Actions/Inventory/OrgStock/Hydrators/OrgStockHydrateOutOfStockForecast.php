@@ -19,6 +19,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -362,18 +363,26 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     }
 
     /**
-     * SKOs needed on the shelf to fill one order of the biggest product selling this stock, at
+     * SKOs needed on the shelf to fill one order of the biggest product selling each stock, at
      * most one whole SKO, so stock only ever sold in fractions still counts while a fraction is left.
+     * A stock without selling products is missing from the result and needs one whole SKO.
+     *
+     * @param  iterable<int>  $orgStockIds
      */
+    public static function sellableQuantities(iterable $orgStockIds): Builder
+    {
+        return DB::table('product_has_org_stocks')
+            ->join('products', 'products.id', '=', 'product_has_org_stocks.product_id')
+            ->whereIn('product_has_org_stocks.org_stock_id', $orgStockIds)
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where('product_has_org_stocks.quantity', '>', 0)
+            ->groupBy('product_has_org_stocks.org_stock_id')
+            ->selectRaw('product_has_org_stocks.org_stock_id, least(1, max(product_has_org_stocks.quantity)) as sellable_quantity');
+    }
+
     private function sellableQuantity(OrgStock $orgStock): float
     {
-        $biggestProductQuantity = (float) DB::table('product_has_org_stocks')
-            ->join('products', 'products.id', '=', 'product_has_org_stocks.product_id')
-            ->where('product_has_org_stocks.org_stock_id', $orgStock->id)
-            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->max('product_has_org_stocks.quantity');
-
-        return $biggestProductQuantity > 0 ? min(1.0, $biggestProductQuantity) : 1.0;
+        return (float) (self::sellableQuantities([$orgStock->id])->first()?->sellable_quantity ?? 1);
     }
 
     /**
