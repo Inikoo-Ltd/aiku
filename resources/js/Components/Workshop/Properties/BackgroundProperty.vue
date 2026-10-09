@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans as trans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 import Image from "@common/Components/Image.vue"
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
@@ -9,7 +9,7 @@ import Dialog from 'primevue/dialog'
 import RadioButton from 'primevue/radiobutton'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import ColorGradientPicker from '@/Components/Utils/ColorGradientPicker.vue'
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import Popover from 'primevue/popover'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage, faMinus, faPalette } from '@fal'
 import { faImage as fasImage } from '@fas'
@@ -54,6 +54,7 @@ const model = defineModel<BackgroundProperty>({
 })
 
 const isOpenGallery = ref(false)
+const gradientPopover = ref<InstanceType<typeof Popover> | null>(null)
 
 const closeUploadImage = (visible: boolean) => {
     isOpenGallery.value = visible
@@ -158,27 +159,22 @@ const sizeOptions = [
 
         <!-- === GRADIENT BACKGROUND === -->
         <div class="col-span-2 flex items-center gap-x-4">
-            <Popover class="relative" v-slot="{ open: isOpen, close }">
-                <PopoverButton>
-                    <div class="group relative h-12 w-28 rounded-md overflow-hidden ring-1 ring-gray-100 ring-inset"
-                        :style="{ background: model?.gradient?.value || 'linear-gradient(45deg, rgba(20, 20, 20, 1), rgba(240, 240, 240, 1))' }">
-                        <div
-                            class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-palette" class="text-white" fixed-width aria-hidden="true" />
-                        </div>
-                    </div>
-                </PopoverButton>
+            <div @click="(event) => gradientPopover?.toggle(event)"
+                class="group relative h-12 w-28 rounded-md overflow-hidden ring-1 ring-gray-100 ring-inset cursor-pointer"
+                :style="{ background: model?.gradient?.value || 'linear-gradient(45deg, rgba(20, 20, 20, 1), rgba(240, 240, 240, 1))' }">
+                <div class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center">
+                    <FontAwesomeIcon icon="fal fa-palette" class="text-white" fixed-width aria-hidden="true" />
+                </div>
+            </div>
 
-                <Transition name="headlessui">
-                    <PopoverPanel
-                        class="top-[100%] absolute z-10 left-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 w-72">
-                        <ColorGradientPicker :data="model?.gradient" @onChange="(e) => {
-                            model.type = 'gradient'
-                            model.gradient = e
-                            emits('update:modelValue', model)
-                        }" />
-                    </PopoverPanel>
-                </Transition>
+            <Popover ref="gradientPopover">
+                <div class="w-64">
+                    <ColorGradientPicker :data="model?.gradient" @onChange="(e) => {
+                        model.type = 'gradient'
+                        model.gradient = e
+                        emits('update:modelValue', model)
+                    }" />
+                </div>
             </Popover>
 
             <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)"
