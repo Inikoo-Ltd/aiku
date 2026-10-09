@@ -21,7 +21,6 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\ArtefactLabel;
@@ -543,7 +542,6 @@ class IndexPartnerShippingList extends OrgAction
                 ->leftJoinSub($onBoard, 'on_board', 'on_board.stock_id', 'org_stocks.stock_id')
                 ->where('artefacts.production_id', $this->production->id)
                 ->whereNull('artefacts.deleted_at')
-                ->where('artefacts.state', '!=', ArtefactStateEnum::DORMANT->value)
                 ->orderBy('artefacts.code')
                 ->get([
                     'artefacts.id',

@@ -5311,6 +5311,14 @@ test('a job order planned by hand is one job with its lines on the board, even f
     ]);
     expect($reversed->employee_id)->toBe($second->artisans()->first()->id);
 
+    $second->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::DORMANT]);
+    $woken = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'stock',
+        'lines'  => [['artefact_id' => $second->id, 'quantity' => 1]],
+    ]);
+    expect($woken->jobOrderItems()->count())->toBe(1)
+        ->and($second->refresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE);
+
     expect(fn () => \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
         'reason' => 'stock',
         'lines'  => [],

@@ -17,6 +17,8 @@ use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use App\Actions\Production\Artefact\SetArtefactState;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -44,6 +46,10 @@ class StoreJobOrderItem extends OrgAction
 
         /** @var JobOrderItem $jobOrderItem */
         $jobOrderItem = $jobOrder->jobOrderItems()->create($modelData);
+
+        if ($jobOrderItem->artefact?->state === ArtefactStateEnum::DORMANT) {
+            SetArtefactState::make()->action($jobOrderItem->artefact, ArtefactStateEnum::ACTIVE);
+        }
 
         if ($jobOrderItem->reference) {
             $jobOrderItem->generateSlug();

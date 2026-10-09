@@ -11,7 +11,6 @@ namespace App\Actions\Production\JobOrder;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
@@ -43,7 +42,6 @@ class StoreManualJobOrder extends OrgAction
         $artefacts = Artefact::where('production_id', $production->id)
             ->whereIn('id', collect($modelData['lines'])->pluck('artefact_id'))
             ->whereNotNull('org_stock_id')
-            ->where('state', '!=', ArtefactStateEnum::DORMANT)
             ->with('orgStock')
             ->get()
             ->keyBy('id');
