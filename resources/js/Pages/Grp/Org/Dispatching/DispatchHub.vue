@@ -17,6 +17,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
 import Table from "@/Components/Table/Table.vue"
 import InputNumber from "primevue/inputnumber"
+import Select from "primevue/select"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faMinus, faSpinnerThird } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -120,19 +121,22 @@ function putAway(item: ProductionItem, destination: ProductionDestination, quant
 }
 
 const stagingKey = (task: { org_partner_id: number, org_stock_id: number }) => task.org_partner_id + '-' + task.org_stock_id
-const stagingSource = reactive<Record<string, number>>({})
+const stagingSource = reactive<Record<string, number | undefined>>({})
 const stagingQuantity = reactive<Record<string, number>>({})
 const stagingInProgress = ref<string | null>(null)
+type StagingTask = NonNullable<typeof props.partner_staging>[number]
+const stagingSourceQuantity = (task: StagingTask) =>
+    task.from_locations.find(location => location.location_org_stock_id === stagingSource[stagingKey(task)])?.quantity ?? 0
+function selectStagingSource(task: StagingTask, locationOrgStockId: number | undefined) {
+    const key = stagingKey(task)
+    stagingSource[key] = locationOrgStockId
+    stagingQuantity[key] = Math.min(task.quantity_to_move, stagingSourceQuantity(task))
+}
 watch(() => props.partner_staging, tasks => {
-    tasks?.forEach(task => {
-        const key = stagingKey(task)
-        const source = task.from_locations[0]
-        stagingSource[key] = source?.location_org_stock_id
-        stagingQuantity[key] = source ? Math.min(task.quantity_to_move, source.quantity) : 0
-    })
+    tasks?.forEach(task => selectStagingSource(task, task.from_locations[0]?.location_org_stock_id))
 }, { immediate: true })
 
-function stage(task: NonNullable<typeof props.partner_staging>[number]) {
+function stage(task: StagingTask) {
     const key = stagingKey(task)
     if (!stagingSource[key] || !(stagingQuantity[key] > 0) || !props.stage_route) return
     router.post(route(props.stage_route.name, props.stage_route.parameters), {
@@ -145,7 +149,7 @@ function stage(task: NonNullable<typeof props.partner_staging>[number]) {
         onFinish: () => { stagingInProgress.value = null },
     })
 }
-function release(task: NonNullable<typeof props.partner_staging>[number]) {
+function release(task: StagingTask) {
     if (!props.release_route || !window.confirm(ctrans("Send what is left to move back to production?"))) return
     const key = stagingKey(task)
     router.post(route(props.release_route.name, props.release_route.parameters), {
@@ -236,11 +240,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         <div class="text-gray-500">{{ task.stock_name }}</div>
                     </td>
                     <td class="px-4 py-2">
-                        <select v-if="task.from_locations.length" v-model="stagingSource[stagingKey(task)]" class="rounded border-gray-300 py-1 font-mono text-sm">
-                            <option v-for="location in task.from_locations" :key="location.location_org_stock_id" :value="location.location_org_stock_id">
-                                {{ location.code }} ({{ location.quantity }})
-                            </option>
-                        </select>
+                        <Select v-if="task.from_locations.length" :modelValue="stagingSource[stagingKey(task)]" :options="task.from_locations" :optionLabel="location => `${location.code} (${location.quantity})`" optionValue="location_org_stock_id" size="small" class="font-mono text-sm" @update:modelValue="locationOrgStockId => selectStagingSource(task, locationOrgStockId)" />
                         <span v-else class="text-red-600">{{ ctrans("Nowhere to take it from") }}</span>
                     </td>
                     <td class="px-4 py-2 font-mono">{{ task.to_location }}</td>
@@ -253,7 +253,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                                     {{ stagingQuantity[stagingKey(task)] > task.quantity_to_move ? '+' : '' }}{{ Math.round((stagingQuantity[stagingKey(task)] - task.quantity_to_move) * 1000) / 1000 }}
                                 </template>
                             </span>
-                            <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
+                            <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :max="stagingSourceQuantity(task)" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
                                 <template #incrementbuttonicon>
                                     <FontAwesomeIcon :icon="faPlus" fixed-width />
                                 </template>
