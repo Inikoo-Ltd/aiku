@@ -22,6 +22,7 @@ type NotFoundPathRow = {
     id: number
     path: string
     hits: number
+    backlinks: number
     last_referrer: string | null
     is_ignored: boolean
     is_fixed: boolean
@@ -112,6 +113,10 @@ const referrerLabel = (referrer: string) => {
 
         <template #cell(hits)="{ item: notFoundPath }: { item: NotFoundPathRow }">
             <span class="tabular-nums">{{ locale.number(notFoundPath.hits) }}</span>
+        </template>
+
+        <template #cell(backlinks)="{ item: notFoundPath }: { item: NotFoundPathRow }">
+            <span class="tabular-nums" :class="notFoundPath.backlinks ? 'font-medium text-gray-900' : 'text-gray-400'">{{ locale.number(notFoundPath.backlinks) }}</span>
         </template>
 
         <template #cell(last_seen_at)="{ item: notFoundPath }: { item: NotFoundPathRow }">

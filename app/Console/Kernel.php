@@ -85,6 +85,7 @@ use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\ExternalLink\RecheckExternalLinkStatuses;
 use App\Actions\Web\Seo\CollectSerpTasks;
+use App\Actions\Web\Seo\FetchBacklinks;
 use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
@@ -1363,6 +1364,17 @@ class Kernel extends ConsoleKernel
                     ),
                 name: 'AuditWebsites',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchBacklinks::makeJob())
+                    ->weeklyOn(1, '01:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchBacklinks',
+                    ),
+                name: 'FetchBacklinks',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 

@@ -312,43 +312,42 @@ Built on 9 October 2026 on DataForSEO's SERP API.
 
 ### 3.1 Backlinks
 
-**Build.**
+Built on 9 October 2026 on DataForSEO's Backlinks API ($0.024 per request plus a small amount per
+row returned).
 
-- One backlink provider (DataForSEO Backlinks, Ahrefs API, or similar). The Search Console API has
-  no links endpoint, so there is no free source.
-- Weekly per website and per competitor domain:
-  - `seo_backlink_summaries`: domain, date, backlinks, referring_domains, new, lost and broken since
-    the last run, the provider's authority score.
-  - `seo_referring_domains`: domain, referring_domain, first_seen, last_seen, backlinks, authority,
-    is_lost.
-- Weekly for our own websites only, one row per link:
-  - `seo_backlinks`: website_id, source_url, source_domain, source_authority, target_url,
-    target_webpage_id, anchor, is_dofollow, first_seen, last_seen, lost_at, is_broken.
-  - `target_webpage_id` is matched the same way as Search Console pages (1.1), so each webpage gets
-    its own backlinks and referring domains.
-  - New: `first_seen` after the previous run. Lost: the provider no longer finds the link, or the
-    source page dropped it; `lost_at` is set and the row is kept. Prefer the provider's own new and
-    lost dates where it reports them.
-  - Broken: the link points at a URL on our site that does not answer 200. Check the target against
-    the latest crawl (1.2) and `website_not_found_paths` (1.3) before asking the provider. A broken
-    backlink is a lost referring domain that a redirect wins back, so the Missing pages screen shows
-    the backlinks pointing at each path and sorts by them.
-  - Competitors get summaries and referring domains only. Their links one by one cost per row and
-    the gap tools below do not need them.
-- Authority is the provider's score (DataForSEO calls it rank) per domain and per page, not Moz DA or
-  the Semrush Authority Score. The numbers will not match either; label the source on every screen
-  and compare trends, not values.
-- Feed referring domains into the keyword difficulty from 2.1.
+- `FetchBacklinks` (Mondays 01:00 UTC, `seo:fetch_backlinks {website?} {--backlinks}`), for every
+  live website and the competitor domains of its shop, each domain once a day at most:
+  - `seo_backlink_summaries`: domain, date, DataForSEO rank (0 to 100), backlinks, referring
+    domains, broken backlinks and pages, spam score, and the new and lost referring domains since
+    the previous week.
+  - `seo_referring_domains`: domain, referring domain, rank, backlinks, DataForSEO's first seen, and
+    our own first and last fetch and `lost_at`. Ours are read up to 3,000, a competitor's up to
+    1,000, strongest first. Lost is only set when the list was read to the end, so a domain past the
+    limit is never called lost.
+- Every four weeks for our own websites, `seo_backlinks`, one row per link: one link per referring
+  domain (up to 1,000), every broken link, and the links first seen and lost since the previous
+  fetch, with DataForSEO's own first seen, last seen and lost dates. `target_path` is stored like
+  `website_not_found_paths.path`, and `target_webpage_id` is matched like Search Console pages.
+- Links and referring domains from our own websites are flagged `is_own_website`. Most of our
+  referring domains and broken links come from our other shops (ancientwisdom.biz, October 2026:
+  26 of its top referring domains, and broken links from the AW Gifts sites to retired pages), so
+  every list hides them by default and can show them.
+- `GetBacklinkGap`: DataForSEO domain intersection for up to four domains against ours, the top
+  1,000 referring domains, cached 30 days per set of domains.
+- Not built: authority fed into keyword difficulty (2.1 uses DataForSEO's own difficulty).
 
-**Backlink gap tool.** Our domain plus up to four other domains, typed in or picked from
-`seo_competitors`. It lists referring domains that link to at least one of the others and not to us,
-with how many of the domains each links to and its authority, most linked first. The default filter
-is "links to two or more of them". A typed-in domain that is not in `seo_competitors` is fetched
-once and cached for 30 days, counted against the same budget cap.
+**Screens.** SEO > Backlinks:
 
-**Screens.** A Backlinks tab: authority, referring domains and backlinks with their trend; new, lost
-and broken backlinks since the previous run, each opening the link list; referring domains with
-authority and first and last seen; and the backlink gap tool.
+- Overview: rank, referring domains, backlinks and broken backlinks with the change since the
+  previous week; new, lost and broken links of the last 30 days without our own websites; referring
+  domains per week; the same figures for each competitor.
+- Referring domains and Backlinks tabs: linking now, new, lost and (for links) broken, with or
+  without our own websites.
+- Backlink gap: pick competitors or type domains; referring domains that link to them and not to
+  us, filtered to those linking to two or more by default.
+- SEO > Missing pages gets a Backlinks column: links pointing at each 404 path, sortable, so the
+  redirects that win back the most links come first.
+- Locally only, a Fetch now button runs the fetch for the shop at once.
 
 ### 3.2 Competitor research
 
@@ -539,10 +538,8 @@ them, so the monthly budget is watched and changed in Aiku instead of in each pr
 | Who adds the service account to the properties that are still missing | Phase 1 |
 | SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency (set in SEO > Keywords) | Phase 2 |
-| Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |
 | Competitor domains per shop (set in SEO > Keywords) | Phase 2 (positions) and Phase 3 (backlinks) |
 | Models and prompts for AI visibility, and whether to buy AI mention data from the SEO provider | Phase 3 |
-| Budget for domains typed into the comparison and gap tools | Phase 3 |
 | Competitor domain traffic: Apify actor or the Similarweb API | Phase 3 |
 | Which non-Google platforms to collect search signals from | Phase 3 |
 | How long to run side by side before cancelling | After Phase 3 |

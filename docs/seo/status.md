@@ -18,6 +18,7 @@ Nothing here has been deployed yet.
 | 2.1 Keyword research | Volume, 12 month trend, difficulty, intent and CPC for up to 5 seed keywords and the keywords that contain them, or the keywords a URL ranks for, through DataForSEO Labs; Search Console queries with the same words | SEO > Keywords: Research tab |
 | Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team | SEO > Keywords: Tracked keywords and Competitors tabs |
 | 2.2 Rank tracking | Google position of every tracked keyword, weekly (top 30) or daily (top 20), with SERP features, AI Overview citations and competitor positions; volumes refreshed monthly | SEO > Keywords: Rankings tab |
+| 3.1 Backlinks | Weekly rank, referring domains and backlinks for our websites and competitors; our links one by one every four weeks with new, lost and broken; backlink gap against up to four domains; backlinks per 404 path | SEO > Backlinks; SEO > Missing pages |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -38,7 +39,7 @@ Nothing here has been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 3.1 Backlinks and backlink gap, 3.2 Domain comparison and keyword gap | Choose a backlink and competitor data provider, ideally the same as the SERP one, and a budget for domains typed into the tools |
+| 3.2 Domain comparison and keyword gap | Nothing: DataForSEO Labs is already the provider; uses the competitors set in SEO > Keywords |
 | 3.3 AI visibility | Choose the models (with web search on) and write the prompts per shop; check the SEO provider's AI mention data first |
 | 3.4 Content help | Nothing; can start any time. The first Site Audit found many product pages with an empty meta description, which is where this would start. |
 | 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
@@ -70,7 +71,8 @@ Nothing here has been deployed yet.
 
 Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
 external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
-daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes.
+daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes, backlinks Mondays at
+01:00 UTC.
 
 ## Configuration
 

@@ -615,6 +615,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Backlinks"),
+                                "tooltip" => __("Backlinks"),
+                                "icon"    => ["fal", "fa-external-link-alt"],
+                                "root"    => "grp.org.shops.show.seo.backlinks.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.backlinks.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

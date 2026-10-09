@@ -101,7 +101,8 @@ class IndexWebsiteNotFoundPaths extends OrgAction
                 'website_not_found_paths.last_seen_at',
             ])
             ->selectRaw(self::FIXED_SQL.' as is_fixed')
-            ->allowedSorts(['path', 'hits', 'first_seen_at', 'last_seen_at'])
+            ->selectRaw('(SELECT COUNT(*) FROM seo_backlinks WHERE seo_backlinks.website_id = website_not_found_paths.website_id AND seo_backlinks.target_path = website_not_found_paths.path AND seo_backlinks.lost_at IS NULL) as backlinks')
+            ->allowedSorts(['path', 'hits', 'backlinks', 'first_seen_at', 'last_seen_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -134,6 +135,7 @@ class IndexWebsiteNotFoundPaths extends OrgAction
                 ])
                 ->column(key: 'path', label: __('Path'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'hits', label: __('Hits'), tooltip: __('Visits to this path that got a 404. Search engine bots are not counted'), canBeHidden: false, sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'backlinks', label: __('Backlinks'), tooltip: __('Links from other websites pointing at this path, from the monthly backlink fetch. A redirect wins them back'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'last_seen_at', label: __('Last seen'), sortable: true)
                 ->column(key: 'first_seen_at', label: __('First seen'), sortable: true)
                 ->column(key: 'last_referrer', label: __('Last came from'), tooltip: __('The page that linked to this path on the last visit, when the browser sent it'), tooltipIcon: true)
