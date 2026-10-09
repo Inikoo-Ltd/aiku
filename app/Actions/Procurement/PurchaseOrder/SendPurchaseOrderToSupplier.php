@@ -23,7 +23,7 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
-use Illuminate\Support\Arr;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -76,7 +76,7 @@ class SendPurchaseOrderToSupplier
         /** @var OrgSupplier|OrgAgent|OrgPartner $counterpart */
         $counterpart  = self::counterpart($purchaseOrder);
         $organisation = $purchaseOrder->organisation;
-        $mailbox      = Arr::get($organisation->settings, 'procurement.gmail.email');
+        $mailbox      = GmailClient::procurementMailbox($organisation);
 
         /** @var DispatchedEmail $dispatchedEmail */
         $dispatchedEmail = $outbox->emailOngoingRun->dispatchedEmails()->create([

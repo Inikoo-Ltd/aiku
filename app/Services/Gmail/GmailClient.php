@@ -44,6 +44,13 @@ final class GmailClient
         return filled(Arr::get($shop->settings, 'gmail.email')) && blank(Arr::get($shop->settings, 'gmail.revoked_at'));
     }
 
+    public static function procurementMailbox(Organisation $organisation): ?string
+    {
+        return blank(Arr::get($organisation->settings, 'procurement.gmail.revoked_at'))
+            ? Arr::get($organisation->settings, 'procurement.gmail.email') ?: null
+            : null;
+    }
+
     public static function forShop(Shop $shop): ?self
     {
         if (blank(Arr::get($shop->settings, 'gmail.refresh_token')) || filled(Arr::get($shop->settings, 'gmail.revoked_at'))) {

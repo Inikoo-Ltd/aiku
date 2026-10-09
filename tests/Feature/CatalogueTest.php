@@ -876,6 +876,11 @@ test('stock changes of several variants of one wix product queue a single invent
     \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::dispatch($variant(3, $wixProductId.'-other'));
 
     \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::assertPushed(2);
+
+    $this->travel(61)->seconds();
+    \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::dispatch($variant(4, $wixProductId));
+
+    \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::assertPushed(3);
 });
 
 test('a product can be exclusive to several customers and only they can see it', function () {

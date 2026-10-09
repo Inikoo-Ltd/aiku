@@ -8851,6 +8851,22 @@ test('a mailbox whose google token is revoked is marked and left alone until it 
 
     expect(\App\Services\Gmail\GmailClient::isShopMailboxUsable($this->shop->fresh()))->toBeFalse();
 
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'channel'          => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'metadata'         => ['email_from' => 'cliente@example.com', 'gmail_thread_id' => 't1'],
+    ]);
+
+    expect(fn () => \App\Actions\Chat\ChatSession\SendChatMessage::make()->handle($session->fresh(), ['message_text' => 'Shipped today', 'sender_type' => ChatSenderTypeEnum::AGENT->value]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($session->messages()->count())->toBe(0);
+
+    $session->delete();
     $settings = $this->shop->fresh()->settings;
     Arr::forget($settings, 'gmail');
     $this->shop->update(['settings' => $settings]);

@@ -9,21 +9,24 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Sentry;
 use Sentry\State\Scope;
 
 /**
- * One push sets every variant of the Wix product from its current quantities, so the stock changes
- * of its variants queued within the minute collapse into a single job.
+ * One push sets every variant of the Wix product from its quantities when it runs, so the stock
+ * changes of its variants within the minute it is delayed collapse into it. The lock lasts that
+ * same minute: a change after it queues a push of its own, and a job lost on the way never holds
+ * the product's pushes back for longer.
  */
-class UpdateWixProductInventoryQuantity extends OrgAction implements ShouldBeUniqueUntilProcessing
+class UpdateWixProductInventoryQuantity extends OrgAction implements ShouldBeUnique
 {
     use WithWixExternalShopApi;
 
     public string $jobQueue = 'hydrators-slave';
     public int $jobTries = 1;
+    public int $jobUniqueFor = 60;
 
     public function getJobUniqueId(Product $product): string
     {

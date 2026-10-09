@@ -19,6 +19,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -177,7 +178,7 @@ class ShowSupplierMessage extends OrgAction
                     'window_open' => SendSupplierWhatsappMessage::isWindowOpen($this->organisation, (string) $supplierMessage->phone_number),
                     'has_template' => filled(Arr::get($this->organisation->settings, 'procurement.whatsapp.message_template')),
                     'template'     => SendSupplierWhatsappMessage::messageTemplate($this->organisation),
-                ] : null) : ($canEdit && Arr::get($this->organisation->settings, 'procurement.gmail.email') ? [
+                ] : null) : ($canEdit && GmailClient::procurementMailbox($this->organisation) ? [
                     'channel' => 'email',
                     'route'   => [
                         'name'       => 'grp.org.procurement.supplier_messages.reply',
