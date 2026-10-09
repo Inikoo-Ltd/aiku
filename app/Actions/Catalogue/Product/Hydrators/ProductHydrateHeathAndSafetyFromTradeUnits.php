@@ -25,7 +25,7 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
     use HasDangerousGoodsFields;
     use HasProductInformation;
 
-    public const array CUSTOMS_FIELDS = ['tariff_code', 'country_of_origin', 'origin_country_id', 'duty_rate', 'hts_us'];
+    public const array CUSTOMS_FIELDS = ['tariff_code', 'country_of_origin', 'origin_country_id'];
 
     public function getJobUniqueId(Product $product): string
     {
@@ -45,16 +45,7 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
             return;
         }
 
-        $dataToUpdate = $tradeUnits->count() == 1
-            ? $this->dataFromASingleTradeUnit($tradeUnits->first(), $product->organisation_id)
-            : $this->dataFromMultipleTradeUnits($tradeUnits, $product->organisation_id);
-
-        $customsTradeUnit = $this->customsTradeUnit($product, $tradeUnits);
-        if ($tradeUnits->count() > 1 && $customsTradeUnit) {
-            foreach (self::CUSTOMS_FIELDS as $field) {
-                $dataToUpdate[$field] = $this->fieldValue($customsTradeUnit, $field, $product->organisation_id);
-            }
-        }
+        $dataToUpdate = $this->expectedData($product);
 
         if ($onlyFields !== null) {
             $dataToUpdate = array_intersect_key($dataToUpdate, array_flip($onlyFields));
@@ -73,6 +64,25 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
             BreakWebpageCache::dispatch($product->webpage)->delay(5);
         }
+    }
+
+    public function expectedData(Product $product): array
+    {
+        $tradeUnits = $product->tradeUnits;
+
+        if ($tradeUnits->count() == 1) {
+            return $this->dataFromASingleTradeUnit($tradeUnits->first(), $product->organisation_id);
+        }
+
+        $data = $this->dataFromMultipleTradeUnits($tradeUnits, $product->organisation_id);
+
+        if ($customsTradeUnit = $this->customsTradeUnit($product, $tradeUnits)) {
+            foreach (self::CUSTOMS_FIELDS as $field) {
+                $data[$field] = $this->fieldValue($customsTradeUnit, $field, $product->organisation_id);
+            }
+        }
+
+        return $data;
     }
 
     /**
