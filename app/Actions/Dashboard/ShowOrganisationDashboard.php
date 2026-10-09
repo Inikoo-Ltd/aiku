@@ -22,6 +22,7 @@ use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore;
+use App\Actions\SupplyChain\Agent\UI\GetAgentDashboardPurchaseOrders;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Organisation\OrgDashboardIntervalTabsEnum;
 use App\Models\SupplyChain\Agent;
@@ -116,8 +117,21 @@ class ShowOrganisationDashboard extends OrgAction
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
                 'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT || !$request->user()->canViewSales() ? ['super_blocks' => []] : $dashboard,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
+                'isAgentOrganisation' => $organisation->type === OrganisationTypeEnum::AGENT,
+                'agentPurchaseOrders' => $organisation->type === OrganisationTypeEnum::AGENT ? Inertia::defer(fn () => $this->getAgentPurchaseOrders($organisation)) : null,
             ]
         );
+    }
+
+    private function getAgentPurchaseOrders(Organisation $organisation): ?array
+    {
+        if ($organisation->type !== OrganisationTypeEnum::AGENT) {
+            return null;
+        }
+
+        $agent = Agent::where('organisation_id', $organisation->id)->first();
+
+        return $agent ? GetAgentDashboardPurchaseOrders::run($agent, $organisation) : null;
     }
 
     private function getCleanHandover(Organisation $organisation, User $user): ?array

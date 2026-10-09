@@ -7,6 +7,7 @@
  */
 
 use App\Actions\SysAdmin\Organisation\UI\ShowOrganisation;
+use App\Http\Middleware\SeparateAgentRoutes;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -49,7 +50,13 @@ Route::prefix("factory")
 
 Route::prefix("procurement")
     ->name("procurement.")
+    ->middleware(SeparateAgentRoutes::class)
     ->group(__DIR__ . "/procurement.php");
+
+Route::prefix("")
+    ->name("agent.")
+    ->middleware(SeparateAgentRoutes::class)
+    ->group(__DIR__ . "/agent.php");
 
 Route::prefix("accounting")
     ->name("accounting.")

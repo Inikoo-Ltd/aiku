@@ -102,6 +102,27 @@ class IndexPurchaseOrders extends OrgAction
                     $query->whereIn('purchase_orders.delivery_state', $elements);
                 },
             ],
+            'attention'      => [
+                'label'    => __('Attention'),
+                'elements' => [
+                    'unconfirmed_over_7_days'  => [__('Unconfirmed over 7 days'), null],
+                    'unconfirmed_over_30_days' => [__('Unconfirmed over 30 days'), null],
+                    'past_expected_date'       => [__('Past expected date'), null],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        if (in_array('unconfirmed_over_7_days', $elements)) {
+                            $query->orWhere(fn ($query) => $query->where('purchase_orders.state', PurchaseOrderStateEnum::SUBMITTED)->where('purchase_orders.submitted_at', '<', now()->subDays(7)));
+                        }
+                        if (in_array('unconfirmed_over_30_days', $elements)) {
+                            $query->orWhere(fn ($query) => $query->where('purchase_orders.state', PurchaseOrderStateEnum::SUBMITTED)->where('purchase_orders.submitted_at', '<', now()->subDays(30)));
+                        }
+                        if (in_array('past_expected_date', $elements)) {
+                            $query->orWhere(fn ($query) => $query->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])->where('purchase_orders.estimated_received_at', '<', now()));
+                        }
+                    });
+                },
+            ],
         ];
     }
 
@@ -144,7 +165,8 @@ class IndexPurchaseOrders extends OrgAction
         } elseif ($parent instanceof Supplier) {
             $query->where('purchase_orders.supplier_id', $parent->id);
         } elseif ($organisationAgent) {
-            $query->where('purchase_orders.agent_id', $organisationAgent->id);
+            $query->where('purchase_orders.agent_id', $organisationAgent->id)
+                ->where('purchase_orders.state', '!=', PurchaseOrderStateEnum::IN_PROCESS);
         } elseif ($parent instanceof OrgStock) {
             $query->whereIn('purchase_orders.id', function ($query) use ($parent) {
                 $query->select('purchase_order_id')
@@ -172,6 +194,7 @@ class IndexPurchaseOrders extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
+                optional: $key === 'attention',
             );
         }
 

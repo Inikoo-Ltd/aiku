@@ -619,42 +619,36 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($agentUser->worksOnlyForAgents())->toBeTrue()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['procurement', 'hr'])
-        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['procurement']['topMenu']['subSections'])->pluck('root')->all())->toBe([
-            'grp.org.procurement.dashboard',
-            'grp.org.procurement.purchase_orders.',
-            'grp.org.procurement.stock_deliveries.',
-            'grp.org.procurement.org_suppliers.',
-            'grp.org.procurement.org_supplier_products.',
-            'grp.org.procurement.supplier_messages.',
-            'grp.org.procurement.settings.',
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'hr', 'agent_settings'])
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
+            'grp.org.agent.org_suppliers.',
         ]);
 
     actingAs($agentUser);
 
-    $this->get(route('grp.org.procurement.purchase_orders.index', $organisation->slug))->assertOk();
-    $this->get(route('grp.org.procurement.org_suppliers.index', $organisation->slug))
+    $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.index', $organisation->slug))
         ->assertInertia(fn ($page) => $page->where('data.meta.total', Supplier::where('agent_id', $this->agent->id)->where('status', true)->count()));
 
     $orgSupplierOfAnotherOrganisation = OrgSupplier::where('organisation_id', '!=', $organisation->id)
         ->whereHas('supplier', fn ($query) => $query->where('agent_id', $this->agent->id))
         ->firstOrFail();
-    $this->get(route('grp.org.procurement.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->slug]))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->slug]))->assertOk();
     expect(collect(\App\Actions\Procurement\OrgSupplier\UI\GetOrgSupplierShowcase::run($orgSupplierOfAnotherOrganisation, $organisation)['stats'])->pluck('route.parameters.0')->unique()->all())
         ->toBe([$organisation->slug]);
 
     $ownOrgAgent      = OrgAgent::where('agent_id', $this->agent->id)->where('organisation_id', '!=', $organisation->id)->firstOrFail();
     [$ownOrgSupplier] = createAgentOrgSupplierWithProduct($this, $ownOrgAgent);
     $ownPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
-    $this->get(route('grp.org.procurement.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
+    $this->get(route('grp.org.agent.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
         ->assertInertia(fn ($page) => $page->where('pageHead.subNavigation', fn ($items) => collect($items)->pluck('route.parameters.0')->unique()->values()->all() === [$organisation->slug]));
-    $this->get(route('grp.org.procurement.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
+    $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
     $ownPurchaseOrder->delete();
 
     $foreignAgent    = StoreAgent::make()->action($this->group, Agent::factory()->definition());
     $foreignOrgAgent = StoreOrgAgent::make()->action($ownOrgAgent->organisation, $foreignAgent, []);
-    $this->get(route('grp.org.procurement.org_agents.show.purchase-orders.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
-    $this->get(route('grp.org.procurement.org_agents.show.suppliers.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_agents.show.purchase-orders.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_agents.show.suppliers.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
 
     $this->get(route('grp.org.hr.employees.index', $organisation->slug))->assertOk();
     $this->get(route('grp.org.hr.employees.show.users.show', [$organisation->slug, $employee->slug, $agentUser->slug]))
@@ -703,7 +697,7 @@ test('agent manager only sees their own agent organisation', function () {
     actingAs($this->adminGuest->getUser());
     expect(json_encode($this->get(route('grp.org.hr.employees.create', $organisation->slug))->viewData('page')['props']))->toContain('"code":"org-admin"');
     $this->get(route('grp.overview.crm.customers.index'))->assertOk();
-    $this->get(route('grp.org.procurement.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
 });
 
 test('PO journey board marks stages on an agent purchase order and keeps handover for management', function (PurchaseOrder $purchaseOrder) {
@@ -865,12 +859,27 @@ test('UI agent organisation dashboard shows clean handover score', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Dashboard/OrganisationDashboard')
             ->has('cleanHandover.quarters')
-            ->has('cleanHandover.hygiene'));
+            ->has('cleanHandover.hygiene')
+            ->where('isAgentOrganisation', true)
+            ->missing('agentPurchaseOrders')
+            ->loadDeferredProps('default', fn (AssertableInertia $reload) => $reload
+                ->has('agentPurchaseOrders.currency')
+                ->has('agentPurchaseOrders.summary.unconfirmed')
+                ->has('agentPurchaseOrders.summary.overdue')
+                ->has('agentPurchaseOrders.summary.confirmed_without_container')
+                ->has('agentPurchaseOrders.summary.routes.unconfirmed.name')
+                ->has('agentPurchaseOrders.attention')
+                ->has('agentPurchaseOrders.suppliers')
+                ->has('agentPurchaseOrders.agent_orders')
+                ->has('agentPurchaseOrders.organisations')
+                ->has('agentPurchaseOrders.containers', 4)));
 
     $this->get(route('grp.org.dashboard.show', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Dashboard/OrganisationDashboard')
-            ->where('cleanHandover', null));
+            ->where('cleanHandover', null)
+            ->where('isAgentOrganisation', false)
+            ->where('agentPurchaseOrders', null));
 });
 
 test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
@@ -2938,8 +2947,41 @@ test('UI Index purchase orders', function () {
         $page
             ->component('Procurement/PurchaseOrders')
             ->has('title')
-            ->has('breadcrumbs', 3);
+            ->has('breadcrumbs', 3)
+            ->has('queryBuilderProps.default.elementGroups.attention.elements.unconfirmed_over_7_days')
+            ->has('queryBuilderProps.default.elementGroups.attention.elements.unconfirmed_over_30_days')
+            ->has('queryBuilderProps.default.elementGroups.attention.elements.past_expected_date');
     });
+
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this);
+    $overdue       = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Overdue attention PO']), strict: false);
+    $overdue->forceFill([
+        'agent_id'              => $this->agent->id,
+        'date'                  => now()->addYear(),
+        'state'                 => PurchaseOrderStateEnum::SUBMITTED,
+        'submitted_at'          => now()->subDays(10),
+        'estimated_received_at' => now()->subDay(),
+    ])->saveQuietly();
+    $draft = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Client draft PO']), strict: false);
+    $draft->forceFill(['agent_id' => $this->agent->id, 'date' => now()->addYear()])->saveQuietly();
+
+    $references = fn ($rows) => collect($rows)->pluck('reference');
+
+    $this->get(route('grp.org.procurement.purchase_orders.index', [
+        $this->organisation->slug,
+        'elements' => ['attention' => 'unconfirmed_over_7_days,unconfirmed_over_30_days,past_expected_date'],
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Procurement/PurchaseOrders')
+        ->where('data.data', fn ($rows) => $references($rows)->contains('Overdue attention PO')
+            && !$references($rows)->contains('Client draft PO')
+            && collect($rows)->every(fn ($row) => in_array($row['state'], ['submitted', 'confirmed'], true))));
+
+    $this->get(route('grp.org.agent.purchase_orders.index', [$this->agent->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrders')
+            ->where('data.data', fn ($rows) => $references($rows)->contains('Overdue attention PO')
+                && !$references($rows)->contains('Client draft PO')));
 });
 
 test('UI index purchase orders for supplier shows supplier-specific columns and row details', function () {
@@ -3305,8 +3347,9 @@ test('ordering from the manufacturing hub fills the shopping list, never a rescu
         expect((new ReflectionMethod($buckets, 'spareExpression'))->invoke($buckets, $orgPartner, 14))->toBe('null::numeric')
             ->and($buckets->orderBuckets($orgPartner))->toBe(['out', 'w1', 'w2', 'w3'])
             ->and((int) DB::selectOne('select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, 'null::numeric', 14, $orgPartner).' as quantity
-                from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os, (select null::jsonb as data) stock_families,
-                    (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 6 as packed_in) p')->quantity)
+                from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os, (select null::int as stock_family_id) stocks,
+                    (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 6 as packed_in) p,
+                    lateral ('.(new ReflectionMethod($buckets, 'rowFacts'))->invoke($buckets, $orgPartner, 14)->toRawSql().') rf')->quantity)
             ->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
             ->and(collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('bucket')->all())->toBe(['out', 'w1', 'w2', 'w3'])
             ->and($buckets->rescuable($orgPartner, 0)['buckets'][0])->toHaveKeys(['cheapest', 'order_cheapest'])
@@ -3326,7 +3369,8 @@ test('a rescue line orders at least a month of sales, never more than the partne
     $quantity = fn (string $spare) => DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
         from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available, 1 as packed_in) os,
-            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
+            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 1 as packed_in) p, (select null::int as stock_family_id) stocks,
+            lateral ('.(new ReflectionMethod($buckets, 'rowFacts'))->invoke($buckets, $this->orgPartner, 14)->toRawSql().') rf'
     )->quantity;
 
     expect((int) $quantity('500'))->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
@@ -3353,7 +3397,8 @@ test('a rescue line to a sister company is rounded up to the partner\'s carton w
     $quantity = fn (string $spare, float $usage) => (int) DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
         from (select '.$usage.' as predicted_daily_usage) s, (select 3 as quantity_available, 2 as packed_in) os,
-            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, '.$sellerStock->id.' as id, 1 as packed_in) p, (select null::jsonb as data) stock_families'
+            (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, '.$sellerStock->id.' as id, 1 as packed_in) p, (select null::int as stock_family_id) stocks,
+            lateral ('.(new ReflectionMethod($buckets, 'rowFacts'))->invoke($buckets, $this->orgPartner, 14)->toRawSql().') rf'
     )->quantity;
 
     $partner = $this->orgPartner->partner;
@@ -4342,7 +4387,7 @@ test('agent organisation manages its own supplier identity', function () {
         ->firstOrFail();
 
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.org.procurement.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
+    $response = $this->get(route('grp.org.agent.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -4481,7 +4526,7 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
     $agentOrganisation = $this->agent->organisation;
     actingAs($this->adminGuest->getUser());
 
-    get(route('grp.org.procurement.agent_labels.index', $agentOrganisation->slug))
+    get(route('grp.org.agent.agent_labels.index', $agentOrganisation->slug))
         ->assertOk()
         ->assertInertia(function (AssertableInertia $page) use ($orgStock, $published) {
             $page->component('Org/Procurement/AgentLabels')
@@ -4490,11 +4535,11 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
                     && collect($orgStocks)->firstWhere('id', $orgStock->id)['labels'][0]['run_sources'] === ['batch_code', 'expiry_date']);
         });
 
-    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7', 'expiry_date' => '2027-09-24']))
+    get(route('grp.org.agent.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7', 'expiry_date' => '2027-09-24']))
         ->assertOk();
-    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7']))
+    get(route('grp.org.agent.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7']))
         ->assertStatus(422);
-    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $foreignOrgStock->id, $foreign->id]))
+    get(route('grp.org.agent.agent_labels.pdf', [$agentOrganisation->slug, $foreignOrgStock->id, $foreign->id]))
         ->assertNotFound();
     get(route('grp.org.procurement.agent_labels.index', $this->organisation->slug))
         ->assertNotFound();
@@ -4504,7 +4549,7 @@ test('agent organisation creates a supplier under its own agent', function () {
     $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.procurement.org_suppliers.create_new', [$ownAgent->organisation->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.create_new', [$ownAgent->organisation->slug]))
         ->assertOk();
 
     $storeData = Supplier::factory()->definition();
@@ -4689,7 +4734,7 @@ describe('shopping list', function () {
 
         $secondItem = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 15]);
 
-        $response = $this->get(route('grp.org.procurement.shopping_list.board', [$this->agent->organisation->slug]));
+        $response = $this->get(route('grp.org.agent.shopping_list.board', [$this->agent->organisation->slug]));
 
         $response->assertInertia(function (AssertableInertia $page) use ($secondItem, $result) {
             $agents = $page->toArray()['props']['agents'];
@@ -4707,7 +4752,7 @@ describe('shopping list', function () {
                 $page->component('SupplyChain/ShoppingListBoard');
             });
 
-        $this->get(route('grp.org.procurement.shopping_list.board', [$this->agent->organisation->slug]))
+        $this->get(route('grp.org.agent.shopping_list.board', [$this->agent->organisation->slug]))
             ->assertInertia(function (AssertableInertia $page) {
                 $page->component('Procurement/ShoppingListBoard');
             });
@@ -9347,7 +9392,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         'reference' => 'PO-USAGE-'.PurchaseOrder::max('id'),
     ], strict: false);
 
-    foreach ([now()->firstOfQuarter(), now()->firstOfQuarter()->addDay()] as $outOfStockDay) {
+    foreach ([[now()->firstOfQuarter(), 0], [now()->firstOfQuarter()->addDay(), 0.667]] as [$outOfStockDay, $leftInLocations]) {
         $organisationStockHistoryId = DB::table('organisation_stock_histories')
             ->where('organisation_id', $orgStock->organisation_id)->where('date', $outOfStockDay->toDateString())->value('id')
             ?? DB::table('organisation_stock_histories')->insertGetId([
@@ -9363,7 +9408,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
             'organisation_id'               => $orgStock->organisation_id,
             'org_stock_id'                  => $orgStock->id,
             'date'                          => $outOfStockDay->toDateString(),
-            'quantity_in_locations'         => 0,
+            'quantity_in_locations'         => $leftInLocations,
         ]);
     }
 

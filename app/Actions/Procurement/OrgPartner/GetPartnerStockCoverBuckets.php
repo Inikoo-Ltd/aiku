@@ -174,7 +174,7 @@ class GetPartnerStockCoverBuckets
         $leadTime = GetPartnerLeadTime::run($orgPartner);
         [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadTime['days']);
 
-        $cost    = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice($orgPartner)}";
+        $cost    = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice()}";
         $inOrder = $this->inRescueOrder();
 
         $perSko = $query
@@ -253,8 +253,8 @@ class GetPartnerStockCoverBuckets
                     ->where('p.organisation_id', $orgPartner->partner_id)
                     ->where('p.state', OrgStockStateEnum::ACTIVE->value);
             })
-            ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
             ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
+            ->leftJoinLateral($this->rowFacts($orgPartner, $leadDays), 'rf')
             ->where('os.organisation_id', $orgPartner->organisation_id)
             ->where('os.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
@@ -330,7 +330,7 @@ class GetPartnerStockCoverBuckets
             ->whereRaw($this->bucketExpression($leadDays)." in ('".implode("', '", $buckets)."')")
             ->when($worstOnly, fn ($query) => $query->whereRaw($this->inRescueOrder()))
             ->addSelect('os.packed_in')
-            ->selectRaw($this->partnerSkoPrice($orgPartner).' as partner_sko_price')
+            ->selectRaw($this->partnerSkoPrice().' as partner_sko_price')
             ->get()
             ->map(fn ($row) => [
                 'org_stock_id' => (int) $row->org_stock_id,
@@ -365,7 +365,12 @@ class GetPartnerStockCoverBuckets
      * with in the shop it sells to the other companies from: the same product GetPartnerSellingProduct
      * prices a purchase order line with.
      */
-    private function partnerSkoPrice(OrgPartner $orgPartner): string
+    private function partnerSkoPrice(): string
+    {
+        return 'rf.partner_sko_price';
+    }
+
+    private function partnerSkoPriceSql(OrgPartner $orgPartner): string
     {
         $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
         $landed  = GetPartnerLandedCost::appliesTo($orgPartner) ? GetPartnerLandedCost::perSkoSql('p.id').', ' : '';
@@ -382,7 +387,7 @@ class GetPartnerStockCoverBuckets
      */
     private function rescueQuantity(string $spare, int $leadDays, OrgPartner $orgPartner): string
     {
-        $need     = "ceil(s.predicted_daily_usage * {$this->criticalDays($leadDays)} - greatest(os.quantity_available, 0))";
+        $need     = "ceil(s.predicted_daily_usage * {$this->criticalDays()} - greatest(os.quantity_available, 0))";
         $forValue = 'least(coalesce(ceil('.self::MINIMUM_LINE_VALUE.' / nullif('.$this->orgSkoPrice($orgPartner).', 0)), 0), ceil(s.predicted_daily_usage * '.self::MAXIMUM_COVER_DAYS.'))';
 
         $quantity = "least($spare, greatest(1, $need, ceil(s.predicted_daily_usage * ".self::MINIMUM_COVER_DAYS."), $forValue))";
@@ -407,6 +412,11 @@ class GetPartnerStockCoverBuckets
      */
     private function partnerCartonSkos(): string
     {
+        return 'rf.carton_skos';
+    }
+
+    private function partnerCartonSkosSql(): string
+    {
         return "coalesce((select ceil(sp.units_per_carton / nullif(greatest(os.packed_in, 1), 0))
             from org_stock_has_org_supplier_products link
             join org_supplier_products osp on osp.id = link.org_supplier_product_id
@@ -426,7 +436,7 @@ class GetPartnerStockCoverBuckets
             return '1';
         }
 
-        return RoundPartnerQuantityToBatches::quantumSql('p');
+        return 'rf.order_quantum';
     }
 
     /**
@@ -434,7 +444,7 @@ class GetPartnerStockCoverBuckets
      */
     private function orgSkoPrice(OrgPartner $orgPartner): string
     {
-        return '('.$this->partnerSkoPrice($orgPartner).' * '.(float) $orgPartner->exchangeToOrgCurrency().')';
+        return '('.$this->partnerSkoPrice().' * '.(float) $orgPartner->exchangeToOrgCurrency().')';
     }
 
     /**
@@ -447,12 +457,37 @@ class GetPartnerStockCoverBuckets
             return 'null::numeric';
         }
 
-        return "floor(p.quantity_available - ps.predicted_daily_usage * {$this->criticalDays($leadDays)})";
+        return "floor(p.quantity_available - rf.partner_daily_usage * {$this->criticalDays()})";
     }
 
-    private function criticalDays(int $leadDays): string
+    private function criticalDays(): string
+    {
+        return 'rf.critical_days';
+    }
+
+    private function criticalDaysSql(int $leadDays): string
     {
         return "coalesce((select (sf.data->'stock_cover'->>'understock_days')::int from stock_families sf where sf.id = stocks.stock_family_id), 2 * coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays))";
+    }
+
+    /**
+     * What every rescue expression needs about a row, worked out once: the critical days, the
+     * partner's price for one SKO, its carton, the partner's own daily usage and the hub's batch
+     * quantum. Written inline, Postgres evaluates each subquery again at every place the quantity and
+     * value expressions repeat it, dozens of times a row; the offset keeps the planner from inlining
+     * the lateral back into them, and reading the partner's usage here rather than joining its stats
+     * keeps a misestimated join from scanning them once per row.
+     */
+    private function rowFacts(OrgPartner $orgPartner, int $leadDays): Builder
+    {
+        $isHub      = $orgPartner->partner->is_manufacturing_hub;
+        $carton     = $isHub ? '1' : $this->partnerCartonSkosSql();
+        $dailyUsage = $isHub ? 'null::numeric' : '(select ps.predicted_daily_usage from org_stock_stats ps where ps.org_stock_id = p.id order by ps.id limit 1)';
+        $quantum    = $isHub ? RoundPartnerQuantityToBatches::quantumSql('p') : '1';
+
+        return DB::query()
+            ->selectRaw("{$this->criticalDaysSql($leadDays)} as critical_days, {$this->partnerSkoPriceSql($orgPartner)} as partner_sko_price, $carton as carton_skos, $dailyUsage as partner_daily_usage, $quantum as order_quantum")
+            ->offset(0);
     }
 
     /**
@@ -499,7 +534,7 @@ class GetPartnerStockCoverBuckets
         $spare      = $this->spareExpression($orgPartner, $leadDays);
 
         $query = $this->scopedQuery($orgPartner)
-            ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
+            ->leftJoinLateral($this->rowFacts($orgPartner, $leadDays), 'rf')
             ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')

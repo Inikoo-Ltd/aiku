@@ -23,34 +23,73 @@ class GetAgentOrganisationNavigation
         $navigation = [];
 
         if ($user->authTo("procurement.$organisation->id.view")) {
-            $subSections = [
-                $this->procurementSubSection(__('Dashboard'), 'fa-chart-network', 'grp.org.procurement.dashboard', 'grp.org.procurement.dashboard', $organisation),
-                $this->procurementSubSection(__('Purchase Orders'), 'fa-clipboard-list', 'grp.org.procurement.purchase_orders.', 'grp.org.procurement.purchase_orders.index', $organisation),
-                $this->procurementSubSection(__('Stock Deliveries'), 'fa-truck-container', 'grp.org.procurement.stock_deliveries.', 'grp.org.procurement.stock_deliveries.index', $organisation),
-                $this->procurementSubSection(__('Suppliers'), 'fa-person-dolly', 'grp.org.procurement.org_suppliers.', 'grp.org.procurement.org_suppliers.index', $organisation),
-                $this->procurementSubSection(__('Supplier Products'), 'fa-box-usd', 'grp.org.procurement.org_supplier_products.', 'grp.org.procurement.org_supplier_products.index', $organisation),
-                $this->procurementSubSection(__('Inbox'), 'fa-inbox', 'grp.org.procurement.supplier_messages.', 'grp.org.procurement.supplier_messages.index', $organisation),
+            $topMenus = [
+                'agent_suppliers' => [
+                    $this->procurementSubSection(__('Suppliers'), 'fa-person-dolly', 'grp.org.agent.org_suppliers.', 'grp.org.agent.org_suppliers.index', $organisation),
+                ],
+                'agent_products' => [
+                    $this->procurementSubSection(__('Products'), 'fa-box-usd', 'grp.org.agent.org_supplier_products.', 'grp.org.agent.org_supplier_products.index', $organisation),
+                    $this->procurementSubSection(__('Labels'), 'fa-tags', 'grp.org.agent.agent_labels.', 'grp.org.agent.agent_labels.index', $organisation),
+                    $this->procurementSubSection(__('Barcodes'), 'fa-barcode', 'grp.org.agent.agent_barcodes.', 'grp.org.agent.agent_barcodes.index', $organisation),
+                ],
+                'agent_purchase_orders' => [
+                    $this->procurementSubSection(__('Dashboard'), 'fa-chart-network', 'grp.org.agent.purchase_orders.dashboard', 'grp.org.agent.purchase_orders.dashboard', $organisation),
+                    $this->procurementSubSection(__('List'), 'fa-clipboard-list', 'grp.org.agent.purchase_orders.index', 'grp.org.agent.purchase_orders.index', $organisation),
+                    $this->procurementSubSection(__('Board'), 'fa-columns', 'grp.org.agent.purchase_orders.board', 'grp.org.agent.purchase_orders.board', $organisation),
+                    $this->procurementSubSection(__('Reports'), 'fa-chart-line', 'grp.org.agent.purchase_orders.reports', 'grp.org.agent.purchase_orders.reports', $organisation),
+                ],
+                'agent_containers' => [
+                    $this->procurementSubSection(__('Current staged containers'), 'fa-box-open', 'grp.org.agent.stock_deliveries.current', 'grp.org.agent.stock_deliveries.current', $organisation),
+                    $this->procurementSubSection(__('Board'), 'fa-columns', 'grp.org.agent.stock_deliveries.board', 'grp.org.agent.stock_deliveries.board', $organisation),
+                    $this->procurementSubSection(__('Past containers'), 'fa-history', 'grp.org.agent.stock_deliveries.past', 'grp.org.agent.stock_deliveries.past', $organisation),
+                ],
             ];
 
-            if ($user->authTo(['org-admin.'.$organisation->id, 'org-supervisor.'.$organisation->id.'.procurement'])) {
-                $subSections[] = $this->procurementSubSection(__('Settings'), 'fa-cog', 'grp.org.procurement.settings.', 'grp.org.procurement.settings.edit', $organisation);
+            foreach (
+                [
+                    'agent_suppliers'       => [__('Suppliers'), 'fa-person-dolly', 'grp.org.agent.org_suppliers'],
+                    'agent_products'        => [__('Products'), 'fa-box-usd', 'grp.org.agent.org_supplier_products'],
+                    'agent_purchase_orders' => [__('Purchase Orders'), 'fa-clipboard-list', 'grp.org.agent.purchase_orders'],
+                    'agent_containers'      => [__('Containers'), 'fa-truck-container', 'grp.org.agent.stock_deliveries'],
+                ] as $key => [$label, $icon, $root]
+            ) {
+                $navigation[$key] = [
+                    'root'    => $root.'.',
+                    'label'   => $label,
+                    'icon'    => ['fal', $icon],
+                    'route'   => [
+                        'name'       => match ($key) {
+                            'agent_purchase_orders' => $root.'.dashboard',
+                            'agent_containers'      => $root.'.current',
+                            default                 => $root.'.index',
+                        },
+                        'parameters' => [$organisation->slug],
+                    ],
+                    'topMenu' => [
+                        'subSections' => $topMenus[$key]
+                    ]
+                ];
             }
+        }
 
-            $navigation['procurement'] = [
-                'root'    => 'grp.org.procurement',
-                'label'   => __('Procurement'),
-                'icon'    => ['fal', 'fa-box-usd'],
+        $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);
+
+        if ($user->authTo(['org-admin.'.$organisation->id, 'org-supervisor.'.$organisation->id.'.procurement'])) {
+            $navigation['agent_settings'] = [
+                'root'    => 'grp.org.agent.settings.',
+                'label'   => __('Agent settings'),
+                'icon'    => ['fal', 'fa-cog'],
                 'route'   => [
-                    'name'       => 'grp.org.procurement.dashboard',
+                    'name'       => 'grp.org.agent.settings.edit',
                     'parameters' => [$organisation->slug],
                 ],
                 'topMenu' => [
-                    'subSections' => $subSections
-                ]
+                    'subSections' => [],
+                ],
             ];
         }
 
-        return $this->getHumanResourcesNavs($user, $organisation, $navigation);
+        return $navigation;
     }
 
     private function procurementSubSection(string $label, string $icon, string $root, string $routeName, Organisation $organisation): array

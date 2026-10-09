@@ -53,7 +53,8 @@ class EnsureOrganisationIsAuthorised
      */
     private function keepRecordsInsideTheAgent(Request $request, Organisation $organisation): void
     {
-        if (str_starts_with((string) $request->route()->getName(), 'grp.org.procurement.agent_labels.')) {
+        $routeName = (string) $request->route()->getName();
+        if (str_starts_with($routeName, 'grp.org.procurement.agent_labels.') || str_starts_with($routeName, 'grp.org.agent.agent_labels.')) {
             return;
         }
 

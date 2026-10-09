@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -62,11 +63,12 @@ class GetOrgStocksQuarterlyUsage
             ->map(fn ($records) => $records->keyBy('period'));
 
         $daysOutOfStock = DB::table('org_stock_histories')
-            ->whereIn('org_stock_id', $orgStockIds)
-            ->where('quantity_in_locations', '<=', 0)
-            ->where('date', '>=', $from)
-            ->selectRaw("org_stock_id, to_char(date_trunc('quarter', date), 'YYYY\"Q\"Q') as period, count(*) as days")
-            ->groupByRaw("org_stock_id, date_trunc('quarter', date)")
+            ->leftJoinSub(OrgStockHydrateOutOfStockForecast::sellableQuantities($orgStockIds), 'sellable', 'sellable.org_stock_id', '=', 'org_stock_histories.org_stock_id')
+            ->whereIn('org_stock_histories.org_stock_id', $orgStockIds)
+            ->whereRaw('org_stock_histories.quantity_in_locations < coalesce(sellable.sellable_quantity, 1)')
+            ->where('org_stock_histories.date', '>=', $from)
+            ->selectRaw("org_stock_histories.org_stock_id, to_char(date_trunc('quarter', org_stock_histories.date), 'YYYY\"Q\"Q') as period, count(*) as days")
+            ->groupByRaw("org_stock_histories.org_stock_id, date_trunc('quarter', org_stock_histories.date)")
             ->get()
             ->groupBy('org_stock_id')
             ->map(fn ($records) => $records->pluck('days', 'period'));

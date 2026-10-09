@@ -107,6 +107,7 @@ use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
@@ -4603,6 +4604,40 @@ describe('out of stock forecast', function () {
         OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
         expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
         $orgStock->update(['quantity_available' => 100]);
+
+        $partPackMovementId = DB::table('org_stock_movements')->insertGetId([
+            'group_id'                   => $orgStock->group_id,
+            'organisation_id'            => $orgStock->organisation_id,
+            'warehouse_id'               => $this->warehouse->id,
+            'org_stock_id'               => $orgStock->id,
+            'date'                       => now()->subDays(100),
+            'class'                      => OrgStockMovementClassEnum::MOVEMENT->value,
+            'type'                       => OrgStockMovementTypeEnum::PURCHASE->value,
+            'flow'                       => OrgStockMovementFlowEnum::IN->value,
+            'quantity'                   => 0.667,
+            'running_quantity_org_stock' => 0.667,
+            'org_amount'                 => 0,
+            'grp_amount'                 => 0,
+            'data'                       => '{}',
+        ]);
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        expect($orgStock->stats->refresh()->forecast_source)->not->toBe('timesfm');
+
+        $productLinks = DB::table('product_has_org_stocks')->where('org_stock_id', $orgStock->id)->pluck('quantity', 'product_id');
+        $productState = DB::table('products')->where('id', $this->product->id)->value('state');
+        DB::table('products')->where('id', $this->product->id)->update(['state' => ProductStateEnum::ACTIVE->value]);
+        DB::table('product_has_org_stocks')->where('org_stock_id', $orgStock->id)->update(['quantity' => 0.5]);
+        $this->product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 0.5]]);
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        expect($orgStock->stats->refresh()->forecast_source)->toBe('timesfm');
+        if (!$productLinks->has($this->product->id)) {
+            $this->product->orgStocks()->detach($orgStock->id);
+        }
+        foreach ($productLinks as $productId => $quantity) {
+            DB::table('product_has_org_stocks')->where('org_stock_id', $orgStock->id)->where('product_id', $productId)->update(['quantity' => $quantity]);
+        }
+        DB::table('products')->where('id', $this->product->id)->update(['state' => $productState]);
+        DB::table('org_stock_movements')->where('id', $partPackMovementId)->delete();
 
         $orgStock->stats->update(['demand_forecast' => [...$forecast, 'from' => now()->subDays(3)->toDateString()]]);
         OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());

@@ -38,6 +38,7 @@ class GetLoggedUser
             'chat_language_id' => $user->chatAgent?->language_id ?? $user->language_id,
             'email'        => $user->email,
             'is_agent'     => $isAgent,
+            'works_only_for_agents' => $user->worksOnlyForAgents(),
             'borrowed_permissions_from' => $user->permissionsLender()?->only(['id', 'username', 'contact_name']),
             'can_borrow_permissions'    => BorrowUserPermissions::canBorrowSomebody($user),
             'agent_id'     => $user->chatAgent?->id,
