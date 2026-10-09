@@ -97,11 +97,29 @@ const partnerUrl = (partner: PartnerCard, routeName = "grp.org.procurement.org_p
 
 const shortDate = (date: string) => useFormatTime(date, { formatTime: "d MMM yyyy" })
 
+const isInBasket = (item: CurrentItem) =>
+	(item.type === "purchase_order" && item.state === "in_process") ||
+	(item.type === "shopping_list" && item.state === "draft")
+
+const currentSections = (partner: PartnerCard) => [
+	{
+		key: "basket",
+		label: ctrans("Basket"),
+		empty: ctrans("Basket is empty"),
+		items: partner.stats.current?.filter(isInBasket) ?? [],
+		lastOrderAt: null,
+	},
+	{
+		key: "orders",
+		label: ctrans("Orders"),
+		empty: ctrans("No orders open or on the way"),
+		items: partner.stats.current?.filter((item) => !isInBasket(item)) ?? [],
+		lastOrderAt: partner.stats.last_submitted_at,
+	},
+]
+
 const stateClass = (item: CurrentItem) => {
-	if (
-		(item.type === "purchase_order" && item.state === "in_process") ||
-		(item.type === "shopping_list" && item.state === "draft")
-	) {
+	if (isInBasket(item)) {
 		return "bg-amber-100 text-amber-800"
 	}
 	if (item.state === "dispatched") {
@@ -220,21 +238,22 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							: null
 					" />
 				</Deferred>
-				<section class="overflow-hidden rounded-md ring-1 ring-gray-200">
+				<section
+					v-for="section in currentSections(partner)"
+					:key="section.key"
+					class="overflow-hidden rounded-md ring-1 ring-gray-200">
 					<div
 						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
-						<span class="font-medium text-gray-600">{{
-							ctrans("Open and on the way")
-						}}</span>
-						<span v-if="partner.stats.last_submitted_at" class="ml-auto text-gray-500">
+						<span class="font-medium text-gray-600">{{ section.label }}</span>
+						<span v-if="section.lastOrderAt" class="ml-auto text-gray-500">
 							{{ ctrans("Last order") }}
 							<span class="tabular-nums text-gray-700">{{
-								shortDate(partner.stats.last_submitted_at)
+								shortDate(section.lastOrderAt)
 							}}</span>
 						</span>
 					</div>
-					<ul v-if="partner.stats.current?.length" class="divide-y divide-gray-100">
-						<li v-for="item in partner.stats.current" :key="item.type + item.reference">
+					<ul v-if="section.items.length" class="divide-y divide-gray-100">
+						<li v-for="item in section.items" :key="item.type + item.reference">
 							<Link
 								:href="item.url"
 								class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50">
@@ -284,7 +303,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 						</li>
 					</ul>
 					<div v-else class="px-2 py-2 text-xs text-gray-500">
-						{{ ctrans("Nothing open or on the way") }}
+						{{ section.empty }}
 					</div>
 				</section>
 			</div>
