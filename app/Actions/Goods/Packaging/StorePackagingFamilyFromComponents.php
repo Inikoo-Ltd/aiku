@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\Packaging;
 
+use App\Enums\Goods\Packaging\PackagingFamilySourceEnum;
+use App\Enums\Goods\Packaging\PackagingPolymerEnum;
 use App\Models\Goods\PackagingComponent;
 use App\Models\Goods\PackagingFamily;
 use App\Models\SysAdmin\Group;
@@ -55,12 +57,13 @@ class StorePackagingFamilyFromComponents
             'code'      => $code,
             'name'      => $name,
             'signature' => $familySignature,
+            'source'    => PackagingFamilySourceEnum::SUPPLIER,
         ]);
 
         foreach ($lines as $signature => $line) {
             $packagingComponent = PackagingComponent::firstOrCreate(
                 ['group_id' => $group->id, 'signature' => $signature],
-                $line['attributes']
+                [...$line['attributes'], 'polymer' => PackagingPolymerEnum::fromMaterialCode($line['attributes']['material_id_code'] ?? null)]
             );
             $family->components()->attach($packagingComponent->id, [
                 'quantity'          => $line['quantity'],

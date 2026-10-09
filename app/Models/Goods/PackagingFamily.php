@@ -8,6 +8,9 @@
 
 namespace App\Models\Goods;
 
+use App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum;
+use App\Enums\Goods\Packaging\PackagingEndUseEnum;
+use App\Enums\Goods\Packaging\PackagingFamilySourceEnum;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,6 +27,11 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property string|null $signature
  * @property array<array-key, mixed> $data
+ * @property PackagingBrandOwnershipEnum $brand_ownership
+ * @property PackagingEndUseEnum $end_use
+ * @property bool $is_product_itself
+ * @property PackagingFamilySourceEnum|null $source
+ * @property Carbon|null $verified_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PackagingComponent> $components
@@ -35,11 +43,19 @@ class PackagingFamily extends Model
     use InGroup;
 
     protected $casts = [
-        'data' => 'array',
+        'data'              => 'array',
+        'brand_ownership'   => PackagingBrandOwnershipEnum::class,
+        'end_use'           => PackagingEndUseEnum::class,
+        'is_product_itself' => 'boolean',
+        'source'            => PackagingFamilySourceEnum::class,
+        'verified_at'       => 'date',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'              => '{}',
+        'brand_ownership'   => 'unknown',
+        'end_use'           => 'household',
+        'is_product_itself' => false,
     ];
 
     protected $guarded = [];
