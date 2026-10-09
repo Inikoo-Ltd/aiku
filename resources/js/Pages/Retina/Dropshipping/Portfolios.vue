@@ -458,8 +458,6 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 const selectedProducts = ref<number[]>([])
 
 const loadingAction = ref([])
-const modalAddproductBluk = ref(false)
-const modalMatchproductBluk = ref(false)
 const modalBulkEditPrice = ref(false)
 const selectedEditProduct = ref([])
 
@@ -482,9 +480,7 @@ const debReloadPage = () => {
 	})
 }
 
-const onSuccessEditCheckmark = (key) => {
-	if (key == "Match With Existing Product") modalMatchproductBluk.value = true
-	else modalAddproductBluk.value = true
+const onSuccessEditCheckmark = () => {
 	selectedProducts.value = []
 
 	progessbar.value = { ...progessbar.value, done: false, total: selectedProducts.value.length }
@@ -492,8 +488,8 @@ const onSuccessEditCheckmark = (key) => {
 
 const onFailedEditCheckmark = (error: any) => {
 	notify({
-		title: "Something went wrong.",
-		text: error?.response?.data?.products || "An error occurred.",
+		title: ctrans("Something went wrong."),
+		text: error?.response?.data?.products || ctrans("An error occurred."),
 		type: "error",
 	})
 }
@@ -591,7 +587,7 @@ const submitPortfolioAction = async (action: any) => {
 		}
 
 		debReloadPage()
-		onSuccessEditCheckmark(action.label)
+		onSuccessEditCheckmark()
 	} catch (error: any) {
 		onFailedEditCheckmark(error)
 	} finally {
@@ -844,7 +840,7 @@ const submitBulkEditPrice = async (type) => {
 		})
 
 		debReloadPage()
-		onSuccessEditCheckmark("bulk-edit")
+		onSuccessEditCheckmark()
 		bulkUpdatePriceData.value = {}
 		modalBulkEditPrice.value = false
 
