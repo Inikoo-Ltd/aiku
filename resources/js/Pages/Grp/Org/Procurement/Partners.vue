@@ -279,26 +279,6 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							}}</span>
 						</span>
 					</div>
-					<div
-						v-if="section.key === 'orders' && productionLanes(partner).length"
-						class="border-b border-gray-100 px-2 py-1.5">
-						<div class="mb-1 flex items-center gap-1.5 text-xs text-gray-500">
-							<FontAwesomeIcon icon="fal fa-industry-alt" fixed-width aria-hidden="true" />
-							{{ ctrans("Production at :partner", { partner: partner.name }) }}
-						</div>
-						<div class="grid grid-cols-4 divide-x divide-gray-100 rounded bg-gray-50 text-center">
-							<div v-for="lane in productionLanes(partner)" :key="lane.key" class="px-1 py-1">
-								<div
-									class="text-sm font-semibold tabular-nums"
-									:class="lane.count ? 'text-gray-900' : 'text-gray-300'">
-									{{ lane.count }}
-								</div>
-								<div class="truncate text-[10px] uppercase tracking-wide text-gray-500">
-									{{ lane.label }}
-								</div>
-							</div>
-						</div>
-					</div>
 					<ul v-if="section.items.length" class="divide-y divide-gray-100">
 						<li v-for="item in section.items" :key="item.type + item.reference">
 							<Link
@@ -351,6 +331,26 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					</ul>
 					<div v-else class="px-2 py-2 text-xs text-gray-500">
 						{{ section.empty }}
+					</div>
+					<div
+						v-if="section.key === 'orders' && productionLanes(partner).length"
+						class="border-t border-gray-200 border-dashed px-2 py-1.5">
+						<div class="mb-1 flex items-center gap-1.5 text-xs text-gray-500">
+							<FontAwesomeIcon icon="fal fa-industry-alt" fixed-width aria-hidden="true" />
+							{{ ctrans("Production at :partner", { partner: partner.name }) }}
+						</div>
+						<div class="grid grid-cols-4 divide-x divide-gray-100 rounded bg-gray-50 text-center">
+							<div v-for="lane in productionLanes(partner)" :key="lane.key" class="px-1 py-1">
+								<div
+									class="text-sm font-semibold tabular-nums"
+									:class="lane.count ? 'text-gray-900' : 'text-gray-300'">
+									{{ lane.count }}
+								</div>
+								<div class="truncate text-[10px] uppercase tracking-wide text-gray-500">
+									{{ lane.label }}
+								</div>
+							</div>
+						</div>
 					</div>
 				</section>
 			</div>

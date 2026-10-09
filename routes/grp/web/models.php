@@ -562,6 +562,7 @@ use App\Actions\Web\Seo\RequestSeoContentSuggestions;
 use App\Actions\Web\Seo\DeleteSeoTrackedKeyword;
 use App\Actions\Web\Seo\RunSeoBacklinkFetch;
 use App\Actions\Web\Seo\RunSeoRankChecks;
+use App\Actions\Web\Seo\UpdateSeoApiBudget;
 use App\Actions\Web\Seo\StoreSeoCompetitor;
 use App\Actions\Web\Seo\StoreSeoTrackedKeyword;
 use App\Actions\Web\Seo\UpdateSeoTrackedKeyword;
@@ -1531,6 +1532,7 @@ Route::patch('stored-items/{storedItem:id}', UpdateStoredItem::class)->name('sto
 Route::patch('stored-items/{storedItem:id}/mark-as-discontinuing', MarkStoredItemAsDiscontinuing::class)->name('stored-items.mark-as-discontinuing');
 
 Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-settings.update');
+Route::patch('/group/seo-api-budget', UpdateSeoApiBudget::class)->name('group.seo_api_budget.update');
 
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
 Route::patch('/{mailshot:id}/mailshot/url-utm', UpdateMailshotUrlUtm::class)->name('shop.mailshot.url-utm.update');
