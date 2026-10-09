@@ -48,6 +48,7 @@ class AppointmentResource extends JsonResource
             'contact_name'     => $appointment->contact_name,
             'email'            => $appointment->email,
             'phone'            => $appointment->phone,
+            'whatsapp_url'     => $appointment->appointmentType?->requiresPhone() ? $appointment->whatsappUrl() : null,
             'number_visitors'  => $appointment->number_visitors,
             'notes'            => $appointment->notes,
             'visitor'          => match (true) {

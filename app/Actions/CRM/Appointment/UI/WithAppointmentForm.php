@@ -68,9 +68,10 @@ trait WithAppointmentForm
                 'value'       => $appointment?->email ?? '',
             ],
             'phone'           => [
-                'type'  => 'input',
-                'label' => __('Phone'),
-                'value' => $appointment?->phone ?? '',
+                'type'        => 'input',
+                'label'       => __('Phone'),
+                'information' => __('Required for video calls, which we make on WhatsApp. Include the country code, for example +44.'),
+                'value'       => $appointment?->phone ?? '',
             ],
             'number_visitors' => [
                 'type'  => 'input_number',

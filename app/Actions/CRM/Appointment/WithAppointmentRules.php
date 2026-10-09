@@ -15,6 +15,8 @@ use Illuminate\Validation\Rule;
 
 trait WithAppointmentRules
 {
+    use WithAppointmentPhoneRules;
+
     protected function appointmentRules(bool $isUpdate, ?Appointment $appointment = null): array
     {
         $required = $isUpdate ? ['sometimes', 'required'] : ['required'];
@@ -31,7 +33,7 @@ trait WithAppointmentRules
             'starts_at'           => [...$required, 'date_format:Y-m-d H:i'],
             'contact_name'        => [...$required, 'string', 'max:255'],
             'email'               => [...$optional, 'nullable', 'email', 'max:255'],
-            'phone'               => [...$optional, 'nullable', 'string', 'max:64'],
+            'phone'               => $this->appointmentPhoneRules($appointmentTypeId ? (int) $appointmentTypeId : null, $isUpdate),
             'number_visitors'     => [...$optional, 'integer', 'min:1', 'max:100'],
             'notes'               => [...$optional, 'nullable', 'string', 'max:5000'],
             'user_id'             => [

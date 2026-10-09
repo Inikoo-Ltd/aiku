@@ -25,6 +25,11 @@ enum EmailOngoingRunCodeEnum: string
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case APPOINTMENT_REQUESTED = 'appointment_requested';
+    case APPOINTMENT_ACCEPTED = 'appointment_accepted';
+    case APPOINTMENT_DECLINED = 'appointment_declined';
+    case APPOINTMENT_RESCHEDULED = 'appointment_rescheduled';
+    case APPOINTMENT_CANCELLED = 'appointment_cancelled';
     case PRE_ORDER_UPDATE = 'pre_order_update';
     case PASSWORD_REMINDER = 'password_reminder';
 

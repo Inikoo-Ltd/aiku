@@ -95,6 +95,16 @@ class Appointment extends Model implements Auditable
         'state_reason',
     ];
 
+    public function whatsappUrl(): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $this->phone);
+        if (str_starts_with((string) $this->phone, '00') || str_starts_with($digits, '00')) {
+            $digits = substr($digits, 2);
+        }
+
+        return $digits ? 'https://wa.me/'.$digits : null;
+    }
+
     public function appointmentType(): BelongsTo
     {
         return $this->belongsTo(AppointmentType::class)->withTrashed();

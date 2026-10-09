@@ -3,6 +3,7 @@
 namespace App\Actions\Iris\Appointment;
 
 use App\Actions\CRM\Appointment\StoreAppointment;
+use App\Actions\CRM\Appointment\WithAppointmentPhoneRules;
 use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\IrisAction;
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreIrisAppointment extends IrisAction
 {
+    use WithAppointmentPhoneRules;
+
     /**
      * @throws \Throwable
      */
@@ -64,7 +67,7 @@ class StoreIrisAppointment extends IrisAction
             'time'                => ['required', 'date_format:H:i'],
             'contact_name'        => ['required', 'string', 'max:255'],
             'email'               => ['required', 'email', 'max:255'],
-            'phone'               => ['nullable', 'string', 'max:64'],
+            'phone'               => $this->appointmentPhoneRules((int) $this->get('appointment_type_id')),
             'number_visitors'     => ['nullable', 'integer', 'min:1', 'max:20'],
             'notes'               => ['nullable', 'string', 'max:2000'],
             'marketing_opt_in'    => ['sometimes', 'boolean'],
@@ -75,6 +78,7 @@ class StoreIrisAppointment extends IrisAction
     public function getValidationMessages(): array
     {
         return [
+            ...$this->appointmentPhoneMessages(),
             'website_url.prohibited' => __('We could not send your request. Please reload the page and try again.'),
         ];
     }

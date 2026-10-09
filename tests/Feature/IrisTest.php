@@ -641,6 +641,36 @@ test('website lists open appointment types with their free times', function () {
         ->and($types->pluck('id'))->not->toContain($closedType->id);
 });
 
+test('a website video call booking needs a WhatsApp number', function () {
+    DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
+
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'                => 'Video call '.Str::random(6),
+        'meeting_mode'        => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+        'duration_minutes'    => 30,
+        'min_notice_hours'    => 0,
+        'booking_window_days' => 14,
+        'availability'        => ['weekly' => array_fill_keys(range(1, 7), [['from' => '09:00', 'to' => '17:00']])],
+    ]);
+    $slots = GetAppointmentTypeAvailableSlots::run($appointmentType);
+    $date  = array_key_last($slots);
+
+    $payload = [
+        'appointment_type_id' => $appointmentType->id,
+        'date'                => $date,
+        'time'                => $slots[$date][0],
+        'contact_name'        => 'Video visitor',
+        'email'               => 'video-'.Str::lower(Str::random(8)).'@example.com',
+    ];
+
+    $this->postJson('http://'.$this->website->domain.'/models/appointment', $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['phone' => 'WhatsApp']);
+
+    $this->postJson('http://'.$this->website->domain.'/models/appointment', [...$payload, 'phone' => '+421 900 123 456'])
+        ->assertOk();
+});
+
 test('visitor books an appointment on the website and becomes a prospect', function () {
     DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
 

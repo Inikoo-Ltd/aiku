@@ -31,6 +31,7 @@ use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\CRM\AppointmentResource;
 use App\Models\Catalogue\Shop;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
@@ -41,6 +42,7 @@ use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\CRM\Favourite\UpdateFavourite;
+use App\Actions\Comms\Email\SendAppointmentEmail;
 use App\Actions\CRM\Appointment\AcceptAppointment;
 use App\Actions\CRM\Appointment\Json\GetAppointmentActionOptions;
 use App\Actions\CRM\Appointment\DeclineAppointment;
@@ -923,6 +925,7 @@ test('appointment staff must arrange that type', function (Appointment $appointm
             'starts_at'           => now()->addDays(3)->format('Y-m-d').' 11:00',
             'user_id'             => $this->user->id,
             'contact_name'        => 'Visitor',
+            'phone'               => '+441234567890',
         ]
     );
 })->depends('book an appointment for a visitor')->throws(ValidationException::class);
@@ -1079,6 +1082,7 @@ test('staff decline an appointment request from the list', function () {
         'appointment_type_id' => $appointmentType->id,
         'starts_at'           => now()->addDays(3)->format('Y-m-d').' 10:00',
         'contact_name'        => 'Page visitor',
+        'phone'               => '+441234567891',
         'state'               => AppointmentStateEnum::REQUESTED->value,
     ]);
 
@@ -1108,6 +1112,122 @@ test('UI Show appointment', function (Appointment $appointment) {
                 ->where('canEdit', true);
         });
 })->depends('cancel and rebook an appointment');
+
+test('visitors are emailed when their appointment is requested, accepted, moved, declined or cancelled', function () {
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'                => 'Emails '.Str::random(6),
+        'meeting_mode'        => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'location'            => 'Showroom, Sheffield',
+        'duration_minutes'    => 45,
+        'min_notice_hours'    => 0,
+        'booking_window_days' => 14,
+        'availability'        => ['weekly' => array_fill_keys(range(1, 7), [['from' => '09:00', 'to' => '17:00']])],
+    ]);
+    $appointmentType->attendees()->syncWithoutDetaching([$this->user->id]);
+
+    $slots = GetAppointmentTypeAvailableSlots::run($appointmentType);
+    $date  = array_key_last($slots);
+
+    $queuedCodes = function (): array {
+        return Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === SendAppointmentEmail::class)
+            ->map(fn ($job) => $job->getParameters()[1])
+            ->values()
+            ->all();
+    };
+
+    Queue::fake();
+
+    $appointment = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $date.' '.$slots[$date][0],
+        'contact_name'        => 'Emailed visitor',
+        'email'               => 'emailed-'.Str::lower(Str::random(8)).'@example.com',
+        'state'               => AppointmentStateEnum::REQUESTED->value,
+    ]);
+    $appointment = AcceptAppointment::make()->action($appointment, ['user_id' => $this->user->id]);
+    $appointment = RescheduleAppointment::make()->action($appointment, ['date' => $date, 'time' => $slots[$date][1]]);
+    $appointment = UpdateAppointment::make()->action($appointment, ['notes' => 'Bringing samples']);
+    DeclineAppointment::make()->action($appointment, ['reason' => 'Closed for stock take']);
+
+    $cancelled = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $date.' '.$slots[$date][2],
+        'contact_name'        => 'Phone visitor',
+        'email'               => 'phone-'.Str::lower(Str::random(8)).'@example.com',
+    ]);
+    UpdateAppointment::make()->action($cancelled, ['state' => AppointmentStateEnum::CANCELLED->value]);
+
+    StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $date.' '.$slots[$date][3],
+        'contact_name'        => 'Walk-in without email',
+    ]);
+
+    expect($queuedCodes())->toBe([
+        OutboxCodeEnum::APPOINTMENT_REQUESTED->value,
+        OutboxCodeEnum::APPOINTMENT_ACCEPTED->value,
+        OutboxCodeEnum::APPOINTMENT_RESCHEDULED->value,
+        OutboxCodeEnum::APPOINTMENT_DECLINED->value,
+        OutboxCodeEnum::APPOINTMENT_ACCEPTED->value,
+        OutboxCodeEnum::APPOINTMENT_CANCELLED->value,
+    ]);
+
+    $rescheduledJob = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === SendAppointmentEmail::class && $job->getParameters()[1] === OutboxCodeEnum::APPOINTMENT_RESCHEDULED->value)->first();
+    expect($rescheduledJob->getParameters()[2])->not->toBeNull();
+
+    $appointment->refresh();
+    $sender = SendAppointmentEmail::make();
+    $body   = $sender->generateBodyHtml($appointment, OutboxCodeEnum::APPOINTMENT_DECLINED);
+    $invite = $sender->calendarInvite($appointment, OutboxCodeEnum::APPOINTMENT_DECLINED);
+
+    expect($body)->toContain('Emailed visitor')
+        ->and($body)->toContain('Closed for stock take')
+        ->and($invite)->toContain('METHOD:CANCEL')
+        ->and($invite)->toContain('UID:appointment-'.$appointment->id.'@')
+        ->and($invite)->toContain('LOCATION:Showroom\, Sheffield')
+        ->and($sender->calendarInvite($appointment, OutboxCodeEnum::APPOINTMENT_ACCEPTED))->toContain('STATUS:CONFIRMED');
+});
+
+test('an appointment email escapes what the visitor typed', function () {
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'             => 'Escape '.Str::random(6),
+        'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+        'duration_minutes' => 30,
+    ]);
+    $appointment = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => now()->addDays(2)->format('Y-m-d').' 10:00',
+        'contact_name'        => '<script>alert(1)</script>',
+        'phone'               => '+441234567892',
+    ]);
+
+    expect(SendAppointmentEmail::make()->generateBodyHtml($appointment, OutboxCodeEnum::APPOINTMENT_REQUESTED))
+        ->not->toContain('<script>')
+        ->toContain('&lt;script&gt;');
+});
+
+test('a video call needs a WhatsApp number with its country code', function () {
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'             => 'WhatsApp '.Str::random(6),
+        'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+        'duration_minutes' => 30,
+    ]);
+    $booking = fn (?string $phone) => fn () => StoreAppointment::make()->action($this->shop, array_filter([
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => now()->addDays(2)->format('Y-m-d').' 11:00',
+        'contact_name'        => 'WhatsApp visitor',
+        'phone'               => $phone,
+    ]));
+
+    expect($booking(null))->toThrow(ValidationException::class, 'WhatsApp')
+        ->and($booking('07700 900123'))->toThrow(ValidationException::class, 'country code');
+
+    $appointment = $booking('+44 7700 900123')();
+
+    expect($appointment->phone)->toBe('+44 7700 900123')
+        ->and(AppointmentResource::make($appointment)->resolve()['whatsapp_url'])->toBe('https://wa.me/447700900123')
+        ->and(SendAppointmentEmail::make()->generateBodyHtml($appointment, OutboxCodeEnum::APPOINTMENT_ACCEPTED))->toContain('+44 7700 900123');
+});
 
 test('book an appointment from the form', function (Appointment $appointment) {
     $contactName = 'Phone visitor '.Str::random(6);

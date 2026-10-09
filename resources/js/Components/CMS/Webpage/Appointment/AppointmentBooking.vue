@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faStoreAlt, faVideo, faClock, faMapMarkerAlt, faCalendarAlt, faGlobe, faArrowLeft } from "@fal"
 import { faCheckCircle } from "@fas"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 
@@ -316,7 +317,7 @@ const datePickerPt = {
                     </div>
                     <div v-if="selectedType.meeting_mode === 'video_call'" class="flex items-start gap-3">
                         <FontAwesomeIcon icon="fal fa-video" fixed-width aria-hidden="true" class="mt-0.5 text-lg text-slate-600" />
-                        <span>{{ selectedType.meeting_mode_label }}</span>
+                        <span>{{ ctrans("Video call on WhatsApp") }}</span>
                     </div>
                     <div v-if="selectedType.location" class="flex items-start gap-3">
                         <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" class="mt-0.5 text-lg text-slate-600" />
@@ -414,8 +415,24 @@ const datePickerPt = {
                     <span v-if="errors.email" class="mt-1 block text-red-600">{{ errors.email }}</span>
                 </div>
                 <div class="text-sm">
-                    <label for="appointment-phone" class="mb-1.5 block font-bold text-slate-800">{{ ctrans("Phone") }}</label>
-                    <InputText id="appointment-phone" v-model="form.phone" type="tel" autocomplete="tel" :pt="fieldPt" :invalid="!!errors.phone" />
+                    <label for="appointment-phone" class="mb-1.5 block font-bold text-slate-800">
+                        <template v-if="selectedType.meeting_mode === 'video_call'">
+                            <FontAwesomeIcon :icon="faWhatsapp" class="text-green-600" fixed-width aria-hidden="true" /> {{ ctrans("WhatsApp number") }} *
+                        </template>
+                        <template v-else>{{ ctrans("Phone") }}</template>
+                    </label>
+                    <InputText
+                        id="appointment-phone"
+                        v-model="form.phone"
+                        type="tel"
+                        autocomplete="tel"
+                        :required="selectedType.meeting_mode === 'video_call'"
+                        :placeholder="selectedType.meeting_mode === 'video_call' ? '+44 7700 900123' : ''"
+                        :pt="fieldPt"
+                        :invalid="!!errors.phone" />
+                    <span v-if="selectedType.meeting_mode === 'video_call' && !errors.phone" class="mt-1 block text-slate-500">
+                        {{ ctrans("We call you on WhatsApp. Include your country code.") }}
+                    </span>
                     <span v-if="errors.phone" class="mt-1 block text-red-600">{{ errors.phone }}</span>
                 </div>
                 <div v-if="selectedType.meeting_mode === 'store_visit'" class="text-sm">

@@ -7,6 +7,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
@@ -39,6 +40,7 @@ const props = defineProps<{
         contact_name: string
         email: string | null
         phone: string | null
+        whatsapp_url: string | null
         number_visitors: number
         notes: string | null
         visitor: { type: string, label: string, name: string, route: RouteDefinition } | null
@@ -151,9 +153,13 @@ const statusMessage = computed(() => ({
                             <FontAwesomeIcon icon="fal fa-envelope" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />
                             <a :href="`mailto:${appointment.email}`" class="text-[--app-accent] hover:underline">{{ appointment.email }}</a>
                         </li>
-                        <li v-if="appointment.phone" class="flex gap-2">
-                            <FontAwesomeIcon icon="fal fa-phone" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />
+                        <li v-if="appointment.phone" class="flex flex-wrap items-center gap-2">
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                             <a :href="`tel:${appointment.phone}`" class="text-[--app-accent] hover:underline">{{ appointment.phone }}</a>
+                            <a v-if="appointment.whatsapp_url" :href="appointment.whatsapp_url" target="_blank" rel="noopener"
+                                class="inline-flex items-center gap-1 rounded-md border border-green-500 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-50">
+                                <FontAwesomeIcon :icon="faWhatsapp" fixed-width aria-hidden="true" /> {{ ctrans("Call on WhatsApp") }}
+                            </a>
                         </li>
                         <li v-if="appointment.appointment_type.meeting_mode === 'store_visit'" class="flex gap-2">
                             <FontAwesomeIcon icon="fal fa-users" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />

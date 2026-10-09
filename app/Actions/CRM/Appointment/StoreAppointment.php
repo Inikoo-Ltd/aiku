@@ -16,6 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreAppointment extends OrgAction
 {
     use WithAppointmentRules;
+    use WithAppointmentNotification;
 
     /**
      * @throws \Throwable
@@ -32,6 +33,8 @@ class StoreAppointment extends OrgAction
 
             /** @var Appointment $appointment */
             $appointment = $shop->appointments()->create($modelData);
+
+            $this->notifyVisitorAboutNewAppointment($appointment);
 
             return $appointment;
         });
@@ -56,6 +59,11 @@ class StoreAppointment extends OrgAction
             'marketing_opt_in'   => ['sometimes', 'boolean'],
             'state'              => ['sometimes', Rule::enum(AppointmentStateEnum::class)],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return $this->appointmentPhoneMessages();
     }
 
     public function prepareForValidation(ActionRequest $request): void

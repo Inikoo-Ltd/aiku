@@ -14,6 +14,7 @@ class UpdateAppointment extends OrgAction
 {
     use WithActionUpdate;
     use WithAppointmentRules;
+    use WithAppointmentNotification;
 
     private Appointment $appointment;
 
@@ -22,10 +23,17 @@ class UpdateAppointment extends OrgAction
      */
     public function handle(Appointment $appointment, array $modelData): Appointment
     {
-        return DB::transaction(function () use ($appointment, $modelData) {
+        $previousState    = $appointment->state;
+        $previousStartsAt = $appointment->starts_at->copy();
+
+        return DB::transaction(function () use ($appointment, $modelData, $previousState, $previousStartsAt) {
             $modelData = $this->prepareAppointmentData($appointment->shop, $modelData, $appointment);
 
-            return $this->update($appointment, $modelData);
+            $appointment = $this->update($appointment, $modelData);
+
+            $this->notifyVisitorAboutChange($appointment, $previousState, $previousStartsAt);
+
+            return $appointment;
         });
     }
 
@@ -45,6 +53,11 @@ class UpdateAppointment extends OrgAction
             'state'        => ['sometimes', Rule::enum(AppointmentStateEnum::class)],
             'state_reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return $this->appointmentPhoneMessages();
     }
 
     public function asController(Appointment $appointment, ActionRequest $request): Appointment

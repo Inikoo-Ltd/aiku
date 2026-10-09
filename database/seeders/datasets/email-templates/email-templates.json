@@ -561,5 +561,20 @@
     "arguments": [
       "order"
     ]
+  },
+  {
+    "outboxes": [
+      "appointment_requested",
+      "appointment_accepted",
+      "appointment_declined",
+      "appointment_rescheduled",
+      "appointment_cancelled"
+    ],
+    "name": "Appointment notification",
+    "content": "appointment_notification.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "appointment"
+    ]
   }
 ]

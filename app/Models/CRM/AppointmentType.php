@@ -96,6 +96,11 @@ class AppointmentType extends Model implements Auditable
         'weekly_hours',
     ];
 
+    public function requiresPhone(): bool
+    {
+        return $this->meeting_mode === AppointmentTypeMeetingModeEnum::VIDEO_CALL;
+    }
+
     public function attendees(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'appointment_type_user')->withTimestamps();
