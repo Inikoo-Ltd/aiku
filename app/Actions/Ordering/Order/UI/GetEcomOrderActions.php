@@ -12,6 +12,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -274,6 +275,18 @@ class GetEcomOrderActions
 
                 default => []
             };
+
+            if ($order->state != OrderStateEnum::SUBMITTED && SaveOrderModification::acceptsNewProducts($order)) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fas fa-plus',
+                    'tooltip' => __('Add products to the order, they go on the delivery note for the picker'),
+                    'label'   => __('Add a product'),
+                    'key'     => 'add-product-to-warehouse-order',
+                ];
+            }
+
             $showCancel = true;
 
             if (in_array($order->state, [

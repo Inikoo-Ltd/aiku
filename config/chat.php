@@ -23,11 +23,13 @@ return [
     // On 71 real emails it put aside 25 of 34 staff-marked spam to gpt-4o's 20, and one real customer to gpt-4o's two.
     'noise_model' => env('CHAT_NOISE_MODEL', 'openai/gpt-5.6-luna'),
     'page_answer_model' => env('CHAT_PAGE_ANSWER_MODEL'),
-    // Suggested replies are written by one of these, a third of the conversations each, so staff choices show which writes better.
+    // Suggested replies are written by one of these, half of the conversations each, so staff choices show which writes better.
     // CHAT_SUGGESTION_MODEL set to one of them ends the comparison.
     'suggestion_model' => env('CHAT_SUGGESTION_MODEL'),
-    'suggestion_models' => ['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna', 'anthropic/claude-sonnet-5.5'],
-    'suggestion_min_covered' => env('CHAT_SUGGESTION_MIN_COVERED', 0.66),
+    'suggestion_models' => ['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna'],
+    'suggestion_min_covered' => env('CHAT_SUGGESTION_MIN_COVERED', 0.33),
+    // Shops (by slug) where suggestions are written and scored against the staff reply but never shown, until they are good enough there.
+    'suggestion_shadow_shops' => array_filter(explode(',', (string) env('CHAT_SUGGESTION_SHADOW_SHOPS', 'aroma'))),
     // A version Jev finds weak is rewritten from the critic's notes, up to this many times; the best version is kept.
     // The cheap writer rewrites; only the last try goes to the strong model, and only when Jev says the facts cover most of what is asked.
     'suggestion_rewrites' => (int) env('CHAT_SUGGESTION_REWRITES', 2),

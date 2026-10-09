@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgAgent;
 
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSupplierProducts;
-use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateAgentSupplierPurchaseOrders;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateStockDeliveries;
@@ -29,7 +28,6 @@ class HydrateOrgAgent
         OrgAgentHydratePurchaseOrders::run($orgAgent);
         OrgAgentHydrateOrgSupplierProducts::run($orgAgent);
         OrgAgentHydrateStockDeliveries::run($orgAgent);
-        OrgAgentHydrateAgentSupplierPurchaseOrders::run($orgAgent);
     }
 
     public function asCommand(Command $command): int

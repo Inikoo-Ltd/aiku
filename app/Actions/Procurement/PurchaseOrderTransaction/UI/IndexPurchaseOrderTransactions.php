@@ -23,7 +23,6 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliv
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
@@ -118,12 +117,13 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
         $weight = DB::table('model_has_trade_units as mhtu')
             ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->join('org_stocks as pack', 'pack.id', '=', 'mhtu.model_id')
             ->whereColumn('mhtu.model_id', 'purchase_order_transactions.org_stock_id')
             ->where('mhtu.model_type', 'OrgStock')
             ->selectRaw('
                 case
                     when count(*) = 0 or count(*) filter (where tu.gross_weight is null) > 0 then null
-                    else round(sum(tu.gross_weight * mhtu.quantity) * purchase_order_transactions.quantity_ordered / 1000, 1)
+                    else round(sum(tu.gross_weight * mhtu.quantity) * purchase_order_transactions.quantity_ordered / coalesce(nullif(max(pack.packed_in), 0), 1) / 1000, 1)
                 end
             ');
 
@@ -139,11 +139,6 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
         if ($parent instanceof PurchaseOrder) {
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
-        }
-
-        if ($parent->parent instanceof OrgAgent) {
-            $query->leftJoin('suppliers', 'suppliers.id', '=', 'sp.supplier_id')
-                ->orderBy('suppliers.name');
         }
 
         if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
@@ -204,7 +199,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
             ->whereColumn('link.org_stock_id', 'seller.id')
             ->where('link.status', true)
-            ->orderBy('link.local_priority')
+            ->orderByDesc('link.local_priority')
             ->select('sp.units_per_carton')
             ->limit(1);
 

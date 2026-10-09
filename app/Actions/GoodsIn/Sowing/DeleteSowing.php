@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\Sowing;
 
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\CalculateReturnDeliveryNoteItemTotalSowed;
+use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
@@ -90,6 +91,7 @@ class DeleteSowing extends OrgAction
                     'org_amount' => -$sowing->orgStockMovement->org_amount,
                     'type'       => $type,
                     'user_id'    => $user?->id,
+                    'batches'    => AllocateOrgStockMovementBatches::make()->movedBatches($sowing->orgStockMovement),
                 ],
                 $sowing
             );

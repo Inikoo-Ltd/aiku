@@ -3,12 +3,12 @@
 namespace App\Actions\Web\WebsiteVisitor;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\WebsitePageView\GetWebsiteEntryPageViews;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\Web\Website;
-use App\Models\Web\WebsiteConversionEvent;
-use App\Models\Web\WebsitePageView;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -26,122 +26,127 @@ class GetWebsitePageConversionAnalytics extends OrgAction
             ? Carbon::parse($params['until'])
             : Carbon::now();
 
-        // Current Period Data
-        $currentStats = $this->getStats($website, $since, $until, $params);
+        $pageType = Arr::get($params, 'page_type');
 
-        // Previous Period Data (for trend)
-        // Calculate duration to shift back
-        $diffInSeconds = $since->diffInSeconds($until);
-        // Avoid zero duration
-        if ($diffInSeconds < 86400) {
-            $diffInSeconds = 86400; // Minimum 1 day for trend comparison context if range is too small
-        }
+        $days      = max(1, (int) $since->copy()->startOfDay()->diffInDays($until->copy()->startOfDay()) + 1);
+        $prevUntil = $since->copy()->subDay();
+        $prevSince = $prevUntil->copy()->subDays($days - 1);
 
-        $prevUntil = $since->copy()->subSecond();
-        $prevSince = $prevUntil->copy()->subSeconds($diffInSeconds);
+        $currentStats  = $this->getStats($website, $since, $until);
+        $previousStats = $this->getStats($website, $prevSince, $prevUntil);
 
-        $prevStats = $this->getStats($website, $prevSince, $prevUntil, $params);
+        $webpages = DB::table('webpages')
+            ->whereIn('id', $currentStats->keys())
+            ->when($pageType, fn ($query) => $query->where('type', $pageType))
+            ->get(['id', 'url', 'canonical_url'])
+            ->keyBy('id');
 
-        // Merge and Format
         $results = [];
-        $allPaths = $currentStats->keys()->merge($prevStats->keys())->unique();
 
-        foreach ($allPaths as $path) {
-            $curr = $currentStats->get($path);
-            $prev = $prevStats->get($path);
+        foreach ($webpages as $webpageId => $webpage) {
+            $current  = $currentStats->get($webpageId);
+            $previous = $previousStats->get($webpageId);
 
-            // Current Metrics
-            $currVisits = $curr['visits'] ?? 0;
-            $currConversions = $curr['conversions'] ?? 0;
-            $currAvgDuration = $curr['avg_duration'] ?? 0;
-            $currRate = $currVisits > 0 ? ($currConversions / $currVisits) * 100 : 0;
-
-            // Previous Metrics
-            $prevVisits = $prev['visits'] ?? 0;
-            $prevConversions = $prev['conversions'] ?? 0;
-            $prevRate = $prevVisits > 0 ? ($prevConversions / $prevVisits) * 100 : 0;
-
-            // Trend Calculation (Difference in Percentage Points)
-            $trend = $currRate - $prevRate;
-            $trendDirection = $trend > 0 ? 'up' : ($trend < 0 ? 'down' : 'neutral');
+            $currentRate  = $this->rate($current['purchases'], $current['entrances']);
+            $previousRate = $previous ? $this->rate($previous['purchases'], $previous['entrances']) : 0;
+            $trend        = $currentRate - $previousRate;
 
             $results[] = [
-                'page_path' => $path,
-                // Use page_url from current if available, else path
-                'page_url' => $curr['url'] ?? $path,
-                'conversion_rate' => round($currRate, 2),
-                'total_conversions' => $currConversions,
-                'total_visits' => $currVisits,
-                'avg_time_spent' => round($currAvgDuration, 0),
-                'trend' => [
-                    'direction' => $trendDirection,
-                    'value' => round(abs($trend), 2),
-                    'prev_rate' => round($prevRate, 2)
-                ]
+                'page_path'         => '/'.ltrim((string) $webpage->url, '/'),
+                'page_url'          => $webpage->canonical_url ?: $webpage->url,
+                'conversion_rate'   => $currentRate,
+                'total_conversions' => $current['purchases'],
+                'checkouts'         => $current['checkouts'],
+                'add_to_baskets'    => $current['add_to_baskets'],
+                'entrances'         => $current['entrances'],
+                'total_visits'      => $current['visits'],
+                'avg_time_spent'    => round($current['avg_duration']),
+                'trend'             => [
+                    'direction' => $trend > 0 ? 'up' : ($trend < 0 ? 'down' : 'neutral'),
+                    'value'     => round(abs($trend), 2),
+                    'prev_rate' => $previousRate,
+                ],
             ];
         }
 
-        // Sort by Total Conversions Descending by default
-        usort($results, fn ($a, $b) => $b['total_conversions'] <=> $a['total_conversions']);
+        usort($results, fn ($a, $b) => [$b['total_conversions'], $b['entrances']] <=> [$a['total_conversions'], $a['entrances']]);
 
         return $results;
     }
 
-    private function getStats(Website $website, Carbon $since, Carbon $until, array $params = [])
+    /**
+     * @return Collection<int, array{visits: int, avg_duration: float, entrances: int, add_to_baskets: int, checkouts: int, purchases: int}>
+     */
+    private function getStats(Website $website, Carbon $since, Carbon $until): Collection
     {
-        $pageType = Arr::get($params, 'page_type');
+        $from = $since->toDateString();
+        $to   = $until->toDateString();
 
-        // 1. Visits
-        $visitsQuery = WebsitePageView::query()
-            ->select(
-                'page_path',
-                // taking the first page_url found for display purposes
-                DB::raw('MIN(page_url) as page_url_display'),
-                DB::raw('count(*) as total_visits'),
-                DB::raw('avg(duration_seconds) as avg_duration')
-            )
+        $visits = DB::connection('aiku_no_sticky')->table('website_page_views')
             ->where('website_id', $website->id)
-            ->whereBetween('view_date', [$since, $until]);
-
-        if ($pageType) {
-            $visitsQuery->where('page_type', $pageType);
-        }
-
-        $visits = $visitsQuery->groupBy('page_path')
+            ->whereNotNull('webpage_id')
+            ->whereBetween('view_date', [$from, $to])
+            ->groupBy('webpage_id')
+            ->select('webpage_id')
+            ->selectRaw('COUNT(*) as visits, AVG(duration_seconds) as avg_duration')
             ->get()
-            ->keyBy('page_path');
+            ->keyBy('webpage_id');
 
-        // 2. Conversions
-        $conversionsQuery = WebsiteConversionEvent::query()
-            ->select('website_conversion_events.page_path', DB::raw('count(*) as total_conversions'))
-            ->where('website_conversion_events.website_id', $website->id)
-            ->where('website_conversion_events.event_type', WebsiteConversionEventTypeEnum::ADD_TO_BASKET)
-            ->whereBetween('website_conversion_events.event_date', [$since, $until]);
-
-        if ($pageType) {
-            $conversionsQuery->join('webpages', 'webpages.id', '=', 'website_conversion_events.webpage_id')
-                ->where('webpages.type', $pageType);
-        }
-
-        $conversions = $conversionsQuery->groupBy('website_conversion_events.page_path')
+        $entrances = GetWebsiteEntryPageViews::run()
+            ->where('entry_views.website_id', $website->id)
+            ->whereNotNull('entry_views.webpage_id')
+            ->whereBetween('entry_views.view_date', [$from, $to])
+            ->groupBy('entry_views.webpage_id')
+            ->select('entry_views.webpage_id')
+            ->selectRaw('COUNT(DISTINCT (entry_visitors.visitor_hash, entry_views.view_date)) as entrances')
             ->get()
-            ->keyBy('page_path');
+            ->keyBy('webpage_id');
 
-        $merged = collect();
-        $allPaths = $visits->keys()->merge($conversions->keys())->unique();
+        $addToBaskets = DB::connection('aiku_no_sticky')->table('website_conversion_events')
+            ->where('website_id', $website->id)
+            ->where('event_type', WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value)
+            ->whereNotNull('webpage_id')
+            ->whereBetween('event_date', [$from, $to])
+            ->groupBy('webpage_id')
+            ->select('webpage_id')
+            ->selectRaw('COUNT(*) as add_to_baskets')
+            ->get()
+            ->keyBy('webpage_id');
 
-        foreach ($allPaths as $path) {
-            $v = $visits->get($path);
-            $c = $conversions->get($path);
+        $checkout = WebsiteConversionEventTypeEnum::CHECKOUT->value;
+        $purchase = WebsiteConversionEventTypeEnum::PURCHASE->value;
 
-            $merged->put($path, [
-                'url' => $v ? $v->page_url_display : $path,
-                'visits' => $v ? $v->total_visits : 0,
-                'avg_duration' => $v ? $v->avg_duration : 0,
-                'conversions' => $c ? $c->total_conversions : 0,
+        $landings = DB::connection('aiku_no_sticky')->table('website_conversion_events')
+            ->where('website_id', $website->id)
+            ->whereIn('event_type', [$checkout, $purchase])
+            ->whereNotNull('landing_webpage_id')
+            ->whereBetween('event_date', [$from, $to])
+            ->groupBy('landing_webpage_id')
+            ->select('landing_webpage_id')
+            ->selectRaw("COUNT(*) FILTER (WHERE event_type = '$checkout') as checkouts")
+            ->selectRaw("COUNT(*) FILTER (WHERE event_type = '$purchase') as purchases")
+            ->get()
+            ->keyBy('landing_webpage_id');
+
+        return $visits->keys()
+            ->merge($entrances->keys())
+            ->merge($addToBaskets->keys())
+            ->merge($landings->keys())
+            ->unique()
+            ->mapWithKeys(fn ($webpageId) => [
+                $webpageId => [
+                    'visits'         => (int) ($visits->get($webpageId)->visits ?? 0),
+                    'avg_duration'   => (float) ($visits->get($webpageId)->avg_duration ?? 0),
+                    'entrances'      => (int) ($entrances->get($webpageId)->entrances ?? 0),
+                    'add_to_baskets' => (int) ($addToBaskets->get($webpageId)->add_to_baskets ?? 0),
+                    'checkouts'      => (int) ($landings->get($webpageId)->checkouts ?? 0),
+                    'purchases'      => (int) ($landings->get($webpageId)->purchases ?? 0),
+                ],
             ]);
-        }
+    }
 
-        return $merged;
+    private function rate(int $purchases, int $entrances): float
+    {
+        return $entrances > 0 ? round($purchases / $entrances * 100, 2) : 0;
     }
 }

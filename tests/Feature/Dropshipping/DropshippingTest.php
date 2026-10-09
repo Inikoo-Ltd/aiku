@@ -1369,7 +1369,9 @@ test('customer downloads the signed letter of authorisation from account setting
     actingAs($webUser, 'retina');
     $this->get(route('retina.sysadmin.letter_of_authorisation.pdf'))->assertForbidden();
     $this->get(route('retina.sysadmin.settings.edit'))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions', []));
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions', [])
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->every(fn ($section) => !isset($section['fields']['is_gift_opted_out']))));
 
     UpdateShop::make()->action($shop, ['letter_of_authorisation_enabled' => true]);
     $this->get(route('retina.sysadmin.letter_of_authorisation.pdf'))

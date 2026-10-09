@@ -48,6 +48,7 @@ class OrgPartner extends Model
         'sources'           => 'array',
         'data'              => 'array',
         'split_cosmetics'   => 'boolean',
+        'next_shipment_on'  => 'date',
     ];
 
     protected $attributes = [

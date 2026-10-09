@@ -69,20 +69,6 @@ trait WithSupplierSubNavigation
             ],
         ];
 
-        if ($parent->agent_id) {
-            $navigation[] = [
-                "label"    => __("Agent purchase orders"),
-                "route"     => [
-                    "name"       => "grp.supply-chain.suppliers.agent_supplier_purchase_orders.index",
-                    "parameters" => [$parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-clipboard-list"],
-                    "tooltip" => __("Agent purchase orders"),
-                ],
-            ];
-        }
-
         return $navigation;
     }
 }

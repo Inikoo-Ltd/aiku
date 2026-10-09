@@ -15,12 +15,14 @@ import {
     faChair,
     faCube,
     faCubes,
+    faEdit,
     faExclamationTriangle,
     faExternalLink,
     faLaugh,
     faMoneyBill,
     faPallet,
     faPeopleArrows,
+    faPlus,
     faPersonDolly,
     faRulerCombined,
     faSeedling,
@@ -34,6 +36,8 @@ import Icon from "@/Components/Icon.vue"
 import BoxDisplay from "@/Components/DataDisplay/BoxDisplay.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import JsBarcode from "jsbarcode"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
@@ -45,6 +49,7 @@ library.add(
     faChair,
     faCube,
     faCubes,
+    faEdit,
     faExclamationTriangle,
     faExternalLink,
     faLaugh,
@@ -52,6 +57,7 @@ library.add(
     faPallet,
     faPeopleArrows,
     faPersonDolly,
+    faPlus,
     faRulerCombined,
     faSeedling,
     faTrashAlt,
@@ -167,7 +173,14 @@ const props = defineProps<{
             organisation_code: string
             barcodes: Barcode[]
             label_options_route: routeType
+            carton_barcode_update_route: routeType | null
         }[]
+        carton?: {
+            supplier_product_id: number
+            net_weight: number | null
+            gross_weight: number | null
+            update_route: routeType | null
+        }
         internal_images?: {
             upload_route: routeType | null
             images: {
@@ -299,7 +312,7 @@ onMounted(() => nextTick(renderBarcodes))
 watch(selectedLabelOrgStockId, () => nextTick(renderBarcodes))
 
 const isPrintable = (barcode: { level: string; number: string | null }) =>
-    !!barcode.number && barcode.level !== "carton" && selectedLabelOrgStockId.value !== null
+    !!barcode.number && selectedLabelOrgStockId.value !== null
 
 const isLabelModalOpen = ref(false)
 const isLoadingLabelOptions = ref(false)
@@ -317,10 +330,15 @@ const openLabelModal = async (level: string) => {
     isLoadingLabelOptions.value = true
 
     try {
-        const { data } = await axios.get(route(orgStock.label_options_route.name, orgStock.label_options_route.parameters))
+        const { data } = await axios.get(route(orgStock.label_options_route.name, {
+            ...orgStock.label_options_route.parameters,
+            ...(props.data.carton ? { supplier_product: props.data.carton.supplier_product_id } : {}),
+        }))
 
         labelOptions.value = data.options
-        labelRoute.value = data.label_route
+        labelRoute.value = props.data.carton
+            ? { ...data.label_route, parameters: { ...data.label_route.parameters, supplier_product: props.data.carton.supplier_product_id } }
+            : data.label_route
         labelLevel.value = level
         isLabelModalOpen.value = true
     } catch (error) {
@@ -331,6 +349,106 @@ const openLabelModal = async (level: string) => {
         })
     } finally {
         isLoadingLabelOptions.value = false
+    }
+}
+
+const gramsToKilograms = (grams: number | null | undefined) => (grams ? String(grams / 1000) : "")
+
+const kilogramsToGrams = (kilograms: string): number | null => {
+    const value = kilograms.trim().replace(",", ".")
+
+    return value === "" ? null : Math.round(Number(value) * 1000)
+}
+
+const cartonNetWeight = ref("")
+const cartonGrossWeight = ref("")
+const isSavingCartonWeights = ref(false)
+
+watch(() => props.data.carton, (carton) => {
+    cartonNetWeight.value = gramsToKilograms(carton?.net_weight)
+    cartonGrossWeight.value = gramsToKilograms(carton?.gross_weight)
+}, { immediate: true })
+
+const isValidKilograms = (kilograms: string) => {
+    const grams = kilogramsToGrams(kilograms)
+
+    return grams === null || (Number.isFinite(grams) && grams >= 0)
+}
+
+const canSaveCartonWeights = computed(() =>
+    isValidKilograms(cartonNetWeight.value)
+    && isValidKilograms(cartonGrossWeight.value)
+    && (kilogramsToGrams(cartonNetWeight.value) !== (props.data.carton?.net_weight ?? null)
+        || kilogramsToGrams(cartonGrossWeight.value) !== (props.data.carton?.gross_weight ?? null)))
+
+const saveCartonWeights = async () => {
+    const updateRoute = props.data.carton?.update_route
+
+    if (!updateRoute || !canSaveCartonWeights.value || isSavingCartonWeights.value) {
+        return
+    }
+
+    isSavingCartonWeights.value = true
+
+    try {
+        await axios.patch(route(updateRoute.name, updateRoute.parameters), {
+            carton_net_weight: kilogramsToGrams(cartonNetWeight.value),
+            carton_weight: kilogramsToGrams(cartonGrossWeight.value),
+        })
+        router.reload({ only: ["showcase"] })
+        notify({
+            title: ctrans("Saved"),
+            text: ctrans("Carton weights updated"),
+            type: "success",
+        })
+    } catch (error) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Could not save the carton weights"),
+            type: "error",
+        })
+    } finally {
+        isSavingCartonWeights.value = false
+    }
+}
+
+const cartonBarcodeUpdateRoute = computed(() =>
+    labelOrgStocks.value.find((orgStock) => orgStock.id === selectedLabelOrgStockId.value)?.carton_barcode_update_route ?? null)
+
+const isCartonBarcodeModalOpen = ref(false)
+const cartonBarcodeInput = ref("")
+const cartonBarcodeHasNumber = ref(false)
+const isSavingCartonBarcode = ref(false)
+const cartonBarcodeInputElement = ref<HTMLInputElement | null>(null)
+
+const openCartonBarcodeModal = (barcode: Barcode) => {
+    cartonBarcodeInput.value = barcode.number ?? ""
+    cartonBarcodeHasNumber.value = !!barcode.number
+    isCartonBarcodeModalOpen.value = true
+    nextTick(() => cartonBarcodeInputElement.value?.focus())
+}
+
+const saveCartonBarcode = async (value: string | null) => {
+    const updateRoute = cartonBarcodeUpdateRoute.value
+
+    if (!updateRoute || isSavingCartonBarcode.value) {
+        return
+    }
+
+    isSavingCartonBarcode.value = true
+
+    try {
+        await axios.patch(route(updateRoute.name, updateRoute.parameters), { carton_barcode: value })
+        isCartonBarcodeModalOpen.value = false
+        router.reload({ only: ["showcase"], onSuccess: () => nextTick(renderBarcodes) })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.errors?.carton_barcode?.[0] ?? ctrans("Could not save the barcode"),
+            type: "error",
+        })
+    } finally {
+        isSavingCartonBarcode.value = false
     }
 }
 
@@ -557,31 +675,80 @@ const availabilityBadge = (isAvailable: boolean) =>
                             <svg :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full"></svg>
                         </button>
                         <svg v-else-if="barcode.number" :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
+                        <button v-else-if="barcode.level === 'carton' && cartonBarcodeUpdateRoute"
+                            type="button"
+                            class="flex h-14 max-w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-2 text-left text-sm text-gray-400 transition hover:border-[--app-accent] hover:text-[--app-accent]"
+                            @click="openCartonBarcodeModal(barcode)">
+                            <Icon :data="{ icon: 'fal fa-plus' }" />
+                            {{ ctrans("Add barcode (type or scan it)") }}
+                        </button>
                         <div v-else class="flex h-14 items-center text-sm italic text-gray-400">{{ ctrans("No barcode") }}</div>
 
-                        <span v-if="formatWeight(barcode.weight)"
-                            class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-700">
+                        <div v-if="barcode.level === 'carton' && data.carton"
+                            class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-700 xl:col-span-2">
+                            <button v-if="barcode.number && cartonBarcodeUpdateRoute"
+                                type="button"
+                                v-tooltip="ctrans('Edit barcode')"
+                                class="text-gray-300 transition hover:text-[--app-accent]"
+                                @click="openCartonBarcodeModal(barcode)">
+                                <Icon :data="{ icon: 'fal fa-edit' }" />
+                            </button>
                             <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
-                            <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
-                        </span>
-                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                            <template v-if="data.carton.update_route">
+                                <label class="inline-flex items-center gap-1.5">
+                                    <span class="text-xs font-medium text-gray-500" v-tooltip="ctrans('Net weight')">{{ ctrans("NW") }}</span>
+                                    <input v-model="cartonNetWeight" type="text" inputmode="decimal"
+                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[--app-accent] focus:ring-[--app-accent]"
+                                        :class="isValidKilograms(cartonNetWeight) ? '' : 'border-red-400'"
+                                        @keydown.enter="saveCartonWeights" />
+                                    <span class="text-xs text-gray-400">kg</span>
+                                </label>
+                                <label class="inline-flex items-center gap-1.5">
+                                    <span class="text-xs font-medium text-gray-500" v-tooltip="ctrans('Gross weight')">{{ ctrans("GW") }}</span>
+                                    <input v-model="cartonGrossWeight" type="text" inputmode="decimal"
+                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[--app-accent] focus:ring-[--app-accent]"
+                                        :class="isValidKilograms(cartonGrossWeight) ? '' : 'border-red-400'"
+                                        @keydown.enter="saveCartonWeights" />
+                                    <span class="text-xs text-gray-400">kg</span>
+                                </label>
+                                <button v-if="canSaveCartonWeights" type="button"
+                                    class="rounded border border-[--app-accent] bg-[--app-accent] px-2 py-1 text-xs text-[--app-accent-text] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-60"
+                                    :disabled="isSavingCartonWeights"
+                                    @click="saveCartonWeights">
+                                    {{ ctrans("Save") }}
+                                </button>
+                            </template>
+                            <template v-else>
+                                <span v-tooltip="ctrans('Net weight')">{{ ctrans("NW") }} <span class="font-medium tabular-nums">{{ formatWeight(data.carton.net_weight) ?? "—" }}</span></span>
+                                <span v-tooltip="ctrans('Gross weight')">{{ ctrans("GW") }} <span class="font-medium tabular-nums">{{ formatWeight(data.carton.gross_weight) ?? "—" }}</span></span>
+                            </template>
+                        </div>
 
-                        <span v-if="formatDimensions(barcode.dimensions)"
-                            v-tooltip="ctrans('Dimensions (L × W × H)')"
-                            class="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
-                            <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
-                            <span class="whitespace-nowrap font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
-                            <span v-if="barcode.dimensions?.type"
-                                class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
-                                {{ barcode.dimensions.type }}
+                        <template v-else>
+                            <span v-if="formatWeight(barcode.weight)"
+                                class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-700">
+                                <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
+                                <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
                             </span>
-                        </span>
-                        <span v-else-if="barcode.warning"
-                            class="inline-flex min-w-0 items-start gap-2 text-xs leading-snug text-amber-700">
-                            <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="mt-0.5 w-4 shrink-0 text-amber-500" />
-                            <span>{{ barcode.warning }}</span>
-                        </span>
-                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                            <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+
+                            <span v-if="formatDimensions(barcode.dimensions)"
+                                v-tooltip="ctrans('Dimensions (L × W × H)')"
+                                class="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
+                                <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
+                                <span class="whitespace-nowrap font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
+                                <span v-if="barcode.dimensions?.type"
+                                    class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
+                                    {{ barcode.dimensions.type }}
+                                </span>
+                            </span>
+                            <span v-else-if="barcode.warning"
+                                class="inline-flex min-w-0 items-start gap-2 text-xs leading-snug text-amber-700">
+                                <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="mt-0.5 w-4 shrink-0 text-amber-500" />
+                                <span>{{ barcode.warning }}</span>
+                            </span>
+                            <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
+                        </template>
                     </div>
                 </template>
             </div>
@@ -653,6 +820,43 @@ const availabilityBadge = (isAvailable: boolean) =>
             </h3>
             <BoxDisplay :data="data.stats" />
         </section>
+
+        <Modal :isOpen="isCartonBarcodeModalOpen" @onClose="isCartonBarcodeModalOpen = false" width="w-full max-w-md">
+            <div class="flex flex-col gap-4 p-2">
+                <div class="text-lg font-semibold">{{ ctrans("Carton barcode") }}</div>
+                <div class="text-sm text-gray-500">
+                    {{ ctrans("Type the barcode, or click the field and scan the carton with a barcode scanner. It is shared by every organisation that buys this stock.") }}
+                </div>
+                <input
+                    ref="cartonBarcodeInputElement"
+                    v-model="cartonBarcodeInput"
+                    type="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="64"
+                    :placeholder="ctrans('e.g. 5056368317972')"
+                    class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-[--app-accent] focus:ring-[--app-accent]"
+                    @keydown.enter.prevent="cartonBarcodeInput.trim() && saveCartonBarcode(cartonBarcodeInput.trim())" />
+                <div class="flex justify-between gap-2">
+                    <Button
+                        v-if="cartonBarcodeHasNumber"
+                        type="negative"
+                        :label="ctrans('Remove barcode')"
+                        icon="fal fa-trash-alt"
+                        :loading="isSavingCartonBarcode"
+                        @click="saveCartonBarcode(null)" />
+                    <div class="ml-auto flex w-full gap-2">
+                        <Button type="tertiary" :label="ctrans('Cancel')" @click="isCartonBarcodeModalOpen = false" />
+                        <Button
+                            :label="ctrans('Save')"
+                            :loading="isSavingCartonBarcode"
+                            full
+                            :disabled="!cartonBarcodeInput.trim()"
+                            @click="saveCartonBarcode(cartonBarcodeInput.trim())" />
+                    </div>
+                </div>
+            </div>
+        </Modal>
 
         <OrgStockLabelModal
             v-if="labelOptions && labelRoute"

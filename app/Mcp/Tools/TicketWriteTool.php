@@ -27,7 +27,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with a QA username or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Anyone can raise a HELP ticket and comment on tickets they raised; every other change is for engineers, lead engineers and QA.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags, or ask QA to check it (ask_qa with QA usernames, comma separated, or anyone, comment as the note). Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Anyone can raise a HELP ticket and comment on tickets they raised; every other change is for engineers, lead engineers and QA.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -155,13 +155,13 @@ class TicketWriteTool extends Tool
 
         $isAskingQa = $request->filled('ask_qa');
         if ($isAskingQa) {
-            $qaUsername = $request->string('ask_qa')->toString();
-            $qaUser     = $qaUsername === 'anyone' ? null : GetTicketBadgeData::qaUsers($user->group_id)->firstWhere('username', $qaUsername);
-            if ($qaUsername !== 'anyone' && !$qaUser) {
-                return Response::error("$qaUsername is not in QA. Pass a QA username or anyone.");
+            $qaUsernames = $request->string('ask_qa')->toString() === 'anyone' ? [] : array_filter(array_map('trim', explode(',', $request->string('ask_qa')->toString())));
+            $qaUsers     = GetTicketBadgeData::qaUsers($user->group_id)->whereIn('username', $qaUsernames);
+            if ($unknown = array_diff($qaUsernames, $qaUsers->pluck('username')->all())) {
+                return Response::error(implode(', ', $unknown).' not in QA. Pass QA usernames or anyone.');
             }
-            $changes['qa_status']  = TicketQaStatusEnum::REQUESTED->value;
-            $changes['qa_user_id'] = $qaUser?->id;
+            $changes['qa_status']   = TicketQaStatusEnum::REQUESTED->value;
+            $changes['qa_user_ids'] = $qaUsers->pluck('id')->values()->all();
             $changes['qa_note']    = $request->get('comment');
         }
 
@@ -253,7 +253,7 @@ class TicketWriteTool extends Tool
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
-            'ask_qa'      => $schema->string()->description('Ask QA to check the ticket: a QA username, or anyone for the whole QA team. comment becomes the note telling them what to check; it is posted and they are notified'),
+            'ask_qa'      => $schema->string()->description('Ask QA to check the ticket: one or more QA usernames, comma separated, or anyone for the whole QA team. Only once the ticket is in progress. comment becomes the note telling them what to check; it is posted and they are notified'),
             'acting_as'   => $schema->string()->description('Username to act as: the comment, assignment or status change is recorded as that user. Help desk supervisors only'),
             'commit'        => $schema->string()->description('With status pending_deploy: hash of the commit that fixes the ticket. Only a deployment that includes it closes the ticket; without it the next deployment does'),
             'waiting_hours' => $schema->integer()->description('With status waiting: hours before the ticket resurfaces (1-720). Defaults to the ticket kind\'s waiting period'),

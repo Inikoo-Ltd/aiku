@@ -55,6 +55,10 @@ class IndexWaitingDeliveryNoteItemsGroupedByItem extends OrgAction
 
         $this->whereDeliveryNotesChannel($query, $shopType);
 
+        $waitingColumn = $waitingType === 'warehouse' ? 'has_waiting_warehouse' : 'has_waiting_crm';
+
+        $query->orderByDesc('has_premium_dispatch');
+
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->distinct()
             ->select([
@@ -67,9 +71,13 @@ class IndexWaitingDeliveryNoteItemsGroupedByItem extends OrgAction
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])
+            ->selectRaw(
+                "EXISTS (SELECT 1 FROM delivery_note_items premium_dni JOIN delivery_notes premium_dn ON premium_dn.id = premium_dni.delivery_note_id WHERE premium_dni.org_stock_id = org_stocks.id AND premium_dni.$waitingColumn = true AND premium_dn.warehouse_id = ? AND premium_dn.state = ? AND premium_dn.is_premium_dispatch = true) as has_premium_dispatch",
+                [$warehouse->id, $state->value]
+            )
             ->allowedSorts(['org_stock_code', 'org_stock_name', 'picking_position'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

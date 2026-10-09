@@ -32,6 +32,7 @@ use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
 use App\Actions\Ordering\WaitingCrmItem\SetWaitingCrmItemAsNotPick;
 use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersInShop;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowOrderingDashboard::class)->name('dashboard');
@@ -43,6 +44,7 @@ Route::post('/backlog/waiting_items/{deliveryNoteItem}/set-as-not-pick', SetWait
 
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
+Route::post('/orders/fetch-shopify-orders', GetShopifyOrdersInShop::class)->name('orders.fetch_shopify_orders');
 Route::get('/channels', [IndexOrderChannels::class, 'inShop'])->name('channels.index');
 Route::get('/invoices/', IndexInvoices::class)->name('invoices.index');
 Route::get('/checkout-abandonments', IndexCheckoutAbandonments::class)->name('checkout_abandonments.index');

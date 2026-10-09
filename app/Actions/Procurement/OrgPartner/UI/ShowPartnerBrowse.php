@@ -114,11 +114,13 @@ class ShowPartnerBrowse extends OrgAction
 
     private function categoriesQuery(int $shopId, string $type, ?string $parentColumn = null, ?string $parentKey = null)
     {
+        $ourProducts = fn () => $this->ourProductsQuery()->whereColumn("products.{$type}_id", 'product_categories.id');
+
         $query = ProductCategory::query()
             ->whereIn('state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value])
             ->where('type', $type)
             ->where('shop_id', $shopId)
-            ->join('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
+            ->whereExists($ourProducts())
             ->select([
                 'product_categories.id',
                 'product_categories.slug',
@@ -126,8 +128,8 @@ class ShowPartnerBrowse extends OrgAction
                 'product_categories.name',
                 'product_categories.web_images',
                 'product_categories.type',
-                'product_category_stats.number_current_products',
-            ]);
+            ])
+            ->selectSub($ourProducts()->selectRaw('count(*)'), 'number_current_products');
 
         if ($parentColumn) {
             $query->where("product_categories.$parentColumn", is_numeric($parentKey) ? $parentKey : ProductCategory::where('slug', $parentKey)->value('id'));
@@ -141,16 +143,29 @@ class ShowPartnerBrowse extends OrgAction
         return Collection::query()
             ->where('state', CollectionStateEnum::ACTIVE)
             ->where('shop_id', $shopId)
+            ->whereExists(
+                $this->ourProductsQuery()
+                    ->join('collection_has_models', 'collection_has_models.model_id', 'products.id')
+                    ->where('collection_has_models.model_type', class_basename(Product::class))
+                    ->whereColumn('collection_has_models.collection_id', 'collections.id')
+            )
             ->select(['id', 'slug', 'code', 'name', 'web_images']);
+    }
+
+    /**
+     * What this partner may see of the seller's catalogue: never another customer's private label.
+     */
+    private function ourProductsQuery()
+    {
+        return Product::query()
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where($this->forSaleOrExclusiveToUs(...))
+            ->whereHas('orgStocks');
     }
 
     private function productsQuery(int $shopId, ?string $family, ?string $collection)
     {
-        $query = Product::query()
-            ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where($this->forSaleOrExclusiveToUs(...))
-            ->where('shop_id', $shopId)
-            ->whereHas('orgStocks');
+        $query = $this->ourProductsQuery()->where('products.shop_id', $shopId);
 
         if ($family) {
             $query->where('family_id', is_numeric($family) ? $family : ProductCategory::where('slug', $family)->value('id'));
@@ -183,7 +198,7 @@ class ShowPartnerBrowse extends OrgAction
      */
     private function forSaleOrExclusiveToUs($query): void
     {
-        $query->where('is_for_sale', true);
+        $query->where('products.is_for_sale', true);
         if ($this->intercompanyCustomer) {
             $query->orWhereExists(
                 fn ($sub) => $sub->from('product_has_exclusive_customers')
@@ -242,12 +257,9 @@ class ShowPartnerBrowse extends OrgAction
         $productIds = collect(Arr::get(SearchCatalogue::run($q, ['shop_id' => $shopId]), 'results.products', []))
             ->pluck('id');
 
-        return Product::query()
-            ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where($this->forSaleOrExclusiveToUs(...))
-            ->where('shop_id', $shopId)
-            ->whereHas('orgStocks')
-            ->whereIn('id', $productIds)
+        return $this->ourProductsQuery()
+            ->where('products.shop_id', $shopId)
+            ->whereIn('products.id', $productIds)
             ->select(['id', 'slug', 'code', 'name', 'web_images', 'price', 'available_quantity', 'units'])
             ->paginate(24)
             ->withQueryString();

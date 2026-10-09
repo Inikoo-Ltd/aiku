@@ -9,6 +9,7 @@
 
 namespace App\Actions\Iris\Catalogue;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\IrisAction;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductAttachments;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -112,6 +113,9 @@ class GetProductDetail extends IrisAction
             'unit'                => $product->unit,
         ];
 
+        $isStockShown         = (bool) data_get($product->shop->settings, 'catalog.allow_stocks_to_be_shown_on_iris', true);
+        $isIncomingStockShown = (bool) data_get($product->shop->settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true);
+
         /** @noinspection PhpUnusedLocalVariableInspection */
         [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
 
@@ -127,6 +131,9 @@ class GetProductDetail extends IrisAction
             'tags'                       => TagResource::collection($product->tags)->toArray($request),
             'specifications'             => $specifications,
             'attachments'                => $this->getProductAttachments($product->id),
+            'allow_stocks_to_be_shown_on_iris'          => $isStockShown,
+            'allow_incoming_stocks_to_be_shown_on_iris' => $isIncomingStockShown,
+            'incoming_stock'                            => $isIncomingStockShown ? GetProductIncomingStock::run($product, true) : [],
         ];
 
     }

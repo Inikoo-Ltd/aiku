@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\UI\Dashboards\IndexOperationsDashboardRecords;
 use App\Actions\Inventory\Location\DownloadLocations;
 use App\Actions\Inventory\Location\UI\IndexLocations;
 use App\Actions\Inventory\Warehouse\UI\CreateWarehouse;
@@ -51,6 +52,7 @@ Route::prefix('{warehouse}')
                     ->group(__DIR__."/fulfilment.php");
 
                 Route::get('team', ShowWarehouseTeam::class)->name('.team.dashboard');
+                Route::get('operations/{list}', IndexOperationsDashboardRecords::class)->name('.operations.records')->whereIn('list', IndexOperationsDashboardRecords::LISTS);
 
             });
     });

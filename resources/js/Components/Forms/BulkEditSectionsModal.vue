@@ -28,6 +28,7 @@
       [sectionKey]: {
         label: string,
         icon?: string,             // e.g. 'fa-light fa-stamp', register the icon in library.add below if new
+        replaceNote?: string,      // overrides the Replace warning, e.g. when empty fields are skipped rather than applied
         fields: {                  // same shape as an EditModel blueprint section's fields, values are the fresh defaults
           [fieldName]: { type, label, value, information?, hasOther?: { name, value }, ...component props }
         },
@@ -80,7 +81,7 @@ import Dialog from "primevue/dialog"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle, faStamp, faBiohazard, faTimes, faInfoCircle, faSave as falSave, faSpinnerThird } from "@fal"
+import { faExclamationTriangle, faStamp, faBiohazard, faWeight, faTimes, faInfoCircle, faSave as falSave, faSpinnerThird } from "@fal"
 import { faCheckCircle, faExclamationTriangle as fasExclamationTriangle } from "@fas"
 import { faSave as fadSave } from "@fad"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -89,11 +90,12 @@ import { getComponent } from "@/Composables/Listing/FieldFormList"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
-library.add(faStamp, faBiohazard, faInfoCircle)
+library.add(faStamp, faBiohazard, faWeight, faInfoCircle)
 
 export interface BulkEditSection {
     label: string
     icon?: string
+    replaceNote?: string
     fields: Record<string, any>
     updateRoute: routeType
 }
@@ -386,7 +388,7 @@ const submitField = (fieldName: string) => {
                             {{ ctrans("The current :section setup of these :count :items will be replaced.", { section: currentSection.label, count: String(items.length), items: itemsLabel }) }}
                         </div>
                         <div class="mt-0.5">
-                            {{ ctrans("Replace applies every field above as shown, including the ones you leave empty. To change a single field, use the save icon next to it instead.") }}
+                            {{ currentSection.replaceNote ?? ctrans("Replace applies every field above as shown, including the ones you leave empty. To change a single field, use the save icon next to it instead.") }}
                         </div>
                     </div>
                 </div>

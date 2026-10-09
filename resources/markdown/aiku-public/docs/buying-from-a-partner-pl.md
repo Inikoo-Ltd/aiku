@@ -71,6 +71,8 @@ Dodawanie jest odrzucane celowo w trzech przypadkach: lista osiągnęła **budge
 
 Gdy partner [wyśle przesyłkę do swojego magazynu](/docs/fulfilling-partner-orders-pl), po stronie Twojego partnera pod **Stock deliveries** (Dostawy towaru) pojawia się przychodząca **stock delivery** (dostawa towaru). Zostaw ją w spokoju, dopóki ma status confirmed (potwierdzona) lub dispatched (wysłana) - odzwierciedla magazyn sprzedającego i aktualizuje się sama. Gdy pudła fizycznie dotrą: **receive** (przyjmij), sprawdź i rozmieść na lokalizacjach dokładnie tak, jak przy każdej dostawie od dostawcy. Wszystko, co niepełne lub uszkodzone, załatwiasz po przyjęciu, względem powiązanej faktury - zobacz [przegląd](/docs/ordering-from-a-partner-organisation-pl), jak działają pieniądze.
 
+Gdy partner wysyła towar, każda linia przychodzi z już wypełnionymi partiami, które partner pobrał: ten sam kod partii i data minimalnej trwałości, przeliczone na Twoje SKO. Przy sprawdzaniu tylko je potwierdzasz albo poprawiasz, jeśli na towarze jest inaczej, a odłożenie towaru kładzie te partie na Twoje półki.
+
 <aside class="wayfinder"><strong>Gdzie kliknąć w aiku</strong>
 <ul>
 <li><b>Zobacz, co trzeba kupić:</b> Twoja organizacja → <b>Procurement → Partners</b> (Zakupy → Partnerzy) → otwórz partnera → <b>Shopping</b> (Zakupy, pulpit) → popracuj nad kafelkami ryzyka.</li>

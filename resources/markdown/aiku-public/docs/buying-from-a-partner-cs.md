@@ -71,6 +71,8 @@ Přidání je odmítnuto ve třech případech, záměrně: seznam dosáhl **bud
 
 Jakmile partner [odešle zásilku do svého skladu](/docs/fulfilling-partner-orders-cs), objeví se u vašeho partnera pod **Stock deliveries** (Skladové dodávky) příchozí **skladová dodávka**. Nechte ji být, dokud říká confirmed (potvrzeno) nebo dispatched (expedováno) — sama zrcadlí sklad prodávajícího a aktualizuje se. Když krabice fyzicky dorazí: **receive** (přijmout), zkontrolujte a uložte na místa přesně jako u kterékoli dodavatelské dodávky. Cokoli chybí nebo je poškozené, se řeší po přijetí, proti navázané faktuře — jak peníze fungují, viz [přehled](/docs/ordering-from-a-partner-organisation-cs).
 
+Když partner expeduje, každý řádek přijde s již vyplněnými dávkami, které partner vyskladnil: stejný kód dávky a datum minimální trvanlivosti, přepočtené na vaše SKO. Při kontrole je jen potvrdíte, nebo opravíte, pokud zboží říká něco jiného, a naskladněním jdou tyto dávky na vaše regály.
+
 <aside class="wayfinder"><strong>Kam kliknout v aiku</strong>
 <ul>
 <li><b>Zjistit, co je třeba koupit:</b> vaše organizace → <b>Procurement → Partners</b> (Nákup → Partneři) → otevřít partnera → <b>Shopping</b> (dashboard) → projít dlaždice rizik.</li>

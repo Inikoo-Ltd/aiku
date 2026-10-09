@@ -27,6 +27,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
+import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 
@@ -41,6 +42,7 @@ const props = defineProps<{
     }
     showcase?: object
     inbox?: object
+    declarations?: object
     history?: object
     attachments?: object
     attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
@@ -55,6 +57,7 @@ const component = computed(() => {
     const components = {
         showcase: SupplierShowcase,
         inbox: TableSupplierMessages,
+        declarations: SupplierDeclarations,
         attachments: TableAttachments,
         history: TableHistories
     }

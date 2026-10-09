@@ -106,7 +106,7 @@ class EditProfile
                                 "noSaveButton" => true,
                                 "value"        => [
                                     'has_2fa'           => (bool)$user->google2fa_secret,
-                                    'secretKey'         => $user->google2fa_secret,
+                                    'secretKey'         => null,
                                     'one_time_password' => null,
                                 ],
                             ],

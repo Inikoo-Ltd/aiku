@@ -104,7 +104,7 @@ const SaveOrder = async () => {
             <template #icon>
                 <FontAwesomeIcon icon='fal fa-info-circle' class='' fixed-width aria-hidden='true' />
             </template>
-            {{ ctrans('This products list will be used for recommenders in product category page (Department/Sub Department/Family page). Only if the shop is turn on the setting.') }}
+            {{ ctrans('This product list is used for recommendations on product category pages (Department, Sub-department and Family pages), if the shop has this setting turned on.') }}
         </Message>
 
         <!-- HEADER ACTION -->

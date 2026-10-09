@@ -93,6 +93,12 @@ class EditStockFamily extends OrgAction
                                     'information' => __('Default: 120 days'),
                                     'value'       => data_get($stockFamily->data, 'stock_cover.overstock_days'),
                                 ],
+                                'is_batch_tracked' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Batch tracked'),
+                                    'information' => __('Goods in asks for the batch code and best-before date of every delivery of these SKOs'),
+                                    'value'       => $stockFamily->is_batch_tracked,
+                                ],
                             ]
                         ]
 

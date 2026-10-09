@@ -13,7 +13,6 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\Dispatching\DeliveryNote;
-use Carbon\Carbon;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Mpdf\MpdfException;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,7 +27,7 @@ class PdfDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): Response
     {
-        $filename = $deliveryNote->slug.'-'.Carbon::now()->format('Y-m-d');
+        $filename = $deliveryNote->slug.'-delivery';
 
         $shop = $deliveryNote->shop;
 
@@ -40,7 +39,7 @@ class PdfDeliveryNote extends OrgAction
             'customer'        => $deliveryNote->customer,
             'shopAddress'     => $shop->address->formatted_address,
             'deliveryAddress' => $deliveryNote->deliveryAddress->formatted_address,
-            'items'           => $deliveryNote->deliveryNoteItems,
+            'items'           => $deliveryNote->deliveryNoteItems()->with(['orgStock', 'pickings.batchCode'])->get(),
         ]);
 
         return response($pdf->output(), 200)

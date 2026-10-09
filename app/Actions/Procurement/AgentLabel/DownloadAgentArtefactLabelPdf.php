@@ -40,7 +40,7 @@ class DownloadAgentArtefactLabelPdf extends OrgAction
         abort_unless(
             $agent
             && $label->stock_id === $orgStock->stock_id
-            && GetAgentOrgStocks::run($agent)->where('org_stocks.id', $orgStock->id)->exists(),
+            && GetAgentOrgStocks::run($agent, orgStockId: $orgStock->id)->where('org_stocks.id', $orgStock->id)->exists(),
             404
         );
 

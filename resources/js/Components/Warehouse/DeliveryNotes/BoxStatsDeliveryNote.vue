@@ -733,6 +733,8 @@ function returnNoteRoute(returnDeliveryNote) {
                         </dd>
                     </dl>
 
+                    <slot name="margin" />
+
                     <!-- Section: Parcels -->
                     <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">

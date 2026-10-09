@@ -360,6 +360,15 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
+                        'label' => __('To review & publish'),
+                        'icon'  => ['fal', 'fa-clipboard-check'],
+                        'root'  => 'grp.org.tasks.review',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.review',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],
                         'root'  => 'grp.org.tasks.board',

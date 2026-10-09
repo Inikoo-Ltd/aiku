@@ -48,7 +48,7 @@ trait WithProformaInvoicePdf
             ];
 
 
-            $filename = $order->slug.'-'.now()->format('Y-m-d');
+            $filename = $order->slug.'-proforma';
             $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', [
                 'shop'                 => $order->shop,
                 'order'                => $order,

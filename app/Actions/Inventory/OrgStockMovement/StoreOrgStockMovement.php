@@ -40,6 +40,8 @@ class StoreOrgStockMovement extends OrgAction
 
     public string $jobQueue = 'stock-control';
 
+    private ?OrgStock $orgStock = null;
+
     public function handle(OrgStock $orgStock, Location $location, array $modelData, null|Picking|Sowing $process = null): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
@@ -99,14 +101,16 @@ class StoreOrgStockMovement extends OrgAction
 
             if ($parent) {
                 data_set($modelData, 'parent_type', class_basename($parent));
-                data_set($modelData, 'parent_id', class_basename($parent->id));
+                data_set($modelData, 'parent_id', $parent->id);
             }
         }
+
+        $batches = Arr::pull($modelData, 'batches', []);
 
         $runningQuantity    = null;
         $runningQuantityOrg = null;
 
-        [$orgStockMovement, $locationOrgStock] = DB::transaction(function () use ($orgStock, $location, $modelData, &$runningQuantity, &$runningQuantityOrg) {
+        [$orgStockMovement, $locationOrgStock] = DB::transaction(function () use ($orgStock, $location, $modelData, $batches, &$runningQuantity, &$runningQuantityOrg) {
             $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->lockForUpdate()->first();
 
             /** @var OrgStockMovement $orgStockMovement */
@@ -114,6 +118,7 @@ class StoreOrgStockMovement extends OrgAction
 
             if ($locationOrgStock) {
                 if ($this->strict) {
+                    AllocateOrgStockMovementBatches::run($orgStockMovement, (float)$locationOrgStock->quantity, $batches);
                     $runningQuantity    = AddToLocationOrgStockQuantity::run($locationOrgStock, (float)$orgStockMovement->quantity);
                     $runningQuantityOrg = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
                 } else {
@@ -175,6 +180,9 @@ class StoreOrgStockMovement extends OrgAction
             'user_id'          => ['sometimes', 'nullable', 'numeric'],
             'reason'           => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
             'note'             => ['sometimes', 'nullable', 'string'],
+            'batches'                 => ['sometimes', 'array'],
+            'batches.*.batch_code_id' => ['required', 'integer', Rule::exists('batch_codes', 'id')->where('org_stock_id', $this->orgStock?->id)],
+            'batches.*.quantity'      => ['required', 'numeric', 'gt:0'],
         ];
 
         if (!$this->strict) {
@@ -194,6 +202,7 @@ class StoreOrgStockMovement extends OrgAction
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
+        $this->orgStock       = $orgStock;
 
         $this->initialisation($orgStock->organisation, $modelData);
 

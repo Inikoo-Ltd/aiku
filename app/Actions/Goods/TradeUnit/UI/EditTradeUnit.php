@@ -208,39 +208,7 @@ class EditTradeUnit extends OrgAction
                         [
                             'label'  => __('Weight/Dimensions'),
                             'icon'   => 'fa-light fa-weight',
-                            'fields' => [
-                                'gross_weight' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('Weight').' ('.__('Shipping').')',
-                                    'value' => $tradeUnit->gross_weight,
-                                    'bind'  => [
-                                        'suffix'            => 'g',
-                                        'maxFractionDigits' => 0
-                                    ]
-                                ],
-//                                'net_weight' => [
-//                                    'type'  => 'input_number',
-//                                    'label' => __('Weight').' ('.__('Marketing').')',
-//                                    'value' => $tradeUnit->marketing_weight,
-//                                    'bind'  => [
-//                                        'suffix' => 'g'
-//                                    ]
-//                                ],
-                                'marketing_weight' => [
-                                    'type'  => 'input_number',
-                                    'label' => __('Weight').' ('.__('Marketing').')',
-                                    'value' => $tradeUnit->marketing_weight,
-                                    'bind'  => [
-                                        'suffix'            => 'g',
-                                        'maxFractionDigits' => 0
-                                    ]
-                                ],
-                                'marketing_dimensions' => [
-                                    'type'  => 'input-dimension',
-                                    'label' => __('Dimensions').' ('.__('Marketing').')',
-                                    'value' => $tradeUnit->marketing_dimensions,
-                                ],
-                            ],
+                            'fields' => $this->getTradeUnitWeightDimensionsFields($tradeUnit),
                         ],
                         [
                             'label'  => __('Tags & Brands'),

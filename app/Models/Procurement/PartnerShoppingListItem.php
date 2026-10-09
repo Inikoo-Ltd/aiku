@@ -292,7 +292,8 @@ class PartnerShoppingListItem extends Model
                 where sos.stock_id = partner_shopping_list_items.stock_id
                     and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
                 limit 1)",
-            $shopIds
+            $shopIds,
+            'partner_shopping_list_items.org_partner_id'
         );
     }
 }

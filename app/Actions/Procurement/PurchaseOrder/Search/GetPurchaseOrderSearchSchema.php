@@ -48,6 +48,11 @@ class GetPurchaseOrderSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name'     => 'agent_order_reference',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'created_at',
                         'type' => 'int64',
                     ],
@@ -60,7 +65,7 @@ class GetPurchaseOrderSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'reference,parent_code,parent_name'
+                'query_by' => 'reference,parent_code,parent_name,agent_order_reference'
             ],
         ];
     }

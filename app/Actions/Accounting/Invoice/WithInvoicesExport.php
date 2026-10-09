@@ -324,7 +324,7 @@ trait WithInvoicesExport
         ];
 
         $deliveryNote = $invoice->order?->deliveryNotes?->first();
-        $filename     = $invoice->slug.'-'.now()->format('Y-m-d');
+        $filename     = $invoice->slug.($invoice->type == InvoiceTypeEnum::INVOICE ? '-invoice' : '-credit-note');
 
         $isCollection = (bool)($deliveryNote?->collection_address_id ?? $invoice->order?->collection_address_id);
 

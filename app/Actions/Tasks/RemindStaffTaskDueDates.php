@@ -72,7 +72,7 @@ class RemindStaffTaskDueDates
     {
         $workers = $task->assignee
             ? collect([$task->assignee])->merge($task->collaborators)
-            : ($task->department && $task->requester ? StaffTask::departmentSupervisors($task->requester, $task->department) : collect());
+            : ($task->department && $task->requester ? StaffTask::departmentSupervisors($task->requester, $task->department, $task->data['organisation_id'] ?? null) : collect());
 
         if ($stage === 'overdue' && $task->requester) {
             $workers->push($task->requester);

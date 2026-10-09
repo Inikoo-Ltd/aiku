@@ -14,7 +14,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { ref } from "vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import { Menu, MenuButton, MenuItems } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -47,7 +47,7 @@ const props = defineProps<{
         }[]
     }
     upload_locations: UploadSection
-
+    bulk_delete_route?: routeType | null
 }>()
 
 const isModalUploadOpen = ref(false)
@@ -104,7 +104,7 @@ const onExport = () => {
                         >
                             <template #label>
                                 <div>
-                                    {{ trans('Export') }}
+                                    {{ ctrans('Export') }}
                                     <span v-if="isExporting">
                                         {{ progressExport }}/100%
                                     </span>
@@ -115,19 +115,19 @@ const onExport = () => {
                 </div>
 
                 <transition name="headlessui2">
-                    <MenuItems class="w-64 z-10 absolute right-0 p-2 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
+                    <MenuItems class="w-64 z-10 absolute right-0 p-2 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-[--app-accent-muted] focus:outline-none" >
                         <div class="mb-2 space-y-1">
                             <div @click="() => selectedColumnExport.length === props.export.columns.length ? selectedColumnExport = [] : selectedColumnExport = props.export.columns.map(column => column.value)"
                                 class="flex items-center justify-end gap-x-1.5 whitespace-nowrap px-3 py-1 cursor-pointer select-none border-b border-gray-300"
                             >
-                                {{ trans('Select all') }}
+                                {{ ctrans('Select all') }}
                                 <FontAwesomeIcon v-if="selectedColumnExport.length === props.export.columns.length" icon='fas fa-check-square' class='' fixed-width aria-hidden='true' />
                                 <FontAwesomeIcon v-else icon='fal fa-square' class='' fixed-width aria-hidden='true' />
                             </div>
 
                             <div v-for="column in props.export.columns" @click="onClickColumnExport(column.value)"
                                 class="flex items-center justify-between rounded whitespace-nowrap px-3 py-1 cursor-pointer"
-                                :class="selectedColumnExport.includes(column.value) ? 'bg-indigo-100' : 'hover:bg-gray-200'"
+                                :class="selectedColumnExport.includes(column.value) ? 'bg-[--app-accent-soft]' : 'hover:bg-gray-200'"
                             >
                                 {{ column.label }}
                                 <FontAwesomeIcon v-if="selectedColumnExport.includes(column.value)" icon='fas fa-check-square' class='' fixed-width aria-hidden='true' />
@@ -139,7 +139,6 @@ const onExport = () => {
                             :href="route(props.export.route.name, {...props.export.route.parameters, columns: selectedColumnExport.join(',')})"
                             doxwnload
                             target="_blank"
-                            xclass="bg-indigo-200/70 hover:bg-indigo-200 w-full leading-4 inline-flex justify-center items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max border border-gray-300 text-gray-700 rounded-md px-3 md:px-4 text-center py-[3px] md:py-[6px] text-sm"
                         >
                             <Button
                                 icon="fas fa-file-export"
@@ -149,7 +148,7 @@ const onExport = () => {
                             >
                                 <template #label>
                                     <div>
-                                        {{ trans('Export') }}
+                                        {{ ctrans('Export') }}
                                         <span v-if="isExporting">
                                             {{ progressExport }}/100%
                                         </span>
@@ -159,7 +158,7 @@ const onExport = () => {
                             
                             <!-- <LoadingIcon v-if="isExporting" />
                             <div>
-                                {{ trans('Export') }}
+                                {{ ctrans('Export') }}
                                 <span v-if="isExporting">
                                     {{ progressExport }}/100%
                                 </span>
@@ -181,7 +180,7 @@ const onExport = () => {
         </template>
     </PageHeading>
     
-    <TableLocations :data="data"  />
+    <TableLocations :data="data" :bulkDeleteRoute="bulk_delete_route" />
 
 
 

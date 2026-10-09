@@ -36,6 +36,10 @@ Stlačenie **Start picking** na dodacom liste ho presunie do stavu **Handling** 
 
 Počas vyskladňovania sa môže ukázať, že riadok potrebuje rozhodnutie, ktoré vyskladňovač nemôže urobiť sám - napríklad náhradu alebo uvoľnenie zo skladu. Vtedy sa celý dodací list presunie do **Waiting** namiesto toho, aby vyskladňovanie pokračovalo okolo problému. Akonáhle už naozaj nič nečaká, objaví sa tlačidlo **Auto Finish Waiting**, ktoré po stlačení skontroluje dodací list a ak sú naozaj všetky riadky vyriešené, posunie ho do **Picked**.
 
+## Dávky
+
+Pri produktoch, ktorých zásoba má dávky, každé vyskladnenie ukazuje dávku, z ktorej sa vzalo. Nemusíte ju vyberať: systém vezme dávku s najskorším dátumom minimálnej trvanlivosti na danej lokácii, až po zásobe bez zaznamenanej dávky. Keď vyskladnenie potrebuje viac, ako dávka má, rozdelí sa na jeden riadok na dávku, napríklad 4 z jednej dávky a 2 z ďalšej, aby dodací list, faktúra aj prijímajúci sklad videli každú dávku, ktorá odišla z regálu. Ak ste vzali z inej dávky, otvorte dávku pri vyskladnení a zmeňte ju. Zmazanie vyskladnenia vráti jeho dávku na regál a vrátený tovar sa vráti ako dávky, ktoré boli vyskladnené. PDF dodacieho listu uvádza pod každou položkou dávku, dátum minimálnej trvanlivosti a množstvo.
+
 ## Súpravy predávané len kompletné
 
 Niektoré produkty sú zložené z viacerých dielov, ktoré samostatne nemajú využitie, napríklad soľná lampa so žiarovkou a káblom. Na stránke **Composition** (zloženie) hlavného produktu majú tieto zapnuté **Sold only as a complete set** (predáva sa len ako celá súprava). Produkt obchodu, ktorý nenasleduje diely svojho hlavného produktu, má rovnaký prepínač na vlastnej stránke **Composition**, a hlavný produkt ho uvádza medzi obchodmi, ktoré sa líšia.

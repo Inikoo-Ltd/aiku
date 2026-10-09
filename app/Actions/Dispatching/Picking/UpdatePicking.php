@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
@@ -16,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
@@ -86,16 +88,32 @@ class UpdatePicking extends OrgAction
             $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $this->quantityAvailableInLocation($picking));
         }
 
-        $picking = $this->update($picking, $modelData);
+        $oldBatchCodeId = $picking->batch_code_id;
+        $picking        = $this->update($picking, $modelData);
+        $batchChanged   = $oldBatchCodeId != $picking->batch_code_id;
 
+        if ($picking->orgStockMovement && ($oldQuantity != $picking->quantity || $batchChanged)) {
+            $movementData = ['quantity' => -($picking->quantity)];
+            if ($picking->batch_code_id) {
+                $movementData['batches'] = [['batch_code_id' => $picking->batch_code_id, 'quantity' => (float)$picking->quantity]];
+            } elseif ($batchChanged) {
+                $movementData['batches'] = [];
+            }
 
-        if ($picking->orgStockMovement && $oldQuantity != $picking->quantity) {
-            UpdateOrgStockMovement::make()->action($picking->orgStockMovement, [
-                'quantity' => -($picking->quantity),
-            ]);
+            UpdateOrgStockMovement::make()->action($picking->orgStockMovement, $movementData);
         }
 
-        return $picking;
+        if ($batchChanged) {
+            foreach (array_filter([$oldBatchCodeId, $picking->batch_code_id]) as $batchCodeId) {
+                BatchCodeHydrateDeliveryNotes::dispatch(BatchCode::find($batchCodeId))->afterCommit();
+            }
+        }
+
+        if (!$picking->batch_code_id) {
+            SplitPickingByBatch::run($picking);
+        }
+
+        return $picking->refresh();
     }
 
     /**

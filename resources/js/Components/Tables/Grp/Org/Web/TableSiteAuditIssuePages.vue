@@ -80,6 +80,15 @@ const detailText = (page: IssuePageRow) => {
             return pathOf(details.canonical ?? "")
         case "noindex_in_sitemap":
             return details.robots_meta ?? ""
+        case "hreflang_invalid_code":
+        case "hreflang_conflicting_code":
+            return (details.codes ?? []).join(", ")
+        case "hreflang_missing_self":
+            return ctrans("Lists :count other versions", { count: locale.number(details.alternates ?? 0) })
+        case "hreflang_to_broken":
+            return (details.alternates ?? []).map((alternate: { url: string, status_code: number | null }) => ctrans(":url answers :status", { url: alternate.url, status: alternate.status_code ?? "-" })).join(", ")
+        case "hreflang_missing_return":
+            return (details.alternates ?? []).join(", ")
         default:
             return ""
     }

@@ -2,7 +2,7 @@
 title: Vystavenie objednávky a prevzatie tovaru
 summary: Nákup od bežného dodávateľa - vystavte objednávku, nechajte si ju potvrdiť, potom premeňte dodávku na tovar, ktorý môžete predávať.
 date: 2026-09-01
-source_date: 2026-09-01
+source_date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 ---
@@ -15,7 +15,7 @@ Keď nakupujete od bežného dodávateľa - nie od partnerskej organizácie, kto
 
 Každý dodávateľ, od ktorého vaša organizácia nakupuje priamo, sa nachádza v **Procurement → Suppliers**. Stránka každého dodávateľa má tlačidlo **Purchase Order** na založenie novej objednávky, plus bočné menu s **Products**, **Purchase Orders** a doterajšími **Stock Deliveries**.
 
-Niektorí dodávatelia sú dostupní len cez **agenta** - osobu alebo firmu, ktorá nakupuje vo vašom mene namiesto priameho dodávania. Agenti majú vlastný zoznam v **Procurement → Agents** a fungujú rovnako: objednávky a dodávky voči agentovi sa zaznamenávajú na stránke agenta namiesto stránky dodávateľa.
+Niektorí dodávatelia sú dostupní len cez **agenta** - osobu alebo firmu, ktorá nakupuje vo vašom mene namiesto priameho dodávania. Agenti majú vlastný zoznam v **Procurement → Agents**. Objednávka cez agenta je stále jedna objednávka na dodávateľa, odoslaná agentovi, a objednávky, ktoré zadáte spolu, tvoria jednu **agent order** (objednávku agenta). Viď [Zadanie objednávky cez agenta](/docs/placing-an-order-through-an-agent-sk).
 
 ## Vystavenie objednávky
 
@@ -55,6 +55,8 @@ Dodávka následne prechádza vlastnými stavmi:
 - **Booked in** - stlačte **Place**, aby ste prevzatý tovar uložili na miesto. Toto je posledný pracovný stav dodávky.
 
 Kontrola položky znamená potvrdenie, koľko z každého riadku skutočne dorazilo - nie každá objednávka dorazí kompletná, a chýbajúce alebo prebytočné množstvá sa zobrazia na karte **Under/Over delivered items**, takže sa nič nestratí v rozdiele medzi tým, čo ste objednali, a tým, čo prišlo.
+
+Pod skontrolovaným množstvom **Batch** (dávka) zaznamená kód dávky a dátum minimálnej trvanlivosti vytlačené na tovare. Jeden riadok môže mať viac dávok: stlačte **Add batch** a rozdeľte množstvo medzi ne. Pri naskladnení idú dávky na regál v poradí, v akom ste ich zadali, takže sklad vie, ktorá dávka je kde, a inventárne prehľady môžu ukázať dátumy minimálnej trvanlivosti. Rodiny označené ako **Batch tracked** (na stránke úpravy rodiny skladových položiek) zobrazujú upozornenie, kým každé skontrolované SKO nemá dávku, a označia dávku bez dátumu minimálnej trvanlivosti. Nič neblokuje príjem, takže dodávka bez vytlačených kódov môže ísť na regál aj tak. Dávku, ktorá už je na regáli, nemožno znížiť pod naskladnené množstvo; najprv zrušte to naskladnenie.
 
 ## Ako to celé zapadá
 

@@ -57,6 +57,7 @@ class UpdateUser extends OrgAction
             data_set($modelData, 'can_use_mcp_discontinue', false);
             data_set($modelData, 'can_use_mcp_web', false);
             data_set($modelData, 'can_use_mcp_procurement', false);
+            data_set($modelData, 'can_use_mcp_production', false);
         }
 
         $user = $this->update($user, $modelData, ['profile', 'settings']);
@@ -100,6 +101,7 @@ class UpdateUser extends OrgAction
             'can_use_mcp_discontinue' => ['sometimes', 'boolean'],
             'can_use_mcp_web'         => ['sometimes', 'boolean'],
             'can_use_mcp_procurement' => ['sometimes', 'boolean'],
+            'can_use_mcp_production'  => ['sometimes', 'boolean'],
             'username'       => [
                 'sometimes',
                 'required',

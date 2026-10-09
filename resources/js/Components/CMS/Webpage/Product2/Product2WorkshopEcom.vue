@@ -41,6 +41,7 @@ import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
+import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
@@ -272,13 +273,15 @@ defineOptions({
 
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center mt-2">
                             <div class="flex items-center gap-2 text-sm">
-                                <span :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-                                    {{
-                                        product.stock > 0
-                                            ? `${ctrans("In stock")} (${availableStock})`
-                                            : ctrans("Out Of Stock")
-                                    }}
-                                </span>
+                                <StockInfoPopover :product="product" :stock="availableStock">
+                                    <span :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                                        {{
+                                            product.stock > 0
+                                                ? `${ctrans("In stock")} (${availableStock})`
+                                                : ctrans("Out Of Stock")
+                                        }}
+                                    </span>
+                                </StockInfoPopover>
                             </div>
 
                             <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
@@ -544,13 +547,15 @@ defineOptions({
             </h1>
 
             <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-1">
-                <span class="text-sm font-medium" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-                    {{
-                        product.stock > 0
-                            ? `${ctrans('In stock')} (${availableStock})`
-                            : ctrans('Out Of Stock')
-                    }}
-                </span>
+                <StockInfoPopover :product="product" :stock="availableStock">
+                    <span class="text-sm font-medium" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                        {{
+                            product.stock > 0
+                                ? `${ctrans('In stock')} (${availableStock})`
+                                : ctrans('Out Of Stock')
+                        }}
+                    </span>
+                </StockInfoPopover>
 
                 <div v-if="layout?.retina?.type !== 'dropshipping'">
                     <LoadingIcon v-if="isLoadingFavourite" class="text-gray-400" />

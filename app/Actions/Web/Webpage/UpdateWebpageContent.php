@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Web\WebBlockResource;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 
 class UpdateWebpageContent extends OrgAction
@@ -75,6 +76,11 @@ class UpdateWebpageContent extends OrgAction
                 'is_dirty' => $isDirty
             ]
         );
+
+        $editor = request()->user();
+        if ($isDirty && $editor instanceof User) {
+            AskWebEditorsToReviewWebpage::run($webpage, $editor);
+        }
 
 
         return $webpage;

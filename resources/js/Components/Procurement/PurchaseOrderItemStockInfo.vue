@@ -436,12 +436,13 @@ function purchaseOrderRoute(slug: string) {
 				<span class="tabular-nums">{{ formatNumber(Number(delivery.quantity) / pack) }}</span>
 			</div>
 			<div v-for="order in otherOrders" :key="order.slug ?? order.reference" class="flex items-baseline gap-1.5 text-gray-600">
-				<span class="text-[10px] uppercase tracking-wide text-amber-700">{{ order.state === "sent" ? ctrans("Requested") : ctrans("Ordered") }}</span>
+				<span class="text-[10px] uppercase tracking-wide text-amber-700">{{ order.stage ?? (order.state === "sent" ? ctrans("Requested") : ctrans("Ordered")) }}</span>
 				<Link v-if="order.slug" :href="purchaseOrderRoute(order.slug)" class="font-mono text-gray-700 hover:underline">{{ order.reference }}</Link>
 				<span v-else class="text-gray-700">{{ order.reference }}</span>
 				<span class="tabular-nums">{{ formatNumber(Number(order.quantity_ordered) / pack) }}</span>
 			</div>
 		</div>
+		<div v-else-if="!isOrderClosed" class="text-gray-400">{{ ctrans("Nothing on order or coming") }}</div>
 
 		<div v-if="recentDeliveries.length" class="text-gray-400">
 			<button type="button" class="hover:text-gray-600" @click="showPastDeliveries = !showPastDeliveries">

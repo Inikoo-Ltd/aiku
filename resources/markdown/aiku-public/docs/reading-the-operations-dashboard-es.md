@@ -24,7 +24,7 @@ Arriba hay dos filtros:
 
 Tu elección se recuerda. A la derecha, cada almacén muestra su **hora local**. "Hoy", "ayer" y "mismo día" siempre se refieren al calendario del propio almacén, no a UTC. La página obtiene cifras nuevas cada minuto mientras está abierta. **Live** las obtiene ahora mismo.
 
-Con **todos los almacenes** seleccionados, cada tarjeta muestra un código corto por almacén bajo el total (por ejemplo *ED 7 · PAR 20*). Pulsa un código para abrir la lista de ese almacén. Con un solo almacén seleccionado, el número grande es el propio enlace.
+Con **todos los almacenes** seleccionados, cada tarjeta muestra un código corto por almacén bajo el total (por ejemplo *ED 7 · PAR 20*). Pulsa en cualquier parte de una tarjeta, de una etapa del flujo o en un número para abrir su lista. Con un solo almacén seleccionado, o cuando solo un almacén tiene algo, la lista se abre directamente; si no, un pequeño menú pregunta qué almacén, con su recuento. Un código bajo el total abre directamente la lista de ese almacén. El tiempo hasta el envío abre los pedidos enviados del periodo, los más lentos primero; cada barra de antigüedad abre las notas de entrega abiertas de esa antigüedad; *Sin contar en 90 días* abre esas ubicaciones, primero las nunca contadas; las cifras de preparadores y empaquetadores abren las líneas preparadas hoy, las faltas y las notas empaquetadas (el trabajo, no quién lo hizo); y las cifras de devoluciones abren las líneas procesadas este mes y las devoluciones con cada motivo.
 
 ## Needs attention now
 

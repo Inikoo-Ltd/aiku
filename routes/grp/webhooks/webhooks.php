@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
+use App\Actions\Catalogue\Shop\External\Shopify\CallbackShopifyExternalShopFetchStock;
+use App\Actions\Catalogue\Shop\External\Shopify\CallbackShopifyExternalShopFulfillmentNotification;
 use App\Actions\Chat\Whatsapp\HandleWhatsappWebhook;
 use App\Actions\Chat\Whatsapp\VerifyWhatsappWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
@@ -60,6 +62,11 @@ Route::middleware('verify.shopify.webhook')->prefix('shopify/{shopifyUser:id}')-
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
 });
 
+
+Route::prefix('shopify-external-shop/{shopifyUser:id}')->name('webhooks.shopify_external_shop.')->group(function () {
+    Route::any('fulfillment_order_notification', CallbackShopifyExternalShopFulfillmentNotification::class)->middleware('verify.shopify.webhook')->name('fulfillment_order_notification');
+    Route::get('fetch_stock.json', CallbackShopifyExternalShopFetchStock::class)->name('fetch_stock');
+});
 
 Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
     Route::post('wc-user-callback', CallbackRetinaWooCommerceUser::class)->name('callback');

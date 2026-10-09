@@ -29,7 +29,7 @@ type LabelLevel = {
 type LabelOptions = {
     sizes: Record<string, { key: string; label: string }[]>
     default_size: string
-    layouts: { key: string; label: string }[]
+    layouts: Record<string, { key: string; label: string }[]>
     fields: Record<string, LabelField[]>
     levels: LabelLevel[]
     custom_text_max_length: number
@@ -57,6 +57,8 @@ const customText = ref("")
 const size = ref<string | undefined>(props.options?.default_size)
 const layout = ref("single")
 
+const layouts = computed(() => (size.value ? props.options?.layouts?.[size.value] : undefined) ?? [])
+
 const resetFromOptions = () => {
     selected.value = Object.fromEntries(fields.value.map((field) => [field.key, field.available && field.checked]))
 
@@ -79,6 +81,12 @@ watch(() => [props.isOpen, props.level], ([isOpen]) => {
 }, { immediate: true })
 
 watch(activeLevel, resetFromOptions)
+
+const levelTitles = computed<Record<string, string>>(() => ({
+    sko: ctrans("SKO label"),
+    unit: ctrans("Unit label"),
+    carton: ctrans("Carton label"),
+}))
 
 const customTextField = computed(() => fields.value.find((field) => field.key === "with_custom_text"))
 
@@ -118,7 +126,7 @@ const optionClass = (isActive: boolean) => [
         <div class="flex flex-col gap-4 p-2">
             <div class="flex items-center justify-between gap-3">
                 <div class="text-lg font-semibold">
-                    {{ activeLevel === "unit" ? ctrans("Unit label") : ctrans("SKO label") }}
+                    {{ levelTitles[activeLevel] ?? ctrans("SKO label") }}
                 </div>
                 <div v-if="printableLevels.length > 1" class="flex gap-1.5">
                     <button
@@ -172,13 +180,9 @@ const optionClass = (isActive: boolean) => [
                         :key="sizeOption.key"
                         type="button"
                         :class="optionClass(size === sizeOption.key)"
-                        :disabled="layout === 'sheet'"
                         @click="size = sizeOption.key">
                         {{ sizeOption.label }}
                     </button>
-                </div>
-                <div v-if="layout === 'sheet'" class="mt-1.5 text-xs text-gray-400">
-                    {{ ctrans("The A4 sheet is die cut to 63.5 x 29.6, so the size is fixed.") }}
                 </div>
             </div>
 
@@ -188,7 +192,7 @@ const optionClass = (isActive: boolean) => [
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                     <button
-                        v-for="layoutOption in options.layouts"
+                        v-for="layoutOption in layouts"
                         :key="layoutOption.key"
                         type="button"
                         :class="optionClass(layout === layoutOption.key)"

@@ -14,13 +14,18 @@ use Illuminate\Notifications\Notification;
 
 class StaffTaskNotification extends Notification
 {
-    public function __construct(public StaffTask $task, public string $title, public string $body)
+    public function __construct(public StaffTask $task, public string $title, public string $body, public ?string $route = null)
     {
+    }
+
+    private function link(): string
+    {
+        return $this->route ?? route('grp.tasks.show', $this->task->reference);
     }
 
     public function via($notifiable): array
     {
-        BroadcastPersonalNotification::dispatch($notifiable->id, ['id' => null, 'title' => $this->title, 'body' => $this->body, 'route' => route('grp.tasks.show', $this->task->reference)]);
+        BroadcastPersonalNotification::dispatch($notifiable->id, ['id' => null, 'title' => $this->title, 'body' => $this->body, 'route' => $this->link()]);
 
         return ['database'];
     }
@@ -31,7 +36,7 @@ class StaffTaskNotification extends Notification
             'title' => $this->title,
             'body'  => $this->body,
             'type'  => 'staff_task',
-            'route' => route('grp.tasks.show', $this->task->reference),
+            'route' => $this->link(),
         ];
     }
 }

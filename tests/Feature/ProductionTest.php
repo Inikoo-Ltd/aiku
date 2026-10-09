@@ -1912,9 +1912,10 @@ test('completed job order is received into stock with a batch code', function ()
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
 
     $artefact = StoreArtefact::make()->action($this->production, [
-        'code'         => 'RECEIVEART1',
-        'name'         => 'Receivable artefact',
-        'org_stock_id' => $orgStock->id,
+        'code'            => 'RECEIVEART1',
+        'name'            => 'Receivable artefact',
+        'org_stock_id'    => $orgStock->id,
+        'shelf_life_days' => 365,
     ]);
     $artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
@@ -1981,7 +1982,10 @@ test('completed job order is received into stock with a batch code', function ()
 
     $batchCode = \App\Models\Dispatching\BatchCode::where('org_stock_id', $orgStock->id)->first();
     expect($batchCode)->not->toBeNull()
-        ->and($batchCode->code)->toBe($jobOrder->reference.'-'.$artefact->code);
+        ->and($batchCode->code)->toBe($jobOrder->reference.'-'.$artefact->code)
+        ->and($batchCode->expiry_date->toDateString())->toBe(now()->addDays(365)->toDateString())
+        ->and(\App\Models\Inventory\OrgStockMovementBatch::where('org_stock_movement_id', $movement->id)->get(['batch_code_id', 'quantity'])->toArray())
+        ->toEqual([['batch_code_id' => $batchCode->id, 'quantity' => '10.000000']]);
 
     $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)
         ->where('org_stock_id', $orgStock->id)->first();
@@ -4979,6 +4983,7 @@ test('breaks belong to the artisan, are capped at their planned length and only 
 });
 
 test('a break clocks a clocked in artisan out and back in, and leaves one who is not clocked in alone', function () {
+    $this->travelTo(now($this->organisation->timezone?->name ?? 'UTC')->setTime(9, 0));
     $employee = StoreEmployee::make()->action($this->organisation, array_merge(Employee::factory()->definition(), [
         'worker_number'   => 'BRK-'.uniqid(),
         'alias'           => 'brk'.uniqid(),
@@ -5390,4 +5395,143 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
     StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-NEW', 'name' => 'New', 'org_stock_id' => $otherStock->id]);
 
     expect($otherStock->refresh()->is_made_in_house)->toBeTrue();
+});
+
+test('the ai assistant sets up artefacts, raw materials, tasks and recipes only when enrolled, logged and revertible', function () {
+    $user = $this->guest->getUser();
+    $user->update(['can_use_mcp' => true, 'can_use_mcp_production' => false]);
+    $suffix = strtoupper(\Illuminate\Support\Str::random(5));
+    $tool   = fn (string $class, array $arguments) => \App\Mcp\Servers\AikuServer::actingAs($user)->tool($class, ['production' => $this->production->slug, ...$arguments]);
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'manufacture_task'])->assertHasErrors(['not enabled for this user']);
+
+    [, , $shop] = createShop();
+    expect($shop->organisation_id)->toBe($this->production->organisation_id);
+    $shopkeeper = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->production->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    expect($this->production->canBeSetUpBy($shopkeeper))->toBeFalse();
+    setPermissionsTeamId($shopkeeper->group_id);
+    $shopkeeper->givePermissionTo('products.'.$shop->id);
+    expect($this->production->canBeSetUpBy($shopkeeper->fresh()))->toBeTrue();
+    $user->update(['can_use_mcp_production' => true]);
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'artefact', 'code' => 'AI-'.$suffix, 'create' => true, 'fields' => ['name' => 'Lip balm'], 'request_text' => 'create it'])
+        ->assertHasErrors(['needs its SKO']);
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'artefact', 'code' => 'AI-'.$suffix, 'fields' => ['name' => 'Lip balm'], 'request_text' => 'create it'])
+        ->assertHasErrors(['create=true']);
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'artefact', 'code' => 'AI-'.$suffix, 'create' => true, 'fields' => ['name' => 'Lip balm'], 'new_sko' => ['units' => 1], 'request_text' => 'create it with its sko'])
+        ->assertOk()->assertSee(['"sko":"AI-'.$suffix.'"', '"trade_unit":"AI-'.$suffix.'"']);
+    $artefact = Artefact::where('production_id', $this->production->id)->where('code', 'AI-'.$suffix)->firstOrFail();
+    expect($artefact->orgStock->stock->code)->toBe('AI-'.$suffix)
+        ->and($artefact->orgStock->is_made_in_house)->toBeTrue();
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'create' => true, 'fields' => ['type' => 'stock', 'description' => 'Beeswax', 'unit' => 'kilogram', 'unit_cost' => 8], 'request_text' => 'add beeswax'])->assertOk();
+    foreach (['POUR', 'PACK'] as $code) {
+        $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'manufacture_task', 'code' => $code.$suffix, 'create' => true, 'fields' => ['name' => $code], 'request_text' => 'add the tasks'])->assertOk();
+    }
+
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'fields' => ['unit_cost' => 80], 'request_text' => 'beeswax is 80 now'])->assertHasErrors(['cost_jump']);
+    $tool(\App\Mcp\Tools\ProductionRecordsTool::class, ['kind' => 'raw_material', 'code' => 'AIRM-'.$suffix, 'fields' => ['unit_cost' => 10], 'request_text' => 'beeswax is 10 now'])->assertOk();
+    $costChange = \App\Models\SysAdmin\McpChange::latest('id')->first();
+    expect($costChange->type)->toBe(\App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCTION_RECORD);
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run($costChange, $user);
+    expect((float) RawMaterial::where('code', 'AIRM-'.$suffix)->value('unit_cost'))->toBe(8.0);
+
+    $recipe = fn (array $steps) => $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['artefacts' => ['ai-'.$suffix], 'steps' => $steps, 'request_text' => 'set the steps']);
+    $recipe([['task' => 'POUR'.$suffix]])->assertHasErrors(['units_per_artefact']);
+    $recipe([['task' => 'POUR'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => 216, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.01]]], ['task' => 'PACK'.$suffix, 'units_per_artefact' => 0.1667, 'target_per_hour' => 11]])
+        ->assertOk()->assertSee(['"task":"POUR'.$suffix.'"', '"target_per_hour":216', '"units_per_artefact":0.1667', '"materials_cost":0.08']);
+    expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['POUR'.$suffix, 'PACK'.$suffix]);
+    $recipe([['task' => 'PACK'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null]])->assertHasErrors(['drop_raw_materials', 'AIRM-'.$suffix]);
+    expect($artefact->manufactureTasks()->count())->toBe(2);
+
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
+    expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
+
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AID'.$suffix, 'name' => 'AI department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'AIF'.$suffix, 'name' => 'AI family']);
+    $artefact->update(['artefact_family_id' => $family->id]);
+    $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['families' => ['AIF'.$suffix], 'steps' => [['task' => 'POUR'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null,
+        'raw_materials'          => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.01]],
+        'artefact_raw_materials' => [['artefact' => 'AI-'.$suffix, 'raw_materials' => [['code' => 'AIRM-'.$suffix, 'quantity' => 0.02]]]]]], 'request_text' => 'the whole family', 'accept' => ['change_1_artefacts', 'drop_raw_materials']])
+        ->assertOk()->assertSee(['"code":"AI-'.$suffix.'"', '"quantity":0.02']);
+    $tool(\App\Mcp\Tools\ProductionRecipeTool::class, ['families' => ['AIF'.$suffix], 'except' => ['AI-'.$suffix]])->assertHasErrors(['No artefacts left']);
+
+    $recipe([['task' => 'NOPE'.$suffix, 'units_per_artefact' => 1, 'target_per_hour' => null]])->assertHasErrors(['task NOPE'.$suffix]);
+    expect(fn () => \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::where('label', 'like', 'Create artefact AI-'.$suffix.'%')->firstOrFail(), $user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('a custom product is made for one customer from an artefact waiting for its trade unit', function () {
+    list($organisation, , $shop) = createShop();
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+    $other    = \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+
+    $production = $organisation->productions()->first()
+        ?? StoreProduction::make()->action($organisation, ['code' => 'CUSPRD', 'name' => 'Custom production']);
+
+    $suffix   = strtoupper(\Illuminate\Support\Str::random(6));
+    $artefact = StoreArtefact::make()->action($production, ['code' => 'CUS-'.$suffix, 'name' => 'Engraved plaque '.$suffix]);
+
+    expect(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->toContain($artefact->id);
+
+    get(route('grp.org.productions.show.crafts.artefacts.show', [$organisation->slug, $production->slug, $artefact->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('customer_product.artefact_id', $artefact->id)
+            ->where('customer_product.shops', fn ($shops) => collect($shops)->contains('id', $shop->id)));
+
+    get(route('grp.json.shop.customers', ['shop' => $shop->id, 'filter[global]' => $customer->reference]))
+        ->assertOk()
+        ->assertJsonFragment(['slug' => $customer->slug]);
+
+    get(route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $shop->slug, $customer->slug, 'custom_product_artefact' => $artefact->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('can_make_custom_product', true)
+            ->where('custom_product_artefact_id', $artefact->id));
+
+    $product = \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [
+        'artefact_id' => $artefact->id,
+        'code'        => 'CUS-'.$suffix,
+        'name'        => 'Engraved plaque '.$suffix,
+        'price'       => 1200,
+        'units'       => 2,
+    ]);
+    $artefact->refresh();
+
+    expect($artefact->trade_unit_id)->not->toBeNull()
+        ->and($artefact->orgStock->organisation_id)->toBe($organisation->id)
+        ->and($artefact->orgStock->stock->code)->toBe('CUS-'.$suffix)
+        ->and($product->shop_id)->toBe($shop->id)
+        ->and($product->exclusive_for_customer_id)->toBe($customer->id)
+        ->and($product->tradeUnits()->pluck('trade_units.id')->all())->toBe([$artefact->trade_unit_id])
+        ->and((float) $product->tradeUnits()->first()->pivot->quantity)->toBe(2.0)
+        ->and($product->orgStocks()->pluck('org_stocks.id')->all())->toContain($artefact->org_stock_id)
+        ->and(\App\Models\Catalogue\Product::whereKey($product->id)->sellableToCustomer($customer->id)->exists())->toBeTrue()
+        ->and(\App\Models\Catalogue\Product::whereKey($product->id)->sellableToCustomer($other->id)->exists())->toBeFalse()
+        ->and(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->not->toContain($artefact->id);
+
+    expect(fn () => \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [
+        'artefact_id' => $artefact->id,
+        'code'        => 'CUS-'.$suffix.'B',
+        'name'        => 'Again',
+        'price'       => 1,
+        'units'       => 1,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Goods\Stock\StoreStock::make()->action($organisation->group, ['code' => 'OLD-'.$suffix, 'name' => 'Old part', 'units' => 1, 'trade_unit' => ['description' => 'Old part']]);
+    $oldPart = StoreArtefact::make()->action($production, ['code' => 'old-'.$suffix, 'name' => 'Old part never linked']);
+
+    expect(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->not->toContain($oldPart->id)
+        ->and(fn () => \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [
+            'artefact_id' => $oldPart->id,
+            'code'        => 'CUS-OLD-'.$suffix,
+            'name'        => 'Old part',
+            'price'       => 1,
+            'units'       => 1,
+        ]))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($oldPart->refresh()->trade_unit_id)->toBeNull()
+        ->and(\App\Models\Catalogue\Product::where('shop_id', $shop->id)->where('code', 'CUS-OLD-'.$suffix)->exists())->toBeFalse();
+
+    get(route('grp.org.productions.show.crafts.artefacts.show', [$organisation->slug, $production->slug, $artefact->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('customer_product', null));
 });

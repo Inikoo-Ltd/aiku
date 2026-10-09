@@ -45,6 +45,7 @@ import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
+import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
 import ButtonOutOfStock from "@/Components/Iris/Products/ButtonOutOfStock.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
@@ -476,9 +477,11 @@ onMounted(async () => {
 
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-sm">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
-                                <span>{{ product.stock > 0 ? ctrans("In stock") : ctrans("Out of stock") }}</span>
+                                <StockInfoPopover :product="product">
+                                    <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                        :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
+                                    <span>{{ product.stock > 0 ? ctrans("In stock") : ctrans("Out of stock") }}</span>
+                                </StockInfoPopover>
                             </div>
 
                             <button v-if="product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
@@ -743,9 +746,11 @@ onMounted(async () => {
                 </div>
 
                 <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm">
-                    <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                        :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
-                    <span>{{ product.stock > 0 ? ctrans("In stock") : ctrans("Out of stock") }}</span>
+                    <StockInfoPopover :product="product">
+                        <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                            :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
+                        <span>{{ product.stock > 0 ? ctrans("In stock") : ctrans("Out of stock") }}</span>
+                    </StockInfoPopover>
                 </div>
             </div>
 

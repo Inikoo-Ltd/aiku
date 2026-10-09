@@ -81,14 +81,6 @@ class ShowOrgAgent extends OrgAction
                             $request->route()->originalParameters()
                         ),
                     ],
-                    'create_direct' => $this->canEdit ? [
-                        'route' => [
-                            'name'       => 'grp.models.org_agent.purchase-order.store',
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ],
-                        'label' => __('Purchase Order')
-                    ] : false,
-
                     // 'meta' => [
                     //     [
                     //         'name'     => trans_choice('supplier|suppliers', $orgAgent->stats->number_org_suppliers),

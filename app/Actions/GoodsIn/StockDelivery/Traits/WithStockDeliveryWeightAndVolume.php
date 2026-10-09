@@ -59,12 +59,13 @@ trait WithStockDeliveryWeightAndVolume
     {
         return DB::table('model_has_trade_units as mhtu')
             ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->join('org_stocks as pack', 'pack.id', '=', 'mhtu.model_id')
             ->whereColumn('mhtu.model_id', 'sdi.org_stock_id')
             ->where('mhtu.model_type', 'OrgStock')
             ->selectRaw("
                 case
                     when count(*) = 0 or count(*) filter (where tu.$column is null) > 0 then null
-                    else sum(tu.$column * mhtu.quantity) * sdi.unit_quantity
+                    else sum(tu.$column * mhtu.quantity) * sdi.unit_quantity / coalesce(nullif(max(pack.packed_in), 0), 1)
                 end
             ");
     }

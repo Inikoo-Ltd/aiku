@@ -148,6 +148,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('quantity_ordered', '>', 0)
+                ->where('model_type', '!=', 'Charge')
                 ->update([
                     'net_amount'              => DB::raw('gross_amount'),
                     'offers_data'             => [],

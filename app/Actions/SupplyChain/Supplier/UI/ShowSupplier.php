@@ -104,6 +104,10 @@ class ShowSupplier extends OrgAction
                     fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($supplier, SupplierTabsEnum::INBOX->value))
                     : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($supplier, SupplierTabsEnum::INBOX->value))),
 
+                SupplierTabsEnum::DECLARATIONS->value => $this->tab == SupplierTabsEnum::DECLARATIONS->value ?
+                    fn () => GetSupplierDeclarations::run($supplier)
+                    : Inertia::optional(fn () => GetSupplierDeclarations::run($supplier)),
+
                 SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier, SupplierTabsEnum::ATTACHMENTS->value))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier, SupplierTabsEnum::ATTACHMENTS->value))),

@@ -19,6 +19,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Select from "primevue/select"
 import InputText from "primevue/inputtext"
+import Checkbox from "primevue/checkbox"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -346,20 +347,31 @@ const kpiCards = computed(() => {
 })
 
 const newStates = reactive<Record<number, string>>({})
-const modal = ref<{ row: Row; state: string } | null>(null)
+const modal = ref<{ rows: Row[]; state: string } | null>(null)
 
-const actionRoute = (row: Row, name: string): routeType => ({
-    name: `grp.org.warehouses.show.inventory.org_stocks.${name}`,
-    parameters: { organisation: row.action!.organisation, warehouse: row.action!.warehouse as string },
-})
+const previewRoute: routeType = { name: "grp.goods.org_stocks.discontinue_preview", parameters: {} }
+const discontinueRoute: routeType = { name: "grp.goods.org_stocks.discontinue", parameters: {} }
 
 function openSet(row: Row): void {
-    modal.value = { row, state: newStates[row.id] }
+    modal.value = { rows: [row], state: newStates[row.id] }
+}
+
+function openBulkSet(): void {
+    if (!bulkState.value || !bulkTargets.value.length) {
+        return
+    }
+
+    modal.value = { rows: bulkTargets.value, state: bulkState.value }
 }
 
 function onSetDone(): void {
     if (modal.value) {
-        delete newStates[modal.value.row.id]
+        const doneIds = modal.value.rows.map((row) => row.id)
+        doneIds.forEach((id) => delete newStates[id])
+        selectedIds.value = selectedIds.value.filter((id) => !doneIds.includes(id))
+    }
+    if (!selectedIds.value.length) {
+        bulkState.value = null
     }
     modal.value = null
     drawerReloadKey.value++
@@ -381,6 +393,72 @@ const statusOptions = computed(() => Object.entries(statuses).map(([value, statu
 const periodOptions = computed(() => props.periods.map((period) => ({ value: period, label: periodLabels[period] })))
 
 const rowStatusOptions = (row: Row) => statusOptions.value.map((option) => ({ ...option, disabled: option.value === row.state }))
+
+const selectedIds = ref<number[]>([])
+const bulkState = ref<string | null>(null)
+
+const selectableRows = computed(() => (props.rows ?? []).filter((row) => row.action))
+
+const selectedRows = computed(() => selectableRows.value.filter((row) => selectedIds.value.includes(row.id)))
+
+const allSelected = computed({
+    get: () => selectableRows.value.length > 0 && selectedRows.value.length === selectableRows.value.length,
+    set: (checked: boolean) => {
+        selectedIds.value = checked ? selectableRows.value.map((row) => row.id) : []
+    },
+})
+
+const bulkStatusOptions = computed(() =>
+    statusOptions.value.map((option) => ({ ...option, disabled: selectedRows.value.every((row) => row.state === option.value) }))
+)
+
+const bulkTargets = computed(() => selectedRows.value.filter((row) => row.state !== bulkState.value))
+
+const selectedStateSummary = computed(() =>
+    Object.keys(statuses)
+        .map((state) => ({ state, count: selectedRows.value.filter((row) => row.state === state).length }))
+        .filter((summary) => summary.count > 0)
+)
+
+const bulkApplyLabel = computed(() => {
+    if (!bulkState.value || !bulkTargets.value.length) {
+        return ctrans("Review change")
+    }
+    return bulkTargets.value.length === 1
+        ? ctrans("Review change for 1 product")
+        : ctrans("Review change for :count products", { count: bulkTargets.value.length })
+})
+
+const bulkHint = computed(() => {
+    if (!bulkState.value) {
+        return ctrans("Choose the new status, then review what it affects. Nothing changes until you confirm.")
+    }
+
+    const notes: string[] = []
+    const skipped = selectedRows.value.length - bulkTargets.value.length
+    if (skipped > 0) {
+        notes.push(ctrans(":count already :status, left as they are.", { count: skipped, status: statuses[bulkState.value].label }))
+    }
+    notes.push(ctrans("Nothing changes until you confirm in the preview."))
+
+    return notes.join(" ")
+})
+
+function clearSelection(): void {
+    selectedIds.value = []
+    bulkState.value = null
+}
+
+watch(selectableRows, (rows) => {
+    const ids = rows.map((row) => row.id)
+    selectedIds.value = selectedIds.value.filter((id) => ids.includes(id))
+    if (!selectedIds.value.length) {
+        bulkState.value = null
+    }
+})
+
+const checkboxClass =
+    "[--p-checkbox-checked-background:var(--app-accent)] [--p-checkbox-checked-border-color:var(--app-accent)] [--p-checkbox-checked-hover-background:var(--app-accent-strong)] [--p-checkbox-checked-hover-border-color:var(--app-accent-strong)] [--p-checkbox-hover-border-color:var(--app-accent)] [--p-checkbox-icon-checked-color:var(--app-accent-text)] [--p-checkbox-icon-checked-hover-color:var(--app-accent-text)] [--p-checkbox-focus-ring-color:var(--app-accent)]"
 
 const pagerButtonClass = "rounded-md border border-gray-300 bg-white px-3 py-1.5 font-medium text-gray-700 transition-colors enabled:hover:bg-gray-50 enabled:hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
 
@@ -584,21 +662,82 @@ function openDrawer(row: Row): void {
     </div>
     <div v-else class="relative isolate mx-4 mb-8 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
     <div ref="tableScroller" class="max-h-[80vh] overflow-auto transition-opacity" :class="{ 'opacity-60': loading }">
-        <div ref="pagerBar" class="sticky left-0 top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 text-xs text-gray-600">
-            <span>{{ ctrans(":total products", { total: quantity(pagination.total) }) }}</span>
-            <div class="flex items-center gap-3">
-                <button type="button" :class="pagerButtonClass" :disabled="loading || pagination.page <= 1" @click="load({}, pagination.page - 1)">
-                    {{ ctrans("Previous") }}
-                </button>
-                <span>{{ ctrans("Page :page of :pages", { page: pagination.page, pages: pagination.last_page }) }}</span>
-                <button type="button" :class="pagerButtonClass" :disabled="loading || pagination.page >= pagination.last_page" @click="load({}, pagination.page + 1)">
-                    {{ ctrans("Next") }}
-                </button>
+        <div ref="pagerBar" class="sticky left-0 top-0 z-20 border-b border-gray-200 bg-white text-xs text-gray-600">
+            <div class="flex items-center justify-between gap-3 px-4 py-2">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>{{ ctrans(":total products", { total: quantity(pagination.total) }) }}</span>
+                    <span v-if="selectableRows.length && !selectedRows.length" class="text-gray-400">
+                        {{ ctrans("Tick products to change their status together") }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" :class="pagerButtonClass" :disabled="loading || pagination.page <= 1" @click="load({}, pagination.page - 1)">
+                        {{ ctrans("Previous") }}
+                    </button>
+                    <span>{{ ctrans("Page :page of :pages", { page: pagination.page, pages: pagination.last_page }) }}</span>
+                    <button type="button" :class="pagerButtonClass" :disabled="loading || pagination.page >= pagination.last_page" @click="load({}, pagination.page + 1)">
+                        {{ ctrans("Next") }}
+                    </button>
+                </div>
+            </div>
+            <div v-if="selectedRows.length" class="border-t border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-2.5" role="region" :aria-label="ctrans('Change status of the selected products')">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-semibold text-gray-900">
+                            {{ selectedRows.length === 1 ? ctrans("1 product selected") : ctrans(":count products selected", { count: selectedRows.length }) }}
+                        </span>
+                        <span v-for="summary in selectedStateSummary" :key="summary.state" class="rounded px-1.5 py-0.5 font-semibold" :class="statuses[summary.state]?.class">
+                            {{ summary.count }} {{ statuses[summary.state]?.label ?? summary.state }}
+                        </span>
+                    </div>
+                    <div class="ml-auto flex flex-wrap items-center gap-2">
+                        <span class="font-medium text-gray-700">{{ ctrans("Change status to") }}</span>
+                        <Select
+                            v-model="bulkState"
+                            :options="bulkStatusOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            optionDisabled="disabled"
+                            size="small"
+                            class="w-40 text-xs"
+                            :class="fieldClass"
+                            :pt="rowSelectPt"
+                            :placeholder="ctrans('Choose status')"
+                            :aria-label="ctrans('Select new status for the selected products')"
+                        >
+                            <template #option="{ option }">
+                                <span class="flex w-full items-center justify-between gap-2 text-xs">
+                                    {{ option.label }}
+                                    <span v-if="option.disabled" class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-400">{{ ctrans("current") }}</span>
+                                </span>
+                            </template>
+                        </Select>
+                        <button
+                            type="button"
+                            class="rounded-md bg-[--app-accent] px-3 py-1.5 font-semibold text-[--app-accent-text] shadow-sm transition-colors enabled:hover:bg-[--app-accent-strong] disabled:cursor-not-allowed disabled:opacity-40"
+                            :disabled="!bulkState || !bulkTargets.length"
+                            @click="openBulkSet"
+                        >
+                            {{ bulkApplyLabel }}
+                        </button>
+                        <button type="button" class="rounded-md px-2 py-1.5 font-medium text-gray-600 transition-colors hover:bg-white hover:text-gray-900" @click="clearSelection">
+                            {{ ctrans("Clear selection") }}
+                        </button>
+                    </div>
+                </div>
+                <p class="mt-1.5 text-gray-600">
+                    {{ bulkHint }}
+                </p>
             </div>
         </div>
         <table class="min-w-full text-xs">
             <thead ref="tableHead" :style="{ top: pagerBarHeight + 'px' }" class="sticky z-10 border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-600">
                 <tr>
+                    <th v-if="selectableRows.length" class="w-8 p-0">
+                        <label v-tooltip="allSelected ? ctrans('Clear selection') : ctrans('Select every product on this page')" class="flex cursor-pointer items-center py-2.5 pl-3 pr-1">
+                            <Checkbox v-model="allSelected" binary size="small" :class="checkboxClass" :aria-label="ctrans('Select all products on this page')" />
+                        </label>
+                    </th>
                     <th class="px-3 py-2.5">
                         <button type="button" class="uppercase tracking-wide transition-colors hover:text-[--app-accent]" @click="toggleSort('code')">{{ ctrans("Code — description") }} {{ sortArrow("code") }}</button>
                     </th>
@@ -615,7 +754,12 @@ function openDrawer(row: Row): void {
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700">
-                <tr v-for="row in rows" :key="row.id" class="transition-colors hover:bg-[--app-accent-soft]">
+                <tr v-for="row in rows" :key="row.id" class="transition-colors hover:bg-[--app-accent-soft]" :class="{ 'bg-[--app-accent-soft]': selectedIds.includes(row.id) }">
+                    <td v-if="selectableRows.length" class="w-8 p-0">
+                        <label v-if="row.action" class="flex cursor-pointer items-center py-2 pl-3 pr-1">
+                            <Checkbox v-model="selectedIds" :value="row.id" size="small" :class="checkboxClass" :aria-label="ctrans('Select :code', { code: row.code })" />
+                        </label>
+                    </td>
                     <td class="max-w-[220px] truncate px-3 py-2" :title="`${row.code} — ${row.name ?? ''}${row.family_code ? ' (' + row.family_code + ')' : ''}`">
                         <button type="button" class="group block w-full truncate text-left" @click="openDrawer(row)">
                             <span class="font-medium text-gray-900 group-hover:text-[--app-accent] group-hover:underline">{{ row.code }}</span>
@@ -685,7 +829,7 @@ function openDrawer(row: Row): void {
                     </td>
                 </tr>
                 <tr v-if="!rows.length">
-                    <td :colspan="organisations.length + 4" class="py-12 text-center text-sm text-gray-500">{{ ctrans("No products match these filters.") }}</td>
+                    <td :colspan="organisations.length + 4 + (selectableRows.length ? 1 : 0)" class="py-12 text-center text-sm text-gray-500">{{ ctrans("No products match these filters.") }}</td>
                 </tr>
             </tbody>
         </table>
@@ -699,10 +843,10 @@ function openDrawer(row: Row): void {
     <OrgStockDiscontinuePreviewModal
         v-if="modal"
         :isOpen="!!modal"
-        :orgStockIds="[modal.row.action!.org_stock_id]"
+        :orgStockIds="modal.rows.map((row) => row.action!.org_stock_id)"
         :initialState="modal.state"
-        :previewRoute="actionRoute(modal.row, 'discontinue_preview')"
-        :discontinueRoute="actionRoute(modal.row, 'discontinue')"
+        :previewRoute="previewRoute"
+        :discontinueRoute="discontinueRoute"
         :zIndex="40"
         @onClose="modal = null"
         @onDone="onSetDone"

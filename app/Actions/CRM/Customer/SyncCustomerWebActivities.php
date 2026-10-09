@@ -9,6 +9,7 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\CRM\Customer\CustomerWebActivityTypeEnum;
+use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerWebActivity;
 use App\Models\Web\WebsiteConversionEvent;
@@ -143,15 +144,21 @@ class SyncCustomerWebActivities implements ShouldBeUnique
 
     private function syncConversionEvents(Customer $customer, array $visitorIds, Collection $visitorWebUserMap, string $from, ?string $to): void
     {
+        $activityTypes = [
+            WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value => CustomerWebActivityTypeEnum::AddToBasket->value,
+            WebsiteConversionEventTypeEnum::CHECKOUT->value      => CustomerWebActivityTypeEnum::Checkout->value,
+        ];
+
         $query = WebsiteConversionEvent::whereIn('website_visitor_id', $visitorIds)
+            ->whereIn('event_type', array_keys($activityTypes))
             ->where('event_date', '>=', $from);
 
         if ($to !== null) {
             $query->where('event_date', '<=', $to);
         }
 
-        $query->chunkById(500, function ($events) use ($customer, $visitorWebUserMap) {
-            $rows = $events->map(function (WebsiteConversionEvent $event) use ($customer, $visitorWebUserMap) {
+        $query->chunkById(500, function ($events) use ($customer, $visitorWebUserMap, $activityTypes) {
+            $rows = $events->map(function (WebsiteConversionEvent $event) use ($customer, $visitorWebUserMap, $activityTypes) {
                 return [
                     'group_id'           => $customer->group_id,
                     'organisation_id'    => $customer->organisation_id,
@@ -160,7 +167,7 @@ class SyncCustomerWebActivities implements ShouldBeUnique
                     'customer_id'        => $customer->id,
                     'web_user_id'        => $visitorWebUserMap[$event->website_visitor_id] ?? null,
                     'website_visitor_id' => $event->website_visitor_id,
-                    'activity_type'      => CustomerWebActivityTypeEnum::AddToBasket->value,
+                    'activity_type'      => $activityTypes[$event->event_type->value],
                     'page_url'           => mb_substr($event->page_url, 0, 4096),
                     'page_path'          => mb_substr($event->page_path, 0, 4096),
                     'page_type'          => null,

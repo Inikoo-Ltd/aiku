@@ -71,6 +71,8 @@ Adds are refused in three cases, on purpose: the list has reached the **budget**
 
 Once the partner [sends a shipment to their warehouse](/docs/fulfilling-partner-orders), an incoming **stock delivery** appears under your partner's **Stock deliveries**. Leave it alone while it says confirmed or dispatched — it mirrors the seller's warehouse and updates itself. When the boxes physically arrive: **receive**, check, and place into locations exactly as you would for any supplier delivery. Anything short or damaged is dealt with after receiving, against the linked invoice — see [the overview](/docs/ordering-from-a-partner-organisation) for how money works.
 
+When the partner dispatches, each line arrives with the batches the partner picked already filled in: the same batch code and best-before date, converted to your SKOs. At checking you only confirm them, or correct them if the goods say otherwise, and placing the stock puts those batches on your shelves.
+
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>See what needs buying:</b> your organisation → <b>Procurement → Partners</b> → open the partner → <b>Shopping</b> (the dashboard) → work the risk tiles.</li>

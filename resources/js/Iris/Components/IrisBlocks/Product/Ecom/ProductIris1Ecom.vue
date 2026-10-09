@@ -16,6 +16,7 @@ import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { ctrans } from "@/Composables/useTrans"
+import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
 import ButtonOutOfStock from "@/Components/Iris/Products/ButtonOutOfStock.vue"
 import PreOrderInfo from "@/Components/Iris/Products/PreOrderInfo.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
@@ -312,14 +313,16 @@ onMounted(async () => {
                             <!-- Stock info -->
                             <LabelComingSoon v-if="product.status === 'coming-soon' && !product.pre_order" :product="product" />
                             <div v-else class="flex items-center gap-2 text-sm">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width />
-                                <span>
-                                    {{ product?.stock >= 250
-                                        ? ctrans("Unlimited quantity available")
-                                        : (product.stock > 0 ? ctrans("In stock") : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock")))
-                                    }}
-                                </span>
+                                <StockInfoPopover :product="product">
+                                    <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                        :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width />
+                                    <span>
+                                        {{ product?.stock >= 250
+                                            ? ctrans("Unlimited quantity available")
+                                            : (product.stock > 0 ? ctrans("In stock") : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock")))
+                                        }}
+                                    </span>
+                                </StockInfoPopover>
                             </div>
 
                             <!-- REMIND ME -->
@@ -573,20 +576,22 @@ onMounted(async () => {
             />
 
             <div v-else class="flex items-center gap-2 text-sm">
-                <FontAwesomeIcon
-                    :icon="faCircle"
-                    class="text-[10px]"
-                    :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width
-                />
-                <span>
-                    {{
-                        product.stock >= 250
-                            ? ctrans("Unlimited quantity available")
-                            : product.stock > 0
-                                ? `${ctrans("In stock")} (${product.stock} ${ctrans("available")})`
-                                : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock"))
-                    }}
-                </span>
+                <StockInfoPopover :product="product">
+                    <FontAwesomeIcon
+                        :icon="faCircle"
+                        class="text-[10px]"
+                        :class="product.stock ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width
+                    />
+                    <span>
+                        {{
+                            product.stock >= 250
+                                ? ctrans("Unlimited quantity available")
+                                : product.stock > 0
+                                    ? `${ctrans("In stock")} (${product.stock} ${ctrans("available")})`
+                                    : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock"))
+                        }}
+                    </span>
+                </StockInfoPopover>
             </div>
 
             <FontAwesomeIcon

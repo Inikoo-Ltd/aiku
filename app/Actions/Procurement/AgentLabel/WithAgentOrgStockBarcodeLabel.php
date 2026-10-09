@@ -21,7 +21,7 @@ trait WithAgentOrgStockBarcodeLabel
         $agent = $this->getOrganisationAgent($organisation);
 
         abort_unless(
-            $agent && GetAgentOrgStocks::run($agent)->where('org_stocks.id', $orgStock->id)->exists(),
+            $agent && GetAgentOrgStocks::run($agent, orgStockId: $orgStock->id)->where('org_stocks.id', $orgStock->id)->exists(),
             404
         );
     }

@@ -69,6 +69,14 @@ Cuando el stock de un SKO en todo el almacén cae por debajo del umbral de stock
 
 Auditar el stock de una ubicación registra la diferencia entre lo que el sistema espera y lo que realmente has contado: introduces la cantidad contada y un motivo (recuento, ganancia de recuento, falta de recuento, dañado, caducado, y otros), y aiku registra el ajuste como un movimiento de stock contra esa ubicación y marca el stock como comprobado.
 
+## Lotes y fechas de consumo preferente
+
+El stock sabe qué lote hay en cada ubicación. Los lotes llegan a las estanterías desde la recepción de mercancía (el código de lote y la fecha de consumo preferente que se escriben al comprobar), desde la producción terminada y desde las entregas de un socio, y salen con los picks. Cuando nadie indica el lote, el stock sale por la fecha de consumo preferente más próxima, después del stock que no tiene lote registrado.
+
+- **Inventory → Batch Codes** muestra los lotes que hay en las estanterías, primero los de fecha más próxima: cuántos SKO quedan, en cuántas ubicaciones y cuántos días faltan, en ámbar a menos de 90 días y en rojo cuando ya ha caducado. Un lote sin fecha de consumo preferente se señala. Cambia el filtro **Stock** para ver los lotes que ya no tienen existencias.
+- La página **Batch Codes** de un SKO muestra lo mismo para ese SKO. **Count batches** abre una ubicación con los lotes que el stock dice que hay y el stock sin lote. Cuéntalos tal como vienen impresos en la mercancía, añade un lote que no aparezca (código y fecha de la etiqueta) y guarda. Es un recuento: lo que cuentas sustituye a lo que había, y cualquier diferencia en el total queda registrada como recuento. Así es también como el stock que ya está en las estanterías recibe sus lotes la primera vez.
+- La exportación de SKO (**Inventory → SKOs**, exportar) incluye para cada SKO la fecha de consumo preferente más próxima en las estanterías, los SKO ya caducados, los que caducan en 30 y en 90 días, y los SKO sin lote.
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Ver o añadir áreas del almacén:</b> tu almacén → <b>Locations → Areas</b> → botón <b>Areas</b> para crear una.</li>

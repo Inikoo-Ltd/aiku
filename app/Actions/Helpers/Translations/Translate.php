@@ -51,8 +51,8 @@ class Translate extends OrgAction
             }
             $translated = $this->translateWith($text, $languageFrom, $languageTo, $translationDriver, $brief);
 
-            $isConfirmed  = true;
             $qualityCheck = config("auto-translations.drivers.$translationDriver.quality_check");
+            $isConfirmed  = (bool) $qualityCheck;
             if ($qualityCheck && $this->isBelowQuality($text, $translated, $languageFrom, $languageTo, $qualityCheck['min_score'])) {
                 $retried     = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver'], $brief));
                 $isConfirmed = $retried !== null;

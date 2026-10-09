@@ -53,6 +53,7 @@ class CrawlPage extends Model
         return [
             'is_in_sitemap' => 'boolean',
             'is_indexable'  => 'boolean',
+            'hreflang'      => 'array',
         ];
     }
 

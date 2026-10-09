@@ -31,6 +31,16 @@ interface Row {
     decisions: Record<string, { accepted: boolean }>
     skip: boolean
     errors: string[]
+    sourcing: Sourcing | null
+}
+
+interface Sourcing {
+    status: "ok" | "overpaying" | "cheap" | "unknown"
+    low: number | null
+    high: number | null
+    currency: string
+    links: { url: string; title: string; price: number | null }[]
+    note: string | null
 }
 
 interface DraftOrder {
@@ -63,6 +73,13 @@ const props = defineProps<{
         problems: string[]
         review: { status?: string; note?: string; partial?: boolean; summary?: string; rows?: Record<string, string> } | null
         ai: string | null
+        sourcing: string | null
+        compliance?: {
+            packaging_rows: number
+            orphans: number[]
+            unread: boolean
+            declaration: { signed_by: string | null; signed_on: string | null; answers: number; not_yes: { question: string; answer: string }[] } | null
+        }
         purchase_orders: Record<string, { purchase_order?: string; organisation?: string | null; parent_name?: string | null; state?: string | null; route?: { name: string; parameters: Record<string, string> } | null; lines?: number; errors?: string[]; error?: string }> | null
     }
     supplier: { code: string; name: string; currency: string | null; products_route: RouteDef }
@@ -74,8 +91,23 @@ const props = defineProps<{
 const isImporting = ref(false)
 
 const isAiRunning = computed(() => ["queued", "running"].includes(props.upload.ai ?? ""))
-const { start: startPolling, stop: stopPolling } = usePoll(4000, { only: ["upload", "rows"] }, { autoStart: isAiRunning.value })
-watch(isAiRunning, (running) => (running ? startPolling() : stopPolling()))
+const isSourcingRunning = computed(() => ["queued", "running"].includes(props.upload.sourcing ?? ""))
+const isPolling = computed(() => isAiRunning.value || isSourcingRunning.value)
+const { start: startPolling, stop: stopPolling } = usePoll(4000, { only: ["upload", "rows"] }, { autoStart: isPolling.value })
+watch(isPolling, (running) => (running ? startPolling() : stopPolling()))
+
+const sourcingNote = computed(() => ({
+    queued: ctrans("Checking prices on sourcing websites, this page updates by itself"),
+    running: ctrans("Checking prices on sourcing websites, this page updates by itself"),
+    budget: ctrans("Sourcing price check stopped: the AI budget for this upload or this month is used up."),
+    failed: ctrans("Sourcing price check could not run."),
+})[props.upload.sourcing ?? ""] ?? null)
+const sourcingMeta = computed(() => ({
+    ok: { label: ctrans("Within the sourcing price range"), icon: "fal fa-check-circle", class: "text-green-700" },
+    overpaying: { label: ctrans("More than 30% above the sourcing price range, we may be overpaying"), icon: "fal fa-exclamation-triangle", class: "text-amber-700" },
+    cheap: { label: ctrans("Well below the sourcing price range, check quality and spec"), icon: "fal fa-exclamation-triangle", class: "text-amber-700" },
+    unknown: { label: ctrans("No comparable items found on sourcing websites"), icon: "fal fa-info-circle", class: "text-gray-500" },
+}))
 const skoNames = ref<Record<number, string>>(Object.fromEntries(props.rows.map((row) => [row.id, row.values.sko_name ?? ""])))
 
 const levelOrder = { error: 0, block: 1, link: 2, warning: 3 }
@@ -253,9 +285,9 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
     <div class="p-4 space-y-4 text-sm text-gray-700">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-gray-500">
             <span>{{ ctrans("Supplier") }}
-                <a :href="route('grp.supply-chain.suppliers.show', supplier.products_route.parameters)" target="_blank" rel="noopener" class="font-medium text-[--app-accent-strong] hover:underline">{{ supplier.name }}</a>
+                <a :href="route('grp.supply-chain.suppliers.show', supplier.products_route.parameters)" target="_blank" rel="noopener" class="font-medium text-gray-700 hover:underline">{{ supplier.name }}</a>
             </span>
-            <a :href="route(supplier.products_route.name, supplier.products_route.parameters)" target="_blank" rel="noopener" class="font-medium text-[--app-accent-strong] hover:underline">
+            <a :href="route(supplier.products_route.name, supplier.products_route.parameters)" target="_blank" rel="noopener" class="font-medium text-gray-700 hover:underline">
                 {{ ctrans("Supplier products") }}
             </a>
             <span class="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
@@ -308,6 +340,32 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
             <ul class="mt-1 list-disc pl-5">
                 <li v-for="error in upload.errors" :key="error">{{ error }}</li>
             </ul>
+        </div>
+
+        <div v-if="upload.compliance && (upload.compliance.packaging_rows || upload.compliance.declaration || upload.compliance.unread)" class="rounded border border-gray-200 p-3">
+            <div class="font-semibold">{{ ctrans("Compliance (v7)") }}</div>
+            <ul class="mt-1 space-y-0.5">
+                <li v-if="upload.compliance.packaging_rows">
+                    {{ ctrans(":count packaging component rows, saved on each trade unit at Import (only where it has no packaging yet).", { count: upload.compliance.packaging_rows }) }}
+                </li>
+                <li v-if="upload.compliance.unread" class="text-amber-700">
+                    {{ ctrans("The Packaging components tab has no \"Part reference\" heading in its first 20 rows, nothing on it was read.") }}
+                </li>
+                <li v-if="upload.compliance.orphans.length" class="text-amber-700">
+                    {{ ctrans("Packaging components rows :rows have no Part reference or one that is not on Product data, they will not be imported.", { rows: upload.compliance.orphans.join(", ") }) }}
+                </li>
+                <li v-if="upload.compliance.declaration">
+                    {{ ctrans("Supplier declaration signed by :name on :date, :count statements.", { name: upload.compliance.declaration.signed_by || ctrans("nobody"), date: upload.compliance.declaration.signed_on || ctrans("no date"), count: upload.compliance.declaration.answers }) }}
+                </li>
+                <li v-for="(answer, index) in upload.compliance.declaration?.not_yes ?? []" :key="index" class="text-amber-700">
+                    {{ answer.question }}: <span class="font-medium">{{ answer.answer || ctrans("not answered") }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <div v-if="sourcingNote" role="status" class="flex items-center gap-2 rounded border border-gray-200 bg-gray-50 p-3 text-gray-600">
+            <FontAwesomeIcon :icon="isSourcingRunning ? 'fal fa-spinner-third' : 'fal fa-info-circle'" :spin="isSourcingRunning" fixed-width />
+            {{ sourcingNote }}
         </div>
 
         <div v-if="!isAiRunning && upload.review?.summary" class="rounded border border-gray-200 bg-gray-50 p-3">
@@ -399,7 +457,7 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                         <td v-if="order.error" colspan="4" class="py-1.5 text-red-700">{{ order.error }}</td>
                         <template v-else>
                             <td class="py-1.5 pr-3">
-                                <a v-if="order.route" :href="route(order.route.name, order.route.parameters)" target="_blank" rel="noopener" class="font-medium text-[--app-accent-strong] hover:underline">{{ order.purchase_order }}</a>
+                                <a v-if="order.route" :href="route(order.route.name, order.route.parameters)" target="_blank" rel="noopener" class="font-medium text-gray-700 hover:underline">{{ order.purchase_order }}</a>
                                 <span v-else class="font-medium">{{ order.purchase_order }}</span>
                                 <span v-for="error in order.errors ?? []" :key="error" class="block text-red-700">{{ error }}</span>
                             </td>
@@ -472,6 +530,8 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                     <span>{{ money(row.values.recommended_price_eur, "€") }} / {{ ctrans("RRP") }} {{ money(row.values.recommended_rrp_eur, "€") }}</span>
                     <span v-if="row.values.unit_barcode">{{ row.values.unit_barcode === "auto" ? ctrans("pool barcode") : row.values.unit_barcode }}</span>
                     <span v-for="(cartons, key) in row.values.order" :key="key">{{ key }} {{ cartons }} {{ ctrans("cartons") }}</span>
+                    <span v-if="row.values.packaging?.length">{{ ctrans(":count packaging components", { count: row.values.packaging.length }) }}</span>
+                    <span v-if="row.values.compliance?.eudr?.status">{{ ctrans("EUDR") }}: {{ row.values.compliance.eudr.status }}</span>
                 </div>
 
                 <div v-if="!isSkipped(row) && needsSkoName(row)" class="mt-2 flex items-center gap-2 text-xs">
@@ -535,6 +595,25 @@ const money = (value: number | null | undefined, symbol = "") => (value === null
                 <p v-if="upload.review?.rows?.[row.row]" class="mt-2 text-xs text-gray-600">
                     <span class="font-medium">{{ ctrans("AI suggests") }}:</span> {{ upload.review.rows[row.row] }}
                 </p>
+
+                <div v-if="row.sourcing" class="mt-2 text-xs text-gray-600">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span class="inline-flex items-center gap-1 font-medium" :class="sourcingMeta[row.sourcing.status].class">
+                            <FontAwesomeIcon :icon="sourcingMeta[row.sourcing.status].icon" fixed-width />
+                            {{ sourcingMeta[row.sourcing.status].label }}
+                        </span>
+                        <span v-if="row.sourcing.low !== null" class="tabular-nums">
+                            {{ ctrans("Sourcing websites") }}: {{ money(row.sourcing.low) }}–{{ money(row.sourcing.high) }} {{ row.sourcing.currency }} · {{ ctrans("cost") }} {{ money(row.values.unit_cost) }} {{ supplier.currency }}
+                        </span>
+                    </div>
+                    <p v-if="row.sourcing.note" class="mt-0.5 text-gray-500">{{ row.sourcing.note }}</p>
+                    <ul v-if="row.sourcing.links.length" class="mt-0.5 space-y-0.5">
+                        <li v-for="link in row.sourcing.links" :key="link.url">
+                            <a :href="link.url" target="_blank" rel="noopener noreferrer nofollow" class="font-medium text-gray-700 hover:underline">{{ link.title || link.url }}</a>
+                            <span v-if="link.price !== null" class="tabular-nums text-gray-500"> · {{ money(link.price) }} {{ row.sourcing.currency }}</span>
+                        </li>
+                    </ul>
+                </div>
 
                 <ul v-if="row.status === 'failed'" class="mt-2 text-xs text-red-700">
                     <li v-for="error in row.errors" :key="error">{{ error }}</li>

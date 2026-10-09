@@ -246,6 +246,22 @@ const openModal = (action: any) => {
 const addNewProduct = (products) => {
     const items = Array.isArray(products) ? products : [products]
 
+    if (props.state !== 'creating' && props.state !== 'submitted') {
+        isModalProductListOpen.value = false
+        router.patch(
+            route(props.modifyRoute.name, props.modifyRoute.parameters),
+            { products: Object.fromEntries(items.map((product) => [product.id, { quantity_ordered: product.quantity_selected }])) },
+            {
+                onStart: () => (loadingsaveModify.value = true),
+                onFinish: () => (loadingsaveModify.value = false),
+                onSuccess: () => notify({ title: ctrans("Success"), text: ctrans("Products added to the order"), type: "success" }),
+                onError: (e: any) => notify({ title: ctrans("Something went wrong"), text: Object.values(e).join(' '), type: "error" }),
+                preserveScroll: true
+            }
+        )
+        return
+    }
+
     items.forEach((product) => {
         const existingIndex = props.data.data.findIndex(
             (p: any) => p.asset_code === product.code

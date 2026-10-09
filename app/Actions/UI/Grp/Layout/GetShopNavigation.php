@@ -134,6 +134,16 @@ class GetShopNavigation
                             ],
                         ] : null,
                         $shop->type !== ShopTypeEnum::EXTERNAL ? [
+                            "label" => __("Sub-departments"),
+                            "tooltip" => __("Sub-departments"),
+                            "icon" => ["fal", "fa-folder-download"],
+                            'root' => 'grp.org.shops.show.catalogue.sub_departments.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.sub_departments.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ] : null,
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Families"),
                             "tooltip" => __("Families"),
                             "icon" => ["fal", "fa-folder"],
@@ -595,6 +605,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Keywords"),
+                                "tooltip" => __("Keywords"),
+                                "icon"    => ["fal", "fa-key"],
+                                "root"    => "grp.org.shops.show.seo.keywords.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.keywords.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];
@@ -797,6 +817,15 @@ class GetShopNavigation
                         "root"  => "grp.org.shops.show.tasks.list_all",
                         "route" => [
                             "name"       => "grp.org.shops.show.tasks.list_all",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("To review & publish"),
+                        "icon"  => ["fal", "fa-clipboard-check"],
+                        "root"  => "grp.org.shops.show.tasks.review",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.review",
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],

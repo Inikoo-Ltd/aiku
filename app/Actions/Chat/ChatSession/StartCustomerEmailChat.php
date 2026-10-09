@@ -23,6 +23,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -44,6 +45,8 @@ class StartCustomerEmailChat extends OrgAction
     use WithChatAgentAuthorisation;
 
     private ?Customer $customer = null;
+
+    private ?Order $order = null;
 
     public function rules(): array
     {
@@ -208,6 +211,16 @@ class StartCustomerEmailChat extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function inOrder(Order $order, ActionRequest $request): ChatSession
+    {
+        $this->order = $order;
+
+        return $this->asController($order->customer, $request);
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function inShop(Shop $shop, ActionRequest $request): ChatSession
     {
         $this->initialisationFromShop($shop, $request);
@@ -230,6 +243,10 @@ class StartCustomerEmailChat extends OrgAction
 
     public function htmlResponse(ChatSession $chatSession): RedirectResponse
     {
+        if ($this->order) {
+            return back();
+        }
+
         return redirect()->route('grp.org.chat.inbox.conversation', [
             'organisation' => $chatSession->shop->organisation->slug,
             'chatSession'  => $chatSession->ulid,
@@ -254,5 +271,10 @@ class StartCustomerEmailChat extends OrgAction
     {
         return filled($customer->email)
             && filled(Arr::get($customer->shop->settings, 'gmail.email'));
+    }
+
+    public static function canBeStartedBy(User $user, Customer $customer): bool
+    {
+        return self::canBeStarted($customer) && self::make()->userCanActOnChatOnShop($user, $customer->shop);
     }
 }

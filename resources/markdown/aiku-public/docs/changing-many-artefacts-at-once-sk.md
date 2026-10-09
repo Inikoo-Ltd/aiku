@@ -2,7 +2,7 @@
 title: Hromadná zmena viacerých artefaktov naraz
 summary: Zaškrtnite artefakty a potom v paneli, ktorý sa objaví, použite výber vpravo na nastavenie veľkosti dávky alebo trvanlivosti, nastavenie rovnakých výrobných krokov pre všetky, presun do inej rodiny alebo oddelenia, vyradenie z prevádzky alebo ich vrátenie späť.
 date: 2026-09-29
-source_date: 2026-09-29
+source_date: 2026-10-08
 tags: production, crafts
 category: production
 ---
@@ -90,6 +90,16 @@ Zoznamy artefaktov sa otvárajú iba na stavoch **In process** (v procese) a **A
 
 Rodiny preberajú svoj stav od artefaktov, ktoré obsahujú. Rodina je aktívna, kým je v nej aspoň jeden artefakt aktívny alebo v procese, a stane sa vyradenou až keď sú vyradené všetky. To znamená, že vyradenie posledného artefaktu v rodine potichu odstráni aj rodinu zo zoznamu rodín, a tie isté prepínače <b>State</b> ju vrátia späť.
 
+## Požiadajte svojho AI asistenta
+
+Ak je váš účet povolený, AI asistent, ktorého pripojíte k aiku, môže výrobu nastaviť za vás. Povedzte mu vlastnými slovami, čo potrebujete, napríklad *"daj ACLB-01 až ACLB-13 tieto kroky: liatie, etiketovanie, balenie"*. Najprv vám ukáže, čo zmení, a zapíše to až po vašom potvrdení.
+
+- Môže vytvárať a upravovať artefakty, suroviny (aj ich jednotkovú cenu) a výrobné úlohy.
+- Nový artefakt sa vždy vytvorí aj so svojím SKO. Ak SKO ešte neexistuje, asistent vytvorí zásobu, jej obchodnú jednotku a SKO spolu s artefaktom.
+- Receptúry fungujú ako na tejto stránke: artefakty, ktoré vymenujete, dostanú presne zadané kroky a kroky, ktoré v zozname nie sú, sa odstránia aj so surovinami. Každý krok má poradie, koľko z neho tvorí jeden artefakt, cieľ za hodinu a suroviny, ktoré spotrebuje na jeden artefakt. Asistent vám povie aj materiálové náklady každého artefaktu.
+- Každá zmena sa zaznamená s vašou požiadavkou a dá sa vrátiť: požiadajte asistenta, aby ju vrátil, alebo to urobí administrátor v zázname zmien AI. Záznam, ktorý asistent vytvoril, sa vrátením neodstráni; nastavte ho ako vyradený.
+- Povolenie je prepínač na vašom používateľskom účte, ktorý zapína administrátor. Platí pre administrátorov skupiny a organizácie, ľudí, ktorí môžu továreň upravovať, a administrátorov obchodov a predavačov v organizácii továrne.
+
 ## Čo je dobré vedieť
 
 - **Artefakty, ktoré už sú v stave, ktorý ste zvolili, sa preskočia.** Vyradenie výberu, ktorý je napoly vyradený, nahlási len tie, ktoré sa skutočne zmenili.
@@ -108,6 +118,7 @@ Rodiny preberajú svoj stav od artefaktov, ktoré obsahujú. Rodina je aktívna,
 <li><b>Rovnaké kroky pre mnoho:</b> vyberte <b>Manufacture task</b> → <b>Make a unified manufacture task</b>.</li>
 <li><b>Vytvoriť výrobnú úlohu:</b> <b>Factory</b> → <b>Operations</b> (prevádzka) → <b>Tasks</b> (úlohy).</li>
 <li><b>Zobraziť vyradené:</b> prepínače <b>State</b> nad tabuľkou → zaškrtnite <b>Discontinued</b>.</li>
+<li><b>Povoliť niekomu nastavovať výrobu cez AI asistenta (administrátori):</b> <b>Sysadmin → Users</b> → otvorte používateľa → <b>Edit</b> → <b>Access</b> → zapnite <b>Can connect AI assistant</b> a potom <b>Can set up artefacts, raw materials and recipes through their AI assistant</b>.</li>
 <li><b>Len jeden artefakt:</b> otvorte ho a použite ceruzku, rovnaké polia sú aj tam. Jeho kroky sú na záložke <b>Manufacture tasks</b>.</li>
 </ul>
 </aside>

@@ -19,6 +19,9 @@ use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\SyncDispatchedFaireOrdersTax;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyProductsAllShops;
+use App\Actions\Catalogue\Shop\External\Shopify\RetryShippingShopifyOrders;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -858,6 +861,42 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+            $this->logSchedule(
+                $schedule->job(GetShopifyOrdersAllShops::makeJob())->everyTenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetShopifyOrdersAllShops',
+                ),
+                name: 'GetShopifyOrdersAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(GetShopifyProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'GetShopifyProductsAllShops',
+                ),
+                name: 'GetShopifyProductsAllShops',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('external_shop:shopify_inventory')->hourlyAt(25)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'UpdateShopifyExternalShopInventory',
+                ),
+                name: 'UpdateShopifyExternalShopInventory',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RetryShippingShopifyOrders::makeJob())->hourlyAt(40)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RetryShippingShopifyOrders',
+                ),
+                name: 'RetryShippingShopifyOrders',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
 
             $this->logSchedule(
                 $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
@@ -1376,6 +1415,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('tasks:daily-sales')->dailyAt('06:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'GenerateDailySalesTasks',
+                ),
+                name: 'GenerateDailySalesTasks',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('masters:price-tips')->dailyAt('05:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'GenerateMasterAssetPriceTips',
                 ),
@@ -1416,6 +1464,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'HydrateChatReplyExamples',
                 ),
                 name: 'HydrateChatReplyExamples',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:score-suggestions')->dailyAt('04:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ScoreChatSuggestions',
+                ),
+                name: 'ScoreChatSuggestions',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
@@ -1470,6 +1527,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ReleaseFullyStockedPrePickLines',
                 ),
                 name: 'ReleaseFullyStockedPrePickLines',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('production:raise_scheduled_partner_orders')->dailyAt('06:00')->timezone('Europe/London')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RaiseScheduledPartnerOrders',
+                ),
+                name: 'RaiseScheduledPartnerOrders',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

@@ -7,7 +7,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, useAttrs, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
 import ProductContents from "@/Components/CMS/Webpage/Product1/ProductContents.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 import Image from "@common/Components/Image.vue"
@@ -159,16 +160,18 @@ defineOptions({
 
                         <div v-if="layout?.iris?.is_logged_in"
                             class="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="(product?.is_on_demand || product.stock > 0 ) ? 'text-green-600' : 'text-red-600'" fixed-width />
-                            <span>
-                               <span>
-                                    {{ product?.is_on_demand
-                                    ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
-                                }}
+                            <StockInfoPopover :product="product">
+                                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                    :class="(product?.is_on_demand || product.stock > 0 ) ? 'text-green-600' : 'text-red-600'" fixed-width />
+                                <span>
+                                   <span>
+                                        {{ product?.is_on_demand
+                                        ? ctrans("Unlimited quantity available")
+                                        : (product.stock > 0 ?  ctrans("In stock") + ` (${product.stock} ` + ctrans("available") + `)` : ctrans("Out Of Stock"))
+                                    }}
+                                    </span>
                                 </span>
-                            </span>
+                            </StockInfoPopover>
                         </div>
                     </div>
                 </div>
@@ -236,7 +239,7 @@ defineOptions({
 
                     <button v-if="product.description_extra" @click="toggleExpanded"
                         class="mt-1 text-gray-900 text-xs underline focus:outline-none">
-                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                        {{ expanded ? ctrans("Show Less") : ctrans("Read More") }}
                     </button>
                 </div>
 
@@ -248,7 +251,7 @@ defineOptions({
                     <div v-if="modelValue?.paymentData?.length > 0"
                         class="items-center gap-3 border-gray-400 font-bold text-gray-800 xpy-2"
                         :style="getStyles(modelValue?.information_style?.title)">
-                        <h2 class="!text-base font-bold">{{ trans("Secure Payments") }}:</h2>
+                        <h2 class="!text-base font-bold">{{ ctrans("Secure Payments") }}:</h2>
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" loading="lazy" decoding="async" />
@@ -342,7 +345,7 @@ defineOptions({
                 :styleData="modelValue?.information_style" />
             <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information"
                 :styleData="modelValue?.information_style" />
-            <h2 class="!text-sm !font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
+            <h2 class="!text-sm !font-semibold mb-2">{{ ctrans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" loading="lazy" decoding="async" />

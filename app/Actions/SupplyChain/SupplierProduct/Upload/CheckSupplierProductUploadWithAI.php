@@ -37,7 +37,9 @@ class CheckSupplierProductUploadWithAI
             return $upload;
         }
 
+        Upload::whereKey($upload->id)->update(['data->sourcing' => 'queued']);
         $this->setAiState($upload, 'done');
+        CheckSupplierProductUploadSourcingPrices::dispatch($upload);
 
         return $upload;
     }

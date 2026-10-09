@@ -212,7 +212,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'org_stocks.packed_in',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($orgPartner->partner)));
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($orgPartner->partner), $orgPartner->id));
     }
 
     /**

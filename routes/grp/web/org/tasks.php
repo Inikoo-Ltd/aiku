@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [ShowStaffTasks::class, 'inOrganisation'])->name('index');
 Route::get('/all', [IndexStaffTasks::class, 'inOrganisation'])->name('list_all');
+Route::get('/review', [IndexStaffTasks::class, 'inOrganisation'])->name('review');
 Route::get('/board', [ShowStaffTasksBoard::class, 'inOrganisation'])->name('board');
 Route::get('/reports', [ShowStaffTasksReports::class, 'inOrganisation'])->name('reports');
 Route::get('/eta-map', [ShowStaffTasksEtaMap::class, 'inOrganisation'])->name('eta_map');

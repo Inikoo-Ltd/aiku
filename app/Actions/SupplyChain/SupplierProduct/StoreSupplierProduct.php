@@ -27,7 +27,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreSupplierProduct extends OrgAction
 {
@@ -122,6 +121,7 @@ class StoreSupplierProduct extends OrgAction
             'cbm'                  => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'extra_costs'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'carton_weight'        => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'carton_net_weight'    => ['sometimes', 'nullable', 'integer', 'min:0'],
 
             'trade_units'          => ['sometimes', 'nullable', 'array'],
             'trade_units.*'        => ['integer', 'exists:trade_units,id'],
@@ -138,17 +138,6 @@ class StoreSupplierProduct extends OrgAction
         }
 
         return $rules;
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(Supplier $supplier, ActionRequest $request): SupplierProduct
-    {
-        $this->supplier_id = $supplier->id;
-        $this->initialisationFromGroup($supplier->group, $request);
-
-        return $this->handle($supplier, $this->validatedData);
     }
 
     /**

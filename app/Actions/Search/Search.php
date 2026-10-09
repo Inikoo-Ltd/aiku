@@ -115,6 +115,7 @@ class Search extends OrgAction
 
         $options = [];
         if (in_array($scope, self::GROUP_SCOPES, true)) {
+            abort_if($scope !== 'tickets' && $request->user()->worksOnlyForAgents(), 403);
             $this->initialisationFromGroup(app('group'), $request);
             if ($scope === 'master_shop' && $request->query('masterShop')) {
                 $options = ['master_shop_id' => MasterShop::where('slug', $request->query('masterShop'))->first()?->id];

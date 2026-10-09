@@ -69,7 +69,7 @@ class GetTicketBadgeData
         if (Ticket::canCheckQa($user)) {
             $badges['queue']['qa_to_check'] = $this->row(
                 __('Waiting for my check'),
-                (clone $all)->whereIn('qa_status', [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING])->where('qa_user_id', $user->id),
+                (clone $all)->whereIn('qa_status', [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING])->qaCheckerIs($user),
                 [],
                 'qa'
             );
@@ -77,7 +77,7 @@ class GetTicketBadgeData
 
         $badges['queue_recent'] = $this->recentUpdates($user, Ticket::where('group_id', $user->group_id)->where(fn (Builder $query) => $query
             ->where('assignee_id', $user->id)
-            ->orWhere('qa_user_id', $user->id)
+            ->orWhere(fn (Builder $query) => $query->qaCheckerIs($user))
             ->orWhereHas('collaborators', fn (Builder $query) => $query->whereKey($user->id))));
 
         return $badges;

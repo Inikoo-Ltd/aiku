@@ -16,6 +16,7 @@ import TableArtefactCompliance from "@/Components/Tables/Grp/Org/Production/Tabl
 import ArtefactShowcase from "@/Components/Showcases/Grp/ArtefactShowcase.vue"
 import ArtefactLabels from "@/Components/Production/Artefact/ArtefactLabels.vue"
 import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
+import ModalAssignArtefactToCustomer from "@/Components/Production/Artefact/ModalAssignArtefactToCustomer.vue"
 
 const props = defineProps<{
     title: string,
@@ -27,6 +28,7 @@ const props = defineProps<{
     compliance?: {}
     history?: {}
     artisans: {}
+    customer_product?: { artefact_id: number, shops: Array<{ id: number, slug: string, code: string, name: string }> } | null
 
 
 }>()
@@ -53,7 +55,11 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #other>
+            <ModalAssignArtefactToCustomer v-if="customer_product" :artefact-id="customer_product.artefact_id" :shops="customer_product.shops" />
+        </template>
+    </PageHeading>
     <ArtisanAssignments :data="artisans" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 

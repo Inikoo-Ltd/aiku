@@ -49,6 +49,7 @@ class GetWebpageSeo
             ],
             'structured_data'        => $this->structuredData($webpage),
             'structured_data_types'  => $this->structuredDataTypes($webpage),
+            'hreflang'               => GetWebpageHreflangAlternates::run($webpage)['alternates'],
         ];
     }
 

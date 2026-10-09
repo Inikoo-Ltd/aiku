@@ -1,7 +1,7 @@
 ---
 title: Adding staff to your agent organisation
 summary: For agent managers — how to give your colleagues their own aiku login, choose what they may do, and close an account when someone leaves.
-date: 2026-09-30
+date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -16,7 +16,7 @@ For the manager of an agent organisation. Once you can log in, you no longer nee
 
 Everyone in your organisation sees only your organisation and the work you do for the buying company:
 
-- **Procurement**: the **Purchase Orders** the buying company's organisations send you, the **Supplier Purchase Orders** you place with each of your suppliers and the deposits you pay on them, the **Stock Deliveries** you ship back, your **Suppliers** and your supplier **Inbox**. Managers also see the procurement **Settings**.
+- **Procurement**: the **Purchase Orders** the buying company's organisations send you, one for each of your suppliers, with the deposits you pay on them, the **Stock Deliveries** you ship back, your **Suppliers** and your supplier **Inbox**. Managers also see the procurement **Settings**.
 - **HR**, for managers only: your own people.
 - **Tickets**, to ask the buying company's help desk for help.
 
@@ -27,7 +27,7 @@ Nobody in your organisation can see the buying company's shops, customers or acc
 Open **HR → Employees** and press **Create Employee**. The form is one page; the parts that matter for you are:
 
 - **Employment**: a **worker number** and an **alias**, both unique within your organisation (first names are fine), and the state **Working**.
-- **Job → Position**: under **Agent**, choose what the person may do. **Clerk** is for someone who works purchase orders, supplier purchase orders, deposits and deliveries. **Manager** can do all of that and also add and remove colleagues in **HR**. The **Organisation Administrator** position is not offered to you: it stays with the buying company.
+- **Job → Position**: under **Agent**, choose what the person may do. **Clerk** is for someone who works purchase orders, deposits and deliveries. **Manager** can do all of that and also add and remove colleagues in **HR**. The **Organisation Administrator** position is not offered to you: it stays with the buying company.
 - **User credentials**: leave this empty for someone who does not need to log in. Fill in a **username** and a **password** and they can sign in immediately; aiku asks them to pick their own password on first entry.
 
 Save, and pass the username and starting password on to them.

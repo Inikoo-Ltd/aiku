@@ -172,7 +172,7 @@ class SendPartnerPurchaseOrderToSeller
                 $product        = $this->sellingProduct($orgPartner, $transaction->stock_id, $shop->id);
                 $sellerOrgStock = $product->orgStocks()->first();
                 $unitsPerItem   = (float) $product->pivot->quantity * (float) ($sellerOrgStock?->packed_in ?: 1);
-                $quantity       = round((float) $transaction->quantity_ordered / $unitsPerItem, 3);
+                $quantity       = round((float) $transaction->quantity_ordered / $unitsPerItem, 6);
                 $amount         = round($quantity * (float) $product->price, 2);
 
                 $orderTransaction = StoreTransaction::make()->action($order, $product->historicAsset, [

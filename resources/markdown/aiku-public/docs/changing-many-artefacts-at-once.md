@@ -1,7 +1,7 @@
 ---
 title: Changing many artefacts at once
 summary: Tick the artefacts, then use the picker at the right of the bar that appears to set a batch size or shelf life, give them all the same manufacture steps, move them to another family or department, discontinue them, or bring them back.
-date: 2026-09-29
+date: 2026-10-08
 tags: production, crafts
 category: production
 help_routes: grp.org.productions.show.crafts.artefacts.index, grp.org.productions.show.crafts.artefact_families.show, grp.org.productions.show.crafts.artefact_departments.show
@@ -90,6 +90,16 @@ The artefact lists open on **In process** and **Active** only, so a discontinued
 
 Families take their state from the artefacts inside them. A family is active while any artefact in it is active or in process, and only turns discontinued once all of them have. That means discontinuing the last artefact in a family quietly removes the family from the families list as well, and the same **State** chips bring it back.
 
+## Asking your AI assistant
+
+If your account is enrolled, the AI assistant you connect to aiku can set production up for you. Tell it what you need in your own words, for example *"give ACLB-01 to ACLB-13 these steps: pour, label, pack"*. It shows you what it will change first and only writes after you confirm.
+
+- It can create and edit artefacts, raw materials (including their unit cost) and manufacture tasks.
+- A new artefact always comes with its SKO. If the SKO does not exist yet, the assistant creates the stock, its trade unit and the SKO together with the artefact.
+- Recipes work as on this page: the artefacts you name get exactly the steps you give, and steps left out are removed with their raw materials. Each step has its order, how much of it one artefact counts as, the target per hour and the raw materials it uses per artefact. The assistant also tells you the materials cost of each artefact.
+- Every change is logged with your request and can be undone: ask the assistant to revert it, or an administrator can do it from the AI changes log. A record the assistant created is not removed by undo; set it as discontinued instead.
+- Enrolment is a switch on your user account that an administrator turns on. It works for group and organisation admins, people who can edit the factory, and the shop admins and shopkeepers of the factory's organisation.
+
 ## Things worth knowing
 
 - **Artefacts already in the state you chose are skipped.** Discontinuing a selection that is half discontinued reports only the ones that actually changed.
@@ -108,6 +118,7 @@ Families take their state from the artefacts inside them. A family is active whi
 <li><b>Same steps for many:</b> pick <b>Manufacture task</b> → <b>Make a unified manufacture task</b>.</li>
 <li><b>Create a manufacture task:</b> <b>Factory</b> → <b>Operations</b> → <b>Tasks</b>.</li>
 <li><b>See discontinued ones:</b> the <b>State</b> chips above the table → tick <b>Discontinued</b>.</li>
+<li><b>Let someone set up production through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can connect AI assistant</b>, then <b>Can set up artefacts, raw materials and recipes through their AI assistant</b>.</li>
 <li><b>One artefact only:</b> open it and use the pencil, the same fields are there. Its steps are on its <b>Manufacture tasks</b> tab.</li>
 </ul>
 </aside>

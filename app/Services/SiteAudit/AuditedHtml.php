@@ -15,6 +15,7 @@ class AuditedHtml
 {
     /**
      * @param  array<int, string>  $hrefs
+     * @param  array<int, array{hreflang: string, href: string}>  $hreflangs
      */
     private function __construct(
         public readonly ?string $title,
@@ -23,7 +24,8 @@ class AuditedHtml
         public readonly ?string $robotsMeta,
         public readonly int $h1Count,
         public readonly int $imagesWithoutAlt,
-        public readonly array $hrefs
+        public readonly array $hrefs,
+        public readonly array $hreflangs
     ) {
     }
 
@@ -45,12 +47,18 @@ class AuditedHtml
         }
 
         $canonical = null;
+        $hreflangs = [];
 
         foreach ($document->querySelectorAll('link[rel][href]') as $link) {
-            if (in_array('canonical', preg_split('/\s+/', strtolower($link->getAttribute('rel'))), true)) {
-                $canonical = self::clean($link->getAttribute('href'));
+            $rel = preg_split('/\s+/', strtolower($link->getAttribute('rel')));
 
-                break;
+            if (in_array('canonical', $rel, true)) {
+                $canonical ??= self::clean($link->getAttribute('href'));
+            } elseif (in_array('alternate', $rel, true) && $link->hasAttribute('hreflang')) {
+                $hreflangs[] = [
+                    'hreflang' => trim($link->getAttribute('hreflang')),
+                    'href'     => trim($link->getAttribute('href')),
+                ];
             }
         }
 
@@ -77,7 +85,8 @@ class AuditedHtml
             robotsMeta: $robotsMeta,
             h1Count: $document->querySelectorAll('h1')->length,
             imagesWithoutAlt: $imagesWithoutAlt,
-            hrefs: array_values(array_unique($hrefs))
+            hrefs: array_values(array_unique($hrefs)),
+            hreflangs: $hreflangs
         );
     }
 

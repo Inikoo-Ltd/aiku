@@ -64,6 +64,8 @@ class IndexStockDeliveryItems extends OrgAction
         $query->where('stock_delivery_items.stock_delivery_id', $parent->id);
         $query->leftJoin('org_stocks', 'stock_delivery_items.org_stock_id', 'org_stocks.id');
         $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'stock_delivery_items.supplier_product_id');
+        $query->leftJoin('stocks', 'stocks.id', '=', 'org_stocks.stock_id');
+        $query->leftJoin('stock_families', 'stock_families.id', '=', 'stocks.stock_family_id');
         $query->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
         $query->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
@@ -92,16 +94,18 @@ class IndexStockDeliveryItems extends OrgAction
             'orgStock:id,slug,packed_in',
             'stockDelivery.currency',
             'sowings' => fn ($sowings) => $sowings->where('type', SowingTypeEnum::SOW)->orderBy('id')->with('location'),
+            'batches.batchCode',
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
             ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->join('org_stocks as pack', 'pack.id', '=', 'mhtu.model_id')
             ->whereColumn('mhtu.model_id', 'stock_delivery_items.org_stock_id')
             ->where('mhtu.model_type', 'OrgStock')
             ->selectRaw('
                 case
                     when count(*) = 0 or count(*) filter (where tu.gross_weight is null) > 0 then null
-                    else round(sum(tu.gross_weight * mhtu.quantity) * stock_delivery_items.unit_quantity / 1000, 1)
+                    else round(sum(tu.gross_weight * mhtu.quantity) * stock_delivery_items.unit_quantity / coalesce(nullif(max(pack.packed_in), 0), 1) / 1000, 1)
                 end
             ');
 
@@ -130,6 +134,7 @@ class IndexStockDeliveryItems extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.has_been_in_warehouse',
+                DB::raw('coalesce(stock_families.is_batch_tracked, false) as is_batch_tracked'),
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
             ])

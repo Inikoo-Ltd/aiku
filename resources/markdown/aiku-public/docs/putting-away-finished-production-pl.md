@@ -41,6 +41,8 @@ Jeśli zlecenie było zrobione na magazyn, dla własnego klienta, albo dla więc
 
 To księguje towar do lokalizacji, nadaje mu kod partii złożony z numeru zlecenia i kodu produktu, odejmuje surowce, które wg receptury zostały zużyte, i oznacza zlecenie jako przyjęte. Wiersz znika, a na tablicy fabryki linia opuszcza kolumnę **Done**.
 
+Partia dostaje też datę minimalnej trwałości: tę wpisaną dla partii na tablicy fabryki, a jeśli jej nie ma, dzień odłożenia plus okres przydatności artefaktu. Artefakt bez okresu przydatności zostaje bez daty minimalnej trwałości, więc uzupełnij okres przydatności przy każdym artefakcie. Gdy później odkładasz więcej z tej samej linii zlecenia, trafia to do tej samej partii. Magazyn wie teraz, która partia leży w której lokalizacji, i z tego raporty inwentarza czytają daty minimalnej trwałości.
+
 Zaksięgowana ilość to tyle, ile rzemieślnicy faktycznie zrobili, a nie ile było zamówione. Zlecenie, które prosiło o 25, a dostało 19, księguje 19.
 
 ## Co dzieje się dalej
