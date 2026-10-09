@@ -13,7 +13,6 @@ import TableSeoTrackedKeywords from "@/Components/Tables/Grp/Org/Web/TableSeoTra
 import SeoCompetitors from "@/Components/Seo/SeoCompetitors.vue"
 import SeoRankings from "@/Components/Seo/SeoRankings.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { ctrans } from "@/Composables/useTrans"
 import { useTabChange } from "@/Composables/tab-change"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Navigation } from "@/types/Tabs"
@@ -27,7 +26,6 @@ const props = defineProps<{
     routes: SeoKeywordRoutes
     options: SeoKeywordOptions
     query: SeoResearchQuery
-    spend: { month: number, budget: number }
     research?: object | null
     tracked_keywords?: object
     rankings?: object
@@ -50,10 +48,6 @@ const tabComponent = computed(() => ({
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <p v-if="currentTab === 'research'" class="px-4 pt-3 text-xs text-gray-500">
-        {{ ctrans("DataForSEO spend this month: :spend of :budget USD", { spend: spend.month.toFixed(2), budget: spend.budget.toFixed(2) }) }}
-    </p>
-
     <component
         :is="tabComponent"
         :key="currentTab"
@@ -62,6 +56,5 @@ const tabComponent = computed(() => ({
         :canEdit="canEdit"
         :routes="routes"
         :options="options"
-        :query="query"
-        :spend="spend" />
+        :query="query" />
 </template>

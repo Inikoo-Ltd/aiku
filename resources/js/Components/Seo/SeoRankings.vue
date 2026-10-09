@@ -71,7 +71,6 @@ defineOptions({ inheritAttrs: false })
 const props = defineProps<{
     data?: RankingsData
     tab: string
-    spend: { month: number, budget: number }
 }>()
 
 const summary = computed(() => props.data!.summary)
@@ -87,7 +86,7 @@ const runChecks = () => {
 
     router.post(route(props.data.runChecksRoute.name, props.data.runChecksRoute.parameters), {}, {
         preserveScroll: true,
-        only: [props.tab, "spend"],
+        only: [props.tab],
         onStart: () => {
             isRunning.value = true
             runError.value = null
@@ -269,7 +268,6 @@ const urlPath = (url: string) => {
                         <div>{{ ctrans(":checked of :tracked keywords checked", { checked: locale.number(summary.checked), tracked: locale.number(summary.tracked) }) }}</div>
                         <div v-if="summary.last_checked_at">{{ ctrans("Latest check :date", { date: useFormatTime(summary.last_checked_at) }) }}</div>
                         <div v-if="summary.pending">{{ ctrans(":count checks waiting for Google results", { count: locale.number(summary.pending) }) }}</div>
-                        <div>{{ ctrans("DataForSEO spend this month: :spend of :budget USD", { spend: spend.month.toFixed(2), budget: spend.budget.toFixed(2) }) }}</div>
                     </div>
                 </div>
             </section>

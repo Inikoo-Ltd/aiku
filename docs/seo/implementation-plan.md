@@ -15,10 +15,16 @@ are suggestions; rename them freely, but keep the boundaries.
   slow provider cannot hold up `analytics`. A dedicated `seo` queue would need a Horizon supervisor in
   every environment; add one only if fetches start to crowd that queue.
 - **Every fetch is idempotent per day.** Unique keys include the date, and a re-run upserts.
-- **Provider calls go through one client per provider**, with the API key in `config/services.php`,
-  a per-run budget cap, and a log row per request in `seo_api_requests` (provider, endpoint, rows,
-  duration, error, cost if the provider reports it). Phase 2 and 3 costs are only visible this way.
+- **Provider calls go through one client per provider**, with the API key in `config/services.php`
+  and a log row per request in `seo_api_requests` (provider, endpoint, rows, duration, error, cost
+  if the provider reports it). Phase 2 and 3 costs are only visible this way.
   `App\Services\SearchConsole\SearchConsoleClient` is the first one.
+- **One monthly budget for all paid SEO APIs**, not one per provider or feature: DataForSEO, Apify
+  and the AI gateway calls for AI visibility count against the same cap (default 250 USD,
+  `SEO_API_MONTHLY_BUDGET` until the [API usage page](#api-usage) makes it a setting).
+  `App\Services\SeoApi\SeoApiBudget` adds up the month's cost in `seo_api_requests`; every client
+  checks it before a billable call. Reading results already paid for is never blocked. Feature
+  screens do not show the spend; the API usage page does.
 - **The SEO dashboard stays the entry point.** Each phase adds sections or tabs to
   `ShowSeoDashboard` (`app/Actions/Web/Website/UI/ShowSeoDashboard.php`), filtered by the dashboard
   interval like the existing performance card.
@@ -230,8 +236,7 @@ Built on 8 October 2026 on DataForSEO, so it does not wait for Google Ads Basic 
 
 - `App\Services\DataForSeo\DataForSeoClient` is the one client for DataForSEO (basic auth with
   `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD`). Every call is logged in `seo_api_requests` with the
-  cost DataForSEO reports, and no call is made once the month's spend reaches
-  `DATAFORSEO_MONTHLY_BUDGET` (default 250 USD).
+  cost DataForSEO reports, and no billable call is made once the shared SEO API budget is reached.
 - `GetKeywordIdeas` (`app/Actions/Web/Seo/`) takes up to 5 seed keywords, a URL, or both, with a
   country and a language. Each seed goes to Labs `keyword_suggestions` (its own figures and the
   keywords that contain it, like Semrush's Keyword Magic Tool), with the 300 rows shared between the
@@ -248,7 +253,7 @@ Built on 8 October 2026 on DataForSEO, so it does not wait for Google Ads Basic 
 
 **Screen.** SEO > Keywords, tab Research: keywords or a URL, country and language (defaulting to the
 shop's), results with intent, volume, a 12 month trend, difficulty, CPC and ad competition, a filter
-per intent, and the month's DataForSEO spend. Below them, the Search Console queries of the website
+per intent. Below them, the Search Console queries of the website
 that contain the same words (last 90 days). Every result has a Track action.
 
 ### Tracked keywords and competitors (set from the UI)
@@ -289,7 +294,7 @@ Built on 9 October 2026 on DataForSEO's SERP API.
 **Screen.** SEO > Keywords, tab Rankings:
 
 - Visibility: share of checked keywords in the top 3, 10 and 20, how many went up or down since the
-  previous check, how many AI Overviews cite us, the month's DataForSEO spend.
+  previous check, how many AI Overviews cite us.
 - By search intent: share of keywords per intent and our top 10 share within it; each intent filters
   the table.
 - Competitors on the same keywords: their top 3 and top 10 share next to ours.
@@ -459,8 +464,8 @@ countries.
   `similarweb_api`), visits, channel_mix (json), top_countries (json), rank, fetched_at.
 - `seo_platform_keyword_signals`: shop_id, platform, keyword, signal (suggested, related, rising),
   country, language, fetched_at.
-- Apify charges per run or per result, depending on the actor. Track it with the same per-request
-  log and budget cap as the other providers.
+- Apify charges per run or per result, depending on the actor. Log it in `seo_api_requests` with
+  its cost, so it counts against the shared SEO API budget.
 
 **Decision.** Choose between an Apify actor (cheap, against Similarweb's terms, may break) and the
 Similarweb API (licensed, priced) for competitor traffic before building it.
@@ -500,6 +505,23 @@ comparison with an earlier period.
   cite each page.
 - Competitor domain traffic is fetched monthly, and Bing and non-Google search signals are shown
   beside Google volumes.
+
+## API usage
+
+Built last, once every paid provider of Phase 2 and 3 is in place. One page for the cost of all of
+them, so the monthly budget is watched and changed in Aiku instead of in each provider's dashboard.
+
+- **Budget setting.** The monthly cap for all SEO APIs together, default 250 USD, set on the page by
+  someone with web edit permission and stored as a group setting. It replaces
+  `SEO_API_MONTHLY_BUDGET`, which stays only as the default.
+- **This month.** Spend against the budget, what is left, and the projected month end at the
+  current daily rate. A warning at 80%, and a clear notice when the cap is reached and calls stop.
+- **Breakdown.** Spend, requests and errors per provider and per feature (keyword research, rank
+  tracking, volume refresh, backlinks, competitor research, AI visibility, Apify), from the
+  `provider` and `endpoint` of `seo_api_requests`; daily spend over the month; the previous months.
+- **Errors.** The latest failed requests with their message, so an expired key or an empty balance
+  shows up here before anyone notices missing data.
+- Feature screens show no spend of their own.
 
 ## Cancelling Semrush
 

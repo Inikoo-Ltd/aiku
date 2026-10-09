@@ -45,6 +45,12 @@ Nothing here has been deployed yet.
 | 3.5 Non-Google demand | Choose the platforms; Bing Webmaster Tools keyword data is free |
 | 3.6 Top pages | Nothing for the traffic and Search Console change against the previous period; can start any time. Referring domains and AI citations per page wait for 3.1 and 3.3. |
 
+### Last: API usage
+
+| Part | What has to happen first |
+| --- | --- |
+| API usage page: spend of all SEO APIs against one monthly budget (default 250 USD, set on the page), per provider and feature, with errors | Built after the paid providers of Phase 3 are in place |
+
 ### Still open in Phase 1
 
 - Compare Site Audit results with a Semrush Site Audit of the same website before the team relies on
@@ -73,7 +79,7 @@ daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 
 | `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
 | `GOOGLE_CRUX_API_KEY` | Chrome UX Report: Real user speed and the Google side of 1.4. The key needs the Chrome UX Report API enabled in its Google Cloud project | Yes |
 | `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | Keyword research (2.1), and rank tracking, backlinks and competitor data later | Yes, for SEO > Keywords |
-| `DATAFORSEO_MONTHLY_BUDGET` | The month's DataForSEO spend after which no call is made, in USD | No, defaults to 250 |
+| `SEO_API_MONTHLY_BUDGET` | One monthly budget in USD for all paid SEO APIs together; no billable call is made once the month's spend reaches it. Becomes a setting on the API usage page | No, defaults to 250 |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
 | `OPENROUTER_API_KEY` | AI visibility and content help (Phase 3) | Not yet |

@@ -207,10 +207,6 @@ class ShowSeoKeywords extends OrgAction
                     'frequencies' => collect(SeoKeywordFrequencyEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 ],
                 'query'       => $query,
-                'spend'       => [
-                    'month'  => round(DataForSeoClient::monthSpend(), 2),
-                    'budget' => DataForSeoClient::monthlyBudget(),
-                ],
 
                 SeoKeywordsTabsEnum::RESEARCH->value => $this->tabProp(
                     SeoKeywordsTabsEnum::RESEARCH,
