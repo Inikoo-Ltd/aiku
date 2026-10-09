@@ -17,6 +17,7 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import EprPackagingCompleteness from "@/Components/Reports/EprPackagingCompleteness.vue"
 import UkPackagingReturn from "@/Components/Reports/UkPackagingReturn.vue"
 import EprShipmentPackaging from "@/Components/Reports/EprShipmentPackaging.vue"
+import EuPackagingReturn from "@/Components/Reports/EuPackagingReturn.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -32,6 +33,8 @@ const props = defineProps<{
 	completeness?: any
 	uk_return?: any
 	shipment?: any
+	eu_return?: any
+	euReturnRoute: { name: string; parameters: Record<string, string> }
 	organisationId: number
 	materials: Record<string, string>
 	ownBrandImports: boolean
@@ -46,12 +49,12 @@ const fromIsoDate = (iso: string): Date => {
 }
 const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
-const tabsWithData = ["completeness", "uk_return", "shipment"]
+const tabsWithData = ["completeness", "uk_return", "eu_return", "shipment"]
 
-const visit = (period: { from: string; to: string }, ownBrandImports = props.ownBrandImports) => {
+const visit = (period: { from: string; to: string } | null, ownBrandImports = props.ownBrandImports) => {
 	router.get(
 		route(route().current() as string, props.downloadRoute.parameters),
-		{ ...period, tab: currentTab.value, ...(ownBrandImports ? { own_brand_imports: 1 } : {}) },
+		{ ...(period ?? {}), tab: currentTab.value, ...(ownBrandImports ? { own_brand_imports: 1 } : {}) },
 		{
 			preserveState: true,
 			preserveScroll: true,
@@ -62,9 +65,28 @@ const visit = (period: { from: string; to: string }, ownBrandImports = props.own
 
 const handleTabUpdate = (tabSlug: string) => {
 	if (tabSlug === currentTab.value) return
+	const quarterly = (tab: string) => tab === "eu_return"
+	const keepPeriod = quarterly(tabSlug) === quarterly(currentTab.value)
 	currentTab.value = tabSlug
-	visit(props.period)
+	visit(keepPeriod ? props.period : null)
 }
+
+const quarters = computed(() => {
+	const today = new Date()
+	let year = today.getFullYear()
+	let quarter = Math.floor(today.getMonth() / 3) + 1
+	const lastDay = [31, 30, 30, 31]
+	const options = []
+	for (let i = 0; i < 4; i++) {
+		const first = String((quarter - 1) * 3 + 1).padStart(2, "0")
+		const last = String(quarter * 3).padStart(2, "0")
+		options.unshift({ label: `Q${quarter} ${year}`, value: `${year}-${first}-01|${year}-${last}-${lastDay[quarter - 1]}` })
+		quarter === 1 ? ((quarter = 4), year--) : quarter--
+	}
+	return options
+})
+
+const periodOptions = computed(() => (currentTab.value === "eu_return" ? quarters.value : halfYears.value))
 
 const halfYears = computed(() => {
 	const today = new Date()
@@ -107,6 +129,8 @@ const ukReturnUrl = computed(() =>
 	route(props.ukReturnRoute.name, { ...props.ukReturnRoute.parameters, from: props.period.from, to: props.period.to, ...(props.ownBrandImports ? { own_brand_imports: 1 } : {}) })
 )
 
+const euReturnUrl = computed(() => route(props.euReturnRoute.name, { ...props.euReturnRoute.parameters, from: props.period.from, to: props.period.to }))
+
 const downloadUrl = computed(() => route(props.downloadRoute.name, { ...props.downloadRoute.parameters, start_date: props.period.from, end_date: props.period.to }))
 </script>
 
@@ -116,7 +140,7 @@ const downloadUrl = computed(() => route(props.downloadRoute.name, { ...props.do
 	<Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="flex flex-wrap items-center gap-3 px-4 pt-4 text-xs text-gray-600">
-		<SegmentedToggle v-model="selectedHalf" :options="halfYears" :ariaLabel="ctrans('Half-year')" />
+		<SegmentedToggle v-model="selectedHalf" :options="periodOptions" :ariaLabel="ctrans('Period')" />
 		<div class="flex items-center gap-2">
 			<DatePicker v-model="rangeFrom" :maxDate="rangeTo ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('From')" />
 			<span>–</span>
@@ -135,6 +159,8 @@ const downloadUrl = computed(() => route(props.downloadRoute.name, { ...props.do
 		:materials="materials"
 		:period="period"
 		@update:ownBrandImports="(value) => visit(period, value)" />
+
+	<EuPackagingReturn v-else-if="currentTab === 'eu_return'" :data="eu_return" :downloadUrl="euReturnUrl" />
 
 	<EprShipmentPackaging v-else-if="currentTab === 'shipment'" :data="shipment" :organisationId="organisationId" :materials="materials" />
 

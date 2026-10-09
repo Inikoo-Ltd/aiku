@@ -45,6 +45,11 @@ class ExportUkPackagingReturn extends OrgAction
         return $rows;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('org-reports.'.$this->organisation->id);
+    }
+
     public function asController(Organisation $organisation, ActionRequest $request): StreamedResponse
     {
         $this->initialisation($organisation, $request);

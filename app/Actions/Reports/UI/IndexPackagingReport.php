@@ -11,6 +11,7 @@ namespace App\Actions\Reports\UI;
 use App\Actions\OrgAction;
 use App\Actions\Reports\GetEprPackagingCompleteness;
 use App\Actions\Reports\GetEprShipmentPackaging;
+use App\Actions\Reports\GetEuPackagingReturn;
 use App\Actions\Reports\GetUkPackagingReturn;
 use App\Actions\UI\Reports\IndexReports;
 use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
@@ -43,13 +44,20 @@ class IndexPackagingReport extends OrgAction
      */
     public function navigation(Organisation $organisation): array
     {
-        return $organisation->country?->code === 'GB'
-            ? PackagingReportTabsEnum::navigation()
-            : PackagingReportTabsEnum::navigationExcept([PackagingReportTabsEnum::UK_RETURN]);
+        $excluded = [];
+        if ($organisation->country?->code !== 'GB') {
+            $excluded[] = PackagingReportTabsEnum::UK_RETURN;
+        }
+        if (!GetEuPackagingReturn::make()->scheme($organisation)) {
+            $excluded[] = PackagingReportTabsEnum::EU_RETURN;
+        }
+
+        return PackagingReportTabsEnum::navigationExcept($excluded);
     }
 
     /**
-     * The period asked for, or the last complete half-year: UK packaging data is collected by half-year.
+     * The period asked for, or the last complete half-year: UK packaging data is collected by half-year. The EU scheme
+     * return defaults to the last complete quarter, as Slovakia reports quarterly.
      *
      * @return array{Carbon, Carbon}
      */
@@ -57,6 +65,12 @@ class IndexPackagingReport extends OrgAction
     {
         if ($request->filled(['from', 'to'])) {
             return [Carbon::parse($request->input('from'))->startOfDay(), Carbon::parse($request->input('to'))->startOfDay()];
+        }
+
+        if ($request->input('tab') === PackagingReportTabsEnum::EU_RETURN->value) {
+            $from = now()->firstOfQuarter()->subQuarterNoOverflow();
+
+            return [$from, $from->copy()->lastOfQuarter()->startOfDay()];
         }
 
         $from = now()->month > 6 ? now()->startOfYear() : now()->subYear()->month(7)->startOfMonth();
@@ -84,6 +98,13 @@ class IndexPackagingReport extends OrgAction
                 PackagingReportTabsEnum::COMPLETENESS->value => $this->tab == PackagingReportTabsEnum::COMPLETENESS->value
                     ? fn () => GetEprPackagingCompleteness::run($organisation, $from, $to)
                     : Inertia::optional(fn () => GetEprPackagingCompleteness::run($organisation, $from, $to)),
+                PackagingReportTabsEnum::EU_RETURN->value => $this->tab == PackagingReportTabsEnum::EU_RETURN->value
+                    ? fn () => GetEuPackagingReturn::run($organisation, $from, $to)
+                    : Inertia::optional(fn () => GetEuPackagingReturn::run($organisation, $from, $to)),
+                'euReturnRoute' => [
+                    'name'       => 'grp.org.reports.packaging.eu-return',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 PackagingReportTabsEnum::SHIPMENT->value => $this->tab == PackagingReportTabsEnum::SHIPMENT->value
                     ? fn () => GetEprShipmentPackaging::run($organisation, $from, $to)
                     : Inertia::optional(fn () => GetEprShipmentPackaging::run($organisation, $from, $to)),

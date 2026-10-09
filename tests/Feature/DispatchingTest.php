@@ -6013,6 +6013,16 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->and($ukReturn()['submission_period'])->toBeNull()
         ->and(\App\Actions\Reports\GetUkPackagingReturn::make()->submissionPeriod(\Illuminate\Support\Carbon::parse('2026-07-01'), \Illuminate\Support\Carbon::parse('2026-12-31')))->toBe('2026-P4');
 
+    $slovak = $this->organisation->replicate()->setRelation('country', \App\Models\Helpers\Country::where('code', 'SK')->firstOrFail());
+    $slovak->id = $this->organisation->id;
+    $euReturn = \App\Actions\Reports\GetEuPackagingReturn::run($slovak, \Illuminate\Support\Carbon::parse('2001-03-01'), \Illuminate\Support\Carbon::parse('2001-03-31'));
+
+    expect($euReturn['scheme'])->toBe('sk')
+        ->and($euReturn['rows'])->toBe([['scheme_material' => 'Sklo', 'scheme_subcategory' => null, 'sales_kg' => 2.9, 'shipment_kg' => 0.0, 'kg' => 2.9, 'previous_kg' => null, 'change' => null]])
+        ->and($euReturn['domestic_parcel_share'])->toEqual(100)
+        ->and(\App\Actions\Reports\ExportEuPackagingReturn::make()->handle($euReturn))->toBe([['2001-03-01', '2001-03-31', 'Sklo', null, 2.9, 0.0, 2.9]])
+        ->and(\App\Actions\Reports\GetEuPackagingReturn::make()->scheme($this->organisation->replicate()->setRelation('country', \App\Models\Helpers\Country::where('code', 'GB')->firstOrFail())))->toBeNull();
+
     $family->update(['brand_ownership' => \App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum::OWN_BRAND]);
     $ownBrand = $ukReturn();
 
