@@ -28,7 +28,7 @@ class StoreFollowUpOrder extends OrgAction
     public static function offersFollowUp(Order $order): bool
     {
         return SaveOrderModification::isEditedInAiku($order)
-            && in_array($order->state, [OrderStateEnum::PICKED, OrderStateEnum::PACKING, OrderStateEnum::PACKED, OrderStateEnum::FINALISED]);
+            && in_array($order->state, [OrderStateEnum::PACKING, OrderStateEnum::PACKED, OrderStateEnum::FINALISED]);
     }
 
     /**

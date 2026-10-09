@@ -64,7 +64,16 @@ class StartPackingDeliveryNote extends OrgAction
         data_set($modelData, 'packer_user_id', $user->id);
 
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $oldState) {
+            /*
+             * Customer service can add a product to a picked note, which walks it back to
+             * handling under the same lock (HELP-3856). Without re-reading here, a packer
+             * starting at that moment would stamp packing over a line nobody has picked.
+             */
+            $currentState = DeliveryNote::whereKey($deliveryNote->id)->lockForUpdate()->value('state');
+            if ($currentState !== $oldState) {
+                abort(409, __('The order has just been changed, refresh and pick the new items first'));
+            }
 
             $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
 
