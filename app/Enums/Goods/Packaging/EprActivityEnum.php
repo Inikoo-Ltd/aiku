@@ -24,6 +24,7 @@ enum EprActivityEnum: string
     case SOLD_DOMESTIC           = 'sold_domestic';
     case EXPORTED                = 'exported';
     case SALE_UNKNOWN_COUNTRY    = 'sale_unknown_country';
+    case SHIPMENT_PACKAGING      = 'shipment_packaging';
 
     public static function labels(): array
     {
@@ -35,6 +36,7 @@ enum EprActivityEnum: string
             'sold_domestic'           => __('Sold domestically'),
             'exported'                => __('Exported'),
             'sale_unknown_country'    => __('Sold, destination unknown'),
+            'shipment_packaging'      => __('Shipment packaging used'),
         ];
     }
 }

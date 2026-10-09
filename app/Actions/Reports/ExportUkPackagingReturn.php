@@ -38,11 +38,16 @@ class ExportUkPackagingReturn extends OrgAction
             }
             $rows[] = [
                 data_get($organisation->settings, 'epr.uk.organisation_id'), null, 'L', $return['submission_period'], $line['activity'], $line['type'], $line['class'],
-                $line['material'], null, null, null, $kg, null, null, $line['ram'],
+                $line['material'], null, $line['from_nation'] ?? null, $line['to_nation'] ?? null, $kg, null, null, $line['ram'],
             ];
         }
 
         return $rows;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('org-reports.'.$this->organisation->id);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): StreamedResponse

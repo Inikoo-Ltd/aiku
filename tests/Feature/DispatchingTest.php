@@ -6013,6 +6013,16 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->and($ukReturn()['submission_period'])->toBeNull()
         ->and(\App\Actions\Reports\GetUkPackagingReturn::make()->submissionPeriod(\Illuminate\Support\Carbon::parse('2026-07-01'), \Illuminate\Support\Carbon::parse('2026-12-31')))->toBe('2026-P4');
 
+    $slovak = $this->organisation->replicate()->setRelation('country', \App\Models\Helpers\Country::where('code', 'SK')->firstOrFail());
+    $slovak->id = $this->organisation->id;
+    $euReturn = \App\Actions\Reports\GetEuPackagingReturn::run($slovak, \Illuminate\Support\Carbon::parse('2001-03-01'), \Illuminate\Support\Carbon::parse('2001-03-31'));
+
+    expect($euReturn['scheme'])->toBe('sk')
+        ->and($euReturn['rows'])->toBe([['scheme_material' => 'Sklo', 'scheme_subcategory' => null, 'sales_kg' => 2.9, 'shipment_kg' => 0.0, 'kg' => 2.9, 'previous_kg' => null, 'change' => null]])
+        ->and($euReturn['domestic_parcel_share'])->toEqual(100)
+        ->and(\App\Actions\Reports\ExportEuPackagingReturn::make()->handle($euReturn))->toBe([['2001-03-01', '2001-03-31', 'Sklo', null, 2.9, 0.0, 2.9]])
+        ->and(\App\Actions\Reports\GetEuPackagingReturn::make()->scheme($this->organisation->replicate()->setRelation('country', \App\Models\Helpers\Country::where('code', 'GB')->firstOrFail())))->toBeNull();
+
     $family->update(['brand_ownership' => \App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum::OWN_BRAND]);
     $ownBrand = $ukReturn();
 
@@ -6038,12 +6048,37 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
 
     $report = fn () => $this->get(route('grp.org.reports.packaging', [$this->organisation->slug, 'tab' => 'completeness', 'from' => '2001-03-01', 'to' => '2001-03-31']));
 
+    $tradeUnit->update(['gross_weight' => 300, 'net_weight' => 100]);
+
     $report()->assertInertia(fn (AssertableInertia $page) => $page
         ->component('Org/Reports/PackagingReport')
         ->where('period', ['from' => '2001-03-01', 'to' => '2001-03-31'])
         ->where('completeness.has_data', true)
         ->where('completeness.summary.coverage', 100)
-        ->where('completeness.rows', []));
+        ->where('completeness.rows', [])
+        ->where('completeness.checks.0.key', 'legacy_top')
+        ->where('completeness.checks.0.count', 0)
+        ->where('completeness.checks.1.key', 'weight_mismatch')
+        ->where('completeness.checks.1.count', 1)
+        ->where('completeness.checks.1.rows.0.code', $orgStock->code)
+        ->where('completeness.checks.1.rows.0.detail', 'Packaging 120 g, gross less net 200 g')
+        ->where('completeness.checks.2.count', 0)
+        ->where('completeness.checks.3.count', 0));
+
+    $lid = \App\Models\Goods\PackagingComponent::create([
+        'group_id' => $this->group->id, 'name' => 'Lid '.Str::random(6), 'packaging_level' => 'primary', 'material_category' => 'plastic', 'weight_g' => 5, 'signature' => sha1(Str::random()),
+    ]);
+    $family->components()->attach($lid->id, ['quantity' => 1, 'quantity_per_unit' => 1]);
+    $family->update(['is_product_itself' => true]);
+
+    $report()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('completeness.checks.2.key', 'plastic_without_polymer')
+        ->where('completeness.checks.2.rows.0.detail', '5 g of plastic')
+        ->where('completeness.checks.3.key', 'product_itself_not_glass')
+        ->where('completeness.checks.3.rows.0.detail', 'plastic'));
+
+    $family->components()->detach($lid->id);
+    $family->update(['is_product_itself' => false]);
 
     $tradeUnit->update(['packaging_family_id' => null]);
 
@@ -6053,8 +6088,8 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->where('completeness.rows.0.code', $orgStock->code)
         ->where('completeness.rows.0.status', 'no_packaging')
         ->where('completeness.rows.0.trade_unit_slug', $tradeUnit->slug)
-        ->where('completeness.rows.0.units_in', 30)
-        ->where('completeness.rows.0.units_out', 24)
+        ->where('completeness.rows.0.units_in', 5)
+        ->where('completeness.rows.0.units_out', 4)
         ->where('completeness.rows.0.share', 100));
 });
 
@@ -6112,4 +6147,56 @@ test('the UK packaging workbook loads as legacy packaging per trade unit, own br
 
     expect($bowl->refresh()->packaging_family_id)->toBe($bowlFamily->id)
         ->and($bowlFamily->components()->count())->toBe(2);
+});
+
+test('shipment packaging is reported as used and lines added by hand join the UK return', function () {
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, Stock::factory()->definition()));
+    $orgStock->update(['code' => 'Box'.Str::random(6)]);
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    $this->post(route('grp.models.shipment_packaging.store', $this->organisation->id), ['code' => strtoupper($orgStock->code), 'material_category' => 'paper_cardboard', 'weight_g' => 400])
+        ->assertRedirect()->assertSessionHasNoErrors();
+    $this->post(route('grp.models.shipment_packaging.store', $this->organisation->id), ['code' => 'NO-SUCH-'.Str::random(6), 'material_category' => 'paper_cardboard', 'weight_g' => 400])
+        ->assertSessionHasErrors('code');
+
+    $component = $tradeUnit->refresh()->packagingFamily->components()->sole();
+    expect($orgStock->refresh()->is_shipment_packaging)->toBeTrue()
+        ->and($component->packaging_level)->toBe(\App\Enums\Goods\Packaging\PackagingLevelEnum::SERVICE)
+        ->and((float)$component->weight_g)->toBe(400.0);
+
+    foreach ([['consumption', 'out', -50], ['return-consumption', 'in', 5]] as [$type, $flow, $quantity]) {
+        DB::table('org_stock_movements')->insert([
+            'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'warehouse_id' => $this->warehouse->id, 'org_stock_id' => $orgStock->id,
+            'date' => '2001-04-10 10:00:00', 'class' => 'movement', 'type' => $type, 'flow' => $flow, 'quantity' => $quantity, 'org_amount' => 0, 'grp_amount' => 0, 'data' => '{}',
+        ]);
+    }
+
+    $from   = \Illuminate\Support\Carbon::parse('2001-04-01');
+    $to     = \Illuminate\Support\Carbon::parse('2001-04-30');
+    $built  = \App\Actions\Goods\Packaging\BuildEprFlowLines::run($this->organisation, $from, $to);
+    $return = fn () => \App\Actions\Reports\GetUkPackagingReturn::run($this->organisation, $from, $to);
+
+    expect($built['shipment_packaging'])->toBe(2)
+        ->and($return()['lines'])->toBe([['activity' => 'PF', 'type' => 'HH', 'class' => 'P3', 'material' => 'PC', 'ram' => 'G', 'kg' => 18.0]])
+        ->and(\App\Actions\Reports\GetEprShipmentPackaging::run($this->organisation, $from, $to))->toMatchArray([['id' => $orgStock->id, 'code' => $orgStock->code, 'name' => $orgStock->name, 'material_category' => 'paper_cardboard', 'weight_g' => 400.0, 'used' => 45.0, 'kg' => 18.0]]);
+
+    $this->post(route('grp.models.epr_manual_line.store', $this->organisation->id), [
+        'date_from' => '2001-04-01', 'date_to' => '2001-04-30', 'activity' => 'IM', 'packaging_type' => 'NH', 'packaging_class' => 'P2',
+        'material_category' => 'paper_cardboard', 'kg' => 100, 'notes' => '2 x 40HC',
+    ])->assertRedirect()->assertSessionHasNoErrors();
+    $this->post(route('grp.models.epr_manual_line.store', $this->organisation->id), ['date_from' => '2001-04-30', 'date_to' => '2001-04-01', 'activity' => 'XX', 'packaging_type' => 'HH', 'packaging_class' => 'P1', 'material_category' => 'glass', 'kg' => -1])
+        ->assertSessionHasErrors(['date_to', 'activity', 'kg']);
+
+    $withManual = $return();
+    expect(collect($withManual['lines'])->firstWhere('activity', 'IM'))->toMatchArray(['type' => 'NH', 'class' => 'P2', 'material' => 'PC', 'ram' => null, 'kg' => 100.0])
+        ->and($withManual['manual_lines'])->toHaveCount(1)
+        ->and($withManual['manual_lines'][0]['notes'])->toBe('2 x 40HC');
+
+    $this->delete(route('grp.models.epr_manual_line.delete', [$this->organisation->id, $withManual['manual_lines'][0]['id']]))->assertRedirect();
+    $this->delete(route('grp.models.shipment_packaging.delete', [$this->organisation->id, $orgStock->id]))->assertRedirect();
+
+    expect($return()['manual_lines'])->toBe([])
+        ->and($orgStock->refresh()->is_shipment_packaging)->toBeFalse()
+        ->and($return()['lines'])->toBe([]);
 });
