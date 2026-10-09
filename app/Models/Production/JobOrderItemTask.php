@@ -9,6 +9,7 @@
 namespace App\Models\Production;
 
 use App\Events\BroadcastManufactureFloorChanged;
+use App\Events\BroadcastPartnerProductionChanged;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -49,7 +50,12 @@ class JobOrderItemTask extends Model
 {
     protected static function booted(): void
     {
-        static::saved(fn (self $model) => BroadcastManufactureFloorChanged::dispatch($model->production_id));
+        static::saved(function (self $model) {
+            BroadcastManufactureFloorChanged::dispatch($model->production_id);
+            if ($model->wasChanged('state')) {
+                BroadcastPartnerProductionChanged::dispatchForJobOrder($model->job_order_id);
+            }
+        });
     }
 
     protected $guarded = [];

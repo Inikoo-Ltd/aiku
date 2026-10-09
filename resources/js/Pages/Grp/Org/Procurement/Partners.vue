@@ -8,7 +8,8 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { ref } from "vue"
+import { onBeforeUnmount, onMounted, ref } from "vue"
+import { useDebounceFn } from "@vueuse/core"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PartnerRescuableSummary, { type Rescuable } from "@/Components/Procurements/PartnerRescuableSummary.vue"
@@ -29,6 +30,7 @@ import {
 	faClipboardList,
 	faIndustryAlt,
 	faHandshake,
+	faPaperPlane,
 } from "@fal"
 library.add(
 	faUsersClass,
@@ -38,7 +40,8 @@ library.add(
 	faTruckContainer,
 	faClipboardList,
 	faIndustryAlt,
-	faHandshake
+	faHandshake,
+	faPaperPlane
 )
 
 interface CurrentItem {
@@ -67,6 +70,7 @@ interface PartnerCard {
 		last_submitted_at?: string | null
 		current?: CurrentItem[]
 		rescuable?: Rescuable
+		production?: Record<"backlog" | "preparing" | "assigned" | "producing", number>
 	}
 }
 
@@ -77,7 +81,22 @@ const props = defineProps<{
 	can_create_purchase_orders?: boolean
 	partners: PartnerCard[]
 	rescuable?: Record<number, Rescuable>
+	live_channel?: string | null
 }>()
+
+const reloadPartners = useDebounceFn(() => router.reload({ only: ["partners"] }), 2000)
+
+onMounted(() => {
+	if (props.live_channel) {
+		window.Echo.private(props.live_channel).listen(".partner-production-changed", reloadPartners)
+	}
+})
+
+onBeforeUnmount(() => {
+	if (props.live_channel) {
+		window.Echo.leave(props.live_channel)
+	}
+})
 
 const locale = useLocaleStore()
 
@@ -95,11 +114,39 @@ const partnerUrl = (partner: PartnerCard, routeName = "grp.org.procurement.org_p
 
 const shortDate = (date: string) => useFormatTime(date, { formatTime: "d MMM yyyy" })
 
+const productionLanes = (partner: PartnerCard) =>
+	partner.stats.production
+		? [
+				{ key: "backlog", label: ctrans("Backlog"), count: partner.stats.production.backlog },
+				{ key: "preparing", label: ctrans("Preparing"), count: partner.stats.production.preparing },
+				{ key: "assigned", label: ctrans("Assigned"), count: partner.stats.production.assigned },
+				{ key: "producing", label: ctrans("Producing"), count: partner.stats.production.producing },
+			]
+		: []
+
+const isInBasket = (item: CurrentItem) =>
+	(item.type === "purchase_order" && item.state === "in_process") ||
+	(item.type === "shopping_list" && item.state === "draft")
+
+const currentSections = (partner: PartnerCard) => [
+	{
+		key: "basket",
+		label: ctrans("Basket"),
+		empty: ctrans("Basket is empty"),
+		items: partner.stats.current?.filter(isInBasket) ?? [],
+		lastOrderAt: null,
+	},
+	{
+		key: "orders",
+		label: ctrans("Orders"),
+		empty: ctrans("No orders open or on the way"),
+		items: partner.stats.current?.filter((item) => !isInBasket(item)) ?? [],
+		lastOrderAt: partner.stats.last_submitted_at,
+	},
+]
+
 const stateClass = (item: CurrentItem) => {
-	if (
-		(item.type === "purchase_order" && item.state === "in_process") ||
-		(item.type === "shopping_list" && item.state === "draft")
-	) {
+	if (isInBasket(item)) {
 		return "bg-amber-100 text-amber-800"
 	}
 	if (item.state === "dispatched") {
@@ -199,7 +246,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 			<div class="flex-1 space-y-3 px-4 py-3">
 				<Deferred data="rescuable">
 					<template #fallback>
-						<div class="h-40 animate-pulse rounded-md bg-gray-100" />
+						<div class="h-40 skeleton rounded-md bg-gray-100" />
 					</template>
 				<PartnerRescuableSummary
 					v-if="rescuable?.[partner.id]"
@@ -218,21 +265,42 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							: null
 					" />
 				</Deferred>
-				<section class="overflow-hidden rounded-md ring-1 ring-gray-200">
+				<section
+					v-for="section in currentSections(partner)"
+					:key="section.key"
+					class="overflow-hidden rounded-md ring-1 ring-gray-200">
 					<div
 						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
-						<span class="font-medium text-gray-600">{{
-							ctrans("Open and on the way")
-						}}</span>
-						<span v-if="partner.stats.last_submitted_at" class="ml-auto text-gray-500">
+						<span class="font-medium text-gray-600">{{ section.label }}</span>
+						<span v-if="section.lastOrderAt" class="ml-auto text-gray-500">
 							{{ ctrans("Last order") }}
 							<span class="tabular-nums text-gray-700">{{
-								shortDate(partner.stats.last_submitted_at)
+								shortDate(section.lastOrderAt)
 							}}</span>
 						</span>
 					</div>
-					<ul v-if="partner.stats.current?.length" class="divide-y divide-gray-100">
-						<li v-for="item in partner.stats.current" :key="item.type + item.reference">
+					<div
+						v-if="section.key === 'orders' && productionLanes(partner).length"
+						class="border-b border-gray-100 px-2 py-1.5">
+						<div class="mb-1 flex items-center gap-1.5 text-xs text-gray-500">
+							<FontAwesomeIcon icon="fal fa-industry-alt" fixed-width aria-hidden="true" />
+							{{ ctrans("Production at :partner", { partner: partner.name }) }}
+						</div>
+						<div class="grid grid-cols-4 divide-x divide-gray-100 rounded bg-gray-50 text-center">
+							<div v-for="lane in productionLanes(partner)" :key="lane.key" class="px-1 py-1">
+								<div
+									class="text-sm font-semibold tabular-nums"
+									:class="lane.count ? 'text-gray-900' : 'text-gray-300'">
+									{{ lane.count }}
+								</div>
+								<div class="truncate text-[10px] uppercase tracking-wide text-gray-500">
+									{{ lane.label }}
+								</div>
+							</div>
+						</div>
+					</div>
+					<ul v-if="section.items.length" class="divide-y divide-gray-100">
+						<li v-for="item in section.items" :key="item.type + item.reference">
 							<Link
 								:href="item.url"
 								class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50">
@@ -241,7 +309,9 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										item.type === 'stock_delivery'
 											? 'fal fa-truck-container'
 											: item.type === 'shopping_list'
-												? 'fal fa-shopping-basket'
+												? item.state === 'open'
+													? 'fal fa-paper-plane'
+													: 'fal fa-shopping-basket'
 												: 'fal fa-clipboard-list'
 									"
 									class="text-gray-500"
@@ -250,7 +320,9 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										item.type === 'stock_delivery'
 											? ctrans('Stock delivery')
 											: item.type === 'shopping_list'
-												? ctrans('Basket')
+												? item.state === 'open'
+													? ctrans('Orders')
+													: ctrans('Basket')
 												: ctrans('Purchase order')
 									" />
 								<div class="min-w-0 flex-1">
@@ -278,7 +350,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 						</li>
 					</ul>
 					<div v-else class="px-2 py-2 text-xs text-gray-500">
-						{{ ctrans("Nothing open or on the way") }}
+						{{ section.empty }}
 					</div>
 				</section>
 			</div>

@@ -11,6 +11,7 @@ namespace App\Models\Procurement;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Events\BroadcastPartnerProductionChanged;
 use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
@@ -78,6 +79,9 @@ class PartnerShoppingListItem extends Model
             $sellerId = $item->partner_organisation_id ?? $item->organisation_id;
             if ($sellerId) {
                 rescue(fn () => BroadcastProductionQueuesChanged::dispatch($sellerId));
+            }
+            if ($item->partner_organisation_id) {
+                rescue(fn () => BroadcastPartnerProductionChanged::dispatch($item->organisation_id));
             }
         };
 

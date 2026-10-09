@@ -488,6 +488,11 @@ onBeforeUnmount(stopTimer)
 						@click="isAsking = false" />
 					<Button
 						:label="ctrans('Prepare')"
+						:tooltip="
+							isHub
+								? ctrans('Automatically picks the products that need ordering and adds them to the Basket')
+								: ctrans('Automatically picks the products that need rescuing and adds them to the purchase order')
+						"
 						:disabled="!estimate.lines || isBudgetUsedUp"
 						:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
 						size="s"
