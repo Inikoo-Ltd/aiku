@@ -10858,6 +10858,7 @@
         "Fetch Priority": "लोड प्राथमिकता",
         "Fetching Complete!": "ल्याउने काम पूरा भयो!",
         "Fetching Portfolios...": "पोर्टफोलियोहरू ल्याउँदै...",
+        "For collection": "आफैं लैजाने",
         "Full screen (F11)": "पूर्ण स्क्रिन (F11)",
         "Full template": "पूर्ण टेम्प्लेट",
         "Future delivered cost": "भविष्यको डेलिभरी लागत",
@@ -13757,6 +13758,7 @@
         "rejected": "अस्वीकृत",
         "rejected customers": "अस्वीकृत ग्राहकहरू",
         "rejection notes": "अस्वीकृतिका नोटहरू",
+        "remaining": "बाँकी",
         "remove": "हटाउनुहोस्",
         "removed": "हटाइएको",
         "rental": "भाडा",
@@ -21505,11 +21507,13 @@
     "bg": {
         ":_fieldname stops following master": ":_fieldname вече не следва основния",
         ":_fieldname will follow master": ":_fieldname ще следва основния",
+        "For collection": "За лично вземане",
         "Share of total": "Дял",
         "The list of column file: portfolios": "Списък с колоните на файла: portfolios"
     },
     "cs": {
         ":_order items ordered; :_dispatched items shipped": "Objednané položky: :_order; odeslané položky: :_dispatched",
+        "For collection": "Osobní odběr",
         "Share of total": "Podíl"
     },
     "hr": {
@@ -21519,6 +21523,7 @@
         "Create New (:_count)": "Stvori novo (:_count)",
         "Displays random products from the current family (:_family)": "Prikazuje nasumične proizvode iz trenutne obitelji (:_family)",
         "Displays the top-selling products from the current family (:_family)": "Prikazuje najprodavanije proizvode iz trenutne obitelji (:_family)",
+        "For collection": "Osobno preuzimanje",
         "Order created at :_dateCreated": "Narudžba kreirana :_dateCreated",
         "Share of total": "Udio",
         "We cannot deliver to :_country, please update the address or contact support.": "Ne možemo dostaviti u državu :_country, ažurirajte adresu ili kontaktirajte podršku.",
@@ -21527,8 +21532,10 @@
     "hu": {
         ":_fieldName of the Master": "A fő termék :_fieldName mezője",
         ":_order items ordered; :_dispatched items shipped": "Megrendelt tételek: :_order; kiszállított tételek: :_dispatched",
+        "For collection": "Személyes átvétel",
         "Master Variant :_masterVarCode has been created successfully.": "A(z) :_masterVarCode fő variáns sikeresen létrejött.",
-        "Share of total": "Arány"
+        "Share of total": "Arány",
+        "remaining": "hátra"
     },
     "it": {
         " Products for sale": " Prodotti in vendita",
@@ -23730,7 +23737,8 @@
         ":_fieldName of the Master": ":_fieldName van het hoofdproduct",
         "Order before :_selectedDate will be marked": "Bestellingen van vóór :_selectedDate worden gemarkeerd",
         "Order created at :_dateCreated": "Bestelling aangemaakt op :_dateCreated",
-        "Share of total": "Aandeel"
+        "Share of total": "Aandeel",
+        "remaining": "resterend"
     },
     "pl": {
         " Products for sale": " Produkty na sprzedaż",
@@ -25305,6 +25313,7 @@
     },
     "ro": {
         ":_order items ordered; :_dispatched items shipped": "Articole comandate: :_order; articole expediate: :_dispatched",
+        "For collection": "Ridicare personală",
         "Share of total": "Pondere"
     },
     "sv": {
@@ -25313,6 +25322,7 @@
     },
     "uk": {
         ":_order items ordered; :_dispatched items shipped": "Замовлено товарів: :_order; відправлено товарів: :_dispatched",
+        "For collection": "Самовивіз",
         "Share of total": "Частка"
     }
 }
