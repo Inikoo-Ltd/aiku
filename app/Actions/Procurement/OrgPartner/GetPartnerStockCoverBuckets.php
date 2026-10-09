@@ -177,9 +177,13 @@ class GetPartnerStockCoverBuckets
         $cost    = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice($orgPartner)}";
         $inOrder = $this->inRescueOrder();
 
-        $counts = $query
-            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost, coalesce(sum($cost), 0) as cost, coalesce(sum($cost) filter (where $inOrder), 0) as order_cost, count(*) filter (where $inOrder) as order_lines, min($cost) filter (where $cost > 0) as cheapest, min($cost) filter (where $inOrder and $cost > 0) as order_cheapest")
-            ->groupByRaw($expression)
+        $perSko = $query
+            ->selectRaw("$expression as bucket, os.health_rank, s.projected_lost_revenue as lost, $cost as cost, $inOrder as in_order")
+            ->offset(0);
+
+        $counts = DB::query()->fromSub($perSko, 'sko')
+            ->selectRaw("bucket, count(*) as total, count(*) filter (where health_rank in ('A', 'B')) as bestsellers, coalesce(sum(lost), 0) as lost, coalesce(sum(cost), 0) as cost, coalesce(sum(cost) filter (where in_order), 0) as order_cost, count(*) filter (where in_order) as order_lines, min(cost) filter (where cost > 0) as cheapest, min(cost) filter (where in_order and cost > 0) as order_cheapest")
+            ->groupBy('bucket')
             ->get()
             ->keyBy('bucket');
 

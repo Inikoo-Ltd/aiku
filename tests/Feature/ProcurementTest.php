@@ -3222,9 +3222,16 @@ test('UI Index org partners', function () {
                 ->where('name', $this->orgPartner->partner->name)
                 ->where('is_hub', $this->orgPartner->partner->is_manufacturing_hub)
                 ->has('stats', fn (AssertableInertia $stats) => $this->orgPartner->partner->is_manufacturing_hub
-                    ? $stats->has('open_shopping_list_items')->has('rescuable.buckets', 4)->has('rescuable.top')->etc()
-                    : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->has('rescuable.buckets', 3)->has('rescuable.buckets.0.left_out')->has('rescuable.top')->etc())
-                ->etc());
+                    ? $stats->has('open_shopping_list_items')->where('rescuable', null)->etc()
+                    : $stats->has('purchase_orders')->has('last_submitted_at')->has('current')->where('rescuable', null)->etc())
+                ->etc())
+            ->missing('rescuable')
+            ->loadDeferredProps(fn (AssertableInertia $page) => $page->has(
+                'rescuable.'.$this->orgPartner->id,
+                fn (AssertableInertia $rescuable) => $this->orgPartner->partner->is_manufacturing_hub
+                    ? $rescuable->has('buckets', 4)->has('top')->etc()
+                    : $rescuable->has('buckets', 3)->has('buckets.0.left_out')->has('top')->etc()
+            ));
     });
 
     $user          = $this->adminGuest->getUser();
