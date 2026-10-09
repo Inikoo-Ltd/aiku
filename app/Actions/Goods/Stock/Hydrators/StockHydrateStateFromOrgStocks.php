@@ -82,7 +82,7 @@ class StockHydrateStateFromOrgStocks implements ShouldBeUnique
             return StockStateEnum::DISCONTINUED;
         }
 
-        if ($numberOrgStocks == $numberDiscontinuingOrgStocks) {
+        if ($numberOrgStocks == $numberDiscontinuedOrgStocks + $numberDiscontinuingOrgStocks) {
             return StockStateEnum::DISCONTINUING;
         }
 

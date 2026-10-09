@@ -14,6 +14,8 @@ use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
+use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
+use App\Actions\Goods\Stock\RepairStocksStateFromOrgStocks;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
@@ -4175,6 +4177,48 @@ describe('discontinue confirm', function () {
             ->and($audit->new_values['source'])->toBe('mcp')
             ->and($audit->new_values['request_text'])->toBe('discontinue this one please')
             ->and($audit->new_values['overrides'])->toBe(['other' => 'active']);
+    });
+
+    test('changing every sko of a stock carries the state up to the stock', function () {
+        $orgStock = $this->orgStocks[2];
+        $stock    = $orgStock->stock;
+        $change   = fn (OrgStockStateEnum $state) => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => $state->value,
+            'scope'         => 'group',
+            'reason'        => 'Stock follows its skos',
+        ]);
+
+        $change(OrgStockStateEnum::DISCONTINUED);
+        expect($stock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED);
+
+        $this->otherOrgStocks[2]->update(['state' => OrgStockStateEnum::DISCONTINUING]);
+        expect(StockHydrateStateFromOrgStocks::make()->getStockStateFromOrgStocks($stock->refresh()))->toBe(StockStateEnum::DISCONTINUING);
+
+        $change(OrgStockStateEnum::ACTIVE);
+        expect($stock->refresh()->state)->toBe(StockStateEnum::ACTIVE);
+    });
+
+    test('state repair fixes an active stock left behind and never touches a discontinued one', function () {
+        $stock      = $this->orgStocks[0]->stock;
+        $otherStock = $this->orgStocks[1]->stock;
+
+        OrgStock::where('stock_id', $stock->id)->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        $stock->update(['state' => StockStateEnum::ACTIVE]);
+        $otherStock->update(['state' => StockStateEnum::DISCONTINUED]);
+
+        expect(RepairStocksStateFromOrgStocks::run($stock->refresh(), false))->toBe([StockStateEnum::ACTIVE, StockStateEnum::DISCONTINUED])
+            ->and($stock->refresh()->state)->toBe(StockStateEnum::ACTIVE)
+            ->and(RepairStocksStateFromOrgStocks::run($stock, true))->toBe([StockStateEnum::ACTIVE, StockStateEnum::DISCONTINUED])
+            ->and($stock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED)
+            ->and(RepairStocksStateFromOrgStocks::run($otherStock->refresh(), true))->toBeNull()
+            ->and($otherStock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED);
+
+        OrgStock::where('stock_id', $otherStock->id)->update(['state' => OrgStockStateEnum::DISCONTINUING]);
+
+        expect(RepairStocksStateFromOrgStocks::run($otherStock->refresh(), true))->toBeNull()
+            ->and($otherStock->refresh()->state)->toBe(StockStateEnum::DISCONTINUED)
+            ->and(RepairStocksStateFromOrgStocks::affectedStocks()->count())->toBeInt();
     });
 
     test('group routes preview and change org stocks picked across organisations in one request', function () {

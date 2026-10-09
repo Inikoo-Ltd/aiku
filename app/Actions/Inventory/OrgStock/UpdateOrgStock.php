@@ -87,7 +87,7 @@ class UpdateOrgStock extends OrgAction
         $changes = $orgStock->getChanges();
 
         if (Arr::has($changes, 'state')) {
-            StockHydrateStateFromOrgStocks::dispatch($orgStock->id);
+            StockHydrateStateFromOrgStocks::dispatch($orgStock->stock_id);
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
 
             foreach ($orgStock->organisation->warehouses as $warehouse) {
