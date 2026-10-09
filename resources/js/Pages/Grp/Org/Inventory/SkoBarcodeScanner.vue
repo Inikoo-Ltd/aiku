@@ -12,7 +12,7 @@ import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBarcodeRead, faCheck, faCheckCircle, faExchange, faSearch, faTimesCircle, faTimes, faInventory, faBox, faArrowLeft } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { playNotificationSound } from "@/Composables/useNotificationSound"
 import { useBarcodeScanner } from "@/Composables/useBarcodeScanner"
@@ -92,7 +92,7 @@ const scan = async (code: string) => {
             playNotificationSound({ frequency: 200, duration: 280, type: "square" })
         }
     } catch (error: any) {
-        notify({ title: trans("Scan failed"), text: error?.response?.data?.message ?? trans("Please try again."), type: "error" })
+        notify({ title: ctrans("Scan failed"), text: error?.response?.data?.message ?? ctrans("Please try again."), type: "error" })
     } finally {
         isScanning.value = false
     }
@@ -159,8 +159,8 @@ const assign = async () => {
     } catch (error: any) {
         const errors = error?.response?.data?.errors
         notify({
-            title: trans("Could not assign barcode"),
-            text: errors ? Object.values(errors).flat().join(" ") : (error?.response?.data?.message ?? trans("Please try again.")),
+            title: ctrans("Could not assign barcode"),
+            text: errors ? Object.values(errors).flat().join(" ") : (error?.response?.data?.message ?? ctrans("Please try again.")),
             type: "error",
         })
     } finally {
@@ -182,7 +182,7 @@ const assign = async () => {
                 inputmode="none"
                 autocomplete="off"
                 spellcheck="false"
-                :placeholder="trans('Scan a SKO barcode')"
+                :placeholder="ctrans('Scan a SKO barcode')"
                 style="padding-left:3rem"
                 class="w-full rounded-xl border-2 border-gray-300 bg-white py-4 pr-12 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500"
                 @keydown.enter.prevent="flushBuffer"
@@ -196,7 +196,7 @@ const assign = async () => {
         </div>
 
         <div class="flex items-center justify-between text-sm text-gray-500">
-            <span>{{ trans('Checked') }}: <span class="font-medium tabular-nums text-gray-700">{{ okCount }}</span></span>
+            <span>{{ ctrans('Checked') }}: <span class="font-medium tabular-nums text-gray-700">{{ okCount }}</span></span>
             <button
                 v-if="mode === 'scan' && can_edit && !result"
                 type="button"
@@ -204,7 +204,7 @@ const assign = async () => {
                 @click="openSearch"
             >
                 <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
-                {{ trans('Find a SKO') }}
+                {{ ctrans('Find a SKO') }}
             </button>
         </div>
 
@@ -213,7 +213,7 @@ const assign = async () => {
                 <div class="flex items-center gap-3 text-red-800">
                     <FontAwesomeIcon icon="fal fa-times-circle" class="text-3xl text-red-500" fixed-width aria-hidden="true" />
                     <div>
-                        <div class="font-semibold">{{ trans('Barcode not found') }}</div>
+                        <div class="font-semibold">{{ ctrans('Barcode not found') }}</div>
                         <div class="font-mono text-sm">{{ result.barcode }}</div>
                     </div>
                 </div>
@@ -225,14 +225,14 @@ const assign = async () => {
                         @click="openSearch"
                     >
                         <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
-                        {{ trans('Assign to a SKO') }}
+                        {{ ctrans('Assign to a SKO') }}
                     </button>
                     <button
                         type="button"
                         class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-white text-base font-medium text-gray-700 active:bg-gray-100"
                         @click="result = null"
                     >
-                        {{ trans('Skip') }}
+                        {{ ctrans('Skip') }}
                     </button>
                 </div>
             </div>
@@ -240,7 +240,7 @@ const assign = async () => {
             <div v-else-if="result?.org_stock" class="rounded-xl border-2 bg-white p-4" :class="justAssigned ? 'border-green-400' : 'border-gray-200'">
                 <div v-if="justAssigned" class="mb-3 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
                     <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
-                    {{ trans('Barcode assigned') }}
+                    {{ ctrans('Barcode assigned') }}
                 </div>
 
                 <div class="flex gap-4">
@@ -258,10 +258,10 @@ const assign = async () => {
                         <div class="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
                             <FontAwesomeIcon :icon="result.org_stock.state.icon" :class="result.org_stock.state.class" fixed-width aria-hidden="true" />
                             {{ result.org_stock.state.tooltip }}
-                            <span v-if="result.org_stock.packed_in">· {{ trans('Pack of :n', { n: result.org_stock.packed_in }) }}</span>
+                            <span v-if="result.org_stock.packed_in">· {{ ctrans('Pack of :n', { n: result.org_stock.packed_in }) }}</span>
                         </div>
                         <div class="mt-1 font-mono text-xs text-gray-500">
-                            {{ result.matched_on === 'unit' ? trans('Unit EAN') : trans('SKO') }} {{ result.barcode }}
+                            {{ result.matched_on === 'unit' ? ctrans('Unit EAN') : ctrans('SKO') }} {{ result.barcode }}
                         </div>
                     </div>
                 </div>
@@ -270,7 +270,7 @@ const assign = async () => {
                     <div class="flex items-center justify-between text-sm">
                         <span class="flex items-center gap-1.5 text-gray-500">
                             <FontAwesomeIcon icon="fal fa-inventory" fixed-width aria-hidden="true" />
-                            {{ trans('Stock') }}
+                            {{ ctrans('Stock') }}
                         </span>
                         <span class="font-semibold tabular-nums text-gray-900">{{ result.org_stock.quantity_in_locations }}</span>
                     </div>
@@ -280,7 +280,7 @@ const assign = async () => {
                             <span class="tabular-nums text-gray-700">{{ location.quantity }}</span>
                         </div>
                     </div>
-                    <div v-else class="mt-2 text-sm text-gray-400">{{ trans('Not in any location') }}</div>
+                    <div v-else class="mt-2 text-sm text-gray-400">{{ ctrans('Not in any location') }}</div>
                 </div>
 
                 <div class="mt-4 grid gap-2">
@@ -290,7 +290,7 @@ const assign = async () => {
                         @click="confirmOk"
                     >
                         <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
-                        {{ trans('All OK') }}
+                        {{ ctrans('All OK') }}
                     </button>
                     <button
                         v-if="can_edit && !justAssigned"
@@ -299,14 +299,14 @@ const assign = async () => {
                         @click="openSearch"
                     >
                         <FontAwesomeIcon icon="fal fa-exchange" fixed-width aria-hidden="true" />
-                        {{ trans('Wrong SKO, move barcode') }}
+                        {{ ctrans('Wrong SKO, move barcode') }}
                     </button>
                 </div>
             </div>
 
             <div v-else class="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center text-gray-400">
                 <FontAwesomeIcon icon="fal fa-barcode-read" class="text-4xl" fixed-width aria-hidden="true" />
-                <div class="mt-2 text-sm">{{ trans('Scan a SKO to check it') }}</div>
+                <div class="mt-2 text-sm">{{ ctrans('Scan a SKO to check it') }}</div>
             </div>
         </template>
 
@@ -318,9 +318,9 @@ const assign = async () => {
                     </button>
                     <div class="min-w-0 flex-1 text-sm text-gray-600">
                         <template v-if="scannedBarcode">
-                            {{ trans('Assign') }} <span class="font-mono font-semibold text-gray-900">{{ scannedBarcode }}</span> {{ trans('to') }}:
+                            {{ ctrans('Assign') }} <span class="font-mono font-semibold text-gray-900">{{ scannedBarcode }}</span> {{ ctrans('to') }}:
                         </template>
-                        <template v-else>{{ trans('Find a SKO, then scan its barcode') }}</template>
+                        <template v-else>{{ ctrans('Find a SKO, then scan its barcode') }}</template>
                     </div>
                 </div>
 
@@ -330,7 +330,7 @@ const assign = async () => {
                         v-model="searchQuery"
                         type="search"
                         autocomplete="off"
-                        :placeholder="trans('SKO code or name')"
+                        :placeholder="ctrans('SKO code or name')"
                         class="w-full rounded-xl border-2 border-gray-300 py-3 pl-11 pr-4 text-base focus:border-indigo-500 focus:ring-indigo-500"
                     />
                     <FontAwesomeIcon icon="fal fa-search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fixed-width aria-hidden="true" />
@@ -347,7 +347,7 @@ const assign = async () => {
                             @click="candidate = null"
                         >
                             <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
-                            {{ trans('Cancel') }}
+                            {{ ctrans('Cancel') }}
                         </button>
                         <button
                             type="button"
@@ -357,10 +357,10 @@ const assign = async () => {
                         >
                             <LoadingIcon v-if="isAssigning" />
                             <FontAwesomeIcon v-else icon="fal fa-check" fixed-width aria-hidden="true" />
-                            {{ trans('Assign') }}
+                            {{ ctrans('Assign') }}
                         </button>
                     </div>
-                    <div v-if="!scannedBarcode" class="mt-2 text-center text-xs text-gray-500">{{ trans('Scan the barcode now to assign it') }}</div>
+                    <div v-if="!scannedBarcode" class="mt-2 text-center text-xs text-gray-500">{{ ctrans('Scan the barcode now to assign it') }}</div>
                 </div>
 
                 <ul v-else class="mt-2 divide-y divide-gray-100">
@@ -378,7 +378,7 @@ const assign = async () => {
                         </button>
                     </li>
                     <li v-if="!searchRows.length && searchQuery.trim().length >= 2 && !isSearching" class="py-6 text-center text-sm text-gray-400">
-                        {{ trans('No SKOs match') }}
+                        {{ ctrans('No SKOs match') }}
                     </li>
                 </ul>
             </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref} from 'vue'
 
 
@@ -26,12 +26,12 @@ const onClickGetStarted = (domain: string) => {
 <template>
     <div class="relative isolate overflow-hidden px-6 py-8 text-center sm:rounded-3xl sm:px-12">
         <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
-            {{ trans(`Let's get started.`) }}
+            {{ ctrans(`Let's get started.`) }}
         </h2>
 
         <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-500">
-            {{ trans('Welcome! We\'re excited to help you.') }} <br> {{ trans('You need to create account from our website shop first') }}
-            <br>  {{ trans('Please select one of our available shops below to begin using our services.') }}
+            {{ ctrans('Welcome! We\'re excited to help you.') }} <br> {{ ctrans('You need to create account from our website shop first') }}
+            <br>  {{ ctrans('Please select one of our available shops below to begin using our services.') }}
         </p>
 
         <div class="mt-10 flex items-center justify-center gap-x-6">

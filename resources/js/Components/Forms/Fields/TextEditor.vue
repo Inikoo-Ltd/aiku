@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { get } from 'lodash-es'
 defineOptions({ inheritAttrs: false })
 
@@ -35,9 +35,9 @@ const props = defineProps<{
       <!-- Counter: Letters and Words -->
       <div v-if="props.options?.counter"
           class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
-          <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
+          <p class="">{{ ctrans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
           <p class="">
-              {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
+              {{ ctrans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
           </p>
       </div>
   </div>

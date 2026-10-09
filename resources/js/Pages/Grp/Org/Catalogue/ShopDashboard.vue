@@ -14,7 +14,7 @@
   import { useTruncate } from '@/Composables/useTruncate'
   import { useRangeFromNow } from '@/Composables/useFormatTime'
   import { useLocaleStore } from "@/Stores/locale"
-  import { trans } from 'laravel-vue-i18n'
+  import { ctrans } from '@/Composables/useTrans'
   import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
   import Image from "@common/Components/Image.vue"
   import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -217,7 +217,7 @@
           <!-- Sections: Recently added Banner -->
           <div class="max-w-2xl lg:mx-0 lg:max-w-none">
               <div class="flex items-center justify-between">
-                  <h2 class="text-base font-semibold text-gray-700 leading-none">{{ trans('Recently edited banner') }}</h2>
+                  <h2 class="text-base font-semibold text-gray-700 leading-none">{{ ctrans('Recently edited banner') }}</h2>
                   <Link :href="'#'" class="text-sm text-gray-500 hover:text-gray-700">
                       View all<span class="sr-only">, banner</span>
                   </Link>
@@ -233,7 +233,7 @@
                       <dl class="divide-y divide-transparent px-4 pt-1 pb-3 text-sm">
                           <!-- Title Banner -->
                           <div class="flex justify-between items-center gap-x-4">
-                              <!-- <dt class="text-gray-500 text-sm">{{ trans('Name') }}</dt> -->
+                              <!-- <dt class="text-gray-500 text-sm">{{ ctrans('Name') }}</dt> -->
                               <dd class="flex items-start gap-x-2">
                                   <div class="text-lg font-semibold text-gray-600">{{ useTruncate(lastEditedBanner?.name, 28, 4) }}
                                   </div>
@@ -241,10 +241,10 @@
                           </div>
                           <!-- Last Eedited -->
                           <div class="flex justify-between items-center gap-x-4">
-                              <!-- <dt class="text-gray-500 text-sm">{{ trans('Last edit') }}</dt> -->
+                              <!-- <dt class="text-gray-500 text-sm">{{ ctrans('Last edit') }}</dt> -->
                               <dd class="text-gray-600 text-xs italic tracking-wide space-x-1">
                                   <FontAwesomeIcon fixed-width icon='fal fa-history' class='text-gray-400' aria-hidden='true' />
-                                  <span class="text-gray-500">{{ trans('Last edited on') }}</span>
+                                  <span class="text-gray-500">{{ ctrans('Last edited on') }}</span>
                                   <time :datetime="lastEditedBanner.updated_at">{{ useRangeFromNow(lastEditedBanner.updated_at, {
                                       localeCode: useLocaleStore().language.code
                                   }) }}</time>

@@ -10,7 +10,7 @@ import {
     faReply,
     faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = withDefaults(
     defineProps<{
@@ -86,7 +86,7 @@ const toSegments = (text: string): PreviewSegment[] => {
 const headerFormat = computed(() => props.header?.format ?? "NONE")
 
 const previewBodySegments = computed(() =>
-    toSegments(props.body || props.placeholder || trans("Your message will appear here…"))
+    toSegments(props.body || props.placeholder || ctrans("Your message will appear here…"))
 )
 
 const previewHeaderSegments = computed(() =>
@@ -131,7 +131,7 @@ const doodleStyle = computed(() => {
     <div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
         <div class="flex items-center gap-2 bg-[#075E54] px-4 py-2.5 text-white">
             <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" fixed-width />
-            <span class="text-sm font-semibold">{{ trans("Preview") }}</span>
+            <span class="text-sm font-semibold">{{ ctrans("Preview") }}</span>
             <span class="ml-auto text-[11px] opacity-70 truncate max-w-[130px]">{{ businessName }}</span>
         </div>
 
@@ -155,7 +155,7 @@ const doodleStyle = computed(() => {
                         <div v-else
                             class="h-20 rounded-md bg-gray-100 flex items-center justify-center gap-2 text-gray-400">
                             <FontAwesomeIcon :icon="faFilePdf" class="text-2xl" fixed-width />
-                            <span class="text-[11px]">{{ trans("PDF") }}</span>
+                            <span class="text-[11px]">{{ ctrans("PDF") }}</span>
                         </div>
                     </div>
 
@@ -195,7 +195,7 @@ const doodleStyle = computed(() => {
                         <div v-for="(button, index) in buttons" :key="index"
                             class="flex items-center justify-center gap-1.5 border-b border-[#E9EDEF] last:border-b-0 py-2.5 text-[14px] text-[#0091EA] font-medium">
                             <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px]" fixed-width />
-                            {{ button.text || trans("Button") }}
+                            {{ button.text || ctrans("Button") }}
                         </div>
                     </div>
                 </div>

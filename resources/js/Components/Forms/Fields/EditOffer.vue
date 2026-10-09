@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { InputNumber } from "primevue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 defineOptions({ inheritAttrs: false })
@@ -86,7 +86,7 @@ const offerType = props.fieldData.offer.type
             <div class="xpl-4 space-y-4">
                 <div v-if="['Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_item_quantity')" class="flex flex-col grid-cols-7 gap-x-4">
                     <div class="col-span-3">
-                        {{ trans("Minimum quantity") }}
+                        {{ ctrans("Minimum quantity") }}
                     </div>
                     <div class="col-span-4">
                         <InputNumber
@@ -95,7 +95,7 @@ const offerType = props.fieldData.offer.type
                             inputId="trigger_item_quantity"
                             :min="1"
                             placeholder="Enter a number"
-                            :suffix="' ' + (get(form, [fieldName, 'trigger_item_quantity'], 1) > 1 ? trans('items') : trans('item'))"
+                            :suffix="' ' + (get(form, [fieldName, 'trigger_item_quantity'], 1) > 1 ? ctrans('items') : ctrans('item'))"
                         />
                     </div>
                 </div>
@@ -103,7 +103,7 @@ const offerType = props.fieldData.offer.type
                 <!-- Section: Amounts -->
                 <div v-if="['Amount AND Order Number'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_min_amount')" class="flex flex-col">
                     <div class="col-span-3">
-                        {{ trans("Min. order amount") }}
+                        {{ ctrans("Min. order amount") }}
                         <InformationIcon information="Minimum of amount of the order" />
                     </div>
                     <div class="col-span-4">
@@ -123,7 +123,7 @@ const offerType = props.fieldData.offer.type
                 <!-- Section: Minimum order -->
                 <div v-if="['Amount AND Order Number'].includes(offerType) && form[fieldName].hasOwnProperty('trigger_order_number')" class="flex flex-col">
                     <div class="col-span-3">
-                        {{ trans("Min. order") }}
+                        {{ ctrans("Min. order") }}
                         <InformationIcon information="The order count required to activate the discount (e.g., 7 = 7th order)" />
                     </div>
                     <div class="col-span-4">
@@ -133,7 +133,7 @@ const offerType = props.fieldData.offer.type
                             inputId="trigger_order_number"
                             :min="1"
                             placeholder="Enter a number"
-                            :suffix="' ' + (get(form, [fieldName, 'trigger_order_number'], 1) > 1 ? trans('orders') : trans('order'))"
+                            :suffix="' ' + (get(form, [fieldName, 'trigger_order_number'], 1) > 1 ? ctrans('orders') : ctrans('order'))"
                         />
                     </div>
                 </div>
@@ -149,7 +149,7 @@ const offerType = props.fieldData.offer.type
                 <div v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offerType) && form[fieldName].hasOwnProperty('percentage_off')" class="flex flex-col">
                 
                     <div class="col-span-3">
-                        {{ trans("Percentage off") }}
+                        {{ ctrans("Percentage off") }}
                     </div>
                     <div class="col-span-4">
                         <InputNumber

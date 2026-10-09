@@ -7,7 +7,7 @@
 import "@/Composables/initialiseLeaflet"
 import { LMap, LTileLayer, LCircleMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
 import { onMounted, nextTick, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 interface MapPoint {
     latitude: number
@@ -78,10 +78,10 @@ watch(() => props.data, () => nextTick(() => map.value?.invalidateSize()))
                                 class="inline-flex h-2 w-2 rounded-full"
                                 :class="point.was_blocked ? 'bg-red-500' : 'bg-green-500'"
                             />
-                            <span>{{ point.was_blocked ? trans('Blocked') : trans('Allowed') }}</span>
+                            <span>{{ point.was_blocked ? ctrans('Blocked') : ctrans('Allowed') }}</span>
                         </div>
                         <div class="text-xs text-gray-500 mt-1">
-                            {{ point.number_requests }} {{ trans('requests') }}
+                            {{ point.number_requests }} {{ ctrans('requests') }}
                         </div>
                     </l-tooltip>
                 </l-circle-marker>
@@ -90,11 +90,11 @@ watch(() => props.data, () => nextTick(() => map.value?.invalidateSize()))
             <div class="absolute bottom-3 left-3 z-[500] bg-white/90 backdrop-blur rounded-md shadow px-3 py-2 text-xs flex items-center gap-4">
                 <span class="flex items-center gap-1.5">
                     <span class="inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
-                    {{ trans('Blocked') }}
+                    {{ ctrans('Blocked') }}
                 </span>
                 <span class="flex items-center gap-1.5">
                     <span class="inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
-                    {{ trans('Allowed') }}
+                    {{ ctrans('Allowed') }}
                 </span>
             </div>
         </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // This file is called in BannerWorkshop, WebsiteWorkshop
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Popover from "@/Components/Utils/Popover.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { computed, ref } from 'vue'
@@ -62,7 +62,7 @@ const emits = defineEmits<{
                 <div>
                     <div class="inline-flex items-start leading-none">
                         <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" fixed-width />
-                        <span class="capitalize">{{ trans('comment') }}</span>
+                        <span class="capitalize">{{ ctrans('comment') }}</span>
                     </div>
                     <div class="py-2.5">
                         <textarea rows="3" :value="modelValue"

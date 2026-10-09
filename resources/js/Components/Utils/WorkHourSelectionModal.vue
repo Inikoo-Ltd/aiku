@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Dialog } from "primevue"
 import Dropdown from "primevue/dropdown"
@@ -78,10 +78,10 @@ watch(
 		<div class="space-y-6 py-4">
 			<div>
 				<h3 class="text-xl font-semibold text-gray-800 mb-2">
-					{{ trans("Select Working Hours") }}
+					{{ ctrans("Select Working Hours") }}
 				</h3>
 				<p class="text-sm text-gray-500">
-					{{ trans("Choose your work schedule for this clocking") }}
+					{{ ctrans("Choose your work schedule for this clocking") }}
 				</p>
 			</div>
 
@@ -92,9 +92,9 @@ watch(
 					@click="selectedType = 'default'">
 					<RadioButton v-model="selectedType" value="default" inputId="default" />
 					<label for="default" class="flex-1 cursor-pointer">
-						<div class="font-medium text-gray-800">{{ trans("Default Schedule") }}</div>
+						<div class="font-medium text-gray-800">{{ ctrans("Default Schedule") }}</div>
 						<div class="text-xs text-gray-500">
-							{{ trans("Your regular working hours") }}
+							{{ ctrans("Your regular working hours") }}
 						</div>
 					</label>
 				</div>
@@ -117,12 +117,12 @@ watch(
 						for="shift"
 						class="flex-1"
 						:class="allowShift ? 'cursor-pointer' : 'cursor-not-allowed'">
-						<div class="font-medium text-gray-800">{{ trans("Shift Schedule") }}</div>
+						<div class="font-medium text-gray-800">{{ ctrans("Shift Schedule") }}</div>
 						<div class="text-xs text-gray-500">
 							{{
 								allowShift
-									? trans("Select a specific shift")
-									: trans("Shift not enabled for your account")
+									? ctrans("Select a specific shift")
+									: ctrans("Shift not enabled for your account")
 							}}
 						</div>
 					</label>
@@ -130,26 +130,26 @@ watch(
 
 				<div v-if="selectedType === 'shift' && allowShift" class="ml-8 mt-3">
 					<label class="block text-sm font-medium text-gray-700 mb-2">
-						{{ trans("Select Shift") }}
+						{{ ctrans("Select Shift") }}
 					</label>
 					<Dropdown
 						v-model="selectedShiftId"
 						:options="availableShifts"
 						optionLabel="name"
 						optionValue="id"
-						:placeholder="trans('Choose a shift')"
+						:placeholder="ctrans('Choose a shift')"
 						class="w-full"
 						:disabled="!allowShift" />
 					<p v-if="availableShifts.length === 0" class="text-xs text-gray-500 mt-1">
-						{{ trans("No shift schedules available") }}
+						{{ ctrans("No shift schedules available") }}
 					</p>
 				</div>
 			</div>
 
 			<div class="flex gap-3 pt-4">
-				<Button :label="trans('Cancel')" type="exit" @click="closeModal" full />
+				<Button :label="ctrans('Cancel')" type="exit" @click="closeModal" full />
 				<Button
-					:label="trans('Confirm')"
+					:label="ctrans('Confirm')"
 					type="save"
 					@click="handleConfirm"
 					:disabled="!canConfirm"

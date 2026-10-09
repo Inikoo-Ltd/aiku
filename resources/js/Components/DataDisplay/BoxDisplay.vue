@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Pie } from "vue-chartjs"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { useLocaleStore } from "@/Stores/locale"

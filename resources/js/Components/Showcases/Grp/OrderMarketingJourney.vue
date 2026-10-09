@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBullseyeArrow, faCartPlus, faShoppingBasket, faUserPlus, faCheckCircle, faChevronDown, faChevronRight } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { useLocaleStore } from '@/Stores/locale'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faBullseyeArrow, faCartPlus, faShoppingBasket, faUserPlus, faCheckCircle, faChevronDown, faChevronRight)
 
@@ -96,10 +96,10 @@ const rows = computed<(JourneyEvent | ProductGroup)[]>(() => {
 })
 
 const kindLabel: Record<string, string> = {
-    add: trans('added'),
-    up: trans('more'),
-    down: trans('fewer'),
-    remove: trans('removed'),
+    add: ctrans('added'),
+    up: ctrans('more'),
+    down: ctrans('fewer'),
+    remove: ctrans('removed'),
 }
 
 const icon = (event: JourneyEvent) => ({
@@ -123,7 +123,7 @@ const money = (value: number, signed = false) =>
 <template>
     <div v-if="data" class="px-4 py-6 max-w-4xl">
         <div class="mb-6 border-b border-gray-200 pb-4">
-            <div class="text-xs uppercase tracking-wide text-gray-400">{{ trans('Attribution') }}</div>
+            <div class="text-xs uppercase tracking-wide text-gray-400">{{ ctrans('Attribution') }}</div>
             <div v-if="data.attribution.length" class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span v-for="(item, index) in data.attribution" :key="index" class="text-sm text-gray-700">
                     {{ item.label }}<span v-if="item.campaign" class="text-gray-400"> / {{ item.campaign }}</span>
@@ -131,15 +131,15 @@ const money = (value: number, signed = false) =>
                 </span>
             </div>
             <div v-else class="mt-1 text-sm text-gray-400">
-                {{ trans('No channel credited for this order') }}
+                {{ ctrans('No channel credited for this order') }}
             </div>
             <div v-if="data.is_first_order" class="mt-1 text-xs text-amber-600">
-                {{ trans("This customer's first order - the timeline starts with the touches that led to registration.") }}
+                {{ ctrans("This customer's first order - the timeline starts with the touches that led to registration.") }}
             </div>
         </div>
 
         <div v-if="!data.events.length" class="text-sm text-gray-400">
-            {{ trans('No marketing activity recorded for this order') }}
+            {{ ctrans('No marketing activity recorded for this order') }}
         </div>
 
         <ol v-else class="relative border-l border-gray-200 ml-3">
@@ -155,11 +155,11 @@ const money = (value: number, signed = false) =>
                                              class="mr-1 text-xs text-gray-400" fixed-width />
                             <span v-if="row.adds" class="text-emerald-600">+{{ row.adds }}</span>
                             <span v-if="row.removals" class="ml-1 text-red-500">−{{ row.removals }}</span>
-                            {{ trans('products') }}
+                            {{ ctrans('products') }}
                             <span v-if="row.delta !== null" class="ml-1 tabular-nums"
                                   :class="row.delta >= 0 ? 'text-emerald-600' : 'text-red-500'">{{ money(row.delta, true) }}</span>
                             <span v-if="row.basket !== null" class="ml-1 text-xs text-gray-400">
-                                {{ trans('basket') }} {{ money(row.basket) }}
+                                {{ ctrans('basket') }} {{ money(row.basket) }}
                             </span>
                         </div>
                         <div class="whitespace-nowrap text-xs tabular-nums text-gray-400">
@@ -175,7 +175,7 @@ const money = (value: number, signed = false) =>
                                 {{ item.label }}
                                 <span v-if="item.kind && item.kind !== 'add'" class="text-gray-400">· {{ kindLabel[item.kind] }}</span>
                                 <span v-if="item.basket !== null && item.basket !== undefined" class="text-gray-400">
-                                    · {{ trans('basket') }} {{ money(item.basket) }}
+                                    · {{ ctrans('basket') }} {{ money(item.basket) }}
                                 </span>
                             </div>
                             <div class="whitespace-nowrap tabular-nums text-gray-400">
@@ -200,11 +200,11 @@ const money = (value: number, signed = false) =>
                             </span>
                             <span v-if="row.type === 'product' && (row as JourneyEvent).basket !== null && (row as JourneyEvent).basket !== undefined"
                                   class="ml-1 text-xs text-gray-400">
-                                {{ trans('basket') }} {{ money((row as JourneyEvent).basket!) }}
+                                {{ ctrans('basket') }} {{ money((row as JourneyEvent).basket!) }}
                             </span>
                             <span v-if="(row as JourneyEvent).campaign_name" class="ml-1 text-xs text-gray-400">{{ (row as JourneyEvent).campaign_name }}</span>
                             <span v-if="row.type === 'touch' && (row as JourneyEvent).attributed"
-                                  class="ml-1 text-xs text-indigo-500">{{ trans('credited') }}</span>
+                                  class="ml-1 text-xs text-indigo-500">{{ ctrans('credited') }}</span>
                         </div>
                         <div class="whitespace-nowrap text-xs tabular-nums text-gray-400">
                             {{ useFormatTime(row.datetime, { formatTime: 'hms' }) }}

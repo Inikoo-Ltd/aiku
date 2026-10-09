@@ -4,7 +4,7 @@ import { router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { cloneDeep, debounce } from 'lodash-es'
 import axios from 'axios'
 import Drawer from 'primevue/drawer'
@@ -194,8 +194,8 @@ const autosave = () => {
       onSuccess: () => emit('update:layout', payload),
       onError: (errors: any) => {
         notify({
-          title: trans('Autosave Failed'),
-          text: errors?.message || trans('Unknown error occurred'),
+          title: ctrans('Autosave Failed'),
+          text: errors?.message || ctrans('Unknown error occurred'),
           type: 'error'
         })
       }
@@ -233,8 +233,8 @@ const onPickTemplate = async (template: any) => {
       }
     } catch (error) {
       notify({
-        title: trans('Error'),
-        text: trans('Failed to load the template'),
+        title: ctrans('Error'),
+        text: ctrans('Failed to load the template'),
         type: 'error'
       })
     }
@@ -280,8 +280,8 @@ const selectPreviewSource = async (item: any) => {
       picked.value[picker.selectionKey] = null
 
       notify({
-        title: trans('Error'),
-        text: trans('Failed to fetch the preview data. Please try again.'),
+        title: ctrans('Error'),
+        text: ctrans('Failed to fetch the preview data. Please try again.'),
         type: 'error'
       })
     } finally {
@@ -312,8 +312,8 @@ const selectPreviewSource = async (item: any) => {
     picked.value[picker.resultKey ?? 'results'] = []
 
     notify({
-      title: trans('Error'),
-      text: trans('Failed to fetch the preview data. Please try again.'),
+      title: ctrans('Error'),
+      text: ctrans('Failed to fetch the preview data. Please try again.'),
       type: 'error'
     })
   } finally {
@@ -396,7 +396,7 @@ onMounted(() => {
               <button
                 v-if="config.sidebar"
                 type="button"
-                v-tooltip="sidebarOpen ? trans('Hide panel') : trans('Show panel')"
+                v-tooltip="sidebarOpen ? ctrans('Hide panel') : ctrans('Show panel')"
                 class="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition"
                 @click="sidebarOpen = !sidebarOpen"
               >
@@ -412,14 +412,14 @@ onMounted(() => {
               <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
                 <span v-if="isSaving" class="flex items-center gap-1.5 text-xs text-gray-500">
                   <LoadingIcon />
-                  <span class="hidden sm:inline">{{ trans('Saving') }}</span>
+                  <span class="hidden sm:inline">{{ ctrans('Saving') }}</span>
                 </span>
               </Transition>
 
               <button
                 v-if="picker"
                 type="button"
-                v-tooltip="trans(picker.subtitle)"
+                v-tooltip="ctrans(picker.subtitle)"
                 class="flex min-w-0 max-w-[16rem] items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 hover:border-gray-300 hover:text-gray-900 transition"
                 @click="visibleDrawer = true"
               >
@@ -430,11 +430,11 @@ onMounted(() => {
                   fixed-width
                   aria-hidden="true"
                 />
-                <span class="truncate">{{ previewLabel ?? trans('Pick a catalogue') }}</span>
+                <span class="truncate">{{ previewLabel ?? ctrans('Pick a catalogue') }}</span>
               </button>
 
               <div v-else-if="irisLayout" class="flex items-center gap-2">
-                <span class="text-xs font-medium text-gray-600">{{ trans('Login') }}</span>
+                <span class="text-xs font-medium text-gray-600">{{ ctrans('Login') }}</span>
                 <ToggleSwitch v-model="irisLayout.iris.is_logged_in" />
               </div>
             </div>
@@ -485,10 +485,10 @@ onMounted(() => {
             >
               <FontAwesomeIcon :icon="faInfoCircle" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
               <div class="space-y-1">
-                <h3 class="text-sm font-semibold text-gray-700">{{ trans(picker.emptyTitle) }}</h3>
-                <p class="text-xs max-w-xs text-gray-500">{{ trans(picker.emptyDescription) }}</p>
+                <h3 class="text-sm font-semibold text-gray-700">{{ ctrans(picker.emptyTitle) }}</h3>
+                <p class="text-xs max-w-xs text-gray-500">{{ ctrans(picker.emptyDescription) }}</p>
               </div>
-              <Button size="xs" :label="trans(picker.emptyAction)" @click="visibleDrawer = true" />
+              <Button size="xs" :label="ctrans(picker.emptyAction)" @click="visibleDrawer = true" />
             </div>
 
             <EmptyState v-else />
@@ -505,8 +505,8 @@ onMounted(() => {
     >
       <template #header>
         <div>
-          <h2 class="text-sm font-semibold">{{ trans(picker.title) }}</h2>
-          <p class="text-xs text-gray-500">{{ trans(picker.subtitle) }}</p>
+          <h2 class="text-sm font-semibold">{{ ctrans(picker.title) }}</h2>
+          <p class="text-xs text-gray-500">{{ ctrans(picker.subtitle) }}</p>
         </div>
       </template>
 

@@ -6,7 +6,7 @@ import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 import axios from "axios"
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 
 import Family1Render from "@/Iris/Components/Families1Render.vue"
@@ -99,9 +99,9 @@ const responsiveGridClass = computed(() => {
 })
 
 const sortOptions = [
-  { label: trans("New arrivals"), value: "product_categories.created_at" },
-  { label: trans("Code"), value: "code" },
-  { label: trans("Name"), value: "name" },
+  { label: ctrans("New arrivals"), value: "product_categories.created_at" },
+  { label: ctrans("Code"), value: "code" },
+  { label: ctrans("Name"), value: "name" },
 ]
 
 

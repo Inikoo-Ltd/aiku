@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import type { Table as TableTS } from "@/types/Table";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { ref, onMounted, reactive, computed, watch } from "vue";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
 import { faSkull } from "@fas";
@@ -86,11 +86,11 @@ const validateQuantityToResend = (item: any, value: number) => {
 
     // Validation rules
     if (value < 0) {
-        errors.push(trans('Quantity cannot be negative'));
+        errors.push(ctrans('Quantity cannot be negative'));
     }
 
     if (value > item.quantity_dispatched) {
-        errors.push(trans('Quantity cannot exceed dispatched quantity'));
+        errors.push(ctrans('Quantity cannot exceed dispatched quantity'));
     }
 
     // Store errors if any
@@ -210,7 +210,7 @@ const getInputClasses = computed(() => {
                     />
                 </div>
                 <select class="w-full rounded-md border-gray-300 py-1 text-sm" @change="emit('update:reason', item.id, ($event.target as HTMLSelectElement).value)">
-                    <option value="">{{ trans("Reason") }}</option>
+                    <option value="">{{ ctrans("Reason") }}</option>
                     <option v-for="reason in reasons" :key="reason.value" :value="reason.value">{{ reason.label }}</option>
                 </select>
             </div>

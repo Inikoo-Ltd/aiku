@@ -9,7 +9,7 @@ import { inject, ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios";
 
 const goNext = inject("goNext");
@@ -44,7 +44,7 @@ const submitForm = async () => {
 <template>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
         <div class="flex flex-col gap-2 w-full md:w-80">
-            <label class="font-semibold">{{ trans("ebay Account Name") }}</label>
+            <label class="font-semibold">{{ ctrans("ebay Account Name") }}</label>
             <PureInput
                 :is-error="errors.name"
                 type="text"
@@ -57,8 +57,8 @@ const submitForm = async () => {
         <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ ctrans("Cancel") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ ctrans("Next") }}</Button>
         </div>
     </form>
 </template>

@@ -17,7 +17,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faTrashAlt } from "@far"
 import { faFileAlt, faPrint, faStar as faStarOutline } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref } from "vue"
 
 import { faStar } from "@fas"
@@ -114,7 +114,7 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                         :icon="faPrint"
                         fixed-width
                         class="text-orange-500"
-                        v-tooltip="trans('Printable')"
+                        v-tooltip="ctrans('Printable')"
                         aria-hidden="true"
                     /> -->
                 </div>
@@ -131,8 +131,8 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                 :class="packaging.is_default ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'"
                 :disabled="settingDefaultId === packaging.id || packaging.state !== 'active'"
                 v-tooltip="packaging.is_default
-                    ? trans('Used when the customer has not chosen their own packaging')
-                    : trans('Set as default packaging')"
+                    ? ctrans('Used when the customer has not chosen their own packaging')
+                    : ctrans('Set as default packaging')"
                 @click="setAsDefault(packaging)"
             >
                 <FontAwesomeIcon
@@ -147,8 +147,8 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                 <span
                     class="inline-flex"
                     v-tooltip="packaging.is_default
-                        ? trans('The default packaging stays active as the fallback')
-                        : packaging.state === 'active' ? trans('Deactivate') : trans('Activate')"
+                        ? ctrans('The default packaging stays active as the fallback')
+                        : packaging.state === 'active' ? ctrans('Deactivate') : ctrans('Activate')"
                 >
                     <ToggleSwitch
                         :modelValue="packaging.state === 'active'"
@@ -159,7 +159,7 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                 <Link
                     :href="packagingEditRoute(packaging)"
                     class="text-gray-400 hover:text-gray-600"
-                    v-tooltip="trans('Edit')"
+                    v-tooltip="ctrans('Edit')"
                 >
                     <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
                 </Link>
@@ -169,14 +169,14 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                         name: 'grp.models.billables.packagings.delete',
                         parameters: [packaging.id],
                     }"
-                    :title="trans('Delete packaging :code?', { code: packaging.code })"
+                    :title="ctrans('Delete packaging :code?', { code: packaging.code })"
                     @success="router.reload()"
                 >
                     <template #default="{ changeModel }">
                         <button
                             class="text-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-red-400"
                             :disabled="packaging.is_default"
-                            v-tooltip="packaging.is_default ? trans('The default packaging cannot be deleted') : trans('Delete')"
+                            v-tooltip="packaging.is_default ? ctrans('The default packaging cannot be deleted') : ctrans('Delete')"
                             @click="changeModel"
                         >
                             <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />

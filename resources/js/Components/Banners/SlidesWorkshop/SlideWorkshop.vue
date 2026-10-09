@@ -9,7 +9,7 @@ import { ref, inject, provide, watch, type Ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from '@/types/route'
 import { BannerScreenView } from '@/types/BannerWorkshop'
 import { getComponent } from '@/Composables/getBannerFields'
@@ -139,7 +139,7 @@ defineExpose({
                         <FontAwesomeIcon v-if="item.icon" fixed-width aria-hidden="true"
                             class="flex-shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500"
                             :icon="item.icon" />
-                        <span class="hidden sm:inline truncate">{{ trans(item.title) }}</span>
+                        <span class="hidden sm:inline truncate">{{ ctrans(item.title) }}</span>
                     </li>
                 </ul>
             </nav>

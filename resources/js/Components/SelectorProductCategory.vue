@@ -5,7 +5,7 @@ import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Image from '../Common/Components/Image.vue'
 import Pagination from '@/Components/Table/Pagination.vue'
@@ -160,7 +160,7 @@ defineExpose({
     </TabView>
 
     <div class="my-3">
-      <PureInput v-model="query" :placeholder="trans('Search...')" @update:modelValue="debounceFetch" />
+      <PureInput v-model="query" :placeholder="ctrans('Search...')" @update:modelValue="debounceFetch" />
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[400px] overflow-auto">
@@ -188,11 +188,11 @@ defineExpose({
       </div>
 
       <div v-if="!isLoading && !list.length" class="col-span-full text-center text-gray-400 py-6">
-        {{ trans('No data found') }}
+        {{ ctrans('No data found') }}
       </div>
 
       <div v-if="isLoading" class="col-span-full text-center py-6">
-        {{ trans('Loading...') }}
+        {{ ctrans('Loading...') }}
       </div>
     </div>
 
@@ -209,7 +209,7 @@ defineExpose({
       <div class="flex justify-between items-center w-full">
         <div class="text-xs text-gray-500">
           {{ selected.length }}
-          {{ trans('selected') }}
+          {{ ctrans('selected') }}
         </div>
 
         <div class="flex gap-2">

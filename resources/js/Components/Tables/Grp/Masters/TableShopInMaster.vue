@@ -4,7 +4,7 @@ import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowRight, faCheck, faTimesCircle } from '@fal';
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 import { Link } from '@inertiajs/vue3';
 
 library.add(faPlus, faMinus, faArrowRight, faCheck, faTimesCircle);
@@ -22,8 +22,8 @@ const getShopRoute = (shop: any) => {
 <template>
     <Table :resource="data" class="mt-5" :name="tab" >
         <template #cell(state)="{ item }">
-            <FontAwesomeIcon v-if="item.state == 'open'" :icon="faCheck" class="text-green-500" v-tooltip="trans('Shop is Open and Active')" fixed-width/>
-            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500" v-tooltip="trans('Shop is Inactive')" fixed-width/>
+            <FontAwesomeIcon v-if="item.state == 'open'" :icon="faCheck" class="text-green-500" v-tooltip="ctrans('Shop is Open and Active')" fixed-width/>
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500" v-tooltip="ctrans('Shop is Inactive')" fixed-width/>
         </template>
         <template #cell(code)="{ item }">
             <Link :href="getShopRoute(item)" class="primaryLink">

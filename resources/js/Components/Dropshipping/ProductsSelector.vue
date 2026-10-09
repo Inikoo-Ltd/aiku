@@ -6,7 +6,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Tag from '@/Components/Tag.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '../../Common/Components/Image.vue'
@@ -75,8 +75,8 @@ const getPortfoliosList = async (url?: string) => {
         console.error('Error', e)
         isLoadingFetch.value = false
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Error while get the products list."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Error while get the products list."),
             type: "error"
         })
     }
@@ -150,15 +150,15 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
     <div>
         <slot name="header">
             <div class="mx-auto text-center text-2xl font-semibold pb-4">
-                {{ headLabel ?? trans("Add products") }}
+                {{ headLabel ?? ctrans("Add products") }}
             </div>
         </slot>
 
         <div class="relative isolate">
             <div class="flex justify-end items-center gap-2 mb-4">
                 <Button @click="() => emits('submit', selectedProduct)" :disabled="selectedProduct.length < 1"
-                    v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                    :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`" type="primary" xfull
+                    v-tooltip="selectedProduct.length < 1 ? ctrans('Select at least one product') : ''"
+                    :label="submitLabel ?? `${ctrans('Add')} ${selectedProduct.length}`" type="primary" xfull
                     icon="fas fa-plus" :loading="isLoadingSubmit" />
             </div>
 
@@ -169,29 +169,29 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
 
             <div class="mb-2">
                 <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
-                    :placeholder="trans('Input to search portfolios')" />
+                    :placeholder="ctrans('Input to search portfolios')" />
                 <slot name="afterInput">
                 </slot>
             </div>
             <div class="h-full md:h-[570px] text-base font-normal">
                 <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
-                    <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
+                    <div class="font-semibold text-lg py-1">{{ ctrans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
                 </div> -->
                 <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
-                        <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{
+                        <div class="font-semibold text-lg py-1">{{ props.label_result ?? ctrans("Result") }} ({{
                             locale?.number(portfoliosMeta?.total || 0) }})</div>
                         <div class="flex gap-2">
                             <div @click="() => isAllSelected ? null : selectAllProducts()" class=" "
                                 :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
-                                {{ trans("Select :number products in this page", { number: portfoliosList.length }) }}
+                                {{ ctrans("Select :number products in this page", { number: portfoliosList.length }) }}
 
                             </div>
                             <!-- <ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" /> -->
                             <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []"
                                 class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
-                                {{ trans('Clear :number selections', { number: compSelectedProduct.length }) }}
+                                {{ ctrans('Clear :number selections', { number: compSelectedProduct.length }) }}
                                 <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
                             </div>
                         </div>
@@ -221,24 +221,24 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                             <div class="flex flex-col justify-between w-full">
                                                 <!-- Left info -->
                                                 <div class="w-fit" xclick="() => selectProduct(item)">
-                                                    <div v-tooltip="trans('Name')"
+                                                    <div v-tooltip="ctrans('Name')"
                                                         class="w-fit font-semibold leading-none mb-1">
                                                         {{ item.name || 'no name' }}
                                                     </div>
 
-                                                    <div v-if="!item.no_code" v-tooltip="trans('Code')"
+                                                    <div v-if="!item.no_code" v-tooltip="ctrans('Code')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                         {{ item.code || 'no code' }}
                                                     </div>
 
-                                                    <div v-if="item.reference" v-tooltip="trans('Reference')"
+                                                    <div v-if="item.reference" v-tooltip="ctrans('Reference')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                         <span class="font-medium">Reference:</span> {{ item.reference ||
                                                             'no reference' }}
                                                     </div>
 
                                                     <!-- Show Weight in KG -->
-                                                    <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
+                                                    <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                         <span class="font-medium">Weight:</span> {{ (item.gross_weight /
                                                         1000).toFixed(2) }} kg
@@ -246,7 +246,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
 
                                                     <!-- Show Stock -->
                                                     <div v-if="item.available_quantity !== null"
-                                                        v-tooltip="trans('Stock')" class="w-fit text-xs italic" :class="{
+                                                        v-tooltip="ctrans('Stock')" class="w-fit text-xs italic" :class="{
                                                             'text-green-500': item.available_quantity > 5,
                                                             'text-orange-500': item.available_quantity > 0 && item.available_quantity <= 5,
                                                             'text-red-500': !item.available_quantity || item.available_quantity === 0
@@ -260,7 +260,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                                 <!-- Show RRP Price -->
                                                 <div class="flex justify-between">
                                                     <div v-if="item.rrp" xclick="() => selectProduct(item)"
-                                                        v-tooltip="trans('RRP')" class="w-fit text-xs text-gray-x500">
+                                                        v-tooltip="ctrans('RRP')" class="w-fit text-xs text-gray-x500">
                                                         <span class="font-medium">RRP:</span> {{
                                                             locale?.currencyFormat(item.currency_code || 'usd', item.rrp ||
                                                                 0)
@@ -269,7 +269,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
 
                                                     <!-- Show Normal Price -->
                                                     <div v-if="item.price" xclick="() => selectProduct(item)"
-                                                        v-tooltip="trans('Price')" class="w-fit text-xs text-blue-500">
+                                                        v-tooltip="ctrans('Price')" class="w-fit text-xs text-blue-500">
                                                         <span class="font-medium">Price:</span> {{
                                                             locale?.currencyFormat(item.currency_code || 'usd', item.price
                                                                 || 0)
@@ -289,7 +289,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                     </div>
                                 </template>
                                 <div v-else class="text-center text-gray-500 col-span-3">
-                                    {{ trans("No Results found") }}
+                                    {{ ctrans("No Results found") }}
                                 </div>
                             </template>
                             <div v-else v-for="(item, index) in 6" :key="index"
@@ -324,8 +324,8 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                         <div class="mt-4">
                             <Button @click="() => emits('submit', selectedProduct)"
                                 :disabled="selectedProduct.length < 1"
-                                v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                                :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`" type="primary" full
+                                v-tooltip="selectedProduct.length < 1 ? ctrans('Select at least one product') : ''"
+                                :label="submitLabel ?? `${ctrans('Add')} ${selectedProduct.length}`" type="primary" full
                                 icon="fas fa-plus" :loading="isLoadingSubmit" />
                         </div>
                     </slot>

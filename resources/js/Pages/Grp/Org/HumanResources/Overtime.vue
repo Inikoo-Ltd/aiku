@@ -15,7 +15,7 @@ import Textarea from 'primevue/textarea'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv } from "@fal";
 
@@ -104,21 +104,21 @@ const minuteSelectOptions = computed(() =>
 
 const durationHourOptions = computed(() =>
     Array.from({ length: 13 }, (_, index) => ({
-        label: `${index} ${trans('hrs')}`,
+        label: `${index} ${ctrans('hrs')}`,
         value: String(index),
     }))
 )
 
 const durationMinuteOptions = computed(() =>
     durationBaseMinutes.map((minute) => ({
-        label: `${minute} ${trans('mins')}`,
+        label: `${minute} ${ctrans('mins')}`,
         value: String(minute),
     }))
 )
 
 const exportFormatOptions = computed(() => [
-    { label: trans('Excel (XLSX)'), value: 'xlsx' },
-    { label: trans('CSV'), value: 'csv' },
+    { label: ctrans('Excel (XLSX)'), value: 'xlsx' },
+    { label: ctrans('CSV'), value: 'csv' },
 ])
 
 const getFormError = (key: string): string | undefined => {
@@ -404,7 +404,7 @@ const submitRequest = () => {
                     type="secondary"
                     :icon="faDownload"
                     size="xs"
-                    :label="trans('Export')"
+                    :label="ctrans('Export')"
                     @click="openExportModal"
                 />
                 <Button
@@ -506,7 +506,7 @@ const submitRequest = () => {
                         type="transparent"
                         size="xs"
                         :icon="faEdit"
-                        :label="trans('Edit')"
+                        :label="ctrans('Edit')"
                         @click="() => openEditModal(item)"
                     />
                     <ModalConfirmation
@@ -521,7 +521,7 @@ const submitRequest = () => {
                                 type="positive"
                                 size="xs"
                                 :icon="faCheck"
-                                :label="trans('Approve')"
+                                :label="ctrans('Approve')"
                                 :loading="isLoadingdelete"
                                 @click="changeModel"
                             />
@@ -530,7 +530,7 @@ const submitRequest = () => {
                             <Button
                                 :loading="isLoadingdelete"
                                 @click="clickYes"
-                                :label="trans('Yes, approve')"
+                                :label="ctrans('Yes, approve')"
                                 type="positive"
                             />
                         </template>
@@ -547,7 +547,7 @@ const submitRequest = () => {
                                 type="warning"
                                 size="xs"
                                 :icon="faTimes"
-                                :label="trans('Reject')"
+                                :label="ctrans('Reject')"
                                 :loading="isLoadingdelete"
                                 @click="changeModel"
                             />
@@ -556,7 +556,7 @@ const submitRequest = () => {
                             <Button
                                 :loading="isLoadingdelete"
                                 @click="clickYes"
-                                :label="trans('Yes, reject')"
+                                :label="ctrans('Yes, reject')"
                                 type="warning"
                             />
                         </template>
@@ -572,7 +572,7 @@ const submitRequest = () => {
                                 type="negative"
                                 size="xs"
                                 :icon="faTrash"
-                                :label="trans('Delete')"
+                                :label="ctrans('Delete')"
                                 :loading="isLoadingdelete"
                                 @click="changeModel"
                             />
@@ -585,13 +585,13 @@ const submitRequest = () => {
 
     <Modal :isOpen="showRequestModal" @onClose="closeRequestModal" width="w-full max-w-lg">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">
-            {{ trans('Create overtime request') }}
+            {{ ctrans('Create overtime request') }}
         </h2>
 
         <form class="space-y-4" @submit.prevent="submitRequest">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Which staff member?') }}
+                    {{ ctrans('Which staff member?') }}
                 </label>
                 <Select
                     v-model="form.employee_id"
@@ -599,7 +599,7 @@ const submitRequest = () => {
                     optionLabel="label"
                     optionValue="value"
                     class="mt-1 w-full"
-                    :placeholder="trans('Select staff member')"
+                    :placeholder="ctrans('Select staff member')"
                 />
                 <div v-if="form.errors.employee_id" class="mt-1 text-sm text-red-600">
                     {{ form.errors.employee_id }}
@@ -608,7 +608,7 @@ const submitRequest = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('What type of overtime do you want to submit?') }}
+                    {{ ctrans('What type of overtime do you want to submit?') }}
                 </label>
                 <Select
                     v-model="form.overtime_type_id"
@@ -616,7 +616,7 @@ const submitRequest = () => {
                     optionLabel="label"
                     optionValue="value"
                     class="mt-1 w-full"
-                    :placeholder="trans('Select overtime type')"
+                    :placeholder="ctrans('Select overtime type')"
                 />
                 <div v-if="form.errors.overtime_type_id" class="mt-1 text-sm text-red-600">
                     {{ form.errors.overtime_type_id }}
@@ -625,7 +625,7 @@ const submitRequest = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('What date did the overtime occur?') }}
+                    {{ ctrans('What date did the overtime occur?') }}
                 </label>
                 <DatePicker
                     v-model="requestedDateModel"
@@ -641,7 +641,7 @@ const submitRequest = () => {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('What time did it start?') }}
+                        {{ ctrans('What time did it start?') }}
                     </label>
                     <div class="mt-1 flex gap-2">
                         <Select
@@ -666,7 +666,7 @@ const submitRequest = () => {
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('How long was the overtime?') }}
+                        {{ ctrans('How long was the overtime?') }}
                     </label>
                     <div class="mt-1 flex gap-2">
                         <Select
@@ -692,7 +692,7 @@ const submitRequest = () => {
 
             <div class="border-t border-gray-200 pt-4 mt-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                    {{ trans('Recorded time') }}
+                    {{ ctrans('Recorded time') }}
                 </label>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700">
@@ -701,7 +701,7 @@ const submitRequest = () => {
                             :value="true"
                             inputId="recorded_same_as_requested_true"
                         />
-                        <span>{{ trans('Same as requested time') }}</span>
+                        <span>{{ ctrans('Same as requested time') }}</span>
                     </label>
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                         <RadioButton
@@ -709,14 +709,14 @@ const submitRequest = () => {
                             :value="false"
                             inputId="recorded_same_as_requested_false"
                         />
-                        <span>{{ trans('Use different recorded time') }}</span>
+                        <span>{{ ctrans('Use different recorded time') }}</span>
                     </label>
                 </div>
 
                 <div v-if="!form.recorded_same_as_requested" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            {{ trans('Recorded start time') }}
+                            {{ ctrans('Recorded start time') }}
                         </label>
                         <div class="mt-1 flex gap-2">
                             <Select
@@ -738,7 +738,7 @@ const submitRequest = () => {
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
-                            {{ trans('Recorded duration') }}
+                            {{ ctrans('Recorded duration') }}
                         </label>
                         <div class="mt-1 flex gap-2">
                             <Select
@@ -762,7 +762,7 @@ const submitRequest = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Status') }}
+                    {{ ctrans('Status') }}
                 </label>
                 <Select
                     v-model="form.status"
@@ -778,7 +778,7 @@ const submitRequest = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Any notes?') }}
+                    {{ ctrans('Any notes?') }}
                 </label>
                 <Textarea
                     v-model="form.reason"
@@ -791,10 +791,10 @@ const submitRequest = () => {
             </div>
 
             <div class="mt-6 flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click.prevent="closeRequestModal" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click.prevent="closeRequestModal" />
                 <Button
                     type="save"
-                    :label="trans('Submit')"
+                    :label="ctrans('Submit')"
                     :loading="form.processing"
                     nativeType="submit"
                 />
@@ -804,17 +804,17 @@ const submitRequest = () => {
 
     <Modal :isOpen="isExportModalOpen" @onClose="closeExportModal" width="w-full max-w-lg">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">
-            {{ trans('Export Overtime Reports') }}
+            {{ ctrans('Export Overtime Reports') }}
         </h2>
         <p class="text-sm text-gray-600 mb-4">
-            {{ trans('Select filters and export format for your overtime report.') }}
+            {{ ctrans('Select filters and export format for your overtime report.') }}
         </p>
 
         <form @submit.prevent="submitExport" class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('From Date') }}
+                        {{ ctrans('From Date') }}
                     </label>
                     <DatePicker
                         v-model="exportFromDateModel"
@@ -825,7 +825,7 @@ const submitRequest = () => {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('To Date') }}
+                        {{ ctrans('To Date') }}
                     </label>
                     <DatePicker
                         v-model="exportToDateModel"
@@ -839,11 +839,11 @@ const submitRequest = () => {
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Overtime Type') }}
+                        {{ ctrans('Overtime Type') }}
                     </label>
                     <Select
                         v-model="exportForm.type"
-                        :options="[{ value: '', label: trans('All Types') }, ...overtimeTypeOptions]"
+                        :options="[{ value: '', label: ctrans('All Types') }, ...overtimeTypeOptions]"
                         optionLabel="label"
                         optionValue="value"
                         class="mt-1 w-full"
@@ -851,11 +851,11 @@ const submitRequest = () => {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Status') }}
+                        {{ ctrans('Status') }}
                     </label>
                     <Select
                         v-model="exportForm.status"
-                        :options="[{ value: '', label: trans('All Statuses') }, ...statusOptions]"
+                        :options="[{ value: '', label: ctrans('All Statuses') }, ...statusOptions]"
                         optionLabel="label"
                         optionValue="value"
                         class="mt-1 w-full"
@@ -865,11 +865,11 @@ const submitRequest = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Employee') }}
+                    {{ ctrans('Employee') }}
                 </label>
                 <Select
                     v-model="exportForm.employee_id"
-                    :options="[{ value: null, label: trans('All Employees') }, ...employeeOptions]"
+                    :options="[{ value: null, label: ctrans('All Employees') }, ...employeeOptions]"
                     optionLabel="label"
                     optionValue="value"
                     class="mt-1 w-full"
@@ -878,7 +878,7 @@ const submitRequest = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Export Format') }}
+                    {{ ctrans('Export Format') }}
                 </label>
                 <div class="mt-2 flex gap-4">
                     <label
@@ -897,11 +897,11 @@ const submitRequest = () => {
             </div>
 
             <div class="mt-6 flex justify-end gap-2">
-                <Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
+                <Button @click="closeExportModal" :label="ctrans('Cancel')" type="tertiary" />
                 <Button
                     type="save"
                     nativeType="submit"
-                    :label="trans('Export')"
+                    :label="ctrans('Export')"
                     :loading="isExporting"
                     icon="fal fa-download"
                 />

@@ -17,7 +17,7 @@ import { RouteParams } from "@/types/route-params";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { inject, ref } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
 
@@ -45,8 +45,8 @@ async function convertToPage(mailshot: Mailshot) {
         router.visit(route(response.data.route.name, response.data.route.parameters));
     } catch {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to convert mailshot into a page"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to convert mailshot into a page"),
             type: "error"
         });
         convertingMailshotId.value = null;
@@ -121,12 +121,12 @@ function mailshotRoute(mailshot: Mailshot) {
                     {{ mailshot.subject?.length > 24 ? mailshot.subject.slice(0, 24) + '…' : mailshot.subject }}
                 </Link>
                 <Link v-if="mailshot.state === 'sent' && mailshot.webpage_slug && !mailshot.has_source_reference && mailshot.type !== 'invite'" :href="webpageRoute(mailshot)"
-                    v-tooltip="trans('Go to webpage')"
+                    v-tooltip="ctrans('Go to webpage')"
                     class="ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 transition">
                     <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </Link>
                 <span v-else-if="mailshot.state === 'sent' && !mailshot.has_source_reference && mailshot.type !== 'invite'"
-                    v-tooltip="trans('Convert to Page')"
+                    v-tooltip="ctrans('Convert to Page')"
                     :class="[
                         'ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded transition',
                         convertingMailshotId && convertingMailshotId !== mailshot.id

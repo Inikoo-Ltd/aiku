@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Switch } from '@headlessui/vue'
 import { ref } from 'vue'
@@ -111,7 +111,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
 
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
-                <div class="text-xs">{{ trans('Color') }}</div>
+                <div class="text-xs">{{ ctrans('Color') }}</div>
                 <ColorPicker
                     :color="get(model, 'color', 'rgba(0, 0, 0, 1)')"
                     @changeColor="(newColor)=> (set(model, 'color', `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`), emits('update:modelValue',model))"
@@ -121,7 +121,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
                         <div v-bind="$attrs" class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center" :style="{
                             border: `4px solid ${get(model, 'color', 'transparent')}`
                         }"
-                            v-tooltip="!(get(model, 'top.value', 0) || get(model, 'right.value', 0) || get(model, 'bottom.value', 0) || get(model, 'left.value', 0)) ? trans('Will not show due have no border width') : undefined"
+                            v-tooltip="!(get(model, 'top.value', 0) || get(model, 'right.value', 0) || get(model, 'bottom.value', 0) || get(model, 'left.value', 0)) ? ctrans('Will not show due have no border width') : undefined"
                         >
                             <Transition name="spin-to-down">
                                 <FontAwesomeIcon v-if="!(get(model, 'top.value', 0) || get(model, 'right.value', 0) || get(model, 'bottom.value', 0) || get(model, 'left.value', 0))" icon='fas fa-exclamation' class='text-gray-400 text-xs' fixed-width aria-hidden='true' />
@@ -133,7 +133,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
 
             <!-- Toggle: Border same value -->
             <div class="px-3 flex justify-between items-center mb-2">
-                <div class="text-xs">{{ trans('Border same value') }}</div>
+                <div class="text-xs">{{ ctrans('Border same value') }}</div>
                 <Switch
                     v-model="isBorderSameValue"
                     :class="[
@@ -152,7 +152,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
                 <Transition name="slide-to-up">
                     <!-- Same value -->
                     <div v-if="isBorderSameValue" class="grid grid-cols-5 items-center w-full">
-                        <FontAwesomeIcon icon='fad fa-border-outer' v-tooltip="trans('Padding all')" class='' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon icon='fad fa-border-outer' v-tooltip="ctrans('Padding all')" class='' fixed-width aria-hidden='true' />
                         <div class="col-span-4">
                             <PureInputNumber
                                 :modelValue="get(model, 'top.value', 0)"
@@ -165,25 +165,25 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
 
                     <div v-else class="space-y-2 w-full">
                         <div class="grid grid-cols-5 items-center w-full justify-center">
-                            <FontAwesomeIcon icon='fad fa-border-top' v-tooltip="trans('Border top')" class='mx-auto' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon icon='fad fa-border-top' v-tooltip="ctrans('Border top')" class='mx-auto' fixed-width aria-hidden='true' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'top.value', 0)" @update:modelValue="(e) => (set(model, 'top.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
                         </div>
                         <div class="grid grid-cols-5 items-center w-full">
-                            <FontAwesomeIcon icon='fad fa-border-bottom' v-tooltip="trans('Border bottom')" class='mx-auto' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon icon='fad fa-border-bottom' v-tooltip="ctrans('Border bottom')" class='mx-auto' fixed-width aria-hidden='true' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'bottom.value', 0)" @update:modelValue="(e) => (set(model, 'bottom.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
                         </div>
                         <div class="grid grid-cols-5 items-center w-full">
-                            <FontAwesomeIcon icon='fad fa-border-left' v-tooltip="trans('Border left')" class='mx-auto' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon icon='fad fa-border-left' v-tooltip="ctrans('Border left')" class='mx-auto' fixed-width aria-hidden='true' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'left.value', 0)" @update:modelValue="(e) => (set(model, 'left.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
                         </div>
                         <div class="grid grid-cols-5 items-center w-full">
-                            <FontAwesomeIcon icon='fad fa-border-right' v-tooltip="trans('Border right')" class='mx-auto' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon icon='fad fa-border-right' v-tooltip="ctrans('Border right')" class='mx-auto' fixed-width aria-hidden='true' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'right.value', 0)" @update:modelValue="(e) => (set(model, 'right.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
@@ -194,7 +194,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
 
 
             <div class="px-3 flex justify-between items-center mb-2">
-                <div class="text-xs">{{ trans('Rounded same value') }}</div>
+                <div class="text-xs">{{ ctrans('Rounded same value') }}</div>
                 <Switch
                     v-model="isRoundedSameValue"
                     :class="[
@@ -211,7 +211,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
             <div class="pl-2 pr-4 flex items-center relative">
                 <Transition name="slide-to-up">
                     <div v-if="isRoundedSameValue" class="grid grid-cols-5 items-center w-full">
-                        <FontAwesomeIcon icon='fad fa-border-outer' v-tooltip="trans('Padding all')" class='' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon icon='fad fa-border-outer' v-tooltip="ctrans('Padding all')" class='' fixed-width aria-hidden='true' />
                         <div class="col-span-4 w-full">
                             <PureInputNumber :modelValue="get(model, 'rounded.topright.value', 0)" @update:modelValue="(newVal) => isRoundedSameValue ? changeRoundedValueToSame(newVal) : false" class="" suffix="px" />
                         </div>
@@ -219,25 +219,25 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
 
                     <div v-else class="space-y-2 w-full">
                         <div class="grid grid-cols-5 items-center w-full">
-                            <div v-html="iconRoundedCorner" v-tooltip="trans('Corner top right')" class='h-5 w-5 mx-auto' />
+                            <div v-html="iconRoundedCorner" v-tooltip="ctrans('Corner top right')" class='h-5 w-5 mx-auto' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'rounded.topright.value', 0)" @update:modelValue="(e) => (set(model, 'rounded.topright.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
                         </div>
                         <div class="grid grid-cols-5 items-center w-full">
-                            <div v-html="iconRoundedCorner" v-tooltip="trans('Corner top left')" class='h-5 w-5 mx-auto -rotate-90' />
+                            <div v-html="iconRoundedCorner" v-tooltip="ctrans('Corner top left')" class='h-5 w-5 mx-auto -rotate-90' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'rounded.topleft.value', 0)" @update:modelValue="(e) => (set(model, 'rounded.topleft.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
                         </div>
                         <div class="grid grid-cols-5 items-center w-full">
-                            <div v-html="iconRoundedCorner" v-tooltip="trans('Corner bottom right')" class='h-5 w-5 mx-auto rotate-90' />
+                            <div v-html="iconRoundedCorner" v-tooltip="ctrans('Corner bottom right')" class='h-5 w-5 mx-auto rotate-90' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'rounded.bottomright.value', 0)" @update:modelValue="(e) => (set(model, 'rounded.bottomright.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>
                         </div>
                         <div class="grid grid-cols-5 items-center w-full">
-                            <div v-html="iconRoundedCorner" v-tooltip="trans('Corner bottom left')" class='h-5 w-5 mx-auto rotate-180' />
+                            <div v-html="iconRoundedCorner" v-tooltip="ctrans('Corner bottom left')" class='h-5 w-5 mx-auto rotate-180' />
                             <div class="col-span-4">
                                 <PureInputNumber :modelValue="get(model, 'rounded.bottomleft.value', 0)" @update:modelValue="(e) => (set(model, 'rounded.bottomleft.value', e), emits('update:modelValue', model))" class="" suffix="px" />
                             </div>

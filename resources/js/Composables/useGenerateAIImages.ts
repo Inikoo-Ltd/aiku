@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 export function useGenerateAIImages({
     customerId,
@@ -37,10 +37,10 @@ export function useGenerateAIImages({
             if (media?.status === 'failed') {
                 aiGenerateImagesError.value =
                     media?.message
-                    || trans('The OpenAI service is currently unreachable, please try again later.')
+                    || ctrans('The OpenAI service is currently unreachable, please try again later.')
                 showGenerateProgressModal.value = false
                 stopEchoListener()
-                notify({ title: trans('Error'), text: aiGenerateImagesError.value, type: 'error' })
+                notify({ title: ctrans('Error'), text: aiGenerateImagesError.value, type: 'error' })
                 return
             }
 
@@ -48,7 +48,7 @@ export function useGenerateAIImages({
             onImageGenerated(media)
             showGenerateProgressModal.value = false
             stopEchoListener()
-            notify({ title: trans('AI Image Generated'), type: 'success' })
+            notify({ title: ctrans('AI Image Generated'), type: 'success' })
         })
 
         return true
@@ -83,15 +83,15 @@ export function useGenerateAIImages({
                 if (media) {
                     onImageGenerated(media)
                 }
-                notify({ title: trans('AI Image Generated'), type: 'success' })
+                notify({ title: ctrans('AI Image Generated'), type: 'success' })
             }
         } catch (e: any) {
             aiGenerateImagesError.value =
                 e?.response?.data?.message
-                || trans('The OpenAI service is currently unreachable, please try again later.')
+                || ctrans('The OpenAI service is currently unreachable, please try again later.')
             showGenerateProgressModal.value = false
             stopEchoListener()
-            notify({ title: trans('Error'), text: aiGenerateImagesError.value, type: 'error' })
+            notify({ title: ctrans('Error'), text: aiGenerateImagesError.value, type: 'error' })
         } finally {
             isGeneratingAI.value = false
         }

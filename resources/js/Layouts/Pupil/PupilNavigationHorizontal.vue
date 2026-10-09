@@ -16,7 +16,7 @@ import { faChevronLeft, faChevronRight } from '@fas'
 import { faParachuteBox, faMoneyBillWave } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
 
@@ -143,7 +143,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 </Transition>
 
                 <Transition name="spin-to-down">
-                    <FontAwesomeIcon icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Shopify')" />
+                    <FontAwesomeIcon icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="ctrans('Shopify')" />
                 </Transition>
             </div>
 

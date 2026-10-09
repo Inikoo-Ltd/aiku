@@ -4,7 +4,7 @@ import { CustomerSalesChannel } from '@/types/customer-sales-channel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Message } from 'primevue'
 import { checkVisible } from "@/Composables/Workshop"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -23,7 +23,7 @@ const props = defineProps<{
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
                     {{
-                        trans("Your registration is not complete yet, you can continue here")
+                        ctrans("Your registration is not complete yet, you can continue here")
                     }}
                 </div>
             </div>
@@ -36,7 +36,7 @@ const props = defineProps<{
                             continueEbayRegistration: true
                         }
                     }" iconRight="fal fa-external-link"
-                    :label="trans('Continue Registration')" zsize="xxs" type="secondary" full
+                    :label="ctrans('Continue Registration')" zsize="xxs" type="secondary" full
                 />
             </div>
         </div>
@@ -47,7 +47,7 @@ const props = defineProps<{
             <div>
                 <div class="inline items-center gap-x-2">
                     {{
-                        trans("Or delete the channel and try again")
+                        ctrans("Or delete the channel and try again")
                     }}
                 </div>
             </div>
@@ -55,7 +55,7 @@ const props = defineProps<{
             <div class="w-full sm:w-fit h-fit">
 
                 <ButtonWithLink
-                    :label="trans('Delete')"
+                    :label="ctrans('Delete')"
                     type="delete"
                     :routeTarget="customer_sales_channel?.delete_route"
                 />

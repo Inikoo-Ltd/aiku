@@ -8,7 +8,7 @@ import { routeType } from '@/types/route'
 import { Table as TableTS } from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
 
@@ -47,7 +47,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         {
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error",
                 })
@@ -132,7 +132,7 @@ const debounceUpdateQuantity = debounce(
                     <Link v-if="state === 'creating' || state === 'xsubmitted'"
                         :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
                         :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
-                        @finish="() => isLoading = false" v-tooltip="trans('Unselect this product')" :preserveScroll="true">
+                        @finish="() => isLoading = false" v-tooltip="ctrans('Unselect this product')" :preserveScroll="true">
                     <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
                         :loading="isLoading === 'unselect' + item.id" />
                     </Link>

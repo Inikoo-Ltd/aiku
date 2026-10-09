@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faRectangleLandscape, faPhone, faEnvelope, faShare, faImage, faCreditCard } from "@fal"
 import { faRss } from "@far"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
@@ -50,20 +50,20 @@ export default {
 				},
 				{
 					key: ["attributes", "fetchpriority"],
-					label: trans("Fetch Priority"),
-					information: trans(
+					label: ctrans("Fetch Priority"),
+					information: ctrans(
 						"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
 					),
 					type: "select",
 					props_data: {
-						placeholder: trans("Priority"),
+						placeholder: ctrans("Priority"),
 						options: [
 							{
-								label: trans("High"),
+								label: ctrans("High"),
 								value: "high",
 							},
 							{
-								label: trans("Low"),
+								label: ctrans("Low"),
 								value: "low",
 							},
 						],

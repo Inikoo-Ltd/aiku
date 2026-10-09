@@ -22,7 +22,7 @@ import {
 } from "@fal"
 import { Link } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue"
 import UserSubscribe from "@/Components/DataDisplay/Dashboard/Widget/UserSubscribe.vue"
 
@@ -71,8 +71,8 @@ const isLoadingVisit = ref(false)
     <div v-if="data.state === 'in_process'">
         <EmptyState
             :data="{
-				title: trans('Outbox is still in process'),
-				description: trans('You can edit it in workshop'),
+				title: ctrans('Outbox is still in process'),
+				description: ctrans('You can edit it in workshop'),
 			}">
             <template #button-empty-state>
                 <Link
@@ -84,7 +84,7 @@ const isLoadingVisit = ref(false)
                     @start="() => (isLoadingVisit = true)"
                     class="mt-4 block w-fit mx-auto">
                     <Button
-                        :label="trans('Workshop')"
+                        :label="ctrans('Workshop')"
                         type="secondary"
                         icon="fal fa-drafting-compass"
                         :loading="isLoadingVisit" />

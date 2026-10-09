@@ -9,7 +9,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Table from "@/Components/Table/Table.vue"
 import { faSkull } from "@fal";
 import { Link, router } from '@inertiajs/vue3';
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
@@ -94,15 +94,15 @@ const deleteRedirect = (item) => {
         },
         onSuccess: () => {
             notify({
-            title: trans("Success"),
-            text: trans("Redirect has been deleted"),
+            title: ctrans("Success"),
+            text: ctrans("Redirect has been deleted"),
             type: "success",
             })
         },
         onError: (err) => {
             notify({
-                title: trans("Fail"),
-                text: trans("Fail to delete redirect"),
+                title: ctrans("Fail"),
+                text: ctrans("Fail to delete redirect"),
                 type: "error",
             })
         },
@@ -123,7 +123,7 @@ const deleteRedirect = (item) => {
                 {{ data['to_webpage_code'] }}
             </Link>
             <div v-else class="text-gray-400 italic">
-                {{ trans("No target webpage") }}
+                {{ ctrans("No target webpage") }}
             </div>
         </template>
 
@@ -138,13 +138,13 @@ const deleteRedirect = (item) => {
         <template #cell(actions_from_website)="{ item: data }">
             <div class="flex align-items-center">
                 <ButtonWithLink
-                    v-tooltip="trans('Edit redirect')"
+                    v-tooltip="ctrans('Edit redirect')"
                     type="edit"
                     :url="editRedirect(data)"
                     size="sm"
                 />
                 <Button
-                    v-tooltip="trans('Delete redirect')"
+                    v-tooltip="ctrans('Delete redirect')"
                     @click="deleteRedirect(data)"
                     :icon="faSkull"
                     :style="'negative'"

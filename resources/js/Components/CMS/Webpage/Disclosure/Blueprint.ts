@@ -1,5 +1,4 @@
 import { ctrans } from "@/Composables/useTrans"
-import { trans } from "laravel-vue-i18n"
 
 export default {
 	blueprint: [

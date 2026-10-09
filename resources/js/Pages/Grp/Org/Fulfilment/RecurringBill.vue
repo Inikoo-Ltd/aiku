@@ -32,7 +32,7 @@ import { faWaveSine } from '@far'
 import { faDiamond } from '@fas'
 import { faCalendarAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import TablePalletDeliveries from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletDeliveries.vue"
 import TablePalletReturns from "@/Components/Tables/Grp/Org/Fulfilment/TablePalletReturns.vue"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -190,12 +190,12 @@ const isLoading = ref(false)
                         <div class="w-[350px]">
                             <!-- Select Services -->
                             <div>
-                                <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Services') }}: </span>
                                 <div class="">
                                     <PureMultiselectInfiniteScroll
                                         v-model="formAddService.service_id"
                                         :fetchRoute="props.service_list_route"
-                                        :placeholder="trans('Select Services')"
+                                        :placeholder="ctrans('Select Services')"
                                         valueProp="id"
                                         @optionsList="(options) => dataServiceList = options"
                                     >
@@ -204,7 +204,7 @@ const isLoading = ref(false)
                                         </template>
                                         <template #option="{ option, isSelected, isPointed }">
                                             <div class="">
-                                                <FontAwesomeIcon v-if="option?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                                                <FontAwesomeIcon v-if="option?.is_pallet_handling" v-tooltip="ctrans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
                                                 {{ option.name }}
                                                 <span class="text-sm text-gray-400">({{ locale.currencyFormat(option.currency_code, option.price) }}/{{ option.unit }})</span>
                                             </div>
@@ -218,11 +218,11 @@ const isLoading = ref(false)
 
                             <!-- Pallet -->
                             <div v-if="dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling" class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Pallet to attach') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Pallet to attach') }}: </span>
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddService.pallet_id"
                                     :fetchRoute="props.pallet_list_route"
-                                    :placeholder="trans('Select pallet')"
+                                    :placeholder="ctrans('Select pallet')"
                                     required
                                     valueProp="id"
                                     @optionsList="(options) => dataPalletList = options"
@@ -248,14 +248,14 @@ const isLoading = ref(false)
                             <Popover v-if="dataServiceList?.find(list => list.id === formAddService.service_id)?.is_pallet_handling" position="" style="z-index: 20" class="mt-3 ">
                                 <template #button>
                                     <div class="text-left">
-                                        <span class="text-xs px-1 my-2">{{ trans('Date') }}: </span>
+                                        <span class="text-xs px-1 my-2">{{ ctrans('Date') }}: </span>
                                         <div
                                             xxv-tooltip="'useDaysLeftFromToday(dataPalletDelivery.estimated_delivery_date)'"
                                             class="text-left border border-gray-300 py-2 text-sm rounded px-3 cursor-pointer"
                                             :class="formAddService.handle_date ? '' : 'text-gray-400 '"
                                         >
                                             <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-base" fixed-width aria-hidden="true" />
-                                            {{ formAddService.handle_date ? useFormatTime(formAddService.handle_date, { formatTime: 'ddmy' }) : trans("Select date") }}
+                                            {{ formAddService.handle_date ? useFormatTime(formAddService.handle_date, { formatTime: 'ddmy' }) : ctrans("Select date") }}
                                         </div>
                                     </div>
                                 </template>
@@ -273,10 +273,10 @@ const isLoading = ref(false)
 
                             <!-- Quantity -->
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddService.quantity"
-                                    :placeholder="trans('Quantity')"
+                                    :placeholder="ctrans('Quantity')"
                                     @keydown.enter="() => onSubmitAddService(action, closed)"
                                 />
                                 <p v-if="get(formAddService, ['errors', 'quantity'])" class="mt-2 text-sm text-red-600">
@@ -323,12 +323,12 @@ const isLoading = ref(false)
                     </template>
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Physical Goods') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Physical Goods') }}: </span>
                             <div>
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddPhysicalGood.outer_id"
                                     :fetchRoute="physical_good_list_route"
-                                    :placeholder="trans('Select Physical Goods')"
+                                    :placeholder="ctrans('Select Physical Goods')"
                                     valueProp="id"
                                 />
 
@@ -337,7 +337,7 @@ const isLoading = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddPhysicalGood.quantity"
                                     placeholder="Quantity"
@@ -378,7 +378,7 @@ const isLoading = ref(false)
                 <div class="flex flex-col justify-center ">
                     <!-- <div class="text-xs">Status</div> -->
                     <div class="font-semibold">
-                        {{ status_rb === 'current' ? trans('On going') : trans('Expired') }}
+                        {{ status_rb === 'current' ? ctrans('On going') : ctrans('Expired') }}
                         <FontAwesomeIcon icon='far fa-wave-sine' class='' fixed-width aria-hidden='true' />
                     </div>
                     <div v-if="status_rb === 'current'" class="flex gap-x-1 text-xs italic text-green-700/70">

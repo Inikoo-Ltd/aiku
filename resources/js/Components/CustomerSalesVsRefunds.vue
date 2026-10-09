@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Pie } from "vue-chartjs"
 import {
     Chart as ChartJS,
@@ -40,7 +40,7 @@ const invoicesRefundRatio = computed(() => {
 const chartColors = ["#0D9488", "#F97316"]
 
 const chartData = computed(() => ({
-    labels: [trans("Total Sales"), trans("Refunds")],
+    labels: [ctrans("Total Sales"), ctrans("Refunds")],
     datasets: [
         {
             backgroundColor: chartColors,
@@ -74,26 +74,26 @@ const chartOptions = {
             <div class="flex items-center gap-3 mb-2">
                 <div class="flex items-center gap-1">
                     <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: chartColors[0] }"></span>
-                    <span>{{ trans('Total Sales') }}</span>
+                    <span>{{ ctrans('Total Sales') }}</span>
                 </div>
                 <div class="flex items-center gap-1">
                     <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: chartColors[1] }"></span>
-                    <span>{{ trans('Refunds') }}</span>
+                    <span>{{ ctrans('Refunds') }}</span>
                 </div>
             </div>
 
             <p>
-                <span class="font-semibold">{{ trans("Total Sales") }}: </span>
+                <span class="font-semibold">{{ ctrans("Total Sales") }}: </span>
                 {{ locale.currencyFormat(currencyCode?.code, data?.revenue_amount || 0) }}
                 <span class="text-[10px] text-gray-500">
-                    ({{ refundRatio.toFixed(2) }}% {{ trans("refunded") }})
+                    ({{ refundRatio.toFixed(2) }}% {{ ctrans("refunded") }})
                 </span>
             </p>
             <p>
-                <span class="font-semibold">{{ trans("Invoices") }}: </span>
+                <span class="font-semibold">{{ ctrans("Invoices") }}: </span>
                 {{ data?.number_invoices?.toLocaleString() }}
                 <span class="text-[10px] text-gray-500">
-                    ({{ invoicesRefundRatio.toFixed(1) }}% {{ trans("with refunds") }})
+                    ({{ invoicesRefundRatio.toFixed(1) }}% {{ ctrans("with refunds") }})
                 </span>
             </p>
         </div>

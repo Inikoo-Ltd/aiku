@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faEnvelope } from '@fal'
@@ -66,7 +66,7 @@ const formatDate = (dateString?: string): string => {
                     ...workshopRoute.parameters,
                     template: template.slug
                 })" class="block w-full">
-                    <Button :label="trans('Use Template')" :type="buttonType" size="sm" class="w-full" />
+                    <Button :label="ctrans('Use Template')" :type="buttonType" size="sm" class="w-full" />
                 </Link>
             </div>
         </div>

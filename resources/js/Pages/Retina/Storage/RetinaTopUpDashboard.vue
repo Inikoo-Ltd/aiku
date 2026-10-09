@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { Link, router, Head, usePage } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -62,8 +62,8 @@ const onSubmitTopUp = () => {
         },
         onSuccess: () => {
             // notify({
-            //     title: trans("Success!"),
-            //     text: trans("Top up request has been submitted successfully."),
+            //     title: ctrans("Success!"),
+            //     text: ctrans("Top up request has been submitted successfully."),
             //     type: "success",
             // })
             amount.value = 100
@@ -71,8 +71,8 @@ const onSubmitTopUp = () => {
         },
         onError: () => {
             notify({
-                title: trans("Something went wrong"),
-                text: trans("Please try again or contact support."),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Please try again or contact support."),
                 type: "error"
             })
         }
@@ -87,7 +87,7 @@ const isCustom = ref(false)
     <Head :title="title" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button :label="trans('Top Up Balance')" @click="() => isModalTopUpOpen = true" icon="fas fa-plus" />
+            <Button :label="ctrans('Top Up Balance')" @click="() => isModalTopUpOpen = true" icon="fas fa-plus" />
         </template>
     </PageHeading>
 
@@ -96,7 +96,7 @@ const isCustom = ref(false)
             <a :href="route('retina.top_up.single_top_up_pdf.export', {
                 topUp: usePage().props.flash.notification.top_up.data.reference
             })" target="_blank" class="mt-3" style="text-decoration: underline; font-weight: 700;">
-                {{ trans("Click Here to Download Receipt") }}
+                {{ ctrans("Click Here to Download Receipt") }}
             </a>
         </template>
     </FlashNotification>
@@ -112,7 +112,7 @@ const isCustom = ref(false)
                 </div>
 
                 <dt class="text-base font-normal ">
-                    {{ trans("Current balance") }}
+                    {{ ctrans("Current balance") }}
                 </dt>
 
                 <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
@@ -157,10 +157,10 @@ const isCustom = ref(false)
         <Modal width="w-full max-w-xl" :isOpen="isModalTopUpOpen" @close="() => isModalTopUpOpen = false">
             <div class="p-6 ">
                 <div class="mb-8">
-                    <h2 class="text-3xl font-bold">{{ trans("Top up Balance") }}</h2>
+                    <h2 class="text-3xl font-bold">{{ ctrans("Top up Balance") }}</h2>
                     <span class="text-sm italic text-gray-400">
                         <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true" />
-                        {{ trans("Deposit funds for various purposes such as orders payment.") }}
+                        {{ ctrans("Deposit funds for various purposes such as orders payment.") }}
                     </span>
                 </div>
                 <div class="space-y-4">
@@ -196,13 +196,13 @@ const isCustom = ref(false)
                     <div @click="isCustom = !isCustom"
                          :class="isCustom ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
                          class="h-12 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
-                        {{ trans("Custom amount") }}
+                        {{ ctrans("Custom amount") }}
                     </div>
 
                 </div>
                 <div v-if="isCustom" class="mt-4">
                     <label for="amount" class="block font-medium mb-2">
-                        {{ trans("Amount to deposit") }}
+                        {{ ctrans("Amount to deposit") }}
                         <InformationIcon :information="ctrans('Minimum amount is :minAmount', { minAmount: locale.currencyFormat(currency.code, 1)})" />
                     </label>
                     <InputNumber
@@ -218,7 +218,7 @@ const isCustom = ref(false)
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-4">
-                    <Button full @click="() => onSubmitTopUp()" :loading="isLoading" :label="trans('Submit')" />
+                    <Button full @click="() => onSubmitTopUp()" :loading="isLoading" :label="ctrans('Submit')" />
                 </div>
             </div>
 

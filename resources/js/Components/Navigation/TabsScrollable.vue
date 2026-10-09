@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronRight } from "@fal"
 import { faSpinnerThird } from "@fad"
 import { faCircle } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import type { Navigation } from "@/types/Tabs"
@@ -99,12 +99,12 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="relative border-b border-gray-200" :style="{ '--tabs-accent': accentColor }">
-        <button v-if="canScrollLeft" type="button" @click="scrollTabs(-1)" :aria-label="trans('Scroll tabs left')"
+        <button v-if="canScrollLeft" type="button" @click="scrollTabs(-1)" :aria-label="ctrans('Scroll tabs left')"
             class="absolute left-0 inset-y-0 z-10 flex w-10 items-center justify-start pl-2 text-gray-500 bg-gradient-to-r from-white via-white/90 to-transparent">
             <FontAwesomeIcon icon="fal fa-chevron-left" class="text-sm" fixed-width aria-hidden="true" />
         </button>
 
-        <button v-if="canScrollRight" type="button" @click="scrollTabs(1)" :aria-label="trans('Scroll tabs right')"
+        <button v-if="canScrollRight" type="button" @click="scrollTabs(1)" :aria-label="ctrans('Scroll tabs right')"
             class="absolute right-0 inset-y-0 z-10 flex w-10 items-center justify-end pr-2 text-gray-500 bg-gradient-to-l from-white via-white/90 to-transparent">
             <FontAwesomeIcon icon="fal fa-chevron-right" class="text-sm" fixed-width aria-hidden="true" />
         </button>

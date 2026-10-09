@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
 	blueprint: [
@@ -19,13 +19,13 @@ export default {
 				{
 					key: ["border", "color"],
 					label: "Lines",
-					information: trans('Lines that used to separates the menu'),
+					information: ctrans('Lines that used to separates the menu'),
 					type: "color",
 				},
 				{
 					key: ["border", "width"],
 					label: "Lines thickness",
-					information: trans('Reasonal number is 0px to 12px'),
+					information: ctrans('Reasonal number is 0px to 12px'),
 					props_data: {
 						unit_option: [
 							{ label: 'px', value: 'px' },

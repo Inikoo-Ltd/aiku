@@ -11,7 +11,7 @@ import { get } from 'lodash-es'
 import { useOrdinalSuffix } from '@/Composables/Utils'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 
@@ -107,10 +107,10 @@ const onSaveRecurringBills = (updateAll: boolean) => {
                 
                 <template #content="{ close: closed }">
                     <div class="max-w-min">
-                        <div class="mb-3 w-fit text-xs text-gray-600">{{trans('Apply the new cut off for the next bills only? Or apply for current open bills and next bills?')}}</div>
+                        <div class="mb-3 w-fit text-xs text-gray-600">{{ctrans('Apply the new cut off for the next bills only? Or apply for current open bills and next bills?')}}</div>
                         <div class="flex gap-x-2">
-                            <Button @click="() => onSaveRecurringBills(false)" :label="trans('Next bills only')" type="tertiary" />
-                            <Button @click="() => onSaveRecurringBills(true)" :label="trans('Current open bills and next bills')" />
+                            <Button @click="() => onSaveRecurringBills(false)" :label="ctrans('Next bills only')" type="tertiary" />
+                            <Button @click="() => onSaveRecurringBills(true)" :label="ctrans('Current open bills and next bills')" />
                         </div>
 
                         <div v-if="form.processing" class="absolute inset-0 bg-black/20 rounded-md flex justify-center items-center">

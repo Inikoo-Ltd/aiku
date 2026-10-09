@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faStore, faEnvelope } from '@fal'
@@ -62,7 +62,7 @@ const ownShopName = computed(() => {
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                     <FontAwesomeIcon :icon="faStore" class="mr-2 text-blue-600" fixed-width />
-                    {{ trans('Your Templates') }}
+                    {{ ctrans('Your Templates') }}
                     <span class="ml-2 text-sm text-gray-500">({{ ownShopName }})</span>
                 </h3>
             </div>
@@ -81,7 +81,7 @@ const ownShopName = computed(() => {
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                     <FontAwesomeIcon :icon="faStore" class="mr-2 text-green-600" fixed-width />
-                    {{ trans('Templates from Other Shops') }}
+                    {{ ctrans('Templates from Other Shops') }}
                 </h3>
             </div>
 
@@ -99,9 +99,9 @@ const ownShopName = computed(() => {
         <!-- No Templates Message -->
         <div v-if="!hasAnyTemplates" class="text-center py-8">
             <FontAwesomeIcon :icon="faEnvelope" class="text-4xl text-gray-300 mb-4" fixed-width />
-            <p class="text-gray-500">{{ trans('No email templates with generated HTML found.') }}</p>
+            <p class="text-gray-500">{{ ctrans('No email templates with generated HTML found.') }}</p>
             <p class="text-sm text-gray-400 mt-2">
-                {{ trans('Create some email templates first to see them here.') }}
+                {{ ctrans('Create some email templates first to see them here.') }}
             </p>
         </div>
     </div>

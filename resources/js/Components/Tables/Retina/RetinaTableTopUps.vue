@@ -11,7 +11,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faCheck, faTimes)
 
 
@@ -37,13 +37,13 @@ const locale = inject('locale', {})
         </template>
 
         <template #cell(status)="{ item }">
-            <FontAwesomeIcon v-if="item.status === 'success'" v-tooltip="trans('Success')" icon="fal fa-check"
+            <FontAwesomeIcon v-if="item.status === 'success'" v-tooltip="ctrans('Success')" icon="fal fa-check"
                 class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="item.status === 'fail'" v-tooltip="trans('Failed')" icon="fal fa-times"
+            <FontAwesomeIcon v-if="item.status === 'fail'" v-tooltip="ctrans('Failed')" icon="fal fa-times"
                 class="text-red-500" fixed-width aria-hidden="true" />
         </template>
         <template #cell(action)="{ item }">
-            <Button v-if="item.status === 'success'" v-tooltip="trans('Download Receipt')" class="rounded-md" type="tertiary" v-on:click="openSingleTopUpReceipt(item.reference)" >
+            <Button v-if="item.status === 'success'" v-tooltip="ctrans('Download Receipt')" class="rounded-md" type="tertiary" v-on:click="openSingleTopUpReceipt(item.reference)" >
                 <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width aria-hidden="true" /> 
             </Button>
         </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     modelValue: { in: boolean; out: boolean }
@@ -22,7 +22,7 @@ const toggleVisibility = (key: 'in' | 'out') => {
 <template>
     <div class="pb-3 border-gray-300 mb-5 px-2 grid">
         <div class="w-full my-2 text-start py-1 font-semibold select-none text-sm border-b border-gray-300 pb-1 mb-3">
-            {{ trans('Visibility') }}
+            {{ ctrans('Visibility') }}
         </div>
 
         <div class="flex gap-x-8">
@@ -40,7 +40,7 @@ const toggleVisibility = (key: 'in' | 'out') => {
                     class="ml-2 cursor-pointer text-xs"
                     :class="disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:text-indigo-600'"
                 >
-                    {{ trans('Logged In') }}
+                    {{ ctrans('Logged In') }}
                 </label>
             </div>
 
@@ -58,7 +58,7 @@ const toggleVisibility = (key: 'in' | 'out') => {
                     class="ml-2 cursor-pointer text-xs"
                     :class="disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:text-indigo-600'"
                 >
-                    {{ trans('Logged Out') }}
+                    {{ ctrans('Logged Out') }}
                 </label>
             </div>
         </div>

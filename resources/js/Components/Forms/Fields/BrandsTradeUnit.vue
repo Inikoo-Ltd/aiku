@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { set } from 'lodash-es'
 import { routeType } from '@/types/route'
@@ -35,10 +35,10 @@ const onAttach = (brandId: number | null) => {
             preserveState: true,
             onStart: () => { isLoading.value = true },
             onSuccess: () => {
-                notify({ title: trans('Success'), text: trans('Brand attached successfully'), type: 'success' })
+                notify({ title: ctrans('Success'), text: ctrans('Brand attached successfully'), type: 'success' })
             },
             onError: (error) => {
-                notify({ title: trans('Something went wrong'), text: error.message, type: 'error' })
+                notify({ title: ctrans('Something went wrong'), text: error.message, type: 'error' })
             },
             onFinish: () => { isLoading.value = false },
         }
@@ -55,10 +55,10 @@ const onDetach = () => {
             preserveState: true,
             onStart: () => { isLoading.value = true },
             onSuccess: () => {
-                notify({ title: trans('Success'), text: trans('Brand detached successfully'), type: 'success' })
+                notify({ title: ctrans('Success'), text: ctrans('Brand detached successfully'), type: 'success' })
             },
             onError: (error) => {
-                notify({ title: trans('Something went wrong'), text: error.message, type: 'error' })
+                notify({ title: ctrans('Something went wrong'), text: error.message, type: 'error' })
             },
             onFinish: () => { isLoading.value = false },
         }
@@ -72,7 +72,7 @@ const onDetach = () => {
             v-model="form[fieldName]"
             @update:modelValue="(e) => { set(form, [fieldName], e); onAttach(e) }"
             :fetchRoute="props.fieldData.brand_routes.index_brand"
-            :placeholder="trans('Select brand')"
+            :placeholder="ctrans('Select brand')"
             valueProp="id"
             :isLoading="isLoading"
         >

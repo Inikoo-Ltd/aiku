@@ -15,7 +15,7 @@ import { Bar } from "vue-chartjs"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors, BarElement, CategoryScale, LinearScale)
 
@@ -74,10 +74,10 @@ const updateFilters = () => {
 }
 
 const quickFilters = computed(() => [
-	{ label: trans("This Week"), start: getWeekStart(), end: getWeekEnd() },
-	{ label: trans("This Month"), start: getMonthStart(), end: getMonthEnd() },
-	{ label: trans("Last Month"), start: getLastMonthStart(), end: getLastMonthEnd() },
-	{ label: trans("This Quarter"), start: getQuarterStart(), end: getQuarterEnd() },
+	{ label: ctrans("This Week"), start: getWeekStart(), end: getWeekEnd() },
+	{ label: ctrans("This Month"), start: getMonthStart(), end: getMonthEnd() },
+	{ label: ctrans("Last Month"), start: getLastMonthStart(), end: getLastMonthEnd() },
+	{ label: ctrans("This Quarter"), start: getQuarterStart(), end: getQuarterEnd() },
 ])
 
 function getWeekStart(): string {
@@ -205,7 +205,7 @@ const attendanceChartData = computed(() => {
 		labels: data.map((e) => e.name),
 		datasets: [
 			{
-				label: trans("Attendance %"),
+				label: ctrans("Attendance %"),
 				data: data.map((e) => e.attendance_percentage),
 				backgroundColor: data.map((e) =>
 					e.attendance_percentage >= 90
@@ -239,7 +239,7 @@ const leaveChartOptions = {
 		tooltip: {
 			callbacks: {
 				label: function (context: any) {
-					return `${context.parsed.x} ${trans("days")}`
+					return `${context.parsed.x} ${ctrans("days")}`
 				},
 			},
 		},
@@ -266,7 +266,7 @@ const leaveChartData = computed(() => {
 		labels: data.map((e) => e.name),
 		datasets: [
 			{
-				label: trans("Leave Days"),
+				label: ctrans("Leave Days"),
 				data: data.map((e) => e.total_leave_days),
 				backgroundColor: "rgba(59, 130, 246, 0.8)",
 				borderColor: "rgb(59, 130, 246)",
@@ -303,7 +303,7 @@ const leaveChartData = computed(() => {
 						type="date"
 						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
 						@change="updateFilters" />
-					<span class="text-gray-500">{{ trans("to") }}</span>
+					<span class="text-gray-500">{{ ctrans("to") }}</span>
 					<input
 						v-model="endDate"
 						type="date"
@@ -315,14 +315,14 @@ const leaveChartData = computed(() => {
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 			<div class="bg-white shadow-sm rounded-lg p-6">
-				<div class="text-sm font-medium text-gray-500">{{ trans("Total Employees") }}</div>
+				<div class="text-sm font-medium text-gray-500">{{ ctrans("Total Employees") }}</div>
 				<div class="mt-2 text-3xl font-bold text-gray-900">
 					{{ formatNumber(total_employees, 0) }}
 				</div>
 			</div>
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
-				<div class="text-sm font-medium text-gray-500">{{ trans("Avg Attendance %") }}</div>
+				<div class="text-sm font-medium text-gray-500">{{ ctrans("Avg Attendance %") }}</div>
 				<div
 					class="mt-2 text-3xl font-bold"
 					:class="attendanceMetricClass(analytics?.avg_attendance_percentage)">
@@ -334,7 +334,7 @@ const leaveChartData = computed(() => {
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
 				<div class="text-sm font-medium text-gray-500">
-					{{ trans("Avg Working Hours") }}
+					{{ ctrans("Avg Working Hours") }}
 				</div>
 					<div class="mt-2 text-3xl font-bold text-gray-900">
 						{{ formatMetric(analytics?.avg_total_working_hours, "h") }}
@@ -343,7 +343,7 @@ const leaveChartData = computed(() => {
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
 				<div class="text-sm font-medium text-gray-500">
-					{{ trans("Avg Overtime Hours") }}
+					{{ ctrans("Avg Overtime Hours") }}
 				</div>
 					<div class="mt-2 text-3xl font-bold text-gray-900">
 						{{ formatMetric(analytics?.avg_overtime_hours, "h") }}
@@ -369,7 +369,7 @@ const leaveChartData = computed(() => {
 					</div>
 					<div class="ml-4">
 						<div class="text-sm font-medium text-gray-500">
-							{{ trans("Total Late Clock-ins") }}
+							{{ ctrans("Total Late Clock-ins") }}
 						</div>
 							<div class="text-2xl font-bold text-gray-900">
 								{{ formatMetric(analytics?.total_late_clockins, "", 0) }}
@@ -395,7 +395,7 @@ const leaveChartData = computed(() => {
 					</div>
 					<div class="ml-4">
 						<div class="text-sm font-medium text-gray-500">
-							{{ trans("Total Early Clock-outs") }}
+							{{ ctrans("Total Early Clock-outs") }}
 						</div>
 							<div class="text-2xl font-bold text-gray-900">
 								{{ formatMetric(analytics?.total_early_clockouts, "", 0) }}
@@ -421,7 +421,7 @@ const leaveChartData = computed(() => {
 					</div>
 					<div class="ml-4">
 						<div class="text-sm font-medium text-gray-500">
-							{{ trans("Total Leave Days") }}
+							{{ ctrans("Total Leave Days") }}
 						</div>
 							<div class="text-2xl font-bold text-gray-900">
 								{{ formatMetric(analytics?.total_leave_days, "", 0) }}
@@ -434,7 +434,7 @@ const leaveChartData = computed(() => {
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 			<div class="bg-white shadow-sm rounded-lg p-6">
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">
-					{{ trans("Employee Attendance") }}
+					{{ ctrans("Employee Attendance") }}
 				</h3>
 				<div v-if="hasAttendanceBreakdown" class="h-80">
 					<Bar :data="attendanceChartData" :options="attendanceChartOptions" />
@@ -452,14 +452,14 @@ const leaveChartData = computed(() => {
 						</div>
 					</div>
 					<div class="text-center text-sm text-gray-500">
-						{{ trans("No attendance data for this period") }}
+						{{ ctrans("No attendance data for this period") }}
 					</div>
 				</div>
 			</div>
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">
-					{{ trans("Top Employees by Leave") }}
+					{{ ctrans("Top Employees by Leave") }}
 				</h3>
 				<div v-if="hasTopEmployeesByLeave" class="h-80">
 					<Bar :data="leaveChartData" :options="leaveChartOptions" />
@@ -477,7 +477,7 @@ const leaveChartData = computed(() => {
 						</div>
 					</div>
 					<div class="text-center text-sm text-gray-500">
-						{{ trans("No leave data for this period") }}
+						{{ ctrans("No leave data for this period") }}
 					</div>
 				</div>
 			</div>

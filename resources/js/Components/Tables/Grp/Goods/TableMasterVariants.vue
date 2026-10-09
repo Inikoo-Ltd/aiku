@@ -11,7 +11,7 @@ import { Shop } from "@/types/shop"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle, faDoNotEnter } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
@@ -69,12 +69,12 @@ const formatOptions = (value) => {
       </template> 
       <template #cell(number_used_slots)="{ item }">
         <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-medium font-medium border transition-colors duration-150 cursor-pointer"> 
-          <span :class="item.number_used_slots == item.number_max_slots  ? 'text-green-500' : 'text-red-500'"> {{ item.number_used_slots }} </span> / {{ item.number_max_slots }} {{ trans(' Slots') }}
+          <span :class="item.number_used_slots == item.number_max_slots  ? 'text-green-500' : 'text-red-500'"> {{ item.number_used_slots }} </span> / {{ item.number_max_slots }} {{ ctrans(' Slots') }}
         </span>
       </template> 
       <template #cell(number_used_slots_for_sale)="{ item }"> 
         <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-medium font-medium border transition-colors duration-150 cursor-pointer"> 
-          <span :class="item.number_used_slots_for_sale == item.product_list.length ? 'text-green-500' : 'text-red-500'"> {{ item.number_used_slots_for_sale }} </span> / {{ item.product_list.length }} {{ trans(' Products for sale') }}
+          <span :class="item.number_used_slots_for_sale == item.product_list.length ? 'text-green-500' : 'text-red-500'"> {{ item.number_used_slots_for_sale }} </span> / {{ item.product_list.length }} {{ ctrans(' Products for sale') }}
         </span>
       </template>
     </Table>

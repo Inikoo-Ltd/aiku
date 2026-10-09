@@ -6,7 +6,7 @@ import { faBadgePercent } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Select from 'primevue/select'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { useDateIntervals } from '@/Composables/useDateIntervals'
@@ -29,8 +29,8 @@ const selectedInterval = ref<string | null>(null)
 const dateIntervals = useDateIntervals()
 
 const presenceOptions = computed(() => [
-    { label: trans('With offer'), value: 'with' },
-    { label: trans('Without offer'), value: 'without' },
+    { label: ctrans('With offer'), value: 'with' },
+    { label: ctrans('Without offer'), value: 'without' },
 ])
 
 const presenceLabel = computed(() => presenceOptions.value.find(option => option.value === offerPresence.value)?.label)
@@ -140,7 +140,7 @@ const toggle = (event: Event) => {
     <div class="flex items-center gap-2 rounded-md">
         <div
             @click="toggle"
-            v-tooltip="props.label ?? trans('Filter by offers')"
+            v-tooltip="props.label ?? ctrans('Filter by offers')"
             class="cursor-pointer group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
         >
             <div class="h-9 rounded flex justify-center items-center gap-2 border"
@@ -169,7 +169,7 @@ const toggle = (event: Event) => {
                         :options="presenceOptions"
                         optionLabel="label"
                         optionValue="value"
-                        :placeholder="trans('Offers')"
+                        :placeholder="ctrans('Offers')"
                         class="flex-1"
                     />
 
@@ -178,12 +178,12 @@ const toggle = (event: Event) => {
                         :options="dateIntervals.map(i => ({ label: i.label, value: i.value }))"
                         optionLabel="label"
                         optionValue="value"
-                        :placeholder="trans('Quick intervals')"
+                        :placeholder="ctrans('Quick intervals')"
                         class="flex-1"
                     />
 
                     <div @click="resetFilter" class="text-red-400 hover:text-red-600 cursor-pointer whitespace-nowrap">
-                        {{ trans("Reset") }}
+                        {{ ctrans("Reset") }}
                     </div>
                 </div>
 
@@ -202,14 +202,14 @@ const toggle = (event: Event) => {
 
             <div class="grid grid-cols-2 text-sm mt-3">
                 <div class="text-left px-1.5">
-                    <div class="text-gray-400">{{ trans("Since") }}</div>
+                    <div class="text-gray-400">{{ ctrans("Since") }}</div>
                     <div>
                         {{ dateFilterValue?.[0] ? useFormatTime(dateFilterValue[0]) : '-' }}
                     </div>
                 </div>
 
                 <div class="justify-self-end text-right px-1.5">
-                    <div class="text-gray-400">{{ trans("Until") }}</div>
+                    <div class="text-gray-400">{{ ctrans("Until") }}</div>
                     <div>
                         {{ dateFilterValue?.[1] ? useFormatTime(dateFilterValue[1]) : '-' }}
                     </div>

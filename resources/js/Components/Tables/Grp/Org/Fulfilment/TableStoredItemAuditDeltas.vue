@@ -8,7 +8,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Icon from '@/Components/Icon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 
 library.add(faCheck, faTimes)
@@ -34,7 +34,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 {{ storedItemAudit.pallet_customer_reference }}
             </div>
             <div v-else class="text-gray-400 italic text-xs">
-                {{ trans(`No pallet customer's reference`) }}
+                {{ ctrans(`No pallet customer's reference`) }}
             </div>
         </template>
 

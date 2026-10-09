@@ -10,7 +10,7 @@ import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faMoneyCheckAlt } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
@@ -50,15 +50,15 @@ function payrollExportUrl() {
 
     <div class="mx-4 mt-6 max-w-xl rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 flex items-end gap-3">
         <div>
-            <label class="block text-xs text-gray-500 mb-1">{{ trans('Payroll from') }}</label>
+            <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Payroll from') }}</label>
             <input type="date" v-model="payrollFrom" class="rounded border-gray-300 text-sm" />
         </div>
         <div>
-            <label class="block text-xs text-gray-500 mb-1">{{ trans('To') }}</label>
+            <label class="block text-xs text-gray-500 mb-1">{{ ctrans('To') }}</label>
             <input type="date" v-model="payrollTo" class="rounded border-gray-300 text-sm" />
         </div>
         <a :href="payrollExportUrl()" class="rounded bg-gray-700 text-white text-sm px-3 py-2">
-            {{ trans('Export payroll CSV') }}
+            {{ ctrans('Export payroll CSV') }}
         </a>
     </div>
 </template>

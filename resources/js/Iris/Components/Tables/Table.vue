@@ -5,7 +5,7 @@ import HeaderCell from './HeaderCell.vue'
 import TableFilterSearch from './TableFilterSearch.vue'
 import TableWrapper from './TableWrapper.vue'
 import { router, usePage } from "@inertiajs/vue3"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { computed, onMounted, onUnmounted, ref, watch, inject } from 'vue'
 import qs from 'qs'
@@ -359,8 +359,8 @@ watch(() => props.name, () => {
                                     {{
                                     compResourceMeta.total > 1
                                     ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
-                                    trans('records')
-                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                    ctrans('records')
+                                    : queryBuilderProps.labelRecord?.[0] || ctrans('record')
                                     }}
                                 </span>
                             </div>

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue"
 import { useForm } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -41,7 +41,7 @@ const submit = () =>
         forceFormData: true,
         preserveScroll: true,
         onSuccess: (page) => {
-            sentReference.value = (page.props.flash as any)?.notification?.title ?? trans("Sent")
+            sentReference.value = (page.props.flash as any)?.notification?.title ?? ctrans("Sent")
             setTimeout(() => (isOpen.value = false), 1200)
         },
     })
@@ -57,10 +57,10 @@ onUnmounted(() => window.removeEventListener("keydown", onKey))
     <button
         type="button"
         class="fixed bottom-12 md:bottom-3 left-3 z-40 h-9 px-3 rounded-full bg-red-600 text-white shadow-lg flex items-center gap-x-2 text-sm hover:bg-red-700"
-        :title="trans('Report a bug') + ' (Alt+Shift+B)'"
+        :title="ctrans('Report a bug') + ' (Alt+Shift+B)'"
         @click="open">
         <FontAwesomeIcon icon="fal fa-bug" fixed-width aria-hidden="true" />
-        <span class="hidden md:inline">{{ trans("Bug") }}</span>
+        <span class="hidden md:inline">{{ ctrans("Bug") }}</span>
     </button>
 
     <Modal :is-open="isOpen" width="w-full max-w-lg" @on-close="isOpen = false">
@@ -68,21 +68,21 @@ onUnmounted(() => window.removeEventListener("keydown", onKey))
             <FontAwesomeIcon icon="fal fa-check-circle" class="mr-2" fixed-width /> {{ sentReference }}
         </div>
         <div v-else class="space-y-3">
-            <p class="text-base font-semibold text-gray-900">{{ trans("Report a bug") }}</p>
+            <p class="text-base font-semibold text-gray-900">{{ ctrans("Report a bug") }}</p>
             <input
                 v-model="form.subject"
                 type="text"
                 maxlength="255"
                 autofocus
                 class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0"
-                :placeholder="trans('What is broken?')"
+                :placeholder="ctrans('What is broken?')"
                 @keydown.enter.prevent="form.subject.trim() && submit()" />
-            <TicketComposer v-model:body="form.description" v-model:images="form.images" :rows="4" :placeholder="trans('Optional: what did you expect, paste a screenshot')" />
+            <TicketComposer v-model:body="form.description" v-model:images="form.images" :rows="4" :placeholder="ctrans('Optional: what did you expect, paste a screenshot')" />
             <p class="text-xs text-gray-400 truncate">{{ form.reference_url }}</p>
             <p v-if="form.errors.subject" class="text-xs text-red-600">{{ form.errors.subject }}</p>
             <div class="flex justify-end gap-x-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isOpen = false" />
-                <Button :label="trans('Send')" icon="fal fa-paper-plane" :loading="form.processing" :disabled="!form.subject.trim()" @click="submit" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="isOpen = false" />
+                <Button :label="ctrans('Send')" icon="fal fa-paper-plane" :loading="form.processing" :disabled="!form.subject.trim()" @click="submit" />
             </div>
         </div>
     </Modal>

@@ -29,7 +29,7 @@ import {
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const contactIconList = [
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok, faYoutube,
@@ -81,12 +81,12 @@ const removeContactOption = (index: number) => {
                 class="group relative rounded-lg border border-gray-300 bg-white p-3 transition hover:border-gray-400">
                 <button type="button"
                     class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-red-300 bg-white text-xxs leading-none text-red-500 shadow-sm transition hover:border-red-400 hover:bg-red-500 hover:text-white"
-                    :title="trans('Remove')" @click="removeContactOption(index)">
+                    :title="ctrans('Remove')" @click="removeContactOption(index)">
                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                 </button>
 
                 <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-                    <PureInput v-model="contactOption.label" :placeholder="trans('Label')"
+                    <PureInput v-model="contactOption.label" :placeholder="ctrans('Label')"
                         :readonly="fieldData?.readonly" class-input="py-1.5 text-xs">
                         <template #prefix>
                             <div class="flex h-full items-center border-r border-gray-200 px-2 text-gray-600">
@@ -105,10 +105,10 @@ const removeContactOption = (index: number) => {
             <div v-if="!contactOptions.length"
                 class="flex flex-col items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-5 text-center text-gray-400">
                 <FontAwesomeIcon :icon="faLink" class="text-base" fixed-width aria-hidden="true" />
-                <span class="text-xs">{{ trans("No contact options yet") }}</span>
+                <span class="text-xs">{{ ctrans("No contact options yet") }}</span>
             </div>
 
-            <Button type="dashed" size="xs" full icon="fal fa-plus" :label="trans('Add contact option')"
+            <Button type="dashed" size="xs" full icon="fal fa-plus" :label="ctrans('Add contact option')"
                 @click="addContactOption" />
         </div>
 

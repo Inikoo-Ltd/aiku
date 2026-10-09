@@ -5,7 +5,7 @@ import Textarea from "primevue/textarea"
 
 
 import type { Image as ImageProxy } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { useFormatTime } from "@/Composables/useFormatTime";
@@ -201,7 +201,7 @@ const updateReply = async () => {
 }
 
 const deleteReply = async () => {
-    if (!confirm(trans("Are you sure you want to delete this reply?"))) return
+    if (!confirm(ctrans("Are you sure you want to delete this reply?"))) return
 
     try {
         loadingDelete.value = true
@@ -239,11 +239,11 @@ const deleteReply = async () => {
             class="flex flex-col gap-3 rounded border border-gray-200 bg-gray-50 p-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h2 class="text-base font-semibold text-gray-900">
-                    {{ trans("Review") }}
+                    {{ ctrans("Review") }}
                 </h2>
 
                 <p class="text-sm text-gray-500">
-                    {{ trans("Customer feedback detail") }}
+                    {{ ctrans("Customer feedback detail") }}
                 </p>
             </div>
 
@@ -267,7 +267,7 @@ const deleteReply = async () => {
                         </div>
 
                         <div v-if="item.required" class="text-[11px] text-red-500">
-                            {{ trans("Required") }}
+                            {{ ctrans("Required") }}
                         </div>
                     </div>
                 </div>
@@ -279,12 +279,12 @@ const deleteReply = async () => {
         <div v-if="Array.isArray(modelValue.image_thumbnails) && modelValue.image_thumbnails.length" class="space-y-2">
             <div class="flex items-center justify-between">
                 <div class="text-sm font-medium text-gray-800">
-                    {{ trans("Images") }}
+                    {{ ctrans("Images") }}
                 </div>
 
                 <div class="text-xs text-gray-500">
                     {{ modelValue.image_thumbnails.length }}
-                    {{ trans("Photos") }}
+                    {{ ctrans("Photos") }}
                 </div>
             </div>
 
@@ -343,22 +343,22 @@ const deleteReply = async () => {
 
                             <div>
                                 <div class="text-sm font-semibold text-gray-900">
-                                    {{ trans("Store") }}
+                                    {{ ctrans("Store") }}
                                 </div>
                                 <div class="text-xs text-orange-600">
-                                    {{ trans("Official Reply") }}
+                                    {{ ctrans("Official Reply") }}
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex gap-3">
                             <button @click="enterEditMode" class="text-gray-500 hover:text-gray-700 transition"
-                                :title="trans('Edit')">
+                                :title="ctrans('Edit')">
                                 <FontAwesomeIcon :icon="faPencil" fixed-width />
                             </button>
                             <button @click="deleteReply" :disabled="loadingDelete"
                                 class="text-gray-500 hover:text-red-600 transition disabled:opacity-50"
-                                :title="trans('Delete')">
+                                :title="ctrans('Delete')">
                                 <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                             </button>
                         </div>
@@ -371,15 +371,15 @@ const deleteReply = async () => {
 
                 <div v-else class="space-y-3">
                     <div class="text-sm font-medium text-gray-800">
-                        {{ trans("Edit Reply") }}
+                        {{ ctrans("Edit Reply") }}
                     </div>
 
                     <Textarea v-model="editReplyText" rows="4" autoResize class="w-full"
-                        :placeholder="trans('Write a professional reply...')" />
+                        :placeholder="ctrans('Write a professional reply...')" />
 
                     <div class="flex justify-end gap-2">
-                        <Button :label="trans('Cancel')" size="xs" type="secondary" @click="cancelEditMode" />
-                        <Button :label="trans('Update Reply')" size="xs" @click="updateReply" :loading="loadingSave"
+                        <Button :label="ctrans('Cancel')" size="xs" type="secondary" @click="cancelEditMode" />
+                        <Button :label="ctrans('Update Reply')" size="xs" @click="updateReply" :loading="loadingSave"
                             :icon="faPencil" />
                     </div>
                 </div>
@@ -390,14 +390,14 @@ const deleteReply = async () => {
 
             <div v-else class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-3">
                 <div class="mb-2 text-sm font-medium text-gray-800">
-                    {{ trans("Reply as Shop") }}
+                    {{ ctrans("Reply as Shop") }}
                 </div>
 
                 <Textarea v-model="storeReply" rows="4" autoResize class="w-full"
-                    :placeholder="trans('Write a professional reply...')" />
+                    :placeholder="ctrans('Write a professional reply...')" />
 
                 <div class="mt-3 flex justify-end">
-                    <Button :label="trans('Send Reply')" size="xs" @click="() => postReply()" :loading="loadingSave"
+                    <Button :label="ctrans('Send Reply')" size="xs" @click="() => postReply()" :loading="loadingSave"
                         :icon="faReply" />
                 </div>
             </div>
@@ -407,7 +407,7 @@ const deleteReply = async () => {
         <!--
         <div v-if="props.modelValue.image_thumbnail" class="space-y-2">
             <div class="text-sm font-medium text-gray-800">
-                {{ trans("Images") }}
+                {{ ctrans("Images") }}
             </div>
 
             <div class="flex flex-wrap gap-2">

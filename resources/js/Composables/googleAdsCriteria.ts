@@ -3,7 +3,7 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export type Criterion = {
     id: string | null
@@ -36,39 +36,39 @@ export const criterionTypeOrder = [
 export const criterionTypeLabel = (type: string | null): string => {
     switch (type) {
         case "USER_LIST":
-            return trans("Your audiences")
+            return ctrans("Your audiences")
         case "CUSTOM_AUDIENCE":
-            return trans("Custom segments")
+            return ctrans("Custom segments")
         case "COMBINED_AUDIENCE":
-            return trans("Combined audiences")
+            return ctrans("Combined audiences")
         case "AUDIENCE":
-            return trans("Audiences")
+            return ctrans("Audiences")
         case "USER_INTEREST":
-            return trans("Interests and in-market")
+            return ctrans("Interests and in-market")
         case "AGE_RANGE":
-            return trans("Age")
+            return ctrans("Age")
         case "GENDER":
-            return trans("Gender")
+            return ctrans("Gender")
         case "PARENTAL_STATUS":
-            return trans("Parental status")
+            return ctrans("Parental status")
         case "INCOME_RANGE":
-            return trans("Household income")
+            return ctrans("Household income")
         case "TOPIC":
-            return trans("Topics")
+            return ctrans("Topics")
         case "KEYWORD":
-            return trans("Keywords")
+            return ctrans("Keywords")
         case "PLACEMENT":
-            return trans("Placements")
+            return ctrans("Placements")
         case "MOBILE_APPLICATION":
-            return trans("Apps")
+            return ctrans("Apps")
         case "YOUTUBE_CHANNEL":
-            return trans("YouTube channels")
+            return ctrans("YouTube channels")
         case "YOUTUBE_VIDEO":
-            return trans("YouTube videos")
+            return ctrans("YouTube videos")
         case "CONTENT_LABEL":
-            return trans("Content labels")
+            return ctrans("Content labels")
         default:
-            return type ? type.replace(/_/g, " ").toLowerCase() : trans("Other")
+            return type ? type.replace(/_/g, " ").toLowerCase() : ctrans("Other")
     }
 }
 
@@ -84,12 +84,12 @@ export const criterionLabel = (criterion: Criterion): string => {
     const stripped = raw.replace(/^(AGE_RANGE_|INCOME_RANGE_|PARENTAL_STATUS_|CONTENT_LABEL_)/, "")
 
     const range = stripped.match(/^(\d+)_(\d+)$/)
-    if (range) return `${range[1]} ${trans("to")} ${range[2]}`
+    if (range) return `${range[1]} ${ctrans("to")} ${range[2]}`
 
     const open = stripped.match(/^(\d+)_UP$/)
-    if (open) return `${open[1]} ${trans("and over")}`
+    if (open) return `${open[1]} ${ctrans("and over")}`
 
-    if (stripped === "UNDETERMINED") return trans("Unknown")
+    if (stripped === "UNDETERMINED") return ctrans("Unknown")
 
     const words = stripped.replace(/_/g, " ").toLowerCase()
 

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 defineProps<{
     data: {
@@ -54,31 +54,31 @@ const time = (value: string) => new Date(value).toLocaleString(undefined, {
 <template>
     <div class="px-4 py-4 space-y-3">
         <div class="text-xs text-gray-500">
-            {{ trans('Period') }}: {{ data.period_label }} ·
-            {{ trans('Clicks are recorded since 8 Aug 2026 and kept 90 days. Suspicious means worth a look, not fraud proven.') }}
+            {{ ctrans('Period') }}: {{ data.period_label }} ·
+            {{ ctrans('Clicks are recorded since 8 Aug 2026 and kept 90 days. Suspicious means worth a look, not fraud proven.') }}
         </div>
 
         <div class="border border-gray-200 rounded-md px-4 py-3">
             <div class="flex items-center gap-x-6 text-sm tabular-nums">
-                <span>{{ data.totals.clicks }} {{ trans('clicks') }}</span>
-                <span>{{ data.totals.ips }} {{ trans('IPs') }}</span>
-                <span>{{ data.totals.repeats }} {{ trans('repeats') }}</span>
+                <span>{{ data.totals.clicks }} {{ ctrans('clicks') }}</span>
+                <span>{{ data.totals.ips }} {{ ctrans('IPs') }}</span>
+                <span>{{ data.totals.repeats }} {{ ctrans('repeats') }}</span>
                 <span :class="data.totals.bots > 0 ? 'text-red-600' : 'text-gray-500'">
-                    {{ data.totals.bots }} {{ trans('bot clicks') }}
+                    {{ data.totals.bots }} {{ ctrans('bot clicks') }}
                     <template v-if="data.totals.bot_pct !== null">({{ data.totals.bot_pct }}%)</template>
                 </span>
             </div>
         </div>
 
         <div class="border border-gray-200 rounded-md px-4 py-3">
-            <div class="text-sm">{{ trans('By channel') }}</div>
+            <div class="text-sm">{{ ctrans('By channel') }}</div>
             <table class="mt-2 text-xs text-gray-600 min-w-72">
                 <thead>
                     <tr class="text-gray-400">
-                        <th class="text-left font-normal pr-4">{{ trans('Channel') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Clicks') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Bots') }}</th>
-                        <th class="text-right font-normal pl-2">{{ trans('Bot share') }}</th>
+                        <th class="text-left font-normal pr-4">{{ ctrans('Channel') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Clicks') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Bots') }}</th>
+                        <th class="text-right font-normal pl-2">{{ ctrans('Bot share') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -93,21 +93,21 @@ const time = (value: string) => new Date(value).toLocaleString(undefined, {
         </div>
 
         <div class="border border-gray-200 rounded-md px-4 py-3">
-            <div class="text-sm">{{ trans('Suspicious IPs') }}</div>
+            <div class="text-sm">{{ ctrans('Suspicious IPs') }}</div>
             <div class="mt-1 text-xs text-gray-500">
-                {{ trans('Five or more clicks from one address in the period, or any click whose browser identified as a bot.') }}
+                {{ ctrans('Five or more clicks from one address in the period, or any click whose browser identified as a bot.') }}
             </div>
-            <div v-if="!data.suspect_ips.length" class="mt-2 text-xs text-gray-400">{{ trans('None in this period') }}</div>
+            <div v-if="!data.suspect_ips.length" class="mt-2 text-xs text-gray-400">{{ ctrans('None in this period') }}</div>
             <table v-else class="mt-2 text-xs text-gray-600 w-full">
                 <thead>
                     <tr class="text-gray-400">
-                        <th class="text-left font-normal pr-4">{{ trans('IP') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('Country') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Clicks') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Bots') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('Channels') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('Device') }}</th>
-                        <th class="text-left font-normal pl-2">{{ trans('First / last seen') }}</th>
+                        <th class="text-left font-normal pr-4">{{ ctrans('IP') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('Country') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Clicks') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Bots') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('Channels') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('Device') }}</th>
+                        <th class="text-left font-normal pl-2">{{ ctrans('First / last seen') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,17 +125,17 @@ const time = (value: string) => new Date(value).toLocaleString(undefined, {
         </div>
 
         <div class="border border-gray-200 rounded-md px-4 py-3">
-            <div class="text-sm">{{ trans('Latest bot clicks') }}</div>
-            <div v-if="!data.recent_bots.length" class="mt-2 text-xs text-gray-400">{{ trans('None in this period') }}</div>
+            <div class="text-sm">{{ ctrans('Latest bot clicks') }}</div>
+            <div v-if="!data.recent_bots.length" class="mt-2 text-xs text-gray-400">{{ ctrans('None in this period') }}</div>
             <table v-else class="mt-2 text-xs text-gray-600 w-full">
                 <thead>
                     <tr class="text-gray-400">
-                        <th class="text-left font-normal pr-4">{{ trans('When') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('Channel') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('Campaign') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('IP') }}</th>
-                        <th class="text-left font-normal px-2">{{ trans('Country') }}</th>
-                        <th class="text-left font-normal pl-2">{{ trans('Landing page') }}</th>
+                        <th class="text-left font-normal pr-4">{{ ctrans('When') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('Channel') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('Campaign') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('IP') }}</th>
+                        <th class="text-left font-normal px-2">{{ ctrans('Country') }}</th>
+                        <th class="text-left font-normal pl-2">{{ ctrans('Landing page') }}</th>
                     </tr>
                 </thead>
                 <tbody>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from "vue"
 import { useBannerBackgroundColor, useHeadlineText } from "@/Composables/useStockList"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { get, isNull } from "lodash-es"
 import draggable from "vuedraggable"
 import { ulid } from "ulid"
@@ -254,11 +254,11 @@ const onPickImageGalery = (image: any) => {
                 ]" @click="setCommonEdit">
                 <FontAwesomeIcon 
                 icon="fal fa-cog" class="text-xl md:text-base text-gray-500" fixed-width aria-hidden="true" />
-                <span class="text-gray-600 text-sm hidden sm:inline">{{ trans("Common properties") }}</span>
+                <span class="text-gray-600 text-sm hidden sm:inline">{{ ctrans("Common properties") }}</span>
             </div>
 
             <!-- Slides/Drag area -->
-            <div class="text-lg font-medium leading-none">{{ trans("Slides") }} <span class='text-dase'>({{ modelValue.components.length }})</span></div>
+            <div class="text-lg font-medium leading-none">{{ ctrans("Slides") }} <span class='text-dase'>({{ modelValue.components.length }})</span></div>
             <draggable :list="modelValue.components" group="slide " item-key="ulid" handle=".handle" class="max-h-96 overflow-auto p-0.5">
                 <template #item="{ element: slide }">
                     <div @mousedown="selectComponentForEdition(slide)" v-if="slide.ulid" :class="[
@@ -338,7 +338,7 @@ const onPickImageGalery = (image: any) => {
                 <Button :style="`secondary`" size="xs" @click="addNewSlide"
                     class="relative w-full flex justify-center lg:w-fit lg:inline space-x-2">
                     <FontAwesomeIcon icon='fas fa-plus' class='' fixed-width aria-hidden='true' />
-                    <span>{{ trans("Add slide") }}</span>
+                    <span>{{ ctrans("Add slide") }}</span>
                 </Button>
             </div>
             <div class="text-xs text-gray-400 pt-2">Max file size 25 MB</div>

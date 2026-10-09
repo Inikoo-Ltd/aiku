@@ -11,7 +11,7 @@ import { Fulfilment } from "@/types/fulfilment"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useLayoutStore } from '@/Stores/layout'
 library.add(faCircle)
 
@@ -39,7 +39,7 @@ function fulfilmentRoute(fulfilment: Fulfilment) {
                 <Link :href="fulfilmentRoute(fulfilment)" class="primaryLink">
                     {{ fulfilment.code }}
                 </Link>
-                <div v-if="fulfilment.code == useLayoutStore().organisationsState?.[useLayoutStore().currentParams.organisation]?.currentFulfilment" v-tooltip="trans('Recently selected')" class="px-0.5 leading-none">
+                <div v-if="fulfilment.code == useLayoutStore().organisationsState?.[useLayoutStore().currentParams.organisation]?.currentFulfilment" v-tooltip="ctrans('Recently selected')" class="px-0.5 leading-none">
                     <FontAwesomeIcon icon='fas fa-circle' class='text-lime-500 text-[6px]' fixed-width aria-hidden='true' />
                 </div>
             </div>

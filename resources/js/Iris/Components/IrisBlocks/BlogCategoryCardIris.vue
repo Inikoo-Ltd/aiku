@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlaneDeparture, faBookOpen, faChartBar, faPlug, faBoxes } from "@fal"
@@ -42,7 +42,7 @@ const displayLabel = computed(
 		getBlogCategoryDisplayName(props.category.value, props.category.label)
 )
 
-const ctaText = computed(() => props.ctaLabel || trans("View Dashboard"))
+const ctaText = computed(() => props.ctaLabel || ctrans("View Dashboard"))
 </script>
 
 <template>
@@ -87,7 +87,7 @@ const ctaText = computed(() => props.ctaLabel || trans("View Dashboard"))
 			<span
 				v-if="showPosition"
 				class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
-				{{ trans("Category :position", { position: position }) }}
+				{{ ctrans("Category :position", { position: position }) }}
 			</span>
 
 			<h2 class="!text-xl font-bold leading-snug text-gray-900">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash } from "@fal"
@@ -43,16 +43,16 @@ const onAddNewLocation = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully add new location :xlocation", { xlocation: newLocation.value?.code || 'no_code' }),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully add new location :xlocation", { xlocation: newLocation.value?.code || 'no_code' }),
                     type: "success"
                 })
                 newLocation.value = null
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add new location"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add new location"),
                     type: "error"
                 })
             },
@@ -113,11 +113,11 @@ defineExpose({
                 class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
             >
                 <div class="text-gray-600 font-medium">
-                    {{ trans("No locations available") }}
+                    {{ ctrans("No locations available") }}
                 </div>
 
                 <div class="text-sm text-gray-400 mt-1">
-                    {{ trans("You haven't added any locations yet") }}
+                    {{ ctrans("You haven't added any locations yet") }}
                 </div>
             </div>
         </div>
@@ -126,7 +126,7 @@ defineExpose({
 
         <!-- Add new location section -->
         <div class="shrink-0 border-gray-200 mt-3">
-            <div class="text-sm font-medium text-gray-600 mb-2">{{ trans("Add New Location") }}</div>
+            <div class="text-sm font-medium text-gray-600 mb-2">{{ ctrans("Add New Location") }}</div>
             <div class="flex gap-x-2 items-center">
                 <div class="flex-1">
                     <PureMultiselectInfiniteScroll
@@ -143,7 +143,7 @@ defineExpose({
                     @click="() => onAddNewLocation()"
                     :disabled="!newLocation"
                     :loading="isLoadingAddNewLocation"
-                    :label="trans('Add')"
+                    :label="ctrans('Add')"
                     icon="fal fa-plus"
                     size="lg"
                 />
@@ -151,7 +151,7 @@ defineExpose({
         </div>
         <!-- Section: buttons -->
         <div class="shrink-0 relative flex gap-x-2 isolate z-30 pt-3 mt-4 border-t bg-white">
-            <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
+            <Button :label="ctrans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 
     </div>

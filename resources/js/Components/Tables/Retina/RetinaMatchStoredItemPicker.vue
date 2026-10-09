@@ -3,7 +3,7 @@ import { ref, watch, computed, onMounted, onUnmounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLink, faSpinner, faTimes, faCheck } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { debounce } from "lodash-es"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
@@ -112,12 +112,12 @@ const selectItem = async (storedItem: StoredItem) => {
             item_id: storedItem.id,
             item_type: 'StoredItem',
         })
-        notify({ title: trans('Success'), text: trans('SKO updated successfully'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('SKO updated successfully'), type: 'success' })
         isOpen.value = false
         storedItems.value = []
         router.reload({ only: ['products'] })
     } catch {
-        notify({ title: trans('Error'), text: trans('Failed to update SKO'), type: 'error' })
+        notify({ title: ctrans('Error'), text: ctrans('Failed to update SKO'), type: 'error' })
     } finally {
         updating.value = false
     }
@@ -127,11 +127,11 @@ const selectItem = async (storedItem: StoredItem) => {
 <template>
     <div class="relative">
         <Button
-            v-tooltip="trans('Match existing SKO')"
+            v-tooltip="ctrans('Match existing SKO')"
             @click.prevent="toggle"
             :style="isOpen ? 'primary' : 'secondary'"
             :icon="['fal', 'fa-link']"
-            :label="trans('Match SKO')"
+            :label="ctrans('Match SKO')"
             size="xs"
             class="whitespace-nowrap" />
 
@@ -144,12 +144,12 @@ const selectItem = async (storedItem: StoredItem) => {
                 <FontAwesomeIcon icon="fal fa-times" class="text-xs" fixed-width aria-hidden="true" />
             </button>
             <div class="mb-2">
-                <span class="text-xs font-semibold text-gray-700">{{ trans('Select SKO to match') }}</span>
+                <span class="text-xs font-semibold text-gray-700">{{ ctrans('Select SKO to match') }}</span>
             </div>
 
             <InputText
                 v-model="searchQuery"
-                :placeholder="trans('Search SKO...')"
+                :placeholder="ctrans('Search SKO...')"
                 size="small"
                 class="w-full mb-2"
                 autofocus />
@@ -157,12 +157,12 @@ const selectItem = async (storedItem: StoredItem) => {
             <div class="max-h-52 overflow-y-auto space-y-0.5" @scroll="onScroll">
                 <div v-if="loading" class="flex items-center justify-center gap-2 py-4 text-xs text-gray-400">
                     <FontAwesomeIcon icon="fal fa-spinner" class="animate-spin" fixed-width aria-hidden="true" />
-                    {{ trans('Loading...') }}
+                    {{ ctrans('Loading...') }}
                 </div>
                 <template v-else>
                     <template v-if="currentItem">
                         <div class="px-2 py-1 text-xs font-semibold text-blue-500 uppercase tracking-wide">
-                            {{ trans('Current SKO') }}
+                            {{ ctrans('Current SKO') }}
                         </div>
                         <div
                             class="cursor-pointer rounded px-3 py-2 text-xs flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 mb-1"
@@ -174,7 +174,7 @@ const selectItem = async (storedItem: StoredItem) => {
                             <FontAwesomeIcon icon="fal fa-check" class="text-blue-500 shrink-0" fixed-width aria-hidden="true" />
                         </div>
                         <div v-if="otherItems.length" class="px-2 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                            {{ trans('All SKOs') }}
+                            {{ ctrans('All SKOs') }}
                         </div>
                     </template>
 
@@ -192,12 +192,12 @@ const selectItem = async (storedItem: StoredItem) => {
                     </div>
 
                     <div v-if="storedItems.length === 0" class="py-4 text-xs text-gray-400 text-center">
-                        {{ trans('No SKOs found') }}
+                        {{ ctrans('No SKOs found') }}
                     </div>
                 </template>
                 <div v-if="loadingMore" class="flex items-center justify-center gap-2 py-2 text-xs text-gray-400">
                     <FontAwesomeIcon icon="fal fa-spinner" class="animate-spin" fixed-width aria-hidden="true" />
-                    {{ trans('Loading more...') }}
+                    {{ ctrans('Loading more...') }}
                 </div>
             </div>
         </div>

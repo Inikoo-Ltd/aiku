@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle } from '@fal'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCommentDollar, faInfoCircle)
 
@@ -50,10 +50,10 @@ const productFetchRoute = computed(() => ({
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
       <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-lg font-semibold text-gray-800">
-          {{ trans('Create Free Gift') }}
+          {{ ctrans('Create Free Gift') }}
         </h2>
         <p class="text-sm text-gray-500 mt-1">
-          {{ trans('Set gift value and assign products') }}
+          {{ ctrans('Set gift value and assign products') }}
         </p>
       </div>
 
@@ -61,7 +61,7 @@ const productFetchRoute = computed(() => ({
         <!-- Amount -->
         <div>
           <label class="block mb-1 text-sm font-medium text-gray-700">
-            {{ trans('Gift Amount') }}
+            {{ ctrans('Gift Amount') }}
           </label>
           <PureInputNumber v-model="form.amount" :min-value="0" class="w-full" />
           <p v-if="form.errors.amount" class="mt-1 text-sm text-red-600">
@@ -73,10 +73,10 @@ const productFetchRoute = computed(() => ({
 
         <div>
           <label class="block mb-1 text-sm font-medium text-gray-700">
-            {{ trans('Products') }}
+            {{ ctrans('Products') }}
           </label>
           <PureMultiselectInfiniteScroll v-model="form.product" mode="tags" :fetchRoute="productFetchRoute"
-            valueProp="id" label-prop="name" :object="true" :caret="false" :placeholder="trans('Select Product')" />
+            valueProp="id" label-prop="name" :object="true" :caret="false" :placeholder="ctrans('Select Product')" />
 
           <p v-if="form.errors.product" class="mt-1 text-sm text-red-600">
             {{ form.errors.product }}
@@ -88,7 +88,7 @@ const productFetchRoute = computed(() => ({
         <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <button type="submit" class="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium
                    hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed" :disabled="form.processing">
-            {{ form.processing ? trans('Saving...') : trans('Save Free Gift') }}
+            {{ form.processing ? ctrans('Saving...') : ctrans('Save Free Gift') }}
           </button>
         </div>
       </form>

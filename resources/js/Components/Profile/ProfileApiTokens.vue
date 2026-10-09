@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { ref } from 'vue'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -50,8 +50,8 @@ const onCreateToken = async () => {
         await refreshTokens()
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to create token.'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to create token.'),
             type: 'error',
         })
     } finally {
@@ -66,8 +66,8 @@ const onDeleteToken = async (token: ApiToken) => {
         await refreshTokens()
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to revoke token.'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to revoke token.'),
             type: 'error',
         })
     } finally {
@@ -95,18 +95,18 @@ const onCopySnippet = (key: string, text: string) => {
 <template>
     <div class="p-6 max-w-3xl space-y-6">
         <div class="space-y-3">
-            <h2 class="text-lg font-semibold">{{ trans('Connect Aiku to your AI assistant') }}</h2>
+            <h2 class="text-lg font-semibold">{{ ctrans('Connect Aiku to your AI assistant') }}</h2>
             <p class="text-sm text-gray-600">
-                {{ trans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku, and it can never change anything.') }}
+                {{ ctrans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku, and it can never change anything.') }}
             </p>
             <p class="text-sm text-gray-600">
-                {{ trans('You only need the address below. Your assistant will ask you to sign in to Aiku and approve it — no key to copy. (Perplexity is the exception: it asks for a key, see Access keys at the bottom.)') }}
+                {{ ctrans('You only need the address below. Your assistant will ask you to sign in to Aiku and approve it — no key to copy. (Perplexity is the exception: it asks for a key, see Access keys at the bottom.)') }}
             </p>
             <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-500">{{ trans('Address') }}:</span>
+                <span class="text-sm text-gray-500">{{ ctrans('Address') }}:</span>
                 <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs select-all">{{ mcpUrl }}</code>
                 <Button
-                    :label="copiedSnippet === 'url' ? trans('Copied!') : trans('Copy')"
+                    :label="copiedSnippet === 'url' ? ctrans('Copied!') : ctrans('Copy')"
                     icon="fal fa-copy"
                     type="tertiary"
                     size="xs"
@@ -119,12 +119,12 @@ const onCopySnippet = (key: string, text: string) => {
                     Claude
                 </summary>
                 <ol class="list-decimal space-y-1.5 px-4 pb-4 pl-9 pt-1 text-sm text-gray-600">
-                    <li>{{ trans('Open claude.ai and click your initials (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
-                    <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Connectors') }}</span>, {{ trans('then') }} <span class="font-medium">{{ trans('Add custom connector') }}</span></li>
-                    <li>{{ trans('Name: type') }} <span class="font-medium">Aiku</span>. {{ trans('URL: paste the address above') }}</li>
-                    <li>{{ trans('Click Connect — a page from Aiku opens. Sign in with your normal Aiku username and password and click Approve') }}</li>
-                    <li>{{ trans('Start a new chat and ask something, for example: "How many orders did my shop get this week?"') }}</li>
-                    <li class="text-gray-500">{{ trans('If Aiku is already listed from an earlier attempt, remove it first and add it again') }}</li>
+                    <li>{{ ctrans('Open claude.ai and click your initials (bottom left), then') }} <span class="font-medium">{{ ctrans('Settings') }}</span></li>
+                    <li>{{ ctrans('Click') }} <span class="font-medium">{{ ctrans('Connectors') }}</span>, {{ ctrans('then') }} <span class="font-medium">{{ ctrans('Add custom connector') }}</span></li>
+                    <li>{{ ctrans('Name: type') }} <span class="font-medium">Aiku</span>. {{ ctrans('URL: paste the address above') }}</li>
+                    <li>{{ ctrans('Click Connect — a page from Aiku opens. Sign in with your normal Aiku username and password and click Approve') }}</li>
+                    <li>{{ ctrans('Start a new chat and ask something, for example: "How many orders did my shop get this week?"') }}</li>
+                    <li class="text-gray-500">{{ ctrans('If Aiku is already listed from an earlier attempt, remove it first and add it again') }}</li>
                 </ol>
             </details>
 
@@ -133,13 +133,13 @@ const onCopySnippet = (key: string, text: string) => {
                     Perplexity
                 </summary>
                 <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
-                    <p class="text-xs text-amber-600">{{ trans('Only works on paid Perplexity plans.') }}</p>
+                    <p class="text-xs text-amber-600">{{ ctrans('Only works on paid Perplexity plans.') }}</p>
                     <ol class="list-decimal space-y-1.5 pl-5">
-                        <li>{{ trans('Open Perplexity and go to') }} <span class="font-medium">{{ trans('Settings') }}</span>, {{ trans('then') }} <span class="font-medium">{{ trans('Connectors') }}</span></li>
-                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('+ Custom connector') }}</span> {{ trans('and choose') }} <span class="font-medium">{{ trans('Remote') }}</span></li>
-                        <li>{{ trans('Name: type') }} <span class="font-medium">Aiku</span>. {{ trans('Server URL: paste the address above') }}</li>
-                        <li>{{ trans('For authentication choose') }} <span class="font-medium">{{ trans('API Key') }}</span> {{ trans('and paste your key') }}</li>
-                        <li>{{ trans('Accept the confirmation messages and you are done') }}</li>
+                        <li>{{ ctrans('Open Perplexity and go to') }} <span class="font-medium">{{ ctrans('Settings') }}</span>, {{ ctrans('then') }} <span class="font-medium">{{ ctrans('Connectors') }}</span></li>
+                        <li>{{ ctrans('Click') }} <span class="font-medium">{{ ctrans('+ Custom connector') }}</span> {{ ctrans('and choose') }} <span class="font-medium">{{ ctrans('Remote') }}</span></li>
+                        <li>{{ ctrans('Name: type') }} <span class="font-medium">Aiku</span>. {{ ctrans('Server URL: paste the address above') }}</li>
+                        <li>{{ ctrans('For authentication choose') }} <span class="font-medium">{{ ctrans('API Key') }}</span> {{ ctrans('and paste your key') }}</li>
+                        <li>{{ ctrans('Accept the confirmation messages and you are done') }}</li>
                     </ol>
                 </div>
             </details>
@@ -149,14 +149,14 @@ const onCopySnippet = (key: string, text: string) => {
                     ChatGPT
                 </summary>
                 <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
-                    <p class="text-xs text-amber-600">{{ trans('Needs a paid ChatGPT plan. No key needed — you will sign in with your normal Aiku login instead.') }}</p>
+                    <p class="text-xs text-amber-600">{{ ctrans('Needs a paid ChatGPT plan. No key needed — you will sign in with your normal Aiku login instead.') }}</p>
                     <ol class="list-decimal space-y-1.5 pl-5">
-                        <li>{{ trans('Open ChatGPT and click your name (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
-                        <li>{{ trans('Go to') }} <span class="font-medium">{{ trans('Connectors') }}</span>. {{ trans('If you do not see a create option, open') }} <span class="font-medium">{{ trans('Advanced') }}</span> {{ trans('and switch on') }} <span class="font-medium">{{ trans('Developer mode') }}</span></li>
-                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Create') }}</span>, {{ trans('name it') }} <span class="font-medium">Aiku</span> {{ trans('and paste the address above') }}</li>
-                        <li>{{ trans('Choose OAuth as authentication if asked, then click through — a page from Aiku will open') }}</li>
-                        <li>{{ trans('Sign in with your normal Aiku username and password and click Approve') }}</li>
-                        <li>{{ trans('In a new chat, enable the Aiku connector and ask your question') }}</li>
+                        <li>{{ ctrans('Open ChatGPT and click your name (bottom left), then') }} <span class="font-medium">{{ ctrans('Settings') }}</span></li>
+                        <li>{{ ctrans('Go to') }} <span class="font-medium">{{ ctrans('Connectors') }}</span>. {{ ctrans('If you do not see a create option, open') }} <span class="font-medium">{{ ctrans('Advanced') }}</span> {{ ctrans('and switch on') }} <span class="font-medium">{{ ctrans('Developer mode') }}</span></li>
+                        <li>{{ ctrans('Click') }} <span class="font-medium">{{ ctrans('Create') }}</span>, {{ ctrans('name it') }} <span class="font-medium">Aiku</span> {{ ctrans('and paste the address above') }}</li>
+                        <li>{{ ctrans('Choose OAuth as authentication if asked, then click through — a page from Aiku will open') }}</li>
+                        <li>{{ ctrans('Sign in with your normal Aiku username and password and click Approve') }}</li>
+                        <li>{{ ctrans('In a new chat, enable the Aiku connector and ask your question') }}</li>
                     </ol>
                 </div>
             </details>
@@ -166,29 +166,29 @@ const onCopySnippet = (key: string, text: string) => {
                     Google Gemini
                 </summary>
                 <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
-                    <p class="text-xs text-amber-600">{{ trans('Only works with a personal Google account — not a work or school account. No key needed.') }}</p>
+                    <p class="text-xs text-amber-600">{{ ctrans('Only works with a personal Google account — not a work or school account. No key needed.') }}</p>
                     <ol class="list-decimal space-y-1.5 pl-5">
-                        <li>{{ trans('Open gemini.google.com, click') }} <span class="font-medium">{{ trans('Settings & help') }}</span> ({{ trans('bottom left') }}), {{ trans('then') }} <span class="font-medium">{{ trans('Connected apps') }}</span></li>
-                        <li>{{ trans('Under custom apps, click to add one and paste the address above') }}</li>
-                        <li>{{ trans('Follow the steps on screen — when an Aiku page opens, sign in with your Aiku username and password and click Approve') }}</li>
-                        <li>{{ trans('Ask Gemini something like "How many orders did my shop get this week?"') }}</li>
+                        <li>{{ ctrans('Open gemini.google.com, click') }} <span class="font-medium">{{ ctrans('Settings & help') }}</span> ({{ ctrans('bottom left') }}), {{ ctrans('then') }} <span class="font-medium">{{ ctrans('Connected apps') }}</span></li>
+                        <li>{{ ctrans('Under custom apps, click to add one and paste the address above') }}</li>
+                        <li>{{ ctrans('Follow the steps on screen — when an Aiku page opens, sign in with your Aiku username and password and click Approve') }}</li>
+                        <li>{{ ctrans('Ask Gemini something like "How many orders did my shop get this week?"') }}</li>
                     </ol>
                 </div>
             </details>
 
             <p class="text-xs text-gray-500">
-                {{ trans('Your AI can only read Aiku, it can never change or delete anything. It sees exactly what you can see, nothing more.') }}
+                {{ ctrans('Your AI can only read Aiku, it can never change or delete anything. It sees exactly what you can see, nothing more.') }}
             </p>
         </div>
 
             <details class="rounded-md border border-gray-200 mt-6">
                 <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
-                    {{ trans('Access keys') }}
-                    <span class="font-normal text-gray-400">— {{ trans('only if your assistant asks for one, like Perplexity') }}</span>
+                    {{ ctrans('Access keys') }}
+                    <span class="font-normal text-gray-400">— {{ ctrans('only if your assistant asks for one, like Perplexity') }}</span>
                 </summary>
                 <div class="space-y-4 px-4 pb-4 pt-2">
         <p class="text-sm text-gray-500">
-            {{ trans('A key works like a password: anyone who has it can read your Aiku data. Only create one if your assistant asks for a key instead of letting you sign in.') }}
+            {{ ctrans('A key works like a password: anyone who has it can read your Aiku data. Only create one if your assistant asks for a key instead of letting you sign in.') }}
         </p>
 
         <form class="flex gap-2" @submit.prevent="onCreateToken">
@@ -196,12 +196,12 @@ const onCopySnippet = (key: string, text: string) => {
                 v-model="newTokenName"
                 type="text"
                 maxlength="64"
-                :placeholder="trans('Give your key a name, e.g. Perplexity')"
+                :placeholder="ctrans('Give your key a name, e.g. Perplexity')"
                 class="flex-1 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
             <Button
                 nativeType="submit"
-                :label="trans('Create key')"
+                :label="ctrans('Create key')"
                 icon="fal fa-key"
                 :loading="isCreating"
                 :disabled="!newTokenName.trim()"
@@ -210,12 +210,12 @@ const onCopySnippet = (key: string, text: string) => {
 
         <div v-if="newPlainTextToken" class="rounded-md border border-amber-300 bg-amber-50 p-4 space-y-2">
             <p class="text-sm font-medium text-amber-800">
-                {{ trans('Copy your key now and keep it somewhere safe. For security, it will not be shown again.') }}
+                {{ ctrans('Copy your key now and keep it somewhere safe. For security, it will not be shown again.') }}
             </p>
             <div class="flex items-center gap-2">
                 <code class="flex-1 break-all rounded bg-white px-2 py-1 text-xs border border-amber-200 select-all">{{ newPlainTextToken }}</code>
                 <Button
-                    :label="isCopied ? trans('Copied!') : trans('Copy')"
+                    :label="isCopied ? ctrans('Copied!') : ctrans('Copy')"
                     icon="fal fa-copy"
                     type="tertiary"
                     size="xs"
@@ -227,9 +227,9 @@ const onCopySnippet = (key: string, text: string) => {
         <table v-if="tokens.length" class="w-full text-sm">
             <thead>
                 <tr class="border-b text-left text-gray-500">
-                    <th class="py-2 font-medium">{{ trans('Name') }}</th>
-                    <th class="py-2 font-medium">{{ trans('Created') }}</th>
-                    <th class="py-2 font-medium">{{ trans('Last used') }}</th>
+                    <th class="py-2 font-medium">{{ ctrans('Name') }}</th>
+                    <th class="py-2 font-medium">{{ ctrans('Created') }}</th>
+                    <th class="py-2 font-medium">{{ ctrans('Last used') }}</th>
                     <th class="py-2"></th>
                 </tr>
             </thead>
@@ -239,10 +239,10 @@ const onCopySnippet = (key: string, text: string) => {
                         <FontAwesomeIcon icon="fal fa-key" class="mr-1.5 text-gray-400" fixed-width />{{ token.name }}
                     </td>
                     <td class="py-2 text-gray-500">{{ useFormatTime(token.created_at) }}</td>
-                    <td class="py-2 text-gray-500">{{ token.last_used_at ? useFormatTime(token.last_used_at) : trans('Never') }}</td>
+                    <td class="py-2 text-gray-500">{{ token.last_used_at ? useFormatTime(token.last_used_at) : ctrans('Never') }}</td>
                     <td class="py-2 text-right">
                         <Button
-                            :label="trans('Revoke')"
+                            :label="ctrans('Revoke')"
                             icon="fal fa-trash-alt"
                             type="negative"
                             size="xs"
@@ -254,7 +254,7 @@ const onCopySnippet = (key: string, text: string) => {
             </tbody>
         </table>
         <div v-else class="text-sm text-gray-400 italic">
-            {{ trans('No keys yet.') }}
+            {{ ctrans('No keys yet.') }}
         </div>
                 </div>
             </details>

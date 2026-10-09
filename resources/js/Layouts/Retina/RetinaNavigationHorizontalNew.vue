@@ -18,7 +18,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import { routeType } from "@/types/route"
 import { useTruncate } from "@/Composables/useTruncate"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Fieldset from "primevue/fieldset"
 
 library.add(faChevronLeft, faChevronRight, faParachuteBox, faMoneyBillWave)
@@ -131,7 +131,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 <Transition v-if="currentActiveHorizontal?.img" name="spin-to-down">
                     <div :key="currentActiveHorizontal?.img" v-tooltip="currentActiveHorizontal?.img_tooltip" class="pl-0.5 h-4 w-[11.5px] min-w-[11.5px] flex items-center justify-center">
                         <LoadingIcon v-if="isLoadingVisitActiveHorizontal" class=""/>
-                        <img v-else :src="currentActiveHorizontal?.img" :alt="trans('Logo')" class="h-4 w-auto max-w-[16px]" />
+                        <img v-else :src="currentActiveHorizontal?.img" :alt="ctrans('Logo')" class="h-4 w-auto max-w-[16px]" />
                     </div>
                 </Transition>
 

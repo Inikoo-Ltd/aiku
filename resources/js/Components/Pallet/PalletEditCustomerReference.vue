@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 import Button from '../Elements/Buttons/Button.vue'
 import { PalletDelivery } from '@/types/Pallet'
@@ -37,16 +37,16 @@ const onUpdateCustomerReference = () => {
         onStart: () => isLoadingSaveCustomer.value = true,
         onError: () => {
             notify({
-                title: trans("Failed"),
-                text: trans("Failed to update the Customer reference, try again."),
+                title: ctrans("Failed"),
+                text: ctrans("Failed to update the Customer reference, try again."),
                 type: "error",
             })
         },
         onSuccess: () => {
             showModalEdit.value = false,
             notify({
-                title: trans("Success"),
-                text: trans("Customer reference updated successfully."),
+                title: ctrans("Success"),
+                text: ctrans("Customer reference updated successfully."),
                 type: "success",
             }),
             cloneCustomerReference.value = props.dataPalletDelivery.customer_reference
@@ -58,10 +58,10 @@ const onUpdateCustomerReference = () => {
 
 <template>
     <div @click="disabled ? false : showModalEdit = !showModalEdit" class="flex gap-x-1 items-center truncate">
-        <FontAwesomeIcon  v-tooltip="trans('Customer Reference')" icon='fal fa-hashtag' class='text-gray-400' fixed-width aria-hidden='true' />
+        <FontAwesomeIcon  v-tooltip="ctrans('Customer Reference')" icon='fal fa-hashtag' class='text-gray-400' fixed-width aria-hidden='true' />
         <template v-if="!disabled">
             <template v-if="!dataPalletDelivery.customer_reference">
-                <Button type="dashed" size="xs"><span class="text-gray-400">{{ trans("Edit Customer reference") }}</span></Button>
+                <Button type="dashed" size="xs"><span class="text-gray-400">{{ ctrans("Edit Customer reference") }}</span></Button>
             </template>
             <div v-else class="group border-b border-dashed border-gray-400 hover:border-solid hover:border-gray-500 cursor-pointer">
                 <span class="text-gray-500 truncate">{{ dataPalletDelivery.customer_reference }}</span>
@@ -74,7 +74,7 @@ const onUpdateCustomerReference = () => {
 
         
         <Modal :isOpen="showModalEdit" @onClose="showModalEdit = false" width="w-full max-w-lg">
-            <h2 class="text-lg font-semibold mb-2">{{ trans("Edit Customer Reference") }}</h2>
+            <h2 class="text-lg font-semibold mb-2">{{ ctrans("Edit Customer Reference") }}</h2>
             <div class="flex gap-x-2">
                 <PureInput
                     v-model="cloneCustomerReference"
@@ -85,7 +85,7 @@ const onUpdateCustomerReference = () => {
 
                 <Button type="primary" @click="onUpdateCustomerReference" :loading="isLoadingSaveCustomer">
                     <LoadingIcon v-if="isLoadingSaveCustomer" />
-                    {{ trans('Save') }}
+                    {{ ctrans('Save') }}
                     <FontAwesomeIcon icon='fas fa-level-down' class='rotate-90' fixed-width aria-hidden='true' />
                 </Button>
             </div>

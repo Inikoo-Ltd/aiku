@@ -9,7 +9,7 @@ import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faCalendarAlt, faPlus, faTrashAlt, faPencil } from "@fal";
 
@@ -146,7 +146,7 @@ const toggleActive = (item: any) => {
         <form class="space-y-4" @submit.prevent="submitCreate">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Label') }}
+                    {{ ctrans('Label') }}
                 </label>
                 <input
                     v-model="form.label"
@@ -161,7 +161,7 @@ const toggleActive = (item: any) => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Start Date') }}
+                    {{ ctrans('Start Date') }}
                 </label>
                 <input
                     v-model="form.start_date"
@@ -175,7 +175,7 @@ const toggleActive = (item: any) => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('End Date') }}
+                    {{ ctrans('End Date') }}
                 </label>
                 <input
                     v-model="form.end_date"
@@ -195,7 +195,7 @@ const toggleActive = (item: any) => {
                     class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="is_active" class="text-sm text-gray-700">
-                    {{ trans('Set as active holiday year') }}
+                    {{ ctrans('Set as active holiday year') }}
                 </label>
             </div>
 
@@ -203,13 +203,13 @@ const toggleActive = (item: any) => {
                 <Button
                     type="secondary"
                     size="sm"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     @click.prevent="closeCreateModal"
                 />
                 <Button
                     type="create"
                     size="sm"
-                    :label="trans('Save')"
+                    :label="ctrans('Save')"
                     nativeType="submit"
                     :disabled="form.processing"
                 />
@@ -221,7 +221,7 @@ const toggleActive = (item: any) => {
         <form class="space-y-4" @submit.prevent="submitEdit">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Label') }}
+                    {{ ctrans('Label') }}
                 </label>
                 <input
                     v-model="editForm.label"
@@ -235,7 +235,7 @@ const toggleActive = (item: any) => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Start Date') }}
+                    {{ ctrans('Start Date') }}
                 </label>
                 <input
                     v-model="editForm.start_date"
@@ -249,7 +249,7 @@ const toggleActive = (item: any) => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('End Date') }}
+                    {{ ctrans('End Date') }}
                 </label>
                 <input
                     v-model="editForm.end_date"
@@ -269,7 +269,7 @@ const toggleActive = (item: any) => {
                     class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="edit_is_active" class="text-sm text-gray-700">
-                    {{ trans('Set as active holiday year') }}
+                    {{ ctrans('Set as active holiday year') }}
                 </label>
             </div>
 
@@ -277,13 +277,13 @@ const toggleActive = (item: any) => {
                 <Button
                     type="secondary"
                     size="sm"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     @click.prevent="closeEditModal"
                 />
                 <Button
                     type="create"
                     size="sm"
-                    :label="trans('Save changes')"
+                    :label="ctrans('Save changes')"
                     nativeType="submit"
                     :disabled="editForm.processing"
                 />
@@ -324,7 +324,7 @@ const toggleActive = (item: any) => {
                     type="secondary"
                     size="xs"
                     icon="fal fa-pencil"
-                    :label="trans('Edit')"
+                    :label="ctrans('Edit')"
                     @click="openEditModal(item)"
                 />
                 <!--
@@ -336,7 +336,7 @@ const toggleActive = (item: any) => {
                             holiday_year: item.id,
                         },
                     }"
-                    :title="trans('Are you sure you want to delete this holiday year?')"
+                    :title="ctrans('Are you sure you want to delete this holiday year?')"
                     isFullLoading
                 >
                     <template #default="{ changeModel }">
@@ -344,7 +344,7 @@ const toggleActive = (item: any) => {
                             type="negative"
                             size="xs"
                             icon="fal fa-trash-alt"
-                            :label="trans('Delete')"
+                            :label="ctrans('Delete')"
                             @click="changeModel"
                         />
                     </template>

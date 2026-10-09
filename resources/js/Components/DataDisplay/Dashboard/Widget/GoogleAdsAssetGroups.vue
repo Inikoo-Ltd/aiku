@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { youtubeUrl } from "@/Composables/googleAdsCriteria"
 
@@ -65,11 +65,11 @@ const strengthClass = (strength: string | null) => {
 }
 
 const textBuckets = [
-    { field: "HEADLINE", label: trans("Headlines") },
-    { field: "LONG_HEADLINE", label: trans("Long headlines") },
-    { field: "DESCRIPTION", label: trans("Descriptions") },
-    { field: "BUSINESS_NAME", label: trans("Business name") },
-    { field: "CALL_TO_ACTION_SELECTION", label: trans("Button") },
+    { field: "HEADLINE", label: ctrans("Headlines") },
+    { field: "LONG_HEADLINE", label: ctrans("Long headlines") },
+    { field: "DESCRIPTION", label: ctrans("Descriptions") },
+    { field: "BUSINESS_NAME", label: ctrans("Business name") },
+    { field: "CALL_TO_ACTION_SELECTION", label: ctrans("Button") },
 ]
 
 const textsByField = (texts: Asset[], field: string) => texts.filter((asset) => asset.field_type === field)
@@ -93,33 +93,33 @@ const groups = computed(() => props.assetGroups)
                     {{ enumLabel(group.primary_status) }}
                 </span>
                 <span class="rounded px-1.5 py-0.5 text-[11px] capitalize" :class="strengthClass(group.ad_strength)">
-                    {{ group.ad_strength ? enumLabel(group.ad_strength) : trans("not rated yet") }}
+                    {{ group.ad_strength ? enumLabel(group.ad_strength) : ctrans("not rated yet") }}
                 </span>
             </div>
 
             <div v-if="group.metrics" class="mt-2 grid grid-cols-3 gap-2 text-xs sm:grid-cols-6">
                 <div>
-                    <div class="text-gray-500">{{ trans("Impressions") }}</div>
+                    <div class="text-gray-500">{{ ctrans("Impressions") }}</div>
                     <div class="tabular-nums text-gray-800">{{ locale.number(group.metrics.impressions) }}</div>
                 </div>
                 <div>
-                    <div class="text-gray-500">{{ trans("Clicks") }}</div>
+                    <div class="text-gray-500">{{ ctrans("Clicks") }}</div>
                     <div class="tabular-nums text-gray-800">{{ locale.number(group.metrics.clicks) }}</div>
                 </div>
                 <div>
-                    <div class="text-gray-500">{{ trans("Cost") }}</div>
+                    <div class="text-gray-500">{{ ctrans("Cost") }}</div>
                     <div class="tabular-nums text-gray-800">{{ money(group.metrics.cost) }}</div>
                 </div>
                 <div>
-                    <div class="text-gray-500">{{ trans("Conversions") }}</div>
+                    <div class="text-gray-500">{{ ctrans("Conversions") }}</div>
                     <div class="tabular-nums text-gray-800">{{ locale.number(group.metrics.conversions) }}</div>
                 </div>
                 <div>
-                    <div class="text-gray-500">{{ trans("Conv. value") }}</div>
+                    <div class="text-gray-500">{{ ctrans("Conv. value") }}</div>
                     <div class="tabular-nums text-gray-800">{{ money(group.metrics.conversions_value) }}</div>
                 </div>
                 <div>
-                    <div class="text-gray-500">{{ trans("ROAS") }}</div>
+                    <div class="text-gray-500">{{ ctrans("ROAS") }}</div>
                     <div class="tabular-nums" :class="group.metrics.roas === null ? 'text-gray-400' : group.metrics.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                         {{ group.metrics.roas === null ? "—" : group.metrics.roas.toFixed(2) + "×" }}
                     </div>
@@ -129,13 +129,13 @@ const groups = computed(() => props.assetGroups)
 
             <dl class="mt-3 space-y-2 text-xs">
                 <div v-if="group.search_themes.length" class="flex flex-wrap gap-x-3 gap-y-1">
-                    <dt class="w-36 shrink-0 text-gray-500">{{ trans("Search themes") }}</dt>
+                    <dt class="w-36 shrink-0 text-gray-500">{{ ctrans("Search themes") }}</dt>
                     <dd class="flex flex-wrap gap-1">
                         <span v-for="theme in group.search_themes" :key="theme" class="rounded bg-gray-100 px-2 py-0.5 text-gray-700">{{ theme }}</span>
                     </dd>
                 </div>
                 <div v-if="group.audience_signals.length" class="flex flex-wrap gap-x-3 gap-y-1">
-                    <dt class="w-36 shrink-0 text-gray-500">{{ trans("Audience signals") }}</dt>
+                    <dt class="w-36 shrink-0 text-gray-500">{{ ctrans("Audience signals") }}</dt>
                     <dd class="flex flex-wrap gap-1">
                         <span v-for="signal in group.audience_signals" :key="signal" class="rounded bg-gray-100 px-2 py-0.5 text-gray-700">{{ signal }}</span>
                     </dd>
@@ -158,7 +158,7 @@ const groups = computed(() => props.assetGroups)
                 </template>
 
                 <div v-if="group.assets.images.length" class="flex flex-wrap gap-x-3 gap-y-1">
-                    <dt class="w-36 shrink-0 text-gray-500">{{ trans("Images") }}</dt>
+                    <dt class="w-36 shrink-0 text-gray-500">{{ ctrans("Images") }}</dt>
                     <dd class="flex flex-wrap gap-2">
                         <a
                             v-for="asset in group.assets.images"
@@ -169,19 +169,19 @@ const groups = computed(() => props.assetGroups)
                             class="block rounded ring-1 ring-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                             :class="notRunning(asset) ? 'opacity-40' : ''"
                             :title="(asset.name ?? '') + (notRunning(asset) ? ' · ' + enumLabel(asset.primary_status) : '')">
-                            <img v-if="asset.url" :src="asset.url" :alt="asset.name ?? trans('Image')" loading="lazy" class="h-20 w-auto max-w-[12rem] rounded object-contain" />
+                            <img v-if="asset.url" :src="asset.url" :alt="asset.name ?? ctrans('Image')" loading="lazy" class="h-20 w-auto max-w-[12rem] rounded object-contain" />
                         </a>
                     </dd>
                 </div>
 
                 <div v-if="group.assets.logos.length" class="flex flex-wrap gap-x-3 gap-y-1">
-                    <dt class="w-36 shrink-0 text-gray-500">{{ trans("Logos") }}</dt>
+                    <dt class="w-36 shrink-0 text-gray-500">{{ ctrans("Logos") }}</dt>
                     <dd class="flex flex-wrap items-center gap-2">
                         <img
                             v-for="asset in group.assets.logos"
                             :key="asset.url ?? asset.name ?? ''"
                             :src="asset.url ?? undefined"
-                            :alt="asset.name ?? trans('Logo')"
+                            :alt="asset.name ?? ctrans('Logo')"
                             loading="lazy"
                             class="h-8 w-auto rounded ring-1 ring-gray-100"
                             :class="notRunning(asset) ? 'opacity-40' : ''" />
@@ -189,19 +189,19 @@ const groups = computed(() => props.assetGroups)
                 </div>
 
                 <div v-if="group.assets.videos.length" class="flex flex-wrap gap-x-3 gap-y-1">
-                    <dt class="w-36 shrink-0 text-gray-500">{{ trans("Videos") }}</dt>
+                    <dt class="w-36 shrink-0 text-gray-500">{{ ctrans("Videos") }}</dt>
                     <dd class="space-y-0.5">
                         <div v-for="asset in group.assets.videos" :key="asset.video_id ?? asset.name ?? ''">
                             <a v-if="asset.video_id" :href="youtubeUrl(asset.video_id)" target="_blank" rel="noopener noreferrer" class="primaryLink" :class="notRunning(asset) ? 'line-through opacity-60' : ''">
                                 {{ asset.video_title ?? asset.name ?? asset.video_id }}
                             </a>
-                            <span v-else class="text-gray-500">{{ asset.name ?? trans("Video") }}</span>
+                            <span v-else class="text-gray-500">{{ asset.name ?? ctrans("Video") }}</span>
                         </div>
                     </dd>
                 </div>
 
                 <div v-if="group.final_urls.length" class="flex flex-wrap gap-x-3 gap-y-1">
-                    <dt class="w-36 shrink-0 text-gray-500">{{ trans("Lands on") }}</dt>
+                    <dt class="w-36 shrink-0 text-gray-500">{{ ctrans("Lands on") }}</dt>
                     <dd>
                         <a v-for="url in group.final_urls" :key="url" :href="url" target="_blank" rel="noopener noreferrer" class="primaryLink block truncate">{{ url }}</a>
                     </dd>

@@ -12,7 +12,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from './Blueprint'
 import { routeType } from '@/types/route'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -106,7 +106,7 @@ function activateBlock() {
               )
             }">
               <span class="text-base font-semibold text-center">
-                {{ trans("View All") }}
+                {{ ctrans("View All") }}
               </span>
             </div>
           </div>

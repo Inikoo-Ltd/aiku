@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationTriangle, faChevronDown, faChevronRight } from '@fal'
@@ -70,7 +70,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('Faire orders not imported') }}
+            {{ ctrans('Faire orders not imported') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
@@ -116,7 +116,7 @@ function toggleOrg(orgSlug: string): void {
                                 {{ reason }}
                             </p>
                             <p class="pl-5 text-xs text-gray-400 italic">
-                                {{ trans('Fix the product on Faire and the order will import automatically.') }}
+                                {{ ctrans('Fix the product on Faire and the order will import automatically.') }}
                             </p>
                         </div>
                     </div>

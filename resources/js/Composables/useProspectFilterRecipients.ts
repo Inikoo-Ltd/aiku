@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 import { debounce } from 'lodash-es'
 import axios from 'axios'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 
 export function useProspectFilterRecipients(props: any) {
@@ -84,7 +84,7 @@ export function useProspectFilterRecipients(props: any) {
         const conflictWith = hasConflict(key)
         if (conflictWith) {
             notify({
-                title: trans("Filter conflict"),
+                title: ctrans("Filter conflict"),
                 text: `"${config.label}" cannot be combined with "${activeFilters.value[conflictWith].config.label}"`,
                 type: "error"
             })
@@ -265,14 +265,14 @@ export function useProspectFilterRecipients(props: any) {
             .then((response) => {
 
                 notify({
-                    title: trans('Success!'),
-                    text: trans('Success to save filter'),
+                    title: ctrans('Success!'),
+                    text: ctrans('Success to save filter'),
                     type: 'success',
                 })
             })
             .catch((error) => {
                 notify({
-                    title: trans("Failed to save filter"),
+                    title: ctrans("Failed to save filter"),
                     type: "error",
                 })
             })

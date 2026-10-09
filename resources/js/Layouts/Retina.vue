@@ -27,7 +27,7 @@ import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExcla
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 
 import Modal from "@/Components/Utils/Modal.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faSearch, faBell, faPlus, faLayerGroup } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal, faSave as fadSave } from '@fad'

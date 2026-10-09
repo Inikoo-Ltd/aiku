@@ -5,7 +5,7 @@ import { Tooltip } from 'floating-vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faQuestionCircle)
 
@@ -329,48 +329,48 @@ const predictedStartPosition = computed(() => {
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-2">
-                <h2 class="text-xl font-semibold text-gray-700">{{ trans('PREDICTIVE ANALYTICS') }}</h2>
+                <h2 class="text-xl font-semibold text-gray-700">{{ ctrans('PREDICTIVE ANALYTICS') }}</h2>
             </div>
             <slot name="close"></slot>
         </div>
 
-        <h3 class="text-sm text-gray-600 mb-6">{{ trans('Customer Lifetime Value (CLV)') }}</h3>
+        <h3 class="text-sm text-gray-600 mb-6">{{ ctrans('Customer Lifetime Value (CLV)') }}</h3>
 
         <!-- CLV Values -->
         <div class="flex items-start justify-center gap-12 mb-6">
             <div class="text-center">
                 <div class="text-sm text-gray-500 mb-1 flex items-center justify-center gap-1">
-                    <span>{{ trans('Historic CLV') }}</span>
+                    <span>{{ ctrans('Historic CLV') }}</span>
                     <Tooltip placement="top">
                         <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" fixed-width />
                         <template #popper>
                             <div class="text-xs">
-                                {{ trans('Historical CLV = Average Purchase Value × Total Order') }}
+                                {{ ctrans('Historical CLV = Average Purchase Value × Total Order') }}
                             </div>
                         </template>
                     </Tooltip>
                 </div>
                 <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
                     historicCLV.toFixed(2)) }}</div>
-                <div class="text-xs text-gray-400">{{ props?.data?.number_orders_state_dispatched }} {{ trans('orders') }}</div>
+                <div class="text-xs text-gray-400">{{ props?.data?.number_orders_state_dispatched }} {{ ctrans('orders') }}</div>
             </div>
 
             <div class="text-3xl text-gray-300 self-center">+</div>
             <div class="text-center">
                 <div class="text-sm text-gray-500 mb-1 flex items-center justify-center gap-1">
-                    <span>{{ trans('Predicted CLV') }}</span>
+                    <span>{{ ctrans('Predicted CLV') }}</span>
                     <Tooltip placement="top">
                         <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" fixed-width />
                         <template #popper>
                             <div class="text-xs">
-                                {{ trans('Predicted CLV = Customer Value (per month) × Expected Remaining Lifespan (Months)') }}
+                                {{ ctrans('Predicted CLV = Customer Value (per month) × Expected Remaining Lifespan (Months)') }}
                             </div>
                         </template>
                     </Tooltip>
                 </div>
                 <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
                     predictedCLV.toFixed(2)) }}</div>
-                <div class="text-xs text-gray-400">{{ trans('Predicted') }}</div>
+                <div class="text-xs text-gray-400">{{ ctrans('Predicted') }}</div>
             </div>
         </div>
 
@@ -410,58 +410,58 @@ const predictedStartPosition = computed(() => {
                 <div class="font-semibold mb-1">{{ hoveredOrder.date }}</div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>{{ trans('Avg Purchase Value') }}: ${{ hoveredOrder.avgPurchaseValue.toFixed(2) }} ({{
+                    <span>{{ ctrans('Avg Purchase Value') }}: ${{ hoveredOrder.avgPurchaseValue.toFixed(2) }} ({{
                         hoveredOrder.valuePercent.toFixed(1) }}%)</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span>{{ trans('Avg Frequency') }}: {{ hoveredOrder.avgPurchaseFrequency.toFixed(2) }}/mo ({{
+                    <span>{{ ctrans('Avg Frequency') }}: {{ hoveredOrder.avgPurchaseFrequency.toFixed(2) }}/mo ({{
                         hoveredOrder.frequencyPercent.toFixed(1) }}%)</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>{{ trans('Avg Lifespan') }}: {{ hoveredOrder.avgCustomerLifespan.toFixed(1) }} mo ({{
+                    <span>{{ ctrans('Avg Lifespan') }}: {{ hoveredOrder.avgCustomerLifespan.toFixed(1) }} mo ({{
                         hoveredOrder.lifespanPercent.toFixed(1) }}%)</span>
                 </div>
-                <div v-if="hoveredOrder.predicted" class="text-blue-300 mt-1 text-center">{{ trans('Predicted') }}</div>
+                <div v-if="hoveredOrder.predicted" class="text-blue-300 mt-1 text-center">{{ ctrans('Predicted') }}</div>
             </div>
 
             <!-- Timeline labels -->
             <div class="flex justify-between mt-2 text-xs text-gray-500">
                 <span>Sep 17, 2016</span>
-                <span :style="{ position: 'relative', left: (todayPosition - 50) + '%' }">{{ trans('Today') }}</span>
-                <span>+1 {{ trans('Year') }}</span>
+                <span :style="{ position: 'relative', left: (todayPosition - 50) + '%' }">{{ ctrans('Today') }}</span>
+                <span>+1 {{ ctrans('Year') }}</span>
             </div>
         </div>
 
         <!-- Churn probability legend -->
         <div class="flex items-center justify-center gap-3 mb-6">
-            <span class="text-xs text-gray-500">{{ trans('Churn Probability') }}:</span>
+            <span class="text-xs text-gray-500">{{ ctrans('Churn Probability') }}:</span>
             <div class="flex items-center gap-1">
-                <span class="text-xs text-gray-500">{{ trans('Low') }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans('Low') }}</span>
                 <div class="w-32 h-3 rounded"
                     style="background: linear-gradient(to right,  #A3FFC3, #EBE571,#FF8B42)" />
-                <span class="text-xs text-gray-500">{{ trans('High') }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans('High') }}</span>
             </div>
         </div>
 
         <!-- Statistics -->
         <div class="space-y-2 text-sm">
             <div class="flex justify-between">
-                <span class="text-gray-600">{{ trans('Total CLV') }}</span>
+                <span class="text-gray-600">{{ ctrans('Total CLV') }}</span>
                 <span class="font-medium text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
                     totalCLV.toFixed(2)) }}</span>
             </div>
             <div class="flex justify-between">
-                <span class="text-gray-600">{{ trans('Churn Risk Prediction') }}</span>
+                <span class="text-gray-600">{{ ctrans('Churn Risk Prediction') }}</span>
                 <span class="font-medium text-gray-800">{{ churnRiskPrediction }}%</span>
             </div>
             <div class="flex justify-between">
-                <span class="text-gray-600">{{ trans('Average Time Between Orders') }}</span>
-                <span class="font-medium text-gray-800">{{ avgTimeBetweenOrders }} {{ trans('days') }}</span>
+                <span class="text-gray-600">{{ ctrans('Average Time Between Orders') }}</span>
+                <span class="font-medium text-gray-800">{{ avgTimeBetweenOrders }} {{ ctrans('days') }}</span>
             </div>
             <div class="flex justify-between">
-                <span class="text-gray-600">{{ trans('Average Order Value') }}</span>
+                <span class="text-gray-600">{{ ctrans('Average Order Value') }}</span>
                 <span class="font-medium text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
                     avgOrderValue.toFixed(2)) }}</span>
             </div>

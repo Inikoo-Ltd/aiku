@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Toggle from "@/Components/Pure/Toggle.vue"
 
 const model = defineModel<boolean>({
@@ -10,11 +10,11 @@ const model = defineModel<boolean>({
 <template>
     <div class="flex items-center gap-x-2">
         <div :class="!model ? 'text-gray-600' : 'text-gray-400'">
-            {{ trans("Edit") }}
+            {{ ctrans("Edit") }}
         </div>
         <Toggle v-model="model" />
         <div :class="model ? 'text-gray-600' : 'text-gray-400'">
-            {{ trans("Preview") }}
+            {{ ctrans("Preview") }}
         </div>
     </div>
 </template>

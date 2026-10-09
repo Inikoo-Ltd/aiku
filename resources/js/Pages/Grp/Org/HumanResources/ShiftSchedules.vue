@@ -3,7 +3,7 @@ import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableShiftSchedules from "@/Components/Tables/Grp/Org/HumanResources/TableShiftSchedules.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import Dialog from "primevue/dialog"
@@ -38,16 +38,16 @@ const submitForm = async () => {
 		})
 		isModalOpen.value = false
 		notify({
-			title: trans("Success"),
-			text: trans("Done, shift added successfully"),
+			title: ctrans("Success"),
+			text: ctrans("Done, shift added successfully"),
 			type: "success",
 		})
 		router.reload()
 	} catch (error: any) {
 		console.error("Failed to create shift schedule:", error)
 		notify({
-			title: trans("Error"),
-			text: error.response?.data?.message || trans("Failed to create shift schedule"),
+			title: ctrans("Error"),
+			text: error.response?.data?.message || ctrans("Failed to create shift schedule"),
 			type: "error",
 		})
 	} finally {
@@ -64,7 +64,7 @@ const submitForm = async () => {
 				@click="openCreateModal"
 				type="create"
 				icon="fal fa-plus"
-				:label="trans('Create Shift')"
+				:label="ctrans('Create Shift')"
 				capitalize />
 		</template>
 	</PageHeading>
@@ -90,9 +90,9 @@ const submitForm = async () => {
 			</div>
 
 			<div class="flex justify-end gap-2 mt-6">
-				<Button :label="trans('Cancel')" type="exit" @click="isModalOpen = false" />
+				<Button :label="ctrans('Cancel')" type="exit" @click="isModalOpen = false" />
 				<Button
-					:label="isSubmitting ? trans('Creating...') : trans('Create')"
+					:label="isSubmitting ? ctrans('Creating...') : ctrans('Create')"
 					type="primary"
 					:disabled="isSubmitting || !form.name.trim()"
 					:loading="isSubmitting"

@@ -6,7 +6,7 @@ import BorderProperty from '@/Components/Workshop/Properties/BorderProperty.vue'
 import TextProperty from '@/Components/Workshop/Properties/TextProperty.vue'
 import DimensionProperty from '@/Components/Workshop/Properties/DimensionProperty.vue'
 import ButtonsProperty from '@/Components/CMS/Fields/ButtonProperties.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import Link from '@/Components/CMS/Fields/Link.vue'
@@ -73,8 +73,8 @@ const model = defineModel<ModelButtonProperties>()
 
 <template>
     <div  class="py-1.5">
-        <!-- <div class="w-full text-center py-2 font-semibold select-none bg-gray-100 mb-3">{{ trans('Link') }}</div> -->
-        <div  class="w-full my-2 py-1 font-semibold select-none text-sm border-b border-gray-300">{{ trans("Link") }}</div>
+        <!-- <div class="w-full text-center py-2 font-semibold select-none bg-gray-100 mb-3">{{ ctrans('Link') }}</div> -->
+        <div  class="w-full my-2 py-1 font-semibold select-none text-sm border-b border-gray-300">{{ ctrans("Link") }}</div>
         <div class="">
             <Link :modelValue="get(model, 'link', '')" @update:modelValue=" (newVal: string) => set(model, 'link', newVal)" />
             <!-- <PureInput v-model="model.link" /> -->
@@ -82,19 +82,19 @@ const model = defineModel<ModelButtonProperties>()
     </div>
 
     <div v-if="model?.container?.properties.dimension" class=" pb-3">
-       <!--  <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Dimension') }}</div> -->
-       <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ trans('Dimension') }}</div>
+       <!--  <div class="w-full text-center py-1 font-semibold select-none">{{ ctrans('Dimension') }}</div> -->
+       <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ ctrans('Dimension') }}</div>
         <DimensionProperty v-model="model.container.properties.dimension" />
     </div>
 
     <div v-if="model?.container?.properties?.background" class=" pb-3">
-        <!-- <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Background') }}</div> -->
-        <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ trans('Background') }}</div>
+        <!-- <div class="w-full text-center py-1 font-semibold select-none">{{ ctrans('Background') }}</div> -->
+        <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ ctrans('Background') }}</div>
         <BackgroundProperty v-model="model.container.properties.background" />
     </div>
 
     <div v-if="model?.container?.properties?.text" class=" pb-3">
-      <!--   <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Text') }}</div> -->
+      <!--   <div class="w-full text-center py-1 font-semibold select-none">{{ ctrans('Text') }}</div> -->
         <TextProperty v-model="model.container.properties.text" />
         <div class="px-3 flex gap-x-2 flex-nowrap">
             <PureInput
@@ -125,20 +125,20 @@ const model = defineModel<ModelButtonProperties>()
     </div>
 
     <div v-if="model?.container?.properties?.border" class="">
-    <!--     <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Border') }}</div> -->
-    <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ trans('Border') }}</div>
+    <!--     <div class="w-full text-center py-1 font-semibold select-none">{{ ctrans('Border') }}</div> -->
+    <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ ctrans('Border') }}</div>
         <BorderProperty v-model="model.container.properties.border" />
     </div>
 
     <div v-if="model?.container?.properties?.padding" class="">
-       <!--  <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Padding') }}</div> -->
-       <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ trans('Padding') }}</div>
+       <!--  <div class="w-full text-center py-1 font-semibold select-none">{{ ctrans('Padding') }}</div> -->
+       <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ ctrans('Padding') }}</div>
         <PaddingMarginProperty v-model="model.container.properties.padding" />
     </div>
 
     <div v-if="model?.container?.properties?.margin" class="">
-   <!--      <div class="w-full text-center py-1 font-semibold select-none">{{ trans('Margin') }}</div> -->
-   <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ trans('Margin') }}</div>
+   <!--      <div class="w-full text-center py-1 font-semibold select-none">{{ ctrans('Margin') }}</div> -->
+   <div  class="w-full my-2  py-1 font-semibold select-none text-sm border-b border-gray-300">{{ ctrans('Margin') }}</div>
         <PaddingMarginProperty v-model="model.container.properties.margin" />
     </div>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Toggle from '@/Components/Pure/Toggle.vue'
 
 type CalendarHoliday = {
@@ -89,7 +89,7 @@ const headerTitle = computed(() => {
     return `${monthNames[monthIndex]} ${filterYear.value}`
   }
 
-  return `${trans('Year')} ${filterYear.value}`
+  return `${ctrans('Year')} ${filterYear.value}`
 })
 
 watch(useHolidayYearPeriod, (val) => {
@@ -103,18 +103,18 @@ watch(useHolidayYearPeriod, (val) => {
 })
 
 const monthNames = [
-  trans('January'),
-  trans('February'),
-  trans('March'),
-  trans('April'),
-  trans('May'),
-  trans('June'),
-  trans('July'),
-  trans('August'),
-  trans('September'),
-  trans('October'),
-  trans('November'),
-  trans('December'),
+  ctrans('January'),
+  ctrans('February'),
+  ctrans('March'),
+  ctrans('April'),
+  ctrans('May'),
+  ctrans('June'),
+  ctrans('July'),
+  ctrans('August'),
+  ctrans('September'),
+  ctrans('October'),
+  ctrans('November'),
+  ctrans('December'),
 ]
 
 const calendarMonths = computed<CalendarMonth[]>(() => {
@@ -253,13 +253,13 @@ const holidaySummariesByMonth = computed<Record<string, { fromDay: number; toDay
 })
 
 const weekdayLabels = [
-  trans('Mo'),
-  trans('Tu'),
-  trans('We'),
-  trans('Th'),
-  trans('Fr'),
-  trans('Sa'),
-  trans('Su'),
+  ctrans('Mo'),
+  ctrans('Tu'),
+  ctrans('We'),
+  ctrans('Th'),
+  ctrans('Fr'),
+  ctrans('Sa'),
+  ctrans('Su'),
 ]
 
 const isWeekendColumn = (index: number): boolean => index === 5 || index === 6
@@ -306,7 +306,7 @@ const isWeekendColumn = (index: number): boolean => index === 5 || index === 6
             class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           >
             <option value="">
-              {{ trans('All months') }}
+              {{ ctrans('All months') }}
             </option>
             <option
               v-for="(name, idx) in monthNames"
@@ -319,7 +319,7 @@ const isWeekendColumn = (index: number): boolean => index === 5 || index === 6
         </template>
 
         <div v-if="calendar.allHolidayYears && calendar.allHolidayYears.length" class="flex items-center gap-2 ml-2">
-          <span class="text-sm text-gray-600">{{ trans('Holiday Year') }}</span>
+          <span class="text-sm text-gray-600">{{ ctrans('Holiday Year') }}</span>
           <Toggle v-model="useHolidayYearPeriod" />
         </div>
       </div>

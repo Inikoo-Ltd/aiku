@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
     data: [
@@ -9,7 +9,7 @@ export default {
                 {
                     name: "delay",
                     type: "range",
-                    label: trans("Duration"),
+                    label: ctrans("Duration"),
                     value: null,
                     timeRange: {
                         min: "2.5",
@@ -21,7 +21,7 @@ export default {
               /*   {
                     name: ["common", "height"],
                     type: "rangeSlider",
-                    label: trans("Banner Height"),
+                    label: ctrans("Banner Height"),
                     useIn: ["desktop", "mobile"],
                     defaultValue: {
                         desktop: 400,
@@ -36,7 +36,7 @@ export default {
                 {
                     name: "navigation",
                     type: "bannerNavigation",
-                    label: trans("Navigation"),
+                    label: ctrans("Navigation"),
                     value: null,
                     options: [
                         { label: 'Navigation (arrows)', name: 'sideNav' },
@@ -46,7 +46,7 @@ export default {
                 {
                     name: ["common", "spaceBetween"],
                     type: "radio",
-                    label: trans("space Between"),
+                    label: ctrans("space Between"),
                     value: null,
                     placeholder: "Enter space between",
                     options: [
@@ -71,7 +71,7 @@ export default {
                 {
                     name: ["common", "spaceColor"],
                     type: "colorpicker",
-                    label: trans("Border color"),
+                    label: ctrans("Border color"),
                     value: null,
                     placeholder: "Enter space between"
                 },
@@ -97,21 +97,21 @@ export default {
                 {
                     name: ["common", "centralStage", "title"],
                     type: "text",
-                    label: trans("Title"),
+                    label: ctrans("Title"),
                     value: ["common", "centralStage", "title"],
                     placeholder: "Enter title of the slide"
                 },
                 {
                     name: ["common", "centralStage", "subtitle"],
                     type: "text",
-                    label: trans("subtitle"),
+                    label: ctrans("subtitle"),
                     value: ["common", "centralStage", "subtitle"],
                     placeholder: "Enter subtitle of the slide"
                 },
                 {
                     name: ["common", "centralStage", "linkOfText"],
                     type: "text",
-                    label: trans("Hyperlink"),
+                    label: ctrans("Hyperlink"),
                     defaultValue: '',
                     value: ["common", "centralStage", "linkOfText"],
                     placeholder: "https://www.example.com"
@@ -119,13 +119,13 @@ export default {
                 {
                     name: ["common", "centralStage", "style", "fontFamily"],
                     type: "selectFont",
-                    label: trans("Font Family"),
+                    label: ctrans("Font Family"),
                     value: ["common", "centralStage", "style", "fontFamily"],
                 },
                 {
                     name: ["common", "centralStage", "textAlign"],
                     type: "textAlign",
-                    label: trans("Text Align"),
+                    label: ctrans("Text Align"),
                     defaultValue: "center",
                     value: ["common", "centralStage", "textAlign"],
                     options: [
@@ -149,7 +149,7 @@ export default {
                 {
                     name: ["common", "centralStage", "style", "fontSize"],
                     type: "radio",
-                    label: trans("Font Size"),
+                    label: ctrans("Font Size"),
                     value: ["common", "centralStage", "style", "fontSize"],
                     defaultValue: {
                         fontTitle: "text-[25px] md:text-[32px] lg:text-[44px]",
@@ -196,14 +196,14 @@ export default {
                 {
                     name: ["common", "centralStage", "style", "color"],
                     type: "colorpicker",
-                    label: trans("Text Color"),
+                    label: ctrans("Text Color"),
                     value: ["common", "centralStage", "style", "color"],
                     icon: 'far fa-text'
                 },
                 {
                     name: ["common", "centralStage", "style", "textShadow"],
                     type: "toggle",
-                    label: trans("Text Shadow"),
+                    label: ctrans("Text Shadow"),
                     value: ["common", "centralStage", "style", "TextShadow"],
                 },
             ],

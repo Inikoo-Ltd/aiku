@@ -13,7 +13,7 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
 import { routeType } from "@/types/route"
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 library.add(faTag, faTrashAlt)
@@ -132,7 +132,7 @@ const locale = inject("locale", aikuLocaleStructure)
                 :routeTarget="item.deleteRoute"
                 icon="fal fa-trash-alt"
                 type="negative"
-                v-tooltip="trans('Delete')"
+                v-tooltip="ctrans('Delete')"
             />
         </template>
     </Table>

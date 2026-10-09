@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
 	blueprint: [
@@ -30,7 +30,7 @@ export default {
 		},
         {
 			name: "Navigation",
-			information: trans('This will apply for all the navigation items'),
+			information: ctrans('This will apply for all the navigation items'),
 			key: ["navigation_container", "properties"],
 			replaceForm: [
 				{
@@ -61,7 +61,7 @@ export default {
 		},
 		{
 			name: "Hover",
-			information: trans('This will apply when the user hover over the navigation item'),
+			information: ctrans('This will apply when the user hover over the navigation item'),
 			key: ["hover", "container", "properties"],
 			replaceForm: [
 				{

@@ -2,7 +2,7 @@
     <nav v-if="!hasData || pagination?.total < 1 || hasPagination && meta?.total > 15"
         class="bg-white px-4 py-3 flex items-center space-x-2 justify-between border-t border-gray-200 sm:px-4">
         <p v-if="!hasData || pagination.total < 1" class="mx-auto">
-            {{ trans('No result found') }}
+            {{ ctrans('No result found') }}
         </p>
 
         <template v-if="hasPagination && meta?.total > 15">
@@ -108,7 +108,7 @@
 import PerPageSelector from "./PerPageSelector.vue"
 import { computed, inject } from "vue"
 import { getTranslations } from "./translations.js"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 const translations = getTranslations()

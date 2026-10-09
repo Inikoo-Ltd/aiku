@@ -12,7 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import axios from "axios"
 import { ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileExport, faFileExcel, faExclamationTriangle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -127,9 +127,9 @@ const exportAeatAnyway = () => {
         <div class="flex items-start gap-4">
             <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600 text-4xl shrink-0" fixed-width aria-hidden="true" />
             <div class="min-w-0 flex-1">
-                <h2 class="text-xl font-semibold text-red-700">{{ trans('AEAT file is not valid') }}</h2>
+                <h2 class="text-xl font-semibold text-red-700">{{ ctrans('AEAT file is not valid') }}</h2>
                 <p class="mt-1 text-gray-700">
-                    {{ trans(':errors problems found in :rows rows. AEAT will reject this file as it is.', { errors: aeatErrors.length, rows: aeatRows }) }}
+                    {{ ctrans(':errors problems found in :rows rows. AEAT will reject this file as it is.', { errors: aeatErrors.length, rows: aeatRows }) }}
                 </p>
                 <table class="mt-4 w-full text-sm">
                     <tr v-for="(count, reason) in aeatSummary" :key="reason" class="border-b border-gray-100">
@@ -138,26 +138,26 @@ const exportAeatAnyway = () => {
                     </tr>
                 </table>
                 <p class="mt-3 text-sm text-gray-700">
-                    {{ trans('Downloading anyway keeps every row and fills the missing values with these. Zero invoiced amounts are left as they are.') }}
+                    {{ ctrans('Downloading anyway keeps every row and fills the missing values with these. Zero invoiced amounts are left as they are.') }}
                 </p>
                 <div class="mt-2 grid grid-cols-3 gap-3 text-sm">
                     <label class="flex flex-col gap-1">
-                        <span class="text-gray-600">{{ trans('Weight for rows without weight (kg)') }}</span>
+                        <span class="text-gray-600">{{ ctrans('Weight for rows without weight (kg)') }}</span>
                         <input v-model="aeatFallback.weight_kg" type="number" min="0" step="0.001" class="rounded border-gray-300" />
                     </label>
                     <label class="flex flex-col gap-1">
-                        <span class="text-gray-600">{{ trans('Tariff code for rows without one') }}</span>
+                        <span class="text-gray-600">{{ ctrans('Tariff code for rows without one') }}</span>
                         <input v-model="aeatFallback.tariff_code" type="text" inputmode="numeric" maxlength="10" class="rounded border-gray-300 font-mono" />
                     </label>
                     <label class="flex flex-col gap-1">
-                        <span class="text-gray-600">{{ trans('Origin country for rows without one') }}</span>
+                        <span class="text-gray-600">{{ ctrans('Origin country for rows without one') }}</span>
                         <input v-model="aeatFallback.origin" type="text" maxlength="2" class="rounded border-gray-300 uppercase" />
                     </label>
                 </div>
                 <pre class="mt-4 max-h-64 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{{ aeatErrors.join('\n') }}</pre>
                 <div class="mt-6 flex justify-end gap-3">
-                    <Button @click="isAeatModalOpen = false" :style="'secondary'" :label="trans('Fix the data first')" />
-                    <Button @click="exportAeatAnyway" :style="'red'" icon="fal fa-exclamation-triangle" :label="trans('Download anyway with the errors')" />
+                    <Button @click="isAeatModalOpen = false" :style="'secondary'" :label="ctrans('Fix the data first')" />
+                    <Button @click="exportAeatAnyway" :style="'red'" icon="fal fa-exclamation-triangle" :label="ctrans('Download anyway with the errors')" />
                 </div>
             </div>
         </div>

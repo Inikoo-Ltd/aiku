@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -206,7 +206,7 @@ const onSubmitSubscribe = async () => {
 		subscribeState.value = "success"
 	} catch (error: any) {
 		subscribeState.value = "error"
-		errorMessage.value = error?.errors?.email || trans("An error occurred while subscribing.")
+		errorMessage.value = error?.errors?.email || ctrans("An error occurred while subscribing.")
 	}
 
 	isSubscribing.value = false
@@ -286,18 +286,18 @@ const columnClass = computed(() => {
 					v-if="showExplore"
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-[color-mix(in_srgb,var(--theme-color-0)_7%,white)] p-8 ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_18%,white)]">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
-						{{ fieldValue?.explore?.eyebrow ?? trans('New here?') }}
+						{{ fieldValue?.explore?.eyebrow ?? ctrans('New here?') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ fieldValue?.explore?.title ?? trans('Start exploring') }}
+						{{ fieldValue?.explore?.title ?? ctrans('Start exploring') }}
 					</h2>
 					<div
 						class="editor-class max-w-md text-sm leading-relaxed text-gray-500"
-						v-html="fieldValue?.explore?.description ?? trans('Dive into the latest stories, guides, and tips across all categories.')" />
+						v-html="fieldValue?.explore?.description ?? ctrans('Dive into the latest stories, guides, and tips across all categories.')" />
 					<a
 						:href="'#' + listId"
 						class="mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[var(--theme-color-0)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_30%,white)] transition hover:bg-[var(--theme-color-0)] hover:text-[var(--theme-color-1)]">
-						{{ fieldValue?.explore?.label ?? trans('Browse All Blogs') }}
+						{{ fieldValue?.explore?.label ?? ctrans('Browse All Blogs') }}
 						<span aria-hidden="true">→</span>
 					</a>
 				</div>
@@ -306,10 +306,10 @@ const columnClass = computed(() => {
 					v-if="showNewsletter"
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-gray-50 p-8 ring-1 ring-gray-200">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-						{{ fieldValue?.newsletter?.eyebrow ?? trans('Stay in the loop') }}
+						{{ fieldValue?.newsletter?.eyebrow ?? ctrans('Stay in the loop') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ fieldValue?.newsletter?.title ?? trans('Get the newsletter') }}
+						{{ fieldValue?.newsletter?.title ?? ctrans('Get the newsletter') }}
 					</h2>
 					<div
 						class="editor-class max-w-md text-sm leading-relaxed text-gray-500"
@@ -318,7 +318,7 @@ const columnClass = computed(() => {
 					<Transition>
 						<div v-if="subscribeState !== 'success'" class="flex flex-col">
 							<form class="mt-2 flex flex-col gap-2 sm:flex-row" @submit.prevent="onSubmitSubscribe">
-								<label :for="listId + '-email'" class="sr-only">{{ trans('Email address') }}</label>
+								<label :for="listId + '-email'" class="sr-only">{{ ctrans('Email address') }}</label>
 
 								<input
 									v-model="hiddenField"
@@ -337,7 +337,7 @@ const columnClass = computed(() => {
 										autocomplete="email"
 										required
 										:disabled="isSubscribing"
-										:placeholder="trans('Enter your email')"
+										:placeholder="ctrans('Enter your email')"
 										class="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-[var(--theme-color-0)]" />
 									<FontAwesomeIcon
 										icon="fal fa-envelope"
@@ -354,7 +354,7 @@ const columnClass = computed(() => {
 										<LoadingIcon v-if="isSubscribing" />
 									</Transition>
 									<FontAwesomeIcon v-if="!isSubscribing" icon="fal fa-envelope" fixed-width aria-hidden="true" />
-									{{ fieldValue?.newsletter?.label ?? trans('Subscribe') }}
+									{{ fieldValue?.newsletter?.label ?? ctrans('Subscribe') }}
 								</button>
 							</form>
 
@@ -365,7 +365,7 @@ const columnClass = computed(() => {
 
 						<div v-else class="mt-2 flex items-center gap-2 text-sm font-medium text-green-600">
 							<FontAwesomeIcon icon="fas fa-check-circle" class="text-lg" fixed-width aria-hidden="true" />
-							{{ trans('You have successfully subscribed') }}!
+							{{ ctrans('You have successfully subscribed') }}!
 						</div>
 					</Transition>
 				</div>
@@ -399,7 +399,7 @@ const columnClass = computed(() => {
 						<Transition name="spin-to-right">
 							<LoadingIcon v-if="isLoadingMore" />
 						</Transition>
-						{{ fieldValue?.list_load_more_label || trans("Load more blogs") }}
+						{{ fieldValue?.list_load_more_label || ctrans("Load more blogs") }}
 					</button>
 				</div>
 			</div>

@@ -8,7 +8,7 @@
 import { inject, onMounted, ref } from "vue";
     import { faInfoCircle } from "@fal";
     import Select from "primevue/select";
-    import { trans } from "laravel-vue-i18n";
+    
     import Textarea from 'primevue/textarea';
     import { useForm } from "@inertiajs/vue3";
     import InputText from 'primevue/inputtext';
@@ -38,17 +38,17 @@ import { ctrans } from "@/Composables/useTrans"
     const shippingServices = ref([]);
     const taxCategories = ref([]);
     const returnAcceptedOptions = ref([
-        {name: trans("Returns Accepted"), value: true},
-        {name: trans("Returns Not Accepted"), value: false}
+        {name: ctrans("Returns Accepted"), value: true},
+        {name: ctrans("Returns Not Accepted"), value: false}
     ]);
     const returnPayers = ref([
-        {name: trans("Seller"), value: "SELLER"},
-        {name: trans("Buyer"), value: "BUYER"}
+        {name: ctrans("Seller"), value: "SELLER"},
+        {name: ctrans("Buyer"), value: "BUYER"}
     ]);
     const returnWithinOptions = ref([
-        {name: trans("14 Days"), value: 14},
-        {name: trans("30 Days"), value: 30},
-        {name: trans("60 Days"), value: 60}
+        {name: ctrans("14 Days"), value: 14},
+        {name: ctrans("30 Days"), value: 30},
+        {name: ctrans("60 Days"), value: 60}
     ]);
 
     const isLoadingStep = ref(false)
@@ -150,11 +150,11 @@ import { ctrans } from "@/Composables/useTrans"
 
         <div class="flex flex-col w-full border rounded-xl">
             <div class="w-full px-4 py-2 bg-gray-100">
-                <span class="font-semibold">{{ trans("Basic settings") }}</span>
+                <span class="font-semibold">{{ ctrans("Basic settings") }}</span>
             </div>
             <div class="grid lg:grid-cols-2">
                 <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("App") }}</label>
+                    <label class="font-semibold">{{ ctrans("App") }}</label>
                     <PureInput
                         type="text"
                         v-model="form.app"
@@ -163,7 +163,7 @@ import { ctrans } from "@/Composables/useTrans"
                 </div>
 
                 <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("Account") }}</label>
+                    <label class="font-semibold">{{ ctrans("Account") }}</label>
                     <PureInput
                         type="text"
                         v-model="form.account"
@@ -172,12 +172,12 @@ import { ctrans } from "@/Composables/useTrans"
                 </div>
 
                 <div class="flex flex-col gap-2 p-4 w-full md:w-80">
-                    <label class="font-semibold">{{ trans("VAT Rates") }}</label>
+                    <label class="font-semibold">{{ ctrans("VAT Rates") }}</label>
                     <ToggleSwitch v-model="form.is_vat_adjustment" />
                 </div>
 
                 <div v-if="form.is_vat_adjustment" class="flex flex-col gap-2 w-full md:w-80 p-4">
-                    <label class="font-semibold">{{ trans("VAT") }}</label>
+                    <label class="font-semibold">{{ ctrans("VAT") }}</label>
                     <Select v-model="form.tax_category_id" :options="taxCategories" optionLabel="label" optionValue="value" class="w-full" />
                 </div>
             </div>
@@ -187,25 +187,25 @@ import { ctrans } from "@/Composables/useTrans"
 
         <div class="flex flex-col w-full border rounded-xl">
             <div class="bg-gray-100 px-4 py-2">
-                <span class="font-semibold">{{ trans("Returns") }}</span>
+                <span class="font-semibold">{{ ctrans("Returns") }}</span>
             </div>
 
             <div class="flex flex-col gap-4 p-4">
                 <div class="flex flex-col w-full border rounded-xl">
                     <div class="bg-gray-100 px-4 py-2">
-                        <span class="font-semibold">{{ trans("Return Business Policy") }}</span>
+                        <span class="font-semibold">{{ ctrans("Return Business Policy") }}</span>
                     </div>
                     <div class="flex flex-col">
                         <div class="flex flex-col gap-2 pt-4 px-4">
-                            <span>{{ trans("Please note that selecting Returns profile will override any returns details set below.") }}</span>
+                            <span>{{ ctrans("Please note that selecting Returns profile will override any returns details set below.") }}</span>
                         </div>
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Profile") }}</label>
+                            <label class="font-semibold">{{ ctrans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_policy_id" :options="returnProfiles"
                                         @update:model-value="errors.return_policy_id = null "
                                         optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
+                                <FontAwesomeIcon v-tooltip="ctrans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.return_policy_id" class="text-sm text-red-600 mt-1">{{ errors.return_policy_id?.[0] }}</p>
                         </div>
@@ -214,33 +214,33 @@ import { ctrans } from "@/Composables/useTrans"
 
                 <div class="flex flex-col w-full border rounded-xl">
                     <div class="bg-gray-100 px-4 py-2">
-                        <span class="font-semibold">{{ trans("Return Settings") }}</span>
+                        <span class="font-semibold">{{ ctrans("Return Settings") }}</span>
                     </div>
                     <div class="grid lg:grid-cols-2">
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Return accepted") }}</label>
+                            <label class="font-semibold">{{ ctrans("Return accepted") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_accepted" :options="returnAcceptedOptions"
                                         @update:model-value="errors.return_accepted = null "
                                         optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
+                                <FontAwesomeIcon v-tooltip="ctrans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.return_accepted" class="text-sm text-red-600 mt-1">{{ errors.return_accepted?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4" v-if="form.return_accepted">
-                            <label class="font-semibold">{{ trans("Return paid by") }}</label>
+                            <label class="font-semibold">{{ ctrans("Return paid by") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_payer" :options="returnPayers"
                                         @update:model-value="errors.return_payer = null "
                                         optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
+                                <FontAwesomeIcon v-tooltip="ctrans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.return_payer" class="text-sm text-red-600 mt-1">{{ errors.return_payer?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4" v-if="form.return_accepted">
-                            <label class="font-semibold">{{ trans("Return within (day)") }}</label>
+                            <label class="font-semibold">{{ ctrans("Return within (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.return_within" @update:model-value="errors.return_within = null " :options="returnWithinOptions" optionLabel="name" optionValue="value" class="w-full" />
                             </div>
@@ -248,7 +248,7 @@ import { ctrans } from "@/Composables/useTrans"
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-96 p-4" v-if="form.return_accepted">
-                            <label class="font-semibold">{{ trans("Detailed return policy explanation") }}</label>
+                            <label class="font-semibold">{{ ctrans("Detailed return policy explanation") }}</label>
                             <Textarea v-model="form.return_description" rows="5" @update:model-value="errors.return_description = null " />
                             <p v-if="errors.return_description" class="text-sm text-red-600 mt-1">{{ errors.return_description?.[0] }}</p>
                         </div>
@@ -261,25 +261,25 @@ import { ctrans } from "@/Composables/useTrans"
 
         <div class="flex flex-col w-full border rounded-xl">
             <div class="bg-gray-100 px-4 py-2">
-                <span class="font-semibold">{{ trans("Shipping") }}</span>
+                <span class="font-semibold">{{ ctrans("Shipping") }}</span>
             </div>
 
             <div class="flex flex-col gap-4 p-4">
                 <div class="flex flex-col w-full border rounded-xl">
                     <div class="bg-gray-100 px-4 py-2">
-                        <span class="font-semibold">{{ trans("Postage Business Policy") }}</span>
+                        <span class="font-semibold">{{ ctrans("Postage Business Policy") }}</span>
                     </div>
                     <div class="flex flex-col">
                         <div class="flex flex-col gap-2 pt-4 px-4">
-                            <span>{{ trans("Please note that selecting Postage profile will override any shipping details set below.") }}</span>
+                            <span>{{ ctrans("Please note that selecting Postage profile will override any shipping details set below.") }}</span>
                         </div>
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Profile") }}</label>
+                            <label class="font-semibold">{{ ctrans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.fulfillment_policy_id"
                                         @update:model-value="errors.fulfillment_policy_id = null "
                                         :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('A fulfillment policy is a reusable template that sets a listing’s shipping services, costs, delivery options, and handling time so you don’t need to configure them manually for each item.')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
+                                <FontAwesomeIcon v-tooltip="ctrans('A fulfillment policy is a reusable template that sets a listing’s shipping services, costs, delivery options, and handling time so you don’t need to configure them manually for each item.')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.fulfillment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.fulfillment_policy_id?.[0] }}</p>
                         </div>
@@ -288,28 +288,28 @@ import { ctrans } from "@/Composables/useTrans"
 
 <!--                <div class="flex flex-col w-full border rounded-xl">
                     <div class="bg-gray-100 px-4 py-2">
-                        <span class="font-semibold">{{ trans("Shipping Settings") }}</span>
+                        <span class="font-semibold">{{ ctrans("Shipping Settings") }}</span>
                     </div>
                     <div class="grid lg:grid-cols-2">
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Shipping service") }}</label>
+                            <label class="font-semibold">{{ ctrans("Shipping service") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.shipping_service"
                                         @update:model-value="errors.shipping_service = null"
                                         :options="shippingServices" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select shipping services')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="ctrans('Select shipping services')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
                             </div>
                             <p v-if="errors.shipping_service" class="text-sm text-red-600 mt-1">{{ errors.shipping_service?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 w-full md:w-80 p-4">
-                            <label class="font-semibold">{{ trans("Shipping price") }}</label>
+                            <label class="font-semibold">{{ ctrans("Shipping price") }}</label>
                             <InputNumber v-model="form.shipping_price" @update:model-value="errors.shipping_price = null" inputId="integeronly" fluid />
                             <p v-if="errors.shipping_price" class="text-sm text-red-600 mt-1">{{ errors.shipping_price?.[0] }}</p>
                         </div>
 
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Max dispatch time (day)") }}</label>
+                            <label class="font-semibold">{{ ctrans("Max dispatch time (day)") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <InputNumber v-model="form.shipping_max_dispatch_time" @update:model-value="errors.shipping_max_dispatch_time = null" inputId="integeronly" fluid />
                             </div>
@@ -324,25 +324,25 @@ import { ctrans } from "@/Composables/useTrans"
 
         <div class="flex flex-col w-full border rounded-xl">
             <div class="bg-gray-100 px-4 py-2">
-                <span class="font-semibold">{{ trans("Payments") }}</span>
+                <span class="font-semibold">{{ ctrans("Payments") }}</span>
             </div>
 
             <div class="flex flex-col gap-4 p-4">
                 <div class="flex flex-col w-full border rounded-xl">
                     <div class="bg-gray-100 px-4 py-2">
-                        <span class="font-semibold">{{ trans("Payment Business Policy") }}</span>
+                        <span class="font-semibold">{{ ctrans("Payment Business Policy") }}</span>
                     </div>
                     <div class="flex flex-col">
                         <div class="flex flex-col gap-2 pt-4 px-4">
-                            <span>{{ trans("Please note if your account has been enabled for eBay managed payments, you need to select eBay payments as your payment profile.") }}</span>
+                            <span>{{ ctrans("Please note if your account has been enabled for eBay managed payments, you need to select eBay payments as your payment profile.") }}</span>
                         </div>
                         <div class="flex flex-col gap-2 p-4">
-                            <label class="font-semibold">{{ trans("Profile") }}</label>
+                            <label class="font-semibold">{{ ctrans("Profile") }}</label>
                             <div class="flex items-center gap-2 w-full md:w-80">
                                 <Select v-model="form.payment_policy_id"
                                         @update:model-value="errors.payment_policy_id = null"
                                         :options="paymentProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
+                                <FontAwesomeIcon v-tooltip="ctrans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.payment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.payment_policy_id?.[0] }}</p>
                         </div>
@@ -354,8 +354,8 @@ import { ctrans } from "@/Composables/useTrans"
         <hr class="w-full border-t" />
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ ctrans("Cancel") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ ctrans("Next") }}</Button>
         </div>
     </form>
 </template>

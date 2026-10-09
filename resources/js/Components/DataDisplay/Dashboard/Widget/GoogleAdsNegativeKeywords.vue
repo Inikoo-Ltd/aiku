@@ -10,7 +10,6 @@ import { useConfirm } from "primevue/useconfirm"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { trans } from "laravel-vue-i18n"
 
 /**
  * A mature account carries hundreds of these, so the list is filtered rather than paged: the reason
@@ -80,29 +79,29 @@ const remove = (keyword: { id: string; text: string }) =>
     <div>
         <div class="flex flex-wrap items-baseline justify-between gap-2">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Excluded search terms") }}
+                {{ ctrans("Excluded search terms") }}
                 <span v-if="negativeKeywords.length" class="font-normal text-gray-500">
                     · {{ negativeKeywords.length }}
                 </span>
-                <HelpTip :text="trans('Searches this campaign never bids on. Adding one takes effect at Google straight away and applies to the whole campaign. Removing one lets the ad show for that search again.')" />
+                <HelpTip :text="ctrans('Searches this campaign never bids on. Adding one takes effect at Google straight away and applies to the whole campaign. Removing one lets the ad show for that search again.')" />
             </h2>
-            <span class="text-xs text-gray-500">{{ trans("Searches this campaign will not bid on") }}</span>
+            <span class="text-xs text-gray-500">{{ ctrans("Searches this campaign will not bid on") }}</span>
         </div>
 
         <form class="mt-4 flex flex-wrap items-end gap-2" @submit.prevent="add">
             <div>
-                <label for="gads-negative-text" class="block text-xs text-gray-500">{{ trans("Term to exclude") }}</label>
+                <label for="gads-negative-text" class="block text-xs text-gray-500">{{ ctrans("Term to exclude") }}</label>
                 <input
                     id="gads-negative-text"
                     v-model="newText"
                     type="text"
                     maxlength="80"
-                    :placeholder="trans('free download')"
+                    :placeholder="ctrans('free download')"
                     :disabled="busy"
                     class="mt-1 w-56 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100" />
             </div>
             <div>
-                <label for="gads-negative-match" class="block text-xs text-gray-500">{{ trans("Match") }}</label>
+                <label for="gads-negative-match" class="block text-xs text-gray-500">{{ ctrans("Match") }}</label>
                 <select
                     id="gads-negative-match"
                     v-model="newMatchType"
@@ -115,7 +114,7 @@ const remove = (keyword: { id: string; text: string }) =>
             </div>
             <Button
                 type="tertiary"
-                :label="trans('Exclude it')"
+                :label="ctrans('Exclude it')"
                 :loading="busy"
                 :disabled="busy || !newText.trim()"
                 @click="add" />
@@ -125,16 +124,16 @@ const remove = (keyword: { id: string; text: string }) =>
         <p v-if="errors.criterion_id" class="mt-1 text-xs text-[#d03b3b]">{{ errors.criterion_id }}</p>
 
         <div v-if="negativeKeywords.length" class="mt-4">
-            <label for="gads-negative-filter" class="sr-only">{{ trans("Search excluded terms") }}</label>
+            <label for="gads-negative-filter" class="sr-only">{{ ctrans("Search excluded terms") }}</label>
             <input
                 id="gads-negative-filter"
                 v-model="filter"
                 type="search"
-                :placeholder="trans('Search these terms')"
+                :placeholder="ctrans('Search these terms')"
                 class="w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-72" />
 
             <p v-if="filter.trim() && !matched.length" class="mt-3 text-xs text-gray-500">
-                {{ trans("Nothing excluded matches that, so ads can still show for it.") }}
+                {{ ctrans("Nothing excluded matches that, so ads can still show for it.") }}
             </p>
 
             <ul v-else class="mt-3 divide-y divide-gray-50">
@@ -148,18 +147,18 @@ const remove = (keyword: { id: string; text: string }) =>
                         :disabled="busy"
                         class="rounded px-1.5 py-0.5 text-[#d03b3b] underline-offset-2 transition hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
                         @click="remove(keyword)">
-                        {{ trans("Remove") }}
+                        {{ ctrans("Remove") }}
                     </button>
                 </li>
             </ul>
 
             <p v-if="hiddenCount > 0" class="mt-3 text-xs text-gray-500">
-                {{ trans("and :count more, type above to find one", { count: hiddenCount }) }}
+                {{ ctrans("and :count more, type above to find one", { count: hiddenCount }) }}
             </p>
         </div>
 
         <p v-else class="mt-4 text-xs text-gray-500">
-            {{ trans("Nothing is excluded yet, so this campaign can pay for any search Google matches it to.") }}
+            {{ ctrans("Nothing is excluded yet, so this campaign can pay for any search Google matches it to.") }}
         </p>
     </div>
 </template>

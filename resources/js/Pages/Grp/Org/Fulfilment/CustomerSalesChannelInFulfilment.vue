@@ -5,7 +5,7 @@ import CustomerShowcase from "@/Components/Showcases/Grp/CustomerShowcase.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { PageHeadingTypes } from "@/types/PageHeading";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { computed, ref } from "vue";
 import type { Component } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -52,11 +52,11 @@ const isModalAddress = ref(false);
   <component v-if="currentTab === 'history'" :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 
   <div v-else class="p-6">
-    <div aria-label="trans('Statistic')" class="border border-gray-300 rounded-lg w-full sm:max-w-lg">
+    <div aria-label="ctrans('Statistic')" class="border border-gray-300 rounded-lg w-full sm:max-w-lg">
       <div v-if="route().params.platform !== 'manual'" class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
         <dl v-if="true" class="flex-auto pl-3">
-          <dt class="text-xs text-gray-400">{{ trans("Account name") }}</dt>
-          <dd v-tooltip="trans('Account name')" class="w-fit mt text-xl font-semibold leading-6">
+          <dt class="text-xs text-gray-400">{{ ctrans("Account name") }}</dt>
+          <dd v-tooltip="ctrans('Account name')" class="w-fit mt text-xl font-semibold leading-6">
             {{ showcase?.stats?.name }}
           </dd>
         </dl>
@@ -102,7 +102,7 @@ const isModalAddress = ref(false);
       <div v-if="showcase?.stats" class="flex flex-col gap-y-2 w-full py-4 px-5">
         <!-- Field: Number orders -->
         <dl v-if="showcase?.stats?.number_orders > -1" class="flex items-center w-full flex-none gap-x-4">
-          <dt v-tooltip="trans('Orders')" class="flex-none">
+          <dt v-tooltip="ctrans('Orders')" class="flex-none">
             <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-gray-400" fixed-width
                              aria-hidden="true" />
           </dt>
@@ -111,7 +111,7 @@ const isModalAddress = ref(false);
 
         <!-- Field: Number customer clients -->
         <dl v-if="showcase?.stats?.number_customer_clients > -1" class="flex items-center w-full flex-none gap-x-4">
-          <dt v-tooltip="trans('Customer clients')" class="flex-none">
+          <dt v-tooltip="ctrans('Customer clients')" class="flex-none">
             <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width
                              aria-hidden="true" />
           </dt>
@@ -120,7 +120,7 @@ const isModalAddress = ref(false);
 
         <!-- Field: Number portfolios -->
         <dl v-if="showcase?.stats?.number_portfolios > -1" class="flex items-center w-full flex-none gap-x-4">
-          <dt v-tooltip="trans('Portfolios')" class="flex-none">
+          <dt v-tooltip="ctrans('Portfolios')" class="flex-none">
             <FontAwesomeIcon icon="fal fa-cube" class="text-gray-400" fixed-width
                              aria-hidden="true" />
           </dt>
@@ -129,7 +129,7 @@ const isModalAddress = ref(false);
 
         <!-- Field: Created at -->
         <dl v-if="data?.customer?.created_at" class="flex items-center w-full flex-none gap-x-4">
-          <dt v-tooltip="trans('Created at')" class="flex-none">
+          <dt v-tooltip="ctrans('Created at')" class="flex-none">
             <span class="sr-only">Created at</span>
             <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width
                              aria-hidden="true" />
@@ -140,7 +140,7 @@ const isModalAddress = ref(false);
         </dl>
         <!-- Field: Email -->
         <dl v-if="data?.customer?.email" class="flex items-center w-full flex-none gap-x-4">
-          <dt v-tooltip="trans('Email')" class="flex-none">
+          <dt v-tooltip="ctrans('Email')" class="flex-none">
             <span class="sr-only">Email</span>
             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
                              aria-hidden="true" />
@@ -151,7 +151,7 @@ const isModalAddress = ref(false);
         </dl>
         <!-- Field: Phone -->
         <dl v-if="data?.customer?.phone" class="flex items-center w-full flex-none gap-x-4">
-          <dt v-tooltip="trans('Phone')" class="flex-none">
+          <dt v-tooltip="ctrans('Phone')" class="flex-none">
             <span class="sr-only">Phone</span>
             <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
           </dt>
@@ -171,7 +171,7 @@ const isModalAddress = ref(false);
               <div v-if="data.address_management.can_open_address_management"
                    @click="() => isModalAddress = true"
                    class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                <span>{{ trans("Edit") }}</span>
+                <span>{{ ctrans("Edit") }}</span>
               </div>
             </div>
           </dd>

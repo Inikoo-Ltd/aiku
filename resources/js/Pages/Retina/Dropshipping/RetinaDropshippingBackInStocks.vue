@@ -7,7 +7,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart } from "@fas"
 import { faBoxOpen, faImage } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ulid } from "ulid"
@@ -85,8 +85,8 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the product to favourites"),
                     type: "error",
                 })
             },
@@ -114,8 +114,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from favourites"),
                     type: "error",
                 })
             },
@@ -146,8 +146,8 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to remind back in stock"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the product to remind back in stock"),
                     type: "error",
                 })
             },
@@ -175,8 +175,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from remind back in stock"),
                     type: "error",
                 })
             },

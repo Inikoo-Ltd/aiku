@@ -15,7 +15,7 @@ import {
 	faHandPaper,
 	faSquare,
 } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(
@@ -86,7 +86,7 @@ const barWidth = (step: FunnelStep) => {
 			<div
 				v-if="!widget.funnel[0]?.value"
 				class="text-sm text-gray-400">
-				{{ trans("No emails have been sent from this outbox yet") }}
+				{{ ctrans("No emails have been sent from this outbox yet") }}
 			</div>
 
 			<div

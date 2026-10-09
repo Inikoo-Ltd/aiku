@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
 import { faCheck, faEnvelope } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 library.add(faCheck, faEnvelope, faCheckCircle)
@@ -124,7 +124,7 @@ const onSubmitSubscribe = async () => {
 
 					<div v-else class="mx-auto mt-6 text-center text-green-500 flex flex-col items-center gap-y-2">
 						<FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
-						{{ trans("You have successfully subscribed") }}!
+						{{ ctrans("You have successfully subscribed") }}!
 					</div>
 				</Transition>
 			</div>

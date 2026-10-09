@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fal"
@@ -27,8 +27,8 @@ defineProps<{
 		<FontAwesomeIcon v-else icon="fal fa-check" fixed-width aria-hidden="true" />
 
 		<span v-if="progress.state !== 'done'">
-			{{ progress.done }}/{{ progress.total }} {{ trans("shops updated") }}
+			{{ progress.done }}/{{ progress.total }} {{ ctrans("shops updated") }}
 		</span>
-		<span v-else>{{ trans("Shops updated") }} ({{ progress.total }})</span>
+		<span v-else>{{ ctrans("Shops updated") }} ({{ progress.total }})</span>
 	</div>
 </template>

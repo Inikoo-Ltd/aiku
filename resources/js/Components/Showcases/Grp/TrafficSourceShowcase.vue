@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { route } from 'ziggy-js'
 import { useLocaleStore } from '@/Stores/locale'
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     data: {
@@ -85,12 +85,12 @@ const campaignsAreTruncated = computed(
                 <div>
                     <div class="text-sm font-medium text-gray-800">{{ data.channel.name }}</div>
                     <div class="mt-1 text-xs text-gray-400">
-                        {{ data.channel.group_label }} · {{ data.channel.is_paid ? trans('Paid') : trans('Unpaid') }}
+                        {{ data.channel.group_label }} · {{ data.channel.is_paid ? ctrans('Paid') : ctrans('Unpaid') }}
                     </div>
                 </div>
                 <span class="text-xs rounded-md px-2 py-1"
                       :class="data.channel.status ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'">
-                    {{ data.channel.status ? trans('Active') : trans('Inactive') }}
+                    {{ data.channel.status ? ctrans('Active') : ctrans('Inactive') }}
                 </span>
             </div>
 
@@ -98,34 +98,34 @@ const campaignsAreTruncated = computed(
                  dashboard answers the period question and this page would only disagree with it. -->
             <div class="mt-5 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('Visits') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('Visits') }}</div>
                     <div class="text-lg text-gray-900 tabular-nums">{{ locale.number(data.stats.visits) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('Customers') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('Customers') }}</div>
                     <div class="text-lg text-gray-900 tabular-nums">{{ share(data.stats.customers) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('Orders') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('Orders') }}</div>
                     <div class="text-lg text-gray-900 tabular-nums">{{ share(data.stats.purchases) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('Revenue') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('Revenue') }}</div>
                     <div class="text-lg tabular-nums text-[#006300]">{{ money(data.stats.revenue) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('Awaiting invoice') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('Awaiting invoice') }}</div>
                     <div class="text-lg text-gray-500 tabular-nums">{{ money(data.stats.pending) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('Spend') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('Spend') }}</div>
                     <div class="text-lg text-gray-900 tabular-nums">
                         <span v-if="data.stats.cost_is_estimated" class="text-xs text-gray-400 mr-1"
-                              :title="trans('Estimated from emails sent')">{{ trans('est.') }}</span>{{ money(data.stats.cost) }}
+                              :title="ctrans('Estimated from emails sent')">{{ ctrans('est.') }}</span>{{ money(data.stats.cost) }}
                     </div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">{{ trans('ROAS') }}</div>
+                    <div class="text-xs text-gray-400">{{ ctrans('ROAS') }}</div>
                     <div class="text-lg tabular-nums"
                          :class="data.stats.roas === null ? 'text-gray-300' : data.stats.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
                         {{ data.stats.roas !== null ? data.stats.roas.toFixed(2) + '×' : '—' }}
@@ -135,23 +135,23 @@ const campaignsAreTruncated = computed(
 
             <div class="mt-5 pt-4 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                 <div>
-                    <div class="text-gray-400">{{ trans('Cost per customer') }}</div>
+                    <div class="text-gray-400">{{ ctrans('Cost per customer') }}</div>
                     <div class="mt-0.5 text-gray-700 tabular-nums">
                         {{ data.stats.cac !== null ? money(data.stats.cac) : '—' }}
                     </div>
                 </div>
                 <div>
-                    <div class="text-gray-400">{{ trans('Revenue per customer') }}</div>
+                    <div class="text-gray-400">{{ ctrans('Revenue per customer') }}</div>
                     <div class="mt-0.5 text-gray-700 tabular-nums">
                         {{ data.stats.per_customer !== null ? money(data.stats.per_customer) : '—' }}
                     </div>
                 </div>
                 <div>
-                    <div class="text-gray-400">{{ trans('First visit') }}</div>
+                    <div class="text-gray-400">{{ ctrans('First visit') }}</div>
                     <div class="mt-0.5 text-gray-700 tabular-nums">{{ data.activity.first_visit ?? '—' }}</div>
                 </div>
                 <div>
-                    <div class="text-gray-400">{{ trans('Last visit') }}</div>
+                    <div class="text-gray-400">{{ ctrans('Last visit') }}</div>
                     <div class="mt-0.5 text-gray-700 tabular-nums">{{ data.activity.last_visit ?? '—' }}</div>
                 </div>
             </div>
@@ -159,16 +159,16 @@ const campaignsAreTruncated = computed(
 
         <!-- The level below, each row landing on the same channel one step down. -->
         <div v-if="data.children?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ data.children_label ?? trans('Breakdown') }}</span>
+            <span class="text-sm font-medium text-gray-800">{{ data.children_label ?? ctrans('Breakdown') }}</span>
             <table class="mt-3 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ data.children_label ?? trans('Breakdown') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Visits') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Awaiting invoice') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Orders') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ data.children_label ?? ctrans('Breakdown') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Visits') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Awaiting invoice') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Revenue') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Orders') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -189,21 +189,21 @@ const campaignsAreTruncated = computed(
         </div>
 
         <div v-if="data.campaigns?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ trans('Campaigns') }}</span>
+            <span class="text-sm font-medium text-gray-800">{{ ctrans('Campaigns') }}</span>
             <span v-if="campaignsAreTruncated" class="ml-2 text-xs text-gray-400">
-                {{ trans('top :shown of :total', { shown: data.campaigns.length, total: data.campaigns_total }) }}
+                {{ ctrans('top :shown of :total', { shown: data.campaigns.length, total: data.campaigns_total }) }}
             </span>
             <table class="mt-3 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Campaign') }}</th>
-                        <th v-if="campaignsHaveOwner" class="text-left font-normal py-1.5 px-2">{{ trans('Shop') }}</th>
-                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Reference') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Customers') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Campaign') }}</th>
+                        <th v-if="campaignsHaveOwner" class="text-left font-normal py-1.5 px-2">{{ ctrans('Shop') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2">{{ ctrans('Reference') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Spend') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Revenue') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Customers') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Orders') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('ROAS') }}</th>
                     </tr>
                 </thead>
                 <tbody>

@@ -36,7 +36,7 @@ import ToggleButton from 'primevue/togglebutton'
 import { routeType } from '@/types/route'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { useProspectFilterRecipients } from "@/Composables/useProspectFilterRecipients";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
     faSpellCheck,
@@ -158,12 +158,12 @@ watch(
 
                 <Button @click="filterMenu.toggle($event)" class="h-10 px-4" :type="'secondary'">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    <span>{{ trans("Filter") }}</span>
+                    <span>{{ ctrans("Filter") }}</span>
 
                     <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
                 </Button>
 
-                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
+                <Button :label="ctrans('Apply Filters')" :type="'primary'" class="h-10 px-4" @click="fetchCustomers" />
 
                 <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4"
                     @click="clearAllFilters" />
@@ -171,13 +171,13 @@ watch(
             <!-- center side -->
             <div class="flex items-center">
                 <span v-if="isAllCustomers" class="text-blue-600 font-medium">
-                    {{ trans("Audience: All Prospects") }}
+                    {{ ctrans("Audience: All Prospects") }}
                 </span>
             </div>
             <!-- right side -->
             <div class="flex items-center gap-3">
 
-                <Button :label="trans('Save recipients')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4" />
+                <Button :label="ctrans('Save recipients')" type="positive" icon="save" @click="saveFilters" class="h-10 px-4" />
             </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -193,7 +193,7 @@ watch(
                 </p>
                 <span
                     class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-2">
-                    {{ trans("Active") }}
+                    {{ ctrans("Active") }}
                 </span>
                 <!-- BOOLEAN -->
                 <template v-if="filter.config.type === 'boolean'" class="mt-2">
@@ -255,12 +255,12 @@ watch(
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">{{ trans("Estimated Recipients") }}</p>
+                    <p class="text-sm text-gray-500 mb-1">{{ ctrans("Estimated Recipients") }}</p>
                     <h2 class="text-4xl font-semibold tracking-tight text-gray-900">
-                        {{ trans(formatNumber(estimatedRecipients)) }}
+                        {{ ctrans(formatNumber(estimatedRecipients)) }}
                     </h2>
                     <p class="text-xs text-gray-400 mt-2">
-                        {{ trans("Based on current filters") }}
+                        {{ ctrans("Based on current filters") }}
                     </p>
                 </div>
 

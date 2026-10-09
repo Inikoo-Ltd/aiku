@@ -6,7 +6,7 @@ import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { faCheckCircle, faTimesCircle, faClock, faPaperclip } from "@fal"
@@ -172,18 +172,18 @@ const closeRejectModal = () => {
 				<div v-if="adjustment.status === 'pending'" class="flex gap-2">
 					<Button
 						@click="approveAdjustment(adjustment)"
-						:label="trans('Approve')"
+						:label="ctrans('Approve')"
 						size="xs"
 						type="primary"
 						icon="fal fa-check" />
 					<Button
 						@click="openRejectModal(adjustment)"
-						:label="trans('Reject')"
+						:label="ctrans('Reject')"
 						size="xs"
 						type="delete"
 						icon="fal fa-times" />
 				</div>
-				<span v-else class="text-gray-400 text-xs">{{ trans("Processed") }}</span>
+				<span v-else class="text-gray-400 text-xs">{{ ctrans("Processed") }}</span>
 			</template>
 		</Table>
 	</div>
@@ -191,10 +191,10 @@ const closeRejectModal = () => {
 	<Modal :isOpen="isRejectModalOpen" @onClose="closeRejectModal" width="w-full max-w-md">
 		<div class="p-6">
 			<h3 class="text-lg font-semibold text-gray-900 mb-4">
-				{{ trans("Reject Adjustment Request") }}
+				{{ ctrans("Reject Adjustment Request") }}
 			</h3>
 			<p class="text-sm text-gray-600 mb-4">
-				{{ trans("Are you sure you want to reject this adjustment request from") }}
+				{{ ctrans("Are you sure you want to reject this adjustment request from") }}
 				<strong>{{ selectedAdjustment?.employee_name }}</strong
 				>?
 			</p>
@@ -202,24 +202,24 @@ const closeRejectModal = () => {
 			<form @submit.prevent="submitReject" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700 mb-1">{{
-						trans("Reason for rejection")
+						ctrans("Reason for rejection")
 					}}</label>
 					<textarea
 						v-model="rejectForm.approval_comment"
 						rows="3"
 						class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-						:placeholder="trans('Please provide a reason for rejection')" />
+						:placeholder="ctrans('Please provide a reason for rejection')" />
 					<p v-if="rejectForm.errors.approval_comment" class="text-sm text-red-500 mt-1">
 						{{ rejectForm.errors.approval_comment }}
 					</p>
 				</div>
 
 				<div class="flex justify-end gap-3 pt-4">
-					<Button @click="closeRejectModal" :label="trans('Cancel')" type="tertiary" />
+					<Button @click="closeRejectModal" :label="ctrans('Cancel')" type="tertiary" />
 						<Button
 							type="primary"
 							nativeType="submit"
-							:label="trans('Reject')"
+							:label="ctrans('Reject')"
 							:loading="isSubmitting" />
 				</div>
 			</form>

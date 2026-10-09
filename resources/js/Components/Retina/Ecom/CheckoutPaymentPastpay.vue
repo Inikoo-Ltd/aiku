@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import { computed, inject, ref } from "vue"
 import { faArrowRight, faCheckCircle } from "@fas"
@@ -71,9 +71,9 @@ const onSubmitPlaceOrder = async () => {
 		const errorMessage = error.response?.data?.message
 			|| error.response?.data?.errors
 			|| error.message
-			|| trans("Please try again or contact administrator")
+			|| ctrans("Please try again or contact administrator")
 		notify({
-			title: trans("Something went wrong"),
+			title: ctrans("Something went wrong"),
 			text: errorMessage,
 			type: 'error'
 		})

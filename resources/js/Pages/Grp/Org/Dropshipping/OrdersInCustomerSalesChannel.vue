@@ -4,7 +4,7 @@ import TableCustomerPlatformOrders from "@/Components/Tables/Grp/Org/Ordering/Ta
 import { Head, router } from "@inertiajs/vue3";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { capitalize } from "@/Composables/capitalize";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { ref } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from "@kyvg/vue3-notification";
@@ -48,7 +48,7 @@ const onSubmitAddOrder = (close: Function) => {
             onError: (error) => {
                 isLoadingSubmit.value = false;
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 });
@@ -68,7 +68,7 @@ const onSubmitAddOrder = (close: Function) => {
             <Popover>
                 <template #button="{ open }">
                     <Button icon="fas fa-plus" :disabled="open" :loading="isLoadingSubmit">
-                        <template #label>{{ trans("Add order") }}</template>
+                        <template #label>{{ ctrans("Add order") }}</template>
                     </Button>
                 </template>
 
@@ -79,7 +79,7 @@ const onSubmitAddOrder = (close: Function) => {
                         </div>
                         <span class="text-sm px-1 my-2 flex items-start">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="-ml-2 -mr-0.5 mt-1 text-red-500 h-[7px]" fixed-width aria-hidden="true" />
-								{{ trans("Client") }}:
+								{{ ctrans("Client") }}:
 							</span>
                         <div class="">
                             <PureMultiselectInfiniteScroll
@@ -93,7 +93,7 @@ const onSubmitAddOrder = (close: Function) => {
 											platform: (route().params as RouteParams).platform
 										}
 									}"
-                                :placeholder="trans('Select client to add order')"
+                                :placeholder="ctrans('Select client to add order')"
                                 valueProp="id"
                                 required
                                 @optionsList="(options: {}[]) => listClient = options"
@@ -110,7 +110,7 @@ const onSubmitAddOrder = (close: Function) => {
 
                         <div class="flex justify-end mt-3">
                             <Button
-                                v-tooltip="!selectedClient ? trans('Select client to add order') : ''"
+                                v-tooltip="!selectedClient ? ctrans('Select client to add order') : ''"
                                 @click="() => onSubmitAddOrder(closed)"
                                 :type="'save'"
                                 :loading="isLoadingSubmit"

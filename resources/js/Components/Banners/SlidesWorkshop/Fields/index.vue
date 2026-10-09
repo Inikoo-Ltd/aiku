@@ -31,7 +31,7 @@
   import Select from '@/Components/Forms/Fields/Select.vue'
   import Phone from '@/Components/Forms/Fields/Phone.vue'
   import Date from '@/Components/Forms/Fields/Date.vue'
-  import {trans} from "laravel-vue-i18n"
+  import { ctrans } from "@/Composables/useTrans"
   import Address from "@/Components/Forms/Fields/Address.vue"
   import Radio from '@/Components/Forms/Fields/Radio.vue'
   import Country from "@/Components/Forms/Fields/Country.vue"
@@ -158,7 +158,7 @@
 
                           <button type="submit" :disabled="form.processing"
                                   class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                              {{ trans('Save') }}
+                              {{ ctrans('Save') }}
                           </button>
                       </div>
                   </div>

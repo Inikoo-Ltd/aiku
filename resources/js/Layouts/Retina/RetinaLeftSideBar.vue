@@ -16,7 +16,7 @@ import { faChevronLeft } from "@far"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { ref } from "vue"
 import { router } from '@inertiajs/vue3'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 // import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
 library.add(faChevronLeft)
@@ -115,7 +115,7 @@ const onLogoutAuth = () => {
                             <div class="min-w-32 flex flex-col justify-center gap-y-2">
                                 <div class="whitespace-nowrap text-gray-500 text-xs">Are you sure want to logout?</div>
                                 <div class="mx-auto">
-                                    <Button @click="onLogoutAuth()" :loading="isLoadingLogout" :label="trans('Yes, logout')" type="red" :full="true" />
+                                    <Button @click="onLogoutAuth()" :loading="isLoadingLogout" :label="ctrans('Yes, logout')" type="red" :full="true" />
                                 </div>
                             </div>
                         </PopoverPanel>

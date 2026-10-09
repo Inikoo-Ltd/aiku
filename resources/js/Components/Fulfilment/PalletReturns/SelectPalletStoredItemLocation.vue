@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 
 const props = defineProps<{
@@ -49,7 +49,7 @@ const generateLocationRoute = (palletStoredItem: any): string | null => {
 <template>
     <div>
         <div class="text-center font-semibold mb-4 text-2xl">
-            {{ trans("Location list for item") }} {{ item?.reference }}
+            {{ ctrans("Location list for item") }} {{ item?.reference }}
         </div>
 
         <div class="rounded p-1 grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -83,7 +83,7 @@ const generateLocationRoute = (palletStoredItem: any): string | null => {
                     </span>
 
                     <span class="ml-1 whitespace-nowrap text-gray-500 tabular-nums border rounded px-1 text-xs border-gray-300">
-                        {{ Number(palletStoredItem.quantity_in_pallet || 0) }} {{ trans("stocks") }}
+                        {{ Number(palletStoredItem.quantity_in_pallet || 0) }} {{ ctrans("stocks") }}
                     </span>
                 </div>
 

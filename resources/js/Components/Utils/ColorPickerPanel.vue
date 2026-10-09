@@ -4,7 +4,7 @@ import { ColorPicker } from 'vue-color-kit'
 import 'vue-color-kit/dist/vue-color-kit.css'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlus, faTimes } from '@fal'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { normaliseColor } from './savedColors'
 import { useSavedColors } from './useSavedColors'
 import { colorValueToHex, hexToColorValue, type ColorValue } from './colorValue'
@@ -68,7 +68,7 @@ const applyPaletteColor = (color: string): void => {
                 {{ label }}
             </span>
 
-            <button v-if="closable" type="button" :aria-label="trans('Close')" @click="emits('close')"
+            <button v-if="closable" type="button" :aria-label="ctrans('Close')" @click="emits('close')"
                 class="-mr-1 flex h-5 w-5 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
                 <FontAwesomeIcon :icon="faTimes" class="h-3 w-3" fixed-width aria-hidden="true" />
             </button>
@@ -90,13 +90,13 @@ const applyPaletteColor = (color: string): void => {
             <div class="mt-3 border-t border-gray-200 pt-2">
                 <div class="flex items-center justify-between gap-3">
                     <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                        {{ trans('Saved') }}
+                        {{ ctrans('Saved') }}
                     </span>
 
                     <button type="button" :disabled="!canSaveCurrentColor" @click="saveColor(currentColor)"
                         class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent">
                         <FontAwesomeIcon :icon="faPlus" class="h-2.5 w-2.5" fixed-width aria-hidden="true" />
-                        {{ trans('Save') }}
+                        {{ ctrans('Save') }}
                     </button>
                 </div>
 
@@ -106,7 +106,7 @@ const applyPaletteColor = (color: string): void => {
                             class="h-5 w-5 rounded border border-gray-200 transition-transform hover:scale-110"
                             :style="{ backgroundColor: saved }" @click="applyPaletteColor(saved)" />
 
-                        <button type="button" :aria-label="trans('Remove :color', { color: saved })"
+                        <button type="button" :aria-label="ctrans('Remove :color', { color: saved })"
                             class="absolute -right-1 -top-1 hidden h-3 w-3 items-center justify-center rounded-full bg-gray-400 text-white hover:bg-red-500 group-hover:flex"
                             @click.stop="forgetColor(saved)">
                             <FontAwesomeIcon :icon="faTimes" class="h-1.5 w-1.5" fixed-width aria-hidden="true" />
@@ -115,7 +115,7 @@ const applyPaletteColor = (color: string): void => {
                 </div>
 
                 <p v-else class="mt-1.5 text-[10px] leading-tight text-gray-400">
-                    {{ trans('Pick a color, then press Save to keep it here.') }}
+                    {{ ctrans('Pick a color, then press Save to keep it here.') }}
                 </p>
             </div>
 

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const emit = defineEmits<{
     pick: [url: string]
@@ -55,13 +55,13 @@ onMounted(() => fetchGifs(false))
                 v-model="query"
                 type="text"
                 class="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                :placeholder="trans('Search GIFs')"
+                :placeholder="ctrans('Search GIFs')"
                 @input="onSearchInput"
             />
         </div>
         <div class="flex-1 overflow-y-auto p-2">
             <div v-if="!loading && !gifs.length" class="text-center text-xs text-gray-400 py-8">
-                {{ trans('No GIFs') }}
+                {{ ctrans('No GIFs') }}
             </div>
             <div v-else class="grid grid-cols-2 gap-1.5">
                 <button
@@ -78,7 +78,7 @@ onMounted(() => fetchGifs(false))
                 class="w-full mt-2 text-xs text-indigo-600 hover:underline py-1"
                 @click="fetchGifs(true)"
             >
-                {{ trans('Load more') }}
+                {{ ctrans('Load more') }}
             </button>
         </div>
         <div class="text-xxs text-gray-400 text-right px-2 pb-1 shrink-0">

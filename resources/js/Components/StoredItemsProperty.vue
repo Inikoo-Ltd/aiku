@@ -8,7 +8,7 @@ import CreateStoredItems from "./CreateStoredItems.vue"
 import Tag from '@/Components/Tag.vue'
 import { get } from 'lodash-es'
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 
 const props = defineProps<{
@@ -84,8 +84,8 @@ const sendToServer = async (data : {}, replaceData?: boolean) => {
                 id: get(e, [`stored_item_ids`])
             }
             notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to update the stored items"),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Failed to update the stored items"),
                 type: "error"
             })
         },

@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { criterionLabel, criterionTypeLabel, criterionTypeOrder, type Criterion } from "@/Composables/googleAdsCriteria"
 
 /**
@@ -56,7 +56,7 @@ const groups = computed(() =>
                                 criterion.negative ? 'bg-[#fdeaea] text-[#d03b3b] line-through' : 'bg-gray-100 text-gray-700',
                                 criterion.status === 'PAUSED' ? 'opacity-50' : '',
                             ]"
-                            :title="criterion.negative ? trans('Excluded') : criterion.status === 'PAUSED' ? trans('Paused') : ''">
+                            :title="criterion.negative ? ctrans('Excluded') : criterion.status === 'PAUSED' ? ctrans('Paused') : ''">
                             {{ criterionLabel(criterion) }}
                         </span>
                     </dd>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import PaymentMethodBadge from "@/Components/Accounting/PaymentMethodBadge.vue"
@@ -33,11 +33,11 @@ defineProps<{
     <Link :href="route(tableRoute.name, tableRoute.parameters)"
         class="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-400 transition-colors">
         <div class="flex items-baseline justify-between mb-3">
-            <div class="font-medium text-gray-700">{{ trans("Payment methods") }}</div>
+            <div class="font-medium text-gray-700">{{ ctrans("Payment methods") }}</div>
             <div class="text-xs text-gray-500">{{ summary.period_label.toLowerCase() }} · {{ locale.currencyFormat(summary.currency_code, summary.total_sales) }}</div>
         </div>
 
-        <div v-if="!summary.methods.length" class="text-sm text-gray-400">{{ trans("No payments yet") }}</div>
+        <div v-if="!summary.methods.length" class="text-sm text-gray-400">{{ ctrans("No payments yet") }}</div>
 
         <div v-for="row in summary.methods" :key="row.method + row.payment_account_type" class="grid grid-cols-[1fr_auto] gap-x-3 items-center text-sm py-0.5">
             <div class="flex items-center gap-2 min-w-0">
@@ -53,6 +53,6 @@ defineProps<{
             </div>
         </div>
 
-        <div v-if="summary.others" class="text-xs text-gray-400 mt-1">{{ trans("+:n more", { n: summary.others }) }}</div>
+        <div v-if="summary.others" class="text-xs text-gray-400 mt-1">{{ ctrans("+:n more", { n: summary.others }) }}</div>
     </Link>
 </template>

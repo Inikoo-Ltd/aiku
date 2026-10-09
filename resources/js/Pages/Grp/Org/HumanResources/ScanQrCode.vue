@@ -8,7 +8,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: any,
@@ -112,8 +112,8 @@ const downloadQrCode = () => {
     upscaleContext.imageSmoothingEnabled = false
     upscaleContext.drawImage(qrCanvas, 0, 0, upscaledQr.width, upscaledQr.height)
 
-    const title = trans("Employee Scan")
-    const subtitle = trans("Scan QR to clock in or out")
+    const title = ctrans("Employee Scan")
+    const subtitle = ctrans("Scan QR to clock in or out")
     const footerText = selectedQrCode.value.label ?? selectedQrCode.value.hash
 
     const pdf = new jsPDF("p", "mm", "a4")
@@ -186,13 +186,13 @@ const downloadQrCode = () => {
             <template #cell(actions)="{ item }">
                 <div class="flex items-center gap-2">
                     <Link :href="route(item.edit_route.name, item.edit_route.parameters)">
-                        <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
+                        <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="ctrans('Edit')" />
                     </Link>
                     <Button
                         type="tertiary"
                         size="xs"
                         :icon="item.active ? faToggleOn : faToggleOff"
-                        :tooltip="item.active ? trans('Deactivate') : trans('Activate')"
+                        :tooltip="item.active ? ctrans('Deactivate') : ctrans('Activate')"
                         :loading="togglingId === item.id"
                         @click="toggleActive(item)" />
                 </div>
@@ -202,8 +202,8 @@ const downloadQrCode = () => {
         <Modal :isOpen="isQrModalOpen" width="w-full max-w-2xl" @onClose="closeQrCode">
             <div v-if="selectedQrCode" class="text-center space-y-4">
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-800">{{ trans("Employee Scan") }}</h2>
-                    <p class="text-sm text-gray-500">{{ trans("Scan QR to clock in or out") }}</p>
+                    <h2 class="text-xl font-semibold text-gray-800">{{ ctrans("Employee Scan") }}</h2>
+                    <p class="text-sm text-gray-500">{{ ctrans("Scan QR to clock in or out") }}</p>
                 </div>
 
                 <div ref="qrContainer"
@@ -211,7 +211,7 @@ const downloadQrCode = () => {
 
                     <Button @click="toggleFullscreen" type="secondary"
                         class="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
-                        :icon="isFullscreen ? faCompress : faExpand" :tooltip="trans('Toggle Fullscreen')" />
+                        :icon="isFullscreen ? faCompress : faExpand" :tooltip="ctrans('Toggle Fullscreen')" />
 
                     <QrcodeVue :value="selectedQrCode.qr_value" :size="isFullscreen ? 600 : 380" level="H" />
 
@@ -221,7 +221,7 @@ const downloadQrCode = () => {
                 </div>
 
                 <div class="flex justify-center gap-2">
-                    <Button :label="trans('Download QR Code (PDF)')" @click="downloadQrCode" type="tertiary"
+                    <Button :label="ctrans('Download QR Code (PDF)')" @click="downloadQrCode" type="tertiary"
                         :icon="faDownload" />
                     <Button type="cancel" @click="closeQrCode" />
                 </div>

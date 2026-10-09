@@ -3,7 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { ref, onMounted, nextTick, computed } from 'vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
 // import RetinaShowIris from '@/Layouts/RetinaShowIris.vue';
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faAsterisk } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -54,7 +54,7 @@ defineExpose({
         <div class="sm:col-span-6">
           <label for="what-you-sell" class="block text-sm font-medium text-gray-700">
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{trans("What Do You Sell")}}
+            {{ctrans("What Do You Sell")}}
           </label>
           <div class="mt-2">
             <PureInput
@@ -75,7 +75,7 @@ defineExpose({
         <div class="sm:col-span-3">
           <label for="shipments-per-week" class="block text-sm font-medium text-gray-700">
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{trans("Shipments Sent PerWeek")}}
+            {{ctrans("Shipments Sent PerWeek")}}
           </label>
           <div class="mt-2">
             <select v-model="form.shipments_per_week"
@@ -96,7 +96,7 @@ defineExpose({
         <div class="sm:col-span-3">
           <label for="goods-size-and-weight" class="block text-sm font-medium text-gray-700">
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{trans("Size and Weight of Your Goods")}}
+            {{ctrans("Size and Weight of Your Goods")}}
           </label>
           <div class="mt-2">
             <PureInput v-model="form.size_and_weight"

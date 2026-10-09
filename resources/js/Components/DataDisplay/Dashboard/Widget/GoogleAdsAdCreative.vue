@@ -4,7 +4,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { youtubeUrl } from "@/Composables/googleAdsCriteria"
 
 /**
@@ -47,7 +47,7 @@ defineProps<{
         <p v-if="ad.business_name || ad.call_to_action" class="mt-1 text-gray-500">
             <span v-if="ad.business_name">{{ ad.business_name }}</span>
             <span v-if="ad.business_name && ad.call_to_action"> · </span>
-            <span v-if="ad.call_to_action">{{ trans("Button") }}: {{ ad.call_to_action }}</span>
+            <span v-if="ad.call_to_action">{{ ctrans("Button") }}: {{ ad.call_to_action }}</span>
         </p>
 
         <div v-if="ad.images?.length" class="mt-2 flex flex-wrap gap-2">
@@ -62,20 +62,20 @@ defineProps<{
                 <img
                     v-if="image.url"
                     :src="image.url"
-                    :alt="image.name ?? trans('Ad image')"
+                    :alt="image.name ?? ctrans('Ad image')"
                     loading="lazy"
                     class="h-20 w-auto max-w-[12rem] rounded object-contain" />
-                <span v-else class="block px-2 py-1 text-gray-500">{{ image.name ?? trans("Image") }}</span>
+                <span v-else class="block px-2 py-1 text-gray-500">{{ image.name ?? ctrans("Image") }}</span>
             </a>
         </div>
 
         <div v-if="ad.logos?.length" class="mt-2 flex flex-wrap items-center gap-2">
-            <span class="text-gray-500">{{ trans("Logo") }}</span>
+            <span class="text-gray-500">{{ ctrans("Logo") }}</span>
             <img
                 v-for="(logo, i) in ad.logos"
                 :key="'logo' + i"
                 :src="logo.url ?? undefined"
-                :alt="logo.name ?? trans('Logo')"
+                :alt="logo.name ?? ctrans('Logo')"
                 loading="lazy"
                 class="h-8 w-auto rounded ring-1 ring-gray-100" />
         </div>
@@ -90,7 +90,7 @@ defineProps<{
                     class="primaryLink">
                     {{ video.video_title ?? video.name ?? video.video_id }}
                 </a>
-                <span v-else class="text-gray-500">{{ video.name ?? trans("Video") }}</span>
+                <span v-else class="text-gray-500">{{ video.name ?? ctrans("Video") }}</span>
             </li>
         </ul>
 
@@ -99,7 +99,7 @@ defineProps<{
                 <img
                     v-if="card.image?.url"
                     :src="card.image.url"
-                    :alt="card.headline ?? trans('Carousel card')"
+                    :alt="card.headline ?? ctrans('Carousel card')"
                     loading="lazy"
                     class="h-24 w-full rounded-t object-cover" />
                 <div class="p-2">

@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPaintBrushAlt, faRocketLaunch, faChevronDown } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { isEqual } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Blueprint from './Blueprint'
 
 library.add(faPaintBrushAlt, faRocketLaunch, faChevronDown)
@@ -95,7 +95,7 @@ onMounted(() => {
         <div id="theme_colors" class="rounded pb-4 transition-all duration-1000" :class="fieldGroupAnimateSection">
           <div class="flex items-center gap-2 mb-4">
             <hr class="h-0.5 rounded-full w-full bg-gray-300" />
-            <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ trans('Select Theme') }}</span>
+            <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ ctrans('Select Theme') }}</span>
             <hr class="h-0.5 rounded-full w-full bg-gray-300" />
           </div>
 
@@ -113,7 +113,7 @@ onMounted(() => {
                     :style="{ backgroundColor: color }"
                   />
                 </div>
-                <span class="text-sm text-gray-700">{{ trans('Theme') }} {{ colorThemes.findIndex(t => isEqual(t, data.layout?.color)) + 1 }}</span>
+                <span class="text-sm text-gray-700">{{ ctrans('Theme') }} {{ colorThemes.findIndex(t => isEqual(t, data.layout?.color)) + 1 }}</span>
               </div>
               <FontAwesomeIcon
                 icon="fal fa-chevron-down"
@@ -145,7 +145,7 @@ onMounted(() => {
                           :style="{ backgroundColor: color }"
                         />
                       </div>
-                      <span class="text-sm font-medium text-gray-700">{{ trans('Theme') }} {{ index + 1 }}</span>
+                      <span class="text-sm font-medium text-gray-700">{{ ctrans('Theme') }} {{ index + 1 }}</span>
                     </div>
                     <FontAwesomeIcon
                       v-if="isEqual(data.layout?.color, colorTheme)"
@@ -164,7 +164,7 @@ onMounted(() => {
         <div>
           <div class="flex items-center gap-2 mb-4">
             <hr class="h-0.5 rounded-full w-full bg-gray-300" />
-            <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ trans('Select Layout') }}</span>
+            <span class="whitespace-nowrap text-sm text-gray-600 font-semibold">{{ ctrans('Select Layout') }}</span>
             <hr class="h-0.5 rounded-full w-full bg-gray-300" />
           </div>
 
@@ -191,7 +191,7 @@ onMounted(() => {
                   :style="{ background: layout.pattern }"
                 />
               </div>
-              <span class="text-sm font-semibold">{{ trans(layout.label) }}</span>
+              <span class="text-sm font-semibold">{{ ctrans(layout.label) }}</span>
             </label>
           </div>
         </div>

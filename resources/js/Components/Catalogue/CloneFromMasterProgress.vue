@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faTimes, faChevronDown } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -20,13 +20,13 @@ const isAllFinished = computed(() => runningCount.value === 0)
 const barsOf = (progress: CloneFamilyProgress) => [
     {
         key: 'families',
-        label: trans('Families'),
+        label: ctrans('Families'),
         done: progress.families.done,
         total: progress.families.total,
     },
     {
         key: 'products',
-        label: trans('Products'),
+        label: ctrans('Products'),
         done: progress.products.done,
         total: progress.products.total,
     },
@@ -60,7 +60,7 @@ const onCloseAll = () => {
                     fixed-width
                     aria-hidden="true" />
                 <span class="text-xs">
-                    {{ isAllFinished ? trans('Cloning finished') : trans('Cloning to shops…') }}
+                    {{ isAllFinished ? ctrans('Cloning finished') : ctrans('Cloning to shops…') }}
                 </span>
                 <span
                     v-if="runningCount > 1"
@@ -81,7 +81,7 @@ const onCloseAll = () => {
                     class="absolute bottom-full right-0 mb-2 z-[9999] w-[380px] max-w-[92vw] rounded-lg border border-gray-200 bg-white text-gray-700 shadow-2xl overflow-hidden">
                     <div class="flex items-center gap-x-2 border-b border-gray-200 bg-gray-50 px-3 py-2">
                         <span class="text-xs font-semibold text-gray-700">
-                            {{ isAllFinished ? trans('Cloning finished') : trans('Cloning to shops…') }}
+                            {{ isAllFinished ? ctrans('Cloning finished') : ctrans('Cloning to shops…') }}
                         </span>
                         <div class="ml-auto flex items-center gap-x-1">
                             <button
@@ -118,7 +118,7 @@ const onCloseAll = () => {
                                     fixed-width
                                     aria-hidden="true" />
                                 <span class="truncate font-semibold text-gray-700">
-                                    {{ progress.masterFamily || trans('Preparing to clone…') }}
+                                    {{ progress.masterFamily || ctrans('Preparing to clone…') }}
                                 </span>
                             </div>
 

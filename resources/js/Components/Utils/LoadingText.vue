@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     text?: string
@@ -29,7 +29,7 @@ onUnmounted(() => {
 
 <template>
     <div class="relative w-fit">
-        <span>{{ text ?? trans('Loading') }}</span>
+        <span>{{ text ?? ctrans('Loading') }}</span>
         <div class="absolute bottom-0 left-full">{{ loadingDot }}</div>
     </div>
 </template>

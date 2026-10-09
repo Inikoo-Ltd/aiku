@@ -3,7 +3,7 @@ import Table from '@/Components/Table/Table.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { Calculation, ProductTransaction } from '@/types/Invoices'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { faFilePdf } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -39,7 +39,7 @@ const props = defineProps<{
                     </div>
                 </div>
 
-                <a v-if="pdfRoute.name" :href="route(pdfRoute.name, pdfRoute.parameters)" target="_blank" class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
+                <a v-if="pdfRoute.name" :href="route(pdfRoute.name, pdfRoute.parameters)" target="_blank" class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="ctrans('Download in')">
                     <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
                 </a>
             </div>

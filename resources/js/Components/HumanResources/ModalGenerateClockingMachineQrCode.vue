@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -51,8 +51,8 @@ const submit = async () => {
         emit('generated', data.data)
 
         notify({
-            title: trans('Success'),
-            text: trans('QR code successfully generated'),
+            title: ctrans('Success'),
+            text: ctrans('QR code successfully generated'),
             type: 'success',
         })
 
@@ -61,8 +61,8 @@ const submit = async () => {
     } catch (error: any) {
         const errors = error.response?.data?.errors || {}
         notify({
-            title: trans('Something went wrong'),
-            text: Object.values(errors).flat().join('. ') || trans('Failed to submit the data, please try again'),
+            title: ctrans('Something went wrong'),
+            text: Object.values(errors).flat().join('. ') || ctrans('Failed to submit the data, please try again'),
             type: 'error',
         })
     } finally {
@@ -76,27 +76,27 @@ const submit = async () => {
         <Button
             type="create"
             icon="fal fa-qrcode"
-            :label="trans('QR code')"
+            :label="ctrans('QR code')"
             @click="openModal"
         />
 
         <Modal :isOpen="isModalOpen" width="w-full max-w-lg" @onClose="closeModal">
             <div class="p-1 space-y-4">
                 <h2 class="text-2xl font-bold text-center">
-                    {{ trans('Generate QR code') }}
+                    {{ ctrans('Generate QR code') }}
                 </h2>
 
                 <div class="space-y-2">
                     <label for="clocking_machine_qr_code_label" class="font-medium">
                         <FontAwesomeIcon icon="fas fa-asterisk"
                                 class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Label') }}:
+                        {{ ctrans('Label') }}:
                     </label>
 
                     <PureInput
                         id="clocking_machine_qr_code_label"
                         v-model="label"
-                        :placeholder="trans('Input a label for the QR code')"
+                        :placeholder="ctrans('Input a label for the QR code')"
                         @keydown.enter="!isSubmitting && submit()"
                     />
                 </div>
@@ -107,7 +107,7 @@ const submit = async () => {
                     <Button
                         full
                         icon="fal fa-qrcode"
-                        :label="isSubmitting ? trans('Loading') : trans('Generate')"
+                        :label="isSubmitting ? ctrans('Loading') : ctrans('Generate')"
                         :disabled="isSubmitting || label.trim().length == 0"
                         :loading="isSubmitting"
                         @click="submit"

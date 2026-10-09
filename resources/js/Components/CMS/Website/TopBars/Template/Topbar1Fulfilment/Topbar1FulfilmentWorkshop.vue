@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -113,7 +113,7 @@ const screenType = inject("screenType", "desktop")
             :style="getStyles(model?.profile.container?.properties)"
                 @click="()=> emits('setPanelActive', 'profile')"
         >
-            <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
+            <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="ctrans('Profile')" fixed-width aria-hidden='true' />
             <div v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
         </a>
 
@@ -135,7 +135,7 @@ const screenType = inject("screenType", "desktop")
             :style="getStyles(model?.logout.container?.properties)"
             @click="()=> emits('setPanelActive', 'logout')"
         >
-            <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
+            <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="ctrans('Log out')" class='' fixed-width aria-hidden='true' />
             <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
         </a>
     </div>

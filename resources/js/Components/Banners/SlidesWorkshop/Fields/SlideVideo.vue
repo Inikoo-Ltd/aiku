@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, watch } from "vue"
 import { faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowLeft, faStar } from "@fortawesome/free-solid-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 type ViewerType = "user" | "agent"
 
@@ -48,8 +48,8 @@ const sessionApiBase = computed(() =>
 
 const statusLabel = computed(() =>
 	isClosed.value
-		? trans("Closed")
-		: trans("Active")
+		? ctrans("Closed")
+		: ctrans("Active")
 )
 
 const statusClass = computed(() =>
@@ -211,7 +211,7 @@ onMounted(async () => {
 					v-if="canLoadMore && messages.length && !isLoadingMore"
 					@click="getMessages(true)"
 					class="px-2 py-1 text-xs border rounded">
-					{{ trans("Load more") }}
+					{{ ctrans("Load more") }}
 				</button>
 				<span v-if="isLoadingMore" class="text-xs text-gray-500 ml-2">
 					Loading...
@@ -242,14 +242,14 @@ onMounted(async () => {
 			<div
 				v-if="!messages.length && !isLoading"
 				class="text-sm text-gray-500 text-center py-8">
-				{{ trans("No messages") }}
+				{{ ctrans("No messages") }}
 			</div>
 		</div>
 
 		<!-- Rating -->
 		<div class="border-t bg-white px-4 py-3">
 			<div class="flex items-center justify-between">
-				<div class="text-sm font-medium">{{ trans("Rate this chat") }}</div>
+				<div class="text-sm font-medium">{{ ctrans("Rate this chat") }}</div>
 				<div class="flex gap-1">
 					<button v-for="n in 5" :key="n" @click="updateRating(n)">
 						<FontAwesomeIcon

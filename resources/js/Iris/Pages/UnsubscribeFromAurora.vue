@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue"
 import axios from "axios"
 import Button from "@iris/Components/IrisButton.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 
 const props = defineProps<{
@@ -106,11 +106,11 @@ function goHome() {
                 <table class="info-table">
                     <tbody>
                     <tr>
-                        <td class="label">{{ trans("Recipient Email") }}</td>
+                        <td class="label">{{ ctrans("Recipient Email") }}</td>
                         <td class="value">{{ recipientEmail }}</td>
                     </tr>
                     <tr>
-                        <td class="label">{{ trans("Name") }}</td>
+                        <td class="label">{{ ctrans("Name") }}</td>
                         <td class="value">{{ recipientName }}</td>
                     </tr>
                     </tbody>

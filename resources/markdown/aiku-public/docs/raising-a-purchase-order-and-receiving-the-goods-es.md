@@ -2,7 +2,7 @@
 title: Cursar una orden de compra y recibir la mercancía
 summary: Compra a un proveedor ordinario - cursa la orden de compra, consigue que se confirme, y luego convierte la entrega en stock que puedas vender.
 date: 2026-10-09
-source_date: 2026-10-08
+source_date: 2026-10-09
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 ---

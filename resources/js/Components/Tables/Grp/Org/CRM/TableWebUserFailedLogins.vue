@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 defineProps<{
     data: object
@@ -18,7 +18,7 @@ defineProps<{
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(failed_at)="{ item: failedLogin }">
-            {{ failedLogin.failed_at ? useFormatTime(failedLogin.failed_at) : trans('never') }}
+            {{ failedLogin.failed_at ? useFormatTime(failedLogin.failed_at) : ctrans('never') }}
         </template>
     </Table>
 </template>

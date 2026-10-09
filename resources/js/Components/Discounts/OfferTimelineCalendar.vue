@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -228,33 +228,33 @@ const modeColumnWidth: Record<TimelineMode, number> = {
 }
 
 const monthNames = [
-    trans("January"),
-    trans("February"),
-    trans("March"),
-    trans("April"),
-    trans("May"),
-    trans("June"),
-    trans("July"),
-    trans("August"),
-    trans("September"),
-    trans("October"),
-    trans("November"),
-    trans("December"),
+    ctrans("January"),
+    ctrans("February"),
+    ctrans("March"),
+    ctrans("April"),
+    ctrans("May"),
+    ctrans("June"),
+    ctrans("July"),
+    ctrans("August"),
+    ctrans("September"),
+    ctrans("October"),
+    ctrans("November"),
+    ctrans("December"),
 ]
 
 const shortMonthNames = [
-    trans("Jan"),
-    trans("Feb"),
-    trans("Mar"),
-    trans("Apr"),
-    trans("May"),
-    trans("Jun"),
-    trans("Jul"),
-    trans("Aug"),
-    trans("Sep"),
-    trans("Oct"),
-    trans("Nov"),
-    trans("Dec"),
+    ctrans("Jan"),
+    ctrans("Feb"),
+    ctrans("Mar"),
+    ctrans("Apr"),
+    ctrans("May"),
+    ctrans("Jun"),
+    ctrans("Jul"),
+    ctrans("Aug"),
+    ctrans("Sep"),
+    ctrans("Oct"),
+    ctrans("Nov"),
+    ctrans("Dec"),
 ]
 
 const campaignTypeColorMap = computed(() => {
@@ -374,7 +374,7 @@ const formatAmount = (value?: string | number | null): string => {
 }
 
 const boolLabel = (value?: boolean | null): string => {
-    return value ? trans("Yes") : trans("No")
+    return value ? ctrans("Yes") : ctrans("No")
 }
 
 const isAllowedColor = (value: string): boolean => {
@@ -588,8 +588,8 @@ const openItem = (item: TimelineItem): void => {
 const showTooltipAtCursor = (event: MouseEvent, item: TimelineItem): void => {
     hoverTooltip.value.visible = true
     const from = item.rawFrom ?? item.from
-    const to = item.rawTo || trans("No end date")
-    hoverTooltip.value.text = `${trans("From")}: ${from} • ${trans("To")}: ${to}`
+    const to = item.rawTo || ctrans("No end date")
+    hoverTooltip.value.text = `${ctrans("From")}: ${from} • ${ctrans("To")}: ${to}`
     hoverTooltip.value.x = event.clientX + 12
     hoverTooltip.value.y = event.clientY + 12
 }
@@ -723,12 +723,12 @@ const yearOptions = computed<SelectOption[]>(() => {
 })
 
 const campaignTypeOptions = computed<SelectOption[]>(() => [
-    { value: "", label: trans("All Campaign Types") },
+    { value: "", label: ctrans("All Campaign Types") },
     ...(props.calendar.filterOptions?.campaignTypes ?? []),
 ])
 
 const shopOptions = computed<SelectOption[]>(() => [
-    { value: "", label: trans("All Shops") },
+    { value: "", label: ctrans("All Shops") },
     ...(props.calendar.filterOptions?.shops ?? []),
 ])
 
@@ -756,28 +756,28 @@ watch(
             <div class="flex flex-wrap items-center gap-2">
                 <Button
                     :key="`mode-week-${mode === 'week'}`"
-                    :label="trans('Week')"
+                    :label="ctrans('Week')"
                     size="md"
                     :type="mode === 'week' ? 'black' : 'transparent'"
                     @click="mode = 'week'"
                 />
                 <Button
                     :key="`mode-month-${mode === 'month'}`"
-                    :label="trans('Month')"
+                    :label="ctrans('Month')"
                     size="md"
                     :type="mode === 'month' ? 'black' : 'transparent'"
                     @click="mode = 'month'"
                 />
                 <Button
                     :key="`mode-quarter-${mode === 'quarter'}`"
-                    :label="trans('Quarter')"
+                    :label="ctrans('Quarter')"
                     size="md"
                     :type="mode === 'quarter' ? 'black' : 'transparent'"
                     @click="mode = 'quarter'"
                 />
                 <Button
                     :key="`mode-year-${mode === 'year'}`"
-                    :label="trans('Year')"
+                    :label="ctrans('Year')"
                     size="md"
                     :type="mode === 'year' ? 'black' : 'transparent'"
                     @click="mode = 'year'"
@@ -788,7 +788,7 @@ watch(
                 <InputText
                     v-model="searchTerm"
                     class="w-full text-xs lg:w-64"
-                    :placeholder="trans('Search offer code or name')"
+                    :placeholder="ctrans('Search offer code or name')"
                     @keyup.enter="applyFilters(true)"
                 />
 
@@ -798,7 +798,7 @@ watch(
                     optionLabel="label"
                     optionValue="value"
                     class="w-full text-xs lg:w-56"
-                    :placeholder="trans('All Campaign Types')"
+                    :placeholder="ctrans('All Campaign Types')"
                     @change="applyFilters(true)"
                 />
                 <Select
@@ -807,7 +807,7 @@ watch(
                     optionLabel="label"
                     optionValue="value"
                     class="w-full text-xs lg:w-56"
-                    :placeholder="trans('All Shops')"
+                    :placeholder="ctrans('All Shops')"
                     @change="applyFilters(true)"
                 />
                 <Select
@@ -816,7 +816,7 @@ watch(
                     optionLabel="label"
                     optionValue="value"
                     class="w-full text-xs lg:w-32"
-                    :placeholder="trans('Year')"
+                    :placeholder="ctrans('Year')"
                     :showClear="selectedYear !== null"
                     @change="applyFilters(true)"
                 />
@@ -833,7 +833,7 @@ watch(
 
             <div class="flex border-b border-gray-200 bg-gray-50">
                 <div class="shrink-0 flex h-10 items-center border-r border-gray-200 bg-gray-50 px-3 text-xs font-semibold text-gray-600" :style="{ width: `${leftColumnWidth}px` }">
-                    {{ trans('Vouchers') }}
+                    {{ ctrans('Vouchers') }}
                 </div>
 
                 <div
@@ -929,7 +929,7 @@ watch(
 
         <div class="rounded-lg border border-gray-200 bg-white p-3">
             <div class="text-xs font-semibold text-gray-600">
-                {{ trans('Campaign Type Colors') }}
+                {{ ctrans('Campaign Type Colors') }}
             </div>
             <div class="mt-2 flex flex-wrap gap-1">
                 <div
@@ -963,8 +963,8 @@ watch(
                                 <span v-html="selectedItem.labelHtml" />
                             </div>
                             <div class="mt-2 flex flex-wrap items-center gap-4 text-base text-slate-600">
-                                <span>{{ trans("From") }}: {{ selectedItem.rawFrom ?? selectedItem.from }}</span>
-                                <span>{{ trans("To") }}: {{ selectedItem.rawTo || trans("No end date") }}</span>
+                                <span>{{ ctrans("From") }}: {{ selectedItem.rawFrom ?? selectedItem.from }}</span>
+                                <span>{{ ctrans("To") }}: {{ selectedItem.rawTo || ctrans("No end date") }}</span>
                             </div>
                         </div>
                         <div class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">
@@ -982,34 +982,34 @@ watch(
                 <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
                     <Card>
                         <template #title>
-                            <div class="text-lg font-semibold text-slate-800">{{ trans("Offer") }}</div>
+                            <div class="text-lg font-semibold text-slate-800">{{ ctrans("Offer") }}</div>
                         </template>
                         <template #content>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2 text-[15px] text-slate-700">
-                                <div class="text-slate-500">{{ trans("Code") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.code ?? selectedItem.offerCode ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Name") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.name ?? selectedItem.label ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Type") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.type ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("State") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.state ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Status") }}</div>
+                                <div class="text-slate-500">{{ ctrans("Code") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.code ?? selectedItem.offerCode ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Name") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.name ?? selectedItem.label ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Type") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.type ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("State") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.state ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Status") }}</div>
                                 <div class="inline-flex items-center">
                                     <Tag :value="boolLabel(selectedItem.details?.offer?.status)" :severity="selectedItem.details?.offer?.status ? 'success' : 'secondary'" rounded />
                                 </div>
-                                <div class="text-slate-500">{{ trans("Duration") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.duration_label ?? selectedItem.durationLabel ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Duration") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.offer?.duration_label ?? selectedItem.durationLabel ?? "-" }}</div>
                             </div>
                         </template>
                     </Card>
 
                     <Card>
                         <template #title>
-                            <div class="text-lg font-semibold text-slate-800">{{ trans("Campaign") }}</div>
+                            <div class="text-lg font-semibold text-slate-800">{{ ctrans("Campaign") }}</div>
                         </template>
                         <template #content>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2 text-[15px] text-slate-700">
-                                <div class="text-slate-500">{{ trans("Code") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.code ?? selectedItem.campaignCode ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Name") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.name ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Type") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Offers State") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.offers_state ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Status") }}</div>
+                                <div class="text-slate-500">{{ ctrans("Code") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.code ?? selectedItem.campaignCode ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Name") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.name ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Type") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Offers State") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.campaign?.offers_state ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Status") }}</div>
                                 <div class="inline-flex items-center">
                                     <Tag :value="boolLabel(selectedItem.details?.campaign?.status)" :severity="selectedItem.details?.campaign?.status ? 'success' : 'secondary'" rounded />
                                 </div>
@@ -1019,26 +1019,26 @@ watch(
 
                     <Card>
                         <template #title>
-                            <div class="text-lg font-semibold text-slate-800">{{ trans("Shop") }}</div>
+                            <div class="text-lg font-semibold text-slate-800">{{ ctrans("Shop") }}</div>
                         </template>
                         <template #content>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2 text-[15px] text-slate-700">
-                                <div class="text-slate-500">{{ trans("Code") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.shop?.code ?? selectedItem.shopCode ?? "-" }}</div>
-                                <div class="text-slate-500">{{ trans("Name") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.shop?.name ?? selectedItem.shopName ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Code") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.shop?.code ?? selectedItem.shopCode ?? "-" }}</div>
+                                <div class="text-slate-500">{{ ctrans("Name") }}</div><div class="font-medium text-slate-900">{{ selectedItem.details?.shop?.name ?? selectedItem.shopName ?? "-" }}</div>
                             </div>
                         </template>
                     </Card>
 
                     <Card>
                         <template #title>
-                            <div class="text-lg font-semibold text-slate-800">{{ trans("Date Time") }}</div>
+                            <div class="text-lg font-semibold text-slate-800">{{ ctrans("Date Time") }}</div>
                         </template>
                         <template #content>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2 text-[15px] text-slate-700">
-                                <div class="text-slate-500">{{ trans("Offer Start") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.offer?.start_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
-                                <div class="text-slate-500">{{ trans("Offer End") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.offer?.end_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
-                                <div class="text-slate-500">{{ trans("Campaign Start") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.campaign?.start_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
-                                <div class="text-slate-500">{{ trans("Campaign End") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.campaign?.finish_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Offer Start") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.offer?.start_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Offer End") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.offer?.end_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Campaign Start") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.campaign?.start_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Campaign End") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.campaign?.finish_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
                             </div>
                         </template>
                     </Card>
@@ -1046,22 +1046,22 @@ watch(
 
                 <Card>
                     <template #title>
-                        <div class="text-lg font-semibold text-slate-800">{{ trans("Offer Stats") }}</div>
+                        <div class="text-lg font-semibold text-slate-800">{{ ctrans("Offer Stats") }}</div>
                     </template>
                     <template #content>
                         <div class="grid grid-cols-1 gap-4 text-[15px] text-slate-700 xl:grid-cols-2">
                             <div class="grid grid-cols-[130px_1fr] gap-y-2">
-                                <div class="text-slate-500">{{ trans("Customers") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_customers) }}</div>
-                                <div class="text-slate-500">{{ trans("Invoices") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_invoices) }}</div>
-                                <div class="text-slate-500">{{ trans("Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.amount) }}</div>
-                                <div class="text-slate-500">{{ trans("Group Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.grp_amount) }}</div>
-                                <div class="text-slate-500">{{ trans("Last Used") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.stats?.offer?.last_used_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Customers") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_customers) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Invoices") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_invoices) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.amount) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Group Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.grp_amount) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Last Used") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.stats?.offer?.last_used_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
                             </div>
                             <div class="grid grid-cols-[130px_1fr] gap-y-2">
-                                <div class="text-slate-500">{{ trans("Orders") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_orders) }}</div>
-                                <div class="text-slate-500">{{ trans("Delivery Notes") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_delivery_notes) }}</div>
-                                <div class="text-slate-500">{{ trans("Org Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.org_amount) }}</div>
-                                <div class="text-slate-500">{{ trans("First Used") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.stats?.offer?.first_used_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Orders") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_orders) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Delivery Notes") }}</div><div class="font-medium text-slate-900">{{ formatNumber(selectedItem.details?.stats?.offer?.number_delivery_notes) }}</div>
+                                <div class="text-slate-500">{{ ctrans("Org Amount") }}</div><div class="font-medium text-slate-900">{{ formatAmount(selectedItem.details?.stats?.offer?.org_amount) }}</div>
+                                <div class="text-slate-500">{{ ctrans("First Used") }}</div><div class="font-medium text-slate-900">{{ useFormatTime(selectedItem.details?.stats?.offer?.first_used_at ?? undefined, { formatTime: "dd MMMM yyyy" }) }}</div>
                             </div>
                         </div>
                     </template>

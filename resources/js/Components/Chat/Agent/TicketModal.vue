@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle, faExternalLink, faLifeRing } from "@fortawesome/free-solid-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -34,10 +34,10 @@ const props = defineProps<{
 const emit = defineEmits(["close", "created"])
 
 const priorities = [
-    { label: trans("Low"), value: "low" },
-    { label: trans("Normal"), value: "normal" },
-    { label: trans("High"), value: "high" },
-    { label: trans("Urgent"), value: "urgent" },
+    { label: ctrans("Low"), value: "low" },
+    { label: ctrans("Normal"), value: "normal" },
+    { label: ctrans("High"), value: "high" },
+    { label: ctrans("Urgent"), value: "urgent" },
 ]
 
 const optionIcons: Record<string, string> = {
@@ -61,9 +61,9 @@ const optionIconClasses: Record<string, string> = {
 }
 
 const kinds = [
-    { label: trans("Bug"), value: "bug" },
-    { label: trans("Documentation"), value: "documentation" },
-    { label: trans("Data integrity"), value: "data_integrity" },
+    { label: ctrans("Bug"), value: "bug" },
+    { label: ctrans("Documentation"), value: "documentation" },
+    { label: ctrans("Data integrity"), value: "data_integrity" },
 ]
 
 const form = ref<{ summary: string; description: string; priority: string; kind: string | null; blocksSource: boolean; closesSource: boolean; images: File[] }>({
@@ -76,8 +76,8 @@ const form = ref<{ summary: string; description: string; priority: string; kind:
     images: [],
 })
 
-const blockedTooltip = trans("While this is ticked, this chat cannot be closed until the ticket is resolved or cancelled.")
-const closesTooltip = trans("Whoever settles the ticket writes a closing note. That note is sent to this customer here, and the chat is closed for you.")
+const blockedTooltip = ctrans("While this is ticked, this chat cannot be closed until the ticket is resolved or cancelled.")
+const closesTooltip = ctrans("Whoever settles the ticket writes a closing note. That note is sent to this customer here, and the chat is closed for you.")
 
 // A chat nobody is holding open is not one a developer can close on your behalf.
 watch(
@@ -146,7 +146,7 @@ const submit = async () => {
         created.value = data.data
         emit("created", data.data)
     } catch (error: any) {
-        notify({ title: trans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
     } finally {
         isSubmitting.value = false
     }
@@ -160,41 +160,41 @@ const submit = async () => {
                 <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width />
             </div>
             <div>
-                <h2 class="text-base font-semibold text-gray-800">{{ trans("Create ticket") }}</h2>
-                <p class="text-xs text-gray-400">{{ session?.contact_name || session?.guest_identifier || trans("chat session") }}</p>
+                <h2 class="text-base font-semibold text-gray-800">{{ ctrans("Create ticket") }}</h2>
+                <p class="text-xs text-gray-400">{{ session?.contact_name || session?.guest_identifier || ctrans("chat session") }}</p>
             </div>
         </div>
 
         <div v-if="created" class="flex flex-col items-center text-center py-6 px-4">
             <FontAwesomeIcon :icon="faCheckCircle" class="text-emerald-500 text-3xl mb-3" fixed-width />
-            <p class="text-sm font-medium text-gray-700">{{ trans("Ticket created") }}</p>
+            <p class="text-sm font-medium text-gray-700">{{ ctrans("Ticket created") }}</p>
             <a :href="created.url" target="_blank" rel="noopener" class="inline-flex items-center gap-2 mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
                 {{ created.key }}
                 <FontAwesomeIcon :icon="faExternalLink" class="text-xs" fixed-width />
             </a>
             <p class="text-xs text-gray-400 mt-1">{{ created.summary }}</p>
-            <Button class="mt-4" size="sm" :label="trans('Close')" @click="emit('close')" />
+            <Button class="mt-4" size="sm" :label="ctrans('Close')" @click="emit('close')" />
         </div>
 
         <form v-else class="space-y-3" @submit.prevent="submit">
             <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600">{{ trans("Subject") }}</label>
-                <InputText v-model="form.summary" class="w-full" :placeholder="trans('One line that says what is wrong')" maxlength="255" />
+                <label class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans("Subject") }}</label>
+                <InputText v-model="form.summary" class="w-full" :placeholder="ctrans('One line that says what is wrong')" maxlength="255" />
             </div>
             <div>
                 <label class="mb-1 block text-xs font-medium text-gray-600">
-                    {{ trans("Details") }}
-                    <span class="font-normal text-gray-400">{{ trans("(markdown works: **bold**, lists, links)") }}</span>
+                    {{ ctrans("Details") }}
+                    <span class="font-normal text-gray-400">{{ ctrans("(markdown works: **bold**, lists, links)") }}</span>
                 </label>
                 <TicketComposer
                     v-model:body="form.description"
                     v-model:images="form.images"
                     :rows="5"
-                    :placeholder="trans('What the customer reported. Paste a screenshot or drop images here.')" />
+                    :placeholder="ctrans('What the customer reported. Paste a screenshot or drop images here.')" />
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600">{{ trans("Priority") }}</label>
+                    <label class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans("Priority") }}</label>
                     <Select v-model="form.priority" :options="priorities" option-label="label" option-value="value" class="w-full">
                         <template #value="{ value, placeholder }">
                             <span v-if="value" class="flex items-center gap-2">
@@ -212,8 +212,8 @@ const submit = async () => {
                     </Select>
                 </div>
                 <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600">{{ trans("Kind") }}</label>
-                    <Select v-model="form.kind" :options="kinds" option-label="label" option-value="value" class="w-full" show-clear :placeholder="trans('Not set')">
+                    <label class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans("Kind") }}</label>
+                    <Select v-model="form.kind" :options="kinds" option-label="label" option-value="value" class="w-full" show-clear :placeholder="ctrans('Not set')">
                         <template #value="{ value, placeholder }">
                             <span v-if="value" class="flex items-center gap-2">
                                 <FontAwesomeIcon v-if="optionIcons[value]" :icon="optionIcons[value]" :class="optionIconClasses[value]" fixed-width aria-hidden="true" />
@@ -235,36 +235,36 @@ const submit = async () => {
                 <input v-model="form.blocksSource" type="checkbox" class="mt-0.5 cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
                 <span class="text-xs">
                     <span class="flex items-center gap-1.5 font-medium" :class="form.blocksSource ? 'text-amber-800' : 'text-gray-700'">
-                        {{ trans("Mark as blocked") }}
+                        {{ ctrans("Mark as blocked") }}
                         <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="blockedTooltip" class="text-gray-400" fixed-width />
                     </span>
                     <span class="mt-0.5 block" :class="form.blocksSource ? 'text-amber-700' : 'text-gray-400'">
                         {{ form.blocksSource
-                            ? trans("This chat stays open until this ticket is resolved or cancelled.")
-                            : trans("The chat can be closed while this ticket is still open.") }}
+                            ? ctrans("This chat stays open until this ticket is resolved or cancelled.")
+                            : ctrans("The chat can be closed while this ticket is still open.") }}
                     </span>
 
                     <label v-if="form.blocksSource" class="mt-2 flex cursor-pointer items-start gap-2 border-t border-amber-200 pt-2" @click.stop>
                         <input v-model="form.closesSource" type="checkbox" class="mt-0.5 cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
                         <span>
                             <span class="flex items-center gap-1.5 font-medium text-amber-800">
-                                {{ trans("Let the developer close this chat when the ticket is settled") }}
+                                {{ ctrans("Let the developer close this chat when the ticket is settled") }}
                                 <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="closesTooltip" class="text-amber-400" fixed-width />
                             </span>
                             <span class="mt-0.5 block text-amber-700">
                                 {{ form.closesSource
-                                    ? trans("Their closing note is sent to the customer here, and the chat is closed.")
-                                    : trans("You close the chat yourself once the ticket is settled.") }}
+                                    ? ctrans("Their closing note is sent to the customer here, and the chat is closed.")
+                                    : ctrans("You close the chat yourself once the ticket is settled.") }}
                             </span>
                         </span>
                     </label>
                 </span>
             </label>
 
-            <p class="text-xs text-gray-400">{{ trans("Raised as a Customer support ticket.") }}</p>
+            <p class="text-xs text-gray-400">{{ ctrans("Raised as a Customer support ticket.") }}</p>
             <div class="flex items-center justify-end gap-2 pt-2">
-                <Button type="tertiary" size="sm" :label="trans('Cancel')" @click="emit('close')" />
-                <Button size="sm" :label="trans('Create')" :loading="isSubmitting" :disabled="!form.summary.trim()" @click="submit" />
+                <Button type="tertiary" size="sm" :label="ctrans('Cancel')" @click="emit('close')" />
+                <Button size="sm" :label="ctrans('Create')" :loading="isSubmitting" :disabled="!form.summary.trim()" @click="submit" />
             </div>
         </form>
     </Modal>

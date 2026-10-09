@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -33,10 +33,10 @@ const CLOCKING_MACHINE_TYPE_BARCODE_SCANNER = 'barcode-scanner'
 const CLOCKING_MACHINE_TYPE_CAMERA_QR = 'camera-qr'
 
 const machineTypes = [
-    { value: CLOCKING_MACHINE_TYPE_QR_CODE, label: trans('QR Code'), icon: 'fal fa-qrcode' },
-    { value: CLOCKING_MACHINE_TYPE_PIN, label: trans('PIN'), icon: 'fal fa-hashtag' },
-    { value: CLOCKING_MACHINE_TYPE_BARCODE_SCANNER, label: trans('Barcode Scanner'), icon: 'fal fa-barcode-scan' },
-    { value: CLOCKING_MACHINE_TYPE_CAMERA_QR, label: trans('Camera QR Scanner'), icon: 'fal fa-camera' },
+    { value: CLOCKING_MACHINE_TYPE_QR_CODE, label: ctrans('QR Code'), icon: 'fal fa-qrcode' },
+    { value: CLOCKING_MACHINE_TYPE_PIN, label: ctrans('PIN'), icon: 'fal fa-hashtag' },
+    { value: CLOCKING_MACHINE_TYPE_BARCODE_SCANNER, label: ctrans('Barcode Scanner'), icon: 'fal fa-barcode-scan' },
+    { value: CLOCKING_MACHINE_TYPE_CAMERA_QR, label: ctrans('Camera QR Scanner'), icon: 'fal fa-camera' },
 ]
 
 const isModalOpen = ref(false)
@@ -78,8 +78,8 @@ const submit = async () => {
         })
 
         notify({
-            title: trans('Success'),
-            text: trans('Clocking machine successfully created'),
+            title: ctrans('Success'),
+            text: ctrans('Clocking machine successfully created'),
             type: 'success',
         })
 
@@ -88,8 +88,8 @@ const submit = async () => {
     } catch (error: any) {
         const errors = error.response?.data?.errors || {}
         notify({
-            title: trans('Something went wrong'),
-            text: Object.values(errors).flat().join('. ') || trans('Failed to submit the data, please try again'),
+            title: ctrans('Something went wrong'),
+            text: Object.values(errors).flat().join('. ') || ctrans('Failed to submit the data, please try again'),
             type: 'error',
         })
     } finally {
@@ -102,32 +102,32 @@ const submit = async () => {
     <div>
         <Button
             type="create"
-            :label="trans('Clocking machine')"
+            :label="ctrans('Clocking machine')"
             @click="openModal"
         />
 
         <Modal :isOpen="isModalOpen" width="w-full max-w-lg" @onClose="closeModal">
             <div class="p-1 space-y-4">
                 <h2 class="text-2xl font-bold text-center">
-                    {{ trans('New clocking machine') }}
+                    {{ ctrans('New clocking machine') }}
                 </h2>
 
                 <div class="space-y-2">
                     <label for="clocking_machine_name" class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Name') }}:
+                        {{ ctrans('Name') }}:
                     </label>
 
                     <PureInput
                         id="clocking_machine_name"
                         v-model="machineName"
-                        :placeholder="trans('Enter clocking machine name')"
+                        :placeholder="ctrans('Enter clocking machine name')"
                         @keydown.enter="!isFormInvalid && !isSubmitting && submit()"
                     />
                 </div>
 
                 <div class="space-y-2">
-                    <div class="font-medium">{{ trans('Type') }}:</div>
+                    <div class="font-medium">{{ ctrans('Type') }}:</div>
 
                     <div class="flex flex-wrap gap-2">
                         <button
@@ -149,14 +149,14 @@ const submit = async () => {
                 <div v-if="hasWorkplaceChoice" class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Workplace') }}:
+                        {{ ctrans('Workplace') }}:
                     </label>
 
                     <PureMultiselect
                         v-model="workplaceId"
                         :options="workplaces"
                         required
-                        :placeholder="trans('Select workplace')"
+                        :placeholder="ctrans('Select workplace')"
                     />
                 </div>
 
@@ -166,7 +166,7 @@ const submit = async () => {
                     <Button
                         full
                         icon="fad fa-save"
-                        :label="isSubmitting ? trans('Loading') : trans('Save')"
+                        :label="isSubmitting ? ctrans('Loading') : ctrans('Save')"
                         :disabled="isFormInvalid || isSubmitting"
                         :loading="isSubmitting"
                         @click="submit"

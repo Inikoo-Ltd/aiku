@@ -22,7 +22,7 @@ import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { get } from 'lodash-es'
 import { faExclamationTriangle } from '@fad'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from '@/types/route'
 import { PageHeadingTypes } from  '@/types/PageHeading'
 import { PalletDelivery, BoxStats, PDRNotes, UploadPallet } from '@/types/Pallet'
@@ -321,11 +321,11 @@ const isModalUploadFileOpen = ref(false)
                     <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
                         <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload pallet") }}
+                            {{ ctrans("Upload pallet") }}
                         </div>
                         <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload Customer's SKO") }}
+                            {{ ctrans("Upload Customer's SKO") }}
                         </div>
                     </MenuItems>
                 </transition>
@@ -413,14 +413,14 @@ const isModalUploadFileOpen = ref(false)
                     <Button v-if="currentTab === 'pallets'" :style="action.style" :icon="action.icon"
                         :iconRight="action.iconRight"
                         :key="`ActionButton${action.label}${action.style}`"
-                        :tooltip="trans('Add multiple pallets')"
+                        :tooltip="ctrans('Add multiple pallets')"
                         class="rounded-l-sm rounded-r-md border-l-0" />
                     <div v-else></div>
                 </template>
 
                 <template #content="{ close: closed }">
                     <div class="w-[350px]">
-                        <span class="text-xs  my-2">{{ trans('Type') }}: </span>
+                        <span class="text-xs  my-2">{{ ctrans('Type') }}: </span>
                         <div class="flex items-center gap-x-2">
                             <div v-for="(typeData, typeIdx) in typePallet" :key="typeIdx"
                                 class="relative py-2 px-1 flex items-center">
@@ -475,7 +475,7 @@ const isModalUploadFileOpen = ref(false)
                     </template>
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Type') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Type') }}: </span>
                             <div class="flex items-center">
                                 <div v-for="(typeData, typeIdx) in typePallet" :key="typeIdx"
                                     class="relative py-3 mr-4 flex items-center">
@@ -488,7 +488,7 @@ const isModalUploadFileOpen = ref(false)
                                     </label>
                                 </div>
                             </div>
-                            <span class="text-xs px-1 my-2">{{ trans('Reference') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Reference') }}: </span>
                             <div>
                                 <PureInput v-model="formAddPallet.customer_reference" autofocus placeholder="Reference"
                                     @keydown.enter="() => handleFormSubmitAddPallet(action, closed)" />
@@ -498,7 +498,7 @@ const isModalUploadFileOpen = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Notes') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Notes') }}: </span>
                                 <textarea
                                     class="placeholder:text-gray-400 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
                                     v-model="formAddPallet.notes" placeholder="Notes">
@@ -538,12 +538,12 @@ const isModalUploadFileOpen = ref(false)
                     </template>
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Services') }}: </span>
                             <div class="">
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddService.service_id"
                                     :fetchRoute="props.service_list_route"
-                                    :placeholder="trans('Select Services')"
+                                    :placeholder="ctrans('Select Services')"
                                     valueProp="id"
                                     @optionsList="(options) => dataServiceList = options"
                                 >
@@ -561,10 +561,10 @@ const isModalUploadFileOpen = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddService.quantity"
-                                    :placeholder="trans('Quantity')"
+                                    :placeholder="ctrans('Quantity')"
                                     @keydown.enter="() => onSubmitAddService(action, closed)"
                                 />
                                 <p v-if="get(formAddService, ['errors', 'quantity'])" class="mt-2 text-sm text-red-600">
@@ -609,12 +609,12 @@ const isModalUploadFileOpen = ref(false)
                     </template>
                     <template #content="{ close: closed }">
                         <div class="w-[350px]">
-                            <span class="text-xs px-1 my-2">{{ trans('Physical Goods') }}: </span>
+                            <span class="text-xs px-1 my-2">{{ ctrans('Physical Goods') }}: </span>
                             <div>
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddPhysicalGood.outer_id"
                                     :fetchRoute="physical_good_list_route"
-                                    :placeholder="trans('Select Physical Goods')"
+                                    :placeholder="ctrans('Select Physical Goods')"
                                     valueProp="id"
                                 />
 
@@ -623,7 +623,7 @@ const isModalUploadFileOpen = ref(false)
                                 </p>
                             </div>
                             <div class="mt-3">
-                                <span class="text-xs px-1 my-2">{{ trans('Quantity') }}: </span>
+                                <span class="text-xs px-1 my-2">{{ ctrans('Quantity') }}: </span>
                                 <PureInput
                                     v-model="formAddPhysicalGood.quantity"
                                     placeholder="Quantity"
@@ -663,7 +663,7 @@ const isModalUploadFileOpen = ref(false)
                 <Button
                     v-if="export_excel_route"
                     :href="'#'"
-                    :label="`${trans('Excel')}`"
+                    :label="`${ctrans('Excel')}`"
                     icon="fal fa-file-excel"
                     type="secondary"
                     target="_blank"
@@ -694,7 +694,7 @@ const isModalUploadFileOpen = ref(false)
                     />
                 </div>
                 <div class="ml-3">
-                    <h3 class="text-sm font-medium">{{ trans('Attention needed') }}</h3>
+                    <h3 class="text-sm font-medium">{{ ctrans('Attention needed') }}</h3>
                     <div class="text-xs opacity-70 ">
                         <p>{{ pallet_limits?.message }}</p>
                     </div>
@@ -744,7 +744,7 @@ const isModalUploadFileOpen = ref(false)
                 <Button
                     v-if="currentTab === 'attachments'"
                     @click="() => isModalUploadFileOpen = true"
-                    :label="trans('Attach file')"
+                    :label="ctrans('Attach file')"
                     icon="fal fa-upload"
                     type="secondary"
                 />

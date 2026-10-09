@@ -2,7 +2,7 @@
 import { inject} from 'vue'
 import { BoxStats } from '@/types/Pallet'
 import { capitalize } from '@/Composables/capitalize'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 import { Link } from '@inertiajs/vue3'
 
@@ -84,18 +84,18 @@ const props = defineProps<{
 
             <!-- Stats: count Pallets, Services, Physical Goods -->
             <div class="space-y-0.5">
-                <div v-tooltip="trans('Count of pallets')" class="w-fit flex items-center gap-x-3">
+                <div v-tooltip="ctrans('Count of pallets')" class="w-fit flex items-center gap-x-3">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon='fal fa-pallet' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
                     </dt>
-                    <dd class="text-gray-500 text-base font-medium tabular-nums">{{ locale.number(boxStats.stats.number_pallets) }} <span class="text-gray-400 font-normal">{{ boxStats.stats.number_pallets > 1 ? trans('Pallets') : trans('Pallet') }}</span></dd>
+                    <dd class="text-gray-500 text-base font-medium tabular-nums">{{ locale.number(boxStats.stats.number_pallets) }} <span class="text-gray-400 font-normal">{{ boxStats.stats.number_pallets > 1 ? ctrans('Pallets') : ctrans('Pallet') }}</span></dd>
                 </div>
 
-                <div v-tooltip="trans('Count of stored item')" class="w-fit flex items-center gap-x-3">
+                <div v-tooltip="ctrans('Count of stored item')" class="w-fit flex items-center gap-x-3">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon='fal fa-concierge-bell' size="xs" class='text-gray-400' fixed-width aria-hidden='true' />
                     </dt>
-                    <dd class="text-gray-500 text-base font-medium tabular-nums">{{ locale.number(boxStats.stats.number_stored_items) }} <span class="text-gray-400 font-normal">{{ boxStats.stats.number_stored_items > 1 ? trans('Stored items') : trans('Stored item') }}</span></dd>
+                    <dd class="text-gray-500 text-base font-medium tabular-nums">{{ locale.number(boxStats.stats.number_stored_items) }} <span class="text-gray-400 font-normal">{{ boxStats.stats.number_stored_items > 1 ? ctrans('Stored items') : ctrans('Stored item') }}</span></dd>
                 </div>
 
             </div>

@@ -11,7 +11,7 @@ import Fieldset from "primevue/fieldset"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMapMarkedAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faMapMarkedAlt)
 
 const props = defineProps<{
@@ -41,7 +41,7 @@ const props = defineProps<{
                 <template #legend>
                     <div>
                         <FontAwesomeIcon icon="fal fa-map-marked-alt" class="text-gray-500" fixed-width aria-hidden='true' />
-                        <span class="font-medium">&nbsp;{{ trans('Address') }}</span>
+                        <span class="font-medium">&nbsp;{{ ctrans('Address') }}</span>
                     </div>
                 </template>
 

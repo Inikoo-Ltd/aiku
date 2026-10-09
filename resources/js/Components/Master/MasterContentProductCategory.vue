@@ -2,7 +2,7 @@
 import { computed, inject, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faAlignLeft, faSearch } from "@fas"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ContentProductCategorySuggestion from './ContentProductCategorySuggestion.vue'
 import MasterSeoSuggestion from './MasterSeoSuggestion.vue'
@@ -19,8 +19,8 @@ const primaryColor = computed(() => layout.app.theme[4])
 const primaryContrastColor = computed(() => layout.app.theme[5])
 
 const tabs = [
-    { key: 'description', label: trans('Description'), icon: faAlignLeft },
-    { key: 'seo', label: trans('SEO Content'), icon: faSearch },
+    { key: 'description', label: ctrans('Description'), icon: faAlignLeft },
+    { key: 'seo', label: ctrans('SEO Content'), icon: faSearch },
 ]
 
 const currentTab = ref(tabs[0].key)

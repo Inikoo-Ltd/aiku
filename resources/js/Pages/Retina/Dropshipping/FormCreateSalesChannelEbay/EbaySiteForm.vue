@@ -8,7 +8,7 @@
     import { inject, ref } from "vue";
     import { faInfoCircle } from "@fal";
     import Select from "primevue/select";
-    import { trans } from "laravel-vue-i18n";
+    import { ctrans } from "@/Composables/useTrans"
     import { useForm } from "@inertiajs/vue3";
     import { library } from "@fortawesome/fontawesome-svg-core";
     import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -53,17 +53,17 @@
 
 <template>
     <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("API Settings") }}</span>
-        <span class="text-sm">{{ trans("This is where you need to add your API settings") }}</span>
+        <span class="text-lg font-semibold">{{ ctrans("API Settings") }}</span>
+        <span class="text-sm">{{ ctrans("This is where you need to add your API settings") }}</span>
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
         <div class="flex flex-col gap-2 ">
-            <label class="font-semibold">{{ trans("eBay Site") }}</label>
+            <label class="font-semibold">{{ ctrans("eBay Site") }}</label>
             <div class="flex items-center gap-2 w-full md:w-80">
                 <Select v-model="form.marketplace" :options="sites" optionLabel="name" optionValue="value"
                         class="w-full"
                         @update:model-value="errors.marketplace = null "/>
-                <FontAwesomeIcon v-tooltip="trans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
+                <FontAwesomeIcon v-tooltip="ctrans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
             </div>
             <p v-if="errors.marketplace" class="text-sm text-red-600 mt-1">{{ errors.marketplace?.[0] }}</p>
         </div>
@@ -71,8 +71,8 @@
         <hr class="w-full border-t" />
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ ctrans("Cancel") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ ctrans("Next") }}</Button>
         </div>
     </form>
 </template>

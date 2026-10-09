@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TabsBox from "@/Components/Navigation/TabsBox.vue"
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
@@ -41,6 +41,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     <TableReviews v-if="props[currentTab]" :data="props[currentTab]" :tab="currentTab" />
 
     <div v-else class="px-6 py-16 text-center text-sm text-gray-400">
-        {{ trans("Coming soon") }}
+        {{ ctrans("Coming soon") }}
     </div>
 </template>

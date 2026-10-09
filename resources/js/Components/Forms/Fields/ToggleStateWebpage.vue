@@ -2,7 +2,7 @@
 
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { get, set } from 'lodash-es'
 import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -81,7 +81,7 @@ const xxx = ref('')
                             checked ? 'bg-red-100 text-red-600 hover:bg-red-300 border-red-500' : 'ring-1 ring-inset ring-gray-300 bg-white  hover:bg-gray-100',
                         ]">
                         <FontAwesomeIcon icon="fal fa-skull" class="mr-1" :class="checked ? 'text-red-500' : 'text-gray-400 group-hover:text-red-500'" fixed-width aria-hidden="true" />
-                        <RadioGroupLabel as="span">{{ trans("Offline") }}</RadioGroupLabel>
+                        <RadioGroupLabel as="span">{{ ctrans("Offline") }}</RadioGroupLabel>
                     </div>
                 </RadioGroupOption>
 
@@ -97,7 +97,7 @@ const xxx = ref('')
                             checked ? 'bg-green-100 text-green-600 hover:bg-green-300 border-green-500' : 'ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-100',
                         ]">
                         <FontAwesomeIcon icon="fal fa-broadcast-tower" class="mr-1" :class="checked ? 'text-green-500' : 'text-gray-400 group-hover:text-green-500'" fixed-width aria-hidden="true" />
-                        <RadioGroupLabel as="span">{{ trans("Online") }}</RadioGroupLabel>
+                        <RadioGroupLabel as="span">{{ ctrans("Online") }}</RadioGroupLabel>
                     </div>
                 </RadioGroupOption>
             </div>
@@ -107,9 +107,9 @@ const xxx = ref('')
             <div v-if="form[fieldName].state === 'closed'" class="mt-4 w-full max-w-sm">
                 <div class="text-xs xfont-semibold text-gray-500">
                     <FontAwesomeIcon icon="fas fa-asterisk" class="h-2 text-xs text-red-500 mt-0.5 align-top" fixed-width aria-hidden="true" />
-                    {{ trans("Select webpage to redirected") }}
+                    {{ ctrans("Select webpage to redirected") }}
                     <FontAwesomeIcon
-                        v-tooltip="trans('Redirect place when user access the closed webpage')"
+                        v-tooltip="ctrans('Redirect place when user access the closed webpage')"
                         icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-700 cursor-pointer" fixed-width aria-hidden="true" />
                     :
                 </div>
@@ -120,7 +120,7 @@ const xxx = ref('')
                     @update:modelValue="(e) => (set(form, [fieldName, 'redirect_webpage_id'], e))"
                     :initOptions="fieldData?.init_options || []"
                     required
-                    :placeholder="trans('Select webpage to redirect')"
+                    :placeholder="ctrans('Select webpage to redirect')"
                     :fetchRoute="{
                         name: 'grp.org.shops.show.web.webpages.index.redirect-options', // Update new route to exclude self & closed webpages
                         parameters: {
@@ -148,7 +148,7 @@ const xxx = ref('')
                 </PureMultiselectInfiniteScroll>
 
                 <div v-if="fieldData?.default_storefront?.id" @click="form[fieldName].redirect_webpage_id = fieldData?.default_storefront?.id" class="text-xs text-gray-400 hover:text-gray-700 cursor-pointer mt-2 underline w-fit">
-                    {{ trans("Click to set redirect to") + " " }} 
+                    {{ ctrans("Click to set redirect to") + " " }} 
                     <Icon :data="fieldData?.default_storefront?.typeIcon" />
                     {{ fieldData?.default_storefront?.code }}
                     <span class="text-gray-400">({{ fieldData?.default_storefront?.href }})</span>

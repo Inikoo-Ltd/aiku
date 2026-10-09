@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios";
 import Draggable from "vuedraggable";
 
@@ -56,8 +56,8 @@ const getWebBlockTypes = async () => {
         modelModalBlocklist.value = true;
     } catch {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to load block types"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to load block types"),
             type: "error",
         });
     }
@@ -66,8 +66,8 @@ const getWebBlockTypes = async () => {
 const onPickBlock = (block: any) => {
     if (model.value.length >= 4) {
         notify({
-            title: trans("Limit reached"),
-            text: trans("Maximum 4 blocks allowed"),
+            title: ctrans("Limit reached"),
+            text: ctrans("Maximum 4 blocks allowed"),
             type: "warn",
         });
 
@@ -138,7 +138,7 @@ const updateBlocks = (blocks: any[]) => {
         <ConfirmPopup />
 
         <div class="flex items-center justify-end">
-            <Button type="create" size="xs" v-if="model.length < 4" :label="trans('Add Tab')"
+            <Button type="create" size="xs" v-if="model.length < 4" :label="ctrans('Add Tab')"
                 @click="getWebBlockTypes" />
         </div>
 
@@ -148,19 +148,19 @@ const updateBlocks = (blocks: any[]) => {
 
                 <div class="text-center">
                     <div class="font-medium">
-                        {{ trans("No model added") }}
+                        {{ ctrans("No model added") }}
                     </div>
 
                     <div class="text-sm text-gray-500 mt-1">
                         {{
-                            trans(
+                            ctrans(
                                 "Start building your page by adding a tabs"
                             )
                         }}
                     </div>
                 </div>
 
-                <Button type="create" v-if="model.length < 4" :label="trans('Add First Tab')"
+                <Button type="create" v-if="model.length < 4" :label="ctrans('Add First Tab')"
                     @click="getWebBlockTypes" />
             </div>
         </div>
@@ -180,7 +180,7 @@ const updateBlocks = (blocks: any[]) => {
                                     </div>
 
                                     <InputText :model-value="block.name" class="w-[80%]"
-                                        :placeholder="trans('Tab Name')" @update:model-value="
+                                        :placeholder="ctrans('Tab Name')" @update:model-value="
                                             updateBlockName(index, $event)
                                             " />
 

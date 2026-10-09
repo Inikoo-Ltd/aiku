@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faWeight, faCube, faCubes, faEdit, faPlus, faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faUser, faWeight, faCube, faCubes, faEdit, faPlus, faTrashAlt)
 
 import { ref, toRaw, inject } from "vue"
@@ -63,8 +63,8 @@ const onSubmitParcels = () => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to add Shipment. Please try again or contact administrator."),
+                    title: ctrans("Something went wrong."),
+                    text: ctrans("Failed to add Shipment. Please try again or contact administrator."),
                     type: "error",
                 })
             },
@@ -130,7 +130,7 @@ const listError = inject('listError', {})
                     </ul>
 
                     <div v-if="!parcelsCopy.length" class="text-gray-400 text-xs mt-1 italic">
-                        {{ trans('No parcels added.') }}
+                        {{ ctrans('No parcels added.') }}
                     </div>
                 </div>
             </div>
@@ -140,11 +140,11 @@ const listError = inject('listError', {})
         <!-- Modal -->
         <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
             <div class="text-center font-bold mb-4">
-                {{ trans('Add Parcels') }}
+                {{ ctrans('Add Parcels') }}
             </div>
 
             <div>
-                <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+                <Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
                     <!-- Header Row -->
                     <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
                         <div class="flex justify-center">
@@ -208,7 +208,7 @@ const listError = inject('listError', {})
                             </div>
                         </TransitionGroup>
                         <div v-else class="text-center text-gray-400">
-                            {{ trans('No parcels') }}
+                            {{ ctrans('No parcels') }}
                         </div>
                     </div>
 
@@ -218,13 +218,13 @@ const listError = inject('listError', {})
                         <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [null, null, null] })"
                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-                            {{ trans("Add another parcel") }}
+                            {{ ctrans("Add another parcel") }}
                         </div>
                     </div>
                 </Fieldset>
 
                 <div v-if="parcelsCopy?.some(parcel => !parcel.dimensions?.every(dimension => Number(dimension) > 0))" class="mt-3 text-xs text-red-500">
-                    {{ trans("Enter length, width and height of every parcel, they are needed to set as packed") }}
+                    {{ ctrans("Enter length, width and height of every parcel, they are needed to set as packed") }}
                 </div>
                 <div class="flex justify-end mt-3">
                     <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="

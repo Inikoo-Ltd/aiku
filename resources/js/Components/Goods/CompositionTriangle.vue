@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 // The holy triangle from the whiteboard: TU on top, SKO and P below, an eye in the
 // middle that watches the cursor. Edge labels appear on hover, quantities always.
@@ -148,7 +148,7 @@ const edges = computed(() => [
     {
         key: 'packed',
         from: TU, to: SKO,
-        label: trans('how is packed'),
+        label: ctrans('how is packed'),
         value: packedQty.value ? `${packedQty.value}` : '?',
         partial: false,
         accent: PACKED_SKY,
@@ -157,7 +157,7 @@ const edges = computed(() => [
     {
         key: 'sell',
         from: TU, to: P,
-        label: trans('how we sell'),
+        label: ctrans('how we sell'),
         value: sellQty.value ? `${sellQty.value}` : '?',
         partial: false,
         accent: SELL_PINK,
@@ -166,11 +166,11 @@ const edges = computed(() => [
     {
         key: 'pick',
         from: SKO, to: P,
-        label: trans('how we pick'),
+        label: ctrans('how we pick'),
         value: pickLabel.value ?? '?',
         partial: isPartialPick.value,
         accent: PICK_TEAL,
-        unit: trans('SKO/Outer'),
+        unit: ctrans('SKO/Outer'),
     },
 ])
 
@@ -218,9 +218,9 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
             <!-- Corners -->
             <g v-for="corner in [
-                { at: TU, label: 'TU', title: trans('Trade unit'), dy: -26, color: '#94a3b8', textColor: '#64748b' },
-                { at: SKO, label: 'SKO', title: trans('Org stock'), dy: 36, color: '#0d9488', textColor: '#0d9488' },
-                { at: P, label: 'P', title: trans('Product'), dy: 36, color: '#94a3b8', textColor: '#64748b' },
+                { at: TU, label: 'TU', title: ctrans('Trade unit'), dy: -26, color: '#94a3b8', textColor: '#64748b' },
+                { at: SKO, label: 'SKO', title: ctrans('Org stock'), dy: 36, color: '#0d9488', textColor: '#0d9488' },
+                { at: P, label: 'P', title: ctrans('Product'), dy: 36, color: '#94a3b8', textColor: '#64748b' },
             ]" :key="corner.label">
                 <circle :cx="corner.at.x" :cy="corner.at.y" r="14" fill="#f8fafc" :stroke="corner.color" stroke-width="1.5" />
                 <circle :cx="corner.at.x" :cy="corner.at.y" r="3" :fill="corner.color" />
@@ -292,7 +292,7 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
         <div class="text-center text-xs text-gray-400 mt-1">
             <template v-if="tradeUnits?.length > 1">
-                {{ trans(':code and :count more', { code: first.code ?? 'TU', count: tradeUnits.length - 1 }) }}
+                {{ ctrans(':code and :count more', { code: first.code ?? 'TU', count: tradeUnits.length - 1 }) }}
             </template>
             <template v-else-if="first.code">{{ first.code }}</template>
         </div>

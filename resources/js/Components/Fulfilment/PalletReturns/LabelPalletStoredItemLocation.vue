@@ -4,7 +4,7 @@ import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInventory } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faInventory)
 
@@ -51,7 +51,7 @@ const otherLocationsCount = computed(() => {
         <span
             v-if="otherLocationsCount > 0"
             class="cursor-pointer whitespace-nowrap py-0.5 px-1 border border-orange-300 rounded text-gray-400 hover:bg-orange-50"
-            v-tooltip="trans('Other :number locations', { number: String(otherLocationsCount) })"
+            v-tooltip="ctrans('Other :number locations', { number: String(otherLocationsCount) })"
             @click="emit('openLocationModal')"
         >
             <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
@@ -66,7 +66,7 @@ const otherLocationsCount = computed(() => {
                 {{ currentPalletStoredItem.location?.code || currentPalletStoredItem.reference || '-' }}
             </span>
             <span class="text-gray-700">
-                (<span class="font-bold">{{ currentPalletStoredItem.quantity_in_pallet || 0 }}</span> {{ trans('Stocks') }})
+                (<span class="font-bold">{{ currentPalletStoredItem.quantity_in_pallet || 0 }}</span> {{ ctrans('Stocks') }})
             </span>
         </span>
     </div>

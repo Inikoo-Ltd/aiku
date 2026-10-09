@@ -2,7 +2,7 @@
 
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { get, set } from 'lodash-es'
 import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -44,9 +44,9 @@ const xxx = ref('')
             <div class="mt-4 w-full max-w-sm">
                 <div class="text-xs xfont-semibold text-gray-500">
                     <FontAwesomeIcon icon="fas fa-asterisk" class="h-2 text-xs text-red-500 mt-0.5 align-top" fixed-width aria-hidden="true" />
-                    {{ trans("Select webpage to redirected") }}
+                    {{ ctrans("Select webpage to redirected") }}
                     <FontAwesomeIcon
-                        v-tooltip="trans('Redirect place when user access the closed webpage')"
+                        v-tooltip="ctrans('Redirect place when user access the closed webpage')"
                         icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-700 cursor-pointer" fixed-width aria-hidden="true" />
                     :
                 </div>
@@ -59,7 +59,7 @@ const xxx = ref('')
                     }"
                     :initOptions="fieldData?.init_options || []"
                     required
-                    :placeholder="trans('Select webpage to redirect')"
+                    :placeholder="ctrans('Select webpage to redirect')"
                     :fetchRoute="{
                         name: 'grp.org.shops.show.web.webpages.index',
                         parameters: {
@@ -86,7 +86,7 @@ const xxx = ref('')
                 </PureMultiselectInfiniteScroll>
 
                 <div v-if="fieldData?.default_storefront?.id" @click="form[fieldName].redirect_webpage_id = fieldData?.default_storefront?.id" class="text-xs text-gray-400 hover:text-gray-700 cursor-pointer mt-2 underline w-fit">
-                    {{ trans("Click to set redirect to") + " " }} 
+                    {{ ctrans("Click to set redirect to") + " " }} 
                     <Icon :data="fieldData?.default_storefront?.typeIcon" />
                     {{ fieldData?.default_storefront?.code }}
                     <span class="text-gray-400">({{ fieldData?.default_storefront?.href }})</span>
@@ -107,7 +107,7 @@ const xxx = ref('')
                 :body="{redirects : form[fieldName].redirect_webpage_id }"
                 :routeTarget="fieldData.route_delete"
                 :disabled="!form[fieldName].redirect_webpage_id"
-                v-tooltip="form[fieldName].redirect_webpage_id ? trans('Select webpage to redirect before delete') : ''"
+                v-tooltip="form[fieldName].redirect_webpage_id ? ctrans('Select webpage to redirect before delete') : ''"
             />
 
             <ButtonWithLink

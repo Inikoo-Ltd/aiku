@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExternalLink } from '@fal'
 
@@ -16,7 +16,7 @@ defineProps<{
             <span v-if="link.element" class="font-mono text-xs bg-gray-100 text-gray-700 rounded px-1.5 py-0.5">
                 {{ link.element }}
             </span>
-            <span v-else class="text-xs text-gray-500">{{ trans('not tagged') }}</span>
+            <span v-else class="text-xs text-gray-500">{{ ctrans('not tagged') }}</span>
         </template>
 
         <template #cell(label)="{ item: link }">

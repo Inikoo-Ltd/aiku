@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 import Image from "@common/Components/Image.vue"
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
@@ -89,7 +89,7 @@ const sizeOptions = [
     <div v-if="model?.type"
         class="grid grid-cols-2 items-center justify-between gap-x-3 flex-wrap px-6 w-full relative">
         <!-- === IMAGE BACKGROUND === -->
-        <div class="relative flex items-center gap-x-2 py-1" v-tooltip="trans('Image background')">
+        <div class="relative flex items-center gap-x-2 py-1" v-tooltip="ctrans('Image background')">
             <div class="group rounded-md relative shadow-lg border border-gray-300">
                 <div class="relative h-12 w-12 cursor-pointer rounded overflow-hidden">
                     <Image v-if="model?.image?.source" :src="model?.image?.source" :alt="'background image'"
@@ -112,7 +112,7 @@ const sizeOptions = [
         </div>
 
         <!-- === COLOR BACKGROUND === -->
-        <div class="flex items-center gap-x-4 h-min" v-tooltip="trans('Color background')">
+        <div class="flex items-center gap-x-4 h-min" v-tooltip="ctrans('Color background')">
             <div class="relative h-12 aspect-square rounded-md shadow">
                 <ColorPicker :color="model.color || '#111111'" @changeColor="(newColor) => {
                     model.color = `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`
@@ -135,7 +135,7 @@ const sizeOptions = [
                             <RadioButton size="small" v-model="model.color" inputId="bg-color-picker-1"
                                 name="bg-color-picker" value="var(--iris-color-primary)" />
                             <label class="cursor-pointer" for="bg-color-picker-1">
-                                {{ trans('Primary color') }}
+                                {{ ctrans('Primary color') }}
                             </label>
                         </div>
 
@@ -143,7 +143,7 @@ const sizeOptions = [
                             <RadioButton size="small" :modelValue="!model.color?.includes('var') ? '#111111' : null"
                                 @update:modelValue="(e) => model.color.includes('var') ? (model.color = '#111111', emits('update:modelValue', model)) : false"
                                 inputId="bg-color-picker-3" name="bg-color-picker" value="#111111" />
-                            <label class="cursor-pointer" for="bg-color-picker-3">{{ trans('Custom solid') }}</label>
+                            <label class="cursor-pointer" for="bg-color-picker-3">{{ ctrans('Custom solid') }}</label>
                         </div>
                     </template>
                 </ColorPicker>

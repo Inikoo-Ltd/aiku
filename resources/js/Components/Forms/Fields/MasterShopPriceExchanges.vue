@@ -8,7 +8,7 @@
 import { reactive, ref, computed, onMounted, onUnmounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -64,7 +64,7 @@ const remainingText = (done: number | undefined, total: number | undefined, star
     if (elapsedMs <= 0) return null
     const remainingMs = elapsedMs * (total - done) / done
     const remainingMin = Math.ceil(remainingMs / 60000)
-    return remainingMin <= 1 ? trans("less than a minute left") : trans(":min min left", { min: String(remainingMin) })
+    return remainingMin <= 1 ? ctrans("less than a minute left") : ctrans(":min min left", { min: String(remainingMin) })
 }
 
 const etaText = (progress: Progress) => remainingText(progress.done, progress.total, progress.updating_started_at || progress.started_at)
@@ -122,8 +122,8 @@ const setMinor = (row: typeof rows[0]) => {
 
 const invalidReason = (row: typeof rows[0]) => {
     if (row.is_major) return null
-    if (!row.major) return trans("Select a major currency to follow")
-    if (parseExchange(row.exchange) === null) return trans("Cannot save: no valid exchange rate set")
+    if (!row.major) return ctrans("Select a major currency to follow")
+    if (parseExchange(row.exchange) === null) return ctrans("Cannot save: no valid exchange rate set")
     return null
 }
 
@@ -267,7 +267,7 @@ const save = () => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: Object.values(errors).join(", "),
                     type: "error"
                 })
@@ -283,11 +283,11 @@ const save = () => {
         <table class="w-full text-sm">
             <thead>
                 <tr class="text-left text-gray-400 border-b">
-                    <th class="py-2 pr-4">{{ trans("Currency") }}</th>
-                    <th class="py-2 pr-4">{{ trans("Role") }}</th>
-                    <th class="py-2 pr-4">{{ trans("Follows") }}</th>
-                    <th class="py-2 pr-4">{{ trans("Exchange") }}</th>
-                    <th class="py-2 pr-4">{{ trans("Decimals") }}</th>
+                    <th class="py-2 pr-4">{{ ctrans("Currency") }}</th>
+                    <th class="py-2 pr-4">{{ ctrans("Role") }}</th>
+                    <th class="py-2 pr-4">{{ ctrans("Follows") }}</th>
+                    <th class="py-2 pr-4">{{ ctrans("Exchange") }}</th>
+                    <th class="py-2 pr-4">{{ ctrans("Decimals") }}</th>
                     <th class="py-2"></th>
                 </tr>
             </thead>
@@ -303,7 +303,7 @@ const save = () => {
                                 :disabled="isRunning(row.code)"
                                 @click="row.is_major = true"
                             >
-                                {{ trans("Major") }}
+                                {{ ctrans("Major") }}
                             </button>
                             <button
                                 type="button"
@@ -313,12 +313,12 @@ const save = () => {
                                     row.is_major && followerCodes(row.code).length ? 'opacity-40 cursor-not-allowed hover:text-gray-300' : ''
                                 ]"
                                 v-tooltip="row.is_major && followerCodes(row.code).length
-                                    ? trans('Cannot be minor: :followers follow it', { followers: followerCodes(row.code).join(', ') })
+                                    ? ctrans('Cannot be minor: :followers follow it', { followers: followerCodes(row.code).join(', ') })
                                     : undefined"
                                 :disabled="isRunning(row.code) || (row.is_major && followerCodes(row.code).length > 0)"
                                 @click="setMinor(row)"
                             >
-                                {{ trans("Minor") }}
+                                {{ ctrans("Minor") }}
                             </button>
                         </div>
                     </td>
@@ -341,24 +341,24 @@ const save = () => {
                         </div>
                         <div v-else-if="!row.is_major && row.exchange && parseExchange(row.exchange) === null"
                             class="text-[10px] text-red-500 mt-0.5">
-                            {{ trans("Invalid number") }}
+                            {{ ctrans("Invalid number") }}
                         </div>
                     </td>
                     <td class="py-2 pr-4">
                         <select v-if="!row.is_major" :value="roundingValue(row)" :disabled="isRunning(row.code)"
                             class="rounded border-gray-300 text-sm py-1 disabled:opacity-50"
-                            v-tooltip="trans('Converted prices are rounded up: whole numbers e.g. 248.88 → 249, steps of 0.05 e.g. 25.67 → 25.70')"
+                            v-tooltip="ctrans('Converted prices are rounded up: whole numbers e.g. 248.88 → 249, steps of 0.05 e.g. 25.67 → 25.70')"
                             @change="setRounding(row, ($event.target as HTMLSelectElement).value)">
-                            <option value="2">{{ trans("0.00") }}</option>
-                            <option value="0">{{ trans("Whole numbers") }}</option>
-                            <option value="step:0.05">{{ trans("Steps of 0.05") }}</option>
+                            <option value="2">{{ ctrans("0.00") }}</option>
+                            <option value="0">{{ ctrans("Whole numbers") }}</option>
+                            <option value="step:0.05">{{ ctrans("Steps of 0.05") }}</option>
                         </select>
                         <span v-else class="text-gray-400">—</span>
                     </td>
                     <td class="py-2 text-right">
                         <button v-if="isRunning(row.code)" type="button"
                             class="w-28 text-left cursor-pointer"
-                            v-tooltip="trans('Updating prices, click for details')"
+                            v-tooltip="ctrans('Updating prices, click for details')"
                             @click="progressModalCurrency = row.code">
                             <template v-if="operations[row.code].state === 'repricing_baskets'">
                                 <div class="h-2 rounded-full bg-gray-200 overflow-hidden">
@@ -366,7 +366,7 @@ const save = () => {
                                         :style="{ width: basketsPct(operations[row.code]) + '%' }" />
                                 </div>
                                 <div class="text-[10px] text-gray-400 mt-0.5">
-                                    {{ trans('baskets') }} {{ basketsPct(operations[row.code]) }}%{{ basketsEtaText(operations[row.code]) ? ' · ~' + basketsEtaText(operations[row.code]) : '' }}
+                                    {{ ctrans('baskets') }} {{ basketsPct(operations[row.code]) }}%{{ basketsEtaText(operations[row.code]) ? ' · ~' + basketsEtaText(operations[row.code]) : '' }}
                                 </div>
                             </template>
                             <template v-else>
@@ -379,13 +379,13 @@ const save = () => {
                                     {{ operations[row.code].total
                                         ? progressPct(operations[row.code]) + '%'
                                             + (etaText(operations[row.code]) ? ' · ~' + etaText(operations[row.code]) : '')
-                                        : (['queued', 'waiting'].includes(operations[row.code].state) ? trans('waiting…') : trans('working…')) }}
+                                        : (['queued', 'waiting'].includes(operations[row.code].state) ? ctrans('waiting…') : ctrans('working…')) }}
                                 </div>
                             </template>
                         </button>
                         <span v-else :class="{ invisible: !isDirty(row) }" v-tooltip="invalidReason(row)">
                             <Button
-                                :label="trans('Apply…')"
+                                :label="ctrans('Apply…')"
                                 size="xs"
                                 :disabled="!rowIsValid(row)"
                                 @click="confirmingRow = row"
@@ -399,18 +399,18 @@ const save = () => {
         <Modal :isOpen="!!progressModalCurrency" width="w-full max-w-lg" @close="progressModalCurrency = null">
             <div v-if="progressModalCurrency && operations[progressModalCurrency]">
                 <div class="font-bold text-xl mb-4">
-                    {{ trans("Updating :currency prices", { currency: progressModalCurrency }) }}
+                    {{ ctrans("Updating :currency prices", { currency: progressModalCurrency }) }}
                 </div>
 
                 <div class="space-y-4 text-sm">
                     <div>
                         <div class="flex justify-between mb-1">
-                            <span class="font-medium">{{ trans("1. Changing product prices") }}</span>
+                            <span class="font-medium">{{ ctrans("1. Changing product prices") }}</span>
                             <span class="tabular-nums text-gray-500">
                                 {{ operations[progressModalCurrency].total
                                     ? operations[progressModalCurrency].done.toLocaleString() + ' / ' + operations[progressModalCurrency].total.toLocaleString()
                                         + ' (' + progressPct(operations[progressModalCurrency]) + '%)'
-                                    : trans('starting…') }}
+                                    : ctrans('starting…') }}
                             </span>
                         </div>
                         <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
@@ -426,13 +426,13 @@ const save = () => {
                         </div>
                         <div v-if="operations[progressModalCurrency].state === 'waiting'"
                             class="text-xs text-amber-600 mt-1 text-right">
-                            {{ trans("Waiting for the :currencies price update to finish, will start automatically…", {
+                            {{ ctrans("Waiting for the :currencies price update to finish, will start automatically…", {
                                 currencies: (operations[progressModalCurrency].waiting_for || []).join(', ')
                             }) }}
                         </div>
                         <div v-else-if="operations[progressModalCurrency].state === 'updating_prices' && !operations[progressModalCurrency].done"
                             class="text-xs text-gray-400 mt-1 text-right">
-                            {{ trans("starting…") }}
+                            {{ ctrans("starting…") }}
                         </div>
                     </div>
 
@@ -443,7 +443,7 @@ const save = () => {
                                 : 'text-gray-400'">
                             <span>
                                 {{ operations[progressModalCurrency].state === 'finished' ? '✓' : '○' }}
-                                {{ trans("2. Repricing basket orders") }}
+                                {{ ctrans("2. Repricing basket orders") }}
                             </span>
                             <span v-if="operations[progressModalCurrency].baskets_total !== undefined" class="tabular-nums text-gray-500">
                                 {{ (operations[progressModalCurrency].baskets_done || 0).toLocaleString() }} /
@@ -465,20 +465,20 @@ const save = () => {
 
                     <div v-if="operations[progressModalCurrency].state === 'finished'"
                         class="rounded border border-emerald-300 bg-emerald-50 text-emerald-700 px-3 py-2 font-medium">
-                        {{ trans("Done! All prices updated.") }}
+                        {{ ctrans("Done! All prices updated.") }}
                     </div>
                     <div v-else-if="operations[progressModalCurrency].state === 'failed'"
                         class="rounded border border-red-300 bg-red-50 text-red-700 px-3 py-2">
-                        <span class="font-medium">{{ trans("Something went wrong.") }}</span>
+                        <span class="font-medium">{{ ctrans("Something went wrong.") }}</span>
                         {{ operations[progressModalCurrency].error }}
                     </div>
                     <p v-else class="text-gray-500 text-xs">
-                        {{ trans("This can take several minutes. You can close this window, the update continues in the background.") }}
+                        {{ ctrans("This can take several minutes. You can close this window, the update continues in the background.") }}
                     </p>
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <Button :label="trans('Close')" type="tertiary" @click="progressModalCurrency = null" />
+                    <Button :label="ctrans('Close')" type="tertiary" @click="progressModalCurrency = null" />
                 </div>
             </div>
         </Modal>
@@ -486,17 +486,17 @@ const save = () => {
         <Modal :isOpen="!!confirmingRow" width="w-full max-w-lg" @close="confirmingRow = null">
             <div v-if="confirmingRow">
                 <div v-if="becomingMajor(confirmingRow)" class="font-bold text-xl mb-3">
-                    {{ trans(":currency will become a major currency", { currency: confirmingRow.code }) }}
+                    {{ ctrans(":currency will become a major currency", { currency: confirmingRow.code }) }}
                 </div>
                 <div v-else class="font-bold text-xl mb-3 text-amber-600">
                     ⚠️
                     <template v-if="affectedShops(confirmingRow.code)">
                         {{ affectedShops(confirmingRow.code)!.shops.length === 1
-                            ? trans("This will change the price of all :count products in shop :shop", {
+                            ? ctrans("This will change the price of all :count products in shop :shop", {
                                 count: affectedShops(confirmingRow.code)!.number_products.toLocaleString(),
                                 shop: affectedShops(confirmingRow.code)!.shops[0]
                             })
-                            : trans("This will change the price of all :count products in :n shops: :shops", {
+                            : ctrans("This will change the price of all :count products in :n shops: :shops", {
                                 count: affectedShops(confirmingRow.code)!.number_products.toLocaleString(),
                                 n: String(affectedShops(confirmingRow.code)!.shops.length),
                                 shops: affectedShops(confirmingRow.code)!.shops.join(', ')
@@ -504,12 +504,12 @@ const save = () => {
                         }}
                     </template>
                     <template v-else>
-                        {{ trans("This will change prices in whole shops") }}
+                        {{ ctrans("This will change prices in whole shops") }}
                     </template>
                 </div>
                 <div class="text-sm space-y-2">
                     <p v-if="!confirmingRow.is_major">
-                        {{ trans(":currency will follow :major with exchange 1 :major = :exchange :currency.", {
+                        {{ ctrans(":currency will follow :major with exchange 1 :major = :exchange :currency.", {
                             currency: confirmingRow.code,
                             major: confirmingRow.major || '',
                             exchange: String(parseExchange(confirmingRow.exchange))
@@ -517,13 +517,13 @@ const save = () => {
                     </p>
                     <template v-if="!confirmingRow.is_major">
                         <p v-if="confirmingRow.fraction_digits === 0" class="font-medium">
-                            {{ trans(":currency prices will be whole numbers: converted prices are rounded up, e.g. 248.88 becomes 249.", { currency: confirmingRow.code }) }}
+                            {{ ctrans(":currency prices will be whole numbers: converted prices are rounded up, e.g. 248.88 becomes 249.", { currency: confirmingRow.code }) }}
                         </p>
                         <p v-else-if="confirmingRow.increment" class="font-medium">
-                            {{ trans(":currency prices and RRPs will move in steps of :step: converted values are rounded up, e.g. 25.67 becomes 25.70.", { currency: confirmingRow.code, step: String(confirmingRow.increment) }) }}
+                            {{ ctrans(":currency prices and RRPs will move in steps of :step: converted values are rounded up, e.g. 25.67 becomes 25.70.", { currency: confirmingRow.code, step: String(confirmingRow.increment) }) }}
                         </p>
                         <p v-if="majorChanged(confirmingRow)" class="font-medium">
-                            {{ trans(":currency will stop following :from and will follow :to instead.", {
+                            {{ ctrans(":currency will stop following :from and will follow :to instead.", {
                                 currency: confirmingRow.code,
                                 from: majorChanged(confirmingRow)!.from || '',
                                 to: majorChanged(confirmingRow)!.to || ''
@@ -533,16 +533,16 @@ const save = () => {
                             class="rounded border px-3 py-2 font-medium"
                             :class="impactSeverityClass(Math.abs(exchangeChangePct(confirmingRow)!.pct))">
                             {{ exchangeChangePct(confirmingRow)!.pct > 0
-                                ? trans("All :currency prices will INCREASE by approximately :pct%", { currency: confirmingRow.code, pct: exchangeChangePct(confirmingRow)!.pct.toFixed(1) })
-                                : trans("All :currency prices will DECREASE by approximately :pct%", { currency: confirmingRow.code, pct: Math.abs(exchangeChangePct(confirmingRow)!.pct).toFixed(1) })
+                                ? ctrans("All :currency prices will INCREASE by approximately :pct%", { currency: confirmingRow.code, pct: exchangeChangePct(confirmingRow)!.pct.toFixed(1) })
+                                : ctrans("All :currency prices will DECREASE by approximately :pct%", { currency: confirmingRow.code, pct: Math.abs(exchangeChangePct(confirmingRow)!.pct).toFixed(1) })
                             }}
                             <span v-if="exchangeChangePct(confirmingRow)!.estimated" class="font-normal text-xs opacity-75">
                                 ({{ majorChanged(confirmingRow)
-                                    ? trans("estimated: assumes :from and :to prices track the market rate", {
+                                    ? ctrans("estimated: assumes :from and :to prices track the market rate", {
                                         from: majorChanged(confirmingRow)!.from || '',
                                         to: majorChanged(confirmingRow)!.to || ''
                                     })
-                                    : trans("estimated against today's market rate")
+                                    : ctrans("estimated against today's market rate")
                                 }})
                             </span>
                         </div>
@@ -552,7 +552,7 @@ const save = () => {
                                 ? impactSeverityClass(Math.abs(realExchangeDiffPct(confirmingRow)!))
                                 : 'border-gray-200 bg-gray-50'">
                             <div class="text-gray-600">
-                                {{ trans("Real exchange today: 1 :major = :rate :currency", {
+                                {{ ctrans("Real exchange today: 1 :major = :rate :currency", {
                                     major: confirmingRow.major || '',
                                     rate: realExchange(confirmingRow)!.toLocaleString(undefined, { maximumFractionDigits: 4 }),
                                     currency: confirmingRow.code
@@ -560,30 +560,30 @@ const save = () => {
                             </div>
                             <div v-if="realExchangeDiffPct(confirmingRow) !== null" class="font-medium">
                                 {{ realExchangeDiffPct(confirmingRow)! >= 0
-                                    ? trans("Your rate is :pct% ABOVE the real exchange", { pct: realExchangeDiffPct(confirmingRow)!.toFixed(1) })
-                                    : trans("Your rate is :pct% BELOW the real exchange", { pct: Math.abs(realExchangeDiffPct(confirmingRow)!).toFixed(1) })
+                                    ? ctrans("Your rate is :pct% ABOVE the real exchange", { pct: realExchangeDiffPct(confirmingRow)!.toFixed(1) })
+                                    : ctrans("Your rate is :pct% BELOW the real exchange", { pct: Math.abs(realExchangeDiffPct(confirmingRow)!).toFixed(1) })
                                 }}
                             </div>
                         </div>
                         <ul class="list-disc pl-5 space-y-1 text-gray-600">
-                            <li>{{ trans("Every product price in every shop using :currency will be recalculated.", { currency: confirmingRow.code }) }}</li>
-                            <li>{{ trans("Orders currently in customers' baskets will be repriced too.") }}</li>
-                            <li>{{ trans("This runs in the background and can take several minutes to complete.") }}</li>
+                            <li>{{ ctrans("Every product price in every shop using :currency will be recalculated.", { currency: confirmingRow.code }) }}</li>
+                            <li>{{ ctrans("Orders currently in customers' baskets will be repriced too.") }}</li>
+                            <li>{{ ctrans("This runs in the background and can take several minutes to complete.") }}</li>
                         </ul>
                     </template>
                     <template v-else>
                         <p class="font-medium text-emerald-700">
-                            {{ trans("No prices will change now.") }}
+                            {{ ctrans("No prices will change now.") }}
                         </p>
                         <p>
-                            {{ trans(":currency prices will stop following an exchange rate. From now on, when changing prices in the Masters section, you must provide the :currency price yourself.", { currency: confirmingRow.code }) }}
+                            {{ ctrans(":currency prices will stop following an exchange rate. From now on, when changing prices in the Masters section, you must provide the :currency price yourself.", { currency: confirmingRow.code }) }}
                         </p>
                     </template>
                 </div>
                 <div class="mt-6 flex gap-2 justify-end">
-                    <Button :label="trans('Cancel')" type="tertiary" @click="cancelAndRevert" />
+                    <Button :label="ctrans('Cancel')" type="tertiary" @click="cancelAndRevert" />
                     <Button
-                        :label="becomingMajor(confirmingRow) ? trans('Yes, make it major') : trans('Yes, update prices')"
+                        :label="becomingMajor(confirmingRow) ? ctrans('Yes, make it major') : ctrans('Yes, update prices')"
                         :type="becomingMajor(confirmingRow) ? 'primary' : 'negative'"
                         :loading="isSaving"
                         @click="save"

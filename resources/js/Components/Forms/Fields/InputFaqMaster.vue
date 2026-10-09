@@ -8,7 +8,7 @@ import { faTrashAlt } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { get, set } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { useEchoMasterProductCategory } from "@/Stores/echo-master-product-category"
 import CascadeProgressIndicator from "./CascadeProgressIndicator.vue"
@@ -120,17 +120,17 @@ const removeFaq = (index: number) => {
             class="rounded-lg border border-gray-200 p-4 space-y-3"
         >
             <div>
-                <label class="mb-1 block text-sm font-medium">{{ trans('Question') }}</label>
+                <label class="mb-1 block text-sm font-medium">{{ ctrans('Question') }}</label>
                 <input
                     v-model="faq.question"
                     type="text"
                     class="w-full rounded-md border border-gray-300 px-3 py-2"
-                    :placeholder="trans('Enter question')"
+                    :placeholder="ctrans('Enter question')"
                 />
             </div>
 
             <div>
-                <label class="mb-1 block text-sm font-medium">{{ trans('Answer') }}</label>
+                <label class="mb-1 block text-sm font-medium">{{ ctrans('Answer') }}</label>
                 <div class="bg-gray-50 border border-gray-300 rounded-md p-2">
                     <EditorV2
                         v-model="faq.answer"
@@ -160,7 +160,7 @@ const removeFaq = (index: number) => {
         <Button
             class="rounded bg-blue-600 px-4 py-2 text-white"
             @click="addFaq"
-            :label="trans('Add FAQ')"
+            :label="ctrans('Add FAQ')"
         />
 
         <p v-if="get(form, ['errors', fieldName])" class="mt-2 text-sm text-red-600">

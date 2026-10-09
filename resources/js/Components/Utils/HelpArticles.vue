@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExternalLinkAlt, faFilm, faLightbulb } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faExternalLinkAlt, faFilm, faLightbulb)
 
 const props = defineProps<{
@@ -29,7 +29,7 @@ onMounted(() => {
             class="hover:bg-gray-800 cursor-pointer group inline-flex items-center text-yellow-400 px-3 h-full font-medium ">            <!-- Label: Language -->
             <FontAwesomeIcon icon='fal fa-lightbulb' class='text-xs' fixed-width aria-hidden='true' />
             <div class="ml-1 h-full font-extralight text-xs flex items-center gap-x-1 leading-none">
-                {{ trans('Help articles') }}
+                {{ ctrans('Help articles') }}
             </div>
 
         </div>
@@ -37,7 +37,7 @@ onMounted(() => {
 
     <Modal :isOpen="isOpenHelpArticles" closeButton @onClose="isOpenHelpArticles = false">
         <div class="font-bold text-lg text-center">
-            {{ trans("Help articles") }}
+            {{ ctrans("Help articles") }}
         </div>
         
         <div class="grid grid-cols-1 gap-x-6 gap-y-1 p-4 lg:grid-cols-2">
@@ -49,7 +49,7 @@ onMounted(() => {
                 <div class="grid">
                     <a :href="article.url" target="_blank" tabindex="-1" class="font-semibold group-hover:xtext-indigo-500">
                         {{ article.label }}
-                        <span v-tooltip="trans('Open link')" class="absolute inset-0" />
+                        <span v-tooltip="ctrans('Open link')" class="absolute inset-0" />
                     </a>
                     <FontAwesomeIcon icon='fal fa-external-link-alt' class='text-gray-400 group-hover:text-gray-600 absolute top-3 right-3' fixed-width aria-hidden='true' />
                     <p class="mt-1 text-gray-500">{{ article.description }}</p>

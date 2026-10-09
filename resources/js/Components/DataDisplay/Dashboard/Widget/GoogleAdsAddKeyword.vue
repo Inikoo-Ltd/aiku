@@ -9,7 +9,6 @@ import { router } from "@inertiajs/vue3"
 import { useConfirm } from "primevue/useconfirm"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { trans } from "laravel-vue-i18n"
 
 /**
  * Adding a keyword straight to an ad group, for when somebody already knows what they want to bid on.
@@ -65,20 +64,20 @@ const add = () => {
         <div class="flex flex-wrap items-end gap-2">
             <div>
                 <label :for="`gads-kw-${adGroupId}`" class="block text-xs text-gray-500">
-                    {{ trans("Add a keyword") }}
+                    {{ ctrans("Add a keyword") }}
                 </label>
                 <input
                     :id="`gads-kw-${adGroupId}`"
                     v-model="text"
                     type="text"
                     maxlength="80"
-                    :placeholder="trans('wholesale candles')"
+                    :placeholder="ctrans('wholesale candles')"
                     :disabled="busy"
                     class="mt-1 w-48 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
                     @keydown.enter.prevent="add" />
             </div>
             <div>
-                <label :for="`gads-kw-match-${adGroupId}`" class="sr-only">{{ trans("Match type") }}</label>
+                <label :for="`gads-kw-match-${adGroupId}`" class="sr-only">{{ ctrans("Match type") }}</label>
                 <select
                     :id="`gads-kw-match-${adGroupId}`"
                     v-model="matchType"
@@ -92,7 +91,7 @@ const add = () => {
             <Button
                 type="tertiary"
                 size="xs"
-                :label="trans('Add')"
+                :label="ctrans('Add')"
                 :loading="busy"
                 :disabled="busy || !text.trim()"
                 @click="add" />

@@ -4,7 +4,7 @@ import Table from "@/Components/Table/Table.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import type { Table as TableTS } from "@/types/Table"
 import { Collapse } from "vue-collapsed"
 import { get, set } from "lodash-es"
@@ -245,10 +245,10 @@ const notifyRequestError = (error: any) => {
     const message =
         error?.response?.data?.message ||
         Object.values(error?.response?.data?.errors ?? {}).flat()?.[0] ||
-        trans("Request failed")
+        ctrans("Request failed")
 
     notify({
-        title: trans("Something went wrong."),
+        title: ctrans("Something went wrong."),
         text: String(message),
         type: "error",
     })
@@ -278,8 +278,8 @@ const switchPalletStoredItemForRequestedItem = async (storedItem: any, currentPa
         Number(currentPalletStoredItem?.not_picked_quantity || 0) > 0
     if (hasProcessedQuantity) {
         notify({
-            title: trans("Cannot change location"),
-            text: trans("This requested pallet already has picked/not picked quantity."),
+            title: ctrans("Cannot change location"),
+            text: ctrans("This requested pallet already has picked/not picked quantity."),
             type: "warn",
         })
         return
@@ -289,8 +289,8 @@ const switchPalletStoredItemForRequestedItem = async (storedItem: any, currentPa
     const targetMaxQuantity = Number(targetPalletStoredItem?.max_quantity || targetPalletStoredItem?.quantity_in_pallet || 0)
     if (selectedQuantityToMove > targetMaxQuantity) {
         notify({
-            title: trans("Cannot change location"),
-            text: trans("Insufficient stock in selected pallet location."),
+            title: ctrans("Cannot change location"),
+            text: ctrans("Insufficient stock in selected pallet location."),
             type: "warn",
         })
         return
@@ -477,15 +477,15 @@ const canChangePacker = computed(() => {
 })
 const changePickingUsersLabel = computed(() => {
     if (canChangePacker.value) {
-        return trans("Change packer")
+        return ctrans("Change packer")
     }
     if (canChangePicker.value) {
-        return trans("Change picker")
+        return ctrans("Change picker")
     }
-    return trans("Change picker / packer")
+    return ctrans("Change picker / packer")
 })
-const activePickingUsersLabel = computed(() => canChangePacker.value ? trans("Packer") : trans("Picker"))
-const activePickingUsersPlaceholder = computed(() => canChangePacker.value ? trans("Select packer") : trans("Select picker"))
+const activePickingUsersLabel = computed(() => canChangePacker.value ? ctrans("Packer") : ctrans("Picker"))
+const activePickingUsersPlaceholder = computed(() => canChangePacker.value ? ctrans("Select packer") : ctrans("Select picker"))
 const activePickingUsersFetchRoute = computed(() => {
     if (canChangePacker.value) {
         return selectedDispatchableReturn.value?.pickerPackerRoutes?.packers_list
@@ -495,10 +495,10 @@ const activePickingUsersFetchRoute = computed(() => {
 })
 const modalPrimaryLabel = computed(() => {
     if (selectedDispatchableReturn.value?.state === "picking") {
-        return trans("Set as Picked")
+        return ctrans("Set as Picked")
     }
 
-    return selectedDispatchableReturn.value?.isCollection ? trans("Set as Collected") : trans("Dispatch")
+    return selectedDispatchableReturn.value?.isCollection ? ctrans("Set as Collected") : ctrans("Dispatch")
 })
 const canShowModalPrimaryButton = computed(() => selectedDispatchableReturn.value?.state !== "dispatched")
 const canEditParcels = computed(() => selectedDispatchableReturn.value?.state !== "dispatched")
@@ -540,8 +540,8 @@ const onUpdatePickingUsers = async () => {
 
     if (!selectedPicker.value?.id) {
         notify({
-            title: trans("Something went wrong"),
-            text: canChangePacker.value ? trans("Please select packer first") : trans("Please select picker first"),
+            title: ctrans("Something went wrong"),
+            text: canChangePacker.value ? ctrans("Please select packer first") : ctrans("Please select picker first"),
             type: "error",
         })
         return
@@ -567,14 +567,14 @@ const onUpdatePickingUsers = async () => {
 
         onCloseModalPickingUsers()
         notify({
-            title: trans("Success"),
-            text: canChangePacker.value ? trans("Packer updated successfully") : trans("Picker updated successfully"),
+            title: ctrans("Success"),
+            text: canChangePacker.value ? ctrans("Packer updated successfully") : ctrans("Picker updated successfully"),
             type: "success",
         })
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || (canChangePacker.value ? trans("Failed to update packer") : trans("Failed to update picker")),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || (canChangePacker.value ? ctrans("Failed to update packer") : ctrans("Failed to update picker")),
             type: "error",
         })
     } finally {
@@ -606,7 +606,7 @@ const isTiktokShipment = computed(() => {
 
 const shipmentButtonLabel = computed(() => {
     return selectedDispatchableReturn.value?.shipmentsRoutes?.button_label
-        ?? (isTiktokShipment.value ? trans("Get shipment from Tiktok") : trans("Shipment"))
+        ?? (isTiktokShipment.value ? ctrans("Get shipment from Tiktok") : ctrans("Shipment"))
 })
 
 const onGetShipmentFromTiktok = () => {
@@ -623,8 +623,8 @@ const onGetShipmentFromTiktok = () => {
         },
         onError: () => {
             notify({
-                title: trans("Something went wrong."),
-                text: trans("Failed to get Shipment from Tiktok. Please try again."),
+                title: ctrans("Something went wrong."),
+                text: ctrans("Failed to get Shipment from Tiktok. Please try again."),
                 type: "error",
             })
         },
@@ -636,7 +636,7 @@ const onGetShipmentFromTiktok = () => {
 
 const onClickShipmentButton = () => {
     if (!selectedDispatchableReturn.value?.parcels?.length) {
-        notify({ title: trans("Something went wrong"), text: trans("Please add at least one parcel"), type: "error" })
+        notify({ title: ctrans("Something went wrong"), text: ctrans("Please add at least one parcel"), type: "error" })
         return
     }
 
@@ -662,8 +662,8 @@ const onOpenModalTrackingNumber = async () => {
         isModalShipment.value = true
     } catch (error) {
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to retrieve shipper list"),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Failed to retrieve shipper list"),
             type: "error",
         })
     } finally {
@@ -698,8 +698,8 @@ const onSubmitShipment = () => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to add Shipment. Please try again."),
+                    title: ctrans("Something went wrong."),
+                    text: ctrans("Failed to add Shipment. Please try again."),
                     type: "error",
                 })
             },
@@ -724,15 +724,15 @@ const onDeleteShipment = async (shipmentId: number) => {
             })
         )
         notify({
-            title: trans("Success!"),
-            text: trans("Shipment has deleted."),
+            title: ctrans("Success!"),
+            text: ctrans("Shipment has deleted."),
             type: "success",
         })
         router.reload()
     } catch (error) {
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to delete shipment."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Failed to delete shipment."),
             type: "error",
         })
     } finally {
@@ -777,8 +777,8 @@ const onSubmitParcels = () => {
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to update parcels."),
+                    title: ctrans("Something went wrong."),
+                    text: ctrans("Failed to update parcels."),
                     type: "error",
                 })
             },
@@ -817,8 +817,8 @@ const onSetAsPicked = async () => {
         })
 
         notify({
-            title: trans("Success"),
-            text: trans("Pallet return set as picked"),
+            title: ctrans("Success"),
+            text: ctrans("Pallet return set as picked"),
             type: "success",
         })
 
@@ -826,8 +826,8 @@ const onSetAsPicked = async () => {
         router.reload()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to set as picked"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Failed to set as picked"),
             type: "error",
         })
     } finally {
@@ -843,8 +843,8 @@ const onDispatchPalletReturn = async () => {
 
     if (!hasShipmentRequirementMet.value) {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Please add shipment before dispatch"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Please add shipment before dispatch"),
             type: "error",
         })
         return
@@ -857,16 +857,16 @@ const onDispatchPalletReturn = async () => {
             url: buildUrl(dispatchRoute.name, dispatchRoute.parameters),
         })
         notify({
-            title: trans("Success"),
-            text: selectedDispatchableReturn.value?.isCollection ? trans("Pallet return set as collected") : trans("Pallet return dispatched"),
+            title: ctrans("Success"),
+            text: selectedDispatchableReturn.value?.isCollection ? ctrans("Pallet return set as collected") : ctrans("Pallet return dispatched"),
             type: "success",
         })
         onCloseSetAsPickedModal()
         router.reload()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to dispatch pallet return"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Failed to dispatch pallet return"),
             type: "error",
         })
     } finally {
@@ -1116,7 +1116,7 @@ const onDispatchPalletReturn = async () => {
                                                     v-if="storedItem.pallet_return_state === 'cancel'"
                                                     class="tabular-nums text-xs text-red-500 flex items-center gap-x-1"
                                                 >
-                                                    <span>× {{ trans("Cancelled") }}</span>
+                                                    <span>× {{ ctrans("Cancelled") }}</span>
                                                     <span class="border-l border-red-300 h-3 mx-1"></span>
                                                     <span>
                                                         {{ palletStoredItem.picked_quantity ?? 0
@@ -1138,7 +1138,7 @@ const onDispatchPalletReturn = async () => {
                                                     {{ palletStoredItem.picked_quantity ?? 0 }}
                                                 </span>
                                                 <span v-else class="text-xs text-gray-400 italic">
-                                                    {{ trans('No item picked yet') }}
+                                                    {{ ctrans('No item picked yet') }}
                                                 </span>
                                             </template>
                                         </div>
@@ -1147,7 +1147,7 @@ const onDispatchPalletReturn = async () => {
                             </div>
 
                             <div v-else class="text-gray-400 italic text-xs">
-                                {{ trans("No pallet") }}
+                                {{ ctrans("No pallet") }}
                             </div>
                         </div>
                     </div>
@@ -1270,7 +1270,7 @@ const onDispatchPalletReturn = async () => {
             </div>
 
             <div v-else class="text-gray-400 italic">
-                {{ trans('No pallet') }}
+                {{ ctrans('No pallet') }}
             </div>
         </template>
 
@@ -1285,7 +1285,7 @@ const onDispatchPalletReturn = async () => {
                 <template v-if="item?.pallet_return_state === 'picking'">
                     <Button
                         icon="fal fa-save"
-                        :label="trans('Set as Picked')"
+                        :label="ctrans('Set as Picked')"
                         type="save"
                         size="sm"
                         class="py-0"
@@ -1295,7 +1295,7 @@ const onDispatchPalletReturn = async () => {
                 <Button
                     v-if="(isPackingFinished() || item?.pallet_return_state === 'picked') && canRowDispatch(item)"
                     icon="fal fa-pencil"
-                    :label="trans('Edit Detail')"
+                    :label="ctrans('Edit Detail')"
                     type="save"
                     size="sm"
                     class="py-0"
@@ -1307,11 +1307,11 @@ const onDispatchPalletReturn = async () => {
                     :href="buildUrl(getDispatchableReturn(item).revertToPickingRoute.name, getDispatchableReturn(item).revertToPickingRoute.parameters)"
                     :method="getDispatchableReturn(item).revertToPickingRoute.method || 'post'"
                     preserveScroll
-                    v-tooltip="trans('Revert to Picking')"
+                    v-tooltip="ctrans('Revert to Picking')"
                 >
                     <Button
                         icon="fal fa-arrow-alt-left"
-                        :label="trans('Revert to Picking')"
+                        :label="ctrans('Revert to Picking')"
                         type="negative"
                         size="sm"
                         class="py-0"
@@ -1327,7 +1327,7 @@ const onDispatchPalletReturn = async () => {
     <Modal :isOpen="isModalSetAsPicked" @onClose="onCloseSetAsPickedModal" width="w-full max-w-3xl" :isClosableInBackground="false" closeButton>
         <div class="flex items-center justify-between border-b border-gray-200 pb-3">
             <div class="text-xl font-semibold">
-                {{ trans("Pallet Return") }} {{ selectedDispatchableReturn?.reference || "-" }}
+                {{ ctrans("Pallet Return") }} {{ selectedDispatchableReturn?.reference || "-" }}
             </div>
             <Button
                 v-if="canShowModalPrimaryButton"
@@ -1337,56 +1337,56 @@ const onDispatchPalletReturn = async () => {
                 size="sm"
                 :loading="isLoadingSetAsPicked"
                 :disabled="!canSubmitModalPrimaryButton"
-                v-tooltip="!canSubmitModalPrimaryButton ? trans('Please add shipment before dispatch') : ''"
+                v-tooltip="!canSubmitModalPrimaryButton ? ctrans('Please add shipment before dispatch') : ''"
                 @click="selectedDispatchableReturn?.state === 'picking' ? onSetAsPicked() : onDispatchPalletReturn()"
             />
         </div>
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-lg border border-gray-200 bg-white p-4">
-                <div v-if="!selectedDispatchableReturn?.isCollection" class="text-base font-semibold text-gray-800 mb-3">{{ trans("Shipping") }}</div>
+                <div v-if="!selectedDispatchableReturn?.isCollection" class="text-base font-semibold text-gray-800 mb-3">{{ ctrans("Shipping") }}</div>
 
                 <div v-if="selectedDispatchableReturn?.isCollection" class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-                    {{ trans("For Collection: Yes") }}
+                    {{ ctrans("For Collection: Yes") }}
                 </div>
                 <div v-else class="space-y-1 text-sm text-gray-700">
                     <div v-if="shippingAddressLines.length">
                         <div v-for="line in shippingAddressLines" :key="line">{{ line }}</div>
                     </div>
                     <div v-else class="text-gray-500 italic">
-                        {{ trans("No shipping address") }}
+                        {{ ctrans("No shipping address") }}
                     </div>
                 </div>
 
                 <div class="mt-4 border-t border-gray-200 pt-3 space-y-1 text-sm">
                     <div v-if="selectedDispatchableReturn?.customer?.name" class="flex justify-between">
-                        <div class="text-gray-500">{{ trans("Customer") }}</div>
+                        <div class="text-gray-500">{{ ctrans("Customer") }}</div>
                         <div class="font-medium text-gray-800">{{ selectedDispatchableReturn.customer.name }}</div>
                     </div>
                     <div v-if="selectedDispatchableReturn?.platform?.name" class="flex justify-between">
-                        <div class="text-gray-500">{{ trans("Platform") }}</div>
+                        <div class="text-gray-500">{{ ctrans("Platform") }}</div>
                         <div class="font-medium text-gray-800">{{ selectedDispatchableReturn.platform.name }}</div>
                     </div>
                     <div v-if="selectedDispatchableReturn?.salesChannel?.name" class="flex justify-between">
-                        <div class="text-gray-500">{{ trans("Sales Channel") }}</div>
+                        <div class="text-gray-500">{{ ctrans("Sales Channel") }}</div>
                         <div class="font-medium text-gray-800">{{ selectedDispatchableReturn.salesChannel.name }}</div>
                     </div>
                 </div>
             </div>
 
             <div class="rounded-lg border border-gray-200 bg-white p-4">
-                <!-- <div class="text-base font-semibold text-gray-800 mb-3">{{ trans("Pallet Return") }}</div> -->
+                <!-- <div class="text-base font-semibold text-gray-800 mb-3">{{ ctrans("Pallet Return") }}</div> -->
 
                 <div class="space-y-2 text-sm">
                     <div class="flex items-center gap-x-2 border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-                        <div class="text-gray-500">{{ trans("Picker") }}:</div>
+                        <div class="text-gray-500">{{ ctrans("Picker") }}:</div>
                         <div class="font-medium text-gray-800">
                             {{ selectedDispatchableReturn?.picker?.contact_name || "-" }}
                         </div>
                     </div>
 
                     <div v-if="isStoredItemReturn && isPickedState" class="flex items-center gap-x-2 border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">
-                        <div class="text-gray-500">{{ trans("Packer") }}:</div>
+                        <div class="text-gray-500">{{ ctrans("Packer") }}:</div>
                         <div class="font-medium text-gray-800">
                             {{ selectedDispatchableReturn?.packer?.contact_name || "-" }}
                         </div>
@@ -1408,13 +1408,13 @@ const onDispatchPalletReturn = async () => {
                     <div class="flex items-center gap-x-2">
                         <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width aria-hidden="true" />
                         <div class="font-medium text-gray-800">{{ selectedDispatchableReturn?.itemsCount ?? 0 }}</div>
-                        <div class="text-gray-500">{{ trans("Items") }}</div>
+                        <div class="text-gray-500">{{ ctrans("Items") }}</div>
                     </div>
 
                     <div class="flex items-center gap-x-2">
-                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon="fas fa-cubes" class="text-gray-400"
+                        <FontAwesomeIcon v-tooltip="ctrans('Parcels')" icon="fas fa-cubes" class="text-gray-400"
                             fixed-width aria-hidden="true" />
-                        <div class="font-medium">{{ trans("Parcels") }} ({{ selectedDispatchableReturn?.parcels?.length
+                        <div class="font-medium">{{ ctrans("Parcels") }} ({{ selectedDispatchableReturn?.parcels?.length
                             ?? 0 }})
                         </div>
                     </div>
@@ -1430,10 +1430,10 @@ const onDispatchPalletReturn = async () => {
                         </ul>
                          <Button v-if="canEditParcels && selectedDispatchableReturn?.parcels?.length"
                             @click="onOpenModalParcels"
-                            :label="trans('Edit')" icon="fal fa-pencil" type="tertiary" size="xs" />
+                            :label="ctrans('Edit')" icon="fal fa-pencil" type="tertiary" size="xs" />
                         <Button v-else-if="canEditParcels"
                             @click="() => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
-                            :label="trans('Add')" icon="fas fa-plus" type="tertiary" size="xs" />
+                            :label="ctrans('Add')" icon="fas fa-plus" type="tertiary" size="xs" />
                     </div>
                 </div>
             </div>
@@ -1443,8 +1443,8 @@ const onDispatchPalletReturn = async () => {
             <div class="rounded-lg border border-gray-200 bg-white p-4">
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                     <div class="flex items-center gap-x-2">
-                        <FontAwesomeIcon v-tooltip="trans('Shipments')" icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
-                        <div class="font-medium">{{ trans("Shipments") }} ({{ selectedDispatchableReturn?.shipments?.length ?? 0 }})</div>
+                        <FontAwesomeIcon v-tooltip="ctrans('Shipments')" icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <div class="font-medium">{{ ctrans("Shipments") }} ({{ selectedDispatchableReturn?.shipments?.length ?? 0 }})</div>
                     </div>
                     <Button
                         v-if="(selectedDispatchableReturn?.shipments?.length ?? 0) < 1"
@@ -1468,7 +1468,7 @@ const onDispatchPalletReturn = async () => {
                             <div v-if="isDeleteShipment === shipment.id" class="px-1">
                                 <LoadingIcon />
                             </div>
-                            <div v-else @click="() => onDeleteShipment(shipment.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
+                            <div v-else @click="() => onDeleteShipment(shipment.id)" v-tooltip="ctrans('Remove shipment')" class="cursor-pointer px-1">
                                 <FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
                             </div>
                         </div>
@@ -1491,7 +1491,7 @@ const onDispatchPalletReturn = async () => {
 
         <div class="mt-6 flex justify-end">
             <Button
-                :label="trans('Close')"
+                :label="ctrans('Close')"
                 type="tertiary"
                 @click="isModalLocation = false"
                 :loading="isSwitchingPalletStoredItem"
@@ -1501,7 +1501,7 @@ const onDispatchPalletReturn = async () => {
 
     <Modal :isOpen="isModalPickingUsers" @onClose="onCloseModalPickingUsers" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
         <div class="flex flex-col gap-4">
-            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKOs") }}</div>
+            <div class="text-center text-lg font-semibold">{{ ctrans("Return Customer's SKOs") }}</div>
             <div v-if="canChangePicker || canChangePacker" class="flex flex-col gap-2">
                 <div class="text-sm font-medium">{{ activePickingUsersLabel }}</div>
                 <PureMultiselectInfiniteScroll
@@ -1525,11 +1525,11 @@ const onDispatchPalletReturn = async () => {
                         </div>
                     </template>
                 </PureMultiselectInfiniteScroll>
-                <div v-else class="text-xs text-gray-500">{{ trans('User list route is not available') }}</div>
+                <div v-else class="text-xs text-gray-500">{{ ctrans('User list route is not available') }}</div>
             </div>
             <Button
                 @click="onUpdatePickingUsers"
-                :label="trans('Save')"
+                :label="ctrans('Save')"
                 type="save"
                 full
                 :loading="isLoadingSetAsPicked" />
@@ -1543,11 +1543,11 @@ const onDispatchPalletReturn = async () => {
         width="w-full max-w-2xl"
     closeButton>
         <div class="text-center font-bold mb-4">
-            {{ trans('Add shipment') }}
+            {{ ctrans('Add shipment') }}
         </div>
 
         <div class="w-full mt-3">
-            <span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+            <span class="text-xs px-1 my-2">{{ ctrans("Shipping options") }}: </span>
 
             <div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
                 <div v-if="isLoadingData === 'addTrackingNumber'" v-for="sip in 3" class="skeleton w-full max-w-52 h-20 rounded"></div>
@@ -1567,7 +1567,7 @@ const onDispatchPalletReturn = async () => {
                 v-model="formTrackingNumber.shipping_id"
                 :fetchRoute="selectedDispatchableReturn?.shipmentsRoutes?.fetch_route"
                 required
-                :placeholder="trans('Select shipping')"
+                :placeholder="ctrans('Select shipping')"
                 object
                 @optionsList="(e) => optionShippingList = e"
             >
@@ -1582,7 +1582,7 @@ const onDispatchPalletReturn = async () => {
             </PureMultiselectInfiniteScroll>
 
             <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
-                <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+                <span class="text-xs px-1 my-2">{{ ctrans("Tracking number") }}: </span>
                 <PureInput v-model="formTrackingNumber.tracking_number" placeholder="ABC-DE-1234567" />
             </div>
 
@@ -1600,8 +1600,8 @@ const onDispatchPalletReturn = async () => {
     </Modal>
 
     <Modal :isOpen="isModalParcels" @onClose="onCloseModalParcels" width="w-full max-w-lg" closeButton>
-        <div class="text-center font-bold mb-4">{{ trans('Add Parcels') }}</div>
-        <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+        <div class="text-center font-bold mb-4">{{ ctrans('Add Parcels') }}</div>
+        <Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
             <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
                 <div></div>
                 <div class="col-span-2 flex items-center space-x-1">
@@ -1634,7 +1634,7 @@ const onDispatchPalletReturn = async () => {
                 <div></div>
                 <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-                    {{ trans("Add another parcel") }}
+                    {{ ctrans("Add another parcel") }}
                 </div>
             </div>
         </Fieldset>

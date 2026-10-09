@@ -10,7 +10,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBullseyeArrow, faFileInvoiceDollar, faRoute } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { useLocaleStore } from '@/Stores/locale'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faBullseyeArrow, faFileInvoiceDollar, faRoute)
 
@@ -44,25 +44,25 @@ const locale = useLocaleStore()
 <template>
     <div v-if="data" class="px-4 py-6 max-w-4xl">
         <div class="mb-6 border-b border-gray-200 pb-4">
-            <div class="text-xs uppercase tracking-wide text-gray-400">{{ trans('Attribution') }}</div>
+            <div class="text-xs uppercase tracking-wide text-gray-400">{{ ctrans('Attribution') }}</div>
             <div v-if="data.attribution.length" class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span v-for="(item, index) in data.attribution" :key="index" class="text-sm text-gray-700">
                     {{ item.label }}<span v-if="item.campaign" class="text-gray-400"> / {{ item.campaign }}</span>
                     <span class="ml-1 tabular-nums text-gray-500">{{ item.share.toFixed(2) }}</span>
                 </span>
             </div>
-            <div v-else class="mt-1 text-sm text-gray-400">{{ trans('No attribution recorded') }}</div>
+            <div v-else class="mt-1 text-sm text-gray-400">{{ ctrans('No attribution recorded') }}</div>
             <div class="mt-1 text-xs text-gray-400">
-                {{ trans('Attribution window') }}: {{ data.attribution_window_days }} {{ trans('days') }}
+                {{ ctrans('Attribution window') }}: {{ data.attribution_window_days }} {{ ctrans('days') }}
             </div>
         </div>
 
         <div v-if="!data.events.length" class="text-sm text-gray-400">
-            {{ trans('No marketing touches or invoices recorded for this customer') }}
+            {{ ctrans('No marketing touches or invoices recorded for this customer') }}
         </div>
 
         <div v-if="data.omitted_events > 0" class="mb-4 text-xs text-gray-400">
-            {{ trans('Showing the most recent :shown events, :omitted older ones are not listed', { shown: data.events.length, omitted: data.omitted_events }) }}
+            {{ ctrans('Showing the most recent :shown events, :omitted older ones are not listed', { shown: data.events.length, omitted: data.omitted_events }) }}
         </div>
 
         <ol v-if="data.events.length" class="relative border-l border-gray-200 ml-3">
@@ -89,7 +89,7 @@ const locale = useLocaleStore()
                 </div>
 
                 <div v-if="event.type === 'touch' && !event.in_window" class="text-xs text-gray-400">
-                    {{ trans('Outside attribution window') }}
+                    {{ ctrans('Outside attribution window') }}
                 </div>
             </li>
         </ol>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import InformationIcon from "../Utils/InformationIcon.vue"
 import { computed } from "vue"
 
@@ -45,8 +45,8 @@ const toggleCheckAll = (value: boolean) => {
                                     :checked="isAllChecked"
                                     @change="toggleCheckAll(($event.target as HTMLInputElement).checked)"
                                 />
-                                {{ trans("Create Webpage?") }}
-                                <InformationIcon :information="trans('If checked, will create the family webpage')" />
+                                {{ ctrans("Create Webpage?") }}
+                                <InformationIcon :information="ctrans('If checked, will create the family webpage')" />
                             </div>
                         </th>
                     </tr>
@@ -64,7 +64,7 @@ const toggleCheckAll = (value: boolean) => {
                                 <input 
                                     type="checkbox" 
                                     v-model="item.create_webpage"
-                                    v-tooltip="item.create_webpage ? trans('Will create the webpage as well') : trans('Family webpage will not be created')" 
+                                    v-tooltip="item.create_webpage ? ctrans('Will create the webpage as well') : ctrans('Family webpage will not be created')" 
                                 />
                             </div>
                         </td>
@@ -74,7 +74,7 @@ const toggleCheckAll = (value: boolean) => {
         </div>
 
         <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded">
-            {{ trans("No data available") }}
+            {{ ctrans("No data available") }}
         </div>
     </div>
 </template>

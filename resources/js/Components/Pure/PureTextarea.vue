@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -43,7 +43,7 @@ const emits = defineEmits<{
             :id="inputName"
             :aria-label="placeholder || undefined"
             :rows
-            :placeholder="placeholder || trans('Enter text here')"
+            :placeholder="placeholder || ctrans('Enter text here')"
             class="pr-6 block w-full rounded-md placeholder:text-gray-400 placeholder:italic placeholder:text-xs 
             disabled:text-gray-500 disabled:border-gray-300 disabled:bg-gray-100
             border-gray-300 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
@@ -60,10 +60,10 @@ const emits = defineEmits<{
     </div>
     <div v-if="counter" class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
         <p class="">
-            {{ trans('Letters') }}: {{ modelValue?.length }}<span v-if="$attrs.maxLength">/{{ $attrs.maxLength }}</span>
+            {{ ctrans('Letters') }}: {{ modelValue?.length }}<span v-if="$attrs.maxLength">/{{ $attrs.maxLength }}</span>
         </p>
         <p class="">
-            {{ trans('Words') }}: {{ modelValue?.trim().split(/\s+/).filter(Boolean).length }}
+            {{ ctrans('Words') }}: {{ modelValue?.trim().split(/\s+/).filter(Boolean).length }}
         </p>
     </div>
 </template>

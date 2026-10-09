@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Head } from '@inertiajs/vue3'
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
@@ -36,7 +36,7 @@ const locale = inject('locale', {})
     <div class="px-4 py-5 md:px-6 lg:px-8 ">
         <div class="mt-4">
             <div class="text-2xl font-semibold text-gray-600">
-                {{ trans("Goods, Service, and Rentals") }}
+                {{ ctrans("Goods, Service, and Rentals") }}
             </div>
 
             <!-- <pre>{{ assets }}</pre> -->
@@ -47,7 +47,7 @@ const locale = inject('locale', {})
                 <Column field="price" sortable headerClass="flex justify-end">
                     <template #header>
                         <div class="flex justify-end items-end">
-                            <span class="font-bold text-right">{{ trans("Price") }}</span>
+                            <span class="font-bold text-right">{{ ctrans("Price") }}</span>
                         </div>
                     </template>
 

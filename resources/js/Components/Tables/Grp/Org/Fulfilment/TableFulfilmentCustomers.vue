@@ -15,7 +15,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { faCheckCircle } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import { ref } from "vue"
@@ -150,10 +150,10 @@ function approveCustomer(customer: any) {
         <!-- Column: Interest -->
         <template #cell(interest)="{ item: customer }">
             <div class="flex gap-2 text-base text-gray-500">
-                <FontAwesomeIcon v-if="customer.interest?.pallets_storage" v-tooltip="trans('Pallet storage')" icon="fal fa-pallet" class="" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="customer.interest?.items_storage" v-tooltip="trans('Dropshipping')" icon="fal fa-narwhal" class="" fixed-width aria-hidden="true" />
-                <!-- <FontAwesomeIcon v-if="customer.interest?.dropshipping" v-tooltip="trans('Dropshipping')" icon='fal fa-' class='' fixed-width aria-hidden='true' /> -->
-                <FontAwesomeIcon v-if="customer.interest?.space_rental" v-tooltip="trans('Space (parking)')" icon="fal fa-parking" class="" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="customer.interest?.pallets_storage" v-tooltip="ctrans('Pallet storage')" icon="fal fa-pallet" class="" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="customer.interest?.items_storage" v-tooltip="ctrans('Dropshipping')" icon="fal fa-narwhal" class="" fixed-width aria-hidden="true" />
+                <!-- <FontAwesomeIcon v-if="customer.interest?.dropshipping" v-tooltip="ctrans('Dropshipping')" icon='fal fa-' class='' fixed-width aria-hidden='true' /> -->
+                <FontAwesomeIcon v-if="customer.interest?.space_rental" v-tooltip="ctrans('Space (parking)')" icon="fal fa-parking" class="" fixed-width aria-hidden="true" />
             </div>
         </template>
     </Table>

@@ -8,7 +8,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash } from "@fal"
 
@@ -102,7 +102,7 @@ const submit = () => {
 }
 
 const modalTitle = computed(() =>
-	isEditMode.value ? trans("Edit restricted period") : trans("Create restricted period")
+	isEditMode.value ? ctrans("Edit restricted period") : ctrans("Create restricted period")
 )
 </script>
 
@@ -127,7 +127,7 @@ const modalTitle = computed(() =>
 					label="Edit"
 					icon="fal fa-pencil"
 					size="xs"
-					v-tooltip="trans('Edit restricted period')"
+					v-tooltip="ctrans('Edit restricted period')"
 					@click="openEdit(item)" />
 				<ModalConfirmationDelete
 					:routeDelete="{
@@ -138,8 +138,8 @@ const modalTitle = computed(() =>
 						},
 					}"
 					:isFullLoading="false"
-					:title="trans('Are you sure you want to delete this restricted period?')"
-					:noLabel="trans('Delete')"
+					:title="ctrans('Are you sure you want to delete this restricted period?')"
+					:noLabel="ctrans('Delete')"
 					noIcon="fal fa-trash">
 					<template #default="{ changeModel }">
 						<Button
@@ -147,7 +147,7 @@ const modalTitle = computed(() =>
 							label="Delete"
 							:icon="faTrash"
 							size="xs"
-							v-tooltip="trans('Delete restricted period')"
+							v-tooltip="ctrans('Delete restricted period')"
 							@click="changeModel()" />
 					</template>
 				</ModalConfirmationDelete>
@@ -163,7 +163,7 @@ const modalTitle = computed(() =>
 		<form class="space-y-4" @submit.prevent="submit">
 			<div>
 				<label class="block text-sm font-medium text-gray-700">
-					{{ trans("Label") }}
+					{{ ctrans("Label") }}
 				</label>
 				<input
 					v-model="form.label"
@@ -177,7 +177,7 @@ const modalTitle = computed(() =>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Start Date") }}
+						{{ ctrans("Start Date") }}
 					</label>
 					<input
 						v-model="form.start_date"
@@ -190,7 +190,7 @@ const modalTitle = computed(() =>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("End Date") }}
+						{{ ctrans("End Date") }}
 					</label>
 					<input
 						v-model="form.end_date"
@@ -205,7 +205,7 @@ const modalTitle = computed(() =>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Strictness") }}
+						{{ ctrans("Strictness") }}
 					</label>
 					<select
 						v-model="form.strictness"
@@ -231,7 +231,7 @@ const modalTitle = computed(() =>
 						type="checkbox"
 						class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 					<label for="is_active" class="ml-2 block text-sm text-gray-700">
-						{{ trans("Active") }}
+						{{ ctrans("Active") }}
 					</label>
 				</div>
 
@@ -242,17 +242,17 @@ const modalTitle = computed(() =>
 						type="checkbox"
 						class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 					<label for="allow_superuser_override" class="ml-2 block text-sm text-gray-700">
-						{{ trans("Allow Superuser Override") }}
+						{{ ctrans("Allow Superuser Override") }}
 					</label>
 				</div>
 			</div>
 
 			<div class="mt-6 flex justify-end gap-2">
 				<Button type="tertiary" @click="closeModal">
-					{{ trans("Cancel") }}
+					{{ ctrans("Cancel") }}
 				</Button>
 				<Button type="save" :loading="form.processing" @click="submit">
-					{{ trans("Save") }}
+					{{ ctrans("Save") }}
 				</Button>
 			</div>
 		</form>

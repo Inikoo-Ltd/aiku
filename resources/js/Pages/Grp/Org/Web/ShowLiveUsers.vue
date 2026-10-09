@@ -8,7 +8,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useIntervalFn } from '@vueuse/core'
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -42,17 +42,17 @@ const currentGrouping = ref('country')
 const searchQuery = ref('')
 
 const groupingOptions = [
-    { value: 'country', label: trans('Country') },
-    { value: 'city', label: trans('City') },
-    { value: 'status', label: trans('Activity') },
-    { value: 'page_title', label: trans('Page title') },
-    { value: 'page_url', label: trans('Page URL') },
-    { value: 'customer', label: trans('Customer') },
-    { value: 'serving_agent', label: trans('Serving agent') },
-    { value: 'department', label: trans('Department') },
-    { value: 'browser', label: trans('Browser') },
-    { value: 'search_engine', label: trans('Search engine') },
-    { value: 'search_term', label: trans('Search term') },
+    { value: 'country', label: ctrans('Country') },
+    { value: 'city', label: ctrans('City') },
+    { value: 'status', label: ctrans('Activity') },
+    { value: 'page_title', label: ctrans('Page title') },
+    { value: 'page_url', label: ctrans('Page URL') },
+    { value: 'customer', label: ctrans('Customer') },
+    { value: 'serving_agent', label: ctrans('Serving agent') },
+    { value: 'department', label: ctrans('Department') },
+    { value: 'browser', label: ctrans('Browser') },
+    { value: 'search_engine', label: ctrans('Search engine') },
+    { value: 'search_term', label: ctrans('Search term') },
 ]
 
 const regionNames = (() => {
@@ -64,9 +64,9 @@ const regionNames = (() => {
 })()
 
 const countryName = (code?: string) =>
-    !code || code === 'XX' ? trans('Unknown') : (regionNames?.of(code) ?? code)
+    !code || code === 'XX' ? ctrans('Unknown') : (regionNames?.of(code) ?? code)
 
-const statusLabel = (status: string) => trans(liveVisitorStatusLabels[status] ?? status)
+const statusLabel = (status: string) => ctrans(liveVisitorStatusLabels[status] ?? status)
 
 const deviceIcon = (v: LiveVisitor) => {
     const device = (v.device ?? '').toLowerCase()
@@ -82,17 +82,17 @@ const pageIcon = (v: LiveVisitor) => (funnelStage(v) ? faShoppingBasket : faFile
 const groupKeyOf = (v: LiveVisitor): string => {
     switch (currentGrouping.value) {
         case 'country': return countryName(v.country)
-        case 'city': return v.city || trans('Unknown')
-        case 'browser': return v.browser || trans('Unknown')
-        case 'page_title': return v.page_title || v.page || trans('Home')
+        case 'city': return v.city || ctrans('Unknown')
+        case 'browser': return v.browser || ctrans('Unknown')
+        case 'page_title': return v.page_title || v.page || ctrans('Home')
         case 'page_url': return v.url || '/'
-        case 'customer': return v.customer_name || trans('Guest')
-        case 'search_engine': return v.search_engine || trans('Direct')
-        case 'search_term': return v.search_term || trans('None')
+        case 'customer': return v.customer_name || ctrans('Guest')
+        case 'search_engine': return v.search_engine || ctrans('Direct')
+        case 'search_term': return v.search_term || ctrans('None')
         case 'status': return statusLabel(v.status)
-        case 'serving_agent': return v.agent || trans('None')
-        case 'department': return v.department || trans('None')
-        default: return trans('Other')
+        case 'serving_agent': return v.agent || ctrans('None')
+        case 'department': return v.department || ctrans('None')
+        default: return ctrans('Other')
     }
 }
 
@@ -155,7 +155,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
 const sinceLabel = (v: LiveVisitor) => {
     const seconds = Math.max(0, Math.round(clock.value / 1000 - v.last_active))
     if (seconds < 10) {
-        return trans('now')
+        return ctrans('now')
     }
 
     return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m`
@@ -169,7 +169,7 @@ const sinceLabel = (v: LiveVisitor) => {
 
     <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div v-if="paused" class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {{ trans('Live tracking is paused: this website is currently handling an unusual number of visitors. It resumes automatically once traffic settles.') }}
+            {{ ctrans('Live tracking is paused: this website is currently handling an unusual number of visitors. It resumes automatically once traffic settles.') }}
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -178,7 +178,7 @@ const sinceLabel = (v: LiveVisitor) => {
                 class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
                 <option v-for="opt in groupingOptions" :key="opt.value" :value="opt.value">
-                    {{ trans('Group by') }} {{ opt.label }}
+                    {{ ctrans('Group by') }} {{ opt.label }}
                 </option>
             </select>
 
@@ -186,7 +186,7 @@ const sinceLabel = (v: LiveVisitor) => {
                 <input
                     v-model="searchQuery"
                     type="text"
-                    :placeholder="trans('Search visitors')"
+                    :placeholder="ctrans('Search visitors')"
                     class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64"
                 >
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -200,14 +200,14 @@ const sinceLabel = (v: LiveVisitor) => {
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                     </span>
-                    {{ trans('Live') }}
+                    {{ ctrans('Live') }}
                 </span>
                 <span class="text-gray-500">
-                    {{ trans('Visitors') }}
+                    {{ ctrans('Visitors') }}
                     <span class="font-semibold text-gray-900 tabular-nums">{{ visibleVisitors.length }}</span>
                 </span>
                 <span class="text-gray-500">
-                    {{ trans('Baskets') }}
+                    {{ ctrans('Baskets') }}
                     <span class="font-semibold text-gray-900 tabular-nums">{{ locale.currencyFormat(currency ?? '', totalBasket) }}</span>
                 </span>
             </div>
@@ -225,7 +225,7 @@ const sinceLabel = (v: LiveVisitor) => {
                 />
 
                 <div v-if="!visibleVisitors.length" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                    {{ trans('No live visitors right now.') }}
+                    {{ ctrans('No live visitors right now.') }}
                 </div>
 
                 <div class="absolute bottom-3 left-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-gray-500">
@@ -242,11 +242,11 @@ const sinceLabel = (v: LiveVisitor) => {
                 <thead>
                     <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-200">
                         <th class="w-10 py-2.5" />
-                        <th class="text-left font-medium px-3 py-2.5">{{ trans('Location') }}</th>
-                        <th class="text-left font-medium px-3 py-2.5">{{ trans('Customer') }}</th>
-                        <th class="text-right font-medium px-3 py-2.5">{{ trans('Basket') }}</th>
-                        <th class="text-left font-medium px-3 py-2.5">{{ trans('Page') }}</th>
-                        <th class="text-right font-medium px-3 py-2.5 w-16">{{ trans('Seen') }}</th>
+                        <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Location') }}</th>
+                        <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Customer') }}</th>
+                        <th class="text-right font-medium px-3 py-2.5">{{ ctrans('Basket') }}</th>
+                        <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Page') }}</th>
+                        <th class="text-right font-medium px-3 py-2.5 w-16">{{ ctrans('Seen') }}</th>
                     </tr>
                 </thead>
                 <tbody ref="tableBodyRef" class="divide-y divide-gray-100">
@@ -285,7 +285,7 @@ const sinceLabel = (v: LiveVisitor) => {
                         </td>
                         <td class="px-3 py-2">
                             <span :class="visitor.customer_name ? 'text-gray-900' : 'text-gray-400 italic'">
-                                {{ visitor.customer_name ?? trans('Guest') }}
+                                {{ visitor.customer_name ?? ctrans('Guest') }}
                             </span>
                         </td>
                         <td
@@ -306,7 +306,7 @@ const sinceLabel = (v: LiveVisitor) => {
                     </tr>
                     <tr v-if="!visibleVisitors.length">
                         <td colspan="6" class="px-3 py-10 text-center text-sm text-gray-400">
-                            {{ trans('Waiting for activity…') }}
+                            {{ ctrans('Waiting for activity…') }}
                         </td>
                     </tr>
                 </tbody>

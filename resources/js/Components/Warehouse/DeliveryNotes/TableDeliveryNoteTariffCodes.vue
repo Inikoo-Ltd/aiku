@@ -5,7 +5,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faDownload, faGlobe } from "@fal"
@@ -71,9 +71,9 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
         class="mb-3 flex items-start gap-3 rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-red-700">
         <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl" fixed-width />
         <div class="min-w-0">
-            <div class="font-semibold">{{ trans("Missing tariff code or country of origin") }}</div>
+            <div class="font-semibold">{{ ctrans("Missing tariff code or country of origin") }}</div>
             <div class="text-sm">
-                {{ trans("These parts cannot be declared for customs until they are fixed in their trade unit:") }}
+                {{ ctrans("These parts cannot be declared for customs until they are fixed in their trade unit:") }}
             </div>
             <ul class="mt-2 space-y-1 text-sm">
                 <li v-for="offender in incompleteRow.offenders" :key="offender.part" class="flex flex-wrap items-center gap-x-2">
@@ -83,16 +83,16 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
                     <span class="text-red-600/80 truncate max-w-md">{{ offender.trade_unit_name }}</span>
                     <span class="text-xs">
                         {{ [
-                            offender.missing_tariff_code ? trans("no tariff code") : null,
-                            offender.missing_origin ? trans("no country of origin") : null,
+                            offender.missing_tariff_code ? ctrans("no tariff code") : null,
+                            offender.missing_origin ? ctrans("no country of origin") : null,
                         ].filter(Boolean).join(" + ") }}
                     </span>
                     <a v-if="offender.trade_unit_slug"
                         :href="route('grp.goods.trade-units.edit', offender.trade_unit_slug)" target="_blank"
                         class="text-xs font-semibold underline underline-offset-2 hover:no-underline">
-                        {{ trans("Edit trade unit") }}
+                        {{ ctrans("Edit trade unit") }}
                     </a>
-                    <span v-else class="text-xs italic">{{ trans("no trade unit linked") }}</span>
+                    <span v-else class="text-xs italic">{{ ctrans("no trade unit linked") }}</span>
                 </li>
             </ul>
         </div>
@@ -100,7 +100,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
 
     <Table :resource="data" :name="tab">
         <template v-if="tariffCodesExport?.download_route" #add-on-button>
-            <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
+            <Button :icon="faDownload" :label="ctrans('Export')" type="tertiary" size="xs"
                 @click="exportPanel.toggle($event)" />
 
             <Popover ref="exportPanel">
@@ -114,7 +114,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
 
                     <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
                         <Checkbox v-model="allColumnsSelected" :binary="true" />
-                        <span>{{ trans("Select all") }}</span>
+                        <span>{{ ctrans("Select all") }}</span>
                     </label>
 
                     <div class="max-h-72 overflow-y-auto">
@@ -131,14 +131,14 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
         <template #cell(tariff_code)="{ item }">
             <span v-if="item.is_incomplete" class="inline-flex items-center gap-1.5 font-semibold text-red-600">
                 <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
-                {{ trans("Missing") }}
+                {{ ctrans("Missing") }}
             </span>
             <span v-else>{{ item.tariff_code }}</span>
         </template>
 
         <template #cell(description)="{ item }">
             <span v-if="item.is_incomplete" class="block max-w-xs text-xs font-semibold text-red-600">
-                {{ trans("No tariff code and/or country of origin — customs clearance will fail") }}
+                {{ ctrans("No tariff code and/or country of origin — customs clearance will fail") }}
             </span>
             <span v-else class="block max-w-xs text-xs text-gray-500">{{ item.description }}</span>
         </template>
@@ -154,7 +154,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
 
         <template #cell(dg)="{ item }">
             <span>
-                <FontAwesomeIcon v-if="item.dg" :icon="faSkull" class="text-red-500" :title="trans('Dangerous goods')" fixed-width />
+                <FontAwesomeIcon v-if="item.dg" :icon="faSkull" class="text-red-500" :title="ctrans('Dangerous goods')" fixed-width />
             </span>
         </template>
 

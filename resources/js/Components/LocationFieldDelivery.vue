@@ -19,7 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimesSquare } from "@fas"
 import { faTrashAlt, faPaperPlane, faInventory } from "@far"
 import { faSignOutAlt, faTruckLoading, faPencil, faTimes } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 library.add( faTrashAlt, faSignOutAlt, faPaperPlane, faInventory, faTruckLoading, faPencil, faTimesSquare, faTimes )
 
@@ -68,8 +68,8 @@ const onChangeLocation = (closeModal?: Function) => {
             onError: errors => {
                 error.value = errors
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to set location"),
                     type: "error"
                 })
             },
@@ -112,8 +112,8 @@ const onChangeLocation = (closeModal?: Function) => {
 
                 <Button v-else-if="pallet.state !== 'not_received'"
                     type="primary"
-                    :label="trans('Set location')"
-                    :tooltip="trans('Set location for pallet')"
+                    :label="ctrans('Set location')"
+                    :tooltip="ctrans('Set location for pallet')"
                     :key="pallet.index"
                     :size="'xs'"
                 />
@@ -121,7 +121,7 @@ const onChangeLocation = (closeModal?: Function) => {
 
             <template #content="{ close: closed }">
                 <div class="w-[250px]">
-                    <span class="text-xs px-1 my-2">{{ trans("Location") }}: </span>
+                    <span class="text-xs px-1 my-2">{{ ctrans("Location") }}: </span>
                     <div>
                         <SelectQuery
                             :urlRoute="route(locationRoute?.name, locationRoute?.parameters)"

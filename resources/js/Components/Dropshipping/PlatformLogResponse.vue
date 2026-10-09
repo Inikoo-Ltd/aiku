@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCode, faCopy, faLightbulb } from "@fal"
@@ -37,13 +37,13 @@ const isDetailOpen = ref(false)
                     v-tooltip="message"
                     class="line-clamp-3 whitespace-pre-line"
                     :class="status === 'fail' ? 'text-red-600' : 'text-gray-700'">
-                    {{ message ?? trans("The platform refused the product without saying why") }}
+                    {{ message ?? ctrans("The platform refused the product without saying why") }}
                 </div>
 
                 <FontAwesomeIcon
                     v-if="detail"
                     @click="isDetailOpen = true"
-                    v-tooltip="trans('See the answer of the platform')"
+                    v-tooltip="ctrans('See the answer of the platform')"
                     :icon="faCode"
                     class="mt-0.5 cursor-pointer text-gray-400 hover:text-gray-600"
                     fixed-width
@@ -61,14 +61,14 @@ const isDetailOpen = ref(false)
         <Modal :isOpen="isDetailOpen" @onClose="isDetailOpen = false" width="w-full max-w-2xl" closeButton>
             <div class="text-base font-normal">
                 <div class="font-semibold">
-                    {{ trans("Answer of :platform", { platform: platformName || trans("the platform") }) }}
+                    {{ ctrans("Answer of :platform", { platform: platformName || ctrans("the platform") }) }}
                     <span v-if="itemCode" class="text-gray-500">({{ itemCode }})</span>
                 </div>
 
                 <div v-if="message" class="mt-2 whitespace-pre-line text-red-600">{{ message }}</div>
                 <div v-if="hint" class="mt-1 text-sm italic text-gray-500">{{ hint }}</div>
                 <div v-if="code" class="mt-2 text-xs text-gray-500">
-                    {{ trans("Error code") }}: <span class="font-mono">{{ code }}</span>
+                    {{ ctrans("Error code") }}: <span class="font-mono">{{ code }}</span>
                 </div>
 
                 <pre
@@ -78,7 +78,7 @@ const isDetailOpen = ref(false)
                 <div class="mt-3 flex justify-end">
                     <Button
                         @click="() => useCopyText(detail ?? '')"
-                        :label="trans('Copy')"
+                        :label="ctrans('Copy')"
                         :icon="faCopy"
                         type="tertiary"
                         size="xs" />

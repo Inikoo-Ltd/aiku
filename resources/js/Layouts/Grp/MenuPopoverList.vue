@@ -7,7 +7,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { capitalize } from "@/Composables/capitalize"
 import { inject, computed, nextTick, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { get } from "lodash"
 library.add(faStoreAlt)
 
@@ -167,18 +167,18 @@ const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
                     ]">
                 <div class="flex flex-col font-semibold">
                     <div>{{ showare.label }}</div>
-                    <div v-if="showare.website_domain" v-tooltip="trans('Website domain')" class="w-fit opacity-60 italic text-xs">
+                    <div v-if="showare.website_domain" v-tooltip="ctrans('Website domain')" class="w-fit opacity-60 italic text-xs">
                         {{ showare.website_domain }}
                     </div>
                 </div>
                 <FontAwesomeIcon v-if="showare.type === 'b2b'" icon='fal fa-fax' fixed-width class='text-sm text-gray-400'
-                    v-tooltip="trans('E-commerce')" aria-hidden='true' />
+                    v-tooltip="ctrans('E-commerce')" aria-hidden='true' />
                 <FontAwesomeIcon v-if="showare.type === 'dropshipping'" icon='fal fa-parachute-box'
-                    fixed-width class='text-sm text-gray-400' v-tooltip="trans('Dropshipping')" aria-hidden='true' />
+                    fixed-width class='text-sm text-gray-400' v-tooltip="ctrans('Dropshipping')" aria-hidden='true' />
                 <FontAwesomeIcon v-if="showare.type === 'fulfilment'" icon='fal fa-hand-holding-box'
-                    fixed-width class='text-sm text-gray-400' v-tooltip="trans('Fulfilment')" aria-hidden='true' />
+                    fixed-width class='text-sm text-gray-400' v-tooltip="ctrans('Fulfilment')" aria-hidden='true' />
                 <FontAwesomeIcon v-if="showare.type === 'external'" icon='fal fa-store'
-                    fixed-width class='text-sm text-gray-400' v-tooltip="trans('External Shop')" aria-hidden='true' />
+                    fixed-width class='text-sm text-gray-400' v-tooltip="ctrans('External Shop')" aria-hidden='true' />
                 </MenuItem>
             </template>
         </div>

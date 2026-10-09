@@ -3,7 +3,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faSortAmountUp } from '@fal'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faSortAmountUp)
 
@@ -46,16 +46,16 @@ const percent = (value: number) => `${Math.round(value * 1000) / 10}%`
             <div class="rounded-lg border border-gray-200">
                 <div class="px-4 py-3 border-b border-gray-100 text-sm font-medium text-gray-700">
                     <FontAwesomeIcon icon="fal fa-sort-amount-up" class="mr-1.5 text-gray-400" fixed-width aria-hidden="true" />
-                    {{ trans('Discount ladder') }}
+                    {{ ctrans('Discount ladder') }}
                 </div>
                 <div v-if="data.ladder?.length" class="max-h-[28rem] overflow-y-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-gray-400 text-left">
-                            <th class="px-4 py-2 font-normal">{{ trans('From quantity') }}</th>
-                            <th class="px-4 py-2 font-normal text-right">{{ trans('Products') }}</th>
-                            <th class="px-4 py-2 font-normal text-right">{{ trans('Avg discount') }}</th>
-                            <th class="px-4 py-2 font-normal text-right">{{ trans('Range') }}</th>
+                            <th class="px-4 py-2 font-normal">{{ ctrans('From quantity') }}</th>
+                            <th class="px-4 py-2 font-normal text-right">{{ ctrans('Products') }}</th>
+                            <th class="px-4 py-2 font-normal text-right">{{ ctrans('Avg discount') }}</th>
+                            <th class="px-4 py-2 font-normal text-right">{{ ctrans('Range') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,19 +70,19 @@ const percent = (value: number) => `${Math.round(value * 1000) / 10}%`
                     </tbody>
                 </table>
                 </div>
-                <div v-else class="px-4 py-6 text-sm text-gray-400">{{ trans('No active step offers') }}</div>
+                <div v-else class="px-4 py-6 text-sm text-gray-400">{{ ctrans('No active step offers') }}</div>
             </div>
 
             <div class="rounded-lg border border-gray-200">
                 <div class="px-4 py-3 border-b border-gray-100 text-sm font-medium text-gray-700">
-                    {{ trans('Most used step offers') }}
+                    {{ ctrans('Most used step offers') }}
                 </div>
                 <table v-if="data.top_offers?.length" class="w-full text-sm">
                     <thead>
                         <tr class="text-gray-400 text-left">
-                            <th class="px-4 py-2 font-normal">{{ trans('Product') }}</th>
-                            <th class="px-4 py-2 font-normal">{{ trans('Steps') }}</th>
-                            <th class="px-4 py-2 font-normal text-right">{{ trans('Orders') }}</th>
+                            <th class="px-4 py-2 font-normal">{{ ctrans('Product') }}</th>
+                            <th class="px-4 py-2 font-normal">{{ ctrans('Steps') }}</th>
+                            <th class="px-4 py-2 font-normal text-right">{{ ctrans('Orders') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -102,7 +102,7 @@ const percent = (value: number) => `${Math.round(value * 1000) / 10}%`
                         </tr>
                     </tbody>
                 </table>
-                <div v-else class="px-4 py-6 text-sm text-gray-400">{{ trans('No active step offers') }}</div>
+                <div v-else class="px-4 py-6 text-sm text-gray-400">{{ ctrans('No active step offers') }}</div>
             </div>
         </div>
     </div>

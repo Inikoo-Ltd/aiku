@@ -1,5 +1,5 @@
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 
 // To copy a text to clipboard
@@ -14,8 +14,8 @@ export const useCopyText = (textToCopy?: string | number) => {
     textarea.remove()
     
     notify({
-        // title: trans(''),
-        title: trans('Text successfully copied to clipboard.'),
+        // title: ctrans(''),
+        title: ctrans('Text successfully copied to clipboard.'),
         type: "info"
     });
 }

@@ -8,7 +8,7 @@
 import { computed, inject, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { debounce } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
@@ -93,12 +93,12 @@ const accentStyle = computed(() => ({
 }))
 
 const formatPrice = (amount: number) =>
-    amount === 0 ? trans("Free") : locale.currencyFormat(props.currencyCode, amount)
+    amount === 0 ? ctrans("Free") : locale.currencyFormat(props.currencyCode, amount)
 
 // A family covers several sizes, so its cost is a range until the warehouse picks the size.
 const formatPackagingPrice = (option: PackagingOption) => {
     if (option.price_max === 0) {
-        return trans("Free")
+        return ctrans("Free")
     }
 
     return option.price === option.price_max
@@ -224,17 +224,17 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
         <!-- Packaging & Personalisation -->
         <section class="rounded-lg border border-gray-200 bg-white p-4">
             <h2 class="text-sm font-semibold text-gray-700">
-                {{ trans("Packaging & Personalisation") }}
+                {{ ctrans("Packaging & Personalisation") }}
             </h2>
 
             <!-- Packaging option -->
             <div class="mt-3">
                 <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
-                    {{ trans("Packaging option") }}
+                    {{ ctrans("Packaging option") }}
                     <FontAwesomeIcon
                         :icon="['fal', 'info-circle']"
                         class="text-gray-400"
-                        v-tooltip="trans('The default packaging used for this order')"
+                        v-tooltip="ctrans('The default packaging used for this order')"
                         fixed-width
                         aria-hidden="true"
                     />
@@ -244,7 +244,7 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                     :options="packagingOptions"
                     optionLabel="label"
                     optionValue="value"
-                    :placeholder="trans('Select packaging')"
+                    :placeholder="ctrans('Select packaging')"
                     class="w-full"
                 >
                     <template #value="{ value }">
@@ -255,7 +255,7 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                             </span>
                             <span class="text-gray-500">{{ formatPackagingPrice(selectedPackagingOption) }}</span>
                         </div>
-                        <span v-else class="text-gray-400">{{ trans("Select packaging") }}</span>
+                        <span v-else class="text-gray-400">{{ ctrans("Select packaging") }}</span>
                     </template>
                     <template #option="{ option }">
                         <div class="flex w-full items-center justify-between gap-2">
@@ -268,18 +268,18 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                     </template>
                 </Select>
                 <p class="mt-1 text-xs text-gray-400">
-                    {{ trans("We will always use the most suitable size of the packaging you select.") }}
+                    {{ ctrans("We will always use the most suitable size of the packaging you select.") }}
                 </p>
             </div>
 
             <!-- Include with order -->
             <div class="mt-4">
                 <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-2">
-                    {{ trans("Include with order") }}
+                    {{ ctrans("Include with order") }}
                     <FontAwesomeIcon
                         :icon="['fal', 'info-circle']"
                         class="text-gray-400"
-                        v-tooltip="trans('These inserts will be added to every order')"
+                        v-tooltip="ctrans('These inserts will be added to every order')"
                         fixed-width
                         aria-hidden="true"
                     />
@@ -302,13 +302,13 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                         <span class="flex-1 text-sm">
                             {{ insert.label }}
                             <span v-if="isPersonalisedMessage(insert.id)" class="block text-xs text-gray-400">
-                                {{ trans("Added automatically when you write a message below") }}
+                                {{ ctrans("Added automatically when you write a message below") }}
                             </span>
                         </span>
                         <span class="text-sm text-gray-500">{{ formatPrice(insert.price) }}</span>
                     </label>
                     <p v-if="!inserts.length" class="py-3 text-center text-xs text-gray-400">
-                        {{ trans("No inserts available for this packaging") }}
+                        {{ ctrans("No inserts available for this packaging") }}
                     </p>
                 </div>
             </div>
@@ -316,12 +316,12 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
             <!-- Personalised message -->
             <div class="mt-4">
                 <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
-                    {{ trans("Personalised message") }}
-                    <span class="text-gray-400">({{ trans("optional") }})</span>
+                    {{ ctrans("Personalised message") }}
+                    <span class="text-gray-400">({{ ctrans("optional") }})</span>
                     <FontAwesomeIcon
                         :icon="['fal', 'info-circle']"
                         class="text-gray-400"
-                        v-tooltip="trans('Printed and included with all orders')"
+                        v-tooltip="ctrans('Printed and included with all orders')"
                         fixed-width
                         aria-hidden="true"
                     />
@@ -332,7 +332,7 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                         :maxlength="maxMessageLength"
                         rows="3"
                         class="w-full text-sm"
-                        :placeholder="trans('Write your message here')"
+                        :placeholder="ctrans('Write your message here')"
                     />
                     <div class="absolute bottom-2 right-3 text-xs text-gray-400">
                         {{ message.length }}/{{ maxMessageLength }}
@@ -344,11 +344,11 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
         <!-- Leaflets & inserts to be printed -->
         <section class="rounded-lg border border-gray-200 bg-white p-4">
             <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700">
-                {{ trans("Leaflets to be printed") }}
+                {{ ctrans("Leaflets to be printed") }}
                 <FontAwesomeIcon
                     :icon="['fal', 'info-circle']"
                     class="text-gray-400"
-                    v-tooltip="trans('The selected inserts and their files that will be printed with this order')"
+                    v-tooltip="ctrans('The selected inserts and their files that will be printed with this order')"
                     fixed-width
                     aria-hidden="true"
                 />
@@ -385,7 +385,7 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                         </span>
                         <span v-else class="flex items-center gap-1 text-xs text-amber-600 font-light">
                             <FontAwesomeIcon :icon="['fal', 'exclamation-circle']" fixed-width aria-hidden="true" />
-                            {{ trans("Leaflet file not uploaded yet") }}
+                            {{ ctrans("Leaflet file not uploaded yet") }}
                         </span>
                     </span>
                     <span
@@ -393,11 +393,11 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
                         class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
                     >
                         <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
-                        {{ trans("Will be printed") }}
+                        {{ ctrans("Will be printed") }}
                     </span>
                 </div>
                 <p v-if="!printableInserts.length" class="py-3 text-center text-xs text-gray-400">
-                    {{ trans("No inserts selected for this order") }}
+                    {{ ctrans("No inserts selected for this order") }}
                 </p>
             </div>
 
@@ -408,7 +408,7 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
             >
                 <span class="flex items-center gap-2">
                     <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
-                    {{ trans("Upload or manage leaflet files") }}
+                    {{ ctrans("Upload or manage leaflet files") }}
                 </span>
                 <FontAwesomeIcon
                     :icon="['fal', 'arrow-right']"

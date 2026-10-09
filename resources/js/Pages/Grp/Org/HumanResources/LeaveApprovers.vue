@@ -9,7 +9,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash, faUserShield, faPencil, faPlus } from "@fal"
 
@@ -66,7 +66,7 @@ const submit = () => {
 	})
 }
 
-const modalTitle = computed(() => trans("Create Leave Approver"))
+const modalTitle = computed(() => ctrans("Create Leave Approver"))
 </script>
 
 <template>
@@ -100,7 +100,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 					'bg-green-100 text-green-800': item.sequence_number === 3,
 					'bg-purple-100 text-purple-800': item.sequence_number > 3,
 				}">
-				{{ trans("Level :level", { level: item.sequence_number }) }}
+				{{ ctrans("Level :level", { level: item.sequence_number }) }}
 			</span>
 		</template>
 
@@ -110,7 +110,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 				:class="
 					item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
 				">
-				{{ item.is_active ? trans("Active") : trans("Inactive") }}
+				{{ item.is_active ? ctrans("Active") : ctrans("Inactive") }}
 			</span>
 		</template>
 
@@ -125,8 +125,8 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 						},
 					}"
 					:isFullLoading="false"
-					:title="trans('Are you sure you want to delete this leave approver?')"
-					:noLabel="trans('Delete')"
+					:title="ctrans('Are you sure you want to delete this leave approver?')"
+					:noLabel="ctrans('Delete')"
 					noIcon="fal fa-trash">
 					<template #default="{ changeModel }">
 						<Button
@@ -134,7 +134,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 							label="Delete"
 							:icon="faTrash"
 							size="xs"
-							v-tooltip="trans('Delete leave approver')"
+							v-tooltip="ctrans('Delete leave approver')"
 							@click="changeModel()" />
 					</template>
 				</ModalConfirmationDelete>
@@ -152,7 +152,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Employee") }}
+						{{ ctrans("Employee") }}
 					</label>
 					<PureMultiselect
 						v-model="form.user_id"
@@ -188,16 +188,16 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Level") }}
+						{{ ctrans("Level") }}
 					</label>
 					<select
 						v-model.number="form.sequence_number"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
-						<option :value="1">{{ trans("Level 1") }}</option>
-						<option :value="2">{{ trans("Level 2") }}</option>
-						<option :value="3">{{ trans("Level 3") }}</option>
-						<option :value="4">{{ trans("Level 4") }}</option>
-						<option :value="5">{{ trans("Level 5") }}</option>
+						<option :value="1">{{ ctrans("Level 1") }}</option>
+						<option :value="2">{{ ctrans("Level 2") }}</option>
+						<option :value="3">{{ ctrans("Level 3") }}</option>
+						<option :value="4">{{ ctrans("Level 4") }}</option>
+						<option :value="5">{{ ctrans("Level 5") }}</option>
 					</select>
 					<div v-if="form.errors.sequence_number" class="mt-1 text-sm text-red-600">
 						{{ form.errors.sequence_number }}
@@ -208,7 +208,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 			<!-- Description -->
 			<div>
 				<label class="block text-sm font-medium text-gray-700">
-					{{ trans("Description") }}
+					{{ ctrans("Description") }}
 				</label>
 				<textarea
 					v-model="form.description"
@@ -227,17 +227,17 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 					type="checkbox"
 					class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 				<label for="is_active" class="ml-2 block text-sm text-gray-700">
-					{{ trans("Active") }}
+					{{ ctrans("Active") }}
 				</label>
 			</div>
 
 			<!-- Buttons -->
 			<div class="mt-6 flex justify-end gap-2">
 				<Button type="tertiary" @click="closeModal">
-					{{ trans("Cancel") }}
+					{{ ctrans("Cancel") }}
 				</Button>
 				<Button type="save" :loading="form.processing" @click="submit">
-					{{ trans("Save") }}
+					{{ ctrans("Save") }}
 				</Button>
 			</div>
 		</form>

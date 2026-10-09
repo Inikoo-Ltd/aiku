@@ -3,7 +3,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -131,8 +131,8 @@ const _popoverProfit = ref(null)
             <div class="flex justify-between">
                 <div>
                     <div class="text-xs mb-1">
-                        {{ trans("Price") }}
-                        <span class="text-gray-500 text-xxs">({{ trans("Excl. Vat") }})</span>
+                        {{ ctrans("Price") }}
+                        <span class="text-gray-500 text-xxs">({{ ctrans("Excl. Vat") }})</span>
                     </div>
 
                     <div v-if="product.units == 1"
@@ -159,9 +159,9 @@ const _popoverProfit = ref(null)
                 </div>
 
                 <!-- <div v-if="product?.rrp_per_unit > 0"
-                    v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
+                    v-tooltip="ctrans('Recommended retail price') + ' (' + ctrans('Excl. Vat') + ')'"
                     class="flex flex-col text-right break-safe">
-                    <div class="text-xs">{{ trans("RRP") }}:</div>
+                    <div class="text-xs">{{ ctrans("RRP") }}:</div>
                     <div class="font-bold text-xs break-safe">
                         {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit || 0) }}
                         <span class="font-normal">{{ product.unit}}</span>
@@ -208,9 +208,9 @@ const _popoverProfit = ref(null)
                 <div class="flex flex-col justify-end text-right text-xs">
 
                     <div v-if="product?.rrp_per_unit > 0"
-                        v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
+                        v-tooltip="ctrans('Recommended retail price') + ' (' + ctrans('Excl. Vat') + ')'"
                         class="flex flex-col break-safe mb-2">
-                        <div class="text-xs">{{ trans("RRP") }}:</div>
+                        <div class="text-xs">{{ ctrans("RRP") }}:</div>
                         <div class="font-bold text-xs break-safe">
                             {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit || 0) }}
                         </div>
@@ -221,7 +221,7 @@ const _popoverProfit = ref(null)
                             @mouseleave="_popoverProfit?.hide" class="ml-1 cursor-pointer opacity-60 hover:opacity-100">
                             <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                         </span>
-                        {{ trans("Profit") }}:
+                        {{ ctrans("Profit") }}:
                     </div>
 
                     <div class="font-bold text-green-700 text-xs break-safe">

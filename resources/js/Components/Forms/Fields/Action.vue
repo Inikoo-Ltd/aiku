@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope } from "@fal"
 import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 
 library.add( faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope, faGoogle )
@@ -55,7 +55,7 @@ const handleClick = (action: Action|any) => {
                     isLoading.value = false
                 }
                 notify({
-                    title: trans('Something went wrong.'),
+                    title: ctrans('Something went wrong.'),
                     text: typeof error === 'string' ? error : Object.values(error || {}).join(', '),
                     type: 'error',
                     duration: 15000,

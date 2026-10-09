@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Payment } from "@/types/payment"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { paymentProviderLogo } from "@/Composables/usePaymentProviderLogo"
@@ -41,7 +41,7 @@ const formatReference = (payment) => {
 }
 
 const cancelConfirmationText = (item) => {
-	return item.payment_account_type === 'account' ? trans('This payment will be cancelled. This action would also affect the customer balance.') : trans('This payment will be cancelled.');
+	return item.payment_account_type === 'account' ? ctrans('This payment will be cancelled. This action would also affect the customer balance.') : ctrans('This payment will be cancelled.');
 }
 
 </script>
@@ -64,14 +64,14 @@ const cancelConfirmationText = (item) => {
 		<template #cell(method)="{ item }">
 			<div class="flex items-center gap-1.5">
 				<span>{{ item.method_label || item.method || '-' }}</span>
-				<span v-if="item.is_mit" v-tooltip="trans('Automatic charge from saved card (MIT)')" class="rounded bg-violet-100 px-1 text-xs font-medium text-violet-700">MIT</span>
+				<span v-if="item.is_mit" v-tooltip="ctrans('Automatic charge from saved card (MIT)')" class="rounded bg-violet-100 px-1 text-xs font-medium text-violet-700">MIT</span>
 				<img v-if="item.payment_account_type !== item.method && paymentProviderLogo(item.payment_account_type)" :src="paymentProviderLogo(item.payment_account_type)" :alt="item.payment_account_name" :title="item.payment_account_name" class="h-3 w-auto max-w-16 opacity-70" loading="lazy" decoding="async" />
 			</div>
 		</template>
 
 		<template #cell(status)="{ item }">
 			<Icon v-if="item.is_cancelled === false" :data="item.status_icon" class="" />
-			<FontAwesomeIcon v-else :icon="faFileTimes" class="text-orange-500 text-lg" v-tooltip="trans('This payment is being cancelled')" fixed-width/>
+			<FontAwesomeIcon v-else :icon="faFileTimes" class="text-orange-500 text-lg" v-tooltip="ctrans('This payment is being cancelled')" fixed-width/>
 		</template>
 
 		<template #cell(amount)="{ item: item }">
@@ -93,15 +93,15 @@ const cancelConfirmationText = (item) => {
 					},
 					method: 'patch'
 				}"
-				:title="trans('Are you sure you want to cancel this payment?')"
+				:title="ctrans('Are you sure you want to cancel this payment?')"
 				:description="cancelConfirmationText(item)"
-				:noLabel="trans('Return')"
+				:noLabel="ctrans('Return')"
 				:iconClass="'text-red-500'"
 				:iconContainerClass="'bg-red-100 border-1 border-red-500'"
 			>
 				<template #default="{ changeModel }">
 					<Button 
-						v-tooltip="trans('Cancel Payment')"
+						v-tooltip="ctrans('Cancel Payment')"
 						class="text-sm" :type="'negative'"
 						@click="changeModel"
 					>
@@ -114,7 +114,7 @@ const cancelConfirmationText = (item) => {
 						:style="'delete'"
 						:loading="isLoadingdelete"
 						@click="() => clickYes()"
-						:label="trans('Cancel Payment')"
+						:label="ctrans('Cancel Payment')"
 					/>
 				</template>
 			</ModalConfirmation>

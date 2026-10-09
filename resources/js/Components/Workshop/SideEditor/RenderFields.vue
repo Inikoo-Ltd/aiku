@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, inject, computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ScreenView from '@/Components/ScreenView.vue'
 
 import { get, isPlainObject, cloneDeep} from 'lodash-es'
@@ -99,7 +99,7 @@ const keyRender = ref(1)
   <div v-if="blueprint.label" class="w-full my-1 py-0.5 border-b border-gray-300 text-xs select-none">
     <div class="flex items-center justify-between">
       <div class="flex items-center font-semibold text-start">
-        {{ trans(blueprint.label) }}
+        {{ ctrans(blueprint.label) }}
         <VTooltip v-if="blueprint.information" class="inline w-fit" placement="right">
           <FontAwesomeIcon
             icon="fal fa-info-circle"
@@ -136,7 +136,7 @@ const keyRender = ref(1)
 
 
   <div v-if="blueprint.reset_value?.value" @click="() => (onPropertyUpdate(blueprint.reset_value.value), blueprint.reset_value.is_refresh_field_on_reset ? keyRender++ : null)" class="w-fit cursor-pointer text-xs text-gray-400 mt-1 hover:text-red-500 hover:underline">
-    {{ trans("Click here to reset the value") }}
+    {{ ctrans("Click here to reset the value") }}
   </div>
 </template>
 

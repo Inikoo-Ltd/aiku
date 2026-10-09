@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, watchEffect } from 'vue'
 import {usePage} from '@inertiajs/vue3'
 
@@ -28,7 +28,7 @@ watchEffect(() => {
 <template>
     <ButtonWithDropdown dusk="table-download-dropdown" class="w-auto">
         <template #button>
-            <div class="h-auto aspect-square flex justify-center items-center" :title="trans('Export Table')">
+            <div class="h-auto aspect-square flex justify-center items-center" :title="ctrans('Export Table')">
                 <FontAwesomeIcon icon="fas fa-download" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
             </div>
         </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { Head, useForm, router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLock, faLink, faPhone, faReply, faTrash, faUpload, faImage, faVideo, faFilePdf, faDownload } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
@@ -111,11 +111,11 @@ const headerFormat = computed(() => props.template.header_format || "NONE")
 
 const headerFormatLabel = computed(() => {
     const labels: Record<string, string> = {
-        NONE: trans("None"),
-        TEXT: trans("Text"),
-        IMAGE: trans("Image"),
-        VIDEO: trans("Video"),
-        DOCUMENT: trans("PDF"),
+        NONE: ctrans("None"),
+        TEXT: ctrans("Text"),
+        IMAGE: ctrans("Image"),
+        VIDEO: ctrans("Video"),
+        DOCUMENT: ctrans("PDF"),
     }
 
     return labels[headerFormat.value] ?? headerFormat.value
@@ -172,8 +172,8 @@ const onHeaderMediaSelect = (event: Event) => {
 
     if (!rule.mime_types.includes(file.type)) {
         notify({
-            title: trans("Failed"),
-            text: trans("WhatsApp accepts :formats here.", { formats: rule.extensions.join(", ") }),
+            title: ctrans("Failed"),
+            text: ctrans("WhatsApp accepts :formats here.", { formats: rule.extensions.join(", ") }),
             type: "error",
         })
         input.value = ""
@@ -182,8 +182,8 @@ const onHeaderMediaSelect = (event: Event) => {
 
     if (file.size > rule.max_kb * 1024) {
         notify({
-            title: trans("Failed"),
-            text: trans("Maximum size is :size MB.", { size: Math.round(rule.max_kb / 1024) }),
+            title: ctrans("Failed"),
+            text: ctrans("Maximum size is :size MB.", { size: Math.round(rule.max_kb / 1024) }),
             type: "error",
         })
         input.value = ""
@@ -196,8 +196,8 @@ const onHeaderMediaSelect = (event: Event) => {
         forceFormData: true,
         onError: (errors) => {
             notify({
-                title: trans("Failed"),
-                text: errors.header_media ?? trans("The server refused the file — it may be larger than the upload limit."),
+                title: ctrans("Failed"),
+                text: errors.header_media ?? ctrans("The server refused the file — it may be larger than the upload limit."),
                 type: "error",
             })
         },
@@ -223,7 +223,7 @@ const buttonIcon = (type: string) =>
     type === "URL" ? faLink : type === "PHONE_NUMBER" ? faPhone : faReply
 
 const buttonTypeLabel = (type: string) =>
-    type === "URL" ? trans("Link") : type === "PHONE_NUMBER" ? trans("Call") : trans("Quick reply")
+    type === "URL" ? ctrans("Link") : type === "PHONE_NUMBER" ? ctrans("Call") : ctrans("Quick reply")
 
 // A quick reply has nowhere to go, so only links and calls carry a destination.
 const buttonDestination = (button: TemplateButton) => button.url || button.phone_number || ""
@@ -236,24 +236,24 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
 
     <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <Message v-if="template.status === 'REJECTED'" severity="error" :closable="false" class="mb-6">
-            {{ trans("Meta rejected this template") }}<span v-if="template.rejected_reason">: {{ template.rejected_reason }}</span>
+            {{ ctrans("Meta rejected this template") }}<span v-if="template.rejected_reason">: {{ template.rejected_reason }}</span>
         </Message>
 
         <div class="flex flex-col lg:flex-row gap-10 xl:gap-14">
             <div class="flex-1 min-w-0 lg:max-w-[600px]">
                 <section class="space-y-6">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-800">{{ trans("Template name") }}</label>
+                        <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Template name") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
-                            {{ trans("Used inside Aiku only — rename it to something your team recognises") }}
+                            {{ ctrans("Used inside Aiku only — rename it to something your team recognises") }}
                         </p>
                         <PureInput v-model="form.label" :placeholder="template.name" />
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-800">{{ trans("Meta template name") }}</label>
+                        <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Meta template name") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
-                            {{ trans("The name WhatsApp knows this template by") }}
+                            {{ ctrans("The name WhatsApp knows this template by") }}
                         </p>
                         <div
                             class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
@@ -264,19 +264,19 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
 
                     <div class="grid sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ trans("Category") }}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ ctrans("Category") }}</label>
                             <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
                                 {{ capitalize(template.category?.toLowerCase() ?? '') }}
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ trans("Language") }}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ ctrans("Language") }}</label>
                             <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
                                 {{ template.language }}
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ trans("Status") }}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ ctrans("Status") }}</label>
                             <div class="rounded-lg border px-3 py-2 text-sm font-medium" :class="statusTone">
                                 {{ capitalize(template.status?.toLowerCase() ?? '') }}
                             </div>
@@ -288,15 +288,15 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
 
                 <section class="space-y-3">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-800">{{ trans("Message") }}</label>
+                        <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Message") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5">
-                            {{ trans("Approved wording is frozen — to change it, create a new template") }}
+                            {{ ctrans("Approved wording is frozen — to change it, create a new template") }}
                         </p>
                     </div>
 
                     <div>
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-medium text-gray-600">{{ trans("Header") }}</span>
+                            <span class="text-xs font-medium text-gray-600">{{ ctrans("Header") }}</span>
                             <span
                                 class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] text-gray-500">
                                 <FontAwesomeIcon v-if="headerIcon" :icon="headerIcon" class="text-[9px]" fixed-width />
@@ -306,7 +306,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
 
                         <div v-if="headerFormat === 'NONE'"
                             class="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
-                            {{ trans("This template was created without a header.") }}
+                            {{ ctrans("This template was created without a header.") }}
                         </div>
 
                         <div v-else-if="headerFormat === 'TEXT'"
@@ -341,18 +341,18 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                     :href="template.header_media.file_url" target="_blank" rel="noopener"
                                     class="shrink-0 inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-600 transition hover:bg-white hover:text-gray-800">
                                     <FontAwesomeIcon :icon="faDownload" class="text-[10px]" fixed-width />
-                                    {{ trans("Download") }}
+                                    {{ ctrans("Download") }}
                                 </a>
                             </div>
 
                             <Message v-else severity="warn" :closable="false" class="text-xs">
-                                {{ trans("No file set — sending this template will fail until one is uploaded.") }}
+                                {{ ctrans("No file set — sending this template will fail until one is uploaded.") }}
                             </Message>
 
                             <label
                                 class="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 cursor-pointer hover:border-gray-400">
                                 <FontAwesomeIcon :icon="faUpload" class="text-[11px]" fixed-width />
-                                {{ template.header_media ? trans("Replace file") : trans("Upload the file to send") }}
+                                {{ template.header_media ? ctrans("Replace file") : ctrans("Upload the file to send") }}
                                 <input type="file" class="hidden" :accept="headerMediaRule?.accept"
                                     @change="onHeaderMediaSelect" />
                             </label>
@@ -360,7 +360,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                     </div>
 
                     <div>
-                        <div class="text-xs font-medium text-gray-600 mb-1">{{ trans("Body") }}</div>
+                        <div class="text-xs font-medium text-gray-600 mb-1">{{ ctrans("Body") }}</div>
                         <div
                             class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-500 whitespace-pre-line">
                             {{ template.body }}
@@ -368,22 +368,22 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                     </div>
 
                     <div>
-                        <div class="text-xs font-medium text-gray-600 mb-1">{{ trans("Footer") }}</div>
+                        <div class="text-xs font-medium text-gray-600 mb-1">{{ ctrans("Footer") }}</div>
                         <div v-if="template.footer"
                             class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
                             {{ template.footer }}
                         </div>
                         <div v-else
                             class="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
-                            {{ trans("This template was created without a footer.") }}
+                            {{ ctrans("This template was created without a footer.") }}
                         </div>
                     </div>
 
                     <div>
-                        <div class="text-xs font-medium text-gray-600 mb-1">{{ trans("Buttons") }}</div>
+                        <div class="text-xs font-medium text-gray-600 mb-1">{{ ctrans("Buttons") }}</div>
                         <div v-if="!template.buttons?.length"
                             class="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400">
-                            {{ trans("This template was created without buttons.") }}
+                            {{ ctrans("This template was created without buttons.") }}
                         </div>
                         <div v-else class="space-y-2">
                         <div v-for="(button, index) in template.buttons" :key="index"
@@ -411,9 +411,9 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
 
                     <section class="space-y-3">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-800">{{ trans("Variables") }}</label>
+                            <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Variables") }}</label>
                             <p class="text-xs text-gray-400 mt-0.5">
-                                {{ trans("Say what each slot means and Aiku fills it from the conversation, so agents never type it") }}
+                                {{ ctrans("Say what each slot means and Aiku fills it from the conversation, so agents never type it") }}
                             </p>
                         </div>
 
@@ -421,17 +421,17 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                             <span class="w-12 shrink-0 font-mono text-xs text-gray-500">{{ slotLabel(index) }}</span>
                             <div class="flex-1">
                                 <PureMultiselect v-model="mapping[index]" :options="tagOptions" searchable
-                                    :placeholder="trans('Choose a variable…')" />
+                                    :placeholder="ctrans('Choose a variable…')" />
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-3 pt-1">
                             <span class="text-[11px]" :class="isMappingComplete ? 'text-gray-400' : 'text-amber-600'">
                                 {{ isMappingComplete
-                                    ? trans("Agents send this without filling anything in.")
-                                    : trans("Map every slot, otherwise agents keep typing the values by hand.") }}
+                                    ? ctrans("Agents send this without filling anything in.")
+                                    : ctrans("Map every slot, otherwise agents keep typing the values by hand.") }}
                             </span>
-                            <Button :label="trans('Save variables')" :loading="isSavingVariables"
+                            <Button :label="ctrans('Save variables')" :loading="isSavingVariables"
                                 :disabled="!isMappingComplete" @click="saveVariables" />
                         </div>
                     </section>
@@ -442,19 +442,19 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                         name: deleteRoute.name,
                         parameters: deleteRoute.parameters,
                         method: 'delete',
-                    }" :title="trans('Delete this template?')"
-                        :description="trans('It is removed from WhatsApp as well, and any language variant goes with it. Approved templates cannot be restored — you would have to submit a new one.')"
-                        :noLabel="trans('Delete template')" :noIcon="faTrash">
+                    }" :title="ctrans('Delete this template?')"
+                        :description="ctrans('It is removed from WhatsApp as well, and any language variant goes with it. Approved templates cannot be restored — you would have to submit a new one.')"
+                        :noLabel="ctrans('Delete template')" :noIcon="faTrash">
                         <template #default="{ changeModel }">
                             <button type="button" @click="changeModel"
                                 class="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 hover:underline">
                                 <FontAwesomeIcon :icon="faTrash" class="text-[10px]" fixed-width />
-                                {{ trans("Delete template") }}
+                                {{ ctrans("Delete template") }}
                             </button>
                         </template>
                     </ModalConfirmationDelete>
 
-                    <Button :label="trans('Save')" :loading="form.processing" @click="save" />
+                    <Button :label="ctrans('Save')" :loading="form.processing" @click="save" />
                 </div>
             </div>
 
@@ -463,7 +463,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                     <div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
                         <div class="flex items-center gap-2 bg-[#075E54] px-4 py-2.5 text-white">
                             <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" fixed-width />
-                            <span class="text-sm font-semibold">{{ trans("Preview") }}</span>
+                            <span class="text-sm font-semibold">{{ ctrans("Preview") }}</span>
                             <span class="ml-auto text-[11px] opacity-70 truncate max-w-[130px]">{{ businessName }}</span>
                         </div>
 
@@ -488,7 +488,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                             <span class="max-w-[90%] truncate text-[11px]">
                                                 {{ template.header_media.name }}
                                             </span>
-                                            <span class="text-[10px] underline">{{ trans("Open file") }}</span>
+                                            <span class="text-[10px] underline">{{ ctrans("Open file") }}</span>
                                         </a>
 
                                         <div v-else class="h-36 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">

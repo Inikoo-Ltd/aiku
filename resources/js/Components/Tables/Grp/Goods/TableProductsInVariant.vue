@@ -11,7 +11,7 @@ import { Shop } from "@/types/shop"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle, faDoNotEnter } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 

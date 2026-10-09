@@ -6,7 +6,7 @@ import { Image as ImageTS } from '@/types/Image'
 import { inject, ref, watch } from 'vue'
 import Tag from '@/Components/Tag.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PermissionsPictogram from '@/Components/DataDisplay/PermissionsPictogram.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -139,24 +139,24 @@ const force2FA = async () => {
                 <span
                     v-if="data?.data?.status"
                     class="inline-block border rounded-md border-green-500 text-green-600 px-2 py-1 text-sm">
-                    <FontAwesomeIcon :icon="faCheck" fixed-width /> {{ trans('Active') }}
+                    <FontAwesomeIcon :icon="faCheck" fixed-width /> {{ ctrans('Active') }}
                 </span>
                 <span
                     v-else
                     class="inline-block border rounded-md border-red-500 text-red-600 px-2 py-1 text-sm">
-                    <FontAwesomeIcon :icon="faTimes" fixed-width /> {{ trans('Inactive') }}
+                    <FontAwesomeIcon :icon="faTimes" fixed-width /> {{ ctrans('Inactive') }}
                 </span>
             </div>
         </div>
 
         <dl class="w-full grid grid-cols-1 sm:grid-cols-2">
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Name") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Name") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">{{ data?.data?.contact_name }}</dd>
             </div>
 
             <div class="px-4 py-6 sm:col-span-1 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Email") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Email") }}:</dt>
                 <!-- <dd class="mt-1 text-sm sm:mt-2">{{ data?.data?.email || '-' }}</dd> -->
                 <a
                     v-if="data?.data?.email"
@@ -169,14 +169,14 @@ const force2FA = async () => {
                 </div>
             </div>
             <!-- <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Status") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Status") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">
-                    <Tag :label="activeUsers[data?.data?.id] ? trans('Online') : trans('Offline')" :theme="activeUsers[data?.data?.id] ? 3 : undefined" />
+                    <Tag :label="activeUsers[data?.data?.id] ? ctrans('Online') : ctrans('Offline')" :theme="activeUsers[data?.data?.id] ? 3 : undefined" />
                 </dd>
             </div> -->
 
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Employee") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Employee") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">
                     <Link
                         v-if="data?.data?.employee"
@@ -190,7 +190,7 @@ const force2FA = async () => {
             </div>
 
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Last Active") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Last Active") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">
                     {{ activeUsers[data?.data?.id]?.last_active ? useFormatTime(activeUsers[data?.data?.id].last_active) : '-' }}
                 </dd>
@@ -198,29 +198,29 @@ const force2FA = async () => {
 
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
                 <dt class="text-sm font-medium">
-                    <FontAwesomeIcon :icon="faRobot" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ trans("AI assistant") }}:
+                    <FontAwesomeIcon :icon="faRobot" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ ctrans("AI assistant") }}:
                 </dt>
                 <dd class="mt-1 text-sm sm:mt-2">
                     <template v-if="!data?.data?.mcp?.enabled">
-                        <span class="text-gray-400">{{ trans("Not allowed") }}</span>
+                        <span class="text-gray-400">{{ ctrans("Not allowed") }}</span>
                     </template>
                     <template v-else-if="!data?.data?.mcp?.number_queries">
-                        <span class="text-gray-500">{{ trans("Allowed, never used") }}</span>
+                        <span class="text-gray-500">{{ ctrans("Allowed, never used") }}</span>
                     </template>
                     <template v-else>
-                        <span class="text-green-600 font-medium">{{ trans("In use") }}</span> —
-                        {{ data.data.mcp.number_queries }} {{ trans("queries") }},
-                        {{ data.data.mcp.tools_used }} {{ trans("different questions types") }},
-                        {{ trans("last used") }} {{ data.data.mcp.last_used_at ? useFormatTime(data.data.mcp.last_used_at) : '-' }}
+                        <span class="text-green-600 font-medium">{{ ctrans("In use") }}</span> —
+                        {{ data.data.mcp.number_queries }} {{ ctrans("queries") }},
+                        {{ data.data.mcp.tools_used }} {{ ctrans("different questions types") }},
+                        {{ ctrans("last used") }} {{ data.data.mcp.last_used_at ? useFormatTime(data.data.mcp.last_used_at) : '-' }}
                     </template>
                     <div v-if="data?.data?.mcp?.full_data_access" class="mt-1 text-orange-600">
-                        <span class="mr-1" aria-hidden="true">🧠</span>{{ trans("Super intelligence: knows all Aiku data and can ask any question of it") }}
+                        <span class="mr-1" aria-hidden="true">🧠</span>{{ ctrans("Super intelligence: knows all Aiku data and can ask any question of it") }}
                     </div>
                 </dd>
             </div>
 
             <div v-if="data?.data?.authorizedOrganisations?.length" class="border-t border-gray-100 px-4 py-6 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Authorized Organisations") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Authorized Organisations") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2 flex flex-wrap">
                     <div v-for="item of data?.data?.authorizedOrganisations" class="m-1">
                         <Tag :label="item.name" />
@@ -230,7 +230,7 @@ const force2FA = async () => {
 
             <!-- Section: Geolocation -->
             <div class="border-t border-gray-100 px-4 py-6 sm:px-0">
-                <dt class="text-sm font-medium">{{ trans("Geolocation") }}:</dt>
+                <dt class="text-sm font-medium">{{ ctrans("Geolocation") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2 flex flex-wrap">
                     {{ data?.data?.last_login?.geolocation?.filter(geo => geo).join(', ') }}
                     <!-- <template v-for="item of data?.data?.last_login.geolocation">
@@ -251,11 +251,11 @@ const force2FA = async () => {
 
         <div v-if="twoFAStatus" class="w-48 py-6">
             <div class="mb-3 w-full">
-                <dt class="text-sm font-medium">{{ trans('Has 2FA') }}: </dt>
+                <dt class="text-sm font-medium">{{ ctrans('Has 2FA') }}: </dt>
                 <dd class="pt-1 inline-grid w-full">
                     <div v-if="twoFAStatus?.has_2fa" class="w-full flex gap-y-2 gap-x-2 h-fit">
                         <span class="border rounded-md border-green-500 px-2 py-1 whitespace-nowrap">
-                            <FontAwesomeIcon :icon="faCheck" class="text-green-500" fixed-width/> {{ trans('Enabled') }}
+                            <FontAwesomeIcon :icon="faCheck" class="text-green-500" fixed-width/> {{ ctrans('Enabled') }}
                         </span>
                         <span class="border rounded-md border-red-500 hover:border-red-300 active:border-red-700 text-red-500 hover:text-red-300 active:text-red-700 cursor-pointer px-2 py-1" @click="disable2FA()">
                             <LoadingIcon v-if="isLoadingUpdate"/>
@@ -264,13 +264,13 @@ const force2FA = async () => {
                     </div>
                     <div v-else class="w-full">
                         <span class="border rounded-md border-red-500 px-2 py-1">
-                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width/> {{ trans('Disabled') }}
+                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width/> {{ ctrans('Disabled') }}
                         </span>
                     </div>
                 </dd>
             </div>
             <div class="mb-4 mt-8">
-                <dt class="text-sm font-medium">{{ trans('Force 2FA') }}: </dt>
+                <dt class="text-sm font-medium">{{ ctrans('Force 2FA') }}: </dt>
                 <dd>
                     <Toggle :model-value="twoFAStatus.is_two_factor_required" @update:model-value="twoFAStatus.is_two_factor_required = !twoFAStatus.is_two_factor_required; force2FA()" :disabled="isLoadingUpdateRequire2FA">
                     </Toggle>

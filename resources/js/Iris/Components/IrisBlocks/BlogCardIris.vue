@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import type { BlogPost } from "@/types/Iris/Blog"
@@ -23,7 +23,7 @@ const props = withDefaults(
 	}
 )
 
-const label = computed(() => props.ctaLabel || trans("Read more"))
+const label = computed(() => props.ctaLabel || ctrans("Read more"))
 </script>
 
 <template>

@@ -4,7 +4,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPaintBrushAlt, faRocketLaunch, faChevronDown } from '@fal'
 import { isEqual } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { useColorTheme } from '@/Composables/useStockList'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
@@ -68,7 +68,7 @@ onMounted(() => {
 <template>
   <div class="overflow-y-auto p-3 space-y-4">
     <div id="theme_colors" class="rounded transition-all duration-1000" :class="fieldGroupAnimateSection">
-      <p class="mb-2 text-xxs font-semibold uppercase tracking-wide text-gray-400">{{ trans('Select Theme') }}</p>
+      <p class="mb-2 text-xxs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans('Select Theme') }}</p>
 
       <div class="relative">
         <button
@@ -84,7 +84,7 @@ onMounted(() => {
                 :style="{ backgroundColor: color }"
               />
             </div>
-            <span class="text-xs text-gray-700">{{ trans('Theme') }} {{ colorThemes.findIndex(t => isEqual(t, layout?.color)) + 1 }}</span>
+            <span class="text-xs text-gray-700">{{ ctrans('Theme') }} {{ colorThemes.findIndex(t => isEqual(t, layout?.color)) + 1 }}</span>
           </div>
           <FontAwesomeIcon
             icon="fal fa-chevron-down"
@@ -116,7 +116,7 @@ onMounted(() => {
                       :style="{ backgroundColor: color }"
                     />
                   </div>
-                  <span class="text-xs font-medium text-gray-700">{{ trans('Theme') }} {{ index + 1 }}</span>
+                  <span class="text-xs font-medium text-gray-700">{{ ctrans('Theme') }} {{ index + 1 }}</span>
                 </div>
                 <FontAwesomeIcon
                   v-if="isEqual(layout?.color, colorTheme)"
@@ -132,7 +132,7 @@ onMounted(() => {
     </div>
 
     <div>
-      <p class="mb-2 text-xxs font-semibold uppercase tracking-wide text-gray-400">{{ trans('Select Layout') }}</p>
+      <p class="mb-2 text-xxs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans('Select Layout') }}</p>
 
       <div class="grid grid-cols-2 gap-2">
         <label
@@ -157,7 +157,7 @@ onMounted(() => {
               :style="{ background: layoutOption.pattern }"
             />
           </div>
-          <span class="text-xs font-medium">{{ trans(layoutOption.label) }}</span>
+          <span class="text-xs font-medium">{{ ctrans(layoutOption.label) }}</span>
         </label>
       </div>
     </div>

@@ -21,7 +21,7 @@ import {
     faEnvelopeOpen, faHandPointer, faUserSlash, faPaperPlane, faEyeSlash,
     faSkull, faDungeon, faExclamationTriangle
 } from '@fal';
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
@@ -146,23 +146,23 @@ const tabsBox = computed(() => {
 
     return [
         {
-            label: trans('Errors & Rejected Emails'),
+            label: ctrans('Errors & Rejected Emails'),
             tabs: buildTabs([0, 1]),
         },
         {
-            label: trans('Sent & Delivered Emails'),
+            label: ctrans('Sent & Delivered Emails'),
             tabs: buildTabs([2, 3]),
         },
         {
-            label: trans('Hard & Soft Bounced Emails'),
+            label: ctrans('Hard & Soft Bounced Emails'),
             tabs: buildTabs([4, 5]),
         },
         {
-            label: trans('Opened & Clicked Emails'),
+            label: ctrans('Opened & Clicked Emails'),
             tabs: buildTabs([6, 7]),
         },
         {
-            label: trans('Spam & Unsubscribed Emails'),
+            label: ctrans('Spam & Unsubscribed Emails'),
             tabs: buildTabs([8, 9]),
         },
     ]
@@ -257,29 +257,29 @@ const effectiveOtherShopTemplates = computed(() =>
         <div v-if="isInProcess && data.is_composed">
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-2">
-                    {{ trans(`:mailshotSubject is composed but not published yet`, {
+                    {{ ctrans(`:mailshotSubject is composed but not published yet`, {
                         mailshotSubject: props.data.mailshot.data.subject
                             ?? ''
                     }) }}
                 </h2>
                 <p class="text-gray-600 mb-4">
-                    {{ trans('Open the workshop and press Save to publish the email, then it will be ready to send.') }}
+                    {{ ctrans('Open the workshop and press Save to publish the email, then it will be ready to send.') }}
                 </p>
                 <Link v-if="props.workshopRoute" :href="route(props.workshopRoute.name, props.workshopRoute.parameters)">
-                    <Button :label="trans('Go to Compose')" type="primary" iconRight="fal fa-arrow-right" />
+                    <Button :label="ctrans('Go to Compose')" type="primary" iconRight="fal fa-arrow-right" />
                 </Link>
             </div>
         </div>
         <div v-else-if="isInProcess">
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-2">
-                    {{ trans(`:mailshotSubject is still in process`, {
+                    {{ ctrans(`:mailshotSubject is still in process`, {
                         mailshotSubject: props.data.mailshot.data.subject
                             ?? ''
                     }) }}
                 </h2>
                 <p class="text-gray-600 mb-4">
-                    {{ trans('Choose an email template to get started with your mailshot.') }}
+                    {{ ctrans('Choose an email template to get started with your mailshot.') }}
                 </p>
             </div>
 

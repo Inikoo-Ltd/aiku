@@ -5,7 +5,7 @@ import { faLink, faUnlink } from "@fal"
 import { faExclamation, faCaretDown, faCaretLeft } from "@fas"
 import SideEditor from "../SideEditor/SideEditor.vue"
 import { watch, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
 library.add(
@@ -142,20 +142,20 @@ const blueprint = [
 			},
 			{
 				key: ["attributes", "fetchpriority"],
-				label: trans("Fetch Priority"),
-				information: trans(
+				label: ctrans("Fetch Priority"),
+				information: ctrans(
 					"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
 				),
 				type: "select",
 				props_data: {
-					placeholder: trans("Priority"),
+					placeholder: ctrans("Priority"),
 					options: [
 						{
-							label: trans("High"),
+							label: ctrans("High"),
 							value: "high",
 						},
 						{
-							label: trans("Low"),
+							label: ctrans("Low"),
 							value: "low",
 						},
 					],

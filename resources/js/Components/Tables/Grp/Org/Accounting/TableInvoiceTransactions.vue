@@ -9,7 +9,7 @@ import { InvoiceTransaction } from "@/types/invoice-transaction"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStream } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
     faStream
@@ -90,13 +90,13 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
                 </span>
                 <span v-if="transaction.fulfilment_info" class="pl-2">
                     <span v-if="transaction.fulfilment_info.servicePalletInfo">
-                        <span class="px-2">{{ trans("Pallet") }}:
+                        <span class="px-2">{{ ctrans("Pallet") }}:
                             <Link :href="route(transaction.fulfilment_info.servicePalletInfo.palletRoute?.name, transaction.fulfilment_info.servicePalletInfo.palletRoute?.parameters) as unknown as string" class="primaryLink">
                                 {{ transaction.fulfilment_info.servicePalletInfo.palletReference }}
                             </Link>
                         </span>
                         <span v-if="transaction.fulfilment_info.servicePalletInfo.handling_date" class="text-gray-400 text-xs">
-                            {{ trans("Date") }}: {{ transaction.fulfilment_info.servicePalletInfo.handling_date }}
+                            {{ ctrans("Date") }}: {{ transaction.fulfilment_info.servicePalletInfo.handling_date }}
                         </span>
                     </span>
                     <span v-if="transaction.fulfilment_info.rentedScopeInfo">

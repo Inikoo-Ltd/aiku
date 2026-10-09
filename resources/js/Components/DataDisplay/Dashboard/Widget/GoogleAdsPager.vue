@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 /**
  * The controls under a locally paged list: what is on screen, how much fits on a page, and the way
@@ -34,13 +34,13 @@ const locale = useLocaleStore()
 <template>
     <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
         <span aria-live="polite">
-            {{ trans("Showing") }} {{ locale.number(firstRow) }} {{ trans("to") }} {{ locale.number(lastRow) }}
-            {{ trans("of") }} {{ locale.number(total) }} {{ unit }}
+            {{ ctrans("Showing") }} {{ locale.number(firstRow) }} {{ ctrans("to") }} {{ locale.number(lastRow) }}
+            {{ ctrans("of") }} {{ locale.number(total) }} {{ unit }}
         </span>
 
         <div class="flex flex-wrap items-center gap-3">
             <label class="flex items-center gap-1.5">
-                {{ trans("Per page") }}
+                {{ ctrans("Per page") }}
                 <select
                     :value="perPage"
                     class="rounded-md border-gray-300 py-0.5 text-xs focus:border-indigo-500 focus:ring-indigo-500"
@@ -55,7 +55,7 @@ const locale = useLocaleStore()
                     :disabled="page === 1"
                     class="rounded px-2 py-1 transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40 disabled:hover:bg-transparent"
                     @click="emit('update:page', page - 1)">
-                    {{ trans("Previous") }}
+                    {{ ctrans("Previous") }}
                 </button>
                 <span class="tabular-nums">{{ page }} / {{ pageCount }}</span>
                 <button
@@ -63,7 +63,7 @@ const locale = useLocaleStore()
                     :disabled="page === pageCount"
                     class="rounded px-2 py-1 transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40 disabled:hover:bg-transparent"
                     @click="emit('update:page', page + 1)">
-                    {{ trans("Next") }}
+                    {{ ctrans("Next") }}
                 </button>
             </div>
         </div>

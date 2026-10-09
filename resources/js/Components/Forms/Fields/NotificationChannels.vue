@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle, faCheckDouble, faCommentLines, faAt, faQuestionCircle, faBell } from "@fal"
 import { faCheckCircle as fasCheckCircle } from "@fas"
@@ -38,13 +38,13 @@ const pushError = ref<string | null>(null)
 
 const browserBlockedReason = computed((): string | null => {
     if (isIos && !isStandalone) {
-        return trans("On iPhone or iPad, add Aiku to your home screen (Share → Add to Home Screen) and open it from there")
+        return ctrans("On iPhone or iPad, add Aiku to your home screen (Share → Add to Home Screen) and open it from there")
     }
     if (!isSupported) {
-        return trans("This browser does not support notifications")
+        return ctrans("This browser does not support notifications")
     }
     if (permission.value === "denied") {
-        return trans("Notifications are blocked for Aiku in this browser's site settings")
+        return ctrans("Notifications are blocked for Aiku in this browser's site settings")
     }
     return null
 })
@@ -91,7 +91,7 @@ const enableOnThisDevice = async () => {
         await axios.post(route(push.value.store_route.name), subscription.toJSON())
         deviceEndpoint.value = subscription.endpoint
     } catch (error) {
-        pushError.value = trans("Could not enable notifications on this device")
+        pushError.value = ctrans("Could not enable notifications on this device")
     } finally {
         isBusy.value = false
     }
@@ -161,16 +161,16 @@ const toggle = (event: string, channel: string) => {
                 <span class="text-gray-500">{{ browserBlockedReason }}</span>
             </template>
             <template v-else-if="deviceEndpoint">
-                <span>{{ trans("Browser notifications are on for this device") }}</span>
+                <span>{{ ctrans("Browser notifications are on for this device") }}</span>
                 <button type="button" :disabled="isBusy" @click.prevent="disableOnThisDevice" class="font-medium text-indigo-600 hover:underline disabled:opacity-50">
-                    {{ trans("Turn off") }}
+                    {{ ctrans("Turn off") }}
                 </button>
             </template>
             <template v-else>
                 <button type="button" :disabled="isBusy" @click.prevent="enableOnThisDevice" class="rounded-md bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                    {{ trans("Enable browser notifications on this device") }}
+                    {{ ctrans("Enable browser notifications on this device") }}
                 </button>
-                <span v-if="push.devices_count" class="text-gray-500">{{ trans(":count other devices enabled", { count: String(push.devices_count) }) }}</span>
+                <span v-if="push.devices_count" class="text-gray-500">{{ ctrans(":count other devices enabled", { count: String(push.devices_count) }) }}</span>
             </template>
             <span v-if="pushError" class="text-red-600">{{ pushError }}</span>
         </div>

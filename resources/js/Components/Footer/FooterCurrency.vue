@@ -14,7 +14,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faLanguage, faMoneyBillAlt, faLayerGroup, faPoundSign, faSpinnerThird)
 
 import FooterTab from '@/Components/Footer/FooterTab.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from '@inertiajs/vue3'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
@@ -80,7 +80,7 @@ const selectedCurrency = ref(currencyList[0])
                             </div>
                         </div>
 
-                        <div v-else class="grid pt-2.5 pb-1.5">{{ trans('Nothing to show here') }}</div>
+                        <div v-else class="grid pt-2.5 pb-1.5">{{ ctrans('Nothing to show here') }}</div>
                     </template>
                 </FooterTab>
             </PopoverPanel>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLongArrowRight } from "@fal"
@@ -175,8 +175,8 @@ const selectSource = (location: any) => {
 
     if (!location.stock || location.stock <= 0) {
         notify({
-            title: trans('Cannot select source'),
-            text: trans('This location has no stock to move'),
+            title: ctrans('Cannot select source'),
+            text: ctrans('This location has no stock to move'),
             type: 'warning',
         })
         return
@@ -214,8 +214,8 @@ const selectTarget = (location: any) => {
 
         if (!swappedSource.stock || swappedSource.stock <= 0) {
             notify({
-                title: trans('Cannot swap locations'),
-                text: trans(':location has no stock to move', { location: swappedSource.name }),
+                title: ctrans('Cannot swap locations'),
+                text: ctrans(':location has no stock to move', { location: swappedSource.name }),
                 type: 'warning',
             })
             return
@@ -454,8 +454,8 @@ const submitCheckStock = () => {
         },
         onSuccess: () => {
             // notify({
-            //     title: trans("Success"),
-            //     text: trans('Moved :_qtyItem stocks from :_locationSource to :_locationDestination', {
+            //     title: ctrans("Success"),
+            //     text: ctrans('Moved :_qtyItem stocks from :_locationSource to :_locationDestination', {
             //         _qtyItem: moveStock.value.quantity.toString(),
             //         _locationSource: moveStock.value.from?.name ?? 'A',
             //         _locationDestination: moveStock.value.to?.name ?? 'B',
@@ -466,8 +466,8 @@ const submitCheckStock = () => {
         },
         onError: (errors) => {
             notify({
-                title: trans("Something went wrong"),
-                text: Object.values(errors ?? {})[0] ?? trans('Unable to move stock. An error occured.'),
+                title: ctrans("Something went wrong"),
+                text: Object.values(errors ?? {})[0] ?? ctrans('Unable to move stock. An error occured.'),
                 type: "error",
             })
         },
@@ -530,7 +530,7 @@ onMounted(() => {
             <button
                 v-if="moveStock.from || moveStock.targets.length > 0"
                 @click="closeMoveStock"
-                v-tooltip="trans('Reset selection')"
+                v-tooltip="ctrans('Reset selection')"
                 class="absolute top-2 right-2 text-gray-400 hover:text-red-500 underline text-xs"
             >
                 <!-- <FontAwesomeIcon icon="fas fa-times" class="text-xs" /> -->
@@ -547,18 +547,18 @@ onMounted(() => {
                         :class="moveStock.from ? 'text-green-600' : 'text-green-500'"
                     >
                         <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
-                        {{ trans('Source') }}
+                        {{ ctrans('Source') }}
                     </div>
                     <div class="font-medium" :class="moveStock.from ? 'text-green-700' : 'text-gray-400 italic'">
                         {{ moveStock.from?.name || '—' }}
                     </div>
                     <div v-if="moveStock.from" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
-                        <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                        <span v-tooltip="ctrans('Current stock in this location')" class="text-gray-500">
                             <FractionDisplay :fractionData="toFractionData(moveStock.from.stock)" />
                         </span>
                         <template v-if="totalMoveQuantity > 0">
                             <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
-                            <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
+                            <span v-tooltip="ctrans('Stock preview after move')" class="font-semibold text-green-700">
                                 <FractionDisplay :fractionData="toFractionData(getCalculatedStock(moveStock.from))" />
                             </span>
                         </template>
@@ -568,7 +568,7 @@ onMounted(() => {
                 <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
 
                 <div class="text-center">
-                    <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
+                    <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ ctrans('Quantity') }}</div>
                     <div class="font-medium tabular-nums text-gray-700 flex justify-center">
                         <FractionDisplay v-if="totalMoveQuantity" :fractionData="toFractionData(totalMoveQuantity)" />
                         <template v-else>......</template>
@@ -586,7 +586,7 @@ onMounted(() => {
                         :class="moveStock.targets.length ? 'text-blue-600' : 'text-blue-500'"
                     >
                         <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
-                        {{ trans('Destination') }}
+                        {{ ctrans('Destination') }}
                     </div>
                     <template v-if="moveStock.targets.length">
                         <div
@@ -596,12 +596,12 @@ onMounted(() => {
                         >
                             <span class="font-medium text-blue-700">{{ entry.location.name }}</span>
                             <span class="tabular-nums text-xs flex items-center gap-x-1">
-                                <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                                <span v-tooltip="ctrans('Current stock in this location')" class="text-gray-500">
                                     <FractionDisplay :fractionData="toFractionData(entry.location.stock)" />
                                 </span>
                                 <template v-if="entry.quantity > 0">
                                     <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
-                                    <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
+                                    <span v-tooltip="ctrans('Stock preview after move')" class="font-semibold text-blue-700">
                                         <FractionDisplay :fractionData="toFractionData(getCalculatedStock(entry.location))" />
                                     </span>
                                 </template>
@@ -614,15 +614,15 @@ onMounted(() => {
             <!-- <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
                 <span v-if="!moveStock.from">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                    {{ trans('Select the source location by clicking the forklift icon on the left') }}
+                    {{ ctrans('Select the source location by clicking the forklift icon on the left') }}
                 </span>
                 <span v-else-if="!moveStock.to">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                    {{ trans('Select the destination location by clicking the forklift icon on the right') }}
+                    {{ ctrans('Select the destination location by clicking the forklift icon on the right') }}
                 </span>
                 <span v-else-if="!moveStock.quantity">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                    {{ trans('Enter the quantity to move from the source') }}
+                    {{ ctrans('Enter the quantity to move from the source') }}
                 </span>
             </div> -->
         </div>
@@ -682,7 +682,7 @@ onMounted(() => {
                 <!-- Left: Source forklift -->
                 <FontAwesomeIcon
                     icon="fas fa-forklift"
-                    v-tooltip="isSource(location) ? trans('Unset as source') : ctrans('Set as source location')"
+                    v-tooltip="isSource(location) ? ctrans('Unset as source') : ctrans('Set as source location')"
                     :class="[
                         'text-xl transition shrink-0',
                         isSource(location)
@@ -755,7 +755,7 @@ onMounted(() => {
                         </div>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
                         <span
-                            v-tooltip="trans('Stock preview after move')"
+                            v-tooltip="ctrans('Stock preview after move')"
                             class="font-semibold"
                             :class="isSource(location) ? 'text-green-700' : 'text-blue-700'"
                         >
@@ -766,7 +766,7 @@ onMounted(() => {
                     <!-- Static stock (no pending change on this row) -->
                     <span
                         v-else
-                        v-tooltip="trans('Stock in this location')"
+                        v-tooltip="ctrans('Stock in this location')"
                         class="tabular-nums text-xs border rounded px-1.5 py-0.5 border-gray-300 text-gray-600"
                     >
                         <FractionDisplay :fractionData="toFractionData(location.stock)" />
@@ -774,17 +774,17 @@ onMounted(() => {
                 </div>
 
                 <!-- Audit info -->
-                <div v-if="location.audited_at" v-tooltip="trans('Last audit :date', { date: useFormatTime(location.audited_at) })" class="text-right text-sm whitespace-nowrap hidden sm:block">
+                <div v-if="location.audited_at" v-tooltip="ctrans('Last audit :date', { date: useFormatTime(location.audited_at) })" class="text-right text-sm whitespace-nowrap hidden sm:block">
                     {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
                 <div v-else class="text-right text-sm italic opacity-60 whitespace-nowrap hidden sm:block">
-                    {{ trans("Never audited") }}
+                    {{ ctrans("Never audited") }}
                 </div>
 
                 <!-- Replenishment suggestion -->
                 <span
-                    v-tooltip="trans('Apply suggested replenishment')"
+                    v-tooltip="ctrans('Apply suggested replenishment')"
                     class="text-sm text-blue-500 cursor-pointer hover:underline whitespace-nowrap"
                     :class="isTarget(location) ? '' : 'opacity-40 cursor-not-allowed'"
                     @click="isTarget(location) && applyReplenishment(location)"

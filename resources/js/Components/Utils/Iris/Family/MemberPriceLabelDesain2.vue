@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
@@ -30,14 +30,14 @@ const props = defineProps<{
                    text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-[14px]
                    2xl:px-2 2xl:py-[3px]"
         >
-            <span>{{ trans("Member Price") }}</span>
+            <span>{{ ctrans("Member Price") }}</span>
     
             <span
                 v-if="offer?.allowances?.[0]?.percentage_off"
                 class="opacity-90
                        text-[8px] sm:text-[9px] md:text-[10px] lg:text-[11px] xl:text-[12px] 2xl:text-[13px]"
             >
-                {{ offer.allowances[0].percentage_off * 100 }}% {{ trans("OFF") }}
+                {{ offer.allowances[0].percentage_off * 100 }}% {{ ctrans("OFF") }}
             </span>
         </div>
     

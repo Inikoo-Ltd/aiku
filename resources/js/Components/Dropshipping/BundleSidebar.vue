@@ -2,7 +2,7 @@
 import { useBundle } from '@/Composables/useBundle';
 import { onBeforeUnmount, ref, watch, computed } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import axios from 'axios'
 import { routeType } from '@/types/route'
 import { debounce } from 'lodash-es'
@@ -120,8 +120,8 @@ const fetchMediaGallery = async () => {
         console.error(e)
 
         notify({
-            title: trans('Error'),
-            text: trans('Failed to load media'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to load media'),
             type: 'error'
         })
     } finally {
@@ -164,8 +164,8 @@ const openFilePicker = () => {
 const uploadFilesLocal = async (files: FileList) => {
     if (!bundle.product_id.value) {
         notify({
-            title: trans('Error'),
-            text: trans('Reload Pages'),
+            title: ctrans('Error'),
+            text: ctrans('Reload Pages'),
             type: 'error'
         })
 
@@ -298,13 +298,13 @@ const handleStoreBundle = async () => {
         bundle.step.value = 2
 
         notify({
-            title: trans('Success'),
+            title: ctrans('Success'),
             type: 'success'
         })
     } catch (e) {
         notify({
-            title: trans('Error'),
-            text: trans('Failed to create bundle'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to create bundle'),
             type: 'error'
         })
     }
@@ -343,8 +343,8 @@ const submitBundle = async () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Success'),
-                    text: trans('Success submit bundle'),
+                    title: ctrans('Success'),
+                    text: ctrans('Success submit bundle'),
                     type: 'success'
                 })
 
@@ -370,10 +370,10 @@ const submitBundle = async () => {
                     errors.description ||
                     errors.images ||
                     Object.values(errors)[0] ||
-                    trans("Failed to submit the data, please try again")
+                    ctrans("Failed to submit the data, please try again")
 
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: submitError.value,
                     type: "error"
                 })
@@ -429,15 +429,15 @@ const handleDelete = () => {
         onSuccess: () => {
             resetBundleState()
             notify({
-                title: trans('Success'),
+                title: ctrans('Success'),
                 type: 'success'
             })
         },
 
         onError: () => {
             notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
+                title: ctrans('Error'),
+                text: ctrans('Failed to delete bundle'),
                 type: 'error'
             })
         }
@@ -464,8 +464,8 @@ const fetchGetBundle = async () => {
     } catch (e) {
         console.error('[AddBundles] fetchGetBundle failed', e)
         notify({
-            title: trans('Error'),
-            text: trans('Failed to load bundle'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to load bundle'),
             type: 'error'
         })
     }
@@ -534,8 +534,8 @@ const isNavigationLocked = computed(() => bundle.open.value && bundle.step.value
 
 const notifyNavigationLocked = () => {
     notify({
-        title: trans('Finish bundle first'),
-        text: trans('You cannot leave this page before completing or discarding the bundle.'),
+        title: ctrans('Finish bundle first'),
+        text: ctrans('You cannot leave this page before completing or discarding the bundle.'),
         type: 'warn'
     })
 }
@@ -624,7 +624,7 @@ onBeforeUnmount(() => {
                         <!-- BETA BADGE -->
                         <span class="text-[10px] px-2 py-[2px] rounded-full 
                                     bg-red-500 text-white font-semibold tracking-wide">
-                            {{trans('BETA VERSION')}}
+                            {{ctrans('BETA VERSION')}}
                         </span>
                     </div>
 
@@ -663,7 +663,7 @@ onBeforeUnmount(() => {
                                 {{ bundle.aiTitleError }}
                             </div>
                             <!-- AI ICON BUTTON -->
-                            <Button icon="fal fa-sparkles" type="button" @click="bundle.generateAITitle" :tooltip="trans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
+                            <Button icon="fal fa-sparkles" type="button" @click="bundle.generateAITitle" :tooltip="ctrans('Generate AI')"  :loading="bundle.isGeneratingAI.value"
                                 :disabled="isGeneratingAI || !bundle.products.value.length" class="absolute right-2 top-1/2 -translate-y-1/2 
                         h-7 w-7 flex items-center justify-center 
                         rounded-md border bg-white hover:bg-gray-100 
@@ -678,7 +678,7 @@ onBeforeUnmount(() => {
                         <div class="flex-1">
                             <div class="text-sm font-semibold">{{ item.name }}</div>
                             <div class="flex gap-2">
-                                <InformationIcon :information="trans('Individual purchased price')" />
+                                <InformationIcon :information="ctrans('Individual purchased price')" />
                                 <div class="font-semibold text-sm line-through">{{ item.price_per_unit }} {{
                                     props.symbol }}</div>
                                 <div class="font-semibold text-green-600">{{ item.price }} {{ props.symbol }}</div>
@@ -689,7 +689,7 @@ onBeforeUnmount(() => {
                             <button @click="bundle.decreaseQty(item.id)"><FontAwesomeIcon icon='fas fa-minus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <div>{{ item.quantity }}</div>
                             <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs" fixed-width aria-hidden='true' /></button>
-                            <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
+                            <button @click="bundle.removeProduct(item.id)" v-tooltip="ctrans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
                             </button>
                         </div>
                     </div>
@@ -771,7 +771,7 @@ onBeforeUnmount(() => {
                             <div class="text-xl font-semibold flex items-center gap-2">
                                 Create Your Bundle
                                 <FontAwesomeIcon
-                                    v-tooltip="trans('Bundle generator')"
+                                    v-tooltip="ctrans('Bundle generator')"
                                     icon="fas fa-layer-group"
                                     class="text-gray-500"
                                     fixed-width
@@ -794,13 +794,13 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                        {{ trans('You cannot leave this page while creating a bundle. Complete it or discard it first.') }}
+                        {{ ctrans('You cannot leave this page while creating a bundle. Complete it or discard it first.') }}
                     </div>
 
                     <!-- DESCRIPTION -->
                     <div class="mb-5">
                         <label class="text-sm font-semibold">
-                            {{ trans('Description') }}
+                            {{ ctrans('Description') }}
                         </label>
 
                         <Textarea v-model="bundle.description.value" rows="6" autoResize class="w-full mt-1"
@@ -815,7 +815,7 @@ onBeforeUnmount(() => {
                             </div>
 
                             <Button icon="fal fa-sparkles"
-                            :label="trans('Generate with AI')" @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value" type="primary"
+                            :label="ctrans('Generate with AI')" @click="bundle.generateAIDescription" :loading="bundle.isGeneratingAI.value" type="primary"
                                 :disabled="!productIds.length" />
                         </div>
                     </div>
@@ -823,7 +823,7 @@ onBeforeUnmount(() => {
                     <!-- MEDIA -->
                     <div class="mb-5">
                          <label class="text-sm font-semibold">
-                            {{ trans('Media') }}
+                            {{ ctrans('Media') }}
                         </label>
 
                         <div class="border-2 border-dashed border-gray-300 rounded-xl h-[140px]
@@ -866,7 +866,7 @@ onBeforeUnmount(() => {
                     <!-- PREVIEW -->
                     <div class="mb-2">
                         <label class="text-sm font-semibold">
-                            {{ trans('Bundle media') }}
+                            {{ ctrans('Bundle media') }}
                         </label>
 
                         <div class="bg-gray-100 rounded-xl p-3 mt-1 grid grid-cols-3 gap-3 min-h-[110px]">
@@ -892,7 +892,7 @@ onBeforeUnmount(() => {
                     <div v-if="submitError" class="text-md text-red-500 mb-2 italic">
                         {{ submitError }}
                     </div>
-                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle || !selectedMedia.length" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="trans('Create Bundle')" type="primary" :loading="isStoringBundle" />
+                    <Button @click="submitBundle" :disabled="!bundle.description.value.length || isStoringBundle || !selectedMedia.length" class="flex justify-center items-center w-full" icon="fas fa-layer-group" :label="ctrans('Create Bundle')" type="primary" :loading="isStoringBundle" />
                 </div>
                 <!-- Modal Existing media -->
                 <Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
@@ -990,7 +990,7 @@ onBeforeUnmount(() => {
                 </Dialog>
                  <Dialog
                     v-model:visible="showGenerateProgressModal"
-                    :header="trans('Generating AI Image')"
+                    :header="ctrans('Generating AI Image')"
                     modal
                     :closable="false"
                     :closeOnEscape="false"
@@ -1000,10 +1000,10 @@ onBeforeUnmount(() => {
                     <div class="py-6 flex flex-col items-center text-center">
                         <LoadingIcon class="mb-4" />
                         <div class="text-sm font-semibold text-gray-800">
-                            {{ trans('Generating your image...') }}
+                            {{ ctrans('Generating your image...') }}
                         </div>
                         <div class="text-xs text-gray-500 mt-2">
-                            {{ trans('Please wait while we process your prompt and listen for the result.') }}
+                            {{ ctrans('Please wait while we process your prompt and listen for the result.') }}
                         </div>
                     </div>
                 </Dialog>

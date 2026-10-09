@@ -3,7 +3,7 @@ import { getIrisComponent } from "@/Iris/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
 import { inject, provide, computed, ref, onErrorCaptured } from "vue";
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
@@ -52,8 +52,8 @@ const onClickLogout = () => {
             onError: errors => {
                 restoreIrisSession?.()
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to logout"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to logout"),
                     type: "error"
                 })
             },

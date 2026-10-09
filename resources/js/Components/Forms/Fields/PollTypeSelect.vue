@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle } from '@fal'
 import { faFacebook, faLinkedin, faGoogle, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { InputText, Select } from 'primevue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
@@ -54,7 +54,7 @@ defineProps<{
                         <InputText
                             fluid
                             v-model="opt.label"
-                            :placeholder="trans('Input label for this option')"
+                            :placeholder="ctrans('Input label for this option')"
                         />
 
                         <div @click="form[fieldName].poll_options.splice(optIdx, 1)" class="group cursor-pointer text-red-400 hover:text-red-600">

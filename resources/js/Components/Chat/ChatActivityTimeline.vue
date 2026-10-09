@@ -2,7 +2,7 @@
 import { ref, onMounted, watch, computed } from "vue"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faArrowUpRightFromSquare,
@@ -159,7 +159,7 @@ watch(
 					<div class="flex-1">
 						<div class="text-sm text-gray-800">
 							<template v-if="activity?.event_type === 'ticket'">
-								{{ trans("Created a ticket") }}
+								{{ ctrans("Created a ticket") }}
 							</template>
 							<template v-else>
 								{{ activity.details?.description || activity.event_label }}

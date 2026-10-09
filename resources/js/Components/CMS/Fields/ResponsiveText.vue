@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle } from '@fal'
 import type { Ref } from 'vue'
 import type { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
 
@@ -170,7 +170,7 @@ watch(
 <template>
   <div class="flex flex-col gap-3 bg-gray-100 p-2 rounded" :key="`${sideKey}-${key}`">
     <div class="flex items-center justify-between">
-      <label class="font-medium text-xs">{{ trans('Responsive Text') }}</label>
+      <label class="font-medium text-xs">{{ ctrans('Responsive Text') }}</label>
       <ToggleSwitch v-model="normalized.use_responsive" />
     </div>
 
@@ -181,7 +181,7 @@ watch(
           ? 'Each screen has its own text. Changing the text on one view will not affect the others.'
           : 'Responsive mode is disabled. The desktop text will be used for all screens (tablet & mobile).'">
         <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" fixed-width />
-        <span>{{ trans('Info') }}</span>
+        <span>{{ ctrans('Info') }}</span>
       </div>
 
       <ScreenView

@@ -14,7 +14,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faLanguage, faSpinnerThird)
 import FooterTab from "@/Components/Footer/FooterTab.vue"
-import { trans, loadLanguageAsync } from "laravel-vue-i18n"
+import { loadLanguageAsync } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import type { Language } from "@/types/Locale"
@@ -101,7 +102,7 @@ const onSelectLanguage = (language: Language) => {
                                 {{ language.name }}
                             </button>
                         </form>
-                        <div v-else class="grid pt-2.5 pb-1.5">{{ trans("Nothing to show here") }}</div>
+                        <div v-else class="grid pt-2.5 pb-1.5">{{ ctrans("Nothing to show here") }}</div>
                     </template>
                 </FooterTab>
             </PopoverPanel>

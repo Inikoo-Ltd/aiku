@@ -4,7 +4,7 @@
 -->
 
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPercent, faHamburger, faFlowerTulip } from "@fal"
@@ -57,12 +57,12 @@ const cardClass = (value: string) => {
                     <span
                         v-if="savedValue === option.value"
                         class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                        {{ trans("Current") }}
+                        {{ ctrans("Current") }}
                     </span>
                     <span
                         v-else-if="model === option.value"
                         class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        {{ trans("Not saved yet") }}
+                        {{ ctrans("Not saved yet") }}
                     </span>
                 </span>
                 <span v-if="option.description" class="mt-1 text-xs text-gray-500">

@@ -3,7 +3,7 @@ import { ref, computed, watch, onUnmounted, onMounted, inject } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from "@headlessui/vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ProgressSpinner from "primevue/progressspinner"
 
@@ -109,8 +109,8 @@ const onSubmit = () => {
 				isRunning.value = false
 
 				notify({
-					title: trans("Failed"),
-					text: trans("Failed to add portfolio"),
+					title: ctrans("Failed"),
+					text: ctrans("Failed to add portfolio"),
 					type: "error",
 				})
 			},

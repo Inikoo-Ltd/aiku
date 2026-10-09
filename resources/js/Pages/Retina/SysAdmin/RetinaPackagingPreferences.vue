@@ -12,7 +12,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Image as ImageProxy } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -111,7 +111,7 @@ const fallbackIconColors: Record<string, string> = {
 
 const formatPriceRange = (option: PackagingOption) => {
     if (option.price_max === 0) {
-        return trans("No extra charge")
+        return ctrans("No extra charge")
     }
 
     const currencyCode = props.currencyCode ?? "USD"
@@ -160,7 +160,7 @@ const inserts = computed(() =>
 
 const formatInsertPrice = (price: number) => {
     if (price === 0) {
-        return trans("Free")
+        return ctrans("Free")
     }
 
     return locale.currencyFormat(props.currencyCode ?? "USD", price)
@@ -226,8 +226,8 @@ const submitUpload = () => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Upload failed"),
-                    text: errors?.file ?? trans("Supported file formats: PDF, JPG, PNG (max 20MB)."),
+                    title: ctrans("Upload failed"),
+                    text: errors?.file ?? ctrans("Supported file formats: PDF, JPG, PNG (max 20MB)."),
                     type: "error",
                 })
             },
@@ -275,8 +275,8 @@ const submitEdit = () => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Upload failed"),
-                    text: errors?.file ?? trans("Supported file formats: PDF, JPG, PNG (max 20MB)."),
+                    title: ctrans("Upload failed"),
+                    text: errors?.file ?? ctrans("Supported file formats: PDF, JPG, PNG (max 20MB)."),
                     type: "error",
                 })
             },
@@ -339,8 +339,8 @@ const saveSettings = () => {
             // button simply stops, with nothing on screen saying why.
             onError: (errors) => {
                 notify({
-                    title: trans("Artwork missing"),
-                    text: errors?.leaflet_ids ?? trans("Upload a file for every insert you tick before saving."),
+                    title: ctrans("Artwork missing"),
+                    text: errors?.leaflet_ids ?? ctrans("Upload a file for every insert you tick before saving."),
                     type: "error",
                 })
             },
@@ -357,10 +357,10 @@ const saveSettings = () => {
             <FontAwesomeIcon :icon="['fal', 'gift']" class="text-3xl" fixed-width aria-hidden="true" />
         </div>
         <div>
-            <h1 class="text-2xl font-bold">{{ trans("Packaging & Personalisation Preferences") }}</h1>
+            <h1 class="text-2xl font-bold">{{ ctrans("Packaging & Personalisation Preferences") }}</h1>
             <div class="mt-1 text-sm text-gray-600">
-                <p>{{ trans("Choose your default packaging and add-ons that will be automatically applied to all your orders.") }}</p>
-                <p>{{ trans("These settings can be overridden on any order in your basket.") }}</p>
+                <p>{{ ctrans("Choose your default packaging and add-ons that will be automatically applied to all your orders.") }}</p>
+                <p>{{ ctrans("These settings can be overridden on any order in your basket.") }}</p>
             </div>
         </div>
     </div>
@@ -371,15 +371,15 @@ const saveSettings = () => {
         <div class="rounded-md border px-4 py-2.5 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, borderColor: accentStyle.softBorder, color: accentStyle.text }">
             <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
             <span>
-                {{ trans("If an item does not fit any of the selected packaging options, it will be sent in our standard packaging at") }}
-                <span class="font-semibold">{{ trans("no extra charge") }}.</span>
+                {{ ctrans("If an item does not fit any of the selected packaging options, it will be sent in our standard packaging at") }}
+                <span class="font-semibold">{{ ctrans("no extra charge") }}.</span>
             </span>
         </div>
 
         <!-- Section 1: Default packaging -->
         <section class="rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
-            <h2 class="text-base font-semibold">1. {{ trans("Default Packaging Option") }}</h2>
-            <p class="text-sm text-gray-500 mb-4">{{ trans("This packaging will be applied to all orders by default.") }}</p>
+            <h2 class="text-base font-semibold">1. {{ ctrans("Default Packaging Option") }}</h2>
+            <p class="text-sm text-gray-500 mb-4">{{ ctrans("This packaging will be applied to all orders by default.") }}</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <button
@@ -417,18 +417,18 @@ const saveSettings = () => {
                     </div>
 
                     <div class="text-sm font-medium">{{ option.label }}</div>
-                    <div class="text-xs text-gray-500">{{ option.sizes ?? trans("One size") }}</div>
+                    <div class="text-xs text-gray-500">{{ option.sizes ?? ctrans("One size") }}</div>
                     <div class="mt-1 text-sm font-semibold" :style="{ color: accentStyle.text }">{{ formatPriceRange(option) }}</div>
                 </button>
             </div>
 
             <div v-if="!packagingOptions.length" class="rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
-                {{ trans("No packaging options are available yet.") }}
+                {{ ctrans("No packaging options are available yet.") }}
             </div>
 
             <div class="mt-4 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
                 <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
-                <span>{{ trans("We will always use the most suitable size for your order based on the packaging you select.") }}</span>
+                <span>{{ ctrans("We will always use the most suitable size for your order based on the packaging you select.") }}</span>
             </div>
         </section>
 
@@ -436,10 +436,10 @@ const saveSettings = () => {
             <!-- Section 2: Inserts & leaflets -->
             <section class="lg:col-span-3 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
                 <h2 class="text-base font-semibold">
-                    2. {{ trans("Inserts & Leaflets") }}
-                    <span class="font-normal text-gray-500">({{ trans("Automatic Add-ons") }})</span>
+                    2. {{ ctrans("Inserts & Leaflets") }}
+                    <span class="font-normal text-gray-500">({{ ctrans("Automatic Add-ons") }})</span>
                 </h2>
-                <p class="text-sm text-gray-500 mb-4">{{ trans("These items will be included with every order.") }}</p>
+                <p class="text-sm text-gray-500 mb-4">{{ ctrans("These items will be included with every order.") }}</p>
 
                 <div class="divide-y divide-gray-100">
                     <label
@@ -463,31 +463,31 @@ const saveSettings = () => {
                                     v-if="!isPersonalisedMessage(insert)"
                                     class="ml-1 text-xs font-medium"
                                     :style="{ color: accentStyle.text }"
-                                >({{ trans("Size to be confirmed") }})</span>
+                                >({{ ctrans("Size to be confirmed") }})</span>
                             </span>
                             <span class="block text-xs text-gray-500">
                                 <template v-if="isPersonalisedMessage(insert)">
-                                    {{ trans("Added automatically when you write a message in section 3") }}
+                                    {{ ctrans("Added automatically when you write a message in section 3") }}
                                 </template>
                                 <template v-else>{{ insert.type_label }}</template>
                             </span>
                         </span>
                         <span class="text-sm text-gray-600">{{ formatInsertPrice(insert.price) }}</span>
-                        <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('More actions')">
+                        <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="ctrans('More actions')">
                             <FontAwesomeIcon :icon="['fal', 'ellipsis-v']" fixed-width aria-hidden="true" />
                         </button>
                     </label>
                 </div>
 
                 <div v-if="!inserts.length" class="rounded-md border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
-                    {{ trans("No inserts or leaflets are available for the selected packaging.") }}
+                    {{ ctrans("No inserts or leaflets are available for the selected packaging.") }}
                 </div>
 
                 <div class="mt-3 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
                     <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
                     <span>
-                        {{ trans("All leaflets and inserts must be uploaded by you.") }}<br />
-                        {{ trans("Size information for printing will be added here once our printer is confirmed.") }}
+                        {{ ctrans("All leaflets and inserts must be uploaded by you.") }}<br />
+                        {{ ctrans("Size information for printing will be added here once our printer is confirmed.") }}
                     </span>
                 </div>
             </section>
@@ -495,10 +495,10 @@ const saveSettings = () => {
             <!-- Section 3: Personalised message -->
             <section class="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
                 <h2 class="text-base font-semibold">
-                    3. {{ trans("Personalised Message") }}
-                    <span class="font-normal text-gray-500">({{ trans("Optional") }})</span>
+                    3. {{ ctrans("Personalised Message") }}
+                    <span class="font-normal text-gray-500">({{ ctrans("Optional") }})</span>
                 </h2>
-                <p class="text-sm text-gray-500 mb-4">{{ trans("This message will be printed and included with all orders.") }}</p>
+                <p class="text-sm text-gray-500 mb-4">{{ ctrans("This message will be printed and included with all orders.") }}</p>
 
                 <div class="relative">
                     <Textarea
@@ -506,7 +506,7 @@ const saveSettings = () => {
                         :maxlength="maxMessageLength"
                         rows="5"
                         class="w-full text-sm"
-                        :placeholder="trans('Write your message here')"
+                        :placeholder="ctrans('Write your message here')"
                     />
                     <div class="absolute bottom-2 right-3 text-xs text-gray-400">
                         {{ personalisedMessage.length }}/{{ maxMessageLength }}
@@ -515,7 +515,7 @@ const saveSettings = () => {
 
                 <div class="mt-3 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
                     <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
-                    <span>{{ trans("This message can be changed or removed at any time.") }}</span>
+                    <span>{{ ctrans("This message can be changed or removed at any time.") }}</span>
                 </div>
             </section>
         </div>
@@ -525,58 +525,58 @@ const saveSettings = () => {
             <section class="lg:col-span-3 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
                 <div class="mb-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="text-base font-semibold">4. {{ trans("Manage Your Leaflets & Inserts") }}</h2>
+                        <h2 class="text-base font-semibold">4. {{ ctrans("Manage Your Leaflets & Inserts") }}</h2>
                         <Button
                             type="tertiary"
                             icon="fal fa-upload"
-                            :label="trans('Upload new leaflet')"
+                            :label="ctrans('Upload new leaflet')"
                             @click="isUploadOpen = !isUploadOpen"
                         />
                     </div>
-                    <p class="text-sm text-gray-500">{{ trans("Upload and manage the leaflets and inserts available for your orders.") }}</p>
+                    <p class="text-sm text-gray-500">{{ ctrans("Upload and manage the leaflets and inserts available for your orders.") }}</p>
                 </div>
 
                 <div v-if="isUploadOpen" class="mb-4 rounded-lg border border-gray-200 p-4">
                     <p class="mb-3 text-xs text-gray-500">
-                        {{ trans("This file will be linked to the selected packaging") }}:
+                        {{ ctrans("This file will be linked to the selected packaging") }}:
                         <span class="font-medium" :style="{ color: accentStyle.text }">{{ summary.defaultPackaging }}</span>
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium mb-1">
-                                {{ trans("Leaflet") }} <span class="text-red-500">*</span>
+                                {{ ctrans("Leaflet") }} <span class="text-red-500">*</span>
                             </label>
                             <Select
                                 v-model="uploadLeafletId"
                                 :options="availableUploadLeaflets"
                                 optionLabel="label"
                                 optionValue="id"
-                                :placeholder="trans('Select a leaflet')"
-                                :emptyMessage="trans('All leaflets already have a file for this packaging')"
+                                :placeholder="ctrans('Select a leaflet')"
+                                :emptyMessage="ctrans('All leaflets already have a file for this packaging')"
                                 class="w-full"
                             />
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">
-                                {{ trans("File") }} <span class="text-red-500">*</span>
+                                {{ ctrans("File") }} <span class="text-red-500">*</span>
                             </label>
                             <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 text-sm hover:border-gray-400">
                                 <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
                                 <span class="truncate" :class="uploadFileName ? '' : 'text-gray-400'">
-                                    {{ uploadFileName ?? trans("Choose a file (PDF, JPG or PNG, max 20MB)") }}
+                                    {{ uploadFileName ?? ctrans("Choose a file (PDF, JPG or PNG, max 20MB)") }}
                                 </span>
                                 <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="hidden" @change="onUploadFileSelected" />
                             </label>
-                            <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm. Supported formats: PDF, JPG, PNG.") }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ ctrans("Inserts are printed at A6, 105 × 148 mm. Supported formats: PDF, JPG, PNG.") }}</p>
                         </div>
                     </div>
                     <div class="mt-3 flex justify-end gap-2">
-                        <Button type="cancel" :label="trans('Cancel')" @click="isUploadOpen = false" />
+                        <Button type="cancel" :label="ctrans('Cancel')" @click="isUploadOpen = false" />
                         <Button
                             type="upload"
                             :loading="isUploading"
                             :disabled="!uploadLeafletId || !uploadFile"
-                            :label="trans('Upload')"
+                            :label="ctrans('Upload')"
                             @click="submitUpload"
                         />
                     </div>
@@ -586,12 +586,12 @@ const saveSettings = () => {
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead>
                             <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-                                <th class="py-2 pr-4 font-medium">{{ trans("File name") }}</th>
-                                <th class="py-2 pr-4 font-medium">{{ trans("Type") }}</th>
-                                <!-- <th class="py-2 pr-4 font-medium">{{ trans("Size") }}</th> -->
-                                <th class="py-2 pr-4 font-medium">{{ trans("Uploaded") }}</th>
-                                <th class="py-2 pr-4 font-medium">{{ trans("Status") }}</th>
-                                <th class="py-2 font-medium text-right">{{ trans("Actions") }}</th>
+                                <th class="py-2 pr-4 font-medium">{{ ctrans("File name") }}</th>
+                                <th class="py-2 pr-4 font-medium">{{ ctrans("Type") }}</th>
+                                <!-- <th class="py-2 pr-4 font-medium">{{ ctrans("Size") }}</th> -->
+                                <th class="py-2 pr-4 font-medium">{{ ctrans("Uploaded") }}</th>
+                                <th class="py-2 pr-4 font-medium">{{ ctrans("Status") }}</th>
+                                <th class="py-2 font-medium text-right">{{ ctrans("Actions") }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -623,18 +623,18 @@ const saveSettings = () => {
                                             :href="leafletDownloadUrl(leaflet)"
                                             target="_blank"
                                             class="p-1 text-gray-400 hover:text-gray-600"
-                                            :aria-label="trans('Download')"
-                                            v-tooltip="trans('Download')"
+                                            :aria-label="ctrans('Download')"
+                                            v-tooltip="ctrans('Download')"
                                         >
                                             <FontAwesomeIcon :icon="['fal', 'download']" fixed-width aria-hidden="true" />
                                         </a>
-                                        <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('Edit')" @click="openEdit(leaflet)">
+                                        <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="ctrans('Edit')" @click="openEdit(leaflet)">
                                             <FontAwesomeIcon :icon="['fal', 'pencil']" fixed-width aria-hidden="true" />
                                         </button>
                                         <button
                                             type="button"
                                             class="p-1 text-red-400 hover:text-red-600 disabled:text-gray-300"
-                                            :aria-label="trans('Delete')"
+                                            :aria-label="ctrans('Delete')"
                                             :disabled="deletingLeafletId === leaflet.id"
                                             @click="deleteLeaflet(leaflet)"
                                         >
@@ -647,28 +647,28 @@ const saveSettings = () => {
                                         <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
                                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label class="block text-sm font-medium mb-1">{{ trans("File name") }}</label>
-                                                    <PureInput v-model="editName" :placeholder="trans('File name')" />
+                                                    <label class="block text-sm font-medium mb-1">{{ ctrans("File name") }}</label>
+                                                    <PureInput v-model="editName" :placeholder="ctrans('File name')" />
                                                 </div>
                                                 <div>
-                                                    <label class="block text-sm font-medium mb-1">{{ trans("Replace file") }}</label>
+                                                    <label class="block text-sm font-medium mb-1">{{ ctrans("Replace file") }}</label>
                                                     <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 text-sm hover:border-gray-400 bg-white">
                                                         <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
                                                         <span class="truncate" :class="editFileName ? '' : 'text-gray-400'">
-                                                            {{ editFileName ?? trans("Keep current file (optional)") }}
+                                                            {{ editFileName ?? ctrans("Keep current file (optional)") }}
                                                         </span>
                                                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="hidden" @change="onEditFileSelected" />
                                                     </label>
-                                                    <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm. Supported formats: PDF, JPG, PNG.") }}</p>
+                                                    <p class="mt-1 text-xs text-gray-500">{{ ctrans("Inserts are printed at A6, 105 × 148 mm. Supported formats: PDF, JPG, PNG.") }}</p>
                                                 </div>
                                             </div>
                                             <div class="mt-3 flex justify-end gap-2">
-                                                <Button type="cancel" :label="trans('Cancel')" @click="editRow = null" />
+                                                <Button type="cancel" :label="ctrans('Cancel')" @click="editRow = null" />
                                                 <Button
                                                     type="save"
                                                     :loading="isEditingLeaflet"
                                                     :disabled="!editName.trim()"
-                                                    :label="trans('Save')"
+                                                    :label="ctrans('Save')"
                                                     @click="submitEdit"
                                                 />
                                             </div>
@@ -680,36 +680,36 @@ const saveSettings = () => {
                     </table>
 
                     <div v-if="!leaflets.length" class="rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
-                        {{ trans("You have not uploaded any leaflets yet.") }}
+                        {{ ctrans("You have not uploaded any leaflets yet.") }}
                     </div>
                 </div>
             </section>
 
             <!-- Default summary -->
             <aside class="lg:col-span-2 rounded-lg border p-4 sm:p-6 h-fit" :style="{ backgroundColor: accentStyle.softBg, borderColor: accentStyle.softBorder }">
-                <h2 class="text-base font-semibold mb-4" :style="{ color: accentStyle.text }">{{ trans("Your Default Summary") }}</h2>
+                <h2 class="text-base font-semibold mb-4" :style="{ color: accentStyle.text }">{{ ctrans("Your Default Summary") }}</h2>
 
                 <dl class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-600">{{ trans("Default Packaging") }}</dt>
+                        <dt class="text-gray-600">{{ ctrans("Default Packaging") }}</dt>
                         <dd class="font-medium text-right">{{ summary.defaultPackaging }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-600">{{ trans("Inserts & Add-ons") }}</dt>
-                        <dd class="font-medium">{{ summary.insertsSelected }} {{ trans("selected") }}</dd>
+                        <dt class="text-gray-600">{{ ctrans("Inserts & Add-ons") }}</dt>
+                        <dd class="font-medium">{{ summary.insertsSelected }} {{ ctrans("selected") }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-600">{{ trans("Personalised Message") }}</dt>
-                        <dd class="font-medium">{{ summary.hasMessage ? trans("Yes") : trans("No") }}</dd>
+                        <dt class="text-gray-600">{{ ctrans("Personalised Message") }}</dt>
+                        <dd class="font-medium">{{ summary.hasMessage ? ctrans("Yes") : ctrans("No") }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
-                        <dt class="text-gray-600">{{ trans("Leaflets Uploaded") }}</dt>
+                        <dt class="text-gray-600">{{ ctrans("Leaflets Uploaded") }}</dt>
                         <dd class="font-medium">{{ summary.leafletsUploaded }}</dd>
                     </div>
                 </dl>
 
                 <p class="mt-4 text-sm font-medium" :style="{ color: accentStyle.text }">
-                    {{ trans("These preferences will be applied to all new orders.") }}
+                    {{ ctrans("These preferences will be applied to all new orders.") }}
                 </p>
 
                 <Button
@@ -718,7 +718,7 @@ const saveSettings = () => {
                     full
                     :loading="isSaving"
                     :icon="justSaved ? 'fal fa-check' : undefined"
-                    :label="justSaved ? trans('Saved') : trans('Save settings')"
+                    :label="justSaved ? ctrans('Saved') : ctrans('Save settings')"
                     @click="saveSettings"
                 />
             </aside>

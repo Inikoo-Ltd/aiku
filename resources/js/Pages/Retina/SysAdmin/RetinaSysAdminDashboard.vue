@@ -20,7 +20,7 @@ import {
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 import { faCheck } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(
 	faWallet,
 	faLink,
@@ -62,17 +62,17 @@ const props = defineProps<{
 		<!-- Section: Radio -->
 		<div class="space-y-3 relative w-full max-w-[500px]">
 			<div class="flex justify-between items-center mb-2">
-				<h2 class="text-xl font-semibold">{{ trans("Your users") }}</h2>
+				<h2 class="text-xl font-semibold">{{ ctrans("Your users") }}</h2>
 			</div>
 
 			<div
 				class="relative px-5 py-4 ring-1 ring-gray-300 rounded-lg bg-gray-50 shadow-sm space-y-2">
 				<div class="text-gray-600">
-					<strong class="text-gray-500">{{ trans("Active") }}:</strong>
+					<strong class="text-gray-500">{{ ctrans("Active") }}:</strong>
 					{{ users?.active }}
 				</div>
 				<div class="text-gray-600">
-					<strong class="text-gray-500">{{ trans("Inactive") }}:</strong>
+					<strong class="text-gray-500">{{ ctrans("Inactive") }}:</strong>
 					{{ users?.inactive }}
 				</div>
 			</div>

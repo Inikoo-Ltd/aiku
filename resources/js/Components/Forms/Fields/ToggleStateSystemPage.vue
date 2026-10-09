@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { get, set } from 'lodash-es'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle, faBroadcastTower, faSkull } from "@fal"
@@ -36,7 +36,7 @@ defineProps<{
                             checked ? 'bg-red-100 text-red-600 hover:bg-red-300 border-red-500' : 'ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-100',
                         ]">
                         <FontAwesomeIcon icon="fal fa-skull" class="mr-1" :class="checked ? 'text-red-500' : 'text-gray-400 group-hover:text-red-500'" fixed-width aria-hidden="true" />
-                        <RadioGroupLabel as="span">{{ trans("Offline") }}</RadioGroupLabel>
+                        <RadioGroupLabel as="span">{{ ctrans("Offline") }}</RadioGroupLabel>
                     </div>
                 </RadioGroupOption>
 
@@ -51,7 +51,7 @@ defineProps<{
                             checked ? 'bg-green-100 text-green-600 hover:bg-green-300 border-green-500' : 'ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-100',
                         ]">
                         <FontAwesomeIcon icon="fal fa-broadcast-tower" class="mr-1" :class="checked ? 'text-green-500' : 'text-gray-400 group-hover:text-green-500'" fixed-width aria-hidden="true" />
-                        <RadioGroupLabel as="span">{{ trans("Online") }}</RadioGroupLabel>
+                        <RadioGroupLabel as="span">{{ ctrans("Online") }}</RadioGroupLabel>
                     </div>
                 </RadioGroupOption>
             </div>
@@ -60,7 +60,7 @@ defineProps<{
         <Transition name="slide-to-left">
             <div v-if="form[fieldName].state === 'closed'" class="mt-4 w-full max-w-sm text-xs text-gray-500">
                 <FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
-                {{ fieldData?.information || trans("When this page is offline the default system page will be shown.") }}
+                {{ fieldData?.information || ctrans("When this page is offline the default system page will be shown.") }}
             </div>
         </Transition>
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue';
 import { Link } from '@inertiajs/vue3';
-import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
 import { computed, ref } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
@@ -90,10 +89,10 @@ const displayUnits = computed(() => {
             </span>
         </div>
         <div v-else-if="trade_units.length > 1" class="text-teal-600 whitespace-nowrap w-full">
-            <span class="">{{ trans('Multi Trade Units') }}</span>
+            <span class="">{{ ctrans('Multi Trade Units') }}</span>
         </div>
         <div v-else class="text-red-500 whitespace-nowrap w-full">
-            <span class="">{{ trans('No Trade Units') }}</span>
+            <span class="">{{ ctrans('No Trade Units') }}</span>
         </div>
 
         <div
@@ -108,24 +107,24 @@ const displayUnits = computed(() => {
             <slot name="modalBody">
                 <div class="  font-bold mb-4">
                     <div class="text-center text-lg">
-                    {{ trans('SKOs/Trade Units to be picked per product outer') }}
+                    {{ ctrans('SKOs/Trade Units to be picked per product outer') }}
                     </div>
                 </div>
     
                 <div class="grid grid-cols-6 mt-3 text-sm font-bold">
                     <div class="text-left">
-                        {{ trans('Reference') }}
+                        {{ ctrans('Reference') }}
                     </div>
                     <div class="text-left col-span-3">
-                        {{ trans('SKO description') }}
+                        {{ ctrans('SKO description') }}
                     </div>
                     <div class="text-right ">
-                        {{ trans('Units to pick') }}
+                        {{ ctrans('Units to pick') }}
                     </div>
 
 
                     <div class="text-right">
-                        {{ trans('SKOs to pick') }}
+                        {{ ctrans('SKOs to pick') }}
                     </div>
                 </div>
     
@@ -143,7 +142,7 @@ const displayUnits = computed(() => {
     
                     <div class="text-left col-span-3 flex items-center">
                         <slot name="col_name" :data="tUnit">
-                            <p>{{ tUnit.tradeUnit?.name }} <span class="text-orange-500">{{ trans('Units/SKO')}}:{{ tUnit.units_per_sku }}</span></p>
+                            <p>{{ tUnit.tradeUnit?.name }} <span class="text-orange-500">{{ ctrans('Units/SKO')}}:{{ tUnit.units_per_sku }}</span></p>
                         </slot>
                     </div>
 

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -53,21 +53,21 @@ watchEffect(() => {
 
         <form class="space-y-8" @submit.prevent="submitResetPassword">
             <div class="text-center font-semibold text-xl">
-                {{ trans("Reset your password") }}
+                {{ ctrans("Reset your password") }}
             </div>
             <div class="text-center font-semibold text-lg">
-                {{ trans("Username") }} {{ username  }}
+                {{ ctrans("Username") }} {{ username  }}
             </div>
             <div class="flex flex-col gap-y-4">
                 <div class="">
-                    <label for="password">{{ trans('New Password') }}</label>
+                    <label for="password">{{ ctrans('New Password') }}</label>
                     <PureInput v-model="formReset.password" type="password" inputName="password"
                         placeholder="Enter new password" />
                     <div v-if="formReset.errors.password">{{ formReset.errors.password }}</div>
                 </div>
 
                 <div class="">
-                    <label for="repeatPassword">{{ trans('Repeat New Password') }}</label>
+                    <label for="repeatPassword">{{ ctrans('Repeat New Password') }}</label>
                     <PureInput v-model="repeatPassword" type="password" inputName="repeatPassword"
                         placeholder="Repeat your new password" />
                     <div v-if="!isPasswordSame && repeatPassword && formReset.password"

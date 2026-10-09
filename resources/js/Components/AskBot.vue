@@ -5,7 +5,7 @@ import { ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faLampDesk } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { marked } from 'marked'
 import LoadingIcon from "./Utils/LoadingIcon.vue"
 import LoadingText from "./Utils/LoadingText.vue"
@@ -65,7 +65,7 @@ const fetchApi = async (query: string) => {
 			// const data = await response.json()
 			// aiResponse.value = await marked.parse(data.data?.response)
 		} catch (error) {
-			errorSearch.value = error.message || trans("An error occurred while fetching search results.")
+			errorSearch.value = error.message || ctrans("An error occurred while fetching search results.")
 		} finally {
 			// isLoadingSearch.value = false
 		}
@@ -93,11 +93,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
 	>
 		<!-- <div class="animate-linear bg-gradient-to-r from-teal-300 via-pink-600 to-red-400 bg-[length:200%_auto] bg-clip-text font-bold text-transparent text-2xl mb-4 text-center">
 			<FontAwesomeIcon icon="fas fa-sparkles" class="text-pink-600" fixed-width aria-hidden="true" />
-			{{ trans('Ask AI anything..')}}
+			{{ ctrans('Ask AI anything..')}}
 		</div> -->
 		<div class="font-bold text-pink-600 text-2xl mb-4 text-center">
 			<FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
-			{{ trans('Ask AI anything..')}}
+			{{ ctrans('Ask AI anything..')}}
 		</div>
 
 		<div class="relative">
@@ -106,14 +106,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
 				@keydown="(e) => handleKeyDown(e)"
 				type="text"
 				class="h-48 w-full border-none xborder xborder-dashed xborder-gray-300 bg-black/10 rounded-lg px-4 placeholder:text-gray-500 focus:ring focus:ring-pink-500 focus:outline-none sm:text-sm"
-				:placeholder="trans('Ask Anything...')"
+				:placeholder="ctrans('Ask Anything...')"
 			/>
 
 			<!-- Text: Press enter to submit -->
 			<div class="mt-2 text-sm text-gray-500">
-				{{ trans("Press") }} <span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Enter</span> {{ trans("to submit") }},
+				{{ ctrans("Press") }} <span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Enter</span> {{ ctrans("to submit") }},
 				<span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Shift</span>+<span class="border border-gray-400 bg-gray-100 text-gray-700 overflow-hidden px-2 py-0.5 text-xs rounded">Enter</span>
-				{{ trans("to add new line") }}
+				{{ ctrans("to add new line") }}
 			</div>
 			<!-- <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
 				<FontAwesomeIcon fixed-width icon="fal fa-lamp-desk" aria-hidden="true" />
@@ -126,7 +126,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 			<div v-if="lastQuery" class="bg-pink-500/5 mt-4 border border-white/40 rounded-lg shadow-md overflow-hidden">
 				<div class="text-white ">
 					<div v-if="lastQuery" class="bg-pink-600 xtext-gray-700 border-b border-white/40 p-4 font-light">
-						{{ trans("Results") }}: <span class="font-semibold">{{ lastQuery }}</span>
+						{{ ctrans("Results") }}: <span class="font-semibold">{{ lastQuery }}</span>
 						<LoadingIcon v-if="isLoadingSearch" class="ml-1" />
 					</div>
 			
@@ -145,7 +145,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 					/>
 
 					<div v-else-if="!isLoadingSearch && lastQuery" class="p-4">
-						<p class="text-center">{{ trans("No results found.") }}</p>
+						<p class="text-center">{{ ctrans("No results found.") }}</p>
 					</div>
 				</div>
 			</div>

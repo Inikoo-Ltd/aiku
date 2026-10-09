@@ -9,7 +9,7 @@ import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faChartLine } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Table from "@/Components/Table/Table.vue"
@@ -26,11 +26,11 @@ defineProps<{
 }>()
 
 const channels = [
-    { value: "all", label: trans("All") },
-    { value: "wholesale", label: trans("Wholesale") },
-    { value: "b2c", label: trans("B2C") },
-    { value: "dropshipping", label: trans("Dropshipping") },
-    { value: "fulfilment", label: trans("Fulfilment") },
+    { value: "all", label: ctrans("All") },
+    { value: "wholesale", label: ctrans("Wholesale") },
+    { value: "b2c", label: ctrans("B2C") },
+    { value: "dropshipping", label: ctrans("Dropshipping") },
+    { value: "fulfilment", label: ctrans("Fulfilment") },
 ]
 const currentChannel = ref(new URLSearchParams(window.location.search).get("channel") ?? "all")
 const setChannel = (value: string) => {
@@ -61,12 +61,12 @@ const setChannel = (value: string) => {
         </div>
 
         <div>
-            <h2 class="font-semibold text-lg">{{ trans("Pickers") }}</h2>
+            <h2 class="font-semibold text-lg">{{ ctrans("Pickers") }}</h2>
             <Table :resource="pickers" name="pickers" />
         </div>
 
         <div>
-            <h2 class="font-semibold text-lg">{{ trans("Packers") }}</h2>
+            <h2 class="font-semibold text-lg">{{ ctrans("Packers") }}</h2>
             <Table :resource="packers" name="packers" />
         </div>
     </div>

@@ -5,7 +5,7 @@
  * Copyright: 2025
 */
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
 	blueprint: [
@@ -17,7 +17,7 @@ export default {
 				{
 					key: ["index_of_navigation_to_apply"],
 					label: "Navigation to apply",
-					information: trans('Specify the index numbers of the navigation items you want to apply the custom styling to. Separate multiple indexes with commas i.e 1, 4, 5, 9'),
+					information: ctrans('Specify the index numbers of the navigation items you want to apply the custom styling to. Separate multiple indexes with commas i.e 1, 4, 5, 9'),
 					props_data: {
 						placeholder: "i.e 1, 2, 5, 7, 8",
 					},
@@ -48,7 +48,7 @@ export default {
 		// 		{
 		// 			key: ["index_of_navigation_to_apply"],
 		// 			label: "Navigation to apply",
-		// 			information: trans('Specify the index numbers of the navigation items you want to apply the custom styling to. Separate multiple indexes with commas i.e 1, 4, 5, 9'),
+		// 			information: ctrans('Specify the index numbers of the navigation items you want to apply the custom styling to. Separate multiple indexes with commas i.e 1, 4, 5, 9'),
 		// 			props_data: {
 		// 				placeholder: "i.e 1, 2, 5, 7, 8",
 		// 			},

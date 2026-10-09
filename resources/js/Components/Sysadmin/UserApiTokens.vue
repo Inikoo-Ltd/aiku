@@ -3,7 +3,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import Table from '../Table/Table.vue'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '../Elements/Buttons/Button.vue'
 
 const props = defineProps<{
@@ -24,7 +24,7 @@ const props = defineProps<{
             <template #cell(actions)="{ item }">
                 <ModalConfirmationDelete
                     :routeDelete="item.route_delete_token"
-                    :title="trans('Are you sure you want to delete this access token?')"
+                    :title="ctrans('Are you sure you want to delete this access token?')"
                     isFullLoading
                 >
                     <template #default="{ isOpenModal, changeModel }">

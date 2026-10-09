@@ -2,7 +2,7 @@
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 
 defineProps<{
@@ -22,7 +22,7 @@ const locale = inject('locale', aikuLocaleStructure)
             class="px-4 mt-5 grid grid-cols-1 divide-gray-200 overflow-hidden rounded-lg md:grid-cols-3 md:divide-x md:divide-y-0">
             <div class="px-4 py-5 sm:p-6 border border-gray-300 rounded-md">
                 <dt class="text-base font-normal">
-                    {{ trans("Amount") }}
+                    {{ ctrans("Amount") }}
                     <span v-tooltip="useFormatTime(data.created_at, {formatTime: 'hm'})" class="text-gray-400">({{ useFormatTime(data.created_at) }})</span>
                 </dt>
                 <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">

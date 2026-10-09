@@ -12,7 +12,7 @@ import { faSort, faSortUp, faSortDown } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faSort, faSortUp, faSortDown)
 
@@ -47,12 +47,12 @@ const locale = useLocaleStore()
 const money = (value: number, currency: string) => locale.currencyFormat(currency, value)
 
 const columns: { key: SortKey; label: string; align: "left" | "right"; format: (day: Day) => string }[] = [
-    { key: "date", label: trans("Date"), align: "left", format: (day) => useFormatTime(day.date, { formatTime: "mdy" }) },
-    { key: "impressions", label: trans("Impressions"), align: "right", format: (day) => locale.number(day.impressions) },
-    { key: "clicks", label: trans("Clicks"), align: "right", format: (day) => locale.number(day.clicks) },
-    { key: "conversions", label: trans("Conversions"), align: "right", format: (day) => locale.number(day.conversions) },
-    { key: "cost", label: trans("Cost") + " (" + props.currency + ")", align: "right", format: (day) => money(day.cost, props.currency) },
-    { key: "shop_cost", label: trans("Spend") + " (" + props.shopCurrency + ")", align: "right", format: (day) => money(day.shop_cost, props.shopCurrency) },
+    { key: "date", label: ctrans("Date"), align: "left", format: (day) => useFormatTime(day.date, { formatTime: "mdy" }) },
+    { key: "impressions", label: ctrans("Impressions"), align: "right", format: (day) => locale.number(day.impressions) },
+    { key: "clicks", label: ctrans("Clicks"), align: "right", format: (day) => locale.number(day.clicks) },
+    { key: "conversions", label: ctrans("Conversions"), align: "right", format: (day) => locale.number(day.conversions) },
+    { key: "cost", label: ctrans("Cost") + " (" + props.currency + ")", align: "right", format: (day) => money(day.cost, props.currency) },
+    { key: "shop_cost", label: ctrans("Spend") + " (" + props.shopCurrency + ")", align: "right", format: (day) => money(day.shop_cost, props.shopCurrency) },
 ]
 
 const sortKey = ref<SortKey>("date")
@@ -146,7 +146,7 @@ watch([sortKey, sortDescending], toFirstPage)
             :page-count="pageCount"
             :per-page="perPage"
             :per-page-options="perPageOptions"
-            :unit="trans('days')"
+            :unit="ctrans('days')"
             @update:page="page = $event"
             @update:per-page="((perPage = $event), toFirstPage())" />
     </div>
