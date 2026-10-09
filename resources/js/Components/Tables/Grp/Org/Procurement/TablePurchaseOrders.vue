@@ -12,6 +12,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
+import { asProcurementRouteName } from "@/Composables/useAgentRoutes"
 
 defineProps<{
 	data: {}
@@ -23,7 +24,7 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 		return null
 	}
 
-	switch (route().current()) {
+	switch (asProcurementRouteName(route().current())) {
 		case "grp.org.procurement.purchase_orders.index":
 		case "grp.org.procurement.org_supplier_products.show":
 		case "grp.org.procurement.org_agents.show.supplier_products.show":
