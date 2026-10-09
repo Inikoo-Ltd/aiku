@@ -59,6 +59,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("polls")
                     ->name("polls.")
                     ->group(__DIR__ . "/polls.php");
+                Route::prefix("appointments")
+                    ->name("appointments.")
+                    ->group(__DIR__ . "/appointments.php");
                 Route::prefix("platforms")
                     ->name("platforms.")
                     ->group(__DIR__ . "/platforms.php");
@@ -114,10 +117,10 @@ Route::prefix('{shop}')->name('show.')
                 Route::get('visitors/webpages/{webpage}', [IndexWebsiteVisitors::class, 'inSeoWebpage'])->name('visitors.webpage')->withoutScopedBindings();
                 Route::get('page-views', IndexWebsitePageViews::class)->name('page_views.index');
                 Route::get('page-views/visitors/{websiteVisitor}', [IndexWebsitePageViews::class, 'inVisitor'])->name('page_views.visitor')->withoutScopedBindings();
-        Route::get('site-audit', ShowSiteAudit::class)->name('site_audit.show');
-        Route::get('site-audit/issues/{issueType}', IndexSiteAuditIssuePages::class)->name('site_audit.issue');
-        Route::get('missing-pages', IndexWebsiteNotFoundPaths::class)->name('not_found.index');
-        Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
+                Route::get('site-audit', ShowSiteAudit::class)->name('site_audit.show');
+                Route::get('site-audit/issues/{issueType}', IndexSiteAuditIssuePages::class)->name('site_audit.issue');
+                Route::get('missing-pages', IndexWebsiteNotFoundPaths::class)->name('not_found.index');
+                Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
             });
 
         Route::prefix("settings")

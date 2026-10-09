@@ -221,6 +221,8 @@ class AppServiceProvider extends ServiceProvider
                 'Favourite'                        => 'App\Models\CRM\Favourite',
                 'TrafficSourceCampaign'            => 'App\Models\CRM\TrafficSourceCampaign',
                 'Poll'                             => 'App\Models\CRM\Poll',
+                'Appointment'                      => 'App\Models\CRM\Appointment',
+                'AppointmentType'                  => 'App\Models\CRM\AppointmentType',
                 'PollOption'                       => 'App\Models\CRM\PollOption',
                 'PollReply'                        => 'App\Models\CRM\PollReply',
                 'Prospect'                         => 'App\Models\CRM\Prospect',

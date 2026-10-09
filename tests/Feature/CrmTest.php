@@ -41,6 +41,13 @@ use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\CRM\Favourite\UpdateFavourite;
+use App\Actions\CRM\Appointment\StoreAppointment;
+use App\Actions\CRM\Appointment\UpdateAppointment;
+use App\Actions\CRM\AppointmentStaff\StoreAppointmentStaff;
+use App\Actions\CRM\AppointmentStaff\UpdateAppointmentStaff;
+use App\Actions\CRM\AppointmentType\DeleteAppointmentType;
+use App\Actions\CRM\AppointmentType\StoreAppointmentType;
+use App\Actions\CRM\AppointmentType\UpdateAppointmentType;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\PollOption\StorePollOption;
@@ -77,6 +84,9 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\CRM\Appointment\AppointmentSourceEnum;
+use App\Enums\CRM\Appointment\AppointmentStateEnum;
+use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
@@ -95,6 +105,8 @@ use App\Models\SysAdmin\User;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerNote;
 use App\Models\CRM\Favourite;
+use App\Models\CRM\Appointment;
+use App\Models\CRM\AppointmentType;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
 use App\Models\CRM\PollReply;
@@ -118,6 +130,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use Inertia\Testing\AssertableInertia;
 
@@ -606,6 +619,393 @@ test('update poll', function (Poll $poll) {
 
     return $poll;
 })->depends('store poll');
+
+test('store appointment type', function () {
+    $name = 'Showroom visit '.Str::random(6);
+    $date = now()->addDays(10)->toDateString();
+
+    $appointmentType = StoreAppointmentType::make()->action(
+        $this->shop,
+        [
+            'name'             => $name,
+            'meeting_mode'     => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+            'location'         => 'Showroom, Sheffield',
+            'duration_minutes' => 45,
+            'availability'     => [
+                'weekly' => [
+                    1 => [['from' => '14:00', 'to' => '17:00'], ['from' => '10:00', 'to' => '12:00']],
+                    3 => [['from' => '09:00', 'to' => '12:30']],
+                ],
+                'dates'  => [
+                    ['date' => $date, 'hours' => []],
+                ],
+            ],
+        ]
+    );
+
+    expect($appointmentType)->toBeInstanceOf(AppointmentType::class)
+        ->and($appointmentType->name)->toBe($name)
+        ->and($appointmentType->shop_id)->toBe($this->shop->id)
+        ->and($appointmentType->meeting_mode)->toBe(AppointmentTypeMeetingModeEnum::STORE_VISIT)
+        ->and($appointmentType->duration_minutes)->toBe(45)
+        ->and($appointmentType->capacity_per_slot)->toBe(1)
+        ->and($appointmentType->is_active)->toBeTrue()
+        ->and($appointmentType->weekly_hours[1])->toBe([['from' => '10:00', 'to' => '12:00'], ['from' => '14:00', 'to' => '17:00']])
+        ->and($appointmentType->weekly_hours[2])->toBe([])
+        ->and($appointmentType->weekly_hours[3])->toBe([['from' => '09:00', 'to' => '12:30']])
+        ->and($appointmentType->dates()->pluck('date')->map(fn ($date) => $date->toDateString())->all())->toBe([$date])
+        ->and($appointmentType->dates()->first()->hours)->toBe([]);
+
+    return $appointmentType;
+});
+
+test('appointment type rejects overlapping or reversed hours', function (array $hours) {
+    StoreAppointmentType::make()->action(
+        $this->shop,
+        [
+            'name'             => 'Video call '.Str::random(6),
+            'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+            'duration_minutes' => 30,
+            'availability'     => ['weekly' => [2 => $hours]],
+        ]
+    );
+})->with([
+    'overlapping' => [[['from' => '09:00', 'to' => '12:00'], ['from' => '11:30', 'to' => '13:00']]],
+    'reversed'    => [[['from' => '15:00', 'to' => '14:00']]],
+])->throws(ValidationException::class);
+
+test('update appointment type', function (AppointmentType $appointmentType) {
+    $pastDate = now()->subDays(3)->toDateString();
+    $appointmentType->dates()->create(['date' => $pastDate, 'hours' => []]);
+
+    $newDate = now()->addDays(20)->toDateString();
+
+    $appointmentType = UpdateAppointmentType::make()->action(
+        $appointmentType,
+        [
+            'duration_minutes'  => 60,
+            'capacity_per_slot' => 3,
+            'is_active'         => false,
+            'availability'      => [
+                'weekly' => [
+                    6 => [['from' => '11:00', 'to' => '15:00']],
+                ],
+                'dates'  => [
+                    ['date' => $newDate, 'hours' => [['from' => '10:00', 'to' => '13:00']]],
+                ],
+            ],
+        ]
+    );
+
+    expect($appointmentType->duration_minutes)->toBe(60)
+        ->and($appointmentType->capacity_per_slot)->toBe(3)
+        ->and($appointmentType->is_active)->toBeFalse()
+        ->and($appointmentType->weekly_hours[1])->toBe([])
+        ->and($appointmentType->weekly_hours[6])->toBe([['from' => '11:00', 'to' => '15:00']])
+        ->and($appointmentType->dates()->orderBy('date')->pluck('date')->map(fn ($date) => $date->toDateString())->all())->toBe([$pastDate, $newDate])
+        ->and($appointmentType->dates()->where('date', $newDate)->first()->hours)->toBe([['from' => '10:00', 'to' => '13:00']]);
+
+    return $appointmentType;
+})->depends('store appointment type');
+
+test('store appointment type from the create form', function () {
+    $name = 'Video call '.Str::random(6);
+
+    $this->post(
+        route('grp.models.shop.appointment_type.store', ['shop' => $this->shop->id]),
+        [
+            'name'             => $name,
+            'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+            'duration_minutes' => 20,
+            'availability'     => [
+                'weekly' => [1 => [['from' => '09:00', 'to' => '10:30']], 2 => [], 3 => [], 4 => [], 5 => [], 6 => [], 7 => []],
+                'dates'  => [],
+            ],
+        ]
+    )->assertRedirect(route('grp.org.shops.show.crm.appointments.types.index', [$this->organisation->slug, $this->shop->slug]));
+
+    $appointmentType = $this->shop->appointmentTypes()->where('name', $name)->first();
+
+    expect($appointmentType)->not->toBeNull()
+        ->and($appointmentType->meeting_mode)->toBe(AppointmentTypeMeetingModeEnum::VIDEO_CALL)
+        ->and($appointmentType->weekly_hours[1])->toBe([['from' => '09:00', 'to' => '10:30']]);
+});
+
+test('UI Index appointment types', function (AppointmentType $appointmentType) {
+    $this->get(route('grp.org.shops.show.crm.appointments.types.index', [$this->organisation->slug, $this->shop->slug]))
+        ->assertInertia(function (AssertableInertia $page) use ($appointmentType) {
+            $page
+                ->component('Org/Shop/CRM/AppointmentTypes')
+                ->has('title')
+                ->has('breadcrumbs', 3)
+                ->where('pageHead.title', __('Appointment types'))
+                ->has('pageHead.subNavigation', 3)
+                ->where('data.data', fn ($rows) => collect($rows)->contains('slug', $appointmentType->slug));
+        });
+})->depends('update appointment type');
+
+test('UI Create appointment type', function () {
+    $this->get(route('grp.org.shops.show.crm.appointments.types.create', [$this->organisation->slug, $this->shop->slug]))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('CreateModel')
+                ->has('formData.blueprint', 3)
+                ->where('formData.blueprint.1.fields.availability.type', 'appointment_availability')
+                ->where('formData.blueprint.1.fields.availability.value.dates', [])
+                ->has('formData.blueprint.1.fields.availability.value.weekly', 7)
+                ->missing('formData.blueprint.2.fields.attendees')
+                ->where('formData.route.name', 'grp.models.shop.appointment_type.store');
+        });
+});
+
+test('UI Edit appointment type', function (AppointmentType $appointmentType) {
+    $this->get(route('grp.org.shops.show.crm.appointments.types.edit', [$this->organisation->slug, $this->shop->slug, $appointmentType->slug]))
+        ->assertInertia(function (AssertableInertia $page) use ($appointmentType) {
+            $page
+                ->component('EditModel')
+                ->where('pageHead.title', $appointmentType->name)
+                ->where('formData.blueprint.2.fields.duration_minutes.value', 60)
+                ->where('formData.blueprint.1.fields.availability.value.weekly.6', [['from' => '11:00', 'to' => '15:00']])
+                ->has('formData.blueprint.1.fields.availability.value.dates', 1)
+                ->where('formData.args.updateRoute.name', 'grp.models.appointment_type.update');
+        });
+})->depends('update appointment type');
+
+test('add appointment staff', function (AppointmentType $appointmentType) {
+    $otherAppointmentType = StoreAppointmentType::make()->action(
+        $this->shop,
+        [
+            'name'             => 'Video call '.Str::random(6),
+            'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+            'duration_minutes' => 30,
+        ]
+    );
+
+    StoreAppointmentStaff::make()->action(
+        $this->shop,
+        [
+            'user_id'           => $this->user->id,
+            'appointment_types' => [$appointmentType->id, $otherAppointmentType->id],
+        ]
+    );
+
+    expect($appointmentType->attendees()->pluck('users.id')->all())->toBe([$this->user->id])
+        ->and($otherAppointmentType->attendees()->pluck('users.id')->all())->toBe([$this->user->id]);
+
+    return $otherAppointmentType;
+})->depends('update appointment type');
+
+test('change the appointments a staff arranges', function (AppointmentType $otherAppointmentType, AppointmentType $appointmentType) {
+    UpdateAppointmentStaff::make()->action(
+        $this->shop,
+        $this->user,
+        ['appointment_types' => [$otherAppointmentType->id]]
+    );
+
+    expect($appointmentType->attendees()->count())->toBe(0)
+        ->and($otherAppointmentType->attendees()->pluck('users.id')->all())->toBe([$this->user->id]);
+})->depends('add appointment staff', 'update appointment type');
+
+test('appointment staff must be a user of the group', function (AppointmentType $appointmentType) {
+    $otherGroupUserId = DB::table('users')->where('group_id', '!=', $this->shop->group_id)->value('id') ?? 0;
+
+    StoreAppointmentStaff::make()->action(
+        $this->shop,
+        ['user_id' => $otherGroupUserId, 'appointment_types' => [$appointmentType->id]]
+    );
+})->depends('update appointment type')->throws(ValidationException::class);
+
+test('appointment staff needs at least one appointment', function () {
+    StoreAppointmentStaff::make()->action(
+        $this->shop,
+        ['user_id' => $this->user->id, 'appointment_types' => []]
+    );
+})->throws(ValidationException::class);
+
+test('UI Index appointment staff', function () {
+    $this->get(route('grp.org.shops.show.crm.appointments.staff.index', [$this->organisation->slug, $this->shop->slug]))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Org/Shop/CRM/AppointmentStaff')
+                ->has('breadcrumbs', 3)
+                ->has('pageHead.subNavigation', 3)
+                ->where('data.data', fn ($rows) => collect($rows)->contains('id', $this->user->id));
+        });
+})->depends('change the appointments a staff arranges');
+
+test('UI Create appointment staff', function () {
+    $this->get(route('grp.org.shops.show.crm.appointments.staff.create', [$this->organisation->slug, $this->shop->slug]))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('CreateModel')
+                ->has('formData.blueprint.0.fields.user_id')
+                ->has('formData.blueprint.0.fields.appointment_types')
+                ->where('formData.route.name', 'grp.models.shop.appointment_staff.store');
+        });
+});
+
+test('UI Edit appointment staff', function (AppointmentType $otherAppointmentType) {
+    $this->get(route('grp.org.shops.show.crm.appointments.staff.edit', [$this->organisation->slug, $this->shop->slug, $this->user->id]))
+        ->assertInertia(function (AssertableInertia $page) use ($otherAppointmentType) {
+            $page
+                ->component('EditModel')
+                ->where('formData.blueprint.0.fields.appointment_types.value', [$otherAppointmentType->id])
+                ->where('formData.args.updateRoute.name', 'grp.models.shop.appointment_staff.update');
+        });
+})->depends('add appointment staff');
+
+test('remove appointment staff', function (AppointmentType $otherAppointmentType) {
+    $this->delete(route('grp.models.shop.appointment_staff.delete', ['shop' => $this->shop->id, 'user' => $this->user->id]))
+        ->assertRedirect(route('grp.org.shops.show.crm.appointments.staff.index', [$this->organisation->slug, $this->shop->slug]));
+
+    expect($otherAppointmentType->attendees()->count())->toBe(0);
+})->depends('add appointment staff');
+
+test('book an appointment for a visitor', function () {
+    $appointmentType = StoreAppointmentType::make()->action(
+        $this->shop,
+        [
+            'name'             => 'Showroom tour '.Str::random(6),
+            'meeting_mode'     => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+            'duration_minutes' => 45,
+        ]
+    );
+    UpdateAppointmentStaff::make()->action($this->shop, $this->user, ['appointment_types' => [$appointmentType->id]]);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $timezone = $this->shop->timezone?->name ?? 'UTC';
+    $startsAt = now($timezone)->addDays(2)->setTime(10, 30);
+
+    $appointment = StoreAppointment::make()->action(
+        $this->shop,
+        [
+            'appointment_type_id' => $appointmentType->id,
+            'starts_at'           => $startsAt->format('Y-m-d H:i'),
+            'user_id'             => $this->user->id,
+            'contact_name'        => 'Visitor '.Str::random(4),
+            'email'               => strtoupper($customer->email),
+            'number_visitors'     => 2,
+        ]
+    );
+
+    expect($appointment)->toBeInstanceOf(Appointment::class)
+        ->and($appointment->state)->toBe(AppointmentStateEnum::BOOKED)
+        ->and($appointment->source)->toBe(AppointmentSourceEnum::STAFF)
+        ->and($appointment->starts_at->equalTo($startsAt))->toBeTrue()
+        ->and($appointment->ends_at->equalTo($startsAt->copy()->addMinutes(45)))->toBeTrue()
+        ->and($appointment->customer_id)->toBe($customer->id)
+        ->and($appointment->user_id)->toBe($this->user->id)
+        ->and($appointment->number_visitors)->toBe(2);
+
+    return $appointment;
+});
+
+test('appointment staff must arrange that type', function (Appointment $appointment) {
+    $otherAppointmentType = StoreAppointmentType::make()->action(
+        $this->shop,
+        [
+            'name'             => 'Video call '.Str::random(6),
+            'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+            'duration_minutes' => 15,
+        ]
+    );
+
+    StoreAppointment::make()->action(
+        $this->shop,
+        [
+            'appointment_type_id' => $otherAppointmentType->id,
+            'starts_at'           => now()->addDays(3)->format('Y-m-d').' 11:00',
+            'user_id'             => $this->user->id,
+            'contact_name'        => 'Visitor',
+        ]
+    );
+})->depends('book an appointment for a visitor')->throws(ValidationException::class);
+
+test('cancel and rebook an appointment', function (Appointment $appointment) {
+    $appointment = UpdateAppointment::make()->action($appointment, ['state' => AppointmentStateEnum::CANCELLED->value]);
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::CANCELLED)
+        ->and($appointment->cancelled_at)->not->toBeNull();
+
+    $appointment = UpdateAppointment::make()->action($appointment, ['state' => AppointmentStateEnum::BOOKED->value]);
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::BOOKED)
+        ->and($appointment->cancelled_at)->toBeNull();
+
+    return $appointment;
+})->depends('book an appointment for a visitor');
+
+test('moving an appointment keeps its length', function (Appointment $appointment) {
+    $timezone = $this->shop->timezone?->name ?? 'UTC';
+    $newStart = now($timezone)->addDays(4)->setTime(14, 0);
+
+    $appointment = UpdateAppointment::make()->action($appointment, ['starts_at' => $newStart->format('Y-m-d H:i')]);
+
+    expect($appointment->starts_at->equalTo($newStart))->toBeTrue()
+        ->and($appointment->ends_at->diffInMinutes($appointment->starts_at, true))->toEqual(45);
+})->depends('cancel and rebook an appointment');
+
+test('book an appointment from the form', function (Appointment $appointment) {
+    $contactName = 'Phone visitor '.Str::random(6);
+
+    $this->post(
+        route('grp.models.shop.appointment.store', ['shop' => $this->shop->id]),
+        [
+            'appointment_type_id' => $appointment->appointment_type_id,
+            'starts_at'           => now()->addDays(5)->format('Y-m-d').' 09:00',
+            'contact_name'        => $contactName,
+            'phone'               => '+441234567890',
+        ]
+    )->assertRedirect(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug]));
+
+    $booked = $this->shop->appointments()->where('contact_name', $contactName)->first();
+
+    expect($booked)->not->toBeNull()
+        ->and($booked->created_by_user_id)->toBe($this->user->id)
+        ->and($booked->user_id)->toBeNull()
+        ->and($booked->customer_id)->toBeNull();
+})->depends('book an appointment for a visitor');
+
+test('UI Index appointments', function (Appointment $appointment) {
+    $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug]))
+        ->assertInertia(function (AssertableInertia $page) use ($appointment) {
+            $page
+                ->component('Org/Shop/CRM/Appointments')
+                ->has('breadcrumbs', 3)
+                ->has('pageHead.subNavigation', 3)
+                ->where('tabs.current', 'upcoming')
+                ->where('upcoming.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
+        });
+})->depends('cancel and rebook an appointment');
+
+test('UI Create appointment', function () {
+    $this->get(route('grp.org.shops.show.crm.appointments.create', [$this->organisation->slug, $this->shop->slug]))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('CreateModel')
+                ->where('formData.blueprint.0.fields.starts_at.type', 'appointment_slot')
+                ->has('formData.blueprint.1.fields.contact_name')
+                ->where('formData.route.name', 'grp.models.shop.appointment.store');
+        });
+});
+
+test('UI Edit appointment', function (Appointment $appointment) {
+    $this->get(route('grp.org.shops.show.crm.appointments.edit', [$this->organisation->slug, $this->shop->slug, $appointment->id]))
+        ->assertInertia(function (AssertableInertia $page) use ($appointment) {
+            $page
+                ->component('EditModel')
+                ->where('pageHead.title', $appointment->contact_name)
+                ->where('formData.blueprint.0.fields.state.value', AppointmentStateEnum::BOOKED->value)
+                ->where('formData.args.updateRoute.name', 'grp.models.appointment.update');
+        });
+})->depends('cancel and rebook an appointment');
+
+test('delete appointment type', function (AppointmentType $appointmentType) {
+    DeleteAppointmentType::make()->action($appointmentType);
+
+    expect(AppointmentType::find($appointmentType->id))->toBeNull()
+        ->and(AppointmentType::withTrashed()->find($appointmentType->id))->not->toBeNull();
+})->depends('update appointment type');
 
 test('store poll option', function (Poll $poll) {
     $pollOption = StorePollOption::make()->action(

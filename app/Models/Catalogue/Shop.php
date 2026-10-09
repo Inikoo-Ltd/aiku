@@ -42,6 +42,8 @@ use App\Models\Comms\SenderEmail;
 use App\Models\Comms\TestEmailRecipient;
 use App\Models\Comms\WhatsappCampaign;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Appointment;
+use App\Models\CRM\AppointmentType;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
@@ -754,6 +756,16 @@ class Shop extends Model implements HasMedia, Auditable
     public function polls(): HasMany
     {
         return $this->hasMany(Poll::class);
+    }
+
+    public function appointmentTypes(): HasMany
+    {
+        return $this->hasMany(AppointmentType::class);
+    }
+
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 
     public function queries(): HasMany

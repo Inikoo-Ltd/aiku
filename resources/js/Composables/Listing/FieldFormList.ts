@@ -100,6 +100,8 @@ import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
+import AppointmentAvailability from '@/Components/Forms/Fields/AppointmentAvailability.vue'
+import AppointmentSlot from '@/Components/Forms/Fields/AppointmentSlot.vue'
 import EmployeeWorkingHours from '@/Components/Forms/Fields/EmployeeWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 import Ratio from '@/Components/Forms/Fields/Ratio.vue'
@@ -227,6 +229,8 @@ export const componentsList: { [key: string]: Component } = {
     'vol_discount' : InputVolDiscount,
     'map-picker' : MapPickerField,
     'working-hours' : InputWorkingHours,
+    'appointment_availability': AppointmentAvailability,
+    'appointment_slot': AppointmentSlot,
     'employee-working-hours' : EmployeeWorkingHours,
     'ratio' : Ratio,
     'free_gift': FreeGift,

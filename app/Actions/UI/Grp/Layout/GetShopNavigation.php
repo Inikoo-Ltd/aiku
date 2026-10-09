@@ -673,6 +673,15 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("Appointments"),
+                            "icon"    => ["fal", "fa-calendar"],
+                            "root"    => "grp.org.shops.show.crm.appointments.",
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.crm.appointments.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];

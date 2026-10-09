@@ -139,6 +139,14 @@ use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
+use App\Actions\CRM\Appointment\StoreAppointment;
+use App\Actions\CRM\Appointment\UpdateAppointment;
+use App\Actions\CRM\AppointmentStaff\DeleteAppointmentStaff;
+use App\Actions\CRM\AppointmentStaff\StoreAppointmentStaff;
+use App\Actions\CRM\AppointmentStaff\UpdateAppointmentStaff;
+use App\Actions\CRM\AppointmentType\DeleteAppointmentType;
+use App\Actions\CRM\AppointmentType\StoreAppointmentType;
+use App\Actions\CRM\AppointmentType\UpdateAppointmentType;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
@@ -1202,6 +1210,11 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();
     Route::post('prospect', StoreProspect::class)->name('prospect.store');
+    Route::post('appointment', StoreAppointment::class)->name('appointment.store');
+    Route::post('appointment-type', StoreAppointmentType::class)->name('appointment_type.store');
+    Route::post('appointment-staff', StoreAppointmentStaff::class)->name('appointment_staff.store');
+    Route::patch('appointment-staff/{user:id}', UpdateAppointmentStaff::class)->name('appointment_staff.update')->withoutScopedBindings();
+    Route::delete('appointment-staff/{user:id}', DeleteAppointmentStaff::class)->name('appointment_staff.delete')->withoutScopedBindings();
     Route::post('website', StoreWebsite::class)->name('website.store');
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
@@ -1734,6 +1747,13 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
 Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('access_token.delete');
 
 Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');
+
+Route::patch('appointment/{appointment:id}', UpdateAppointment::class)->name('appointment.update');
+
+Route::name('appointment_type.')->prefix('appointment-type/{appointmentType:id}')->group(function () {
+    Route::patch('', UpdateAppointmentType::class)->name('update');
+    Route::delete('', DeleteAppointmentType::class)->name('delete');
+});
 
 Route::name('poll.')->prefix('poll')->group(function () {
     Route::patch('{poll:id}/update', UpdatePoll::class)->name('update')->withoutScopedBindings();
