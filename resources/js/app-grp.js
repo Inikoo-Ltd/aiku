@@ -21,6 +21,7 @@ import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ZiggyVue } from "ziggy-js";
+import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { ctrans } from "@/Composables/useTrans";
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
@@ -124,11 +125,16 @@ createInertiaApp(
                     });
       }
 
+      setAgentOrganisations(props.initialPage.props.layout?.agents?.data);
+      router.on("navigate", (event) => setAgentOrganisations(event.detail.page.props.layout?.agents?.data));
+      window.route = withAgentRoutes(window.route);
+
       app.use(plugin);
       app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
       
       app.use(createPinia()).
         use(ZiggyVue, Ziggy).
+        use({ install: (vueApp) => { vueApp.config.globalProperties.route = withAgentRoutes(vueApp.config.globalProperties.route); } }).
         use(Notifications).
         use(FloatingVue).
         use(ConfirmationService).

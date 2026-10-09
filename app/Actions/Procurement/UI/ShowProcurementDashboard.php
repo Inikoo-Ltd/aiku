@@ -252,6 +252,13 @@ class ShowProcurementDashboard extends OrgAction
 
     public function getBreadcrumbs(array $routeParameters): array
     {
+        $organisation = Arr::get($routeParameters, 'organisation');
+        $organisation = $organisation instanceof Organisation ? $organisation : Organisation::where('slug', $organisation)->first();
+
+        if ($organisation?->type === OrganisationTypeEnum::AGENT) {
+            return ShowOrganisationDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation'));
+        }
+
         return
             array_merge(
                 ShowOrganisationDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),

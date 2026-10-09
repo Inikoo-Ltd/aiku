@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\SysAdmin\Organisation;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Helpers\Redirects\RedirectSupplierLink;
 use App\Models\SysAdmin\User;
@@ -139,7 +141,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
     expect($user->auth_type)->toBe(UserAuthTypeEnum::DEFAULT)
         ->and($user->legacy_password)->toBeNull()
         ->and(Hash::check('aurora-password', $user->password))->toBeTrue()
-        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toContain('procurement', 'hr')
+        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'hr', 'agent_settings'])
         ->and($user->hasGroupAccess())->toBeFalse()
         ->and(array_keys(GetGroupNavigation::run($user)))->toBe(['tickets']);
 
@@ -151,6 +153,17 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
             ->where('dashboard.super_blocks', [])
             ->has('cleanHandover.quarters')
             ->missing('cleanHandover.hygiene'));
+
+    $this->get(route('grp.org.agent.org_suppliers.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.agent.stock_deliveries.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.procurement.org_suppliers.index', $organisation->slug).'?sort=code')
+        ->assertRedirect(route('grp.org.agent.org_suppliers.index', $organisation->slug).'?sort=code');
+    $this->get(route('grp.org.procurement.dashboard', $organisation->slug))->assertRedirect(route('grp.org.dashboard.show', $organisation->slug));
+    $this->get(route('grp.org.procurement.org_agents.index', $organisation->slug))->assertNotFound();
+    $this->get(route('grp.org.procurement.org_partners.index', $organisation->slug))->assertNotFound();
+    $this->get(route('grp.org.warehouses.index', $organisation->slug))->assertForbidden();
+    $this->get(route('grp.org.agent.org_suppliers.index', Organisation::where('type', OrganisationTypeEnum::SHOP)->firstOrFail()->slug))->assertForbidden();
 })->depends('create agent');
 
 test('update agent', function (Agent $agent) {

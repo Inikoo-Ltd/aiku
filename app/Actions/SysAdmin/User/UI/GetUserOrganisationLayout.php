@@ -31,8 +31,9 @@ class GetUserOrganisationLayout
             'id'                     => $organisation->id,
             'slug'                   => $organisation->slug,
             'code'                   => $organisation->code,
-            'label'                  => $organisation->name,
+            'label'                  => Arr::get($organisation->settings, 'ui.name') ?: $organisation->name,
             'type'                   => $organisation->type,
+            'country_code'           => $organisation->country?->code,
             'currency'               => $organisation->currency,
             'logo'                   => $organisation->imageSources(48, 48),
             'route'                  => [

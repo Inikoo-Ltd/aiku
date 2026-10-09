@@ -619,42 +619,36 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($agentUser->worksOnlyForAgents())->toBeTrue()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['procurement', 'hr'])
-        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['procurement']['topMenu']['subSections'])->pluck('root')->all())->toBe([
-            'grp.org.procurement.dashboard',
-            'grp.org.procurement.purchase_orders.',
-            'grp.org.procurement.stock_deliveries.',
-            'grp.org.procurement.org_suppliers.',
-            'grp.org.procurement.org_supplier_products.',
-            'grp.org.procurement.supplier_messages.',
-            'grp.org.procurement.settings.',
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'hr', 'agent_settings'])
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
+            'grp.org.agent.org_suppliers.',
         ]);
 
     actingAs($agentUser);
 
-    $this->get(route('grp.org.procurement.purchase_orders.index', $organisation->slug))->assertOk();
-    $this->get(route('grp.org.procurement.org_suppliers.index', $organisation->slug))
+    $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.index', $organisation->slug))
         ->assertInertia(fn ($page) => $page->where('data.meta.total', Supplier::where('agent_id', $this->agent->id)->where('status', true)->count()));
 
     $orgSupplierOfAnotherOrganisation = OrgSupplier::where('organisation_id', '!=', $organisation->id)
         ->whereHas('supplier', fn ($query) => $query->where('agent_id', $this->agent->id))
         ->firstOrFail();
-    $this->get(route('grp.org.procurement.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->slug]))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->slug]))->assertOk();
     expect(collect(\App\Actions\Procurement\OrgSupplier\UI\GetOrgSupplierShowcase::run($orgSupplierOfAnotherOrganisation, $organisation)['stats'])->pluck('route.parameters.0')->unique()->all())
         ->toBe([$organisation->slug]);
 
     $ownOrgAgent      = OrgAgent::where('agent_id', $this->agent->id)->where('organisation_id', '!=', $organisation->id)->firstOrFail();
     [$ownOrgSupplier] = createAgentOrgSupplierWithProduct($this, $ownOrgAgent);
     $ownPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
-    $this->get(route('grp.org.procurement.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
+    $this->get(route('grp.org.agent.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
         ->assertInertia(fn ($page) => $page->where('pageHead.subNavigation', fn ($items) => collect($items)->pluck('route.parameters.0')->unique()->values()->all() === [$organisation->slug]));
-    $this->get(route('grp.org.procurement.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
+    $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
     $ownPurchaseOrder->delete();
 
     $foreignAgent    = StoreAgent::make()->action($this->group, Agent::factory()->definition());
     $foreignOrgAgent = StoreOrgAgent::make()->action($ownOrgAgent->organisation, $foreignAgent, []);
-    $this->get(route('grp.org.procurement.org_agents.show.purchase-orders.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
-    $this->get(route('grp.org.procurement.org_agents.show.suppliers.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_agents.show.purchase-orders.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.org_agents.show.suppliers.index', [$organisation->slug, $foreignOrgAgent->slug]))->assertNotFound();
 
     $this->get(route('grp.org.hr.employees.index', $organisation->slug))->assertOk();
     $this->get(route('grp.org.hr.employees.show.users.show', [$organisation->slug, $employee->slug, $agentUser->slug]))
@@ -703,7 +697,7 @@ test('agent manager only sees their own agent organisation', function () {
     actingAs($this->adminGuest->getUser());
     expect(json_encode($this->get(route('grp.org.hr.employees.create', $organisation->slug))->viewData('page')['props']))->toContain('"code":"org-admin"');
     $this->get(route('grp.overview.crm.customers.index'))->assertOk();
-    $this->get(route('grp.org.procurement.purchase_orders.index', $organisation->slug))->assertOk();
+    $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
 });
 
 test('PO journey board marks stages on an agent purchase order and keeps handover for management', function (PurchaseOrder $purchaseOrder) {
@@ -2982,7 +2976,7 @@ test('UI Index purchase orders', function () {
             && !$references($rows)->contains('Client draft PO')
             && collect($rows)->every(fn ($row) => in_array($row['state'], ['submitted', 'confirmed'], true))));
 
-    $this->get(route('grp.org.procurement.purchase_orders.index', [$this->agent->organisation->slug]))
+    $this->get(route('grp.org.agent.purchase_orders.index', [$this->agent->organisation->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Procurement/PurchaseOrders')
@@ -4393,7 +4387,7 @@ test('agent organisation manages its own supplier identity', function () {
         ->firstOrFail();
 
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.org.procurement.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
+    $response = $this->get(route('grp.org.agent.org_suppliers.edit', [$ownAgent->organisation->slug, $orgSupplier->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -4532,7 +4526,7 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
     $agentOrganisation = $this->agent->organisation;
     actingAs($this->adminGuest->getUser());
 
-    get(route('grp.org.procurement.agent_labels.index', $agentOrganisation->slug))
+    get(route('grp.org.agent.agent_labels.index', $agentOrganisation->slug))
         ->assertOk()
         ->assertInertia(function (AssertableInertia $page) use ($orgStock, $published) {
             $page->component('Org/Procurement/AgentLabels')
@@ -4541,11 +4535,11 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
                     && collect($orgStocks)->firstWhere('id', $orgStock->id)['labels'][0]['run_sources'] === ['batch_code', 'expiry_date']);
         });
 
-    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7', 'expiry_date' => '2027-09-24']))
+    get(route('grp.org.agent.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7', 'expiry_date' => '2027-09-24']))
         ->assertOk();
-    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7']))
+    get(route('grp.org.agent.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7']))
         ->assertStatus(422);
-    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $foreignOrgStock->id, $foreign->id]))
+    get(route('grp.org.agent.agent_labels.pdf', [$agentOrganisation->slug, $foreignOrgStock->id, $foreign->id]))
         ->assertNotFound();
     get(route('grp.org.procurement.agent_labels.index', $this->organisation->slug))
         ->assertNotFound();
@@ -4555,7 +4549,7 @@ test('agent organisation creates a supplier under its own agent', function () {
     $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
 
     $this->withoutExceptionHandling();
-    $this->get(route('grp.org.procurement.org_suppliers.create_new', [$ownAgent->organisation->slug]))
+    $this->get(route('grp.org.agent.org_suppliers.create_new', [$ownAgent->organisation->slug]))
         ->assertOk();
 
     $storeData = Supplier::factory()->definition();
@@ -4740,7 +4734,7 @@ describe('shopping list', function () {
 
         $secondItem = StoreShoppingListItem::make()->action($this->orgSupplierProduct, ['quantity_units' => 15]);
 
-        $response = $this->get(route('grp.org.procurement.shopping_list.board', [$this->agent->organisation->slug]));
+        $response = $this->get(route('grp.org.agent.shopping_list.board', [$this->agent->organisation->slug]));
 
         $response->assertInertia(function (AssertableInertia $page) use ($secondItem, $result) {
             $agents = $page->toArray()['props']['agents'];
@@ -4758,7 +4752,7 @@ describe('shopping list', function () {
                 $page->component('SupplyChain/ShoppingListBoard');
             });
 
-        $this->get(route('grp.org.procurement.shopping_list.board', [$this->agent->organisation->slug]))
+        $this->get(route('grp.org.agent.shopping_list.board', [$this->agent->organisation->slug]))
             ->assertInertia(function (AssertableInertia $page) {
                 $page->component('Procurement/ShoppingListBoard');
             });

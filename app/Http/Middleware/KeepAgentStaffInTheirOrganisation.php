@@ -20,7 +20,13 @@ use Symfony\Component\HttpFoundation\Response;
 class KeepAgentStaffInTheirOrganisation
 {
     public const array OPEN_SECTIONS = [
-        'grp.org.',
+        'grp.org.agent.',
+        'grp.org.procurement.',
+        'grp.org.dashboard.',
+        'grp.org.hr.',
+        'grp.org.tasks.',
+        'grp.org.tickets.',
+        'grp.org.fallback',
         'grp.json.',
         'grp.models.',
         'grp.dashboard.show',
