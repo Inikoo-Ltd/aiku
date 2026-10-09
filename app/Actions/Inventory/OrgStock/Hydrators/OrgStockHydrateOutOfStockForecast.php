@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\Hydrators;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -33,7 +34,9 @@ use Illuminate\Support\Facades\DB;
  *     it could be sold, as do SKOs with too little history or no forecast that night.
  *  1. Rebuild the daily demand series over the last 91 days from delivery_note_items.created_at
  *     (delivery_note_items.date is only set on Aurora-fetched rows), counting ONLY days the stock
- *     was actually on the shelf (running balance > 0 from org_stock_movements). An item that
+ *     was actually on the shelf (running balance from org_stock_movements enough for one order of
+ *     its biggest selling product, at most one whole SKO: a few loose units left of a pack cannot
+ *     fill a wholesale order, HELP-3842). An item that
  *     was out of stock 90% of the window still gets its true selling rate.
  *  2. Pick a model for that series: Croston with the Syntetos-Boylan correction for
  *     intermittent demand (most days zero), Holt's damped-trend smoothing on weekly rates for
@@ -257,7 +260,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
             ->pluck('dispatched', 'day');
 
         $series = [];
-        $days   = $this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available);
+        $days   = $this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available, $this->sellableQuantity($orgStock));
         foreach ($days as $day => $inStock) {
             if ($inStock) {
                 $series[$day] = (float) ($dispatchedByDay[$day] ?? 0);
@@ -359,12 +362,27 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     }
 
     /**
+     * SKOs needed on the shelf to fill one order of the biggest product selling this stock, at
+     * most one whole SKO, so stock only ever sold in fractions still counts while a fraction is left.
+     */
+    private function sellableQuantity(OrgStock $orgStock): float
+    {
+        $biggestProductQuantity = (float) DB::table('product_has_org_stocks')
+            ->join('products', 'products.id', '=', 'product_has_org_stocks.product_id')
+            ->where('product_has_org_stocks.org_stock_id', $orgStock->id)
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->max('product_has_org_stocks.quantity');
+
+        return $biggestProductQuantity > 0 ? min(1.0, $biggestProductQuantity) : 1.0;
+    }
+
+    /**
      * Which days of the window the stock was actually on the shelf, rebuilt from the
      * movements' running balance.
      *
      * @return array<string, bool> day (Y-m-d) => was in stock
      */
-    private function inStockDays(int $orgStockId, Carbon $from, float $fallbackSeed): array
+    private function inStockDays(int $orgStockId, Carbon $from, float $fallbackSeed, float $sellableQuantity): array
     {
         $lastRunningByDay = DB::table('org_stock_movements')
             ->where('org_stock_id', $orgStockId)
@@ -391,7 +409,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
             if (array_key_exists($key, $lastRunningByDay)) {
                 $balance = $lastRunningByDay[$key];
             }
-            $days[$key] = $balance > 0;
+            $days[$key] = $balance > 0 && $balance >= $sellableQuantity;
         }
 
         return $days;

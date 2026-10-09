@@ -63,7 +63,7 @@ class GetOrgStocksQuarterlyUsage
 
         $daysOutOfStock = DB::table('org_stock_histories')
             ->whereIn('org_stock_id', $orgStockIds)
-            ->where('quantity_in_locations', '<=', 0)
+            ->where('quantity_in_locations', '<', 1)
             ->where('date', '>=', $from)
             ->selectRaw("org_stock_id, to_char(date_trunc('quarter', date), 'YYYY\"Q\"Q') as period, count(*) as days")
             ->groupByRaw("org_stock_id, date_trunc('quarter', date)")

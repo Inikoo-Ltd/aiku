@@ -9347,7 +9347,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         'reference' => 'PO-USAGE-'.PurchaseOrder::max('id'),
     ], strict: false);
 
-    foreach ([now()->firstOfQuarter(), now()->firstOfQuarter()->addDay()] as $outOfStockDay) {
+    foreach ([[now()->firstOfQuarter(), 0], [now()->firstOfQuarter()->addDay(), 0.667]] as [$outOfStockDay, $leftInLocations]) {
         $organisationStockHistoryId = DB::table('organisation_stock_histories')
             ->where('organisation_id', $orgStock->organisation_id)->where('date', $outOfStockDay->toDateString())->value('id')
             ?? DB::table('organisation_stock_histories')->insertGetId([
@@ -9363,7 +9363,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
             'organisation_id'               => $orgStock->organisation_id,
             'org_stock_id'                  => $orgStock->id,
             'date'                          => $outOfStockDay->toDateString(),
-            'quantity_in_locations'         => 0,
+            'quantity_in_locations'         => $leftInLocations,
         ]);
     }
 
