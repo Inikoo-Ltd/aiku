@@ -1,8 +1,8 @@
 ---
 title: Práca s obrazovkou dielne
 summary: Sprievodca pre remeselníka - obrazovka Moje úlohy, zoznam úloh, ktorý sa sám aktualizuje, START a DONE, a čo stlačiť, keď ste vyrobili menej, než sa žiadalo.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-10-09
+source_date: 2026-10-09
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -67,6 +67,20 @@ Schváliť môže len ten, kto riadi túto výrobu, a nikdy nie vlastnú prácu.
 
 Po schválení sa úloha zväčší na to, čo sa naozaj vyrobilo: sklad zaskladní všetko, čo si žiadna objednávka nepýtala ide na sklad, a suroviny sa odpíšu za celú dávku. Nasledujúce kroky tej istej úlohy sa zväčšia tiež. Stránka výrobnej zákazky ukazuje, kto vyrobil navyše, kto to schválil, ako a kedy.
 
+## Jedna dávka pre viac riadkov
+
+Niekedy jedna dávka slúži viac než jednej úlohe. Napríklad 100 bochníkov HCS-48 a 100 krájaných bochníkov SLHCS-48 v tej istej vôni sa spolu zmieša, naleje a vytvaruje ako 200 bochníkov.
+
+**Spojenie (manažéri).** Klepnite na jeden z riadkov na obrazovke dielne. Pod jeho detailmi **Combine Production with other lines into one batch** zobrazí ostatné otvorené riadky čakajúce na ten istý krok. Zaškrtnite tie, ktoré patria do rovnakej dávky, a stlačte **Combine**. Riadok, ktorý je už spojený, dokončený alebo sa na ňom pracuje, sa neponúka.
+
+**Práca na dávke (remeselníci).** Riadky sa teraz zobrazia ako jeden riadok s 🔗 a spolu uvedenými kódmi, *HCS-48 + SLHCS-48*, a súčtom, *0/200*. Detaily vypisujú každý riadok s jeho pracovným príkazom. Stlačte raz **START**, vyrobte dávku, zadajte celkový vyrobený počet - 200 - a stlačte raz **DONE**.
+
+**Čo s tým robí Aiku.** Súčet sa rozdelí medzi riadky podľa toho, čo každému ešte zostávalo vyrobiť, v celých kusoch: 100 na HCS-48, 100 na SLHCS-48. Rovnako sa rozdelí aj čas. Každý riadok potom pokračuje svojimi vlastnými ďalšími krokmi - jeden zmršťovaním, druhý krájaním a potom zmršťovaním. Stránka pracovného príkazu ukazuje krok ako *One batch with* (Jedna dávka s) druhým riadkom.
+
+**Mzda a ciele** sa počítajú za dávku ako celok: 200 bochníkov za hodiny, ktoré to trvalo, voči cieľu kroku. Spojenie preplatí presne toľko, koľko by preplatili samostatné dávky rovnakým tempom. Keď majú riadky pre daný krok rozdielne ciele, cieľom dávky je ten, ktorý zaberie rovnaký počet hodín ako samostatné dávky.
+
+Vyrobiť viac, než všetky riadky žiadali, vyžaduje kartu alebo PIN vedúceho, ako je uvedené vyššie; prebytok sa tiež rozdelí medzi riadky. Manažér môže riadky znova **Separate** (Oddeliť), kedykoľvek na nich nikto nepracuje. Čo sa už spolu vyrobilo, zostáva pri každom riadku.
+
 ## Čo je dobré vedieť
 
 - **Jedna úloha naraz.** Kým máte otvorenú úlohu, tlačidlá START sú vypnuté. Najprv ju uzavrite.
@@ -79,6 +93,7 @@ Po schválení sa úloha zväčší na to, čo sa naozaj vyrobilo: sklad zasklad
 <li><b>Začať:</b> klepnite na riadok → <b>START</b>.</li>
 <li><b>Dokončiť:</b> zadajte <b>Quantity made</b> → <b>DONE</b>.</li>
 <li><b>Menej, než sa žiadalo:</b> <b>DONE</b> → <b>Continue later</b> alebo <b>Job finished</b>.</li>
+<li><b>Jedna dávka pre viac riadkov:</b> klepnite na riadok → <b>Combine … with other lines into one batch</b> → zaškrtnite riadky → <b>Combine</b>. Vrátenie späť: klepnite na spojený riadok → <b>Separate</b>.</li>
 </ul>
 </aside>
 
@@ -87,5 +102,6 @@ Po schválení sa úloha zväčší na to, čo sa naozaj vyrobilo: sklad zasklad
 <li>Pozície sa nastavujú v karte zamestnanca v Human Resources a nesú so sebou oprávnenia.</li>
 <li>Vidieť vlastné úlohy, START a DONE: pozícia <b>Operative</b> pre danú dielňu.</li>
 <li>Vidieť a brať si <b>Open jobs</b>, zaznamenávať zamietnuté kusy: <b>Foreman</b>, <b>Mix preparer</b> alebo <b>Floor supervisor</b>.</li>
+<li>Spájanie a oddeľovanie riadkov: manažéri, ktorí riadia dielňu, tí istí ľudia, ktorí môžu schváliť nadvýrobu.</li>
 </ul>
 </aside>

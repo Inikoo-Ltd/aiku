@@ -518,6 +518,8 @@ use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureNonProductiveSession;
 use App\Actions\Production\ManufactureBreak\EndManufactureBreak;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
+use App\Actions\Production\JobOrderItemTask\CombineJobOrderItemTasks;
+use App\Actions\Production\JobOrderItemTask\SeparateJobOrderItemTasks;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
 use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
@@ -1548,6 +1550,8 @@ Route::post('/artefact/{artefact:id}/compliance-item', StoreArtefactComplianceIt
 Route::patch('/compliance-item/{artefactComplianceItem:id}', UpdateArtefactComplianceItem::class)->name('artefact.compliance-item.update')->withoutScopedBindings();
 Route::delete('/compliance-item/{artefactComplianceItem:id}', DeleteArtefactComplianceItem::class)->name('artefact.compliance-item.delete')->withoutScopedBindings();
 Route::post('/job-order-item-task/{jobOrderItemTask:id}/session', StartManufactureTaskSession::class)->name('job-order-item-task.session.store')->withoutScopedBindings();
+Route::post('/production/{production:id}/combined-task', CombineJobOrderItemTasks::class)->name('production.combined_task.store')->withoutScopedBindings();
+Route::patch('/job-order-item-task/{jobOrderItemTask:id}/separate', SeparateJobOrderItemTasks::class)->name('job-order-item-task.separate')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/close', CloseManufactureTaskSession::class)->name('manufacture-task-session.close')->withoutScopedBindings();
 Route::post('/production/{production:id}/break', StartManufactureBreak::class)->name('production.break.store')->withoutScopedBindings();
 Route::post('/production/{production:id}/non-productive-session', StartManufactureNonProductiveSession::class)->name('production.non_productive_session.store')->withoutScopedBindings();

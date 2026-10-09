@@ -16,6 +16,7 @@ use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
+use App\Models\Production\ManufactureTaskSessionShare;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -57,7 +58,7 @@ class UnassignToProduceItems extends OrgAction
         $jobOrderItems = $artefactId ? $jobOrder->jobOrderItems()->where('artefact_id', $artefactId)->get() : collect();
 
         $taskIds = JobOrderItemTask::whereIn('job_order_item_id', $jobOrderItems->pluck('id'))->select('id');
-        if (ManufactureTaskSession::whereIn('job_order_item_task_id', $taskIds)->exists()) {
+        if (ManufactureTaskSession::whereIn('job_order_item_task_id', $taskIds)->exists() || ManufactureTaskSessionShare::whereIn('job_order_item_task_id', $taskIds)->exists()) {
             return false;
         }
 

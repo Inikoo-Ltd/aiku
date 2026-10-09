@@ -2585,6 +2585,83 @@ describe('production reward pay bands', function () {
         ]))->toThrow(\Illuminate\Validation\ValidationException::class);
     });
 
+    test('job lines that share a step are made as one combined batch and the quantity and time are shared back to each line', function () {
+        $suffix    = rand(10000, 99999);
+        $artefacts = collect(['CMB-A', 'CMB-B'])->map(function (string $code) use ($suffix) {
+            $artefact = StoreArtefact::make()->action($this->production, ['code' => $code.$suffix, 'name' => 'Combined '.$code]);
+            $artefact->manufactureTasks()->sync([]);
+            AttachManufactureTaskToArtefact::make()->action($artefact, [
+                'manufacture_task_id' => $this->manufactureTask->id,
+                'position'            => 1,
+                'units_per_artefact'  => 1,
+                'standard_rate'       => 21,
+            ]);
+
+            return $artefact->refresh();
+        });
+
+        $tasks = $artefacts->map(function (Artefact $artefact) {
+            $jobOrder = StoreJobOrder::make()->action($this->production, []);
+            $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 100]);
+            ConfirmJobOrder::make()->action($jobOrder);
+
+            return $item->tasks()->first();
+        });
+        [$taskA, $taskB] = $tasks->all();
+
+        $combineUrl = route('grp.models.production.combined_task.store', ['production' => $this->production->id]);
+        \Pest\Laravel\post($combineUrl, ['job_order_item_task_ids' => [$taskA->id]])->assertSessionHasErrors('job_order_item_task_ids');
+        \Pest\Laravel\post($combineUrl, ['job_order_item_task_ids' => [$taskA->id, $taskB->id]])->assertSessionHasNoErrors();
+        \Pest\Laravel\post($combineUrl, ['job_order_item_task_ids' => [$taskA->id, $taskB->id]])->assertSessionHasErrors('job_order_item_task_ids');
+
+        expect($taskA->refresh()->combined_task_id)->toBe($taskA->id)
+            ->and($taskB->refresh()->combined_task_id)->toBe($taskA->id);
+
+        $floorTasks = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->viewData('page')['props']['tasks'])->whereIn('id', [$taskA->id, $taskB->id]);
+        expect($floorTasks)->toHaveCount(1)
+            ->and($floorTasks->first()['quantity_required'])->toBe(200.0)
+            ->and(collect($floorTasks->first()['combined'])->pluck('id')->all())->toBe([$taskA->id, $taskB->id])
+            ->and($floorTasks->first()['separate_route'])->not->toBeNull();
+
+        $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $taskB);
+        expect($session->job_order_item_task_id)->toBe($taskA->id)
+            ->and($session->is_combined)->toBeTrue()
+            ->and($taskB->refresh()->state)->toBe(JobOrderItemTaskStateEnum::IN_PROGRESS);
+
+        expect(fn () => \App\Actions\Production\JobOrderItemTask\SeparateJobOrderItemTasks::make()->action($taskA))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $session->update(['started_at' => now()->subHours(8)]);
+        $closed = CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 200])->refresh();
+
+        expect((float) $closed->quantity_made)->toBe(200.0)
+            ->and((float) $closed->standard_rate)->toBe(21.0)
+            ->and($closed->is_under_target)->toBeFalse()
+            ->and($closed->band_code)->toBe('3')
+            ->and((float) $closed->pay)->toBe(120.0)
+            ->and($closed->shares->pluck('quantity_made', 'job_order_item_task_id')->map(fn ($quantity) => (float) $quantity)->all())->toBe([$taskA->id => 100.0, $taskB->id => 100.0])
+            ->and((float) $taskA->refresh()->quantity_made)->toBe(100.0)
+            ->and((float) $taskB->refresh()->quantity_made)->toBe(100.0)
+            ->and($taskA->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+            ->and($taskB->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+        $item = collect(get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $taskB->jobOrder->slug]))
+            ->viewData('page')['props']['items'])->first();
+        expect($item['tasks'][0]['combined_with'])->toBe($artefacts[0]->code.' ('.$taskA->jobOrder->reference.')');
+
+        \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($closed);
+        expect((float) $taskA->refresh()->quantity_made)->toBe(0.0)
+            ->and((float) $taskB->refresh()->quantity_made)->toBe(0.0);
+
+        \App\Actions\Production\JobOrderItemTask\SeparateJobOrderItemTasks::make()->action($taskA);
+        expect($taskA->refresh()->combined_task_id)->toBeNull()
+            ->and($taskB->refresh()->combined_task_id)->toBeNull();
+
+        expect(CloseManufactureTaskSession::apportion(201, collect([$taskA->id => 0.5, $taskB->id => 0.5])))->toBe([$taskA->id => 101.0, $taskB->id => 100.0])
+            ->and(CloseManufactureTaskSession::apportion(10.5, collect([$taskA->id => 0.5, $taskB->id => 0.5])))->toBe([$taskA->id => 5.25, $taskB->id => 5.25]);
+    });
+
     test('changing a recipe step position keeps its target', function () {
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,

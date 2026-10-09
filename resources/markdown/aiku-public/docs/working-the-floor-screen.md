@@ -1,7 +1,7 @@
 ---
 title: Working the floor screen
 summary: The artisan's guide - the My tasks screen, the job list that updates on its own, START and DONE, and what to press when you made fewer than asked.
-date: 2026-09-08
+date: 2026-10-09
 tags: production, floor, artisan
 category: production
 help_routes: grp.org.productions.show.floor
@@ -67,6 +67,20 @@ Only someone who runs this factory floor can authorise, and never for their own 
 
 Once authorised the job grows to what was really made: the warehouse puts away all of it, what no order asked for goes to stock, and the raw materials are deducted for the whole batch. Later steps of the same job grow too, so the next person can finish all of it. The job order page shows who made the extra, who authorised it, how and when.
 
+## One batch for several lines
+
+Sometimes one batch serves more than one job. For example, 100 HCS-48 loaves and 100 SLHCS-48 sliced loaves in the same scent are mixed, poured and moulded together as 200 loaves.
+
+**Combining (managers).** Tap one of the lines on the floor screen. Under its details, **Combine Production with other lines into one batch** lists the other open lines waiting for the same step. Tick the ones that go in the same batch and press **Combine**. A line that is already combined, finished or being worked on is not offered.
+
+**Working it (artisans).** The lines now show as one row with a 🔗 and the codes together, *HCS-48 + SLHCS-48*, and the total, *0/200*. The details list each line with its job order. Press **START** once, make the batch, type the total made - 200 - and press **DONE** once.
+
+**What Aiku does with it.** The total is shared between the lines by what each still had to make, in whole units: 100 to HCS-48, 100 to SLHCS-48. The time is shared the same way. Each line then moves on to its own next steps - shrinking for one, slicing then shrinking for the other. The job order page shows the step as *One batch with* the other line.
+
+**Pay and targets** are worked out on the batch as a whole: 200 loaves in the hours it took, against the step's target. Combining pays exactly what separate batches at the same speed would. When the lines have different targets for the step, the batch target is the one that takes the same hours as the separate batches would.
+
+Making more than all the lines asked for needs a manager's badge or PIN, as above; the extra is shared between the lines too. A manager can **Separate** the lines again whenever nobody is working on them. What was already made together stays with each line.
+
 ## Things worth knowing
 
 - **One job at a time.** While you have a job open the START buttons are disabled. Close it first.
@@ -79,6 +93,7 @@ Once authorised the job grows to what was really made: the warehouse puts away a
 <li><b>Start:</b> tap the row → <b>START</b>.</li>
 <li><b>Finish:</b> type <b>Quantity made</b> → <b>DONE</b>.</li>
 <li><b>Fewer than asked:</b> <b>DONE</b> → <b>Continue later</b> or <b>Job finished</b>.</li>
+<li><b>One batch for several lines:</b> tap a line → <b>Combine … with other lines into one batch</b> → tick the lines → <b>Combine</b>. To undo: tap the combined row → <b>Separate</b>.</li>
 </ul>
 </aside>
 
@@ -87,5 +102,6 @@ Once authorised the job grows to what was really made: the warehouse puts away a
 <li>Positions are set on the employee record under Human Resources and carry the rights with them.</li>
 <li>Seeing your own jobs, START and DONE: the <b>Operative</b> position for the factory.</li>
 <li>Seeing and taking <b>Open jobs</b>, recording rejects: <b>Foreman</b>, <b>Mix preparer</b> or <b>Floor supervisor</b>.</li>
+<li>Combining and separating lines: the managers who run the factory floor, the same people who can authorise overproduction.</li>
 </ul>
 </aside>

@@ -39,6 +39,11 @@ class ShowManufactureFloor extends OrgAction
     /** @var array<int, string[]> */
     private array $missingMixes = [];
 
+    /** @var array<int, Collection<int, JobOrderItemTask>> combined steps by the id of the step that stands for them */
+    private array $combinedGroups = [];
+
+    private bool $canCombine = false;
+
     public function handle(Production $production): Production
     {
         return $production;
@@ -91,7 +96,11 @@ class ShowManufactureFloor extends OrgAction
             ->groupBy('job_order_item_task_id')
             ->map(fn ($sessions) => $sessions->map(fn (ManufactureTaskSession $session) => $session->user->contact_name ?: $session->user->username)->values()->all());
 
-        $canPickOpenJobs = $this->canPickOpenJobs($user, $production);
+        $canPickOpenJobs  = $this->canPickOpenJobs($user, $production);
+        $this->canCombine = $user->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            "productions_operations.$production->id.orchestrate",
+        ]);
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
@@ -106,7 +115,10 @@ class ShowManufactureFloor extends OrgAction
                             ->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0]);
                     });
             })
-            ->when(!$canPickOpenJobs, fn ($query) => $query->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0]))
+            ->when(!$canPickOpenJobs, fn ($query) => $query->where(function ($query) {
+                $query->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$this->employee?->id ?? 0])
+                    ->orWhereIn('job_order_item_tasks.combined_task_id', $this->combinedTaskIdsOf($this->employee));
+            }))
             ->orderBy('job_orders.date')
             ->orderBy('job_order_item_tasks.position')
             ->orderBy('job_order_item_tasks.id')
@@ -115,10 +127,13 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasksByJobOrderItem = $openTasks->groupBy('job_order_item_id');
 
+        $openTasks = $this->collapseCombined($openTasks);
+
         $stepsByJobOrderItem = JobOrderItemTask::whereIn('job_order_item_id', $openTasksByJobOrderItem->keys())
             ->with([
                 'manufactureTask',
                 'sessions' => fn ($query) => $query->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])->with('user'),
+                'sessionShares.session.user',
             ])
             ->orderBy('position')
             ->orderBy('id')
@@ -129,8 +144,13 @@ class ShowManufactureFloor extends OrgAction
 
         $tasks = $openTasks
             ->map(function (JobOrderItemTask $task) use ($openTasksByJobOrderItem, $workingOnBy, $stepsByJobOrderItem, &$serializedSteps) {
-                $blockingStep = $task->blockingStep($openTasksByJobOrderItem->get($task->job_order_item_id));
-                $workingOn    = $workingOnBy->get($task->id, []);
+                $members      = $this->combinedGroups[$task->id] ?? collect([$task]);
+                $blockingStep = $members->map(fn (JobOrderItemTask $member) => match (true) {
+                    $member->id == $task->id                         => $task->blockingStep($openTasksByJobOrderItem->get($task->job_order_item_id)),
+                    $member->state == JobOrderItemTaskStateEnum::DONE => null,
+                    default                                          => $member->blockingStep($member->jobOrderItem->tasks),
+                })->filter()->first();
+                $workingOn    = $members->flatMap(fn (JobOrderItemTask $member) => $workingOnBy->get($member->id, []))->unique()->values()->all();
 
                 return $this->serializeTask($task) + [
                     'working_on_by'   => $workingOn,
@@ -145,7 +165,7 @@ class ShowManufactureFloor extends OrgAction
         $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereDate('ended_at', now()->toDateString())
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder', 'shares.jobOrderItemTask.jobOrderItem.artefact'])
             ->orderByDesc('ended_at')
             ->get()
             ->map(fn (ManufactureTaskSession $session) => [
@@ -154,7 +174,9 @@ class ShowManufactureFloor extends OrgAction
                 'seconds'             => (int) $session->started_at->diffInSeconds($session->ended_at),
                 'is_non_productive'   => $session->isNonProductive(),
                 'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
-                'artefact_code'       => $session->isNonProductive() ? ($session->jobOrder?->reference ?? __('General')) : $session->jobOrderItemTask->jobOrderItem->artefact->code,
+                'artefact_code'       => $session->isNonProductive()
+                    ? ($session->jobOrder?->reference ?? __('General'))
+                    : $session->artefactCode(),
                 'artefact_name'       => $session->jobOrderItemTask?->jobOrderItem->artefact->name,
                 'job_order_reference' => $session->isNonProductive() ? $session->jobOrder?->reference : $session->jobOrderItemTask->jobOrder->reference,
                 'quantity_made'       => (float) $session->quantity_made,
@@ -215,7 +237,7 @@ class ShowManufactureFloor extends OrgAction
                     'id'         => $openSession->id,
                     'can_reject' => $canPickOpenJobs,
                     'started_at' => $openSession->started_at,
-                    'task'       => $this->serializeTask($openSession->jobOrderItemTask),
+                    'task'       => $this->serializeTask($openSession->jobOrderItemTask, $openSession->is_combined ? $openSession->jobOrderItemTask->combinedGroup() : null),
                     'close_route' => [
                         'name'       => 'grp.models.manufacture-task-session.close',
                         'parameters' => ['manufactureTaskSession' => $openSession->id],
@@ -226,6 +248,11 @@ class ShowManufactureFloor extends OrgAction
                 ] : null),
                 'artisan'      => $this->employee?->contact_name,
                 'can_pick_open_jobs' => $canPickOpenJobs,
+                'combine_route'      => $this->canCombine ? [
+                    'name'       => 'grp.models.production.combined_task.store',
+                    'parameters' => ['production' => $this->production->id],
+                    'method'     => 'post',
+                ] : null,
                 'tasks'        => $tasks,
                 'finished_today' => $finishedToday,
                 'today'        => [
@@ -348,7 +375,7 @@ class ShowManufactureFloor extends OrgAction
         $userName = fn (ManufactureTaskSession $session) => $session->user->contact_name ?: $session->user->username;
 
         return $steps->map(function (JobOrderItemTask $step) use ($steps, $userName) {
-            $closedSessions = $step->sessions->where('state', ManufactureTaskSessionStateEnum::CLOSED);
+            $closedWork = $step->closedWork();
 
             return [
                 'id'                => $step->id,
@@ -357,35 +384,105 @@ class ShowManufactureFloor extends OrgAction
                 'quantity_made'     => (float)$step->quantity_made,
                 'quantity_required' => (float)$step->quantity_required,
                 'blocked_by_step'   => $step->blockingStep($steps)?->manufactureTask->name,
-                'worked_by'         => $closedSessions->map($userName)->unique()->values()->all(),
+                'worked_by'         => $closedWork->map(fn (array $work) => $work['user']->contact_name ?: $work['user']->username)->unique()->values()->all(),
                 'working_on_by'     => $step->sessions->where('state', ManufactureTaskSessionStateEnum::OPEN)->map($userName)->values()->all(),
-                'seconds'           => (int)round($closedSessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()) * 3600),
+                'seconds'           => (int)round($closedWork->sum('hours') * 3600),
             ];
         })->values()->all();
     }
 
-    protected function serializeTask(JobOrderItemTask $task): array
+    /**
+     * @param Collection<int, JobOrderItemTask>|null $group the steps combined with this one, itself included
+     */
+    protected function serializeTask(JobOrderItemTask $task, ?Collection $group = null): array
     {
+        $group      = $group ?? $this->combinedGroups[$task->id] ?? null;
+        $isCombined = $group && $group->count() > 1;
+        $members    = $isCombined ? $group : collect([$task]);
+
         return [
             'id'                  => $task->id,
             'state'               => $task->state,
             'position'            => $task->position,
+            'manufacture_task_id' => $task->manufacture_task_id,
             'task_code'           => $task->manufactureTask->code,
             'task_name'           => $task->manufactureTask->name,
-            'artefact_code'       => $task->jobOrderItem->artefact->code,
-            'artefact_name'       => $task->jobOrderItem->artefact->name,
-            'job_order_reference' => $task->jobOrder->reference,
+            'artefact_code'       => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code)->unique()->implode(' + '),
+            'artefact_name'       => $isCombined ? __('Combined batch') : $task->jobOrderItem->artefact->name,
+            'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
             'artisan'             => $task->jobOrderItem->artisan()?->contact_name,
-            'is_mine'             => $this->employee && $task->jobOrderItem->artisanId() == $this->employee->id,
-            'waiting_for'         => $this->missingMixes[$task->job_order_item_id] ??= array_column(GetJobOrderItemMissingMixes::run($task->jobOrderItem), 'code'),
-            'quantity_required'   => (float)$task->quantity_required,
-            'quantity_made'       => (float)$task->quantity_made,
+            'is_mine'             => $this->employee && $members->contains(fn (JobOrderItemTask $member) => $member->jobOrderItem->artisanId() == $this->employee->id),
+            'waiting_for'         => $members->flatMap(fn (JobOrderItemTask $member) => $this->missingMixes[$member->job_order_item_id] ??= array_column(GetJobOrderItemMissingMixes::run($member->jobOrderItem), 'code'))->unique()->values()->all(),
+            'quantity_required'   => (float)$members->sum('quantity_required'),
+            'quantity_made'       => (float)$members->sum('quantity_made'),
+            'combined'            => $isCombined ? $members->map(fn (JobOrderItemTask $member) => [
+                'id'                  => $member->id,
+                'artefact_code'       => $member->jobOrderItem->artefact->code,
+                'artefact_name'       => $member->jobOrderItem->artefact->name,
+                'job_order_reference' => $member->jobOrder->reference,
+                'quantity_required'   => (float)$member->quantity_required,
+                'quantity_made'       => (float)$member->quantity_made,
+            ])->values()->all() : null,
+            'separate_route'      => $isCombined && $this->canCombine ? [
+                'name'       => 'grp.models.job-order-item-task.separate',
+                'parameters' => ['jobOrderItemTask' => $task->id],
+                'method'     => 'patch',
+            ] : null,
             'start_route'         => [
                 'name'       => 'grp.models.job-order-item-task.session.store',
                 'parameters' => ['jobOrderItemTask' => $task->id],
                 'method'     => 'post',
             ],
         ];
+    }
+
+    /**
+     * A combined batch is one job on the floor: the first unfinished step of the group stands for
+     * all of them, the others leave the list.
+     *
+     * @param Collection<int, JobOrderItemTask> $openTasks
+     * @return Collection<int, JobOrderItemTask>
+     */
+    protected function collapseCombined(Collection $openTasks): Collection
+    {
+        $hidden = [];
+        foreach ($openTasks->whereNotNull('combined_task_id')->groupBy('combined_task_id') as $tasks) {
+            $group = $tasks->first()->combinedGroup();
+            if ($group->count() < 2) {
+                continue;
+            }
+            $group->load(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask']);
+
+            $standsFor = $group->first(fn (JobOrderItemTask $member) => $member->state != JobOrderItemTaskStateEnum::DONE);
+            $openTask  = $openTasks->firstWhere('id', $standsFor?->id);
+            if (!$openTask) {
+                continue;
+            }
+
+            $this->combinedGroups[$openTask->id] = $group->map(fn (JobOrderItemTask $member) => $member->id == $openTask->id ? $openTask : $member);
+            array_push($hidden, ...$group->pluck('id')->reject(fn (int $id) => $id == $openTask->id)->all());
+        }
+
+        return $openTasks->reject(fn (JobOrderItemTask $task) => in_array($task->id, $hidden))->values();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function combinedTaskIdsOf(?Employee $employee): array
+    {
+        if (!$employee) {
+            return [];
+        }
+
+        return JobOrderItemTask::where('job_order_item_tasks.production_id', $this->production->id)
+            ->whereNotNull('job_order_item_tasks.combined_task_id')
+            ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+            ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
+            ->whereRaw('coalesce(job_order_items.employee_id, job_orders.employee_id) = ?', [$employee->id])
+            ->distinct()
+            ->pluck('job_order_item_tasks.combined_task_id')
+            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

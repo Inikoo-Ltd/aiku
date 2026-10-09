@@ -12,11 +12,12 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
 import Select from 'primevue/select'
+import Checkbox from 'primevue/checkbox'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIndustry } from "@fal"
-library.add(faIndustry)
+import { faIndustry, faLink } from "@fal"
+library.add(faIndustry, faLink)
 
 interface FloorStep {
     id: number
@@ -30,10 +31,20 @@ interface FloorStep {
     seconds: number
 }
 
+interface CombinedLine {
+    id: number
+    artefact_code: string
+    artefact_name: string
+    job_order_reference: string
+    quantity_required: number
+    quantity_made: number
+}
+
 interface FloorTask {
     id: number
     state: string
     position: number
+    manufacture_task_id: number
     task_code: string
     task_name: string
     artefact_code: string
@@ -48,6 +59,8 @@ interface FloorTask {
     steps: FloorStep[]
     quantity_required: number
     quantity_made: number
+    combined: CombinedLine[] | null
+    separate_route: null | { name: string, parameters: object }
     start_route: { name: string, parameters: object }
 }
 
@@ -85,6 +98,7 @@ const props = defineProps<{
     }
     artisan: string | null
     can_pick_open_jobs: boolean
+    combine_route: null | { name: string, parameters: object }
     tasks: FloorTask[]
     finished_today: {
         id: number
@@ -237,6 +251,44 @@ function stepStatus(step: FloorStep) {
     return `${ctrans('Ready')} · ${units}`
 }
 
+const combineError = computed(() => (page.props.errors as Record<string, string> | undefined)?.job_order_item_task_ids)
+const combining = ref(false)
+const combineWith = ref<number[]>([])
+const combineCandidates = computed(() => {
+    const task = selectedTask.value
+    if (!task || task.combined) return []
+    return props.tasks.filter(other => other.id != task.id
+        && other.manufacture_task_id == task.manufacture_task_id
+        && !other.combined
+        && !other.working_on_by.length
+        && props.open_session?.task.id != other.id)
+})
+
+watch(selectedTaskId, () => {
+    combining.value = false
+    combineWith.value = []
+})
+
+function combine() {
+    if (!props.combine_route || !selectedTask.value || !combineWith.value.length) return
+    processing.value = true
+    router.post(
+        route(props.combine_route.name, props.combine_route.parameters),
+        { job_order_item_task_ids: [selectedTask.value.id, ...combineWith.value] },
+        { preserveScroll: true, onSuccess: () => { combining.value = false; combineWith.value = [] }, onFinish: () => processing.value = false }
+    )
+}
+
+function separate(task: FloorTask) {
+    if (!task.separate_route) return
+    processing.value = true
+    router.patch(
+        route(task.separate_route.name, task.separate_route.parameters),
+        {},
+        { preserveScroll: true, onFinish: () => processing.value = false }
+    )
+}
+
 function startTask(task: FloorTask) {
     processing.value = true
     router.post(
@@ -275,6 +327,7 @@ function startTask(task: FloorTask) {
                     ]"
                     @click="selectedTaskId = task.id">
                     <div class="font-semibold truncate flex items-center gap-2">
+                        <FontAwesomeIcon v-if="task.combined" :icon="['fal', 'link']" fixed-width class="text-gray-500 text-xs" :title="ctrans('Combined batch')" aria-hidden="true" />
                         {{ task.artefact_code }}
                         <template v-if="open_session?.task.id == task.id">
                             <FontAwesomeIcon icon="fas fa-play" class="text-green-600 text-xs" fixed-width aria-hidden="true" />
@@ -405,6 +458,57 @@ function startTask(task: FloorTask) {
                     @click="startTask(selectedTask)">
                     {{ ctrans('START') }}
                 </button>
+
+                <div v-if="selectedTask.combined" class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
+                    <div class="px-4 py-2 border-b border-gray-200 text-sm text-gray-600 flex items-center justify-between gap-3">
+                        <span>{{ ctrans('One batch for these lines, the total made is shared between them') }}</span>
+                        <button v-if="selectedTask.separate_route" type="button"
+                            class="text-sm font-medium text-gray-700 underline disabled:opacity-40"
+                            :disabled="processing" @click="separate(selectedTask)">
+                            {{ ctrans('Separate') }}
+                        </button>
+                    </div>
+                    <div v-for="line in selectedTask.combined" :key="line.id" class="px-4 py-3 border-b border-gray-100 last:border-0 flex justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="font-medium truncate">{{ line.artefact_code }} <span class="text-gray-500 font-normal">· {{ line.job_order_reference }}</span></div>
+                            <div class="text-xs text-gray-500 truncate">{{ line.artefact_name }}</div>
+                        </div>
+                        <div class="tabular-nums text-gray-600 shrink-0">{{ line.quantity_made }} / {{ line.quantity_required }}</div>
+                    </div>
+                </div>
+
+                <div v-else-if="combine_route && combineCandidates.length" class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
+                    <button v-if="!combining" type="button" class="w-full px-4 py-3 text-sm text-gray-700 flex items-center gap-2 hover:bg-gray-50"
+                        @click="combining = true">
+                        <FontAwesomeIcon :icon="['fal', 'link']" fixed-width aria-hidden="true" />
+                        {{ ctrans('Combine :step with other lines into one batch', { step: selectedTask.task_name }) }}
+                    </button>
+                    <template v-else>
+                        <div class="px-4 py-2 border-b border-gray-200 text-sm text-gray-600">
+                            {{ ctrans('Make :step of these lines in one batch with :code', { step: selectedTask.task_name, code: selectedTask.artefact_code }) }}
+                        </div>
+                        <label v-for="candidate in combineCandidates" :key="candidate.id"
+                            class="px-4 py-3 border-b border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50">
+                            <Checkbox v-model="combineWith" :value="candidate.id" />
+                            <div class="min-w-0 flex-1">
+                                <div class="font-medium truncate">{{ candidate.artefact_code }} <span class="text-gray-500 font-normal">· {{ candidate.job_order_reference }}</span></div>
+                                <div class="text-xs text-gray-500 truncate">{{ candidate.artefact_name }}</div>
+                            </div>
+                            <div class="tabular-nums text-gray-600 shrink-0">{{ candidate.quantity_made }} / {{ candidate.quantity_required }}</div>
+                        </label>
+                        <div v-if="combineError" class="px-4 py-2 text-sm text-red-600">{{ combineError }}</div>
+                        <div class="px-4 py-3 flex gap-3">
+                            <button type="button" class="rounded-lg bg-[--app-accent] text-[--app-accent-text] font-semibold px-6 py-2 disabled:opacity-40"
+                                :disabled="processing || !combineWith.length" @click="combine">
+                                {{ ctrans('Combine') }}
+                            </button>
+                            <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold px-6 py-2"
+                                @click="combining = false">
+                                {{ ctrans('Cancel') }}
+                            </button>
+                        </div>
+                    </template>
+                </div>
 
                 <div class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
                     <div class="px-4 py-2 border-b border-gray-200 text-sm text-gray-600">

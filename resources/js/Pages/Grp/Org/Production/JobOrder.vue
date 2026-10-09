@@ -15,11 +15,11 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSortShapesDown, faPlus, faTrashAlt, faUsers } from "@fal"
+import { faSortShapesDown, faPlus, faTrashAlt, faUsers, faLink } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faSortShapesDown, faPlus, faTrashAlt, faUsers)
+library.add(faSortShapesDown, faPlus, faTrashAlt, faUsers, faLink)
 
 interface ItemTask {
     id: number
@@ -29,6 +29,7 @@ interface ItemTask {
     quantity_required: number
     quantity_made: number
     quantity_rejected: number
+    combined_with: string | null
 }
 
 interface SubJob {
@@ -378,6 +379,10 @@ function receiveIntoStock() {
                         {{ task.task_name }}
                         <span v-if="task.state == 'done'" class="ml-2 text-green-600 font-medium">{{ ctrans('Done') }}</span>
                         <span v-else-if="task.state == 'in_progress'" class="ml-2 text-amber-600 font-medium">{{ ctrans('In progress') }}</span>
+                        <span v-if="task.combined_with" class="ml-2 text-xs text-gray-500">
+                            <FontAwesomeIcon :icon="['fal', 'link']" fixed-width aria-hidden="true" />
+                            {{ ctrans('One batch with :lines', { lines: task.combined_with }) }}
+                        </span>
                     </div>
                     <div class="tabular-nums text-gray-600">
                         {{ task.quantity_made }} / {{ task.quantity_required }}

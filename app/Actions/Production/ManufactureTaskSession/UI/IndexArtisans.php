@@ -97,7 +97,7 @@ class IndexArtisans extends OrgAction
             'id'                  => $session->id,
             'state'               => $session->state,
             'task_name'           => $session->manufactureTask->name,
-            'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+            'artefact_code'       => $session->artefactCode(),
             'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
             'started_at'          => $session->started_at,
             'ended_at'            => $session->ended_at,
