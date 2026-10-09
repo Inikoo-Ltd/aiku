@@ -11,6 +11,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Websites\WebsitesDashboard;
 use App\Actions\Web\Seo\GetSeoPortfolio;
 use App\Models\SysAdmin\Group;
+use App\Models\Web\SeoReportSubscription;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,6 +47,10 @@ class ShowSeoPortfolio extends OrgAction
                     ],
                 ],
                 'data'        => GetSeoPortfolio::run(),
+                'reportSubscription' => [
+                    'is_subscribed' => SeoReportSubscription::where('user_id', $request->user()->id)->whereNull('shop_id')->exists(),
+                    'route'         => ['name' => 'grp.models.group.seo_report_subscription.toggle', 'parameters' => []],
+                ],
             ]
         );
     }

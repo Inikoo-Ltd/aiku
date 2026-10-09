@@ -552,10 +552,17 @@ Strategy (Research)", 8 October 2026). None is built; each needs the team's go-a
   recommends daily top 100, about $486 a month for 2,700 keywords, against about $65 for top 100
   weekly. Let the team choose the depth per keyword (20, 30 or 100), so positions 31 to 100 are
   seen where they matter; the cost shows on the API usage page.
-- **Export and scheduled reports.** Aiku tables already support export links
-  (`InertiaTable::withExportLinks`), but no SEO table uses them. Add Excel exports to the SEO tables,
-  and a scheduled report (weekly or monthly, per shop or for all) emailed to the team: visibility,
-  winners and losers, audit health, new and lost backlinks.
+- **Export and scheduled reports.** Built on 9 October 2026.
+  - An Excel button on every SEO table (Rankings, Tracked keywords, Top pages, Missing pages,
+    Referring domains, Backlinks, Keyword gap, SEO portfolio) downloads it with the filters and sort
+    it has on screen, up to 20,000 rows (`ExportSeoTable`, `ExportSeoPortfolio`, `SeoTableExport`).
+    The same index actions are read in pages of 2,000 for the request.
+  - Weekly report by email: anyone can turn it on per shop (SEO dashboard) or for every website (SEO
+    portfolio), kept in `seo_report_subscriptions`. `SendSeoWeeklyReports` (Mondays 07:00 UTC, after
+    the weekly checks) sends each subscriber the shop's week against the week before: visitors,
+    Google clicks, impressions and position, tracked keywords in the top 10 with the five biggest
+    winners and losers, site health, referring domains with new and lost, new 404 paths and the
+    suggested fixes waiting; the portfolio report lists every website.
 - **Portfolio view.** Built on 9 October 2026: Website (group menu) > SEO portfolio (`ShowSeoPortfolio`, `GetSeoPortfolio`), linked from every SEO dashboard,
   one row per live website: site health of the latest audit and its change, visitors and Google
   clicks of the last 28 days against the 28 before (Search Console ending on its own last day),

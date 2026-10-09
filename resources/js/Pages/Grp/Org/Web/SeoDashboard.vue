@@ -17,6 +17,7 @@ import TableWebsiteConversionCustomers from "@/Components/Tables/Grp/Org/Web/Tab
 import SeoDashboardMissingPages from "@/Components/Seo/SeoDashboardMissingPages.vue"
 import SeoDashboardPageViews from "@/Components/Seo/SeoDashboardPageViews.vue"
 import SeoDashboardVisitors from "@/Components/Seo/SeoDashboardVisitors.vue"
+import SeoReportToggle from "@/Components/Seo/SeoReportToggle.vue"
 import TableSearchConsoleQueries from "@/Components/Tables/Grp/Org/Web/TableSearchConsoleQueries.vue"
 import TableWebpagesPageSpeed from "@/Components/Tables/Grp/Org/Web/TableWebpagesPageSpeed.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -140,6 +141,7 @@ const props = defineProps<{
     page_speed_summary: PageSpeedSummary | null
     page_speed?: object | null
     groupLinks: { label: string, icon: string, route: routeType }[]
+    reportSubscription: { is_subscribed: boolean, route: routeType }
     pageTabs: {
         current: string
         navigation: Navigation
@@ -675,6 +677,7 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
+            <SeoReportToggle :subscription="reportSubscription" />
             <Link v-for="groupLink in groupLinks" :key="groupLink.route.name" :href="route(groupLink.route.name, groupLink.route.parameters)">
                 <Button type="tertiary" :icon="groupLink.icon" :label="groupLink.label" v-tooltip="ctrans('All shops together, at group level')" />
             </Link>

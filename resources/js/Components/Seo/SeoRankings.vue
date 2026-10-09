@@ -14,6 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBell } from "@fal"
 import { faBell as fasBell } from "@fas"
 import SeoKeywordHistoryChart from "@/Components/Seo/SeoKeywordHistoryChart.vue"
+import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -365,6 +366,9 @@ const urlPath = (url: string) => {
             </div>
 
             <div class="mt-4">
+                <div class="mx-4 mb-2 flex justify-end">
+                    <SeoExportButton table="rankings" />
+                </div>
                 <Table :resource="data.table" :name="tab">
                     <template #cell(keyword)="{ item: ranking }: { item: RankingRow }">
                         <div class="flex items-center gap-2">
