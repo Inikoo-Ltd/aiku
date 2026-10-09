@@ -14,6 +14,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\SupplyChain\AgentInvoice;
@@ -40,6 +41,7 @@ class ApplyAgentInvoiceCosting
         $agentInvoice = $stockDelivery->agentInvoice()->first();
 
         if (!$agentInvoice
+            || $agentInvoice->source === StockDeliveryInvoiceSourceEnum::ESTIMATED
             || $stockDelivery->state !== StockDeliveryStateEnum::PLACED
             || $stockDelivery->is_costed
             || $agentInvoice->currency_id !== $stockDelivery->currency_id

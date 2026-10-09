@@ -9,6 +9,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Models\SupplyChain\AgentInvoice;
+use App\Models\SupplyChain\SupplierInvoice;
 use App\Models\SupplyChain\AgentPayment;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -307,6 +308,11 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function agentInvoice(): HasOne
     {
         return $this->hasOne(AgentInvoice::class);
+    }
+
+    public function supplierInvoice(): HasOne
+    {
+        return $this->hasOne(SupplierInvoice::class);
     }
 
     public function currency(): BelongsTo

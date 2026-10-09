@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\SupplyChain\Agent;
@@ -50,22 +51,7 @@ class StoreAgentInvoice extends OrgAction
             throw ValidationException::withMessages(['invoice' => __('The container has left the agent, its invoice can no longer change.')]);
         }
 
-        $lines = $stockDelivery->items()
-            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
-            ->with('orgStock:id,code,name')
-            ->orderBy('id')
-            ->get()
-            ->map(fn (StockDeliveryItem $item) => [
-                'stock_delivery_item_id' => $item->id,
-                'org_stock_id' => $item->org_stock_id,
-                'code'         => $item->orgStock?->code,
-                'name'         => $item->orgStock?->name,
-                'quantity'     => (float) $item->unit_quantity,
-                'unit_price'   => (float) $item->unit_quantity > 0 ? round((float) $item->net_amount / (float) $item->unit_quantity, 4) : 0.0,
-                'amount'       => (float) $item->net_amount,
-            ])
-            ->values()
-            ->all();
+        $lines = self::invoiceLines($stockDelivery);
 
         if ($lines === []) {
             throw ValidationException::withMessages(['invoice' => __('The container has no lines to invoice.')]);
@@ -86,6 +72,7 @@ class StoreAgentInvoice extends OrgAction
                     'agent_id'        => $agent->id,
                     'organisation_id' => $stockDelivery->organisation_id,
                     'number'          => $number,
+                    'source'          => StockDeliveryInvoiceSourceEnum::AGENT,
                     'reference'       => strtoupper($agent->organisation->code).'-INV-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT),
                     'date'            => now()->toDateString(),
                     'currency_id'     => $stockDelivery->currency_id,
@@ -103,6 +90,29 @@ class StoreAgentInvoice extends OrgAction
 
             return $agentInvoice;
         });
+    }
+
+    /**
+     * @return array<int, array{stock_delivery_item_id: int, org_stock_id: int|null, code: string|null, name: string|null, quantity: float, unit_price: float, amount: float}>
+     */
+    public static function invoiceLines(StockDelivery $stockDelivery): array
+    {
+        return $stockDelivery->items()
+            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
+            ->with('orgStock:id,code,name')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (StockDeliveryItem $item) => [
+                'stock_delivery_item_id' => $item->id,
+                'org_stock_id' => $item->org_stock_id,
+                'code'         => $item->orgStock?->code,
+                'name'         => $item->orgStock?->name,
+                'quantity'     => (float) $item->unit_quantity,
+                'unit_price'   => (float) $item->unit_quantity > 0 ? round((float) $item->net_amount / (float) $item->unit_quantity, 4) : 0.0,
+                'amount'       => (float) $item->net_amount,
+            ])
+            ->values()
+            ->all();
     }
 
     public function authorize(ActionRequest $request): bool

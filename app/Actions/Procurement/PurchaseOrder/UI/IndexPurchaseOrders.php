@@ -25,6 +25,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -53,7 +54,7 @@ class IndexPurchaseOrders extends OrgAction
     use WithSupplierSubNavigation;
     use WithAgentOrganisation;
 
-    private Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier $parent;
+    private Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -71,7 +72,7 @@ class IndexPurchaseOrders extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
-    protected function getElementGroups(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier $parent): array
+    protected function getElementGroups(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent): array
     {
         $supplierStats = match (true) {
             $parent instanceof Supplier => $parent->stats,
@@ -126,7 +127,7 @@ class IndexPurchaseOrders extends OrgAction
         ];
     }
 
-    public function handle(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent, $prefix = null): LengthAwarePaginator
     {
         if ($parent instanceof Group) {
             $organisation = $parent->organisations()->first();
@@ -164,6 +165,8 @@ class IndexPurchaseOrders extends OrgAction
             $query->where('purchase_orders.group_id', $parent->id);
         } elseif ($parent instanceof Supplier) {
             $query->where('purchase_orders.supplier_id', $parent->id);
+        } elseif ($parent instanceof StockDelivery) {
+            $query->whereIn('purchase_orders.id', $parent->purchaseOrders()->select('purchase_orders.id'));
         } elseif ($organisationAgent) {
             $query->where('purchase_orders.agent_id', $organisationAgent->id)
                 ->where('purchase_orders.state', '!=', PurchaseOrderStateEnum::IN_PROCESS);
@@ -209,7 +212,7 @@ class IndexPurchaseOrders extends OrgAction
             ]);
         }
 
-        if ($parent instanceof Group || $organisationAgent || $parent instanceof Supplier) {
+        if ($parent instanceof Group || $organisationAgent || $parent instanceof Supplier || $parent instanceof StockDelivery) {
             $query
                 ->leftJoin('organisations', 'purchase_orders.organisation_id', 'organisations.id')
                 ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
@@ -241,7 +244,7 @@ class IndexPurchaseOrders extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
@@ -273,7 +276,7 @@ class IndexPurchaseOrders extends OrgAction
                 $table->column(key: 'agent_order_reference', label: __('Agent order'), sortable: true);
             }
 
-            if ($parent instanceof Group || $parent instanceof Organisation || $parent instanceof OrgAgent) {
+            if ($parent instanceof Group || $parent instanceof Organisation || $parent instanceof OrgAgent || $parent instanceof StockDelivery) {
                 $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
 

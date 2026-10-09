@@ -17,6 +17,8 @@ use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
@@ -36,18 +38,20 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgPartnerResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
+use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Http\Resources\Procurement\StockDeliveryItemCostResource;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Http\Resources\Procurement\StockDeliveryUnderOverDeliveredItemResource;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
+use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\SupplyChain\AgentInvoice;
 use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
-use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -143,7 +147,6 @@ class ShowStockDelivery extends OrgAction
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
-                'purchase_orders'  => $this->getPurchaseOrderLinks($stockDelivery),
                 'box_stats'        => $this->getBoxStats($stockDelivery, $request),
                 'tabs'             => [
                     'current'    => $this->tab,
@@ -191,6 +194,10 @@ class ShowStockDelivery extends OrgAction
                     fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
                     : Inertia::optional(fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))),
 
+                StockDeliveryTabsEnum::PURCHASE_ORDERS->value => $this->tab == StockDeliveryTabsEnum::PURCHASE_ORDERS->value ?
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($stockDelivery, StockDeliveryTabsEnum::PURCHASE_ORDERS->value))
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($stockDelivery, StockDeliveryTabsEnum::PURCHASE_ORDERS->value))),
+
                 StockDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == StockDeliveryTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))),
@@ -212,6 +219,7 @@ class ShowStockDelivery extends OrgAction
             ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PENDING_ITEMS->value))
             ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::DONE_ITEMS->value))
             ->table(IndexStockDeliveryUnderOverDeliveredItems::make()->tableStructure(prefix: StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
+            ->table(IndexPurchaseOrders::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::PURCHASE_ORDERS->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
             ->table(IndexProcurementNotes::make()->tableStructure(prefix: StockDeliveryTabsEnum::NOTES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: StockDeliveryTabsEnum::HISTORY->value));
@@ -220,28 +228,6 @@ class ShowStockDelivery extends OrgAction
     public function jsonResponse(): StockDeliveryResource
     {
         return new StockDeliveryResource($this->stockDelivery);
-    }
-
-    /**
-     * @return array<int, array{reference: string, route: array<string, mixed>}>
-     */
-    public function getPurchaseOrderLinks(StockDelivery $stockDelivery): array
-    {
-        $organisationSlug = (request()->route('organisation') ?? $stockDelivery->organisation)->slug;
-
-        return $stockDelivery->purchaseOrders()
-            ->orderBy('purchase_orders.id')
-            ->get(['purchase_orders.id', 'purchase_orders.reference', 'purchase_orders.slug'])
-            ->map(fn (PurchaseOrder $purchaseOrder) => [
-                'reference' => $purchaseOrder->reference,
-                'route'     => [
-                    'name'       => 'grp.org.procurement.purchase_orders.show',
-                    'parameters' => [
-                        'organisation'  => $organisationSlug,
-                        'purchaseOrder' => $purchaseOrder->slug,
-                    ],
-                ],
-            ])->all();
     }
 
     public function getPurchaseOrderTimeline(EloquentCollection $purchaseOrders): array
@@ -591,6 +577,53 @@ class ShowStockDelivery extends OrgAction
                 'total'        => $stockDelivery->cost_total,
                 'org_items'    => $stockDelivery->items()->sum('org_net_amount'),
             ],
+            'invoice' => $this->getInvoiceSummary($stockDelivery),
+            'invoice_entry' => $this->canEdit && $this->canEditPayments && !$stockDelivery->isManagedByPartner() && ($stockDelivery->agent_id ? $stockDelivery->agentInvoice()->first()?->source : null) !== StockDeliveryInvoiceSourceEnum::AGENT ? [
+                'route' => [
+                    'name'       => 'grp.models.stock-delivery.invoice.store',
+                    'parameters' => [$stockDelivery->id],
+                ],
+                'is_agent' => (bool) $stockDelivery->agent_id,
+            ] : null,
+        ];
+    }
+
+    /**
+     * @return array{kind: string, source: string, reference: string|null, date: string, charges_list: array<int, array<string, mixed>>, currency: string, org_currency: string, org_exchange: float|null, goods: float, charges: float, total: float, paid: float|null, balance_due: float|null}|null
+     */
+    public function getInvoiceSummary(StockDelivery $stockDelivery): ?array
+    {
+        $invoice = $stockDelivery->agentInvoice()->with('currency')->first()
+            ?? $stockDelivery->supplierInvoice()->with('currency')->first();
+
+        if (!$invoice) {
+            return null;
+        }
+
+        $orgCurrency = $stockDelivery->organisation->currency;
+
+        $orgExchange = match (true) {
+            $invoice->currency_id === $orgCurrency->id => 1.0,
+            $invoice->currency_id === $stockDelivery->currency_id && (float) $stockDelivery->org_exchange > 0 => (float) $stockDelivery->org_exchange,
+            default => GetCurrencyExchange::run($invoice->currency, $orgCurrency),
+        };
+
+        $isAgentInvoice = $invoice instanceof AgentInvoice;
+
+        return [
+            'kind'         => $isAgentInvoice ? 'agent' : 'supplier',
+            'source'       => $invoice->source->value,
+            'reference'    => $invoice->reference,
+            'date'         => $invoice->date->toDateString(),
+            'charges_list' => $invoice->charges ?? [],
+            'currency'     => $invoice->currency->code,
+            'org_currency' => $orgCurrency->code,
+            'org_exchange' => $orgExchange,
+            'goods'        => (float) $invoice->goods_amount,
+            'charges'      => (float) $invoice->charges_amount,
+            'total'        => (float) $invoice->total_amount,
+            'paid'         => $isAgentInvoice ? $invoice->paidAmount() : null,
+            'balance_due'  => $isAgentInvoice ? $invoice->balanceDue() : null,
         ];
     }
 
@@ -889,6 +922,10 @@ class ShowStockDelivery extends OrgAction
         $navigation = $this->hasUnderOverDeliveredTab($stockDelivery)
             ? StockDeliveryTabsEnum::navigation()
             : StockDeliveryTabsEnum::navigationExcept([StockDeliveryTabsEnum::UNDER_OVER_DELIVERED]);
+
+        if (!$stockDelivery->purchaseOrders()->exists()) {
+            unset($navigation[StockDeliveryTabsEnum::PURCHASE_ORDERS->value]);
+        }
 
         if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['title'] = __('Items (costing)');
