@@ -13,6 +13,7 @@ import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: {}
+    tab?: string
 }>()
 
 const routeParams = route().params as Record<string, string>
@@ -27,7 +28,7 @@ const webUserHref = (webUser: { slug: string | null, customer_slug: string | nul
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Session ID -->
         <template #cell(session_id)="{ item: visitor }">
             <Link v-if="pageViewsOfVisitorHref(visitor.id)" :href="pageViewsOfVisitorHref(visitor.id)" class="primaryLink font-mono text-xs">

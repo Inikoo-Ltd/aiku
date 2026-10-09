@@ -21,13 +21,16 @@ are suggestions; rename them freely, but keep the boundaries.
   `App\Services\SearchConsole\SearchConsoleClient` is the first one.
 - **One monthly budget for all paid SEO APIs**, not one per provider or feature: DataForSEO and the
   AI gateway calls of content help count against the same cap (default 250 USD,
-  `SEO_API_MONTHLY_BUDGET` until the [API usage page](#api-usage) makes it a setting).
+  set on the [API usage page](#api-usage), `SEO_API_MONTHLY_BUDGET` as the default).
   `App\Services\SeoApi\SeoApiBudget` adds up the month's cost in `seo_api_requests`; every client
   checks it before a billable call. Reading results already paid for is never blocked. Feature
   screens do not show the spend; the API usage page does.
-- **The SEO dashboard stays the entry point.** Each phase adds sections or tabs to
-  `ShowSeoDashboard` (`app/Actions/Web/Website/UI/ShowSeoDashboard.php`), filtered by the dashboard
-  interval like the existing performance card.
+- **The SEO dashboard stays the entry point.** Its tabs, at the top like those of a website: Overview
+  (the cards filtered by the dashboard interval and the table tabs Top pages, Conversions, Search
+  queries, Low CTR queries and Page speed, switched with the `table` query parameter), Visitors,
+  Page views, Missing pages and API usage. Only the open table is built. The SEO menu holds the
+  tools with tabs of their own: Site audit, Keywords, Backlinks and Competitors; the old Visitors,
+  Page views and Missing pages addresses open their tab.
 
 ## Phase 0: fix the data we already show
 
@@ -170,7 +173,7 @@ Done on 7 October 2026.
 - `maintenance:prune_website_not_found_paths` deletes paths not seen for 90 days, daily at 03:50 UTC.
 - Hits are a floor, not a count: when Varnish caches a 404, repeat visits never reach Laravel.
 
-**Screen.** SEO > Missing pages lists paths by hits with last seen, first seen and where the last
+**Screen.** The Missing pages tab of the SEO dashboard lists paths by hits with last seen, first seen and where the last
 visit came from, filtered to Open by default (Open, Fixed, Ignored).
 
 - "Create redirect" opens a modal to pick a live page and posts to the existing
@@ -345,7 +348,7 @@ row returned).
   without our own websites.
 - Backlink gap: pick competitors or type domains; referring domains that link to them and not to
   us, filtered to those linking to two or more by default.
-- SEO > Missing pages gets a Backlinks column: links pointing at each 404 path, sortable, so the
+- The Missing pages tab gets a Backlinks column: links pointing at each 404 path, sortable, so the
   redirects that win back the most links come first.
 - Locally only, a Fetch now button runs the fetch for the shop at once.
 
@@ -512,19 +515,22 @@ Built on 9 October 2026. The Webpages tab of the SEO dashboard is now Top pages
 
 ## API usage
 
-Built last, once every paid provider of Phase 2 and 3 is in place. One page for the cost of all of
-them, so the monthly budget is watched and changed in Aiku instead of in each provider's dashboard.
+Built on 9 October 2026, once the providers were settled (DataForSEO and the AI gateway). A tab of
+the SEO dashboard (`GetSeoApiUsage`): the figures and the budget are the group's, so every shop
+shows the same.
 
 - **Budget setting.** The monthly cap for all SEO APIs together, default 250 USD, set on the page by
-  someone with web edit permission and stored as a group setting. It replaces
-  `SEO_API_MONTHLY_BUDGET`, which stays only as the default.
-- **This month.** Spend against the budget, what is left, and the projected month end at the
-  current daily rate. A warning at 80%, and a clear notice when the cap is reached and calls stop.
-- **Breakdown.** Spend, requests and errors per provider and per feature (keyword research, rank
-  tracking, volume refresh, backlinks, competitor research, AI visibility, content help), from the
-  `provider` and `endpoint` of `seo_api_requests`; daily spend over the month; the previous months.
-- **Errors.** The latest failed requests with their message, so an expired key or an empty balance
-  shows up here before anyone notices missing data.
+  someone with `group-webmaster.edit` or `sysadmin.edit` (`UpdateSeoApiBudget`) and kept in the
+  group settings (`seo.api_monthly_budget`). `SEO_API_MONTHLY_BUDGET` is only the default.
+- **This month.** Spend against the budget with a bar, what is left, the month end at the current
+  daily pace, requests and failed requests. A warning at 80% or when the pace would pass the budget,
+  and a notice once it is spent and paid calls stop.
+- **Breakdown.** Spend, requests and failures per feature and provider, the feature read from the
+  endpoint logged in `seo_api_requests` (Labs `ranked_keywords` counts as competitor research even
+  when keyword research asked for a URL); spend per day; the previous six months, each opening its
+  own month.
+- **Errors.** The latest twenty failed requests with their message, website and endpoint, so an
+  expired key, an empty balance or a paused account shows up here first.
 - Feature screens show no spend of their own.
 
 ## Not planned yet

@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed, provide, ref } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -13,13 +13,16 @@ import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSetti
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TableWebpagesPerformance from "@/Components/Tables/Grp/Org/Web/TableWebpagesPerformance.vue"
 import TableWebsiteConversionCustomers from "@/Components/Tables/Grp/Org/Web/TableWebsiteConversionCustomers.vue"
+import SeoApiUsage from "@/Components/Seo/SeoApiUsage.vue"
+import SeoDashboardMissingPages from "@/Components/Seo/SeoDashboardMissingPages.vue"
+import SeoDashboardPageViews from "@/Components/Seo/SeoDashboardPageViews.vue"
+import SeoDashboardVisitors from "@/Components/Seo/SeoDashboardVisitors.vue"
 import TableSearchConsoleQueries from "@/Components/Tables/Grp/Org/Web/TableSearchConsoleQueries.vue"
 import TableWebpagesPageSpeed from "@/Components/Tables/Grp/Org/Web/TableWebpagesPageSpeed.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { coreWebVitalRating, formatCoreWebVital, ratingStyles } from "@/Components/DataDisplay/coreWebVitals"
 import type { CoreWebVital } from "@/Components/DataDisplay/coreWebVitals"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -136,18 +139,61 @@ const props = defineProps<{
     search: SearchPerformance | null
     page_speed_summary: PageSpeedSummary | null
     page_speed?: object | null
+    pageTabs: {
+        current: string
+        navigation: Navigation
+    }
     tabs: {
         current: string
         navigation: Navigation
     }
     webpages?: object | null
+    visitors?: object | null
+    page_views?: object | null
+    missing_pages?: object | null
+    api_usage?: object | null
     conversions?: object | null
     search_queries?: object | null
     search_opportunities?: object | null
 }>()
 
+const currentPageTab = ref(props.pageTabs.current)
+
+const handlePageTabUpdate = (tabSlug: string) => {
+    if (tabSlug === currentPageTab.value) {
+        return
+    }
+
+    router.get(`${window.location.pathname}?tab=${encodeURIComponent(tabSlug)}`, {}, {
+        preserveScroll: true,
+        onSuccess: () => currentPageTab.value = tabSlug,
+    })
+}
+
+const pageTabComponent = computed(() => ({
+    visitors: SeoDashboardVisitors,
+    page_views: SeoDashboardPageViews,
+    missing_pages: SeoDashboardMissingPages,
+    api_usage: SeoApiUsage,
+} as Record<string, unknown>)[currentPageTab.value])
+
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => {
+    if (tabSlug === currentTab.value) {
+        return
+    }
+
+    const url = new URL(window.location.href)
+
+    url.search = `?tab=overview&table=${encodeURIComponent(tabSlug)}`
+
+    router.get(url.pathname + url.search, {}, {
+        only: [tabSlug, "queryBuilderProps"],
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => currentTab.value = tabSlug,
+    })
+}
 
 const tabComponent = computed(() => ({
     webpages: TableWebpagesPerformance,
@@ -629,294 +675,305 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <div class="pt-3">
-        <DashboardSettings :intervals="intervals" :settings="settings" currentTab="seo" :reloadOnly="reloadOnly" />
-    </div>
+    <Tabs :current="currentPageTab" :navigation="pageTabs.navigation" @update:tab="handlePageTabUpdate" />
 
-    <section
-        :aria-label="ctrans('Website performance')"
-        :aria-busy="isLoadingOnTable"
-        class="relative mx-4 my-4 rounded-xl bg-white ring-1 ring-gray-200">
-        <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
-            <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
+    <component
+        :is="pageTabComponent"
+        v-if="currentPageTab !== 'overview'"
+        :key="currentPageTab"
+        :data="(props as Record<string, any>)[currentPageTab]"
+        :tab="currentPageTab" />
+
+    <template v-else>
+        <div class="pt-3">
+            <DashboardSettings :intervals="intervals" :settings="settings" currentTab="seo" :reloadOnly="reloadOnly" />
         </div>
 
-        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
-            <p v-if="website" class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
-                <Link
-                    :href="route(website.route.name, website.route.parameters)"
-                    class="font-medium text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
-                    {{ website.name }}
-                </Link>
-                <a
-                    :href="website.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="break-all text-gray-600 underline-offset-2 hover:underline focus-visible:underline">
-                    {{ website.domain }}
-                </a>
-            </p>
-            <span v-if="hasData" class="text-xs text-gray-500">{{ periodText }}</span>
-        </div>
-
-        <p v-if="!performance" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            {{ ctrans("This website has no traffic records yet. They are built every night from the visits tracked on the storefront.") }}
-        </p>
-
-        <p v-else-if="!hasData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            {{ ctrans("No traffic was recorded in this period. Pick a longer interval above to see older days.") }}
-        </p>
-
-        <template v-else>
-            <div
-                class="grid grid-cols-1 gap-x-8 gap-y-6 px-5 pb-5 pt-5"
-                :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showDailyChart }">
-                <div class="flex flex-col justify-between gap-y-5">
-                    <div>
-                        <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(performance.visitors) }}</div>
-                        <div class="mt-1 text-sm text-gray-600">{{ ctrans("Visitors") }}</div>
-                        <div class="text-xs text-gray-500">{{ ctrans("unique visitors per day, added up") }}</div>
-                    </div>
-
-                    <div>
-                        <div class="flex h-2 gap-0.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
-                            <div
-                                v-for="segment in visitorTypes"
-                                :key="segment.label"
-                                :class="segment.swatchClass"
-                                :style="{ width: `${segment.percentage}%` }" />
-                        </div>
-                        <dl class="mt-2 space-y-1 text-sm">
-                            <div v-for="segment in visitorTypes" :key="segment.label" class="flex items-center gap-2">
-                                <span class="size-2.5 shrink-0 rounded-sm" :class="segment.swatchClass" aria-hidden="true" />
-                                <dt class="text-gray-600">{{ segment.label }}</dt>
-                                <dd class="ml-auto tabular-nums text-gray-900">
-                                    {{ locale.number(segment.value) }}
-                                    <span class="ml-1.5 inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
-                </div>
-
-                <div v-if="showDailyChart" class="min-w-0">
-                    <div class="h-56 sm:h-64" role="img" :aria-label="dailyChartSummary">
-                        <Chart type="line" :data="dailyChartData" :options="dailyChartOptions" class="h-full" />
-                    </div>
-                </div>
+        <section
+            :aria-label="ctrans('Website performance')"
+            :aria-busy="isLoadingOnTable"
+            class="relative mx-4 my-4 rounded-xl bg-white ring-1 ring-gray-200">
+            <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
+                <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
             </div>
 
-            <dl class="grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-5">
-                <div
-                    v-for="metric in metrics"
-                    :key="metric.label"
-                    class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
-                    <dt class="text-xs text-gray-500">{{ metric.label }}</dt>
-                    <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
-                </div>
-            </dl>
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
+                <p v-if="website" class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
+                    <Link
+                        :href="route(website.route.name, website.route.parameters)"
+                        class="font-medium text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
+                        {{ website.name }}
+                    </Link>
+                    <a
+                        :href="website.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="break-all text-gray-600 underline-offset-2 hover:underline focus-visible:underline">
+                        {{ website.domain }}
+                    </a>
+                </p>
+                <span v-if="hasData" class="text-xs text-gray-500">{{ periodText }}</span>
+            </div>
 
-            <div class="border-t border-gray-100 px-5 py-4">
-                <div class="flex flex-wrap items-baseline justify-between gap-x-4">
-                    <h3 class="text-xs font-medium text-gray-700">{{ ctrans("Sessions by device") }}</h3>
-                    <span class="text-xs text-gray-500">{{ ctrans(":sessions sessions", { sessions: locale.number(performance.sessions) }) }}</span>
+            <p v-if="!performance" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                {{ ctrans("This website has no traffic records yet. They are built every night from the visits tracked on the storefront.") }}
+            </p>
+
+            <p v-else-if="!hasData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                {{ ctrans("No traffic was recorded in this period. Pick a longer interval above to see older days.") }}
+            </p>
+
+            <template v-else>
+                <div
+                    class="grid grid-cols-1 gap-x-8 gap-y-6 px-5 pb-5 pt-5"
+                    :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showDailyChart }">
+                    <div class="flex flex-col justify-between gap-y-5">
+                        <div>
+                            <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(performance.visitors) }}</div>
+                            <div class="mt-1 text-sm text-gray-600">{{ ctrans("Visitors") }}</div>
+                            <div class="text-xs text-gray-500">{{ ctrans("unique visitors per day, added up") }}</div>
+                        </div>
+
+                        <div>
+                            <div class="flex h-2 gap-0.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
+                                <div
+                                    v-for="segment in visitorTypes"
+                                    :key="segment.label"
+                                    :class="segment.swatchClass"
+                                    :style="{ width: `${segment.percentage}%` }" />
+                            </div>
+                            <dl class="mt-2 space-y-1 text-sm">
+                                <div v-for="segment in visitorTypes" :key="segment.label" class="flex items-center gap-2">
+                                    <span class="size-2.5 shrink-0 rounded-sm" :class="segment.swatchClass" aria-hidden="true" />
+                                    <dt class="text-gray-600">{{ segment.label }}</dt>
+                                    <dd class="ml-auto tabular-nums text-gray-900">
+                                        {{ locale.number(segment.value) }}
+                                        <span class="ml-1.5 inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <div v-if="showDailyChart" class="min-w-0">
+                        <div class="h-56 sm:h-64" role="img" :aria-label="dailyChartSummary">
+                            <Chart type="line" :data="dailyChartData" :options="dailyChartOptions" class="h-full" />
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
+
+                <dl class="grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-5">
                     <div
-                        v-for="segment in deviceSessions"
-                        :key="segment.label"
-                        :class="segment.swatchClass"
-                        :style="{ width: `${segment.percentage}%` }" />
-                </div>
-                <dl class="mt-3 grid grid-cols-1 gap-x-8 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                    <div v-for="segment in deviceSessions" :key="segment.label" class="flex items-center gap-2">
-                        <span class="size-2.5 shrink-0 rounded-sm" :class="segment.swatchClass" aria-hidden="true" />
-                        <dt class="text-gray-600">{{ segment.label }}</dt>
-                        <dd class="ml-auto tabular-nums text-gray-900">
-                            {{ locale.number(segment.value) }}
-                            <span class="ml-1.5 inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
-                        </dd>
+                        v-for="metric in metrics"
+                        :key="metric.label"
+                        class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
+                        <dt class="text-xs text-gray-500">{{ metric.label }}</dt>
+                        <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
                     </div>
                 </dl>
-            </div>
-        </template>
-    </section>
 
-    <section
-        v-if="performance && hasData"
-        :aria-label="ctrans('Conversions')"
-        :aria-busy="isLoadingOnTable"
-        class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
-        <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
-            <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
-        </div>
-
-        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
-            <span class="text-sm font-medium text-gray-900">{{ ctrans("Conversions") }}</span>
-            <span class="text-xs text-gray-500">{{ conversionsTrackedText }}</span>
-        </div>
-
-        <p v-if="!hasConversions" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            {{ noConversionsText }}
-        </p>
-
-        <div v-else-if="showDailyChart" class="px-5 pt-4">
-            <div class="h-48 sm:h-56" role="img" :aria-label="conversionChartSummary">
-                <Chart type="line" :data="conversionChartData" :options="dailyChartOptions" class="h-full" />
-            </div>
-        </div>
-
-        <dl v-if="hasConversions" class="mt-4 grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-6">
-            <div
-                v-for="metric in conversionMetrics"
-                :key="metric.key"
-                class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
-                <dt class="text-xs text-gray-500" v-tooltip="metric.hint">{{ metric.label }}</dt>
-                <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
-                <dd
-                    v-for="comparisonKey in availableComparisons"
-                    :key="comparisonKey"
-                    class="mt-0.5 flex flex-wrap gap-x-1 text-xs"
-                    v-tooltip="comparisonRange(comparisonKey)">
-                    <span class="text-gray-500">{{ comparisonLabels[comparisonKey] }}</span>
-                    <span class="tabular-nums" :class="comparisonText(metric.key, comparisonKey)?.tone">{{ comparisonText(metric.key, comparisonKey)?.text }}</span>
-                </dd>
-            </div>
-        </dl>
-    </section>
-
-    <section
-        v-if="search"
-        :aria-label="ctrans('Google Search performance')"
-        :aria-busy="isLoadingOnTable"
-        class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
-        <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
-            <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
-        </div>
-
-        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
-            <p class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
-                <span class="font-medium text-gray-900">{{ ctrans("Google Search") }}</span>
-                <span v-if="search.site_url" class="break-all text-gray-600">{{ search.site_url }}</span>
-            </p>
-            <span v-if="hasSearchData" class="text-xs text-gray-500">{{ searchPeriodText }}</span>
-        </div>
-
-        <div v-if="!isSearchConnected" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            <p>{{ ctrans("Aiku cannot read Google Search Console for :domain yet.", { domain: website?.domain ?? "" }) }}</p>
-            <p v-if="search.service_account_email" class="mt-1">
-                {{ ctrans("Add this account as a user on the domain's Search Console property:") }}
-                <span class="break-all font-mono text-xs text-gray-900">{{ search.service_account_email }}</span>
-            </p>
-            <p v-else class="mt-1">{{ ctrans("No Google service account is set up on this installation.") }}</p>
-        </div>
-
-        <p v-else-if="!search.latest_stored_day" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            {{ ctrans("Search Console data is fetched every night. The first fetch loads the last 16 months.") }}
-        </p>
-
-        <p v-else-if="!hasSearchData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            {{ ctrans("No Google Search data in this period. Google sends it two to three days late.") }}
-            <span class="text-gray-500">{{ latestSearchDayText }}</span>
-        </p>
-
-        <template v-else>
-            <div
-                class="grid grid-cols-1 gap-x-8 gap-y-6 px-5 pb-5 pt-5"
-                :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showSearchChart }">
-                <div class="flex flex-col justify-between gap-y-5">
-                    <div>
-                        <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(search.clicks) }}</div>
-                        <div class="mt-1 text-sm text-gray-600">{{ ctrans("Clicks") }}</div>
-                        <div class="text-xs text-gray-500">{{ latestSearchDayText }}</div>
+                <div class="border-t border-gray-100 px-5 py-4">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+                        <h3 class="text-xs font-medium text-gray-700">{{ ctrans("Sessions by device") }}</h3>
+                        <span class="text-xs text-gray-500">{{ ctrans(":sessions sessions", { sessions: locale.number(performance.sessions) }) }}</span>
                     </div>
-
-                    <dl class="space-y-1 text-sm">
-                        <div v-for="metric in searchMetrics" :key="metric.label" class="flex items-baseline gap-2">
-                            <dt class="text-gray-600">{{ metric.label }}</dt>
-                            <dd class="ml-auto tabular-nums text-gray-900">{{ metric.value }}</dd>
+                    <div class="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
+                        <div
+                            v-for="segment in deviceSessions"
+                            :key="segment.label"
+                            :class="segment.swatchClass"
+                            :style="{ width: `${segment.percentage}%` }" />
+                    </div>
+                    <dl class="mt-3 grid grid-cols-1 gap-x-8 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                        <div v-for="segment in deviceSessions" :key="segment.label" class="flex items-center gap-2">
+                            <span class="size-2.5 shrink-0 rounded-sm" :class="segment.swatchClass" aria-hidden="true" />
+                            <dt class="text-gray-600">{{ segment.label }}</dt>
+                            <dd class="ml-auto tabular-nums text-gray-900">
+                                {{ locale.number(segment.value) }}
+                                <span class="ml-1.5 inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
+                            </dd>
                         </div>
                     </dl>
                 </div>
+            </template>
+        </section>
 
-                <div v-if="showSearchChart" class="min-w-0">
-                    <div class="h-56 sm:h-64" role="img" :aria-label="searchChartSummary">
-                        <Chart type="line" :data="searchChartData" :options="searchChartOptions" class="h-full" />
-                    </div>
+        <section
+            v-if="performance && hasData"
+            :aria-label="ctrans('Conversions')"
+            :aria-busy="isLoadingOnTable"
+            class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
+            <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
+                <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
+            </div>
+
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
+                <span class="text-sm font-medium text-gray-900">{{ ctrans("Conversions") }}</span>
+                <span class="text-xs text-gray-500">{{ conversionsTrackedText }}</span>
+            </div>
+
+            <p v-if="!hasConversions" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                {{ noConversionsText }}
+            </p>
+
+            <div v-else-if="showDailyChart" class="px-5 pt-4">
+                <div class="h-48 sm:h-56" role="img" :aria-label="conversionChartSummary">
+                    <Chart type="line" :data="conversionChartData" :options="dailyChartOptions" class="h-full" />
                 </div>
             </div>
-        </template>
-    </section>
 
-    <section
-        v-if="page_speed_summary"
-        :aria-label="ctrans('Page speed')"
-        class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
-        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 pt-4">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                <span class="font-medium text-gray-900">{{ ctrans("Page speed") }}</span>
-                <SegmentedToggle v-model="speedSource" :options="speedSourceOptions" :aria-label="ctrans('Data source')" />
-            </div>
-            <span v-if="speedPeriodText" class="text-xs text-gray-500">{{ speedPeriodText }}</span>
-        </div>
-
-        <p v-if="!speedData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
-            {{
-                speedSource === "crux"
-                    ? ctrans("Google has not reported this website yet. It needs enough Chrome visits over 28 days, and the report is fetched every Tuesday.")
-                    : ctrans("Not enough page loads measured in visitors' browsers in the last 28 days.")
-            }}
-        </p>
-
-        <div v-else class="grid grid-cols-1 gap-x-8 gap-y-5 px-5 pb-5 pt-4 sm:grid-cols-2">
-            <div v-for="device in speedDevices" :key="device.key">
-                <div class="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <h3 class="text-sm font-medium text-gray-900">{{ device.label }}</h3>
-                    <span
-                        v-if="deviceVerdict(speedData.devices[device.key])"
-                        class="inline-flex items-center gap-1.5 text-xs"
-                        :class="ratingStyles[deviceVerdict(speedData.devices[device.key])!].text">
-                        <span class="size-2 rounded-full" :class="ratingStyles[deviceVerdict(speedData.devices[device.key])!].dot" aria-hidden="true" />
-                        {{ verdictText(deviceVerdict(speedData.devices[device.key])!) }}
-                    </span>
-                    <span v-else class="text-xs text-gray-500">{{ ctrans("No data") }}</span>
+            <dl v-if="hasConversions" class="mt-4 grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-6">
+                <div
+                    v-for="metric in conversionMetrics"
+                    :key="metric.key"
+                    class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
+                    <dt class="text-xs text-gray-500" v-tooltip="metric.hint">{{ metric.label }}</dt>
+                    <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
+                    <dd
+                        v-for="comparisonKey in availableComparisons"
+                        :key="comparisonKey"
+                        class="mt-0.5 flex flex-wrap gap-x-1 text-xs"
+                        v-tooltip="comparisonRange(comparisonKey)">
+                        <span class="text-gray-500">{{ comparisonLabels[comparisonKey] }}</span>
+                        <span class="tabular-nums" :class="comparisonText(metric.key, comparisonKey)?.tone">{{ comparisonText(metric.key, comparisonKey)?.text }}</span>
+                    </dd>
                 </div>
+            </dl>
+        </section>
 
-                <dl v-if="speedData.devices[device.key]" class="mt-2 divide-y divide-gray-100 text-sm">
-                    <div v-for="metric in speedMetrics" :key="metric.key" class="flex items-center gap-2 py-1.5">
-                        <dt class="text-gray-600" v-tooltip="metric.description">{{ metric.label }}</dt>
-                        <dd class="ml-auto flex items-center gap-1.5 tabular-nums text-gray-900">
-                            {{ formatCoreWebVital(metric.key, speedData.devices[device.key]?.[metric.key]) }}
-                            <span
-                                v-if="coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])"
-                                class="size-2 rounded-full"
-                                :class="ratingStyles[coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])!].dot"
-                                :title="ratingStyles[coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])!].label" />
-                        </dd>
-                    </div>
-                </dl>
+        <section
+            v-if="search"
+            :aria-label="ctrans('Google Search performance')"
+            :aria-busy="isLoadingOnTable"
+            class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
+            <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
+                <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
             </div>
-        </div>
 
-        <div v-if="website" class="border-t border-gray-100 px-5 py-3 text-xs text-gray-500">
-            {{ ctrans("75th percentile of real page loads.") }}
-            <Link :href="route(website.route.name, website.route.parameters)" class="text-gray-700 underline underline-offset-2 hover:text-gray-900">{{ ctrans("See the weekly history") }}</Link>
-        </div>
-    </section>
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
+                <p class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
+                    <span class="font-medium text-gray-900">{{ ctrans("Google Search") }}</span>
+                    <span v-if="search.site_url" class="break-all text-gray-600">{{ search.site_url }}</span>
+                </p>
+                <span v-if="hasSearchData" class="text-xs text-gray-500">{{ searchPeriodText }}</span>
+            </div>
 
-    <section
-        v-if="website"
-        :aria-label="ctrans('Webpages and search queries')"
-        :aria-busy="isLoadingOnTable"
-        class="relative mx-4 mb-4 rounded-xl bg-white pb-3 pt-2 ring-1 ring-gray-200">
-        <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
-            <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
-        </div>
+            <div v-if="!isSearchConnected" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                <p>{{ ctrans("Aiku cannot read Google Search Console for :domain yet.", { domain: website?.domain ?? "" }) }}</p>
+                <p v-if="search.service_account_email" class="mt-1">
+                    {{ ctrans("Add this account as a user on the domain's Search Console property:") }}
+                    <span class="break-all font-mono text-xs text-gray-900">{{ search.service_account_email }}</span>
+                </p>
+                <p v-else class="mt-1">{{ ctrans("No Google service account is set up on this installation.") }}</p>
+            </div>
 
-        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+            <p v-else-if="!search.latest_stored_day" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                {{ ctrans("Search Console data is fetched every night. The first fetch loads the last 16 months.") }}
+            </p>
 
-        <div class="pt-3">
-            <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="currentTab === 'conversions' ? { currencyCode: performance?.currency_code } : {}" />
-        </div>
-    </section>
+            <p v-else-if="!hasSearchData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                {{ ctrans("No Google Search data in this period. Google sends it two to three days late.") }}
+                <span class="text-gray-500">{{ latestSearchDayText }}</span>
+            </p>
+
+            <template v-else>
+                <div
+                    class="grid grid-cols-1 gap-x-8 gap-y-6 px-5 pb-5 pt-5"
+                    :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showSearchChart }">
+                    <div class="flex flex-col justify-between gap-y-5">
+                        <div>
+                            <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(search.clicks) }}</div>
+                            <div class="mt-1 text-sm text-gray-600">{{ ctrans("Clicks") }}</div>
+                            <div class="text-xs text-gray-500">{{ latestSearchDayText }}</div>
+                        </div>
+
+                        <dl class="space-y-1 text-sm">
+                            <div v-for="metric in searchMetrics" :key="metric.label" class="flex items-baseline gap-2">
+                                <dt class="text-gray-600">{{ metric.label }}</dt>
+                                <dd class="ml-auto tabular-nums text-gray-900">{{ metric.value }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div v-if="showSearchChart" class="min-w-0">
+                        <div class="h-56 sm:h-64" role="img" :aria-label="searchChartSummary">
+                            <Chart type="line" :data="searchChartData" :options="searchChartOptions" class="h-full" />
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <section
+            v-if="page_speed_summary"
+            :aria-label="ctrans('Page speed')"
+            class="relative mx-4 mb-4 rounded-xl bg-white ring-1 ring-gray-200">
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 pt-4">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    <span class="font-medium text-gray-900">{{ ctrans("Page speed") }}</span>
+                    <SegmentedToggle v-model="speedSource" :options="speedSourceOptions" :aria-label="ctrans('Data source')" />
+                </div>
+                <span v-if="speedPeriodText" class="text-xs text-gray-500">{{ speedPeriodText }}</span>
+            </div>
+
+            <p v-if="!speedData" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+                {{
+                    speedSource === "crux"
+                        ? ctrans("Google has not reported this website yet. It needs enough Chrome visits over 28 days, and the report is fetched every Tuesday.")
+                        : ctrans("Not enough page loads measured in visitors' browsers in the last 28 days.")
+                }}
+            </p>
+
+            <div v-else class="grid grid-cols-1 gap-x-8 gap-y-5 px-5 pb-5 pt-4 sm:grid-cols-2">
+                <div v-for="device in speedDevices" :key="device.key">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <h3 class="text-sm font-medium text-gray-900">{{ device.label }}</h3>
+                        <span
+                            v-if="deviceVerdict(speedData.devices[device.key])"
+                            class="inline-flex items-center gap-1.5 text-xs"
+                            :class="ratingStyles[deviceVerdict(speedData.devices[device.key])!].text">
+                            <span class="size-2 rounded-full" :class="ratingStyles[deviceVerdict(speedData.devices[device.key])!].dot" aria-hidden="true" />
+                            {{ verdictText(deviceVerdict(speedData.devices[device.key])!) }}
+                        </span>
+                        <span v-else class="text-xs text-gray-500">{{ ctrans("No data") }}</span>
+                    </div>
+
+                    <dl v-if="speedData.devices[device.key]" class="mt-2 divide-y divide-gray-100 text-sm">
+                        <div v-for="metric in speedMetrics" :key="metric.key" class="flex items-center gap-2 py-1.5">
+                            <dt class="text-gray-600" v-tooltip="metric.description">{{ metric.label }}</dt>
+                            <dd class="ml-auto flex items-center gap-1.5 tabular-nums text-gray-900">
+                                {{ formatCoreWebVital(metric.key, speedData.devices[device.key]?.[metric.key]) }}
+                                <span
+                                    v-if="coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])"
+                                    class="size-2 rounded-full"
+                                    :class="ratingStyles[coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])!].dot"
+                                    :title="ratingStyles[coreWebVitalRating(metric.key, speedData.devices[device.key]?.[metric.key])!].label" />
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <div v-if="website" class="border-t border-gray-100 px-5 py-3 text-xs text-gray-500">
+                {{ ctrans("75th percentile of real page loads.") }}
+                <Link :href="route(website.route.name, website.route.parameters)" class="text-gray-700 underline underline-offset-2 hover:text-gray-900">{{ ctrans("See the weekly history") }}</Link>
+            </div>
+        </section>
+
+        <section
+            v-if="website"
+            :aria-label="ctrans('Webpages and search queries')"
+            :aria-busy="isLoadingOnTable"
+            class="relative mx-4 mb-4 rounded-xl bg-white pb-3 pt-2 ring-1 ring-gray-200">
+            <div v-if="isLoadingOnTable" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60">
+                <LoadingIcon class="text-3xl text-[--app-accent-strong]" />
+            </div>
+
+            <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+            <div class="pt-3">
+                <component :is="tabComponent" v-if="props[currentTab]" :key="currentTab" :data="props[currentTab]" :tab="currentTab" v-bind="currentTab === 'conversions' ? { currencyCode: performance?.currency_code } : {}" />
+            </div>
+        </section>
+    </template>
 </template>

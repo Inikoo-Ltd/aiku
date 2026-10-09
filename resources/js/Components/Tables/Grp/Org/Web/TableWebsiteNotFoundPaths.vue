@@ -35,6 +35,7 @@ const props = defineProps<{
     data: object
     website: { id: number, domain: string, url: string }
     canEdit: boolean
+    tab?: string
 }>()
 
 const locale = useLocaleStore()
@@ -102,7 +103,7 @@ const referrerLabel = (referrer: string) => {
 </script>
 
 <template>
-    <Table :resource="data">
+    <Table :resource="data" :name="tab">
         <template #cell(path)="{ item: notFoundPath }: { item: NotFoundPathRow }">
             <a :href="website.url + notFoundPath.path" target="_blank" rel="noopener noreferrer" class="break-all text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
                 {{ notFoundPath.path }}
