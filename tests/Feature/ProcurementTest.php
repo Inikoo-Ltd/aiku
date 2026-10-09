@@ -213,6 +213,11 @@ use App\Models\SysAdmin\Organisation;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
+use App\Models\GoodsIn\StockDeliveryServiceInvoice;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryServiceInvoiceTypeEnum;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\UpdateStockDeliveryServiceInvoice;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\StoreStockDeliveryServiceInvoice;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\DeleteStockDeliveryServiceInvoice;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
@@ -5026,6 +5031,130 @@ describe('stock delivery costing checklist', function () {
             ->and($stockDelivery->is_costed)->toBeFalse()
             ->and($stockDelivery->placed_at)->toBeNull()
             ->and($stockDelivery->booked_in_at)->toBeNull();
+    });
+});
+
+describe('stock delivery service invoices', function () {
+    beforeEach(function () {
+        $orgSupplier = OrgSupplier::first();
+        $this->serviceInvoiceStockDeliveries = collect(['A', 'B'])->map(fn (string $suffix) => StoreStockDelivery::make()->action($orgSupplier, [
+            'reference' => 'SVC-'.$suffix.'-'.StockDelivery::withTrashed()->max('id'),
+            'date'      => date('Y-m-d'),
+        ], strict: false));
+        $this->serviceInvoiceOrganisation = $this->serviceInvoiceStockDeliveries->first()->organisation;
+    });
+
+    test('a freight bill split over two containers fills both shipping rows and completes costing once duty is in', function () {
+        [$first, $second] = $this->serviceInvoiceStockDeliveries->all();
+        $organisation     = $this->serviceInvoiceOrganisation;
+
+        foreach ([$first, $second] as $stockDelivery) {
+            StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'amount' => 1000, 'received_at' => now()]);
+        }
+
+        StoreStockDeliveryServiceInvoice::make()->action($organisation, [
+            'type'         => StockDeliveryServiceInvoiceTypeEnum::FREIGHT->value,
+            'issuer'       => 'Sea Forwarder',
+            'reference'    => 'SF-1',
+            'date'         => '2026-10-01',
+            'currency_id'  => $organisation->currency_id,
+            'total_amount' => 300,
+            'allocations'  => [
+                ['stock_delivery_id' => $first->id, 'amount' => 100],
+                ['stock_delivery_id' => $second->id, 'amount' => 200],
+            ],
+        ]);
+
+        $firstShipping  = $first->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->sole();
+        $secondShipping = $second->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->sole();
+
+        expect((float) $firstShipping->amount)->toBe(100.0)
+            ->and((float) $secondShipping->amount)->toBe(200.0)
+            ->and($firstShipping->received_at)->not->toBeNull()
+            ->and($firstShipping->from_service_invoices)->toBeTrue()
+            ->and($firstShipping->label)->toBe('Sea Forwarder SF-1')
+            ->and($first->refresh()->is_costed)->toBeFalse()
+            ->and($second->refresh()->is_costed)->toBeFalse();
+
+        $costsBeforeTax = StockDeliveryCost::whereIn('stock_delivery_id', [$first->id, $second->id])->count();
+        StoreStockDeliveryServiceInvoice::make()->action($organisation, [
+            'type'         => StockDeliveryServiceInvoiceTypeEnum::TAX->value,
+            'issuer'       => 'Customs Broker',
+            'date'         => '2026-10-02',
+            'currency_id'  => $organisation->currency_id,
+            'total_amount' => 500,
+            'allocations'  => [['stock_delivery_id' => $first->id], ['stock_delivery_id' => $second->id]],
+        ]);
+        expect(StockDeliveryCost::whereIn('stock_delivery_id', [$first->id, $second->id])->count())->toBe($costsBeforeTax);
+
+        $duty = StoreStockDeliveryServiceInvoice::make()->action($organisation, [
+            'type'         => StockDeliveryServiceInvoiceTypeEnum::DUTY->value,
+            'issuer'       => 'Customs Broker',
+            'date'         => '2026-10-02',
+            'currency_id'  => $organisation->currency_id,
+            'total_amount' => 90.01,
+            'allocations'  => [['stock_delivery_id' => $first->id], ['stock_delivery_id' => $second->id]],
+        ]);
+
+        $dutyRows = StockDeliveryCost::whereIn('stock_delivery_id', [$first->id, $second->id])->where('type', StockDeliveryCostTypeEnum::DUTY)->get();
+        expect($dutyRows)->toHaveCount(2)
+            ->and(round($dutyRows->sum(fn (StockDeliveryCost $cost) => (float) $cost->amount), 2))->toBe(90.01)
+            ->and(round($duty->stockDeliveries->sum('pivot.amount'), 2))->toBe(90.01)
+            ->and($first->refresh()->is_costed)->toBeTrue()
+            ->and($second->refresh()->is_costed)->toBeTrue();
+
+        $this->patch(route('grp.models.stock-delivery-cost.update', $firstShipping->id), ['amount' => 1])
+            ->assertSessionHasErrors('type');
+        expect((float) $firstShipping->refresh()->amount)->toBe(100.0);
+
+        $this->get(route('grp.org.procurement.service_invoices.index', [$organisation->slug, 'search' => 'Sea Forwarder']))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Org/Procurement/StockDeliveryServiceInvoices')
+                ->where('data.data.0.issuer', 'Sea Forwarder')
+                ->where('data.data.0.allocations.1.amount', 200));
+    });
+
+    test('deleting a service invoice puts the rows it filled back to pending and leaves hand typed rows alone', function () {
+        $stockDelivery = $this->serviceInvoiceStockDeliveries->first();
+        $organisation  = $this->serviceInvoiceOrganisation;
+
+        StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'amount' => 50, 'received_at' => now()]);
+        $handDuty = StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'amount' => 40, 'received_at' => now()]);
+
+        $billData = fn (StockDeliveryServiceInvoiceTypeEnum $type, float $total) => [
+            'type'         => $type->value,
+            'issuer'       => 'Port Agent',
+            'date'         => '2026-10-03',
+            'currency_id'  => $organisation->currency_id,
+            'total_amount' => $total,
+            'allocations'  => [['stock_delivery_id' => $stockDelivery->id]],
+        ];
+        $freight  = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::FREIGHT, 120));
+        $handling = StoreStockDeliveryServiceInvoice::make()->action($organisation, $billData(StockDeliveryServiceInvoiceTypeEnum::OTHER, 30));
+
+        $shipping = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->sole();
+        $extra    = $stockDelivery->costs()->where('stock_delivery_service_invoice_id', $handling->id)->sole();
+        expect((float) $shipping->amount)->toBe(120.0)
+            ->and($shipping->from_service_invoices)->toBeTrue()
+            ->and($extra->type)->toBe(StockDeliveryCostTypeEnum::EXTRA)
+            ->and((float) $extra->amount)->toBe(30.0);
+
+        UpdateStockDeliveryServiceInvoice::make()->action($handling, ['total_amount' => 35]);
+        UpdateStockDeliveryServiceInvoice::make()->action($handling->refresh(), ['reference' => 'PA-9']);
+        expect((float) $extra->refresh()->amount)->toBe(35.0)
+            ->and($extra->label)->toBe('Port Agent PA-9')
+            ->and(array_column(StoreStockDeliveryServiceInvoice::largestRemainderSplit([1, 2, 3], [1 => 1, 2 => 1, 3 => 0], 0.05), 'amount'))->toBe([0.03, 0.02, 0.0]);
+
+        DeleteStockDeliveryServiceInvoice::make()->action($freight);
+        DeleteStockDeliveryServiceInvoice::make()->action($handling);
+
+        $shipping->refresh();
+        expect($shipping->amount)->toBeNull()
+            ->and($shipping->received_at)->toBeNull()
+            ->and($shipping->from_service_invoices)->toBeFalse()
+            ->and($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->exists())->toBeFalse()
+            ->and((float) $handDuty->refresh()->amount)->toBe(40.0)
+            ->and(StockDeliveryServiceInvoice::withTrashed()->find($freight->id)->trashed())->toBeTrue();
     });
 });
 

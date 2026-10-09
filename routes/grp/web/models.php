@@ -307,6 +307,10 @@ use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\ReopenStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\DeleteStockDeliveryServiceInvoice;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\MarkStockDeliveryServiceInvoicePaid;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\StoreStockDeliveryServiceInvoice;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\UpdateStockDeliveryServiceInvoice;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
@@ -943,6 +947,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('supplier', [StoreSupplier::class, 'inOrganisation'])->name('supplier.store');
     Route::post('org-supplier/from-supplier/{supplier:id}', [StoreOrgSupplier::class, 'inOrganisation'])->name('org_supplier.store')->withoutScopedBindings();
+    Route::post('stock-delivery-service-invoice', StoreStockDeliveryServiceInvoice::class)->name('stock_delivery_service_invoice.store');
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/carton-weights', UpdateOrgSupplierProductCartonWeights::class)->name('org_supplier_product.carton_weights.update')->withoutScopedBindings();
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/org-stock/{orgStock:id}/carton-barcode', UpdateOrgSupplierProductCartonBarcode::class)->name('org_supplier_product.carton_barcode.update')->withoutScopedBindings();
 
@@ -1622,6 +1627,12 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::post('invoice/{media:id}/read', ReadStockDeliveryInvoice::class)->name('invoice.read')->withoutScopedBindings();
     Route::post('invoice/{media:id}/apply', ApplyStockDeliveryInvoiceCosting::class)->name('invoice.apply')->withoutScopedBindings();
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
+});
+
+Route::name('stock_delivery_service_invoice.')->prefix('stock-delivery-service-invoice/{serviceInvoice:id}')->group(function () {
+    Route::patch('update', UpdateStockDeliveryServiceInvoice::class)->name('update');
+    Route::patch('paid', MarkStockDeliveryServiceInvoicePaid::class)->name('paid');
+    Route::delete('', DeleteStockDeliveryServiceInvoice::class)->name('delete');
 });
 
 Route::name('stock-delivery-cost.')->prefix('stock-delivery-cost/{stockDeliveryCost:id}')->group(function () {

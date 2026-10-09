@@ -290,6 +290,13 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $this->hasMany(StockDeliveryCost::class);
     }
 
+    public function serviceInvoices(): BelongsToMany
+    {
+        return $this->belongsToMany(StockDeliveryServiceInvoice::class, 'stock_delivery_service_invoice_allocations')
+            ->withPivot('amount')
+            ->withTimestamps();
+    }
+
     public function depositApplications(): HasMany
     {
         return $this->hasMany(StockDeliveryDepositApplication::class);

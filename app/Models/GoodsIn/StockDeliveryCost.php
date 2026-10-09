@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $received_at
  * @property int|null $currency_id
  * @property numeric|null $exchange
+ * @property bool $from_service_invoices
+ * @property int|null $stock_delivery_service_invoice_id
  * @property-read Currency|null $currency
  * @property-read StockDelivery $stockDelivery
  */
@@ -39,6 +41,7 @@ class StockDeliveryCost extends Model
         'type'        => StockDeliveryCostTypeEnum::class,
         'received_at' => 'datetime',
         'is_na'       => 'boolean',
+        'from_service_invoices' => 'boolean',
     ];
 
     public function stockDelivery(): BelongsTo
