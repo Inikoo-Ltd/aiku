@@ -90,6 +90,10 @@ Broadcast::channel('grp.production.{productionId}.floor', function (User $user, 
     ]);
 });
 
+Broadcast::channel('grp.org.{organisationId}.partner-production', function (User $user, int $organisationId) {
+    return $user->authTo("procurement.$organisationId.view");
+});
+
 Broadcast::channel('grp.org.{organisationId}.production-queues', function (User $user, int $organisationId) {
     if ($user->authTo(['org-supervisor.'.$organisationId, 'productions-view.'.$organisationId])) {
         return true;
