@@ -8,6 +8,7 @@ import {
     EmailRow,
     MODULE_TYPES,
     UNSUBSCRIBE_URL_TAG,
+    isEmptyMergeContent,
     isTableModule,
     isUnsubscribeModule,
     tableColumnCount,
@@ -394,7 +395,7 @@ export const makeFixedWidthRowsFluid = (html: string): string =>
             .replace(/(?<![-\w])width\s*:\s*(\d+)px/i, 'width:100%;max-width:$1px'))
 
 const renderMergeContent = (module: EmailModule, context: RenderContext): string =>
-    blockTable('merge_content_block', module, context, makeFixedWidthRowsFluid(module.descriptor?.mergeContent?.value ?? ''))
+    isEmptyMergeContent(module) ? '' : blockTable('merge_content_block', module, context, makeFixedWidthRowsFluid(module.descriptor?.mergeContent?.value ?? ''))
 
 export const renderUnsubscribeContent = (module: EmailModule): string => {
     const settings = module.descriptor?.aikuUnsubscribe ?? {}

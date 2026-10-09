@@ -24,7 +24,7 @@ import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/C
 import { ctrans } from '@/Composables/useTrans'
 import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
-    createMergeContentModule, createModule, createRow, duplicateWithNewUuids, normaliseEmailJson,
+    createModule, createRow, dynamicContentSource, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
     rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
@@ -253,11 +253,18 @@ const deleteRow = (row: EmailRow) => {
     }
 }
 
+const onModuleAdded = (module: EmailModule | undefined, row: EmailRow) => {
+    selectModule(module, row)
+    if (isEmptyMergeContent(module)) {
+        openDynamicContentPicker(module!)
+    }
+}
+
 const insertModule = (module: EmailModule) => {
     const location = findModuleLocation(selectedModuleUuid.value)
     if (location) {
         location.column.modules.splice(location.index + 1, 0, module)
-        selectModule(module, location.row)
+        onModuleAdded(module, location.row)
         return
     }
 
@@ -265,14 +272,14 @@ const insertModule = (module: EmailModule) => {
     const targetColumn = targetRow?.columns.find((column) => column.modules.length === 0) ?? targetRow?.columns[0]
     if (targetRow && targetColumn) {
         targetColumn.modules.push(module)
-        selectModule(module, targetRow)
+        onModuleAdded(module, targetRow)
         return
     }
 
     const row = createRow([12], `${contentWidth.value}px`)
     row.columns[0].modules.push(module)
     email.value.page.rows.push(row)
-    selectModule(module, row)
+    onModuleAdded(module, row)
 }
 
 const duplicateSelectedModule = () => {
@@ -330,27 +337,28 @@ const clonePaletteModule = (item: { type: string }) => createThemedModule(item.t
 const dynamicProductsRef = ref<InstanceType<typeof BeefreeDynamicProducts> | null>(null)
 const dynamicBlocksRef = ref<InstanceType<typeof BeefreeDynamicBlocks> | null>(null)
 const isDynamicContentChooserOpen = ref(false)
-const isReplacingDynamicContent = ref(false)
-
-const openDynamicContentChooser = (replace = false) => {
-    isReplacingDynamicContent.value = replace
-    isDynamicContentChooserOpen.value = true
-}
 
 const chooseDynamicContent = async (picker: typeof dynamicProductsRef.value | typeof dynamicBlocksRef.value) => {
     isDynamicContentChooserOpen.value = false
+    const target = selectedModule.value
     try {
         const content = await picker?.openModal() as { name: string, value: string } | undefined
-        if (!content) {
-            return
+        if (content && target?.type === MODULE_TYPES.mergeContent) {
+            target.descriptor.mergeContent = { name: content.name, value: content.value }
         }
-        if (isReplacingDynamicContent.value && selectedModule.value?.type === MODULE_TYPES.mergeContent) {
-            selectedModule.value.descriptor.mergeContent = { name: content.name, value: content.value }
-            return
-        }
-        insertModule(createMergeContentModule(content.name, content.value))
     } catch {
         return
+    }
+}
+
+const openDynamicContentPicker = (module: EmailModule) => {
+    const source = dynamicContentSource(module)
+    if (source === 'products') {
+        chooseDynamicContent(dynamicProductsRef.value)
+    } else if (source === 'blocks') {
+        chooseDynamicContent(dynamicBlocksRef.value)
+    } else {
+        isDynamicContentChooserOpen.value = true
     }
 }
 
@@ -878,7 +886,7 @@ defineExpose({
                                         <div v-for="column in row.columns" :key="column.uuid" :style="columnStyle(row, column)" class="email-column relative min-w-0">
                                             <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="opacity-40" class="min-h-[40px]"
                                                 filter=".email-inline-editor" :prevent-on-filter="false"
-                                                @add="(event: any) => selectModule(column.modules[event.newIndex], row)">
+                                                @add="(event: any) => onModuleAdded(column.modules[event.newIndex], row)">
                                                 <template #item="{ element: module }">
                                                     <div class="email-module group/module relative cursor-pointer"
                                                         :class="[selectedModuleUuid === module.uuid ? 'z-[2] outline outline-2 -outline-offset-1 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-1 hover:-outline-offset-1 hover:outline-[var(--theme-color-4)]', isHiddenOnCurrentDevice(module.descriptor?.computedStyle) ? 'opacity-40' : '']"
@@ -966,7 +974,7 @@ defineExpose({
                                 :imagesUploadRoute="imagesUploadRoute" :imageCategories="imageCategories" :mergeTags="editorMergeTags" :textRevision="editorRevision + panelTextRevision"
                                 :videoThumbnailState="selectedModule ? videoThumbnailStates[selectedModule.uuid!] : undefined"
                                 @textEdited="scheduleTextSync('canvas')"
-                                @replaceDynamicContent="openDynamicContentChooser(true)" />
+                                @replaceDynamicContent="openDynamicContentPicker(selectedModule!)" />
                         </div>
                     </template>
 
@@ -991,14 +999,6 @@ defineExpose({
                                             @click="insertModule(createThemedModule(element.type))">
                                             <FontAwesomeIcon :icon="element.icon" class="text-2xl text-gray-500" fixed-width aria-hidden="true" />
                                             {{ ctrans(element.label) }}
-                                        </button>
-                                    </template>
-                                    <template #footer>
-                                        <button type="button"
-                                            class="flex h-[84px] flex-col items-center justify-center gap-y-2 rounded border border-gray-200 bg-white px-1 text-center text-[12px] leading-tight text-gray-700 transition hover:border-[var(--theme-color-4)] hover:shadow-md"
-                                            @click="openDynamicContentChooser(false)">
-                                            <FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-2xl text-gray-500" fixed-width aria-hidden="true" />
-                                            {{ ctrans('Products') }}
                                         </button>
                                     </template>
                                 </draggable>

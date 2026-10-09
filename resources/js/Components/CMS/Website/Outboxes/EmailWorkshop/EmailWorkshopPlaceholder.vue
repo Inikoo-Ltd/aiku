@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faImage, faVideo, faText, faCode, faShareAlt, faIcons, faPuzzlePiece } from '@fal'
+import { faImage, faVideo, faText, faCode, faShareAlt, faIcons, faPuzzlePiece, faCubes } from '@fal'
 import { ctrans } from '@/Composables/useTrans'
 import { ModulePlaceholder } from './emailWorkshopBlocks'
 
-library.add(faImage, faVideo, faText, faCode, faShareAlt, faIcons, faPuzzlePiece)
+library.add(faImage, faVideo, faText, faCode, faShareAlt, faIcons, faPuzzlePiece, faCubes)
 
 defineProps<{
     placeholder: ModulePlaceholder

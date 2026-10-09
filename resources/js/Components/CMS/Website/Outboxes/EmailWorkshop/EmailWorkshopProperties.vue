@@ -13,7 +13,7 @@ import { routeType } from '@/types/route'
 import {
     DEFAULT_SOCIAL_ICON_SET, EmailBody, EmailModule, EmailRow, MODULE_TYPES, SOCIAL_ICON_SETS, SOCIAL_NETWORKS, addTableColumn, addTableRow, applySocialIconSet,
     createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, setModuleText,
-    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl,
+    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl, dynamicContentSource,
 } from './emailWorkshopBlocks'
 
 library.add(faArrowUp, faArrowDown, faTrashAlt, faPlus, faImage, faLock)
@@ -358,6 +358,11 @@ const bodyContentStyle = computed(() => ensureObject(props.body.content, 'style'
 const bodyComputedStyle = computed(() => ensureObject(props.body.content, 'computedStyle'))
 const bodyContainerStyle = computed(() => ensureObject(props.body.container, 'style'))
 
+const dynamicContentChooseLabel = computed(() => ({
+    products: 'Choose products',
+    blocks: 'Choose a dynamic block',
+}[dynamicContentSource(props.module) ?? ''] ?? 'Choose products or a dynamic block'))
+
 const contentSectionTitle = computed(() => ({
     [MODULE_TYPES.heading]: ctrans('Heading options'),
     [MODULE_TYPES.paragraph]: ctrans('Paragraph options'),
@@ -371,7 +376,7 @@ const contentSectionTitle = computed(() => ({
     [MODULE_TYPES.icons]: ctrans('Icons options'),
     [MODULE_TYPES.video]: ctrans('Video options'),
     [MODULE_TYPES.html]: isUnsubscribeModule(props.module) ? ctrans('Unsubscribe options') : (isTableModule(props.module) ? ctrans('Table options') : ctrans('HTML options')),
-    [MODULE_TYPES.mergeContent]: ctrans('Dynamic content'),
+    [MODULE_TYPES.mergeContent]: dynamicContentSource(props.module) === 'products' ? ctrans('Products') : ctrans('Dynamic content'),
 }[moduleType.value] ?? ctrans('Content options')))
 </script>
 
@@ -659,10 +664,10 @@ const contentSectionTitle = computed(() => ({
                 </template>
 
                 <template v-else-if="moduleType === MODULE_TYPES.mergeContent">
-                    <div class="my-2 rounded bg-gray-50 px-3 py-2 text-[13px] text-gray-700">{{ descriptor.mergeContent?.name }}</div>
-                    <button type="button" class="mb-2 w-full rounded border border-[var(--theme-color-4)] py-1.5 text-[13px] text-[var(--theme-color-4)] hover:bg-[color-mix(in_srgb,var(--theme-color-4)_8%,white)]"
+                    <div v-if="descriptor.mergeContent?.name" class="my-2 rounded bg-gray-50 px-3 py-2 text-[13px] text-gray-700">{{ descriptor.mergeContent.name }}</div>
+                    <button type="button" class="my-2 w-full rounded border border-[var(--theme-color-4)] py-1.5 text-[13px] text-[var(--theme-color-4)] hover:bg-[color-mix(in_srgb,var(--theme-color-4)_8%,white)]"
                         @click="emits('replaceDynamicContent')">
-                        {{ ctrans('Replace dynamic content') }}
+                        {{ descriptor.mergeContent?.name ? ctrans('Replace dynamic content') : ctrans(dynamicContentChooseLabel) }}
                     </button>
                 </template>
             </EmailWorkshopSection>

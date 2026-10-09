@@ -85,6 +85,7 @@ export const INLINE_EDITABLE_TYPES: string[] = [
 export const UNSUBSCRIBE_BLOCK = 'aiku-unsubscribe'
 export const UNSUBSCRIBE_URL_TAG = '[Unsubscribe Url]'
 export const TABLE_BLOCK = 'aiku-table'
+export const PRODUCTS_BLOCK = 'aiku-products'
 
 export const DEFAULT_FONT_FAMILY = 'Arial, Helvetica Neue, Helvetica, sans-serif'
 export const DEFAULT_MESSAGE_WIDTH = '650px'
@@ -390,6 +391,8 @@ export const paletteModuleTypes: Array<{ type: string, label: string, icon: stri
     { type: MODULE_TYPES.icons, label: 'Icons', icon: 'fal fa-icons' },
     { type: TABLE_BLOCK, label: 'Table', icon: 'fal fa-table' },
     { type: MODULE_TYPES.html, label: 'HTML', icon: 'fal fa-code' },
+    { type: PRODUCTS_BLOCK, label: 'Products', icon: 'fal fa-cubes' },
+    { type: MODULE_TYPES.mergeContent, label: 'Dynamic content', icon: 'fal fa-puzzle-piece' },
     { type: UNSUBSCRIBE_BLOCK, label: 'Unsubscribe', icon: 'fal fa-user-slash' },
 ]
 
@@ -414,6 +417,9 @@ export const moduleDisplayName = (module: EmailModule): string => {
     }
     if (isTableModule(module)) {
         return 'table'
+    }
+    if (dynamicContentSource(module) === 'products') {
+        return 'products'
     }
 
     return shortModuleType(module.type).replace('-', ' ')
@@ -539,6 +545,12 @@ export const createModule = (type: string): EmailModule => {
     if (type === TABLE_BLOCK) {
         return createTableModule()
     }
+    if (type === PRODUCTS_BLOCK) {
+        return createMergeContentModule('', '', 'products')
+    }
+    if (type === MODULE_TYPES.mergeContent) {
+        return createMergeContentModule('', '', 'blocks')
+    }
 
     return {
         type,
@@ -548,7 +560,15 @@ export const createModule = (type: string): EmailModule => {
     }
 }
 
-export const createMergeContentModule = (name: string, value: string): EmailModule => ({
+export const isEmptyMergeContent = (module: EmailModule | null | undefined): boolean =>
+    module?.type === MODULE_TYPES.mergeContent && !String(module.descriptor?.mergeContent?.value ?? '').trim()
+
+export type DynamicContentSource = 'products' | 'blocks'
+
+export const dynamicContentSource = (module: EmailModule | null | undefined): DynamicContentSource | null =>
+    module?.type === MODULE_TYPES.mergeContent ? module.descriptor?.aikuDynamicSource ?? null : null
+
+export const createMergeContentModule = (name: string, value: string, source?: DynamicContentSource): EmailModule => ({
     type: MODULE_TYPES.mergeContent,
     uuid: uuidv4(),
     locked: false,
@@ -556,6 +576,7 @@ export const createMergeContentModule = (name: string, value: string): EmailModu
         style: defaultPadding('0px'),
         mergeContent: { name, value },
         computedStyle: { hideContentOnMobile: false },
+        ...(source ? { aikuDynamicSource: source } : {}),
     },
 })
 
@@ -765,7 +786,13 @@ export const modulePlaceholder = (module: EmailModule): ModulePlaceholder | null
         case MODULE_TYPES.icons:
             return descriptor.iconsList?.icons?.length ? null : { icon: 'fal fa-icons', title: 'Icons', hint: 'Add icon items', size: 'small' }
         case MODULE_TYPES.mergeContent:
-            return String(descriptor.mergeContent?.value ?? '').trim() ? null : { icon: 'fal fa-puzzle-piece', title: 'Dynamic content', hint: 'Pick products or a dynamic block', size: 'small' }
+            if (!isEmptyMergeContent(module)) {
+                return null
+            }
+            return {
+                products: { icon: 'fal fa-cubes', title: 'Products', hint: 'Pick products from the shop', size: 'small' },
+                blocks: { icon: 'fal fa-puzzle-piece', title: 'Dynamic content', hint: 'Pick a dynamic block', size: 'small' },
+            }[dynamicContentSource(module) ?? ''] ?? { icon: 'fal fa-puzzle-piece', title: 'Dynamic content', hint: 'Pick products or a dynamic block', size: 'small' }
         default:
             return null
     }
