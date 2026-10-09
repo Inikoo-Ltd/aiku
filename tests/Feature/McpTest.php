@@ -24,6 +24,9 @@ use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerNotesTool;
 use App\Mcp\Tools\DiscordMessageTool;
 use App\Mcp\Tools\DeliveryNotesSummaryTool;
+use App\Actions\SysAdmin\McpSql\GetMcpSqlConnection;
+use App\Actions\SysAdmin\McpSql\GetMcpSqlTiers;
+use App\Actions\SysAdmin\McpSql\SyncMcpSqlRoles;
 use App\Mcp\Tools\DescribeTablesTool;
 use App\Mcp\Tools\EmployeeAttendanceTool;
 use App\Mcp\Tools\EmployeeDirectoryTool;
@@ -71,6 +74,8 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Guest;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\McpRequest;
+use App\Models\HumanResources\JobPosition;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -373,6 +378,7 @@ describe('mcp authentication', function () {
 describe('the schema guide', function () {
     beforeEach(function () {
         $this->user->update(['can_use_mcp_sql' => true]);
+        config(['mcp_sql_tiers.unrestricted_users' => [$this->user->username]]);
 
         config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
     });
@@ -385,16 +391,6 @@ describe('the schema guide', function () {
         ]);
 
         $response->assertHasErrors(['SQL access is disabled: this environment has no dedicated read-only database user configured.']);
-    });
-
-    test('a user without sql access gets an actionable denial instead of an unknown tool error', function () {
-        $this->user->update(['can_use_mcp_sql' => false]);
-
-        $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
-            'search' => 'shops',
-        ]);
-
-        $response->assertHasErrors()->assertSee('SQL access is not enabled for this user. Do not retry');
     });
 
     test('search finds tables by partial name', function () {
@@ -451,17 +447,8 @@ describe('the schema guide', function () {
 describe('the sql query tool', function () {
     beforeEach(function () {
         config(['database.connections.aiku_read_only' => config('database.connections.'.config('database.default'))]);
+        config(['mcp_sql_tiers.unrestricted_users' => [$this->user->username]]);
         config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
-    });
-
-    test('user without sql access is denied with guidance', function () {
-        $this->user->update(['can_use_mcp_sql' => false]);
-
-        $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
-            'sql' => 'select 1',
-        ]);
-
-        $response->assertHasErrors()->assertSee('ask a sysadmin to enable it');
     });
 
     test('the request logger captures the error message', function () {
@@ -620,6 +607,10 @@ describe('the my access tool', function () {
         $this->user->update(['can_use_mcp_sql' => false]);
 
         expect((new ShopSalesTool())->shouldRegister($mcpRequest))->toBeTrue();
+    });
+
+    test('the sql timeout ends a query before octane kills the request', function () {
+        expect(config('mcp.sql_timeout_ms'))->toBeLessThan(config('octane.max_execution_time') * 1000);
     });
 });
 
@@ -1885,5 +1876,101 @@ describe('ai changes log', function () {
 
         expect($mcpChange->refresh()->reverted_at)->not->toBeNull()
             ->and($this->family->relatedProducts()->count())->toBe(0);
+    });
+});
+
+describe('sql tiers', function () {
+    beforeEach(function () {
+        config(['database.connections.aiku_read_only' => config('database.connections.'.config('database.default'))]);
+        config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
+    });
+
+    afterEach(function () {
+        foreach (array_keys(DB::getConnections()) as $connection) {
+            if (str_starts_with($connection, 'mcp_sql_')) {
+                DB::purge($connection);
+            }
+        }
+        SyncMcpSqlRoles::run(drop: true);
+    });
+
+    test('every table and view is assigned to a tier or to never, and positions name real tiers', function () {
+        $policy  = config('mcp_sql_tiers');
+        $matches = fn (string $table, array $patterns) => collect($patterns)->contains(fn (string $pattern) => fnmatch($pattern, $table));
+
+        $unassigned = collect(DB::select("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
+            ->pluck('table_name')
+            ->reject(fn (string $table) => $matches($table, $policy['never']))
+            ->reject(fn (string $table) => collect($policy['tiers'])->contains(
+                fn (array $patterns, string $tier) => $matches($table, $patterns) && ($tier !== 'base' || !$matches($table, $policy['not_base']))
+            ))
+            ->values()
+            ->all();
+
+        $tierNames = array_merge(array_keys($policy['tiers']), array_keys($policy['shown_columns']));
+
+        expect($unassigned)->toBe([])
+            ->and(array_values(array_diff(collect($policy['positions'])->flatten()->unique()->all(), $tierNames)))->toBe([]);
+    });
+
+    test('raul and aiku read everything through the full read only login', function () {
+        expect(config('mcp_sql_tiers.unrestricted_users'))->toContain('raul', 'aiku');
+
+        config(['mcp_sql_tiers.unrestricted_users' => [$this->user->username]]);
+
+        expect(GetMcpSqlTiers::run($this->user))->toBeNull()
+            ->and(GetMcpSqlConnection::run($this->user))->toBe('aiku_read_only');
+    });
+
+    test('tiers come from the job positions given to the user', function () {
+        $position = JobPosition::where('code', 'acc-c')->firstOrFail();
+        $this->user->pseudoJobPositions()->attach($position->id, ['group_id' => $this->group->id, 'scopes' => []]);
+
+        expect(GetMcpSqlTiers::run($this->user))->toContain('base', 'finance', 'payroll');
+
+        $this->user->pseudoJobPositions()->detach($position->id);
+    });
+
+    test('a tier login reads its tiers and cannot switch to a wider role', function () {
+        SyncMcpSqlRoles::run();
+        $base = DB::connection(GetMcpSqlConnection::make()->forTiers(['base']));
+
+        expect($base->selectOne('SELECT count(*) AS n FROM shops')->n)->toBeGreaterThan(0)
+            ->and(fn () => $base->select('SELECT settings FROM shops LIMIT 1'))->toThrow(QueryException::class, 'permission denied')
+            ->and(fn () => $base->select('SELECT id FROM invoices LIMIT 1'))->toThrow(QueryException::class, 'permission denied')
+            ->and(fn () => $base->select('SELECT id FROM users LIMIT 1'))->toThrow(QueryException::class, 'permission denied')
+            ->and(fn () => $base->select('SELECT id FROM oauth_access_tokens LIMIT 1'))->toThrow(QueryException::class, 'permission denied')
+            ->and(fn () => $base->select("SELECT set_config('role', ?, false)", [config('database.connections.aiku_read_only.username')]))->toThrow(QueryException::class, 'permission denied to set role');
+
+        $sales = DB::connection(GetMcpSqlConnection::make()->forTiers(['base', 'sales']));
+        expect($sales->select('SELECT id FROM invoices LIMIT 1'))->toBeArray();
+    });
+
+    test('pay columns are readable through payroll only', function () {
+        SyncMcpSqlRoles::run();
+        $hr      = DB::connection(GetMcpSqlConnection::make()->forTiers(['base', 'hr']));
+        $payroll = DB::connection(GetMcpSqlConnection::make()->forTiers(['base', 'hr', 'payroll']));
+
+        expect($hr->select('SELECT id FROM employees LIMIT 1'))->toBeArray()
+            ->and(fn () => $hr->select('SELECT salary FROM employees LIMIT 1'))->toThrow(QueryException::class, 'permission denied')
+            ->and(fn () => $hr->select('SELECT pin FROM employees LIMIT 1'))->toThrow(QueryException::class, 'permission denied')
+            ->and($payroll->select('SELECT salary, bank_account_number FROM employees LIMIT 1'))->toBeArray();
+    });
+
+    test('the sql tools show a restricted user only what their tiers reach', function () {
+        config(['mcp_sql_tiers.positions' => []]);
+        SyncMcpSqlRoles::run();
+
+        AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, ['search' => 'shop_time'])
+            ->assertOk()->assertSee('shop_time_series');
+
+        AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, ['tables' => ['shops', 'users']])
+            ->assertOk()->assertSee('"not_found":["users"]')->assertDontSee('"settings"');
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, ['sql' => 'SELECT id FROM invoices LIMIT 1'])
+            ->assertHasErrors()->assertSee('outside this user');
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, ['sql' => 'SELECT 1', 'database' => 'nightowl'])
+            ->assertHasErrors()->assertSee('for engineers');
     });
 });

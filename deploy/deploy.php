@@ -81,6 +81,7 @@ task('deploy:migrate', function () {
     }
 
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
+    artisan('mcp:sync-sql-roles', ['skipIfNoEnv', 'showOutput'])();
 });
 
 desc('Stop active cache warming crawls early in deployment');
