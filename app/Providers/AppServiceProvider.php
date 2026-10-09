@@ -247,6 +247,7 @@ class AppServiceProvider extends ServiceProvider
                 'Sowing'                           => 'App\Models\GoodsIn\Sowing',
                 'StockDelivery'                    => 'App\Models\GoodsIn\StockDelivery',
                 'StockDeliveryItem'                => 'App\Models\GoodsIn\StockDeliveryItem',
+                'StockDeliveryServiceInvoice'      => 'App\Models\GoodsIn\StockDeliveryServiceInvoice',
                 'ReturnDeliveryNote'               => 'App\Models\GoodsIn\ReturnDeliveryNote',
 
                 // Dropshipping

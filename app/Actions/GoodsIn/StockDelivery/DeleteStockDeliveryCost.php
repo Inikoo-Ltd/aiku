@@ -31,6 +31,10 @@ class DeleteStockDeliveryCost extends OrgAction
         if ($this->stockDeliveryCost->type !== StockDeliveryCostTypeEnum::EXTRA) {
             $validator->errors()->add('type', __('Only extra expenses can be deleted'));
         }
+
+        if (!$this->asAction && $this->stockDeliveryCost->from_service_invoices) {
+            $validator->errors()->add('type', __('This cost comes from the service invoices, change the invoice instead'));
+        }
     }
 
     public function handle(StockDeliveryCost $stockDeliveryCost): void

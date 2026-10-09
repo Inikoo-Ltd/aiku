@@ -25,20 +25,24 @@ class UpdateStockDeliveryCost extends OrgAction
 
     public function rules(): array
     {
-        return [
+        return array_merge(StoreStockDeliveryCost::serviceInvoiceRules($this->asAction), [
             'label'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'amount'      => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'received_at' => ['sometimes', 'nullable', 'date'],
             'is_na'       => ['sometimes', 'boolean'],
             'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
             'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-        ];
+        ]);
     }
 
     public function afterValidator(Validator $validator): void
     {
         if (!$this->asAction && $this->stockDeliveryCost->stockDelivery->is_costed) {
             $validator->errors()->add('state', __('This stock delivery is costed, an accounting manager can change it with Update costing'));
+        }
+
+        if (!$this->asAction && $this->stockDeliveryCost->from_service_invoices) {
+            $validator->errors()->add('type', __('This cost comes from the service invoices, change the invoice instead'));
         }
     }
 

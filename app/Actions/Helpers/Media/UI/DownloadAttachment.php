@@ -14,6 +14,7 @@ use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryServiceInvoice;
 use App\Models\Helpers\Media;
 use App\Models\HumanResources\AttendanceAdjustment;
 use App\Models\HumanResources\Clocking;
@@ -117,6 +118,10 @@ class DownloadAttachment
                 "accounting.$owner->organisation_id.view",
                 'supply-chain.view',
                 ...$this->goodsInPermissions($owner->organisation_id),
+            ]),
+            $owner instanceof StockDeliveryServiceInvoice => $user->authTo([
+                "procurement.$owner->organisation_id.view",
+                "accounting.$owner->organisation_id.view",
             ]),
             $owner instanceof PurchaseOrder => $user->authTo([
                 "procurement.$owner->organisation_id.view",

@@ -23,6 +23,7 @@ import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliver
 import StockDeliveryInvoiceCosting from "@/Components/Procurement/StockDeliveryInvoiceCosting.vue"
 import StockDeliveryInvoiceEntry from "@/Components/Procurement/StockDeliveryInvoiceEntry.vue"
 import StockDeliveryAgentPayments from "@/Components/Procurement/StockDeliveryAgentPayments.vue"
+import StockDeliveryServiceInvoices from "@/Components/Procurement/StockDeliveryServiceInvoices.vue"
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
@@ -179,6 +180,7 @@ const props = defineProps<{
 	attachmentScopes: { name: string; code: string }[]
 	invoice_costing: InstanceType<typeof StockDeliveryInvoiceCosting>["$props"]["invoices"]
 	agentInvoice?: InstanceType<typeof AgentContainerInvoicePanel>["$props"]["data"] | null
+	service_invoices: InstanceType<typeof StockDeliveryServiceInvoices>["$props"]["data"] | null
 	notes?: {}
 	note_store_route?: routeType
 	history?: {}
@@ -937,6 +939,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:currency="box_stats.invoice.currency"
 				:hasCharges="box_stats.invoice.charges_list.length > 0"
 			/>
+			<StockDeliveryServiceInvoices v-if="service_invoices && blockIndex === costBlocks.length - 1" :data="service_invoices" />
 			<div v-if="isCostingVisible && blockIndex === costBlocks.length - 1" class="mt-3 flex justify-end">
 				<Button
 					type="tertiary"

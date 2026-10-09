@@ -51,6 +51,8 @@ use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\GoodsIn\StockDeliveryCost;
+use App\Models\GoodsIn\StockDeliveryServiceInvoice;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\UI\IndexStockDeliveryServiceInvoices;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
@@ -157,6 +159,7 @@ class ShowStockDelivery extends OrgAction
                 'costing'          => $this->getCosting($stockDelivery),
                 'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
                 'invoice_costing'  => GetStockDeliveryInvoiceCosting::run($stockDelivery),
+                'service_invoices' => $this->getServiceInvoices($stockDelivery),
                 'agentInvoice'     => $stockDelivery->agent_id && $stockDelivery->agent_id === $this->getOrganisationAgent($this->organisation)?->id
                     ? GetAgentContainerInvoiceData::run($this->organisation, $stockDelivery)
                     : null,
@@ -753,6 +756,42 @@ class ShowStockDelivery extends OrgAction
         }
 
         return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value));
+    }
+
+    /**
+     * Agents never see what the receiving organisation pays locally.
+     */
+    private function getServiceInvoices(StockDelivery $stockDelivery): ?array
+    {
+        if ($this->organisation->type === OrganisationTypeEnum::AGENT || $stockDelivery->parent_type === 'OrgPartner'
+            || !request()->user()?->authTo(["procurement.{$this->organisation->id}.view", "accounting.{$this->organisation->id}.view"])) {
+            return null;
+        }
+
+        $serviceInvoices = $stockDelivery->serviceInvoices()
+            ->with(['currency:id,code', 'stockDeliveries:id,slug,reference', 'attachments'])
+            ->orderBy('date')
+            ->get();
+
+        return [
+            'list'         => $serviceInvoices->map(fn (StockDeliveryServiceInvoice $serviceInvoice) => IndexStockDeliveryServiceInvoices::row($serviceInvoice, $stockDelivery->organisation))->all(),
+            'can_edit'     => $this->canEditPayments || $this->canUpdateCosting,
+            'is_costed'    => $stockDelivery->is_costed,
+            'types'        => IndexStockDeliveryServiceInvoices::typeOptions(),
+            'org_currency' => $stockDelivery->organisation->currency->code,
+            'org_currency_id' => $stockDelivery->organisation->currency_id,
+            'currencies'   => Currency::orderBy('code')->get(['id', 'code'])->toArray(),
+            'stock_delivery_id' => $stockDelivery->id,
+            'stock_deliveries'  => StockDelivery::where('organisation_id', $stockDelivery->organisation_id)
+                ->where('is_costed', false)
+                ->whereNotIn('state', [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED])
+                ->orderByDesc('id')
+                ->limit(200)
+                ->get(['id', 'reference'])
+                ->toArray(),
+            'store_route'  => ['name' => 'grp.models.org.stock_delivery_service_invoice.store', 'parameters' => ['organisation' => $stockDelivery->organisation_id], 'method' => 'post'],
+            'index_route'  => ['name' => 'grp.org.procurement.service_invoices.index', 'parameters' => [$stockDelivery->organisation->slug]],
+        ];
     }
 
     private function getCosting(StockDelivery $stockDelivery): array

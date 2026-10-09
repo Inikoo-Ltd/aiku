@@ -15,6 +15,7 @@ use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
+use App\Actions\GoodsIn\StockDeliveryServiceInvoice\UI\IndexStockDeliveryServiceInvoices;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Procurement\OrgAgent\ExportOrgAgents;
 use App\Actions\Procurement\OrgAgent\UI\EditOrgAgent;
@@ -106,6 +107,7 @@ Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
 Route::get('/stock-cover', IndexOrganisationStockCoverItems::class)->name('stock_cover.index');
 Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->name('stock_cover.export');
 Route::get('/pre-orders', IndexPreOrdersBySupplier::class)->name('pre_orders.index');
+Route::get('/service-invoices', IndexStockDeliveryServiceInvoices::class)->name('service_invoices.index');
 Route::patch('/pre-orders', UpdatePreOrdersForSupplier::class)->name('pre_orders.update');
 
 Route::prefix('settings')->as('settings.')->group(function () {
