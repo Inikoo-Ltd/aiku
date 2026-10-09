@@ -14,6 +14,7 @@ use App\Actions\CRM\UI\ShowCrmDashboard;
 use App\Actions\Web\WebsitePageView\UI\IndexWebsitePageViews;
 use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
 use App\Actions\Web\Crawl\UI\ShowSiteAudit;
+use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
 use App\Actions\Web\Seo\UI\ShowSeoBacklinks;
 use App\Actions\Web\Seo\UI\ShowSeoCompetitors;
 use App\Actions\Web\Seo\UI\ShowSeoKeywords;
@@ -118,6 +119,7 @@ Route::prefix('{shop}')->name('show.')
                 Route::get('page-views/visitors/{websiteVisitor}', [IndexWebsitePageViews::class, 'inVisitor'])->name('page_views.visitor')->withoutScopedBindings();
         Route::get('site-audit', ShowSiteAudit::class)->name('site_audit.show');
         Route::get('site-audit/issues/{issueType}', IndexSiteAuditIssuePages::class)->name('site_audit.issue');
+        Route::get('site-audit/suggestions', IndexSeoContentSuggestions::class)->name('site_audit.suggestions');
         Route::get('missing-pages', IndexWebsiteNotFoundPaths::class)->name('not_found.index');
         Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
         Route::get('backlinks', ShowSeoBacklinks::class)->name('backlinks.show');

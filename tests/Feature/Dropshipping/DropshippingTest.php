@@ -989,7 +989,7 @@ test('bulk price rule prices each product from its own rrp', function () {
     $productB->update(['rrp' => 20]);
     $portfolioB = StorePortfolio::make()->action($customerSalesChannel, $productB, []);
 
-    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::run([
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::run($this->customer, [
         'items'         => [$portfolioA->id, $portfolioB->id],
         'pricing_type'  => 'percent',
         'pricing_value' => -10
@@ -998,6 +998,31 @@ test('bulk price rule prices each product from its own rrp', function () {
     expect((float) $portfolioA->refresh()->customer_price)->toBe(9.0)
         ->and((float) $portfolioB->refresh()->customer_price)->toBe(18.0)
         ->and(\Illuminate\Support\Arr::get($portfolioA->settings, 'pricing_opt_out'))->toBeTrue();
+});
+
+test('bulk price rule ignores portfolios of another customer', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $this->product->update(['rrp' => 10]);
+
+    $ownChannel   = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_bulk_price_own']);
+    $ownPortfolio = StorePortfolio::make()->action($ownChannel, $this->product, []);
+
+    $otherCustomer  = createOwnCustomer($this->shop, 'bulk price other customer');
+    $otherChannel   = StoreCustomerSalesChannel::make()->action($otherCustomer, $platform, ['reference' => 'test_ebay_bulk_price_other']);
+    $otherPortfolio = StorePortfolio::make()->action($otherChannel, $this->product, []);
+    $otherPrice     = (float) $otherPortfolio->customer_price;
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::run($this->customer, [
+        'items'         => [$ownPortfolio->id, $otherPortfolio->id],
+        'pricing_type'  => 'percent',
+        'pricing_value' => 50
+    ], true);
+
+    $otherPortfolio->refresh();
+    expect((float) $ownPortfolio->refresh()->customer_price)->toBe(15.0)
+        ->and((float) $otherPortfolio->customer_price)->toBe($otherPrice)
+        ->and(\Illuminate\Support\Arr::get($otherPortfolio->settings, 'pricing'))->toBeNull()
+        ->and(\Illuminate\Support\Arr::get($otherPortfolio->settings, 'pricing_opt_out'))->toBeNull();
 });
 
 test('platform portfolio logs are only reachable through the retina portfolios logs tab', function () {

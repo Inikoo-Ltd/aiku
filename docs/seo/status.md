@@ -20,6 +20,8 @@ Nothing here has been deployed yet.
 | 2.2 Rank tracking | Google position of every tracked keyword, weekly (top 30) or daily (top 20), with SERP features, AI Overview citations and competitor positions; volumes refreshed monthly | SEO > Keywords: Rankings tab |
 | 3.1 Backlinks | Weekly rank, referring domains and backlinks for our websites and competitors; our links one by one every four weeks with new, lost and broken; backlink gap against up to four domains; backlinks per 404 path | SEO > Backlinks; SEO > Missing pages |
 | 3.2 Competitor research | Competitor domains and the ones Google results suggest; domain comparison (links, organic keywords, estimated traffic, intent) and keyword gap against up to four domains, in the shop's market | SEO > Competitors |
+| 3.4 Content help | AI-written page titles and meta descriptions for the pages the audit flags and the pages with many impressions and few clicks, weekly or on request; never published until someone uses them | Webpage: SEO and sharing panel; SEO > Site audit > Suggested fixes |
+| 3.6 Top pages | Every webpage with visitors, page views and Search Console clicks, impressions and position against the previous period, filters Growing, Dropping, New and Lost, the number of queries and referring domains per page | SEO dashboard: Top pages tab |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -41,10 +43,9 @@ Nothing here has been deployed yet.
 | Part | What has to happen first |
 | --- | --- |
 | 3.3 AI visibility | Choose the models (with web search on) and write the prompts per shop; check the SEO provider's AI mention data first |
-| 3.4 Content help | Nothing; can start any time. The first Site Audit found many product pages with an empty meta description, which is where this would start. |
 | 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
 | 3.5 Non-Google demand | Choose the platforms; Bing Webmaster Tools keyword data is free |
-| 3.6 Top pages | Nothing for the traffic and Search Console change against the previous period; can start any time. Referring domains and AI citations per page wait for 3.1 and 3.3. |
+| 3.6 AI citations per page | Waits for 3.3 |
 
 ### Last: API usage
 
@@ -72,7 +73,7 @@ Nothing here has been deployed yet.
 Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
 external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
 daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes, backlinks Mondays at
-01:00 UTC, competitor keywords Mondays at 02:00 UTC.
+01:00 UTC, competitor keywords Mondays at 02:00 UTC, content suggestions Tuesdays at 04:00 UTC.
 
 ## Configuration
 
@@ -84,4 +85,4 @@ daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 
 | `SEO_API_MONTHLY_BUDGET` | One monthly budget in USD for all paid SEO APIs together; no billable call is made once the month's spend reaches it. Becomes a setting on the API usage page | No, defaults to 250 |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
-| `OPENROUTER_API_KEY` | AI visibility and content help (Phase 3) | Not yet |
+| `OPENROUTER_API_KEY` | Content help (3.4), and AI visibility (3.3) later | Yes, for content help |

@@ -414,9 +414,35 @@ product titles and descriptions.
 
 ### 3.4 Content help
 
-- `WithPromptAI::promptSeo()` exists and nothing calls it. Use the gateway to suggest meta titles
-  and descriptions for pages that the audit flags, and for pages with high impressions and low CTR.
-- Suggestions are never published automatically. Someone accepts them on the webpage SEO panel.
+Built on 9 October 2026 on the AI gateway (OpenRouter, `gpt-5.6-luna`, under a tenth of a cent per
+page). `WithPromptAI::promptSeo()` is still unused; the prompt lives in the new action.
+
+- `GenerateSeoContentSuggestions` writes a page title and/or meta description for one webpage from
+  what it shows (product name, code, description and family, or category, description and some of
+  its products), the Google searches it appears for (Search Console, last 90 days) and the audit's
+  length limits. The title limit is 60 characters minus the website's title prefix: Google cuts
+  titles from the end, so a long suffix (AW UK's "- Ancient Wisdom - Giftware and Aromatherapy
+  Supplier" is 54 characters on its own) can be cut but the page title should not be. It is told to
+  state only facts from the page. Every call is logged in `seo_api_requests` with its cost and counts
+  against the SEO API budget.
+- `seo_content_suggestions`: webpage, field, the value when it was written, the suggestion, why
+  (audit issue, low CTR, or asked for), state (pending, accepted, dismissed), who decided and when.
+- `SuggestSeoContent` (Tuesdays 04:00 UTC, after the Sunday audits; `seo:suggest_content {website?}
+  {--limit=}`), up to 30 pages per website: first the pages with at least 500 impressions in 28
+  days, an average position of 10 or better and a CTR under 2%, then the title and description
+  issues of the latest audit. "Title too long" only counts when the page title itself is too long,
+  not when the website's own text makes it so. A page with a pending suggestion, or one decided in
+  the last 90 days, is skipped for that field.
+- Nothing is published by itself. `AcceptSeoContentSuggestion` writes the suggestion, possibly
+  edited, through `UpdateWebpage`, so it shows in the webpage history; `DismissSeoContentSuggestion`
+  keeps the page as it is.
+
+**Screens.**
+
+- Webpage, SEO and sharing panel: the pending suggestions, editable, with Use this and Dismiss, and
+  a button that writes a new title and description on the spot.
+- SEO > Site audit, Suggested fixes: every suggestion of the website, waiting, used or dismissed,
+  with the same actions.
 
 ### 3.5 Apify for competitor traffic and non-Google search demand
 
@@ -468,29 +494,24 @@ Similarweb API (licensed, priced) for competitor traffic before building it.
 
 ### 3.6 Top pages
 
-**Today.** The Webpages tab of the SEO dashboard lists webpages with Aiku's traffic for the
-dashboard interval and, since 1.1, Search Console clicks, impressions and position. It shows no
-comparison with an earlier period.
+Built on 9 October 2026. The Webpages tab of the SEO dashboard is now Top pages
+(`IndexWebpagesPerformance`).
 
-**Build.** Turn the Webpages tab into Top pages, one column group at a time as the data arrives:
-
-| Columns | Source | Can start |
-| --- | --- | --- |
-| Visitors, page views and their % change against the previous period of the same length | `webpage_time_series_records` | Now |
-| Search clicks, impressions and their % change, position and its change, number of queries | `search_console_page_days`, `search_console_page_queries` | Now |
-| Referring domains and backlinks | `seo_backlinks` (3.1) | With 3.1 |
-| AI prompts that cite the page, and by how many models | `seo_ai_citations` (3.3) | With 3.3 |
-
-- The previous period ends the day before the dashboard interval starts and has the same number of
-  days. Search Console data ends 3 days before today, so its comparison uses its own last day, not
-  today.
-- The change is shown in % with its direction, and as the absolute difference on hover, because a
-  page going from 2 visitors to 4 is +100% and means nothing. Hide the % below a minimum (for example
-  20 visitors or clicks in either period) and show only the difference.
-- Filters: Growing, Dropping, New (no traffic in the previous period), Lost (no traffic now).
-  Sorted by traffic by default; sorting by change finds the biggest drops.
-- The prompts column opens the list of prompts and models that cited the page; the referring
-  domains column opens the backlinks to the page.
+- For the dashboard interval and the period before it (same number of days, ending the day before
+  the interval starts): visitors and page views from `webpage_time_series_records`; Search Console
+  clicks, impressions and position from `search_console_page_days`, whose periods end on the last
+  day Search Console has data for, not today. With the interval set to All there is nothing to
+  compare with, and the table says so.
+- Each figure shows its change under it: a percentage, or the plain difference when both periods
+  are under 20 (`MIN_FOR_PERCENT`), with the previous value and the difference on hover. Position
+  shows the places gained or lost.
+- Filters Growing, Dropping, New (no visitors before) and Lost (no visitors now), on visitors.
+  Growing and Dropping sort by the change, so the biggest drops come first. Lost pages are listed
+  even with no traffic in the interval.
+- New columns: Queries (different Google searches the page appeared for) and Referring domains
+  (from `seo_backlinks` of 3.1, our own websites left out; that list holds one link per linking
+  domain plus the new, lost and broken ones, so it counts domains better than links).
+- Waits for 3.3: the AI prompts that cite each page.
 
 ### Phase 3 is done when
 

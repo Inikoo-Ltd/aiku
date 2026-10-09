@@ -23,8 +23,47 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebpagesPerformance extends OrgAction
 {
+    /**
+     * Below this many visitors or clicks in both periods a change is shown as a difference, not a
+     * percentage: going from 2 to 4 is +100% and means nothing.
+     */
+    public const int MIN_FOR_PERCENT = 20;
+
+    /**
+     * The previous period ends the day before the interval starts and has the same number of days.
+     * Search Console data stops a few days before today, so its periods end on its own last day.
+     *
+     * @return array{traffic: array{from: string, to: string, previous_from: string, previous_to: string}|null, search: array{from: string, to: string, previous_from: string, previous_to: string}|null}
+     */
+    public static function periods(Website $website, ?string $fromDate, ?string $toDate): array
+    {
+        if (!$fromDate) {
+            return ['traffic' => null, 'search' => null];
+        }
+
+        $from = Carbon::parse($fromDate)->startOfDay();
+        $to   = Carbon::parse($toDate ?? today())->startOfDay();
+
+        $lastSearchDay = DB::table('search_console_page_days')->where('website_id', $website->id)->max('date');
+        $searchTo      = $lastSearchDay ? Carbon::parse($lastSearchDay)->min($to) : null;
+
+        $period = fn (Carbon $from, Carbon $to) => $to->lt($from) ? null : [
+            'from'          => $from->toDateString(),
+            'to'            => $to->toDateString(),
+            'previous_from' => $from->copy()->subDays((int) $from->diffInDays($to) + 1)->toDateString(),
+            'previous_to'   => $from->copy()->subDay()->toDateString(),
+        ];
+
+        return [
+            'traffic' => $period($from, $to),
+            'search'  => $searchTo ? $period($from, $searchTo) : null,
+        ];
+    }
+
     public function handle(Website $website, ?string $fromDate = null, ?string $toDate = null, ?string $prefix = null): LengthAwarePaginator
     {
+        $periods = self::periods($website, $fromDate, $toDate);
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $value = strip_tags($value);
@@ -66,11 +105,59 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw('SUM(search_console_page_days.impressions) as search_impressions')
             ->selectRaw('SUM(search_console_page_days.position * search_console_page_days.impressions) as search_weighted_position');
 
+        $previousPerformance = $periods['traffic'] ? DB::table('webpage_time_series')
+            ->join('webpage_time_series_records', 'webpage_time_series_records.webpage_time_series_id', '=', 'webpage_time_series.id')
+            ->where('webpage_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->where('webpage_time_series_records.frequency', TimeSeriesFrequencyEnum::DAILY->singleLetter())
+            ->whereIn('webpage_time_series.webpage_id', DB::table('webpages')->where('website_id', $website->id)->select('id'))
+            ->whereBetween('webpage_time_series_records.period', [$periods['traffic']['previous_from'], $periods['traffic']['previous_to']])
+            ->groupBy('webpage_time_series.webpage_id')
+            ->select('webpage_time_series.webpage_id')
+            ->selectRaw('SUM(webpage_time_series_records.visitors) as visitors')
+            ->selectRaw('SUM(webpage_time_series_records.page_views) as page_views') : null;
+
+        $previousSearch = $periods['search'] ? DB::table('search_console_page_days')
+            ->where('search_console_page_days.website_id', $website->id)
+            ->whereNotNull('search_console_page_days.webpage_id')
+            ->whereBetween('search_console_page_days.date', [$periods['search']['previous_from'], $periods['search']['previous_to']])
+            ->groupBy('search_console_page_days.webpage_id')
+            ->select('search_console_page_days.webpage_id')
+            ->selectRaw('SUM(search_console_page_days.clicks) as search_clicks')
+            ->selectRaw('SUM(search_console_page_days.impressions) as search_impressions')
+            ->selectRaw('SUM(search_console_page_days.position * search_console_page_days.impressions) as search_weighted_position') : null;
+
+        $queries = DB::table('search_console_page_queries')
+            ->where('website_id', $website->id)
+            ->whereNotNull('webpage_id')
+            ->when($fromDate, fn ($query) => $query->where('date', '>=', Carbon::parse($fromDate)->toDateString()))
+            ->when($toDate, fn ($query) => $query->where('date', '<=', Carbon::parse($toDate)->toDateString()))
+            ->groupBy('webpage_id')
+            ->select('webpage_id')
+            ->selectRaw('COUNT(DISTINCT query) as search_queries');
+
+        $backlinks = DB::table('seo_backlinks')
+            ->where('website_id', $website->id)
+            ->whereNotNull('target_webpage_id')
+            ->whereNull('lost_at')
+            ->where('is_own_website', false)
+            ->groupBy('target_webpage_id')
+            ->select('target_webpage_id')
+            ->selectRaw('COUNT(*) as backlinks')
+            ->selectRaw('COUNT(DISTINCT source_domain) as referring_domains');
+
         $queryBuilder = QueryBuilder::for(Webpage::class)
             ->where('webpages.website_id', $website->id)
             ->leftJoinSub($performance, 'performance', 'performance.webpage_id', '=', 'webpages.id')
             ->leftJoinSub($search, 'search', 'search.webpage_id', '=', 'webpages.id')
-            ->where(fn ($query) => $query->whereNotNull('performance.webpage_id')->orWhereNotNull('search.webpage_id'))
+            ->leftJoinSub($queries, 'queries', 'queries.webpage_id', '=', 'webpages.id')
+            ->leftJoinSub($backlinks, 'backlinks', 'backlinks.target_webpage_id', '=', 'webpages.id')
+            ->when($previousPerformance, fn ($query) => $query->leftJoinSub($previousPerformance, 'previous_performance', 'previous_performance.webpage_id', '=', 'webpages.id'))
+            ->when($previousSearch, fn ($query) => $query->leftJoinSub($previousSearch, 'previous_search', 'previous_search.webpage_id', '=', 'webpages.id'))
+            ->where(fn ($query) => $query
+                ->whereNotNull('performance.webpage_id')
+                ->orWhereNotNull('search.webpage_id')
+                ->when($previousPerformance, fn ($query) => $query->orWhereNotNull('previous_performance.webpage_id'))
+                ->when($previousSearch, fn ($query) => $query->orWhereNotNull('previous_search.webpage_id')))
             ->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id')
             ->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id')
             ->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
@@ -101,8 +188,36 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw('CASE WHEN search.search_impressions > 0 THEN ROUND(search.search_weighted_position / search.search_impressions, 1) END as search_position')
             ->selectRaw('CASE WHEN performance.page_views > 0 THEN ROUND(performance.total_time_on_page / performance.page_views) ELSE 0 END as avg_time_on_page')
             ->selectRaw('CASE WHEN performance.entrances > 0 THEN ROUND(performance.purchases * 100.0 / performance.entrances, 2) ELSE 0 END as conversion_rate')
-            ->allowedSorts(['code', 'title', 'visitors', 'page_views', 'avg_time_on_page', 'conversion_rate', 'search_clicks', 'search_impressions', 'search_position'])
-            ->allowedFilters([$globalSearch])
+            ->selectRaw('COALESCE(queries.search_queries, 0) as search_queries')
+            ->selectRaw('COALESCE(backlinks.backlinks, 0) as backlinks')
+            ->selectRaw('COALESCE(backlinks.referring_domains, 0) as referring_domains')
+            ->selectRaw($previousPerformance ? 'COALESCE(previous_performance.visitors, 0) as previous_visitors' : 'NULL as previous_visitors')
+            ->selectRaw($previousPerformance ? 'COALESCE(previous_performance.page_views, 0) as previous_page_views' : 'NULL as previous_page_views')
+            ->selectRaw($previousSearch ? 'COALESCE(previous_search.search_clicks, 0) as previous_search_clicks' : 'NULL as previous_search_clicks')
+            ->selectRaw($previousSearch ? 'COALESCE(previous_search.search_impressions, 0) as previous_search_impressions' : 'NULL as previous_search_impressions')
+            ->selectRaw($previousSearch ? 'CASE WHEN previous_search.search_impressions > 0 THEN ROUND(previous_search.search_weighted_position / previous_search.search_impressions, 1) END as previous_search_position' : 'NULL as previous_search_position')
+            ->selectRaw($previousPerformance ? 'COALESCE(performance.visitors, 0) - COALESCE(previous_performance.visitors, 0) as visitors_change' : 'NULL as visitors_change')
+            ->selectRaw($previousSearch ? 'COALESCE(search.search_clicks, 0) - COALESCE(previous_search.search_clicks, 0) as search_clicks_change' : 'NULL as search_clicks_change')
+            ->allowedSorts(['code', 'title', 'visitors', 'page_views', 'avg_time_on_page', 'conversion_rate', 'search_clicks', 'search_impressions', 'search_position', 'search_queries', 'referring_domains', 'visitors_change', 'search_clicks_change'])
+            ->allowedFilters([
+                $globalSearch,
+                AllowedFilter::callback('trend', function ($query, $value) use ($previousPerformance) {
+                    if (!$previousPerformance) {
+                        return;
+                    }
+
+                    $current  = 'COALESCE(performance.visitors, 0)';
+                    $previous = 'COALESCE(previous_performance.visitors, 0)';
+
+                    match ($value) {
+                        'growing'  => $query->whereRaw("$current > $previous AND $previous > 0"),
+                        'dropping' => $query->whereRaw("$current < $previous AND $current > 0"),
+                        'new'      => $query->whereRaw("$previous = 0 AND $current > 0"),
+                        'lost'     => $query->whereRaw("$current = 0 AND $previous > 0"),
+                        default    => null,
+                    };
+                }),
+            ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -133,6 +248,8 @@ class IndexWebpagesPerformance extends OrgAction
                 ->column(key: 'search_clicks', label: __('Search clicks'), tooltip: __('Clicks from Google Search, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'search_impressions', label: __('Impressions'), tooltip: __('Times the page was shown in Google Search, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'search_position', label: __('Position'), tooltip: __('Average position in Google Search, weighted by impressions. 1 is the top result'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'search_queries', label: __('Queries'), tooltip: __('Different Google searches the page appeared for, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'referring_domains', label: __('Referring domains'), tooltip: __('Other websites linking to the page, from our monthly backlink list, our own websites left out. The list holds one link per linking domain, so it counts domains better than links'), sortable: true, align: 'right', tooltipIcon: true)
                 ->defaultSort('-visitors');
         };
     }

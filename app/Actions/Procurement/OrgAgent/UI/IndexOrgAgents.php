@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\OrgAgent\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\AgentOrder\ResolveAgentOrderReference;
 use App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets;
 use App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -30,6 +29,15 @@ class IndexOrgAgents extends OrgAction
     use WithProcurementAuthorisation;
 
     private const COVER_BUCKETS = ['out', 'w1', 'w2', 'w3'];
+
+    /**
+     * A stock delivery not dispatched yet is the next container being filled at the agent.
+     */
+    private const NEXT_CONTAINER_STATES = [
+        StockDeliveryStateEnum::IN_PROCESS->value,
+        StockDeliveryStateEnum::CONFIRMED->value,
+        StockDeliveryStateEnum::READY_TO_SHIP->value,
+    ];
 
     /**
      * @return Collection<int, OrgAgent>
@@ -68,7 +76,6 @@ class IndexOrgAgents extends OrgAction
             'country_name'         => $location[1] ?? null,
             'currency_code'        => $agent->currency?->code,
             'suppliers'            => (int) $orgAgent->stats?->number_org_suppliers,
-            'open_agent_order'     => ResolveAgentOrderReference::make()->openAgentOrderReference($orgAgent),
             'last_submitted_at'    => $this->lastSubmittedAt($orgAgent),
             'pipeline'             => $this->pipeline($orgAgent),
             'current'              => $this->agentOrderRows($orgAgent)->concat($this->stockDeliveryRows($orgAgent))->values()->all(),
@@ -194,7 +201,7 @@ class IndexOrgAgents extends OrgAction
             ->orderByRaw('coalesce(date, created_at)')
             ->get()
             ->map(fn ($stockDelivery) => [
-                'type'        => 'stock_delivery',
+                'type'        => in_array($stockDelivery->state, self::NEXT_CONTAINER_STATES, true) ? 'next_container' : 'stock_delivery',
                 'reference'   => $stockDelivery->reference,
                 'state'       => $stockDelivery->state,
                 'state_label' => $stateLabels[$stockDelivery->state] ?? $stockDelivery->state,
@@ -251,7 +258,7 @@ class IndexOrgAgents extends OrgAction
                     ],
                 ],
                 'currency_code'     => $this->organisation->currency->code,
-                'can_create_orders' => $this->canEdit,
+                'card_sections'     => (object) ($request->user()->settings['agent_card_sections'] ?? []),
                 'agents'            => $orgAgents->map(fn (OrgAgent $orgAgent) => $this->agentCard($orgAgent))->all(),
                 'cover'             => Inertia::defer(fn () => $this->coverByAgent($orgAgents)),
             ],

@@ -34,6 +34,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $search_clicks
  * @property mixed $search_impressions
  * @property mixed $search_position
+ * @property mixed $search_queries
+ * @property mixed $backlinks
+ * @property mixed $referring_domains
+ * @property mixed $previous_visitors
+ * @property mixed $previous_page_views
+ * @property mixed $previous_search_clicks
+ * @property mixed $previous_search_impressions
+ * @property mixed $previous_search_position
  */
 class WebpagePerformanceResource extends JsonResource
 {
@@ -66,6 +74,16 @@ class WebpagePerformanceResource extends JsonResource
             'search_clicks'      => (int) $this->search_clicks,
             'search_impressions' => (int) $this->search_impressions,
             'search_position'    => $this->search_position !== null ? (float) $this->search_position : null,
+            'search_queries'     => (int) $this->search_queries,
+            'backlinks'          => (int) $this->backlinks,
+            'referring_domains'  => (int) $this->referring_domains,
+            'previous'           => [
+                'visitors'           => $this->previous_visitors !== null ? (int) $this->previous_visitors : null,
+                'page_views'         => $this->previous_page_views !== null ? (int) $this->previous_page_views : null,
+                'search_clicks'      => $this->previous_search_clicks !== null ? (int) $this->previous_search_clicks : null,
+                'search_impressions' => $this->previous_search_impressions !== null ? (int) $this->previous_search_impressions : null,
+                'search_position'    => $this->previous_search_position !== null ? (float) $this->previous_search_position : null,
+            ],
         ];
     }
 }

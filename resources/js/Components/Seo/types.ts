@@ -24,3 +24,20 @@ export type SeoResearchQuery = {
     country_code: string
     language_code: string
 }
+
+export type ContentSuggestion = {
+    id: number
+    field: "title" | "description"
+    current_value: string | null
+    suggestion: string
+    reason: string
+    created_at: string | null
+    accept_route: routeType
+    dismiss_route: routeType
+}
+
+export type ContentSuggestions = {
+    items: ContentSuggestion[]
+    request_route: routeType
+    limits: { title: number, description: number }
+}

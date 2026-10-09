@@ -6,10 +6,9 @@
 
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { ref } from "vue"
+import axios from "axios"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -21,15 +20,28 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faPeopleArrows,
 	faShoppingBasket,
-	faPlus,
-	faTruckContainer,
+	faShip,
+	faChartLineDown,
+	faChevronDown,
+	faChevronUp,
 	faBoxes,
 	faClipboardList,
+	faWarehouse,
 } from "@fal"
-library.add(faPeopleArrows, faShoppingBasket, faPlus, faTruckContainer, faBoxes, faClipboardList)
+library.add(
+	faPeopleArrows,
+	faShoppingBasket,
+	faShip,
+	faChartLineDown,
+	faChevronDown,
+	faChevronUp,
+	faBoxes,
+	faClipboardList,
+	faWarehouse
+)
 
 interface CurrentItem {
-	type: "agent_order" | "stock_delivery"
+	type: "agent_order" | "next_container" | "stock_delivery"
 	reference: string
 	state: string
 	state_label: string
@@ -50,7 +62,6 @@ interface AgentCard {
 	country_name: string | null
 	currency_code: string | null
 	suppliers: number
-	open_agent_order: string | null
 	last_submitted_at: string | null
 	current: CurrentItem[]
 	pipeline: {
@@ -74,9 +85,9 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	currency_code: string
-	can_create_orders?: boolean
 	agents: AgentCard[]
 	cover?: Record<number, CoverBucket[]>
+	card_sections: Record<string, boolean>
 }>()
 
 const locale = useLocaleStore()
@@ -132,19 +143,24 @@ const stateClass = (item: CurrentItem) => {
 	return "bg-gray-100 text-gray-700"
 }
 
-const ROWS_SHOWN = 5
-
-const groups: { type: CurrentItem["type"]; title: string; empty: string; icon: string }[] = [
+const groups: { type: CurrentItem["type"]; title: string; icon: string }[] = [
+	{
+		type: "next_container",
+		title: ctrans("Next container, at the agent"),
+		icon: "fal fa-warehouse",
+	},
 	{
 		type: "stock_delivery",
-		title: ctrans("Containers"),
-		empty: ctrans("No containers on the way"),
-		icon: "fal fa-truck-container",
+		title: ctrans("Containers on the way"),
+		icon: "fal fa-ship",
 	},
 ]
 
 const openOrdersValue = (agent: AgentCard) =>
 	itemsOf(agent, "agent_order").reduce((total, item) => total + (item.value ?? 0), 0)
+
+const readyToShip = (agent: AgentCard) =>
+	agent.pipeline.stages.find((stage) => stage.stage === "ready_to_ship")
 
 const itemsOf = (agent: AgentCard, type: CurrentItem["type"]) =>
 	agent.current
@@ -155,36 +171,16 @@ const itemsOf = (agent: AgentCard, type: CurrentItem["type"]) =>
 				a.date.localeCompare(b.date)
 		)
 
-const expanded = ref<Record<string, boolean>>({})
+const expanded = ref<Record<string, boolean>>({ ...props.card_sections })
 
-const isExpanded = (agent: AgentCard, type: string) => !!expanded.value[agent.id + type]
+const OPEN_BY_DEFAULT = ["cover", "orders"]
 
-const toggle = (agent: AgentCard, type: string) =>
-	(expanded.value[agent.id + type] = !isExpanded(agent, type))
+const isExpanded = (agent: AgentCard, section: string) =>
+	expanded.value[agent.id + section] ?? OPEN_BY_DEFAULT.includes(section)
 
-const visibleItems = (agent: AgentCard, type: CurrentItem["type"]) =>
-	isExpanded(agent, type) ? itemsOf(agent, type) : itemsOf(agent, type).slice(0, ROWS_SHOWN)
-
-const creatingFor = ref<number | null>(null)
-
-const createAgentOrder = (agent: AgentCard) => {
-	router.post(
-		route("grp.models.org-agent.agent-order.store", { orgAgent: agent.id }),
-		{},
-		{
-			onStart: () => (creatingFor.value = agent.id),
-			onFinish: () => (creatingFor.value = null),
-			onError: (errors) => {
-				notify({
-					title: ctrans("No agent order created"),
-					text:
-						Object.values(errors)[0] ??
-						ctrans("Something went wrong, please try again"),
-					type: "error",
-				})
-			},
-		}
-	)
+const toggle = (agent: AgentCard, section: string) => {
+	expanded.value[agent.id + section] = !isExpanded(agent, section)
+	axios.patch(route("grp.models.profile.update"), { agent_card_sections: expanded.value })
 }
 </script>
 
@@ -204,7 +200,7 @@ const createAgentOrder = (agent: AgentCard) => {
 					:src="'/flags/' + agent.country_code.toLowerCase() + '.png'"
 					:alt="agent.country_name ?? ''"
 					:title="agent.country_name ?? ''"
-					class="h-4 rounded-sm ring-1 ring-gray-200" />
+					class="h-4 w-auto shrink-0" />
 				<div class="min-w-0 flex-1">
 					<Link
 						:href="agentUrl(agent)"
@@ -247,9 +243,16 @@ const createAgentOrder = (agent: AgentCard) => {
 						<div
 							v-if="bucketsOf(agent).length"
 							class="overflow-hidden rounded-md text-xs ring-1 ring-gray-200">
-							<div
-								v-if="lostOf(agent, 'lost')"
-								class="flex items-baseline gap-1.5 border-b border-gray-200 bg-gray-50 px-2 py-1.5">
+							<button
+								type="button"
+								class="flex w-full items-baseline gap-1.5 bg-gray-50 px-2 py-1.5 text-left hover:bg-gray-100"
+								:class="{ 'border-b border-gray-200': isExpanded(agent, 'cover') }"
+								:aria-expanded="isExpanded(agent, 'cover')"
+								@click="toggle(agent, 'cover')">
+								<FontAwesomeIcon
+									icon="fal fa-chart-line-down"
+									class="self-center text-gray-500"
+									fixed-width />
 								<span class="text-gray-600">{{
 									ctrans("Projected lost sales")
 								}}</span>
@@ -265,64 +268,89 @@ const createAgentOrder = (agent: AgentCard) => {
 										})
 									}}
 								</span>
-							</div>
-							<table class="w-full tabular-nums">
-								<thead class="text-gray-500">
-									<tr>
-										<th class="px-2 py-1 text-left font-normal"></th>
-										<th class="px-2 py-1 text-right font-normal">
-											{{ ctrans("SKOs") }}
-										</th>
-										<th
-											v-tooltip="ctrans('Bestsellers: health rank A or B')"
-											class="cursor-help px-2 py-1 text-right font-normal">
-											{{ ctrans("A/B") }}
-										</th>
-										<th class="px-2 py-1 text-right font-normal">
-											{{ ctrans("Not ordered") }}
-										</th>
-										<th class="px-2 py-1 text-right font-normal">
-											{{ ctrans("Lost sales") }}
-										</th>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-gray-100">
-									<tr
-										v-for="bucket in bucketsOf(agent)"
-										:key="bucket.bucket"
-										class="cursor-pointer hover:bg-gray-50"
-										@click="router.visit(bucketUrl(agent, bucket.bucket))">
-										<td class="px-2 py-1">
-											<span
-												v-tooltip="bucket.label"
-												class="rounded px-1.5 py-0.5"
-												:class="bucketClass[bucket.bucket]"
-												>{{ bucketShortLabel[bucket.bucket] }}</span
-											>
-										</td>
-										<td class="px-2 py-1 text-right font-medium text-gray-900">
-											{{ locale.number(bucket.count) }}
-										</td>
-										<td class="px-2 py-1 text-right">
-											{{
-												bucket.bestsellers
-													? locale.number(bucket.bestsellers)
-													: ""
-											}}
-										</td>
-										<td class="px-2 py-1 text-right">
-											{{
-												bucket.untouched
-													? locale.number(bucket.untouched)
-													: ""
-											}}
-										</td>
-										<td class="px-2 py-1 text-right">
-											{{ bucket.lost ? wholeMoney(bucket.lost) : "" }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
+								<FontAwesomeIcon
+									:icon="
+										isExpanded(agent, 'cover')
+											? 'fal fa-chevron-up'
+											: 'fal fa-chevron-down'
+									"
+									class="self-center text-gray-400"
+									:class="{ 'ml-auto': !lostOf(agent, 'lost_untouched') }"
+									fixed-width />
+							</button>
+							<template v-if="isExpanded(agent, 'cover')">
+								<table class="w-full tabular-nums">
+									<thead class="text-gray-500">
+										<tr>
+											<th class="px-2 py-1 text-left font-normal"></th>
+											<th class="px-2 py-1 text-right font-normal">
+												{{ ctrans("SKOs") }}
+											</th>
+											<th
+												v-tooltip="
+													ctrans('Bestsellers: health rank A or B')
+												"
+												class="cursor-help px-2 py-1 text-right font-normal">
+												{{ ctrans("A/B") }}
+											</th>
+											<th class="px-2 py-1 text-right font-normal">
+												{{ ctrans("Not ordered") }}
+											</th>
+											<th class="px-2 py-1 text-right font-normal">
+												{{ ctrans("Lost sales") }}
+											</th>
+										</tr>
+									</thead>
+									<tbody class="divide-y divide-gray-100">
+										<tr
+											v-for="bucket in bucketsOf(agent)"
+											:key="bucket.bucket"
+											class="cursor-pointer hover:bg-gray-50"
+											@click="router.visit(bucketUrl(agent, bucket.bucket))">
+											<td class="px-2 py-1">
+												<span
+													v-tooltip="bucket.label"
+													class="rounded px-1.5 py-0.5"
+													:class="bucketClass[bucket.bucket]"
+													>{{ bucketShortLabel[bucket.bucket] }}</span
+												>
+											</td>
+											<td
+												class="px-2 py-1 text-right font-medium text-gray-900">
+												{{ locale.number(bucket.count) }}
+											</td>
+											<td class="px-2 py-1 text-right">
+												{{
+													bucket.bestsellers
+														? locale.number(bucket.bestsellers)
+														: ""
+												}}
+											</td>
+											<td class="px-2 py-1 text-right">
+												{{
+													bucket.untouched
+														? locale.number(bucket.untouched)
+														: ""
+												}}
+											</td>
+											<td class="px-2 py-1 text-right">
+												{{ bucket.lost ? wholeMoney(bucket.lost) : "" }}
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<Link
+									:href="
+										agentUrl(
+											agent,
+											'grp.org.procurement.org_agents.show.shopping.dashboard'
+										)
+									"
+									class="flex items-center gap-1.5 border-t border-gray-200 px-2 py-1.5 font-medium text-gray-700 hover:bg-gray-50 hover:underline">
+									<FontAwesomeIcon icon="fal fa-shopping-basket" fixed-width />
+									{{ ctrans("Review and reorder") }}
+								</Link>
+							</template>
 						</div>
 						<div v-else class="text-xs text-emerald-700">
 							{{ ctrans("Nothing running out") }}
@@ -331,86 +359,122 @@ const createAgentOrder = (agent: AgentCard) => {
 				</section>
 
 				<section class="overflow-hidden rounded-md text-xs ring-1 ring-gray-200">
-					<Link
-						:href="
-							agentUrl(
-								agent,
-								'grp.org.procurement.org_agents.show.agent_orders.index'
-							)
-						"
-						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 hover:bg-gray-100">
-						<FontAwesomeIcon
-							icon="fal fa-clipboard-list"
-							class="text-gray-500"
-							fixed-width />
-						<span class="font-medium text-gray-600">{{
-							ctrans("Open purchase orders")
-						}}</span>
-						<span class="tabular-nums text-gray-700">{{
-							locale.number(itemsOf(agent, "agent_order").length)
-						}}</span>
-						<span
-							v-if="itemsOf(agent, 'agent_order').length"
-							class="tabular-nums text-gray-500"
-							>· {{ wholeMoney(openOrdersValue(agent)) }}</span
-						>
-						<span v-if="agent.last_submitted_at" class="ml-auto text-gray-500">
-							{{ ctrans("Last order") }}
-							<span class="tabular-nums text-gray-700">{{
-								shortDate(agent.last_submitted_at)
-							}}</span>
-						</span>
-					</Link>
-					<table v-if="agent.pipeline.stages.length" class="w-full tabular-nums">
-						<tbody class="divide-y divide-gray-100">
-							<tr v-for="stage in agent.pipeline.stages" :key="stage.stage">
-								<td class="px-2 py-1 text-gray-600">{{ stage.label }}</td>
-								<td class="px-2 py-1 text-right text-gray-500">
-									{{
-										ctrans(":count supplier orders", {
-											count: locale.number(stage.orders),
-										})
-									}}
-								</td>
-								<td class="px-2 py-1 text-right font-medium text-gray-900">
-									{{ wholeMoney(stage.value) }}
-								</td>
-							</tr>
-						</tbody>
-					</table>
 					<div
-						v-if="agent.pipeline.late || agent.pipeline.no_eta"
-						class="flex gap-3 border-t border-gray-100 px-2 py-1 text-amber-700">
-						<span v-if="agent.pipeline.late">{{
-							ctrans(":count past their ETA", {
-								count: locale.number(agent.pipeline.late),
-							})
-						}}</span>
-						<span v-if="agent.pipeline.no_eta">{{
-							ctrans(":count without ETA", {
-								count: locale.number(agent.pipeline.no_eta),
-							})
-						}}</span>
+						class="flex items-center bg-gray-50"
+						:class="{ 'border-b border-gray-200': isExpanded(agent, 'orders') }">
+						<Link
+							:href="
+								agentUrl(
+									agent,
+									'grp.org.procurement.org_agents.show.order_pipeline'
+								)
+							"
+							class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 hover:underline">
+							<FontAwesomeIcon
+								icon="fal fa-clipboard-list"
+								class="text-gray-500"
+								fixed-width />
+							<span class="font-medium text-gray-600">{{
+								ctrans("Open purchase orders")
+							}}</span>
+							<span class="tabular-nums text-gray-700">{{
+								locale.number(itemsOf(agent, "agent_order").length)
+							}}</span>
+							<span
+								v-if="itemsOf(agent, 'agent_order').length"
+								class="tabular-nums text-gray-500"
+								>· {{ wholeMoney(openOrdersValue(agent)) }}</span
+							>
+							<span v-if="agent.last_submitted_at" class="ml-auto text-gray-500">
+								{{ ctrans("Last order") }}
+								<span class="tabular-nums text-gray-700">{{
+									shortDate(agent.last_submitted_at)
+								}}</span>
+							</span>
+						</Link>
+						<button
+							type="button"
+							class="self-stretch px-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+							:aria-expanded="isExpanded(agent, 'orders')"
+							:aria-label="ctrans('Show or hide')"
+							@click="toggle(agent, 'orders')">
+							<FontAwesomeIcon
+								:icon="
+									isExpanded(agent, 'orders')
+										? 'fal fa-chevron-up'
+										: 'fal fa-chevron-down'
+								"
+								fixed-width />
+						</button>
 					</div>
+					<template v-if="isExpanded(agent, 'orders')">
+						<table v-if="agent.pipeline.stages.length" class="w-full tabular-nums">
+							<tbody class="divide-y divide-gray-100">
+								<tr
+									v-for="stage in agent.pipeline.stages.filter(
+										(stage) => stage.stage !== 'ready_to_ship'
+									)"
+									:key="stage.stage">
+									<td class="px-2 py-1 text-gray-600">{{ stage.label }}</td>
+									<td class="px-2 py-1 text-right text-gray-500">
+										{{
+											ctrans(":count supplier orders", {
+												count: locale.number(stage.orders),
+											})
+										}}
+									</td>
+									<td class="px-2 py-1 text-right font-medium text-gray-900">
+										{{ wholeMoney(stage.value) }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<div
+							v-if="agent.pipeline.late || agent.pipeline.no_eta"
+							class="flex gap-3 border-t border-gray-100 px-2 py-1 text-amber-700">
+							<span v-if="agent.pipeline.late">{{
+								ctrans(":count past their ETA", {
+									count: locale.number(agent.pipeline.late),
+								})
+							}}</span>
+							<span v-if="agent.pipeline.no_eta">{{
+								ctrans(":count without ETA", {
+									count: locale.number(agent.pipeline.no_eta),
+								})
+							}}</span>
+						</div>
+					</template>
 				</section>
 
 				<section
 					v-for="group in groups"
 					:key="group.type"
 					class="overflow-hidden rounded-md ring-1 ring-gray-200">
-					<div
-						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
+					<button
+						type="button"
+						class="flex w-full items-center gap-2 bg-gray-50 px-2 py-1.5 text-left text-xs enabled:hover:bg-gray-100"
+						:class="{ 'border-b border-gray-200': isExpanded(agent, group.type) }"
+						:disabled="!itemsOf(agent, group.type).length"
+						:aria-expanded="isExpanded(agent, group.type)"
+						@click="toggle(agent, group.type)">
 						<FontAwesomeIcon :icon="group.icon" class="text-gray-500" fixed-width />
 						<span class="font-medium text-gray-600">{{ group.title }}</span>
 						<span class="tabular-nums text-gray-500">{{
 							locale.number(itemsOf(agent, group.type).length)
 						}}</span>
-					</div>
-					<template v-if="itemsOf(agent, group.type).length">
+						<FontAwesomeIcon
+							v-if="itemsOf(agent, group.type).length"
+							:icon="
+								isExpanded(agent, group.type)
+									? 'fal fa-chevron-up'
+									: 'fal fa-chevron-down'
+							"
+							class="ml-auto text-gray-400"
+							fixed-width />
+					</button>
+					<template v-if="isExpanded(agent, group.type)">
 						<ul class="divide-y divide-gray-100">
-							<li
-								v-for="item in visibleItems(agent, group.type)"
-								:key="item.reference">
+							<li v-for="item in itemsOf(agent, group.type)" :key="item.reference">
 								<Link
 									:href="item.url"
 									class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50">
@@ -449,68 +513,20 @@ const createAgentOrder = (agent: AgentCard) => {
 								</Link>
 							</li>
 						</ul>
-						<button
-							v-if="itemsOf(agent, group.type).length > ROWS_SHOWN"
-							type="button"
-							class="w-full border-t border-gray-100 px-2 py-1 text-left text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-							@click="toggle(agent, group.type)">
-							{{
-								isExpanded(agent, group.type)
-									? ctrans("Show less")
-									: ctrans("Show all :count", {
-											count: itemsOf(agent, group.type).length,
-										})
-							}}
-						</button>
 					</template>
-					<div v-else class="px-2 py-2 text-xs text-gray-500">
-						{{ group.empty }}
+					<div
+						v-if="group.type === 'next_container' && readyToShip(agent)"
+						class="flex border-t border-gray-100 px-2 py-1.5 text-xs tabular-nums">
+						<span class="text-gray-600">{{
+							ctrans(":count supplier orders ready to ship", {
+								count: locale.number(readyToShip(agent)!.orders),
+							})
+						}}</span>
+						<span class="ml-auto font-medium text-gray-900">{{
+							wholeMoney(readyToShip(agent)!.value)
+						}}</span>
 					</div>
 				</section>
-			</div>
-
-			<div class="flex items-center gap-3 border-t border-gray-100 px-4 py-3">
-				<Link
-					v-if="agent.status"
-					:href="
-						agentUrl(agent, 'grp.org.procurement.org_agents.show.shopping.dashboard')
-					">
-					<Button
-						:label="ctrans('Go shopping')"
-						icon="fal fa-shopping-basket"
-						type="tertiary"
-						size="s"
-						class="whitespace-nowrap" />
-				</Link>
-				<Link
-					v-if="can_create_orders && agent.open_agent_order"
-					:href="
-						route('grp.org.procurement.org_agents.show.agent_orders.show', [
-							organisation,
-							agent.slug,
-							agent.open_agent_order,
-						])
-					">
-					<Button
-						:label="
-							ctrans('Add items to :reference', {
-								reference: agent.open_agent_order,
-							})
-						"
-						icon="fal fa-plus"
-						type="tertiary"
-						size="s"
-						class="whitespace-nowrap" />
-				</Link>
-				<Button
-					v-else-if="can_create_orders && agent.status"
-					:label="ctrans('New agent order')"
-					icon="fal fa-plus"
-					type="tertiary"
-					size="s"
-					:loading="creatingFor === agent.id"
-					class="whitespace-nowrap"
-					@click="createAgentOrder(agent)" />
 			</div>
 		</div>
 

@@ -55,6 +55,7 @@ type AuditData = {
 }
 
 const props = defineProps<{
+    suggestions: { pending: number, route: routeType }
     title: string
     pageHead: PageHeadingTypes
     website: { domain: string }
@@ -190,6 +191,12 @@ const finishReasonText = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
+            <Link :href="route(suggestions.route.name, suggestions.route.parameters)">
+                <Button
+                    type="tertiary"
+                    icon="fal fa-magic"
+                    :label="suggestions.pending ? ctrans(':count suggested fixes', { count: locale.number(suggestions.pending) }) : ctrans('Suggested fixes')" />
+            </Link>
             <Button
                 v-if="canRunAudit"
                 type="secondary"

@@ -1266,6 +1266,35 @@ test('purchase order needs a product available in both the supplier product and 
     DeletePurchaseOrder::make()->action($purchaseOrder);
 });
 
+test('reactivating a discontinued supplier product makes it available again unless told otherwise', function () {
+    $supplier        = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'REACT',
+        'name'             => 'Reactivated',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUED->value]);
+    expect($supplierProduct->refresh()->is_available)->toBeFalse();
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::ACTIVE->value]);
+    expect($supplierProduct->refresh()->is_available)->toBeTrue();
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => false]);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUING->value]);
+    expect($supplierProduct->refresh()->is_available)->toBeFalse();
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUED->value]);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::ACTIVE->value, 'is_available' => false]);
+    expect($supplierProduct->refresh()->is_available)->toBeFalse();
+});
+
 test('a supplier product without any SKO is refused on a purchase order with how to create its SKO', function () {
     $supplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
     $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
@@ -2598,7 +2627,11 @@ test('UI show procurement dashboard', function () {
             )
             ->where('dashboardCards', fn ($cards) => collect($cards)->pluck('label')->intersect(['Agents', 'Suppliers', 'Supplier Products'])->isEmpty()
                 && collect($cards)->pluck('label')->contains('Open purchase orders'))
-            ->missing('search_demand');
+            ->missing('search_demand')
+            ->missing('counterparties')
+            ->loadDeferredProps(fn (AssertableInertia $page) => $page
+                ->has('counterparties.currency')
+                ->where('counterparties.cards', fn ($cards) => collect($cards)->contains(fn ($card) => $card['type'] === 'agent' && $card['name'] === $this->orgAgent->agent->name)));
     });
 });
 
@@ -2679,6 +2712,23 @@ test('UI Index org agents', function () {
             ->missing('cover')
             ->loadDeferredProps(fn (AssertableInertia $page) => $page->has('cover'));
     });
+});
+
+test('agent card sections stay open or closed per user', function () {
+    $user = auth()->user();
+    $user->update(['settings' => array_merge($user->settings ?? [], ['tickets_list_mine' => 'assigned'])]);
+    $closed = $this->orgAgent->id.'cover';
+
+    $this->patch(route('grp.models.profile.update'), [
+        'agent_card_sections' => [$closed => false, $this->orgAgent->id.'stock_delivery' => true, 'nonsense' => true],
+    ])->assertSessionHasNoErrors();
+
+    expect($user->fresh()->settings)
+        ->toMatchArray(['tickets_list_mine' => 'assigned'])
+        ->and($user->fresh()->settings['agent_card_sections'])->toBe([$closed => false, $this->orgAgent->id.'stock_delivery' => true]);
+
+    $this->get(route('grp.org.procurement.org_agents.index', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('card_sections.'.$closed, false));
 });
 
 test('UI show org agents', function () {
@@ -8338,10 +8388,25 @@ test('UI agent shopping dashboard renders', function () {
             ->where('coverBuckets.8.bucket', 'never')
             ->where('coverTotal', fn ($total) => $total === collect($page->toArray()['props']['coverBuckets'])->sum('count'))
             ->has('leadTime.days')
+            ->has('orderCapacity.warehouse')
+            ->missing('openAgentPurchaseOrders')
+            ->missing('suppliers');
+    });
+});
+
+test('UI agent order pipeline renders', function () {
+    $response = $this->get(route('grp.org.procurement.org_agents.show.order_pipeline', [$this->organisation->slug, $this->orgAgent->slug]));
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/AgentOrderPipeline')
+            ->has('title')
+            ->has('shoppingList.open_items_count')
+            ->has('leadTime.days')
             ->has('suppliers')
             ->has('openAgentPurchaseOrders')
             ->has('openStockDeliveries')
-            ->has('orderCapacity.warehouse')
             ->has('stockDeliveriesRoute.name')
             ->has('agentPurchaseOrdersRoute.name');
     });

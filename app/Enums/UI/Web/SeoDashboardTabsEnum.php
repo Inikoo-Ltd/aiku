@@ -28,9 +28,9 @@ enum SeoDashboardTabsEnum: string
     {
         return match ($this) {
             SeoDashboardTabsEnum::WEBPAGES => [
-                'title'   => __('Webpages'),
+                'title'   => __('Top pages'),
                 'icon'    => 'fal fa-browser',
-                'tooltip' => __('Each webpage with its visits from Aiku tracking and its Google Search clicks from Search Console, for the selected period.'),
+                'tooltip' => __('Each webpage with its visits from Aiku tracking, its Google Search clicks from Search Console and the domains linking to it, for the selected period and against the period before.'),
             ],
             SeoDashboardTabsEnum::CONVERSIONS => [
                 'title'   => __('Conversions'),

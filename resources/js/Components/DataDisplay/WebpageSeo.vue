@@ -3,6 +3,8 @@ import { computed, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import SeoContentSuggestions from "@/Components/Seo/SeoContentSuggestions.vue"
+import type { ContentSuggestions } from "@/Components/Seo/types"
 import { buildWebpageStructuredData, type WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 import { faImage, faCheckCircle, faTimesCircle, faCode } from "@fal"
 import { faFacebook, faXTwitter, faWhatsapp, faGoogle } from "@fortawesome/free-brands-svg-icons"
@@ -29,6 +31,7 @@ const props = defineProps<{
 		structured_data?: Record<string, any> | Array<Record<string, any>>
 		structured_data_types?: string[]
 		hreflang?: { hreflang: string; href: string }[]
+		content_suggestions?: ContentSuggestions
 	}
 	structuredDataSource?: WebpageStructuredDataSource | null
 	stacked?: boolean
@@ -149,6 +152,8 @@ const robotFlags = computed(() => [
 						{{ ctrans("None. Set a hreflang group on the website, and this page needs a live, indexed counterpart on another website of the group.") }}
 					</dd>
 				</div>
+
+				<SeoContentSuggestions v-if="seo.content_suggestions" :data="seo.content_suggestions" />
 			</dl>
 
 			<div class="space-y-3">

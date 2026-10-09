@@ -158,6 +158,26 @@ class Portfolio extends Model implements Auditable
 
     public function markShopifyVariantAdopted(bool $adopted): void
     {
-        $this->update(['settings' => [...($this->settings ?? []), 'shopify_variant_adopted' => $adopted]]);
+        $settings = [...($this->settings ?? []), 'shopify_variant_adopted' => $adopted];
+
+        if (!$adopted) {
+            $settings['shopify_price_managed_by_us'] = false;
+        }
+
+        $this->update(['settings' => $settings]);
+    }
+
+    /**
+     * A variant the merchant already had keeps the merchant's price unless the merchant asked us
+     * to manage it (INI-028 step 4). Products we uploaded ourselves always take our price.
+     */
+    public function isShopifyPriceManagedByUs(): bool
+    {
+        return $this->isShopifyVariantAdopted() && (bool) data_get($this->settings, 'shopify_price_managed_by_us', false);
+    }
+
+    public function markShopifyPriceManagedByUs(bool $managedByUs): void
+    {
+        $this->update(['settings' => [...($this->settings ?? []), 'shopify_price_managed_by_us' => $managedByUs]]);
     }
 }

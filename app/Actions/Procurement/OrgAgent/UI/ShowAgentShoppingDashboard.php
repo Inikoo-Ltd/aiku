@@ -35,7 +35,7 @@ class ShowAgentShoppingDashboard extends OrgAction
      *
      * @return array<int, array<string, mixed>>
      */
-    private function openAgentPurchaseOrders(OrgAgent $orgAgent): array
+    public function openAgentPurchaseOrders(OrgAgent $orgAgent): array
     {
         return DB::table('purchase_orders as po')
             ->leftJoin('suppliers as sup', 'sup.id', 'po.supplier_id')
@@ -73,7 +73,7 @@ class ShowAgentShoppingDashboard extends OrgAction
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function openStockDeliveries(OrgAgent $orgAgent): array
+    public function openStockDeliveries(OrgAgent $orgAgent): array
     {
         return DB::table('stock_deliveries as sd')
             ->leftJoin('suppliers as sup', 'sup.id', 'sd.supplier_id')
@@ -126,9 +126,6 @@ class ShowAgentShoppingDashboard extends OrgAction
         return [
             'cover'                        => GetAgentStockCoverBuckets::run($orgAgent),
             'order_capacity'               => GetAgentOrderCapacity::run($orgAgent),
-            'suppliers'                    => GetAgentSupplierPerformance::run($orgAgent),
-            'open_agent_purchase_orders' => $this->openAgentPurchaseOrders($orgAgent),
-            'open_stock_deliveries'        => $this->openStockDeliveries($orgAgent),
             'open_items_count'             => (int) $openItems->total,
             'oldest_item_at'               => $openItems->oldest_at,
             'priority_breakdown'           => collect(ShoppingListItemPriorityEnum::cases())->map(fn ($priority) => [
@@ -179,21 +176,6 @@ class ShowAgentShoppingDashboard extends OrgAction
                 'coverTotal'   => $data['cover']['total'],
                 'leadTime'     => $data['cover']['lead_time'],
                 'orderCapacity' => $data['order_capacity'],
-                'suppliers'     => $data['suppliers'],
-                'openAgentPurchaseOrders' => $data['open_agent_purchase_orders'],
-                'openStockDeliveries'        => $data['open_stock_deliveries'],
-                'shoppingListRoute' => [
-                    'name'       => 'grp.org.procurement.shopping_list.index',
-                    'parameters' => [$this->organisation->slug],
-                ],
-                'stockDeliveriesRoute' => [
-                    'name'       => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
-                    'parameters' => [$this->organisation->slug, $this->orgAgent->slug],
-                ],
-                'agentPurchaseOrdersRoute' => [
-                    'name'       => 'grp.org.procurement.org_agents.show.purchase-orders.index',
-                    'parameters' => [$this->organisation->slug, $this->orgAgent->slug],
-                ],
             ]
         );
     }

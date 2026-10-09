@@ -181,6 +181,7 @@ use App\Actions\Retina\Ordering\UpdateRetinaTransaction;
 use App\Actions\Retina\Shopify\CreateRetinaNewAllPortfoliosToShopify;
 use App\Actions\Retina\Shopify\CreateRetinaNewBulkPortfoliosToShopify;
 use App\Actions\Retina\Shopify\MatchRetinaBulkPortfoliosToCurrentShopifyProduct;
+use App\Actions\Retina\Shopify\SetRetinaShopifyPortfoliosPriceManagement;
 use App\Actions\Retina\Shopify\MatchRetinaPortfolioToCurrentShopifyProduct;
 use App\Actions\Retina\Shopify\StoreRetinaNewProductToCurrentShopify;
 use App\Actions\Retina\Shopify\StoreRetinaProductShopify;
@@ -413,6 +414,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/shopify-price-management', SetRetinaShopifyPortfoliosPriceManagement::class)->name('shopify.price_management')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateRetinaNewAllPortfoliosToShopify::class)->name('shopify.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/shopify-dimensions-all', UpdateRetinaAllPortfoliosDimensionsToShopify::class)->name('shopify.batch_all_dimensions_update')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
