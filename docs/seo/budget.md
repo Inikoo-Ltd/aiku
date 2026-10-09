@@ -92,8 +92,10 @@ want, and no price per user.
 - **Domains typed into the comparison and gap tools.** Each new domain is a fetch; the 30 day cache
   and the budget cap in the plan keep this bounded.
 
-The per-run budget cap and the `seo_api_requests` log from the
-[ground rules](implementation-plan.md#ground-rules) enforce the cap and show the month's spend.
+The cap is one budget for all SEO APIs together (DataForSEO, Apify and the AI gateway), not one per
+provider or feature. `SeoApiBudget` enforces it from the `seo_api_requests` log in the
+[ground rules](implementation-plan.md#ground-rules), and the
+[API usage page](implementation-plan.md#api-usage) shows the month's spend and sets the cap.
 
 ## Before approving
 

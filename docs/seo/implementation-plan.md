@@ -15,10 +15,16 @@ are suggestions; rename them freely, but keep the boundaries.
   slow provider cannot hold up `analytics`. A dedicated `seo` queue would need a Horizon supervisor in
   every environment; add one only if fetches start to crowd that queue.
 - **Every fetch is idempotent per day.** Unique keys include the date, and a re-run upserts.
-- **Provider calls go through one client per provider**, with the API key in `config/services.php`,
-  a per-run budget cap, and a log row per request in `seo_api_requests` (provider, endpoint, rows,
-  duration, error, cost if the provider reports it). Phase 2 and 3 costs are only visible this way.
+- **Provider calls go through one client per provider**, with the API key in `config/services.php`
+  and a log row per request in `seo_api_requests` (provider, endpoint, rows, duration, error, cost
+  if the provider reports it). Phase 2 and 3 costs are only visible this way.
   `App\Services\SearchConsole\SearchConsoleClient` is the first one.
+- **One monthly budget for all paid SEO APIs**, not one per provider or feature: DataForSEO, Apify
+  and the AI gateway calls for AI visibility count against the same cap (default 250 USD,
+  `SEO_API_MONTHLY_BUDGET` until the [API usage page](#api-usage) makes it a setting).
+  `App\Services\SeoApi\SeoApiBudget` adds up the month's cost in `seo_api_requests`; every client
+  checks it before a billable call. Reading results already paid for is never blocked. Feature
+  screens do not show the spend; the API usage page does.
 - **The SEO dashboard stays the entry point.** Each phase adds sections or tabs to
   `ShowSeoDashboard` (`app/Actions/Web/Website/UI/ShowSeoDashboard.php`), filtered by the dashboard
   interval like the existing performance card.
@@ -222,7 +228,7 @@ owner of HELP-3303 decides to drop them.
 
 ## Phase 2: keywords
 
-2.1 is built; 2.2 is not started. See [status.md](status.md).
+2.1 and 2.2 are built. See [status.md](status.md).
 
 ### 2.1 Keyword research
 
@@ -230,8 +236,7 @@ Built on 8 October 2026 on DataForSEO, so it does not wait for Google Ads Basic 
 
 - `App\Services\DataForSeo\DataForSeoClient` is the one client for DataForSEO (basic auth with
   `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD`). Every call is logged in `seo_api_requests` with the
-  cost DataForSEO reports, and no call is made once the month's spend reaches
-  `DATAFORSEO_MONTHLY_BUDGET` (default 250 USD).
+  cost DataForSEO reports, and no billable call is made once the shared SEO API budget is reached.
 - `GetKeywordIdeas` (`app/Actions/Web/Seo/`) takes up to 5 seed keywords, a URL, or both, with a
   country and a language. Each seed goes to Labs `keyword_suggestions` (its own figures and the
   keywords that contain it, like Semrush's Keyword Magic Tool), with the 300 rows shared between the
@@ -248,7 +253,7 @@ Built on 8 October 2026 on DataForSEO, so it does not wait for Google Ads Basic 
 
 **Screen.** SEO > Keywords, tab Research: keywords or a URL, country and language (defaulting to the
 shop's), results with intent, volume, a 12 month trend, difficulty, CPC and ad competition, a filter
-per intent, and the month's DataForSEO spend. Below them, the Search Console queries of the website
+per intent. Below them, the Search Console queries of the website
 that contain the same words (last 90 days). Every result has a Track action.
 
 ### Tracked keywords and competitors (set from the UI)
@@ -264,37 +269,37 @@ that contain the same words (last 90 days). Every result has a Track action.
 
 ### 2.2 Rank tracking
 
-**Build.**
+Built on 9 October 2026 on DataForSEO's SERP API.
 
-- Pick one SERP provider (DataForSEO, SerpApi, or similar) and one client class for it. Do not
-  scrape Google from our servers: it breaks Google's terms and needs a proxy pool.
-- `seo_tracked_keywords`: shop_id, keyword_id, location_code, language, device, target_webpage_id
-  (nullable), frequency (daily or weekly), is_active.
-- `seo_keyword_rankings`: tracked_keyword_id, date, position (null when not in the top 100),
-  ranking_url, webpage_id, serp_features (json: featured snippet, AI Overview, local pack, ads,
-  shopping), and whether our page is in the AI Overview.
-- `seo_competitors`: shop_id, domain, label. Competitor positions come from the same SERP response,
-  so they cost nothing extra: `seo_competitor_rankings` (tracked_keyword_id, competitor_id, date,
-  position, url).
-- Use the provider's queued mode where it is cheaper than live results; rankings are not needed in
-  real time.
-- Show the Search Console average position beside the tracked position. They measure different
-  things (an average over all impressions against one check from one location) and the team should
-  see both.
+- `PostSerpTasks` (daily 00:30 UTC) queues a Google check for every active tracked keyword that is
+  due: daily ones every day, weekly ones once seven days have passed. It uses the standard queue
+  ($0.0006 per page of 10 results), reading weekly keywords to the top 30 and daily ones to the top
+  20, as in [budget.md](budget.md). Tasks carry a tag with a hash of `APP_URL`, so environments
+  sharing the DataForSEO account never collect each other's tasks. A task with no result after 72
+  hours is posted again.
+- `CollectSerpTasks` (every 15 minutes) reads `tasks_ready` and stores the ready results through
+  `StoreSerpResult`. Reading results is free, so it is not stopped by the monthly budget; posting is.
+- `seo_keyword_rankings`: one row per keyword and day: our organic position (null when not within the
+  depth read), ranking URL and webpage, the SERP features shown (AI Overview, shopping, local pack,
+  ...), whether the AI Overview cites our domain, and the depth read.
+- `seo_competitor_rankings`: each competitor's position and URL from the same result, at no extra cost.
+- `seo_tracked_keywords` keeps the latest check (position, previous position and date, ranking URL,
+  SERP features, AI Overview) for the screen, and the pending task id.
+- `RefreshTrackedKeywordVolumes` (daily 00:15 UTC) refreshes volume, difficulty and intent of tracked
+  keywords older than 30 days through Labs `keyword_overview`, 700 keywords per request, so a keyword
+  added by hand gets its figures the next day.
+- Commands for a manual run: `seo:post_serp_tasks`, `seo:collect_serp_tasks`,
+  `seo:refresh_keyword_volumes`.
 
-**Cost control.** Cost grows with keywords × locations × devices × checks per month. Agree the list
-per shop and the frequency before switching it on, set the per-run budget cap, and show the month's
-spend on the dashboard.
+**Screen.** SEO > Keywords, tab Rankings:
 
-**Screens.** A Rankings tab:
-
-- Visibility: share of tracked keywords in the top 3, top 10 and top 100.
-- Position changes since the previous check, winners and losers.
-- Competitors on the same keywords: their position per keyword, and their visibility next to ours.
-- Intent overview: the share of tracked keywords per intent (for example 40% informational,
-  10% navigational, 30% commercial, 20% transactional), with our visibility within each intent, so
-  the team sees whether we win the buying searches or only the reading ones. Each share opens the
-  keyword list filtered to that intent.
+- Visibility: share of checked keywords in the top 3, 10 and 20, how many went up or down since the
+  previous check, how many AI Overviews cite us.
+- By search intent: share of keywords per intent and our top 10 share within it; each intent filters
+  the table.
+- Competitors on the same keywords: their top 3 and top 10 share next to ours.
+- Table: position, change (with New and Lost), the Search Console average position of the last 28
+  days beside it, ranking page, volume, intent, SERP features and the competitors' positions.
 
 ### Phase 2 is done when
 
@@ -307,43 +312,42 @@ spend on the dashboard.
 
 ### 3.1 Backlinks
 
-**Build.**
+Built on 9 October 2026 on DataForSEO's Backlinks API ($0.024 per request plus a small amount per
+row returned).
 
-- One backlink provider (DataForSEO Backlinks, Ahrefs API, or similar). The Search Console API has
-  no links endpoint, so there is no free source.
-- Weekly per website and per competitor domain:
-  - `seo_backlink_summaries`: domain, date, backlinks, referring_domains, new, lost and broken since
-    the last run, the provider's authority score.
-  - `seo_referring_domains`: domain, referring_domain, first_seen, last_seen, backlinks, authority,
-    is_lost.
-- Weekly for our own websites only, one row per link:
-  - `seo_backlinks`: website_id, source_url, source_domain, source_authority, target_url,
-    target_webpage_id, anchor, is_dofollow, first_seen, last_seen, lost_at, is_broken.
-  - `target_webpage_id` is matched the same way as Search Console pages (1.1), so each webpage gets
-    its own backlinks and referring domains.
-  - New: `first_seen` after the previous run. Lost: the provider no longer finds the link, or the
-    source page dropped it; `lost_at` is set and the row is kept. Prefer the provider's own new and
-    lost dates where it reports them.
-  - Broken: the link points at a URL on our site that does not answer 200. Check the target against
-    the latest crawl (1.2) and `website_not_found_paths` (1.3) before asking the provider. A broken
-    backlink is a lost referring domain that a redirect wins back, so the Missing pages screen shows
-    the backlinks pointing at each path and sorts by them.
-  - Competitors get summaries and referring domains only. Their links one by one cost per row and
-    the gap tools below do not need them.
-- Authority is the provider's score (DataForSEO calls it rank) per domain and per page, not Moz DA or
-  the Semrush Authority Score. The numbers will not match either; label the source on every screen
-  and compare trends, not values.
-- Feed referring domains into the keyword difficulty from 2.1.
+- `FetchBacklinks` (Mondays 01:00 UTC, `seo:fetch_backlinks {website?} {--backlinks}`), for every
+  live website and the competitor domains of its shop, each domain once a day at most:
+  - `seo_backlink_summaries`: domain, date, DataForSEO rank (0 to 100), backlinks, referring
+    domains, broken backlinks and pages, spam score, and the new and lost referring domains since
+    the previous week.
+  - `seo_referring_domains`: domain, referring domain, rank, backlinks, DataForSEO's first seen, and
+    our own first and last fetch and `lost_at`. Ours are read up to 3,000, a competitor's up to
+    1,000, strongest first. Lost is only set when the list was read to the end, so a domain past the
+    limit is never called lost.
+- Every four weeks for our own websites, `seo_backlinks`, one row per link: one link per referring
+  domain (up to 1,000), every broken link, and the links first seen and lost since the previous
+  fetch, with DataForSEO's own first seen, last seen and lost dates. `target_path` is stored like
+  `website_not_found_paths.path`, and `target_webpage_id` is matched like Search Console pages.
+- Links and referring domains from our own websites are flagged `is_own_website`. Most of our
+  referring domains and broken links come from our other shops (ancientwisdom.biz, October 2026:
+  26 of its top referring domains, and broken links from the AW Gifts sites to retired pages), so
+  every list hides them by default and can show them.
+- `GetBacklinkGap`: DataForSEO domain intersection for up to four domains against ours, the top
+  1,000 referring domains, cached 30 days per set of domains.
+- Not built: authority fed into keyword difficulty (2.1 uses DataForSEO's own difficulty).
 
-**Backlink gap tool.** Our domain plus up to four other domains, typed in or picked from
-`seo_competitors`. It lists referring domains that link to at least one of the others and not to us,
-with how many of the domains each links to and its authority, most linked first. The default filter
-is "links to two or more of them". A typed-in domain that is not in `seo_competitors` is fetched
-once and cached for 30 days, counted against the same budget cap.
+**Screens.** SEO > Backlinks:
 
-**Screens.** A Backlinks tab: authority, referring domains and backlinks with their trend; new, lost
-and broken backlinks since the previous run, each opening the link list; referring domains with
-authority and first and last seen; and the backlink gap tool.
+- Overview: rank, referring domains, backlinks and broken backlinks with the change since the
+  previous week; new, lost and broken links of the last 30 days without our own websites; referring
+  domains per week; the same figures for each competitor.
+- Referring domains and Backlinks tabs: linking now, new, lost and (for links) broken, with or
+  without our own websites.
+- Backlink gap: pick competitors or type domains; referring domains that link to them and not to
+  us, filtered to those linking to two or more by default.
+- SEO > Missing pages gets a Backlinks column: links pointing at each 404 path, sortable, so the
+  redirects that win back the most links come first.
+- Locally only, a Fetch now button runs the fetch for the shop at once.
 
 ### 3.2 Competitor research
 
@@ -459,8 +463,8 @@ countries.
   `similarweb_api`), visits, channel_mix (json), top_countries (json), rank, fetched_at.
 - `seo_platform_keyword_signals`: shop_id, platform, keyword, signal (suggested, related, rising),
   country, language, fetched_at.
-- Apify charges per run or per result, depending on the actor. Track it with the same per-request
-  log and budget cap as the other providers.
+- Apify charges per run or per result, depending on the actor. Log it in `seo_api_requests` with
+  its cost, so it counts against the shared SEO API budget.
 
 **Decision.** Choose between an Apify actor (cheap, against Similarweb's terms, may break) and the
 Similarweb API (licensed, priced) for competitor traffic before building it.
@@ -501,6 +505,23 @@ comparison with an earlier period.
 - Competitor domain traffic is fetched monthly, and Bing and non-Google search signals are shown
   beside Google volumes.
 
+## API usage
+
+Built last, once every paid provider of Phase 2 and 3 is in place. One page for the cost of all of
+them, so the monthly budget is watched and changed in Aiku instead of in each provider's dashboard.
+
+- **Budget setting.** The monthly cap for all SEO APIs together, default 250 USD, set on the page by
+  someone with web edit permission and stored as a group setting. It replaces
+  `SEO_API_MONTHLY_BUDGET`, which stays only as the default.
+- **This month.** Spend against the budget, what is left, and the projected month end at the
+  current daily rate. A warning at 80%, and a clear notice when the cap is reached and calls stop.
+- **Breakdown.** Spend, requests and errors per provider and per feature (keyword research, rank
+  tracking, volume refresh, backlinks, competitor research, AI visibility, Apify), from the
+  `provider` and `endpoint` of `seo_api_requests`; daily spend over the month; the previous months.
+- **Errors.** The latest failed requests with their message, so an expired key or an empty balance
+  shows up here before anyone notices missing data.
+- Feature screens show no spend of their own.
+
 ## Cancelling Semrush
 
 1. Run Aiku and Semrush side by side for at least one full Semrush billing cycle after Phase 3.
@@ -517,10 +538,8 @@ comparison with an earlier period.
 | Who adds the service account to the properties that are still missing | Phase 1 |
 | SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency (set in SEO > Keywords) | Phase 2 |
-| Backlink and competitor data provider (ideally the same as the SERP one) | Phase 3 |
 | Competitor domains per shop (set in SEO > Keywords) | Phase 2 (positions) and Phase 3 (backlinks) |
 | Models and prompts for AI visibility, and whether to buy AI mention data from the SEO provider | Phase 3 |
-| Budget for domains typed into the comparison and gap tools | Phase 3 |
 | Competitor domain traffic: Apify actor or the Similarweb API | Phase 3 |
 | Which non-Google platforms to collect search signals from | Phase 3 |
 | How long to run side by side before cancelling | After Phase 3 |

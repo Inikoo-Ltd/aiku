@@ -11,8 +11,8 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import SeoKeywordResearch from "@/Components/Seo/SeoKeywordResearch.vue"
 import TableSeoTrackedKeywords from "@/Components/Tables/Grp/Org/Web/TableSeoTrackedKeywords.vue"
 import SeoCompetitors from "@/Components/Seo/SeoCompetitors.vue"
+import SeoRankings from "@/Components/Seo/SeoRankings.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { ctrans } from "@/Composables/useTrans"
 import { useTabChange } from "@/Composables/tab-change"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Navigation } from "@/types/Tabs"
@@ -26,9 +26,9 @@ const props = defineProps<{
     routes: SeoKeywordRoutes
     options: SeoKeywordOptions
     query: SeoResearchQuery
-    spend: { month: number, budget: number }
     research?: object | null
     tracked_keywords?: object
+    rankings?: object
     competitors?: object[]
 }>()
 
@@ -38,6 +38,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const tabComponent = computed(() => ({
     research: SeoKeywordResearch,
     tracked_keywords: TableSeoTrackedKeywords,
+    rankings: SeoRankings,
     competitors: SeoCompetitors,
 })[currentTab.value])
 </script>
@@ -46,10 +47,6 @@ const tabComponent = computed(() => ({
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
-    <p v-if="currentTab === 'research'" class="px-4 pt-3 text-xs text-gray-500">
-        {{ ctrans("DataForSEO spend this month: :spend of :budget USD", { spend: spend.month.toFixed(2), budget: spend.budget.toFixed(2) }) }}
-    </p>
 
     <component
         :is="tabComponent"

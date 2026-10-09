@@ -474,6 +474,16 @@ const conversionMetrics = computed(() => {
     ]
 })
 
+const hasConversions = computed(() => {
+    const performance = props.performance
+
+    return !!performance && performance.add_to_baskets + performance.checkouts + performance.purchases > 0
+})
+
+const noConversionsText = computed(() => props.performance?.conversions_tracked_since
+    ? ctrans("No add to basket, checkout or purchase in this period. Pick a longer interval above to compare with older days.")
+    : ctrans("No checkout or purchase has been recorded on this website yet. They are recorded from the storefront as customers add to basket, reach the checkout and submit their order."))
+
 const conversionsTrackedText = computed(() => props.performance?.conversions_tracked_since
     ? ctrans("Checkouts and purchases recorded since :date", { date: formatDay(props.performance.conversions_tracked_since, "mdy") })
     : ctrans("No checkout or purchase recorded yet"))
@@ -746,13 +756,17 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
             <span class="text-xs text-gray-500">{{ conversionsTrackedText }}</span>
         </div>
 
-        <div v-if="showDailyChart" class="px-5 pt-4">
+        <p v-if="!hasConversions" class="px-5 pb-5 pt-3 text-sm text-gray-600">
+            {{ noConversionsText }}
+        </p>
+
+        <div v-else-if="showDailyChart" class="px-5 pt-4">
             <div class="h-48 sm:h-56" role="img" :aria-label="conversionChartSummary">
                 <Chart type="line" :data="conversionChartData" :options="dailyChartOptions" class="h-full" />
             </div>
         </div>
 
-        <dl class="mt-4 grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-6">
+        <dl v-if="hasConversions" class="mt-4 grid grid-cols-2 border-t border-gray-100 sm:grid-cols-3 lg:grid-cols-6">
             <div
                 v-for="metric in conversionMetrics"
                 :key="metric.key"

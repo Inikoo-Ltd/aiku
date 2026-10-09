@@ -29,6 +29,8 @@ type TrackedKeywordRow = {
     delete_route: routeType & { method: string }
 }
 
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps<{
     data?: object
     tab: string

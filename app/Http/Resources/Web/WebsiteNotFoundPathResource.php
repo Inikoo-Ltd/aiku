@@ -15,6 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $id
  * @property string $path
  * @property int $hits
+ * @property int|null $backlinks
  * @property string|null $last_referrer
  * @property bool $is_ignored
  * @property bool $is_fixed
@@ -31,6 +32,7 @@ class WebsiteNotFoundPathResource extends JsonResource
             'id'            => $this->id,
             'path'          => $this->path,
             'hits'          => $this->hits,
+            'backlinks'     => (int) $this->backlinks,
             'last_referrer' => $this->last_referrer,
             'is_ignored'    => (bool) $this->is_ignored,
             'is_fixed'      => (bool) $this->is_fixed,

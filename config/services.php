@@ -128,9 +128,12 @@ return [
     ],
 
     'dataforseo' => [
-        'login'          => env('DATAFORSEO_LOGIN'),
-        'password'       => env('DATAFORSEO_PASSWORD'),
-        'monthly_budget' => (float) env('DATAFORSEO_MONTHLY_BUDGET', 250),
+        'login'    => env('DATAFORSEO_LOGIN'),
+        'password' => env('DATAFORSEO_PASSWORD'),
+    ],
+
+    'seo_api' => [
+        'monthly_budget' => (float) env('SEO_API_MONTHLY_BUDGET', 250),
     ],
 
     'openai' => [

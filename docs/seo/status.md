@@ -16,7 +16,9 @@ Nothing here has been deployed yet.
 | 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO > Missing pages |
 | 1.4 Page speed | Core Web Vitals (LCP, INP, CLS) from real visits, per website and per page, following HELP-3303: Google's Chrome UX Report and visitors' browsers | SEO dashboard: Page speed card and Page speed tab |
 | 2.1 Keyword research | Volume, 12 month trend, difficulty, intent and CPC for up to 5 seed keywords and the keywords that contain them, or the keywords a URL ranks for, through DataForSEO Labs; Search Console queries with the same words | SEO > Keywords: Research tab |
-| Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team; nothing is fetched for them until 2.2 | SEO > Keywords: Tracked keywords and Competitors tabs |
+| Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team | SEO > Keywords: Tracked keywords and Competitors tabs |
+| 2.2 Rank tracking | Google position of every tracked keyword, weekly (top 30) or daily (top 20), with SERP features, AI Overview citations and competitor positions; volumes refreshed monthly | SEO > Keywords: Rankings tab |
+| 3.1 Backlinks | Weekly rank, referring domains and backlinks for our websites and competitors; our links one by one every four weeks with new, lost and broken; backlink gap against up to four domains; backlinks per 404 path | SEO > Backlinks; SEO > Missing pages |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -31,19 +33,24 @@ Nothing here has been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 2.2 Rank tracking | Approve the monthly budget ([budget.md](budget.md)); the team fills the tracked keyword list and competitors |
-| 2.1 Monthly refresh of saved keywords | Built with 2.2 |
+| Switching rank tracking on | Approve the monthly budget ([budget.md](budget.md)) and fill the tracked keyword list and competitors; nothing is checked while the list is empty |
 
 ### Phase 3: the outside world
 
 | Part | What has to happen first |
 | --- | --- |
-| 3.1 Backlinks and backlink gap, 3.2 Domain comparison and keyword gap | Choose a backlink and competitor data provider, ideally the same as the SERP one, and a budget for domains typed into the tools |
+| 3.2 Domain comparison and keyword gap | Nothing: DataForSEO Labs is already the provider; uses the competitors set in SEO > Keywords |
 | 3.3 AI visibility | Choose the models (with web search on) and write the prompts per shop; check the SEO provider's AI mention data first |
 | 3.4 Content help | Nothing; can start any time. The first Site Audit found many product pages with an empty meta description, which is where this would start. |
 | 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
 | 3.5 Non-Google demand | Choose the platforms; Bing Webmaster Tools keyword data is free |
 | 3.6 Top pages | Nothing for the traffic and Search Console change against the previous period; can start any time. Referring domains and AI citations per page wait for 3.1 and 3.3. |
+
+### Last: API usage
+
+| Part | What has to happen first |
+| --- | --- |
+| API usage page: spend of all SEO APIs against one monthly budget (default 250 USD, set on the page), per provider and feature, with errors | Built after the paid providers of Phase 3 are in place |
 
 ### Still open in Phase 1
 
@@ -63,7 +70,9 @@ Nothing here has been deployed yet.
    property that is still missing.
 
 Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
-external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC.
+external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
+daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes, backlinks Mondays at
+01:00 UTC.
 
 ## Configuration
 
@@ -72,7 +81,7 @@ external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC.
 | `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
 | `GOOGLE_CRUX_API_KEY` | Chrome UX Report: Real user speed and the Google side of 1.4. The key needs the Chrome UX Report API enabled in its Google Cloud project | Yes |
 | `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | Keyword research (2.1), and rank tracking, backlinks and competitor data later | Yes, for SEO > Keywords |
-| `DATAFORSEO_MONTHLY_BUDGET` | The month's DataForSEO spend after which no call is made, in USD | No, defaults to 250 |
+| `SEO_API_MONTHLY_BUDGET` | One monthly budget in USD for all paid SEO APIs together; no billable call is made once the month's spend reaches it. Becomes a setting on the API usage page | No, defaults to 250 |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
 | `OPENROUTER_API_KEY` | AI visibility and content help (Phase 3) | Not yet |

@@ -11,10 +11,13 @@ namespace App\Actions\Web\Seo\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Seo\GetKeywordIdeas;
+use App\Actions\Web\Seo\GetSeoRankingsOverview;
+use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Website\UI\ShowSeoDashboard;
 use App\Enums\UI\Web\SeoKeywordsTabsEnum;
 use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Enums\Web\Seo\SeoKeywordFrequencyEnum;
+use App\Http\Resources\Web\SeoRankingResource;
 use App\Http\Resources\Web\SeoTrackedKeywordResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
@@ -140,6 +143,24 @@ class ShowSeoKeywords extends OrgAction
             ->all();
     }
 
+    private function rankings(Shop $shop): array
+    {
+        return [
+            ...GetSeoRankingsOverview::run($shop),
+            'domain'         => $shop->website?->domain,
+            'isConfigured'   => DataForSeoClient::make() !== null,
+            'depths'         => [
+                'weekly' => PostSerpTasks::WEEKLY_DEPTH,
+                'daily'  => PostSerpTasks::DAILY_DEPTH,
+            ],
+            'runChecksRoute' => app()->environment('local') && $this->canEdit ? [
+                'name'       => 'grp.models.shop.seo.rank_checks.store',
+                'parameters' => [$shop->id],
+            ] : null,
+            'table'          => SeoRankingResource::collection(IndexSeoRankings::run($shop, SeoKeywordsTabsEnum::RANKINGS->value)),
+        ];
+    }
+
     private function tabProp(SeoKeywordsTabsEnum $tab, Closure $resolver): mixed
     {
         return $this->tab === $tab->value ? $resolver : Inertia::optional($resolver);
@@ -186,10 +207,6 @@ class ShowSeoKeywords extends OrgAction
                     'frequencies' => collect(SeoKeywordFrequencyEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 ],
                 'query'       => $query,
-                'spend'       => [
-                    'month'  => round(DataForSeoClient::monthSpend(), 2),
-                    'budget' => DataForSeoClient::monthlyBudget(),
-                ],
 
                 SeoKeywordsTabsEnum::RESEARCH->value => $this->tabProp(
                     SeoKeywordsTabsEnum::RESEARCH,
@@ -201,12 +218,18 @@ class ShowSeoKeywords extends OrgAction
                     fn () => SeoTrackedKeywordResource::collection(IndexSeoTrackedKeywords::run($shop, SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value))
                 ),
 
+                SeoKeywordsTabsEnum::RANKINGS->value => $this->tabProp(
+                    SeoKeywordsTabsEnum::RANKINGS,
+                    fn () => $this->rankings($shop)
+                ),
+
                 SeoKeywordsTabsEnum::COMPETITORS->value => $this->tabProp(
                     SeoKeywordsTabsEnum::COMPETITORS,
                     fn () => $this->competitors($shop)
                 ),
             ]
-        )->table(IndexSeoTrackedKeywords::make()->tableStructure(prefix: SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value));
+        )->table(IndexSeoTrackedKeywords::make()->tableStructure(prefix: SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value))
+            ->table(IndexSeoRankings::make()->tableStructure(prefix: SeoKeywordsTabsEnum::RANKINGS->value));
     }
 
     public function getBreadcrumbs(array $routeParameters): array

@@ -69,7 +69,7 @@ const search = () => {
     router.get(window.location.pathname, { tab: "research", ...form }, {
         preserveState: true,
         preserveScroll: true,
-        only: ["research", "query", "spend"],
+        only: ["research", "query"],
         onStart: () => isSearching.value = true,
         onFinish: () => isSearching.value = false,
     })

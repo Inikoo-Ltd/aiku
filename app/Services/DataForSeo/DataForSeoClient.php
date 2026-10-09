@@ -9,6 +9,7 @@ namespace App\Services\DataForSeo;
 
 use App\Models\Web\SeoApiRequest;
 use App\Models\Web\Website;
+use App\Services\SeoApi\SeoApiBudget;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
@@ -18,8 +19,8 @@ use Throwable;
 
 /**
  * Every DataForSEO call goes through here, so each one is logged in `seo_api_requests` with the cost
- * DataForSEO reports, and no call is made once the month's spend reaches the budget in
- * `services.dataforseo.monthly_budget`.
+ * DataForSEO reports, and no billable call is made once the month's spend of all SEO APIs reaches
+ * the shared budget (`SeoApiBudget`).
  */
 class DataForSeoClient
 {
@@ -43,19 +44,6 @@ class DataForSeoClient
         return $login && $password ? new self($login, $password) : null;
     }
 
-    public static function monthSpend(): float
-    {
-        return (float) SeoApiRequest::query()
-            ->where('provider', self::PROVIDER)
-            ->where('created_at', '>=', now()->startOfMonth())
-            ->sum('cost');
-    }
-
-    public static function monthlyBudget(): float
-    {
-        return (float) config('services.dataforseo.monthly_budget');
-    }
-
     /**
      * The result of a single live task.
      *
@@ -64,7 +52,7 @@ class DataForSeoClient
      */
     public function live(string $endpoint, array $task, ?Website $website = null): array
     {
-        $tasks = $this->send('post', $endpoint, [$task], $website);
+        $tasks = $this->send('post', $endpoint, [$task], $website, true);
 
         return $this->taskResult($tasks[0] ?? []);
     }
@@ -78,16 +66,19 @@ class DataForSeoClient
      */
     public function postTasks(string $endpoint, array $tasks, ?Website $website = null): array
     {
-        return $this->send('post', $endpoint, $tasks, $website);
+        return $this->send('post', $endpoint, $tasks, $website, true);
     }
 
     /**
+     * Reads what is already paid for or free (task results, ready lists, location lists), so it is not
+     * stopped by the monthly budget.
+     *
      * @return array<int, array>
      * @throws DataForSeoException
      */
     public function get(string $endpoint, ?Website $website = null): array
     {
-        $tasks = $this->send('get', $endpoint, null, $website);
+        $tasks = $this->send('get', $endpoint, null, $website, false);
 
         return $this->taskResult($tasks[0] ?? []);
     }
@@ -116,10 +107,10 @@ class DataForSeoClient
      * @return array<int, array>
      * @throws DataForSeoException
      */
-    private function send(string $method, string $endpoint, ?array $tasks, ?Website $website): array
+    private function send(string $method, string $endpoint, ?array $tasks, ?Website $website, bool $isBillable): array
     {
-        if (self::monthSpend() >= self::monthlyBudget()) {
-            throw new DataForSeoException(__('The DataForSEO budget for this month (:budget USD) has been reached.', ['budget' => self::monthlyBudget()]), DataForSeoException::BUDGET_REACHED);
+        if ($isBillable && SeoApiBudget::isReached()) {
+            throw new DataForSeoException(__('The SEO API budget for this month (:budget USD) has been reached.', ['budget' => SeoApiBudget::monthlyBudget()]), DataForSeoException::BUDGET_REACHED);
         }
 
         $startedAt = hrtime(true);
