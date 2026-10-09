@@ -22,6 +22,8 @@ use App\Models\Web\Crawl;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
+use App\Models\Web\SeoContentSuggestion;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -143,6 +145,13 @@ class ShowSiteAudit extends OrgAction
                     'method'     => 'post',
                 ],
                 'severities'  => CrawlIssueSeverityEnum::labels(),
+                'suggestions' => [
+                    'pending' => SeoContentSuggestion::where('website_id', $website->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->count(),
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.seo.site_audit.suggestions',
+                        'parameters' => Arr::only($request->route()->originalParameters(), ['organisation', 'shop']),
+                    ],
+                ],
                 'audit'       => fn () => $this->handle($website),
             ]
         );

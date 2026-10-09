@@ -414,9 +414,35 @@ product titles and descriptions.
 
 ### 3.4 Content help
 
-- `WithPromptAI::promptSeo()` exists and nothing calls it. Use the gateway to suggest meta titles
-  and descriptions for pages that the audit flags, and for pages with high impressions and low CTR.
-- Suggestions are never published automatically. Someone accepts them on the webpage SEO panel.
+Built on 9 October 2026 on the AI gateway (OpenRouter, `gpt-5.6-luna`, under a tenth of a cent per
+page). `WithPromptAI::promptSeo()` is still unused; the prompt lives in the new action.
+
+- `GenerateSeoContentSuggestions` writes a page title and/or meta description for one webpage from
+  what it shows (product name, code, description and family, or category, description and some of
+  its products), the Google searches it appears for (Search Console, last 90 days) and the audit's
+  length limits. The title limit is 60 characters minus the website's title prefix: Google cuts
+  titles from the end, so a long suffix (AW UK's "- Ancient Wisdom - Giftware and Aromatherapy
+  Supplier" is 54 characters on its own) can be cut but the page title should not be. It is told to
+  state only facts from the page. Every call is logged in `seo_api_requests` with its cost and counts
+  against the SEO API budget.
+- `seo_content_suggestions`: webpage, field, the value when it was written, the suggestion, why
+  (audit issue, low CTR, or asked for), state (pending, accepted, dismissed), who decided and when.
+- `SuggestSeoContent` (Tuesdays 04:00 UTC, after the Sunday audits; `seo:suggest_content {website?}
+  {--limit=}`), up to 30 pages per website: first the pages with at least 500 impressions in 28
+  days, an average position of 10 or better and a CTR under 2%, then the title and description
+  issues of the latest audit. "Title too long" only counts when the page title itself is too long,
+  not when the website's own text makes it so. A page with a pending suggestion, or one decided in
+  the last 90 days, is skipped for that field.
+- Nothing is published by itself. `AcceptSeoContentSuggestion` writes the suggestion, possibly
+  edited, through `UpdateWebpage`, so it shows in the webpage history; `DismissSeoContentSuggestion`
+  keeps the page as it is.
+
+**Screens.**
+
+- Webpage, SEO and sharing panel: the pending suggestions, editable, with Use this and Dismiss, and
+  a button that writes a new title and description on the spot.
+- SEO > Site audit, Suggested fixes: every suggestion of the website, waiting, used or dismissed,
+  with the same actions.
 
 ### 3.5 Apify for competitor traffic and non-Google search demand
 

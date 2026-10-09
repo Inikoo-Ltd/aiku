@@ -89,6 +89,7 @@ use App\Actions\Web\Seo\FetchBacklinks;
 use App\Actions\Web\Seo\FetchCompetitorResearch;
 use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
+use App\Actions\Web\Seo\SuggestSeoContent;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\WebsiteNotFoundPath\PruneWebsiteNotFoundPaths;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -1386,6 +1387,17 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'FetchCompetitorResearch',
                     ),
                 name: 'FetchCompetitorResearch',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SuggestSeoContent::makeJob())
+                    ->weeklyOn(2, '04:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'SuggestSeoContent',
+                    ),
+                name: 'SuggestSeoContent',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
