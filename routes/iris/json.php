@@ -35,6 +35,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerCollectionSale
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Helpers\Brand\Json\GetIrisBrands;
+use App\Actions\Iris\Appointment\GetIrisAppointmentTypes;
 use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
 use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
@@ -94,6 +95,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('/footer', GetIrisFooterData::class)->name('footer');
 
     Route::get('registration-data', GetIrisRegistrationData::class)->name('registration_data');
+
+    Route::get('appointments', GetIrisAppointmentTypes::class)->name('appointments.index');
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');

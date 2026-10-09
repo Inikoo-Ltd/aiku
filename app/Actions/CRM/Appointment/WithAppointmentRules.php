@@ -55,13 +55,19 @@ trait WithAppointmentRules
             $modelData['ends_at'] = $startsAt->copy()->addMinutes($appointmentType->duration_minutes);
         }
 
-        if (!$appointment || Arr::hasAny($modelData, ['email', 'phone'])) {
-            $visitor = $this->resolveVisitor(
-                shop: $shop,
-                email: Arr::get($modelData, 'email', $appointment?->email),
-                phone: Arr::get($modelData, 'phone', $appointment?->phone),
-                contactName: Arr::get($modelData, 'contact_name', $appointment?->contact_name)
-            );
+        $customerId     = Arr::pull($modelData, 'customer_id');
+        $marketingOptIn = (bool) Arr::pull($modelData, 'marketing_opt_in', false);
+
+        if ($customerId || !$appointment || Arr::hasAny($modelData, ['email', 'phone'])) {
+            $visitor = $customerId
+                ? Customer::where('shop_id', $shop->id)->find($customerId)
+                : $this->resolveVisitor(
+                    shop: $shop,
+                    email: Arr::get($modelData, 'email', $appointment?->email),
+                    phone: Arr::get($modelData, 'phone', $appointment?->phone),
+                    contactName: Arr::get($modelData, 'contact_name', $appointment?->contact_name),
+                    marketingOptIn: $marketingOptIn
+                );
 
             $modelData['visitor_type'] = $visitor?->getMorphClass();
             $modelData['visitor_id']   = $visitor?->id;
@@ -78,7 +84,7 @@ trait WithAppointmentRules
     /**
      * @throws \Throwable
      */
-    protected function resolveVisitor(Shop $shop, ?string $email, ?string $phone, ?string $contactName): Customer|Prospect|null
+    protected function resolveVisitor(Shop $shop, ?string $email, ?string $phone, ?string $contactName, bool $marketingOptIn = false): Customer|Prospect|null
     {
         if (!$email && !$phone) {
             return null;
@@ -101,8 +107,8 @@ trait WithAppointmentRules
                 'contact_name'    => $contactName,
                 'email'           => $email,
                 'phone'           => $phone,
-                'dont_contact_me' => true,
-                'is_opt_in'       => false,
+                'dont_contact_me' => !$marketingOptIn,
+                'is_opt_in'       => $marketingOptIn,
                 'data'            => ['source' => 'appointment'],
             ], fn ($value) => !is_null($value) && $value !== ''),
             strict: false

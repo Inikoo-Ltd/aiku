@@ -120,6 +120,7 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     'cta-video-1': () => import('@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'),
     'video-1': () => import('@/Components/CMS/Webpage/Video/Video1Workshop.vue'),
     'user-subscribe': () => import('@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'),
+    'appointment-1': () => import('@/Components/CMS/Webpage/Appointment1/Appointment1Workshop.vue'),
     'login': () => import('@/Components/CMS/Webpage/Login/LoginWorkshop.vue'),
     'register': () => import('@/Components/CMS/Webpage/Register/RegisterWorkshop.vue'),
     'register-dashboard': () => import('@/Components/CMS/Webpage/RegisterDashboard/RegisterDashboardWorkshop.vue'),

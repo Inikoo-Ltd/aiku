@@ -72,7 +72,7 @@ class WebBlockType extends Model implements HasMedia
     protected $attributes = [
         'blueprint'         => '{}',
         'data'              => '{}',
-        'shop_availability' => '{}',
+        'shop_availability' => '[]',
     ];
 
     protected $guarded = [];

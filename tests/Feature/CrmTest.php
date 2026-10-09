@@ -46,6 +46,7 @@ use App\Actions\CRM\Appointment\UpdateAppointment;
 use App\Actions\CRM\AppointmentStaff\StoreAppointmentStaff;
 use App\Actions\CRM\AppointmentStaff\UpdateAppointmentStaff;
 use App\Actions\CRM\AppointmentType\DeleteAppointmentType;
+use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\CRM\AppointmentType\StoreAppointmentType;
 use App\Actions\CRM\AppointmentType\UpdateAppointmentType;
 use App\Actions\CRM\Poll\StorePoll;
@@ -1054,6 +1055,45 @@ test('UI Edit appointment', function (Appointment $appointment) {
                 ->where('formData.args.updateRoute.name', 'grp.models.appointment.update');
         });
 })->depends('cancel and rebook an appointment');
+
+test('free appointment times follow hours, dates, notice, breaks and bookings', function () {
+    $appointmentType = StoreAppointmentType::make()->action(
+        $this->shop,
+        [
+            'name'                => 'Slots '.Str::random(6),
+            'meeting_mode'        => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+            'duration_minutes'    => 45,
+            'buffer_minutes'      => 15,
+            'min_notice_hours'    => 2,
+            'booking_window_days' => 14,
+            'capacity_per_slot'   => 1,
+            'availability'        => [
+                'weekly' => [1 => [['from' => '10:00', 'to' => '12:00'], ['from' => '14:00', 'to' => '15:00']]],
+            ],
+        ]
+    );
+
+    $timezone = $this->shop->timezone?->name ?? 'UTC';
+    $monday   = Carbon::now($timezone)->next(Carbon::MONDAY)->addWeek()->startOfDay();
+    $now      = $monday->copy()->subDays(6)->setTime(9, 0);
+    $slots    = GetAppointmentTypeAvailableSlots::run($appointmentType, $now);
+
+    expect($slots[$monday->toDateString()])->toBe(['10:00', '11:00', '14:00']);
+
+    $appointmentType->dates()->create(['date' => $monday->toDateString(), 'hours' => []]);
+    expect(GetAppointmentTypeAvailableSlots::run($appointmentType, $now))->not->toHaveKey($monday->toDateString());
+
+    $appointmentType->dates()->where('date', $monday->toDateString())->delete();
+    StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $monday->toDateString().' 10:00',
+        'contact_name'        => 'Booked visitor',
+    ]);
+    expect(GetAppointmentTypeAvailableSlots::run($appointmentType, $now)[$monday->toDateString()])->toBe(['11:00', '14:00']);
+
+    $sameMorning = $monday->copy()->setTime(9, 30);
+    expect(GetAppointmentTypeAvailableSlots::run($appointmentType, $sameMorning)[$monday->toDateString()])->toBe(['14:00']);
+});
 
 test('delete appointment type', function (AppointmentType $appointmentType) {
     DeleteAppointmentType::make()->action($appointmentType);

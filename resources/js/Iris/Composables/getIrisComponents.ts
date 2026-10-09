@@ -104,6 +104,7 @@ const CarouselImageBackgroundIris = async(() => import("@/Iris/Components/IrisBl
 const CtaVideo1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"))
 const Video1Iris = async(() => import("@/Iris/Components/IrisBlocks/Video1Iris.vue"))
 const UserSubscribeIris = async(() => import("@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"))
+const Appointment1Iris = async(() => import("@/Iris/Components/IrisBlocks/Appointment1Iris.vue"))
 const LoginIris = async(() => import("@/Iris/Components/IrisBlocks/LoginIris.vue"))
 const RegisterIris = async(() => import("@/Iris/Components/IrisBlocks/RegisterIris.vue"))
 const RegisterDashboardIris = async(() => import("@/Iris/Components/IrisBlocks/RegisterDashboardIris.vue"))
@@ -230,6 +231,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"cta-video-1": CtaVideo1Iris,
 		video_1: Video1Iris,
 		"user-subscribe": UserSubscribeIris,
+		"appointment-1": Appointment1Iris,
 		login: LoginIris,
 		register: RegisterIris,
 		"register-dashboard": RegisterDashboardIris,

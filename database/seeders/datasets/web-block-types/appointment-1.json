@@ -1,0 +1,55 @@
+{
+	"slug": "appointment-1",
+	"code": "appointment-1",
+	"name": "Appointment booking",
+	"scope": "webpage",
+	"category": "block",
+	"icon": ["fal", "calendar-check"],
+	"website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
+	"is_in_test": false,
+	"shop_availability": [],
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "#ffffff",
+						"image": {
+							"original": null
+						}
+					},
+					"text": {
+						"desktop": {
+							"color": "rgba(17, 24, 39, 1)",
+							"fontSize": null,
+							"fontFamily": "Inter, sans-serif"
+						}
+					},
+					"padding": {
+						"unit": "px",
+						"top": {
+							"value": 20
+						},
+						"bottom": {
+							"value": 20
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						}
+					}
+				}
+			},
+			"value": {
+				"headline": "<h2>Book a visit</h2>",
+				"description": "<p>Choose a time that suits you and we will be ready for you.</p>"
+			},
+			"settings": {
+				"show_marketing_opt_in": true
+			}
+		}
+	}
+}

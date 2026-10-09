@@ -165,6 +165,13 @@ class RouteServiceProvider extends ServiceProvider
          * took boro's disk to 100%; the limit stands even behind the login, since the volume that
          * hurt was never about who was asking.
          */
+        RateLimiter::for('iris-appointment-booking', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perDay(30)->by($request->ip()),
+            ];
+        });
+
         RateLimiter::for('iris-feeds', function (Request $request) {
             return [
                 Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()),

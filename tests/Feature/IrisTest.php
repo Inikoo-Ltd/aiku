@@ -33,6 +33,12 @@ use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
+use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
+use App\Actions\CRM\AppointmentType\StoreAppointmentType;
+use App\Enums\CRM\Appointment\AppointmentSourceEnum;
+use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
+use App\Models\CRM\Appointment;
+use App\Models\CRM\Prospect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -603,4 +609,82 @@ test('iris family page does not ship the family products twice', function () {
     expect($page['component'])->toBe('Catalogue/Family')
         ->and($page['props']['data']['family']['slug'])->toBe($family->slug)
         ->and($page['props']['data']['family'])->not->toHaveKey('products');
+});
+
+test('website lists open appointment types with their free times', function () {
+    DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
+
+    $openType = StoreAppointmentType::make()->action($this->shop, [
+        'name'                => 'Showroom visit '.Str::random(6),
+        'meeting_mode'        => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'duration_minutes'    => 60,
+        'min_notice_hours'    => 0,
+        'booking_window_days' => 14,
+        'availability'        => ['weekly' => array_fill_keys(range(1, 7), [['from' => '09:00', 'to' => '17:00']])],
+    ]);
+    $closedType = StoreAppointmentType::make()->action($this->shop, [
+        'name'             => 'Closed '.Str::random(6),
+        'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+        'duration_minutes' => 30,
+        'is_active'        => false,
+    ]);
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/appointments')->assertOk();
+    $types    = collect($response->json('appointment_types'));
+    $listed   = $types->firstWhere('id', $openType->id);
+
+    expect($response->json('shop_name'))->toBe($this->shop->name)
+        ->and($listed)->not->toBeNull()
+        ->and($listed['meeting_mode'])->toBe('store_visit')
+        ->and($listed['slots'])->not->toBeEmpty()
+        ->and($types->pluck('id'))->not->toContain($closedType->id);
+});
+
+test('visitor books an appointment on the website and becomes a prospect', function () {
+    DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
+
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'                => 'Showroom visit '.Str::random(6),
+        'meeting_mode'        => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'duration_minutes'    => 60,
+        'min_notice_hours'    => 0,
+        'booking_window_days' => 14,
+        'capacity_per_slot'   => 1,
+        'availability'        => ['weekly' => array_fill_keys(range(1, 7), [['from' => '09:00', 'to' => '17:00']])],
+    ]);
+    $slots = GetAppointmentTypeAvailableSlots::run($appointmentType);
+    $date  = array_key_last($slots);
+    $time  = $slots[$date][0];
+    $email = 'web-visitor-'.Str::lower(Str::random(8)).'@example.com';
+
+    $payload = [
+        'appointment_type_id' => $appointmentType->id,
+        'date'                => $date,
+        'time'                => $time,
+        'contact_name'        => 'Web visitor',
+        'email'               => $email,
+        'number_visitors'     => 3,
+        'marketing_opt_in'    => true,
+    ];
+
+    $this->postJson('http://'.$this->website->domain.'/models/appointment', $payload)
+        ->assertOk()
+        ->assertJsonPath('starts_at', $date.' '.$time);
+
+    $appointment = Appointment::where('appointment_type_id', $appointmentType->id)->sole();
+
+    expect($appointment->source)->toBe(AppointmentSourceEnum::WEBSITE)
+        ->and($appointment->number_visitors)->toBe(3)
+        ->and($appointment->visitor)->toBeInstanceOf(Prospect::class)
+        ->and($appointment->visitor->email)->toBe($email)
+        ->and($appointment->visitor->is_opt_in)->toBeTrue()
+        ->and($appointment->visitor->dont_contact_me)->toBeFalse();
+
+    $this->postJson('http://'.$this->website->domain.'/models/appointment', [...$payload, 'email' => 'other-'.$email])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('time');
+
+    $this->postJson('http://'.$this->website->domain.'/models/appointment', [...$payload, 'time' => $slots[$date][1], 'website_url' => 'http://spam.example'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('website_url');
 });

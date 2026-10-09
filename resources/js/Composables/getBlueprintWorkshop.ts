@@ -44,6 +44,7 @@ import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
+import Appointment1 from "@/Components/CMS/Webpage/Appointment1/Blueprint"
 import LoginBlueprint from "@/Components/CMS/Webpage/Login/Blueprint"
 import RegisterBlueprint from "@/Components/CMS/Webpage/Register/Blueprint"
 import RegisterDashboardBlueprint from "@/Components/CMS/Webpage/RegisterDashboard/Blueprint"
@@ -186,6 +187,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"cta-video-1": CTAVideo1Blueprint.blueprint,
 		"video-1": VideoBlueprint.blueprint,
 		"user-subscribe": UserSubscribe.blueprint,
+		"appointment-1": Appointment1.blueprint,
 		"login": LoginBlueprint.blueprint,
 		"register": RegisterBlueprint.blueprint,
 		"register-dashboard": RegisterDashboardBlueprint.blueprint,

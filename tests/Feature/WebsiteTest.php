@@ -1255,9 +1255,15 @@ test('UI show webpage workshop in shop website', function (Website $website, Web
                 fn (AssertableInertia $page) => $page->where("title", $webpage->code)->etc()
             )
             ->has('webpage')
-            ->has('webBlockTypes');
+            ->where('webBlockTypes.data', fn ($webBlockTypes) => collect($webBlockTypes)->contains('code', 'appointment-1'));
     });
 })->depends('create b2b website', 'create webpage');
+
+test('a new web block type is available to every shop by default', function () {
+    $webBlockType = new WebBlockType();
+
+    expect($webBlockType->shop_availability)->toBe([]);
+});
 
 test('UI get section route show shop website', function (Website $website) {
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.show.web.websites.show', [

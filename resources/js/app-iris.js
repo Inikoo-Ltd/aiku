@@ -53,6 +53,19 @@ router.on("beforeUpdate", (event) => {
 });
 
 const irisLocale = normalizeLocale(document.documentElement.lang);
+
+const irisShortDayNames = (() => {
+  const sunday = new Date(2024, 0, 7);
+  return Array.from({ length: 7 }, (_, offset) => {
+    const day = new Date(sunday);
+    day.setDate(sunday.getDate() + offset);
+    try {
+      return new Intl.DateTimeFormat(irisLocale, { weekday: "short" }).format(day);
+    } catch {
+      return day.toLocaleDateString("en", { weekday: "short" });
+    }
+  });
+})();
 const irisLocaleMessages = loadLocaleMessages(irisLocale);
 
 createInertiaApp(
@@ -124,6 +137,10 @@ createInertiaApp(
         use(FloatingVue).
         use(ConfirmationService).
         use(PrimeVue, {
+          locale: {
+            firstDayOfWeek: 1,
+            dayNamesMin   : irisShortDayNames
+          },
           theme: {
             preset : MyPreset,
             options: {

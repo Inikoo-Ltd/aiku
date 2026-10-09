@@ -8,6 +8,7 @@
 */
 
 
+use App\Actions\Iris\Appointment\StoreIrisAppointment;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
 use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
@@ -41,6 +42,7 @@ use App\Actions\Retina\UnsubscribeAurora;
 use Illuminate\Support\Facades\Route;
 
 Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
+Route::post('appointment', StoreIrisAppointment::class)->name('appointment.store')->middleware('throttle:iris-appointment-booking');
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
 Route::post('portfolio-multi-channels', StoreIrisPortfolioToMultiChannels::class)->name('multi_channels.portfolio.store');

@@ -52,6 +52,8 @@ class StoreAppointment extends OrgAction
             ...$this->appointmentRules(isUpdate: false),
             'source'             => ['sometimes', Rule::enum(AppointmentSourceEnum::class)],
             'created_by_user_id' => ['sometimes', 'nullable', 'integer'],
+            'customer_id'        => ['sometimes', 'nullable', 'integer', Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)],
+            'marketing_opt_in'   => ['sometimes', 'boolean'],
         ];
     }
 
