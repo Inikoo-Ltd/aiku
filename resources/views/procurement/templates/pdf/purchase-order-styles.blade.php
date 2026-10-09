@@ -10,6 +10,7 @@
         table.lines { margin-top: 18px; }
         table.lines th { background: #f2f2f2; font-size: 8pt; text-transform: uppercase; text-align: left; padding: 6px 5px; border-bottom: 1px solid #bbb; }
         table.lines td { padding: 6px 5px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
+        table.lines td.image { text-align: center; vertical-align: middle; }
         .right { text-align: right; }
         .totals { margin-top: 10px; width: 40%; margin-left: 60%; }
         .totals td { padding: 4px 5px; }

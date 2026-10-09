@@ -213,7 +213,14 @@ class ShowPurchaseOrder extends OrgAction
                             'key'    => 'pdf',
                             'route'  => [
                                 'name'       => 'grp.org.procurement.purchase_orders.pdf',
-                                'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
+                                'parameters' => ['organisation' => $this->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug],
+                            ],
+                            'options' => [
+                                [
+                                    'value'      => 'with_images',
+                                    'label'      => __('Product images'),
+                                    'is_checked' => false,
+                                ],
                             ],
                         ],
                         ...($uploadExcel ? [] : [$this->downloadExcelAction($purchaseOrder)]),

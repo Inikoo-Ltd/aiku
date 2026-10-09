@@ -61,6 +61,9 @@
     <thead>
     <tr>
         <th style="width: 4%">#</th>
+        @if($images !== null)
+            <th style="width: 10%">Image</th>
+        @endif
         <th style="width: 14%">Code</th>
         <th>Description</th>
         <th class="right" style="width: 9%">Units / carton</th>
@@ -77,6 +80,13 @@
         @php($lineCurrency = $product?->currency?->code ?? $purchaseOrder->currency->code)
         <tr>
             <td>{{ $index + 1 }}</td>
+            @if($images !== null)
+                <td class="image">
+                    @if(isset($images[$line->id]))
+                        <img src="{{ $images[$line->id] }}" style="max-width: 48px; max-height: 48px;" alt="" />
+                    @endif
+                </td>
+            @endif
             <td>{{ $product?->code ?? $line->orgStock?->code }}</td>
             <td>{{ $product?->name ?? $line->orgStock?->name }}</td>
             <td class="right">{{ $unitsPerCarton ? $quantity($unitsPerCarton) : '' }}</td>

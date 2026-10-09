@@ -19,6 +19,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Web\Webpage;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -184,7 +185,7 @@ class GetOrgStockDiscontinuePreview extends OrgAction
     private function liveWebpages(array $productIds): array
     {
         if (!$productIds) {
-            return ['count' => 0, 'urls' => []];
+            return ['count' => 0, 'urls' => [], 'pages' => []];
         }
 
         $own = DB::table('products')
@@ -201,7 +202,41 @@ class GetOrgStockDiscontinuePreview extends OrgAction
 
         $urls = $own->merge($featuring)->unique()->sort()->values()->all();
 
-        return ['count' => count($urls), 'urls' => $urls];
+        return ['count' => count($urls), 'urls' => $urls, 'pages' => $this->productWebpages($productIds)];
+    }
+
+    /**
+     * Every page showing the products whatever its state, so the preview can say which are still live.
+     *
+     * @param  array<int, int>  $productIds
+     * @return array<int, array{url: string, state: string, canonical_url: string|null}>
+     */
+    private function productWebpages(array $productIds): array
+    {
+        $columns = ['webpages.id', 'webpages.url', 'webpages.state', 'webpages.canonical_url', 'shops.type as shop_type'];
+
+        $own = DB::table('products')
+            ->join('webpages', 'webpages.id', '=', 'products.webpage_id')
+            ->join('shops', 'shops.id', '=', 'webpages.shop_id')
+            ->whereIn('products.id', $productIds)
+            ->get($columns);
+
+        $featuring = DB::table('webpage_has_products')
+            ->join('webpages', 'webpages.id', '=', 'webpage_has_products.webpage_id')
+            ->join('shops', 'shops.id', '=', 'webpages.shop_id')
+            ->whereIn('webpage_has_products.product_id', $productIds)
+            ->get($columns);
+
+        return $own->merge($featuring)
+            ->unique('id')
+            ->sortBy('url')
+            ->map(fn ($page) => [
+                'url'           => $page->url,
+                'state'         => $page->state,
+                'canonical_url' => Webpage::canonicalUrlForEnvironment($page->canonical_url, fn () => ShopTypeEnum::from($page->shop_type)),
+            ])
+            ->values()
+            ->all();
     }
 
     private function openOrders(array $productIds): array
