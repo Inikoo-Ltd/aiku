@@ -12,10 +12,12 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerAddressEditAuthorisation;
 
 class UpdateCustomerDeliveryAddress extends OrgAction
 {
     use WithActionUpdate;
+    use WithCustomerAddressEditAuthorisation;
 
     public function handle(Customer $customer, array $modelData): Customer
     {

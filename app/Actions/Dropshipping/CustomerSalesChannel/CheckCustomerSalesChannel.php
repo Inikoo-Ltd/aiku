@@ -18,10 +18,12 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerSalesChannelEditAuthorisation;
 
 class CheckCustomerSalesChannel extends OrgAction
 {
     use WithActionUpdate;
+    use WithCustomerSalesChannelEditAuthorisation;
 
 
     private CustomerSalesChannel $customerSalesChannel;

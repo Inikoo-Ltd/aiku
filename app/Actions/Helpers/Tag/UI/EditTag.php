@@ -19,9 +19,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class EditTag extends OrgAction
 {
+    use WithCrmTagsAuthorisation;
+
     private ?TagScopeEnum $forcedScope = null;
 
     public function inSelfFilledTags(Organisation $organisation, Shop $shop, Tag $tag, ActionRequest $request): Response

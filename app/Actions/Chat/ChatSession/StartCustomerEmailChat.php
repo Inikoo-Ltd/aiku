@@ -255,4 +255,9 @@ class StartCustomerEmailChat extends OrgAction
         return filled($customer->email)
             && filled(Arr::get($customer->shop->settings, 'gmail.email'));
     }
+
+    public function canBeStartedBy(?User $user, Customer $customer): bool
+    {
+        return $user instanceof User && $this->userCanActOnChatOnShop($user, $customer->shop);
+    }
 }

@@ -16,10 +16,12 @@ use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
+use App\Actions\Traits\Authorisations\WithAccountingModuleAuthorisation;
 
 class OmegaInvoice extends OrgAction
 {
     use WithOmegaData;
+    use WithAccountingModuleAuthorisation;
     public function handle(Invoice $invoice): string
     {
 

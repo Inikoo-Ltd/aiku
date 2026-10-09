@@ -2096,3 +2096,90 @@ test('customer page opens for normal and dropshipping customers, reorders tab on
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.reorders')->etc());
 });
+
+test('a crm viewer reads customers, polls and prospects but changes nothing, and does not open invoices in accounting', function () {
+    $shop         = $this->shop;
+    $organisation = $this->organisation;
+    $customer     = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $webUser      = StoreWebUser::make()->action($customer, [
+        'email'    => fake()->unique()->safeEmail(),
+        'username' => fake()->unique()->userName(),
+        'password' => 'password',
+    ]);
+    $poll         = StorePoll::make()->action($shop, [
+        'name'                     => 'viewer poll '.fake()->unique()->numberBetween(1000, 999999),
+        'label'                    => 'viewer poll',
+        'in_registration'          => false,
+        'in_registration_required' => false,
+        'in_iris'                  => false,
+        'in_iris_required'         => false,
+        'type'                     => ['type' => PollTypeEnum::OPEN_QUESTION],
+    ]);
+    $invoice      = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), ['in_process' => false]));
+
+    $originalRoles       = $this->user->roles->pluck('name')->all();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+    $actingWithOnly      = function (array $permissions) {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncRoles([]);
+        $this->user->syncPermissions($permissions);
+        \Illuminate\Support\Facades\Cache::tags('auth-user:'.$this->user->id)->flush();
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($this->user->refresh());
+    };
+
+    try {
+        $actingWithOnly(["crm.$shop->id.view", "crm.$shop->id.prospects.view"]);
+
+        $page = get(route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $shop->slug, $customer->slug, 'tab' => 'showcase']))
+            ->assertOk()->viewData('page')['props'];
+        expect($page['permissions'])->each->toBeFalse()
+            ->and(collect($page['pageHead']['actions'])->pluck('key'))->not->toContain('edit_customer')
+            ->and(collect($page['notes']['note_list'])->pluck('editable')->unique()->all())->toBe([false])
+            ->and($page['showcase']['store_note_route'])->toBeNull()
+            ->and($page['showcase']['editWebUser'])->toBeNull()
+            ->and($page['showcase']['address_management']['can_open_address_management'])->toBeFalse();
+
+        post(route('grp.models.customer.note.store', ['customer' => $customer->id]), ['note' => 'viewer note'])->assertForbidden();
+        patch(route('grp.models.customer.update', ['customer' => $customer->id]), ['is_gift_opted_out' => true])->assertForbidden();
+        patch(route('grp.models.customer.approve', ['customer' => $customer->id]))->assertForbidden();
+        patch(route('grp.models.customer.address.update', ['customer' => $customer->id]), [])->assertForbidden();
+        patch(route('grp.models.customer.credit-transaction.store', ['customer' => $customer->id]), [])->assertForbidden();
+        get(route('grp.org.shops.show.crm.customers.show.web_users.edit', [$organisation->slug, $shop->slug, $customer->slug, $webUser->slug]))->assertForbidden();
+
+        $pollPage = get(route('grp.org.shops.show.crm.polls.show', [$organisation->slug, $shop->slug, $poll->slug]))->assertOk()->viewData('page')['props'];
+        expect($pollPage['can_edit'])->toBeFalse()
+            ->and($pollPage['pageHead']['actions'])->toBeEmpty();
+        $this->delete(route('grp.models.poll.delete', ['poll' => $poll->id]))->assertForbidden();
+
+        get(route('grp.org.shops.show.crm.prospects.mailshots.index', [$organisation->slug, $shop->slug]))->assertOk();
+        post(route('grp.models.shop.prospect.mailshot.store', ['shop' => $shop->id]), [])->assertForbidden();
+        get(route('grp.org.shops.show.crm.internal_tags.create', [$organisation->slug, $shop->slug]))->assertForbidden();
+
+        get(route('grp.org.accounting.invoices.show', [$organisation->slug, $invoice->slug]))->assertForbidden();
+        get(route('grp.majordomo.redirect_invoice_in_accounting', ['invoice' => $invoice->id]))->assertForbidden();
+        get(route('grp.org.accounting.invoices.index', [$organisation->slug]))->assertForbidden();
+        get(route('grp.org.accounting.refunds.index', [$organisation->slug]))->assertForbidden();
+        post(route('grp.models.refund.create', ['invoice' => $invoice->id]))->assertForbidden();
+
+        $actingWithOnly(["crm.$shop->id.view", "orders.$shop->id.edit"]);
+        patch(route('grp.models.customer.update', ['customer' => $customer->id]), ['internal_notes' => 'orders note'])->assertForbidden();
+        patch(route('grp.models.customer.update', ['customer' => $customer->id]), ['is_gift_opted_out' => true])->assertSessionHasNoErrors();
+        expect(Arr::get($customer->refresh()->settings, 'is_gift_opted_out'))->toBeTrue();
+
+        $actingWithOnly(["crm.$shop->id.edit"]);
+        get(route('grp.org.accounting.invoices.show', [$organisation->slug, $invoice->slug]))->assertForbidden();
+        expect(post(route('grp.models.refund.create', ['invoice' => $invoice->id]))->status())->not->toBe(403);
+
+        $actingWithOnly(["accounting.$organisation->id.view"]);
+        get(route('grp.org.accounting.invoices.index', [$organisation->slug]))->assertOk();
+        $invoicePage = get(route('grp.org.accounting.invoices.show', [$organisation->slug, $invoice->slug]))->assertOk()->viewData('page')['props'];
+        expect($invoicePage['invoice_pay']['can_pay'])->toBeFalse()
+            ->and($invoicePage['pageHead']['wrapped_actions'])->toBeEmpty();
+        post(route('grp.models.refund.create', ['invoice' => $invoice->id]))->assertForbidden();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+    }
+});

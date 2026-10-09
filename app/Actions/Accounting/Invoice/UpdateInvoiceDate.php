@@ -20,10 +20,12 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Carbon\Carbon;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithInvoiceEditAuthorisation;
 
 class UpdateInvoiceDate extends OrgAction
 {
     use WithActionUpdate;
+    use WithInvoiceEditAuthorisation;
 
 
     public function handle(Invoice $invoice, array $modelData): Invoice

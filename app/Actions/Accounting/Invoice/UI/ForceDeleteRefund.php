@@ -17,9 +17,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class ForceDeleteRefund extends OrgAction
 {
+    use WithRefundEditAuthorisation;
+
     /**
      * @throws \Throwable
      */

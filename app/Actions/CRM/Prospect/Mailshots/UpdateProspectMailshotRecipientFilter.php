@@ -12,10 +12,12 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithProspectsEditAuthorisation;
 
 class UpdateProspectMailshotRecipientFilter extends OrgAction
 {
     use WithActionUpdate;
+    use WithProspectsEditAuthorisation;
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {

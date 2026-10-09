@@ -42,7 +42,7 @@ class SetMailshotAsReady
             return true;
         }
 
-        return $request->user()->authTo("crm.prospects.edit");
+        return $request->user()->authTo("crm.{$request->route('mailshot')->shop_id}.prospects.edit");
     }
 
     public function rules(): array

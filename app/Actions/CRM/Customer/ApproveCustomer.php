@@ -13,6 +13,7 @@ use App\Actions\Comms\Email\SendCustomerApprovedEmail;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateCustomers;
 use App\Actions\Fulfilment\RentalAgreement\StoreRentalAgreement;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ApproveCustomer extends OrgAction
 {
     use WithActionUpdate;
+    use WithCRMEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -62,7 +64,7 @@ class ApproveCustomer extends OrgAction
      */
     public function asController(Customer $customer, ActionRequest $request): Customer
     {
-        $this->initialisation($customer->organisation, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer);
     }

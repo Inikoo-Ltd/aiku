@@ -30,11 +30,13 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class IndexTags extends OrgAction
 {
     use WithRetinaRouteModelOwnershipCheck;
     use WithCustomersSubNavigation;
+    use WithCrmTagsAuthorisation;
 
     private Shop $parent;
     private ?TagScopeEnum $forcedScope = null;
@@ -147,7 +149,7 @@ class IndexTags extends OrgAction
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'scope', label: __('Scope'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER) {
+            if ($this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER && $this->canEdit) {
                 $table->column(key: 'action', label: __('Action'));
             }
 
@@ -176,7 +178,7 @@ class IndexTags extends OrgAction
                         'title' => __('Tags'),
                         'icon'  => ['fal', 'fa-tags'],
                     ],
-                    'actions' => $this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER ? [
+                    'actions' => $this->forcedScope !== TagScopeEnum::SYSTEM_CUSTOMER && $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',

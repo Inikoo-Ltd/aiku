@@ -204,6 +204,11 @@ trait IsInvoiceUI
         };
     }
 
+    public function canRefund(Invoice $invoice, ActionRequest $request): bool
+    {
+        return $this->canEdit || $request->user()->authTo("crm.$invoice->shop_id.edit");
+    }
+
     public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData, bool $isWithSendInvoice = false): array
     {
         $wrappedActions = [];
@@ -253,10 +258,10 @@ trait IsInvoiceUI
                         ]
                     ]
                 ];
-        } else {
+        } elseif ($request->user()->authTo("accounting.{$invoice->shop->organisation_id}.edit")) {
             $wrappedActions[] =
                 [
-                    'supervisor' => $request->user()->authTo("accounting.{$invoice->shop->organisation_id}.edit"),
+                    'supervisor' => true,
                     'type'       => 'button',
                     'style'      => 'edit',
                     'class'      => ['color' => 'red !important'],
@@ -275,7 +280,7 @@ trait IsInvoiceUI
                 ];
         }
 
-        if ($this->parent instanceof Organisation) {
+        if ($this->canEdit && $this->parent instanceof Organisation) {
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -286,7 +291,7 @@ trait IsInvoiceUI
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
-        } elseif ($this->parent instanceof FulfilmentCustomer) {
+        } elseif ($this->canEdit && $this->parent instanceof FulfilmentCustomer) {
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -299,7 +304,7 @@ trait IsInvoiceUI
         }
 
 
-        if ($isWithSendInvoice) {
+        if ($this->canEdit && $isWithSendInvoice) {
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -316,7 +321,7 @@ trait IsInvoiceUI
             ];
         }
 
-        if ($payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
+        if ($this->canRefund($invoice, $request) && $payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
             $wrappedActions[] =
                 [
                     'type'  => 'button',

@@ -21,9 +21,12 @@ use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Sentry;
+use App\Actions\Traits\Authorisations\WithProspectsEditAuthorisation;
 
 class StoreProspectMailshot extends OrgAction
 {
+    use WithProspectsEditAuthorisation;
+
     /**
      * @throws \Throwable
      */

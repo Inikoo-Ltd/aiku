@@ -20,10 +20,12 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 
 class ExportCustomers extends OrgAction
 {
     use WithExportData;
+    use WithCRMAuthorisation;
 
     private const STREAM_THRESHOLD = 20000;
 
@@ -99,7 +101,7 @@ class ExportCustomers extends OrgAction
      */
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): BinaryFileResponse|StreamedResponse
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
     }
 }

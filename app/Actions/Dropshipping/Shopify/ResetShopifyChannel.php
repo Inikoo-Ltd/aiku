@@ -17,12 +17,16 @@ use App\Actions\Dropshipping\Shopify\Webhook\CreateShopifyWebhooks;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
+use App\Actions\Traits\Authorisations\WithCustomerSalesChannelEditAuthorisation;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ResetShopifyChannel
 {
     use asAction;
     use WithRetinaRouteModelOwnershipCheck;
+    use WithCustomerSalesChannelEditAuthorisation {
+        authorize as authorizeCustomerSalesChannelEdit;
+    }
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
@@ -52,7 +56,17 @@ class ResetShopifyChannel
         $this->handle($customerSalesChannel);
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel): void
+    public function authorize(ActionRequest $request): bool
+    {
+        if (str_starts_with($request->route()->getName(), 'retina.')) {
+            return true;
+        }
+
+        return $this->authorizeCustomerSalesChannelEdit($request);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->handle($customerSalesChannel);
     }

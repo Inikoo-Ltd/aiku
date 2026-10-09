@@ -260,7 +260,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                 <ModalConfirmationDelete
                     v-if="item.can_connect_to_platform && !item.platform_status"
                     :routeDelete="{
-                        name: 'grp.models.customer_sales_channel.delete',
+                        name: 'grp.models.customer_sales_channel.shopify_reset',
                         parameters: {
                             customerSalesChannel: item.id,
                         },

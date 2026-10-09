@@ -15,9 +15,12 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use Laravel\Octane\Facades\Octane;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class RefundAllTaxesInvoiceTransactions extends OrgAction
 {
+    use WithRefundEditAuthorisation;
+
     /**
      * Refunds whatever tax of the original invoice has not been refunded yet.
      *
@@ -81,6 +84,7 @@ class RefundAllTaxesInvoiceTransactions extends OrgAction
      */
     public function action(Invoice $refund): Invoice
     {
+        $this->asAction = true;
         $this->initialisationFromShop($refund->shop, []);
         return $this->handle($refund);
     }

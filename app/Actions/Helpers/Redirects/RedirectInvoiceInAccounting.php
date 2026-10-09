@@ -29,6 +29,11 @@ class RedirectInvoiceInAccounting extends OrgAction
         return Redirect::to($url);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo("accounting.{$request->route('invoice')->organisation_id}.view");
+    }
+
     public function asController(Invoice $invoice, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromGroup(group(), $request);

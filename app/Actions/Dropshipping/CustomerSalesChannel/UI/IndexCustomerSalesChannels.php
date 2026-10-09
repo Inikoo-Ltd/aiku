@@ -29,10 +29,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 
 class IndexCustomerSalesChannels extends OrgAction
 {
     use WithCustomerSubNavigation;
+    use WithCRMAuthorisation;
 
     private Customer|Platform $parent;
     private string $bucket = '';
@@ -145,7 +147,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 ],
                 'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
-        )->table($this->tableStructure(parent: $this->parent));
+        )->table($this->tableStructure(parent: $this->parent, canEdit: $this->canEdit));
     }
 
     protected function getElementGroups(Customer|Platform $parent): array
@@ -172,9 +174,9 @@ class IndexCustomerSalesChannels extends OrgAction
         ];
     }
 
-    public function tableStructure(Customer|Platform $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Customer|Platform $parent, ?array $modelOperations = null, $prefix = null, bool $canEdit = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -211,7 +213,11 @@ class IndexCustomerSalesChannels extends OrgAction
                 $table->column(key: 'platform_status', label: __('Status'), sortable: true);
             }
 
-            $table->column(key: 'action', label: __('Actions'), searchable: true)->defaultSort('reference');
+            if ($canEdit) {
+                $table->column(key: 'action', label: __('Actions'), searchable: true);
+            }
+
+            $table->defaultSort('reference');
         };
     }
 

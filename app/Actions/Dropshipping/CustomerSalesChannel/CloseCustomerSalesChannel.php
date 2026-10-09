@@ -23,9 +23,12 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerSalesChannelEditAuthorisation;
 
 class CloseCustomerSalesChannel extends OrgAction
 {
+    use WithCustomerSalesChannelEditAuthorisation;
+
     public function handle(CustomerSalesChannel $customerSalesChannel): ?bool
     {
         UpdateCustomerSalesChannel::run(

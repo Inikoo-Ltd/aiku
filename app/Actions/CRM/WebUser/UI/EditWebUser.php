@@ -9,12 +9,14 @@
 namespace App\Actions\CRM\WebUser\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,13 +34,20 @@ class EditWebUser extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->parent instanceof Fulfilment) {
-            return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.view");
-        } elseif ($this->parent instanceof Shop) {
-            return $request->user()->authTo("crm.{$this->shop->id}.view");
+        return self::canEdit($request->user(), $this->shop);
+    }
+
+    public static function canEdit(?User $user, Shop $shop): bool
+    {
+        if (!$user) {
+            return false;
         }
 
-        return false;
+        if ($shop->type === ShopTypeEnum::FULFILMENT) {
+            return $user->authTo("fulfilment-shop.{$shop->fulfilment->id}.edit");
+        }
+
+        return $user->authTo("crm.$shop->id.edit");
     }
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, WebUser $webUser, ActionRequest $request): WebUser

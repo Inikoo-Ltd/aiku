@@ -13,6 +13,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithInvoiceAuthorisation
 {
+    use WithInvoiceEditPermissions;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -24,11 +26,24 @@ trait WithInvoiceAuthorisation
             return $request->user()->authTo("accounting.{$this->organisation->id}.view");
         }
 
-        $isEdit = str_ends_with($request->route()->getName(), '.edit');
+        $routeName = $request->route()->getName();
 
-        $this->canEdit = $request->user()->authTo($this->getInvoicePermissions($invoice, 'edit'));
+        $this->canEdit = $request->user()->authTo($this->getInvoiceEditPermissions($invoice));
 
-        return $isEdit ? $this->canEdit : $request->user()->authTo($this->getInvoicePermissions($invoice, 'view'));
+        if (str_ends_with($routeName, '.edit')) {
+            return $this->canEdit;
+        }
+
+        if (str_starts_with($routeName, 'grp.org.accounting.')) {
+            $permissions = ["accounting.$invoice->organisation_id.view"];
+            if ($buyerOrganisationId = $invoice->customer?->as_organisation_id) {
+                $permissions[] = "procurement.$buyerOrganisationId.view";
+            }
+
+            return $request->user()->authTo($permissions);
+        }
+
+        return $request->user()->authTo($this->getInvoiceViewPermissions($invoice));
     }
 
     protected function getInvoiceToAuthorise(ActionRequest $request): ?Invoice
@@ -43,25 +58,23 @@ trait WithInvoiceAuthorisation
         return $slug ? Invoice::withTrashed()->where('slug', $slug)->first() : null;
     }
 
-    protected function getInvoicePermissions(Invoice $invoice, string $level): array
+    protected function getInvoiceViewPermissions(Invoice $invoice): array
     {
         $permissions = [
-            "accounting.$invoice->organisation_id.$level",
-            "crm.$invoice->shop_id.$level",
-            "orders.$invoice->shop_id.$level",
+            "accounting.$invoice->organisation_id.view",
+            "crm.$invoice->shop_id.view",
+            "orders.$invoice->shop_id.view",
         ];
 
         if ($fulfilmentId = $invoice->shop->fulfilment?->id) {
-            $permissions[] = "fulfilment-shop.$fulfilmentId.$level";
+            $permissions[] = "fulfilment-shop.$fulfilmentId.view";
         }
 
-        if ($level === 'view') {
-            foreach ($invoice->organisation->warehouses()->pluck('id') as $warehouseId) {
-                $permissions[] = "dispatching.$warehouseId.view";
-            }
-            if ($buyerOrganisationId = $invoice->customer?->as_organisation_id) {
-                $permissions[] = "procurement.$buyerOrganisationId.view";
-            }
+        foreach ($invoice->organisation->warehouses()->pluck('id') as $warehouseId) {
+            $permissions[] = "dispatching.$warehouseId.view";
+        }
+        if ($buyerOrganisationId = $invoice->customer?->as_organisation_id) {
+            $permissions[] = "procurement.$buyerOrganisationId.view";
         }
 
         return $permissions;

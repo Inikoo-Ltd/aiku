@@ -9,11 +9,12 @@ defineProps<{
   title: string
   pageHead: PageHeadingTypes,
   data: any
+  can_view_invoices?: boolean
 }>()
 </script>
 
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead" />
-  <TableInvoices :data="data" />
+  <TableInvoices :data="data" :canViewInvoices="can_view_invoices ?? true" />
 </template>

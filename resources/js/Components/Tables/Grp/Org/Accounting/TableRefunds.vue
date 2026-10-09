@@ -20,10 +20,13 @@ import { RouteParams } from "@/types/route-params";
 library.add(faFileInvoiceDollar, faCircle,faCheckCircle,faQuestionCircle, faArrowCircleLeft, faSeedling)
 
 
-defineProps<{
+withDefaults(defineProps<{
     data: {}
     tab?: string
-}>()
+    canViewInvoices?: boolean
+}>(), {
+    canViewInvoices: true,
+})
 
 const locale = useLocaleStore();
 
@@ -137,9 +140,10 @@ function customerRoute(invoice: Invoice) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: refund }">
-            <Link :href="refundHref(refund) as string" class="primaryLink py-0.5">
+            <Link v-if="canViewInvoices" :href="refundHref(refund) as string" class="primaryLink py-0.5">
                 {{ refund.reference }}
             </Link>
+            <span v-else class="py-0.5">{{ refund.reference }}</span>
         </template>
 
         <template #cell(in_process)="{ item: item }">

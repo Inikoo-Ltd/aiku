@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Dropshipping\Customers\UI\IndexCustomers;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
 use App\Actions\Dropshipping\Invoices\UI\IndexInvoices;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
@@ -82,6 +83,7 @@ class ShowPlatform extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => PlatformTabsEnum::navigation()
                 ],
+                'can_view_invoices' => !$parent instanceof Shop || $request->user()->authTo("accounting.$parent->organisation_id.view"),
                 PlatformTabsEnum::SHOWCASE->value =>
                     $this->tab == PlatformTabsEnum::SHOWCASE->value
                         ? fn () => InvoicesResource::collection(IndexInvoices::run($parent, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))
@@ -119,6 +121,7 @@ class ShowPlatform extends OrgAction
             IndexCustomerSalesChannels::make()->tableStructure(
                 parent: $platform,
                 prefix: PlatformTabsEnum::CHANNELS->value,
+                canEdit: $parent instanceof Shop && CloseCustomerSalesChannel::canEditCustomerSalesChannelsIn($request->user(), $parent),
             )
         )->table(
             IndexCustomers::make()->tableStructure(

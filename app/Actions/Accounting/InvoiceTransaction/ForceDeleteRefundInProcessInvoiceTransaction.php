@@ -12,10 +12,12 @@ namespace App\Actions\Accounting\InvoiceTransaction;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class ForceDeleteRefundInProcessInvoiceTransaction extends OrgAction
 {
     use WithDeleteRefundInProcessTransaction;
+    use WithRefundEditAuthorisation;
 
     public function handle(InvoiceTransaction $invoiceTransaction): void
     {

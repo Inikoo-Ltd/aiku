@@ -16,11 +16,13 @@ use App\Http\Resources\Mail\MailshotResource;
 use App\Models\Comms\Mailshot;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithProspectsEditAuthorisation;
 
 class UpdateProspectMailshot extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithProspectsEditAuthorisation;
 
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot

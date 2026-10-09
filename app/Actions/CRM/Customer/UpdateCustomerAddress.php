@@ -15,9 +15,12 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerAddressEditAuthorisation;
 
 class UpdateCustomerAddress extends OrgAction
 {
+    use WithCustomerAddressEditAuthorisation;
+
     public function handle(Customer $customer, array $modelData): void
     {
         $addressData = Arr::get($modelData, 'address');

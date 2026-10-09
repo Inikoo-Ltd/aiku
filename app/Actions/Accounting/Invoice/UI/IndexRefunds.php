@@ -39,6 +39,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithAccountingModuleAuthorisation;
 
 class IndexRefunds extends OrgAction
 {
@@ -46,6 +47,7 @@ class IndexRefunds extends OrgAction
     use WithCustomerSubNavigation;
     use WithInvoicesSubNavigation;
     use WithInvoiceCategorySubNavigation;
+    use WithAccountingModuleAuthorisation;
 
 
     private Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider|Invoice $parent;

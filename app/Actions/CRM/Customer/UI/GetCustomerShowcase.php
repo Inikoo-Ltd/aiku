@@ -26,7 +26,10 @@ class GetCustomerShowcase
 {
     use AsObject;
 
-    public function handle(Customer $customer): array
+    /**
+     * @param  array{edit: bool, edit_customer: bool, edit_address: bool, edit_subscriptions: bool, edit_balance: bool, edit_gift_opt_out: bool}  $permissions
+     */
+    public function handle(Customer $customer, array $permissions): array
     {
         $tagRoute = [
             'index_tag' => [
@@ -73,7 +76,7 @@ class GetCustomerShowcase
 
         $webUser = $customer->webUsers()->first();
         $webUserRoute = null;
-        if ($webUser) {
+        if ($webUser && $permissions['edit']) {
             $webUserRoute = [
                 'name'       => 'grp.org.shops.show.crm.customers.show.web_users.edit',
                 'parameters' => [
@@ -126,9 +129,13 @@ class GetCustomerShowcase
             ->limit(10)
             ->get();
 
+        $addressManagement = GetCustomerAddressManagement::run(customer: $customer);
+        $addressManagement['can_open_address_management'] = $addressManagement['can_open_address_management'] && $permissions['edit_address'];
+
         return [
+            'permissions' => $permissions,
             'customer' => CustomerResource::make($customer)->getArray(),
-            'address_management' => GetCustomerAddressManagement::run(customer:$customer),
+            'address_management' => $addressManagement,
             'require_approval' => Arr::get($customer->shop->settings, 'registration.require_approval', false),
             'approveRoute'       => [
                 'name'       => 'grp.models.customer.approve',
@@ -140,7 +147,7 @@ class GetCustomerShowcase
                 "label"       => NotesEnum::INTERNAL->label(),
                 "note"        => $customer->internal_notes ?? '',
                 "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
-                "editable"    => true,
+                "editable"    => $permissions['edit'],
                 "field"       => "internal_notes",
                 ...NotesEnum::INTERNAL->boilerPlate()
             ],
@@ -150,13 +157,13 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
-            'store_note_route' => [
+            'store_note_route' => $permissions['edit'] ? [
                 'name'       => 'grp.models.customer.note.store',
                 'parameters' => [
                     'customer' => $customer->id
                 ],
                 'method'     => 'post'
-            ],
+            ] : null,
             'shop'              => [
                 'id' => $customer->shop->id,
                 'name' => $customer->shop->name,

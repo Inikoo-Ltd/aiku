@@ -17,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceDownloadAuthorisation;
 
 class PdfInvoice extends OrgAction
 {
@@ -24,6 +25,7 @@ class PdfInvoice extends OrgAction
     use WithAttributes;
     use WithExportData;
     use WithInvoicesExport;
+    use WithInvoiceDownloadAuthorisation;
 
 
     public function handle(Invoice $invoice, array $options = []): Response

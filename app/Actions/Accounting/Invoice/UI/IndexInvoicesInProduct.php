@@ -122,6 +122,7 @@ class IndexInvoicesInProduct extends OrgAction
             'InvoicesInProduct',
             [
                 'title'    => __('Invoices'),
+                'can_view_invoices' => !$this->parent instanceof Product || $request->user()->authTo("accounting.{$this->parent->organisation_id}.view"),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $this->parent,
                     request()->route()->getName(),

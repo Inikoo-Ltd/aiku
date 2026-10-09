@@ -77,6 +77,14 @@ const props = defineProps<{
     sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
     can_add_order: boolean
     can_email_customer?: boolean
+    permissions: {
+        edit: boolean
+        edit_customer: boolean
+        edit_address: boolean
+        edit_subscriptions: boolean
+        edit_balance: boolean
+        edit_gift_opt_out: boolean
+    }
     can_make_custom_product?: boolean
     custom_product_artefacts?: Array<{ id: number, code: string, name: string | null }>
     custom_product_artefact_id?: number | null
@@ -223,6 +231,7 @@ const layout = inject('layout')
                 <UpcomingTransactionsPanel
                     v-if="props.showcase?.upcoming_transaction_route && shop_data.type !== 'external'"
                     :routes="props.showcase?.upcoming_transaction_route"
+                    :canEdit="permissions.edit"
                     :shopSlug="props.showcase.shop.slug"
                     :temporaryNote="notes?.temporary_note"
                     :hideButton="true"

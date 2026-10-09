@@ -17,9 +17,12 @@ use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 
 class DeletePoll extends OrgAction
 {
+    use WithCRMEditAuthorisation;
+
     public function handle(Poll $poll, bool $forceDelete): Poll
     {
         $poll->pollOptions()->delete();

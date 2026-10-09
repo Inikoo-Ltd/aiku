@@ -14,9 +14,12 @@ use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use Laravel\Octane\Facades\Octane;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class RefundAllInvoiceTransactions extends OrgAction
 {
+    use WithRefundEditAuthorisation;
+
     /**
      * @throws \Throwable
      */
@@ -62,6 +65,7 @@ class RefundAllInvoiceTransactions extends OrgAction
      */
     public function action(Invoice $refund): Invoice
     {
+        $this->asAction = true;
         $this->initialisationFromShop($refund->shop, []);
         return $this->handle($refund);
     }

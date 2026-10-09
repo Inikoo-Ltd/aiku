@@ -185,11 +185,11 @@ class IndexProspectMailshots extends InertiaAction
                 'pageHead'    => [
                     'title'            => __('Prospects mailshots'),
                     'subNavigation'    => $subNavigation,
-                    'actions'          =>
-                    [
+                    'actions'          => array_values(array_filter(
+                        [
                         // TODO: Check later
                         // ($shop->prospects_sender_email_id && $shop->prospectsSenderEmail->state == SenderEmailStateEnum::VERIFIED) ?
-                        [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New mailshot'),
@@ -203,9 +203,10 @@ class IndexProspectMailshots extends InertiaAction
                                     'shop' => $shop->id
                                 ]
                             ]
-                        ]
+                        ] : null
                         // : null
                     ]
+                    )),
 
 
                 ],
@@ -232,6 +233,15 @@ class IndexProspectMailshots extends InertiaAction
 
             ]
         )->table($this->tableStructure(prefix: ProspectsMailshotsTabsEnum::MAILSHOTS->value));
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $shopId = $request->route('shop')->id;
+
+        $this->canEdit = $request->user()->authTo("crm.$shopId.prospects.edit");
+
+        return $request->user()->authTo("crm.$shopId.prospects.view");
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator

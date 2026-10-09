@@ -19,10 +19,12 @@ use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerSalesChannelEditAuthorisation;
 
 class StoreMultiplePortfolios extends OrgAction
 {
     use WithActionUpdate;
+    use WithCustomerSalesChannelEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -98,6 +100,7 @@ class StoreMultiplePortfolios extends OrgAction
      */
     public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
+        $this->asAction = true;
         $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
 
         $this->handle($customerSalesChannel, $this->validatedData);

@@ -10,6 +10,7 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\UI\ShowPlatform;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
@@ -113,6 +114,7 @@ class ShowCustomerSalesChannel extends OrgAction
                     'platform_user'          => $customerSalesChannel->user,
                     'fulfilment_policies'    => $fulfilmentPolicies,
                     'reconnect_link'         => $this->getReconnectLink($customerSalesChannel),
+                    'can_edit'               => CloseCustomerSalesChannel::canEditCustomerSalesChannelsIn($request->user(), $customerSalesChannel->shop),
                 ],
                 CustomerPlatformTabsEnum::HISTORY->value => $this->tab == CustomerPlatformTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, CustomerPlatformTabsEnum::HISTORY->value))

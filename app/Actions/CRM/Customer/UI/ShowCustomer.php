@@ -62,6 +62,7 @@ class ShowCustomer extends OrgAction
     use WithCustomerSubNavigation;
     use WithCRMAuthorisation;
     use HasGrData;
+    use WithCustomerPagePermissions;
 
     private Organisation|Shop $parent;
 
@@ -129,7 +130,8 @@ class ShowCustomer extends OrgAction
         }
 
         $grData = $this->getGrData($customer);
-        $canMakeCustomProduct = $request->user()->authTo("crm.{$this->shop->id}.edit") && $customer->organisation->productions()->exists();
+        $permissions = $this->getCustomerPagePermissions($request->user(), $customer);
+        $canMakeCustomProduct = $permissions['edit'] && $customer->organisation->productions()->exists();
 
         return Inertia::render(
             'Org/Shop/CRM/Customer',
@@ -145,7 +147,8 @@ class ShowCustomer extends OrgAction
                 ],
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
-                'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer),
+                'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer) && StartCustomerEmailChat::make()->canBeStartedBy($request->user(), $customer),
+                'permissions'        => $permissions,
                 'can_make_custom_product' => $canMakeCustomProduct,
                 'custom_product_artefacts' => Inertia::optional(fn () => $canMakeCustomProduct ? StoreCustomerProductFromArtefact::artefactOptions($customer) : []),
                 'custom_product_artefact_id' => $request->integer('custom_product_artefact') ?: null,
@@ -181,7 +184,7 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : null,
-                        [
+                        $permissions['edit_customer'] ? [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -190,7 +193,7 @@ class ShowCustomer extends OrgAction
                                 'name'       => 'grp.org.shops.show.crm.customers.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ],
+                        ] : null,
                     ])),
                     'subNavigation' => $subNavigation,
                     'iconRight' => $customer->is_vip ? [
@@ -199,7 +202,7 @@ class ShowCustomer extends OrgAction
                         'color' => '#FFC000'
                     ] : []
                 ],
-                'notes'            => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? $this->getCustomerNotes($customer) : null,
+                'notes'            => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? $this->getCustomerNotes($customer, $permissions['edit']) : null,
                 'updateRoute'      => [
                     'name'       => 'grp.models.customer.update',
                     'parameters' => [
@@ -245,8 +248,8 @@ class ShowCustomer extends OrgAction
                 ],
 
                 $tabs::SHOWCASE->value            => $this->tab == $tabs::SHOWCASE->value ?
-                    fn () => GetCustomerShowcase::run($customer)
-                    : Inertia::optional(fn () => GetCustomerShowcase::run($customer)),
+                    fn () => GetCustomerShowcase::run($customer, $permissions)
+                    : Inertia::optional(fn () => GetCustomerShowcase::run($customer, $permissions)),
                 $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerTimeline::run($customer)
                     : Inertia::optional(fn () => GetCustomerTimeline::run($customer)),
@@ -316,7 +319,7 @@ class ShowCustomer extends OrgAction
     }
 
 
-    public function getCustomerNotes(Customer $customer): array
+    public function getCustomerNotes(Customer $customer, bool $editable): array
     {
         return [
             "note_list" => [
@@ -324,7 +327,7 @@ class ShowCustomer extends OrgAction
                     "label"       => NotesEnum::INTERNAL->label(),
                     "note"        => $customer->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members. Staff can communicate with each other about the customer."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "field"       => "internal_notes",
                     ...NotesEnum::INTERNAL->boilerPlate()
                 ],
@@ -332,7 +335,7 @@ class ShowCustomer extends OrgAction
                     "label"       => __("Warehouse Note (Permanent)"),
                     "note"        => $customer->warehouse_internal_notes ?? '',
                     "information" => __("Will be put on every Order private note. Visible only to customer service and warehouse's staff."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "field"       => "warehouse_internal_notes",
                     ...NotesEnum::WAREHOUSE->boilerPlate()
                 ],
@@ -340,7 +343,7 @@ class ShowCustomer extends OrgAction
                     "label"       => __("Shipping Label (Permanent)"),
                     "note"        => $customer->shipping_notes ?? '',
                     "information" => __("Printed on the shipping label of every new order unless the customer writes their own label note. First 34 characters."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "field"       => "shipping_notes",
                     ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ]
@@ -349,7 +352,7 @@ class ShowCustomer extends OrgAction
                 "label"         => NotesEnum::WAREHOUSE_TEMPORARY->label(),
                 "note"          => $customer->warehouse_temporary_notes ?? '',
                 "information"   => __("Will be put on the next Order private note"),
-                "editable"      => true,
+                "editable"      => $editable,
                 "field"         => "warehouse_temporary_notes",
                 "updateRoute"   => [
                     'name'       => 'grp.models.customer.update',

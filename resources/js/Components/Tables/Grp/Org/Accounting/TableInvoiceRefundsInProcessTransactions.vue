@@ -7,7 +7,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { ref, toRaw } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputNumber from 'primevue/inputnumber'
 import { get, set } from 'lodash-es'
@@ -29,6 +29,7 @@ const props = defineProps<{
     data: {}
     tab: string
     is_tax_only?: boolean
+    canEdit: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -71,7 +72,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
             },
             onError: (e) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.net_amount || e.message,
                     type: "error",
                 })
@@ -132,16 +133,16 @@ const productRoute = (item) => {
 
                     <!-- Previous Refund -->
                     <small v-if="item.total_last_refund" class="text-gray-500 text-xs">
-                        {{ trans("Previous refund") }}: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
+                        {{ ctrans("Previous refund") }}: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
                     </small>
 
                     <!-- Refundable Amount -->
                     <button
-                        v-if="item.total_last_refund != item.net_amount && item.net_amount - item.refund_net_amount - item.total_last_refund > 0"
+                        v-if="canEdit && item.total_last_refund != item.net_amount && item.net_amount - item.refund_net_amount - item.total_last_refund > 0"
                         @click="()=>setAllRefund(item.rowIndex, item.max_refundable_amount)"
                         :disabled="item.net_amount - item.refund_net_amount - item.total_last_refund <= 0"
                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                        {{ trans("Refundable") }}: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
+                        {{ ctrans("Refundable") }}: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
                     </button>
                 </div>
             </template>
@@ -164,14 +165,14 @@ const productRoute = (item) => {
 
             <!-- <template #cell(prev_refund)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
-                    <Tag v-if="Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
+                    <Tag v-if="Number(item.total_last_refund)" v-tooltip="ctrans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
                     <span v-else>-</span>
                 </div>
             </template> -->
 
             <template #cell(action)="{ item, proxyItem }">
                 <!-- <div class="space-x-2 w-[350px]">
-                    <div v-if="Number(item.refund_net_amount)" v-tooltip="trans('Selected amount to refund')" class="w-fit font-semibold">
+                    <div v-if="Number(item.refund_net_amount)" v-tooltip="ctrans('Selected amount to refund')" class="w-fit font-semibold">
                         {{ locale.currencyFormat(item.currency_code, item.refund_net_amount) }}
                     </div>
                     <template v-if="item.net_amount !=  item.total_last_refund">
@@ -180,7 +181,7 @@ const productRoute = (item) => {
                             @xclick="() => get(proxyItem, 'refund_type', null) == 'full' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'full')"
                             :key="item.code"
                             :routeTarget="item.refund_transaction_full_refund"
-                            :label="trans('Refund item')"
+                            :label="ctrans('Refund item')"
                             icon="fas fa-arrow-alt-circle-left"
                             size="s"
                             :bindToLink="{ preserveScroll: true }"
@@ -192,7 +193,7 @@ const productRoute = (item) => {
                             v-if="!get(proxyItem, ['refund_net_amount'], 0)"
                             @click="() => get(proxyItem, 'refund_type', null) == 'partial' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'partial')"
                             :key="get(proxyItem, 'refund_type', null) + '-' + item.code"
-                            :label="trans('Refund Item Partially')"
+                            :label="ctrans('Refund Item Partially')"
                             icon="fal fa-arrow-circle-left"
                             size="s"
                             :bindToLink="{ preserveScroll: true }"
@@ -229,7 +230,7 @@ const productRoute = (item) => {
                                 </InputNumber>
 
                                 <p v-if="get(proxyItem, ['new_refund_amount'], null) > item.net_amount" class="italic text-red-500 text-xs mt-1">
-                                    {{ trans('Refund amount should not over the net amount') }}
+                                    {{ ctrans('Refund amount should not over the net amount') }}
                                 </p>
                             </div>
                             <LoadingIcon v-if="isLoadingQuantity.includes(item.rowIndex)" class="h-8" />
@@ -248,7 +249,7 @@ const productRoute = (item) => {
                                 v-if="Number(item.total_last_refund) < Number(item.net_amount)"
                                 @click="() => proxyItem.new_refund_amount = (item.net_amount - item.total_last_refund)"
                                 :key="item.code"
-                                :label="trans('Refund All')"
+                                :label="ctrans('Refund All')"
                                 size="xxs"
                                 :disabled="proxyItem.new_refund_amount == (item.net_amount - item.total_last_refund)"
                                 :bindToLink="{ preserveScroll: true }"
@@ -258,7 +259,7 @@ const productRoute = (item) => {
                         </div>
                         </div> -->
 
-                        <div class="flex items-center gap-3 w-fit">
+                        <div v-if="canEdit" class="flex items-center gap-3 w-fit">
                             <ActionCell
                                 v-if="Number(item.total_last_refund) < Number(item.net_amount)"
                                 :ref="(e) => _formCell[item.rowIndex] = e"
@@ -274,10 +275,10 @@ const productRoute = (item) => {
                                 @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
                             >
                                 <template #decrementicon v-if="is_tax_only">
-                                    <FontAwesomeIcon :icon="faEmptySet" v-tooltip="trans('Set value to 0')" fixed-width/>
+                                    <FontAwesomeIcon :icon="faEmptySet" v-tooltip="ctrans('Set value to 0')" fixed-width/>
                                 </template>
                                 <template #incrementicon v-if="is_tax_only">
-                                    <FontAwesomeIcon :icon="faStarChristmas" v-tooltip="trans('Set value to max amount')" fixed-width/>
+                                    <FontAwesomeIcon :icon="faStarChristmas" v-tooltip="ctrans('Set value to max amount')" fixed-width/>
                                 </template>
                             </ActionCell>
 

@@ -201,19 +201,21 @@ class ShowRefund extends OrgAction
 
 
         $actions = [];
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'edit',
-            'icon'  => 'fal fa-pencil',
-            'label' => __('Edit'),
-            'route' => [
-                'name'       => 'grp.org.accounting.invoices.edit',
-                'parameters' => [
-                    'organisation' => $refund->organisation->slug,
-                    'invoice' => $refund->slug
-                ]
-            ],
-        ];
+        if ($this->canEdit) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'icon'  => 'fal fa-pencil',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => 'grp.org.accounting.invoices.edit',
+                    'parameters' => [
+                        'organisation' => $refund->organisation->slug,
+                        'invoice' => $refund->slug
+                    ]
+                ],
+            ];
+        }
 
         if (DeleteRefund::userCanDeleteInvoicesIn($request->user(), $refund->shop)) {
             $actions[] = [
@@ -231,7 +233,9 @@ class ShowRefund extends OrgAction
             ];
         }
 
-        if ($refund->in_process) {
+        $canRefund = $this->canRefund($refund, $request);
+
+        if ($refund->in_process && $canRefund) {
 
             $actions[] = [
                 'type'  => 'button',
@@ -289,6 +293,7 @@ class ShowRefund extends OrgAction
                 ] : null,
                 'actions'       => $actions,
             ],
+            'can_edit'    => $canRefund,
             'tabs'        => [
                 'current'    => $this->tab,
                 'navigation' => $refund->in_process ? RefundInProcessTabsEnum::navigation() : RefundTabsEnum::navigation()

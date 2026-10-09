@@ -22,10 +22,12 @@ use App\Models\Helpers\Tag;
 use App\Models\Production\Artefact;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class AttachTagsToModel extends OrgAction
 {
     use WithRetinaRouteModelOwnershipCheck;
+    use WithCrmTagsAuthorisation;
 
     private ?TagScopeEnum $forcedScope = null;
 
@@ -117,6 +119,7 @@ class AttachTagsToModel extends OrgAction
 
     public function action(TradeUnit|TradeUnitFamily|Customer|Artefact $parent, array $modelData, $replace = false): void
     {
+        $this->asAction = true;
         $hasSession = request()->hasSession();
         try {
             if ($parent instanceof TradeUnit || $parent instanceof TradeUnitFamily) {

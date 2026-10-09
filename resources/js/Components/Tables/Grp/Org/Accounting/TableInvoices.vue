@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faFileInvoiceDollar, faCircle, faCheckCircle, faQuestionCircle } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params";
 import { bucketQuery } from "@/Composables/bucketQuery";
 
@@ -22,10 +22,13 @@ import { bucketQuery } from "@/Composables/bucketQuery";
 library.add(faFileInvoiceDollar, faCircle, faCheckCircle, faQuestionCircle);
 
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   data: {}
   tab?: string
-}>();
+  canViewInvoices?: boolean
+}>(), {
+  canViewInvoices: true,
+});
 
 const locale = useLocaleStore();
 
@@ -127,10 +130,11 @@ function customerRoute(invoice: Invoice) {
     </template>
 
     <template #cell(reference)="{ item: invoice }">
-      <Link :href="invoiceHref(invoice)" class="primaryLink py-0.5">
+      <Link v-if="canViewInvoices" :href="invoiceHref(invoice)" class="primaryLink py-0.5">
         {{ invoice.reference }}
       </Link>
-      <FontAwesomeIcon v-if="invoice.in_process" v-tooltip="trans('In process')" icon="fal fa-seedling" class="text-green-500" fixed-width aria-hidden="true" />
+      <span v-else class="py-0.5">{{ invoice.reference }}</span>
+      <FontAwesomeIcon v-if="invoice.in_process" v-tooltip="ctrans('In process')" icon="fal fa-seedling" class="text-green-500" fixed-width aria-hidden="true" />
     </template>
 
     <template #cell(customer_name)="{ item: invoice }">

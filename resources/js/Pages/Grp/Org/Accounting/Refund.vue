@@ -142,6 +142,7 @@ const props = defineProps<{
     group: {}
   }
   is_tax_only?: boolean
+  can_edit: boolean
 }>()
 
 const currentTab = ref<string>(props.tabs.current);
@@ -214,12 +215,24 @@ const getInvoiceRoute = () => {
             invoice: props.original_invoice.slug
 
         });
-    } else {
-        return route('grp.org.accounting.invoices.show', {
-            organisation: (route().params as RouteParams).organisation,
-            invoice: props.original_invoice.slug
-        });
     }
+
+    const currentRoute = route().current() as string
+    const parentParams = { ...(route().params as RouteParams) }
+    delete parentParams.refund
+
+    if (currentRoute.endsWith('.invoices.show.refunds.show')) {
+        return route(currentRoute.replace(/\.refunds\.show$/, ''), { ...parentParams, invoice: props.original_invoice.slug })
+    }
+
+    if (currentRoute.endsWith('.orders.show.refunds.show')) {
+        return route(currentRoute.replace(/refunds\.show$/, 'invoices.show'), { ...parentParams, invoice: props.original_invoice.slug })
+    }
+
+    return route('grp.org.accounting.invoices.show', {
+        organisation: (route().params as RouteParams).organisation,
+        invoice: props.original_invoice.slug
+    });
 }
 </script>
 
@@ -446,5 +459,5 @@ const getInvoiceRoute = () => {
   </div>
 
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab]" :tab="currentTab" :ref="(e) => _refComponents[currentTab] = e" :is_tax_only="is_tax_only" />
+  <component :is="component" :data="props[currentTab]" :tab="currentTab" :ref="(e) => _refComponents[currentTab] = e" :is_tax_only="is_tax_only" :canEdit="can_edit" />
 </template>

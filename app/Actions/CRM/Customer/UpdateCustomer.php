@@ -67,7 +67,9 @@ class UpdateCustomer extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
-    use WithCRMEditAuthorisation;
+    use WithCRMEditAuthorisation {
+        authorize as authorizeCrmEdit;
+    }
     use WithPrepareTaxNumberValidation;
     use WithValidateTaxNumberCustomAudit;
 
@@ -466,6 +468,22 @@ class UpdateCustomer extends OrgAction
     private function canGrantCredit(): bool
     {
         return $this->asAction && $this->shop->type === ShopTypeEnum::B2B;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->authorizeCrmEdit($request)) {
+            return true;
+        }
+
+        return $this->shop->type !== ShopTypeEnum::FULFILMENT
+            && array_keys(Arr::except($request->all(), ['_method'])) === ['is_gift_opted_out']
+            && $request->user()->authTo(
+                [
+                    "accounting.{$this->shop->organisation_id}.edit",
+                    "orders.{$this->shop->id}.edit",
+                ]
+            );
     }
 
     public function asController(Customer $customer, ActionRequest $request): Customer

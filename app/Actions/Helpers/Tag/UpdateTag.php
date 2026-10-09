@@ -26,9 +26,12 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class UpdateTag extends OrgAction
 {
+    use WithCrmTagsAuthorisation;
+
     public function inProductProperty(Tag $tag, ActionRequest $request): void
     {
         $group = Group::query()->findOrFail($tag->group_id);

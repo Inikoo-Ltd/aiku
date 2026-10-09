@@ -22,6 +22,7 @@ library.add(faGift, faRepeat, faPencil, faTrash, faPlus, faCubes, faCalendarPlus
 
 const props = defineProps<{
     routes: UpcomingTransactionRoutes
+    canEdit: boolean
     shopSlug: string
     openFormSignal?: number
     temporaryNote?: {}
@@ -78,7 +79,11 @@ const openEditForm = (transaction: UpcomingTransaction) => {
     modalView.value = "form"
 }
 
-watch(() => props.openFormSignal, () => openCreateForm(false))
+watch(() => props.openFormSignal, () => {
+    if (props.canEdit) {
+        openCreateForm(false)
+    }
+})
 
 const closeModal = () => {
     isModalOpen.value = false
@@ -203,7 +208,7 @@ const submitNote =  () => {
                             {{ ctrans("Upcoming Transactions") }}
                             <span
                                 v-if="total"
-                                class="rounded-full bg-indigo-50 px-2 py-0.5 text-sm font-semibold text-indigo-600 tabular-nums"
+                                class="rounded-full bg-[--app-accent-soft] px-2 py-0.5 text-sm font-semibold text-[--app-accent-strong] tabular-nums"
                             >
                                 {{ total }}
                             </span>
@@ -214,6 +219,7 @@ const submitNote =  () => {
                     </div>
 
                     <Button
+                        v-if="canEdit"
                         :label="ctrans('Add')"
                         icon="plus"
                         style="create"
@@ -297,12 +303,12 @@ const submitNote =  () => {
                             />
                         </div>
 
-                        <div v-else class="flex flex-shrink-0 items-center gap-1">
+                        <div v-else-if="canEdit" class="flex flex-shrink-0 items-center gap-1">
                             <button
                                 type="button"
                                 @click="() => openEditForm(transaction)"
                                 v-tooltip="ctrans('Edit')"
-                                class="rounded p-1.5 text-gray-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600"
+                                class="rounded p-1.5 text-gray-400 transition-colors hover:bg-[--app-accent-soft] hover:text-[--app-accent]"
                             >
                                 <FontAwesomeIcon icon="fal fa-pencil" class="text-xs" fixed-width />
                             </button>
@@ -319,15 +325,23 @@ const submitNote =  () => {
                 </div>
 
                 <button
-                    v-else
+                    v-else-if="canEdit"
                     type="button"
                     @click="() => openCreateForm(true)"
-                    class="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-8 text-center transition-colors hover:border-indigo-300 hover:bg-gray-50"
+                    class="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-8 text-center transition-colors hover:border-[--app-accent-muted] hover:bg-gray-50"
                 >
                     <FontAwesomeIcon icon="fal fa-cubes" class="text-2xl text-gray-300" fixed-width />
                     <span class="text-sm text-gray-500">{{ ctrans("No upcoming transactions yet") }}</span>
-                    <span class="text-sm font-medium text-indigo-600">{{ ctrans("Add the first one") }}</span>
+                    <span class="text-sm font-medium text-[--app-accent]">{{ ctrans("Add the first one") }}</span>
                 </button>
+
+                <div
+                    v-else
+                    class="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-8 text-center"
+                >
+                    <FontAwesomeIcon icon="fal fa-cubes" class="text-2xl text-gray-300" fixed-width />
+                    <span class="text-sm text-gray-500">{{ ctrans("No upcoming transactions yet") }}</span>
+                </div>
 
                 <div v-if="temporaryNote?.field" class="pt-3 mt-3">
                     <h2 class="flex flex-auto items-center gap-2 text-lg font-bold text-gray-900 mb-2">
@@ -341,9 +355,9 @@ const submitNote =  () => {
                                 }" fixed-width
                             />
                         </span>
-                        <span>
-                            <Button 
-                                :label="ctrans('Save')" 
+                        <span v-if="canEdit">
+                            <Button
+                                :label="ctrans('Save')"
                                 :type="'secondary'"
                                 :icon="faFloppyDisk"
                                 class="ml-auto" 
@@ -352,9 +366,10 @@ const submitNote =  () => {
                             />
                         </span>
                     </h2>
-                    <PureTextarea 
+                    <PureTextarea
                         v-model="temporaryNote.note"
-                        counter 
+                        :disabled="!canEdit"
+                        counter
                         :rows="6"
                         :placeholder="temporaryNote.information"
                         @keydown.ctrl.enter="submitNote()" 
