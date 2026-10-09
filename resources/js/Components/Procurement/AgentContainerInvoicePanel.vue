@@ -1,9 +1,3 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Fri, 09 Oct 2026 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2026, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
@@ -238,12 +232,12 @@ const confirmDeletePayment = (row: Payment) =>
 					<Button v-if="data.is_open" type="transparent" size="xs" icon="fal fa-plus" :label="ctrans('Add')" @click="addCharge" />
 				</div>
 				<template v-if="data.is_open">
-					<p v-if="!charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("Commission, packing, freight: anything on top of the goods. Mark freight as Freight, it becomes the container's shipping cost.") }}</p>
-					<div v-for="(charge, index) in charges" :key="index" class="mt-2 flex items-center gap-2">
-						<InputText v-model="charge.description" size="small" class="min-w-0 flex-1" :class="fieldFocusClass" :placeholder="ctrans('Description')" :aria-label="ctrans('Description')" />
+					<p v-if="!charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("Commission, packing, freight: anything on top of the goods. Mark freight charges as Freight so they count as the container's shipping cost.") }}</p>
+					<div v-for="(charge, index) in charges" :key="index" class="mt-2 flex flex-wrap items-center gap-2">
+						<InputText v-model="charge.description" size="small" class="min-w-0 basis-full flex-1 sm:basis-auto" :class="fieldFocusClass" :placeholder="ctrans('Description')" :aria-label="ctrans('Description')" />
 						<SegmentedToggle v-model="charge.type" :options="chargeTypeOptions" :ariaLabel="ctrans('Charge type')" />
 						<InputNumber v-model="charge.amount" mode="currency" :currency="data.invoice.currency_code" :min="0" size="small" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-32 !text-right' } } }" :aria-label="ctrans('Amount')" />
-						<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" @click="removeCharge(index)">
+						<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" :aria-label="ctrans('Remove')" @click="removeCharge(index)">
 							<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
 						</button>
 					</div>
@@ -286,7 +280,7 @@ const confirmDeletePayment = (row: Payment) =>
 						</span>
 						<span class="flex items-center gap-2">
 							<span class="tabular-nums text-gray-800">{{ money(row.amount) }}</span>
-							<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" @click="confirmDeletePayment(row)">
+							<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" :aria-label="ctrans('Remove')" @click="confirmDeletePayment(row)">
 								<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
 							</button>
 						</span>

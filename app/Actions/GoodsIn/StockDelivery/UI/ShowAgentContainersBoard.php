@@ -32,6 +32,8 @@ class ShowAgentContainersBoard extends OrgAction
 
     private const int ARRIVED_DAYS = 30;
 
+    private const int CARDS_PER_COLUMN = 30;
+
     public function handle(Agent $agent): array
     {
         $arrivedStates = [
@@ -62,8 +64,10 @@ class ShowAgentContainersBoard extends OrgAction
         return collect($columns)->map(function (array $column, string $key) use ($stockDeliveries) {
             [$label, $states, $sinceColumn] = $column;
 
-            $cards = $stockDeliveries
-                ->filter(fn (StockDelivery $stockDelivery) => in_array($stockDelivery->state, $states, true))
+            $inColumn = $stockDeliveries->filter(fn (StockDelivery $stockDelivery) => in_array($stockDelivery->state, $states, true));
+
+            $cards = $inColumn
+                ->take(self::CARDS_PER_COLUMN)
                 ->map(fn (StockDelivery $stockDelivery) => [
                     'id'              => $stockDelivery->id,
                     'reference'       => $stockDelivery->reference,
@@ -86,6 +90,7 @@ class ShowAgentContainersBoard extends OrgAction
             return [
                 'key'   => $key,
                 'label' => $label,
+                'total' => $inColumn->count(),
                 'cards' => $cards,
             ];
         })->values()->all();

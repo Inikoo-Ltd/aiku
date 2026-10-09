@@ -100,10 +100,10 @@ const hasFilters = computed(() => supplier.value || organisation.value)
 				<Select v-model="supplier" :options="data.suppliers" optionLabel="label" optionValue="value" filter showClear :placeholder="ctrans('All suppliers')" :class="fieldClass" />
 			</label>
 			<label class="flex items-center gap-2">
-				<span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Client") }}</span>
+				<span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Organisation") }}</span>
 				<Select v-model="organisation" :options="data.organisations" optionLabel="label" optionValue="value" showClear :placeholder="ctrans('All organisations')" :class="fieldClass" />
 			</label>
-			<button v-if="hasFilters" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="supplier = null; organisation = null">
+			<button v-if="hasFilters" type="button" class="text-xs text-gray-600 hover:text-gray-900" @click="supplier = null; organisation = null">
 				× {{ ctrans("Clear") }}
 			</button>
 			<span class="ml-auto text-xs text-gray-400">{{ ctrans("Settled orders stay on the board for :days days", { days: data.settled_days }) }}</span>

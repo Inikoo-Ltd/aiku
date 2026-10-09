@@ -42,6 +42,8 @@ class AgentInvoice extends Model
 
     protected $guarded = [];
 
+    private ?array $advancePaymentsCache = null;
+
     protected function casts(): array
     {
         return [
@@ -79,6 +81,10 @@ class AgentInvoice extends Model
      */
     public function advancePayments(): array
     {
+        if ($this->advancePaymentsCache !== null) {
+            return $this->advancePaymentsCache;
+        }
+
         $deposits = $this->stockDelivery->depositApplications()
             ->with('aspoDeposit:id,reference')
             ->get()
@@ -99,7 +105,7 @@ class AgentInvoice extends Model
                 'amount'    => (float) $payment->amount,
             ]);
 
-        return $deposits->concat($payments)->values()->all();
+        return $this->advancePaymentsCache = $deposits->concat($payments)->values()->all();
     }
 
     public function paidAmount(): float

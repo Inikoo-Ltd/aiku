@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Staff of an agent see their own organisation and nothing of the group: only the sections listed here
  * are open to them, so a group page added later stays closed to agents until someone decides otherwise.
+ * Shared json, helper and pdf endpoints are listed one by one: many of them take any record by id.
  */
 class KeepAgentStaffInTheirOrganisation
 {
@@ -27,8 +28,19 @@ class KeepAgentStaffInTheirOrganisation
         'grp.org.tasks.',
         'grp.org.tickets.',
         'grp.org.fallback',
-        'grp.json.',
         'grp.models.',
+        'grp.json.ticket.',
+        'grp.json.countries_address_data',
+        'grp.json.org-agent.',
+        'grp.json.org-supplier.',
+        'grp.json.org_supplier_products.',
+        'grp.json.org_suppliers.',
+        'grp.json.crm_return_badge',
+        'grp.json.crm_waiting_badge',
+        'grp.json.dispatching_waiting_badge',
+        'grp.json.faire_skipped_badge',
+        'grp.json.master_updated_badge',
+        'grp.json.products_need_review_badge',
         'grp.dashboard.show',
         'grp.tickets.',
         'grp.tasks.',
@@ -38,7 +50,6 @@ class KeepAgentStaffInTheirOrganisation
         'grp.clocking_employees.',
         'grp.clocking_scan',
         'grp.kiosk.',
-        'grp.helpers.',
         'grp.search.index',
         'grp.search.suggestions',
         'grp.search.click',
@@ -47,7 +58,6 @@ class KeepAgentStaffInTheirOrganisation
         'grp.majordomo.redirect_agent',
         'grp.majordomo.redirect_supplier',
         'grp.media.',
-        'grp.pdfs.',
         'grp.gmail.',
         'grp.login.',
         'grp.logout',

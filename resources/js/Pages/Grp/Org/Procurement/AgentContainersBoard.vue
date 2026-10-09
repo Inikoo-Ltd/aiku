@@ -26,7 +26,7 @@ interface ContainerCard {
 defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	columns: { key: string; label: string; cards: ContainerCard[] }[]
+	columns: { key: string; label: string; total: number; cards: ContainerCard[] }[]
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -43,7 +43,7 @@ const daysClass = (days: number) => (days >= 30 ? "text-red-600" : days >= 14 ? 
 			<section v-for="column in columns" :key="column.key" class="flex w-72 shrink-0 flex-col rounded-lg bg-gray-50 ring-1 ring-gray-200">
 				<header class="flex items-center justify-between px-3 py-2.5">
 					<h2 class="text-sm font-semibold text-gray-700">{{ column.label }}</h2>
-					<span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-gray-200">{{ column.cards.length }}</span>
+					<span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-gray-200">{{ column.total }}</span>
 				</header>
 				<div class="flex flex-col gap-2 px-2 pb-2">
 					<p v-if="!column.cards.length" class="px-2 py-6 text-center text-xs text-gray-400">{{ ctrans("No containers") }}</p>
@@ -68,9 +68,10 @@ const daysClass = (days: number) => (days >= 30 ? "text-red-600" : days >= 14 ? 
 							<dt class="text-gray-400">{{ ctrans("Weight") }}</dt>
 							<dd class="text-right tabular-nums text-gray-700">{{ card.gross_weight !== null ? locale.number(Math.round(card.gross_weight)) + " kg" : "-" }}</dd>
 							<dt class="text-gray-400">{{ ctrans("Value") }}</dt>
-							<dd class="text-right tabular-nums font-medium text-gray-800">{{ card.currency ? locale.currencyFormat(card.currency, card.amount) : locale.number(card.amount) }}</dd>
+							<dd class="text-right tabular-nums font-medium text-gray-800">{{ card.currency ? locale.currencyFormat(card.currency, card.amount) : "-" }}</dd>
 						</dl>
 					</article>
+					<p v-if="column.total > column.cards.length" class="px-2 py-1 text-center text-xs text-gray-500">{{ ctrans(":count more", { count: column.total - column.cards.length }) }}</p>
 				</div>
 			</section>
 		</div>

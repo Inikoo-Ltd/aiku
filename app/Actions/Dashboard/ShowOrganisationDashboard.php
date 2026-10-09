@@ -56,6 +56,10 @@ class ShowOrganisationDashboard extends OrgAction
 
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
+        if ($organisation->type === OrganisationTypeEnum::AGENT || !$request->user()->canViewSales()) {
+            return $this->render($organisation, $request, ['super_blocks' => []]);
+        }
+
         $userSettings = $request->user()->settings;
 
         $tabValues  = OrganisationDashboardSalesTableTabsEnum::values();
@@ -110,12 +114,17 @@ class ShowOrganisationDashboard extends OrgAction
             ]
         ];
 
+        return $this->render($organisation, $request, $dashboard);
+    }
+
+    private function render(Organisation $organisation, ActionRequest $request, array $dashboard): Response
+    {
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
             [
                 'title'         => __('Dashboard').' '.$organisation->name,
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
-                'dashboard'     => $organisation->type === OrganisationTypeEnum::AGENT || !$request->user()->canViewSales() ? ['super_blocks' => []] : $dashboard,
+                'dashboard'     => $dashboard,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
                 'isAgentOrganisation' => $organisation->type === OrganisationTypeEnum::AGENT,
                 'agentPurchaseOrders' => $organisation->type === OrganisationTypeEnum::AGENT ? Inertia::defer(fn () => $this->getAgentPurchaseOrders($organisation)) : null,

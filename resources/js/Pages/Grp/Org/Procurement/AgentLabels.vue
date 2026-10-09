@@ -1,14 +1,12 @@
-<!--
-  -  Author: Raul Perusquia <raul@inikoo.com>
-  -  Created: Thu, 24 Sep 2026 12:00:00 Malaysia Time, Kuala Lumpur, Malaysia
-  -  Copyright (c) 2026, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
+import InputText from "primevue/inputtext"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import DatePicker from "primevue/datepicker"
 import { computed, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPrint, faTags } from "@fal"
+import { faPrint, faSearch, faTags } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -16,7 +14,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faPrint, faTags)
+library.add(faPrint, faSearch, faTags)
 
 interface AgentLabel {
     id: number
@@ -46,6 +44,20 @@ const search = ref("")
 const printingLabelId = ref<number | null>(null)
 const batchCode = ref("")
 const expiryDate = ref("")
+
+const fromIsoDate = (iso: string): Date => {
+    const [year, month, day] = iso.split("-").map(Number)
+    return new Date(year, month - 1, day)
+}
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+const expiryDateModel = computed<Date | null>({
+    get: () => (expiryDate.value ? fromIsoDate(expiryDate.value) : null),
+    set: (value) => {
+        expiryDate.value = value ? toLocalIsoDate(value) : ""
+    },
+})
+const datePickerPt = { pcInputText: { root: { class: "!w-40 !py-1 !text-xs" } } }
+const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
 
 const orgStocks = computed(() => {
     const query = search.value.trim().toLowerCase()
@@ -83,12 +95,10 @@ const print = (label: AgentLabel) => {
 
     <div class="p-4 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
-            <input
-                v-model="search"
-                type="search"
-                class="w-72 rounded border border-gray-300 px-2 py-1 text-sm"
-                :placeholder="ctrans('Search SKO code or name')"
-                :aria-label="ctrans('Search SKO code or name')" />
+            <IconField class="w-full sm:w-72">
+                <InputIcon><FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" /></InputIcon>
+                <InputText v-model="search" :placeholder="ctrans('Search SKO code or name')" :aria-label="ctrans('Search SKO code or name')" class="w-full" />
+            </IconField>
             <div v-if="data.number_without_labels" class="text-xs text-gray-500" role="status">
                 {{ ctrans(':count of the products you buy for us have no published label yet.', { count: String(data.number_without_labels) }) }}
             </div>
@@ -129,11 +139,11 @@ const print = (label: AgentLabel) => {
                             @submit.prevent>
                             <label v-if="label.run_sources.includes('batch_code')" class="text-xs text-gray-600">
                                 {{ ctrans('Batch code') }}
-                                <input v-model="batchCode" type="text" required class="mt-1 block w-48 rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <InputText v-model="batchCode" required class="mt-1 block !w-48 !py-1 !text-sm" />
                             </label>
                             <label v-if="label.run_sources.includes('expiry_date')" class="text-xs text-gray-600">
                                 {{ ctrans('Expiry date') }}
-                                <input v-model="expiryDate" type="date" required class="mt-1 block rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <DatePicker v-model="expiryDateModel" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" class="mt-1 block" :class="fieldFocusClass" :pt="datePickerPt" />
                             </label>
                             <Button type="primary" size="xs" icon="fal fa-print" :label="ctrans('Open PDF')" :disabled="!isReadyToPrint(label)" @click="print(label)" />
                         </form>

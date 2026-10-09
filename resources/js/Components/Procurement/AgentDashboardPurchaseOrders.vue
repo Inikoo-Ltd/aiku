@@ -198,7 +198,7 @@ const toneClasses: Record<string, string> = {
 				<ul v-else class="divide-y divide-gray-100">
 					<li v-for="purchaseOrder in data.attention" :key="purchaseOrder.id" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
 						<span
-							class="w-28 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium"
+							class="w-auto shrink-0 rounded sm:w-28 px-2 py-0.5 text-center text-xs font-medium"
 							:class="purchaseOrder.is_overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
 							{{ purchaseOrder.is_overdue ? daysLate(purchaseOrder.days_late) : ctrans("Waiting :days", { days: days(purchaseOrder.days_waiting) }) }}
 						</span>
@@ -213,7 +213,7 @@ const toneClasses: Record<string, string> = {
 							</p>
 						</div>
 						<span class="hidden text-xs text-gray-500 sm:block">{{ purchaseOrder.state_label }}</span>
-						<span class="w-32 shrink-0 text-right text-sm tabular-nums text-gray-700">{{ money(purchaseOrder.amount) }}</span>
+						<span class="w-auto shrink-0 text-right sm:w-32 text-sm tabular-nums text-gray-700">{{ money(purchaseOrder.amount) }}</span>
 					</li>
 				</ul>
 			</section>
