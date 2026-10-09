@@ -869,6 +869,18 @@ export const normaliseEmailJson = (source: any): EmailJson => {
     return email
 }
 
+export const createDynamicBlockRows = (layout: any, width: string): EmailRow[] => {
+    if (!layout?.page?.body || !Array.isArray(layout.page.rows)) {
+        return []
+    }
+
+    return duplicateWithNewUuids(normaliseEmailJson(layout).page.rows).map((row) => {
+        row.content.style.width = width
+
+        return row
+    })
+}
+
 export const RICH_TEXT_TOGGLES = ['bold', 'italic', 'underline', 'strikethrough', 'link', 'color', 'fontSize', 'alignLeft', 'alignCenter', 'alignRight', 'bulletList', 'orderedList', 'clear', 'undo', 'redo']
 export const INLINE_TEXT_TOGGLES = ['bold', 'italic', 'underline', 'link', 'color', 'clear', 'undo', 'redo']
 

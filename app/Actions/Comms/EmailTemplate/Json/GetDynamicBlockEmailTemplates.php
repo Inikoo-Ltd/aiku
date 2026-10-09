@@ -50,6 +50,7 @@ class GetDynamicBlockEmailTemplates extends OrgAction
                 'email_templates.slug',
                 'email_templates.name',
                 'email_templates.compiled_layout',
+                'email_templates.layout',
                 'shops.slug as shop_slug',
                 'shops.name as shop_name',
                 'organisations.slug as organisation_slug',
@@ -84,6 +85,7 @@ class GetDynamicBlockEmailTemplates extends OrgAction
             'id'              => $emailTemplate->id,
             'name'            => $emailTemplate->name,
             'compiled_layout' => $emailTemplate->compiled_layout,
+            'layout'          => $emailTemplate->layout,
             'shop_name'       => $emailTemplate->shop_name,
             'workshop_url'    => route('grp.org.shops.show.dashboard.comms.templates.workshop', [
                 $emailTemplate->organisation_slug,

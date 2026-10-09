@@ -24,7 +24,7 @@ import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/C
 import { ctrans } from '@/Composables/useTrans'
 import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
-    columnWidthPercent, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
+    columnWidthPercent, createDynamicBlockRows, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
     rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
@@ -338,19 +338,6 @@ const dynamicProductsRef = ref<InstanceType<typeof BeefreeDynamicProducts> | nul
 const dynamicBlocksRef = ref<InstanceType<typeof BeefreeDynamicBlocks> | null>(null)
 const isDynamicContentChooserOpen = ref(false)
 
-const chooseDynamicContent = async (picker: typeof dynamicProductsRef.value | typeof dynamicBlocksRef.value) => {
-    isDynamicContentChooserOpen.value = false
-    const target = selectedModule.value
-    try {
-        const content = await picker?.openModal() as { name: string, value: string } | undefined
-        if (content && target?.type === MODULE_TYPES.mergeContent) {
-            target.descriptor.mergeContent = { name: content.name, value: content.value }
-        }
-    } catch {
-        return
-    }
-}
-
 const replaceModuleWithRows = (module: EmailModule, rows: EmailRow[]) => {
     const location = findModuleLocation(module.uuid ?? null)
     if (!location || !rows.length) {
@@ -374,12 +361,36 @@ const chooseProducts = async (target: EmailModule) => {
     }
 }
 
+const chooseBlock = async (target: EmailModule) => {
+    try {
+        const selection = await dynamicBlocksRef.value?.openModal({ withLayout: true }) as { name: string, value: string, layout?: unknown } | undefined
+        if (!selection) {
+            return
+        }
+        const rows = createDynamicBlockRows(selection.layout, `${contentWidth.value}px`)
+        if (rows.length) {
+            replaceModuleWithRows(target, rows)
+        } else if (target.type === MODULE_TYPES.mergeContent) {
+            target.descriptor.mergeContent = { name: selection.name, value: selection.value }
+        }
+    } catch {
+        return
+    }
+}
+
+const chooseDynamicContent = (choose: (target: EmailModule) => Promise<void>) => {
+    isDynamicContentChooserOpen.value = false
+    if (selectedModule.value) {
+        choose(selectedModule.value)
+    }
+}
+
 const openDynamicContentPicker = (module: EmailModule) => {
     const source = dynamicContentSource(module)
     if (source === 'products') {
         chooseProducts(module)
     } else if (source === 'blocks') {
-        chooseDynamicContent(dynamicBlocksRef.value)
+        chooseBlock(module)
     } else {
         isDynamicContentChooserOpen.value = true
     }
@@ -1062,7 +1073,7 @@ defineExpose({
                 <div class="grid grid-cols-2 gap-3">
                     <button type="button"
                         class="flex flex-col items-start gap-y-2 rounded-lg border border-gray-200 p-4 text-left transition hover:border-[var(--theme-color-4)] hover:shadow-md"
-                        @click="chooseDynamicContent(dynamicProductsRef)">
+                        @click="chooseDynamicContent(chooseProducts)">
                         <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--theme-color-4)_10%,white)] text-lg text-[var(--theme-color-4)]">
                             <FontAwesomeIcon icon="fal fa-cubes" fixed-width aria-hidden="true" />
                         </span>
@@ -1071,7 +1082,7 @@ defineExpose({
                     </button>
                     <button type="button"
                         class="flex flex-col items-start gap-y-2 rounded-lg border border-gray-200 p-4 text-left transition hover:border-[var(--theme-color-4)] hover:shadow-md"
-                        @click="chooseDynamicContent(dynamicBlocksRef)">
+                        @click="chooseDynamicContent(chooseBlock)">
                         <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--theme-color-4)_10%,white)] text-lg text-[var(--theme-color-4)]">
                             <FontAwesomeIcon icon="fal fa-puzzle-piece" fixed-width aria-hidden="true" />
                         </span>

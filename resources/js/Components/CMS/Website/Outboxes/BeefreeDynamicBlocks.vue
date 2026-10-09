@@ -13,6 +13,7 @@ interface DynamicBlock {
     id: number
     name: string
     compiled_layout: string
+    layout: Record<string, any> | null
     workshop_url: string
     shop_name: string
 }
@@ -33,7 +34,8 @@ const isLoading = ref(false)
 const currentPage = ref(1)
 const lastPage = ref(1)
 
-let resolveSelection: ((value: { name: string, value: string }) => void) | null = null
+let resolveSelection: ((value: Record<string, any>) => void) | null = null
+let wantsLayout = false
 let rejectSelection: (() => void) | null = null
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let latestRequestId = 0
@@ -103,10 +105,11 @@ const insertSelected = () => {
     if (!selectedBlock.value) {
         return
     }
-    resolveSelection?.({
+    const selection = {
         name: selectedBlock.value.name,
         value: extractBodyHtml(selectedBlock.value.compiled_layout),
-    })
+    }
+    resolveSelection?.(wantsLayout ? { ...selection, layout: selectedBlock.value.layout } : selection)
     resolveSelection = null
     rejectSelection = null
     isOpen.value = false
@@ -118,7 +121,8 @@ const onHide = () => {
     rejectSelection = null
 }
 
-const openModal = () => {
+const openModal = (options: { withLayout?: boolean } = {}) => {
+    wantsLayout = !!options.withLayout
     return new Promise((resolve, reject) => {
         resolveSelection = resolve
         rejectSelection = reject
