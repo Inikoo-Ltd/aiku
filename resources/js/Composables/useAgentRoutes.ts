@@ -38,3 +38,6 @@ export const withAgentRoutes = <T extends (...args: any[]) => any>(route: T): T 
 
 		return route(route().has(agentName) ? agentName : name, params, ...rest)
 	}) as T
+
+export const asProcurementRouteName = (name?: string): string | undefined =>
+	name?.startsWith(AGENT_PREFIX) ? PROCUREMENT_PREFIX + name.slice(AGENT_PREFIX.length) : name
