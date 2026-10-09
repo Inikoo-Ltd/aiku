@@ -4005,6 +4005,13 @@ test('goods in workers book in stock deliveries and only goods in supervisors un
     actingAs($this->adminGuest->getUser());
 });
 
+function createUnlinkedOrgStock($test): OrgStock
+{
+    $stock = StoreStock::make()->action($test->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+
+    return \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($test->organisation, $stock);
+}
+
 function createStockDeliveryWithItems($test, string $code, array $unitQuantities): StockDelivery
 {
     $supplier    = StoreSupplier::make()->action(parent: $test->group, modelData: Supplier::factory()->definition());
@@ -7866,14 +7873,15 @@ describe('partner shopping list', function () {
         PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->delete();
         $draft = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
 
-        $this->travel(2)->hours();
+        $submittedAt = now()->addHours(2)->startOfSecond();
+        $this->travelTo($submittedAt);
         $submitted = SubmitPartnerShoppingList::make()->action($this->orgPartner);
         $draft->refresh();
         $this->travelBack();
 
         expect($submitted)->toBe(1)
             ->and($draft->state)->toBe(ShoppingListItemStateEnum::OPEN)
-            ->and($draft->created_at->toDateTimeString())->toBe(now()->addHours(2)->toDateTimeString());
+            ->and($draft->created_at->toDateTimeString())->toBe($submittedAt->toDateTimeString());
     });
 
     test('one draft line can be submitted on its own, the rest stay on the ongoing PO', function () {
@@ -9617,14 +9625,14 @@ test('storing an org supplier product twice for the same org supplier returns th
 });
 
 test('attach a supplier product to an org stock that has none, first one becomes preferred', function () {
-    $orgStock = $this->orgStocks[1];
+    $orgStock = createUnlinkedOrgStock($this);
     expect(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(0);
 
     $supplierProduct    = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
         'code'             => 'attach-me',
         'name'             => 'Attach me',
         'cost'             => 12,
-        'stock_id'         => $this->stocks[1]->id,
+        'stock_id'         => $orgStock->stock_id,
         'units_per_pack'   => 10,
         'units_per_carton' => 100,
     ]);
@@ -9644,7 +9652,7 @@ test('attach a supplier product to an org stock that has none, first one becomes
         'code'             => 'attach-me-2',
         'name'             => 'Attach me 2',
         'cost'             => 15,
-        'stock_id'         => $this->stocks[1]->id,
+        'stock_id'         => $orgStock->stock_id,
         'units_per_pack'   => 10,
         'units_per_carton' => 100,
     ]);
@@ -9822,8 +9830,8 @@ test('incoming stock tells the customer when an out of stock product is expected
 });
 
 test('a partly delivered purchase order still shows the lines that are not in the delivery', function () {
-    $orderedOrgStock   = $this->orgStocks[1];
-    $deliveredOrgStock = $this->orgStocks[2];
+    $orderedOrgStock   = createUnlinkedOrgStock($this);
+    $deliveredOrgStock = createUnlinkedOrgStock($this);
 
     $supplier    = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
     $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
@@ -10500,6 +10508,8 @@ test('rebuilding stock histories since a day writes each past day and today', fu
 });
 
 test('undoing a put away from a delivery takes the stock out at the value it went in at', function () {
+    $this->orgStocks[0]->update(['packed_in' => 1]);
+
     $placeFromDelivery = function (string $code, float $netAmount) {
         $stockDelivery = createStockDeliveryWithItems($this, $code, [10]);
         $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
@@ -10547,6 +10557,7 @@ test('a cancelled stock delivery item can not be put away', function () {
 })->throws(ValidationException::class);
 
 test('a stock delivery with stock already in locations can not be cancelled', function () {
+    $this->orgStocks[0]->update(['packed_in' => 1]);
     $stockDelivery = createStockDeliveryWithItems($this, 'CANCEL-PLACED', [10, 10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
@@ -10592,6 +10603,7 @@ test('a put away can not be undone once the delivery is booked in', function () 
 })->throws(ValidationException::class);
 
 test('undoing a put away needs procurement permission', function () {
+    $this->orgStocks[0]->update(['packed_in' => 1]);
     $stockDelivery = createStockDeliveryWithItems($this, 'UNDO-FORBIDDEN', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
