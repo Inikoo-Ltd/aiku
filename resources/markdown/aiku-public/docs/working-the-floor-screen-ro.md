@@ -1,8 +1,8 @@
 ---
 title: Lucrul cu ecranul de fabrică
 summary: Ghidul meșteșugarului - ecranul Sarcinile mele, lista de sarcini care se actualizează singură, START și DONE, și ce apeși dacă ai făcut mai puțin decât ți s-a cerut.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-10-09
+source_date: 2026-10-09
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -56,6 +56,31 @@ Scrie numărul real și apasă <b>DONE</b>. Rândul de completat e înlocuit cu 
 
 Oricum ar fi, sarcina la care lucrai se închide și e plătită la ce ai făcut. Nimic nu rămâne pe jumătate deschis în lista ta.
 
+## Când ai făcut mai mult decât ți s-a cerut
+
+Scrie numărul real și apasă **DONE**. Ecranul avertizează *18 above target, a manager must authorise it* (18 peste țintă, un manager trebuie să aprobe) și deschide **Manager authorisation required for overproduction**.
+
+- **Scan the badge** - un manager sau supervizor ține codul QR personal (același cu care se pontează) în fața camerei. Este acceptat imediat ce e citit. **Switch camera** comută între camera din față și cea din spate.
+- **Use manager PIN** - dacă camera nu îl citește, managerul își tastează în schimb PIN-ul de pontaj.
+
+Doar cineva care conduce acest atelier de fabrică poate aproba, și niciodată pentru propria muncă. După cinci coduri sau PIN-uri greșite, fereastra refuză timp de 15 minute.
+
+Odată aprobată, sarcina crește la cât s-a făcut de fapt: depozitul pune totul la loc, ce nu a cerut nicio comandă intră în stoc, iar materiile prime se scad pentru tot lotul. Pașii următori ai aceleiași sarcini cresc și ei, ca următorul om să poată termina tot. Pagina comenzii de lucru arată cine a făcut surplusul, cine l-a aprobat, cum și când.
+
+## Un singur lot pentru mai multe linii
+
+Uneori un lot servește mai multe sarcini. De exemplu, 100 de batoane HCS-48 și 100 de batoane feliate SLHCS-48 cu același parfum se amestecă, se toarnă și se modelează împreună, ca 200 de batoane.
+
+**Combinarea (managerii).** Apasă pe una dintre linii pe ecranul de fabrică. Sub detaliile ei, **Combine Production with other lines into one batch** listează celelalte linii deschise care așteaptă același pas. Bifează-le pe cele care intră în același lot și apasă **Combine**. O linie deja combinată, terminată sau la care se lucrează nu este oferită.
+
+**Lucrul la el (meșteșugarii).** Liniile apar acum ca un singur rând cu 🔗 și codurile împreună, *HCS-48 + SLHCS-48*, și totalul, *0/200*. Detaliile listează fiecare linie cu comanda ei de lucru. Apasă **START** o dată, fă lotul, scrie totalul făcut - 200 - și apasă **DONE** o dată.
+
+**Ce face Aiku cu el.** Totalul se împarte între linii după cât mai avea fiecare de făcut, în unități întregi: 100 la HCS-48, 100 la SLHCS-48. Timpul se împarte la fel. Fiecare linie trece apoi la propriii pași următori - ambalare în folie pentru una, feliere și apoi ambalare pentru cealaltă. Pagina comenzii de lucru arată pasul ca *One batch with* (un lot cu) cealaltă linie.
+
+**Plata și țintele** se calculează pe lot ca întreg: 200 de batoane în orele cât a durat, față de ținta pasului. Combinarea plătește exact cât ar plăti loturi separate la aceeași viteză. Când liniile au ținte diferite pentru pas, ținta lotului este cea care ia aceleași ore ca loturile separate.
+
+Dacă faci mai mult decât au cerut toate liniile la un loc, e nevoie de codul sau PIN-ul unui manager, ca mai sus; surplusul se împarte și el între linii. Un manager poate **Separate** (separa) liniile din nou oricând nu lucrează nimeni la ele. Ce s-a făcut deja împreună rămâne la fiecare linie.
+
 ## Lucruri bune de știut
 
 - **O sarcină pe rând.** Cât timp ai o sarcină deschisă, butoanele START sunt dezactivate. Închide-o mai întâi.
@@ -68,6 +93,7 @@ Oricum ar fi, sarcina la care lucrai se închide și e plătită la ce ai făcut
 <li><b>Începe:</b> apasă pe rând → <b>START</b>.</li>
 <li><b>Termină:</b> scrie <b>Quantity made</b> → <b>DONE</b>.</li>
 <li><b>Mai puțin decât cerut:</b> <b>DONE</b> → <b>Continue later</b> sau <b>Job finished</b>.</li>
+<li><b>Un lot pentru mai multe linii:</b> apasă pe o linie → <b>Combine … with other lines into one batch</b> → bifează liniile → <b>Combine</b>. Pentru a anula: apasă pe rândul combinat → <b>Separate</b>.</li>
 </ul>
 </aside>
 
@@ -76,5 +102,6 @@ Oricum ar fi, sarcina la care lucrai se închide și e plătită la ce ai făcut
 <li>Pozițiile se setează pe fișa angajatului sub Human Resources și aduc cu ele drepturile.</li>
 <li>Vizualizarea sarcinilor proprii, START și DONE: poziția <b>Operative</b> pentru fabrică.</li>
 <li>Vizualizarea și preluarea <b>Open jobs</b>, înregistrarea respingerilor: <b>Foreman</b>, <b>Mix preparer</b> sau <b>Floor supervisor</b>.</li>
+<li>Combinarea și separarea liniilor: managerii care conduc atelierul de fabrică, aceiași oameni care pot aproba supraproducția.</li>
 </ul>
 </aside>
