@@ -1,13 +1,13 @@
 import { format, formatDuration, intervalToDuration, addSeconds, formatDistanceToNow,
     formatDistanceToNowStrict, startOfDay, isPast, parseISO, isAfter, differenceInDays  } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
-import { zhCN, enUS, enGB, fr, de, id, ja, sk, es, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, uk } from 'date-fns/locale'
+import { zhCN, enUS, enGB, fr, de, id, ja, sk, es, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, tr, uk } from 'date-fns/locale'
 import { getActiveLanguage } from 'laravel-vue-i18n'
 import { ctrans } from '@/Composables/useTrans'
 
 export const localesCode: any = {
     zhCN, enUS, enGB, fr, de, id, ja, sk, es,
-    'zh-Hans': zhCN, en: enGB, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, uk,
+    'zh-Hans': zhCN, en: enGB, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, tr, uk,
 }
 
 export interface OptionsTime {
