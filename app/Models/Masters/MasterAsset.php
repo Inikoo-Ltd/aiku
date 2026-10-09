@@ -48,6 +48,7 @@ use App\Models\Traits\HasSearch;
  * @property int|null $master_shop_id
  * @property int|null $master_family_id
  * @property int|null $master_sub_department_id
+ * @property int|null $customs_trade_unit_id
  * @property int|null $master_department_id
  * @property MasterAssetTypeEnum $type
  * @property bool $is_main

@@ -25,6 +25,8 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
     use HasDangerousGoodsFields;
     use HasProductInformation;
 
+    public const array CUSTOMS_FIELDS = ['tariff_code', 'country_of_origin', 'origin_country_id', 'duty_rate', 'hts_us'];
+
     public function getJobUniqueId(Product $product): string
     {
         return $product->id;
@@ -47,6 +49,13 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
             ? $this->dataFromASingleTradeUnit($tradeUnits->first(), $product->organisation_id)
             : $this->dataFromMultipleTradeUnits($tradeUnits, $product->organisation_id);
 
+        $customsTradeUnit = $this->customsTradeUnit($product, $tradeUnits);
+        if ($tradeUnits->count() > 1 && $customsTradeUnit) {
+            foreach (self::CUSTOMS_FIELDS as $field) {
+                $dataToUpdate[$field] = $this->fieldValue($customsTradeUnit, $field, $product->organisation_id);
+            }
+        }
+
         if ($onlyFields !== null) {
             $dataToUpdate = array_intersect_key($dataToUpdate, array_flip($onlyFields));
         }
@@ -64,6 +73,18 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
         if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
             BreakWebpageCache::dispatch($product->webpage)->delay(5);
         }
+    }
+
+    /**
+     * A product made of several trade units declares one of them to customs, so the invoice
+     * carries a single tariff code and origin. Set on the product, else on the master it follows.
+     */
+    private function customsTradeUnit(Product $product, $tradeUnits): ?TradeUnit
+    {
+        $customsTradeUnitId = $product->customs_trade_unit_id
+            ?? ($product->not_follow_master_trade_units ? null : $product->masterProduct?->customs_trade_unit_id);
+
+        return $customsTradeUnitId ? $tradeUnits->firstWhere('id', $customsTradeUnitId) : null;
     }
 
     public function dataFromASingleTradeUnit(TradeUnit $tradeUnit, ?int $organisationId = null): array

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\Product\Traits\WithPreOrderEditFields;
+use App\Actions\Catalogue\Product\Traits\WithCustomsTradeUnitField;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -36,6 +37,7 @@ class EditProduct extends OrgAction
     use WithBarcodeChoice;
     use WithDuplicatedBarcodeProducts;
     use WithPreOrderEditFields;
+    use WithCustomsTradeUnitField;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -860,6 +862,9 @@ class EditProduct extends OrgAction
                                 ]
                             ],
                         ] : [],
+                        'customs_trade_unit_id' => (!$product->masterProduct || $product->not_follow_master_trade_units) && $product->tradeUnits->count() > 1
+                            ? $this->customsTradeUnitField($product->tradeUnits, $product->customs_trade_unit_id)
+                            : [],
                     ]),
                 ],
                 $product->shop->type == ShopTypeEnum::DROPSHIPPING ? [] : [

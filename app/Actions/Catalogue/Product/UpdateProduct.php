@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
@@ -314,6 +315,10 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
+        if (Arr::has($changed, 'customs_trade_unit_id')) {
+            ProductHydrateHeathAndSafetyFromTradeUnits::run($product, ProductHydrateHeathAndSafetyFromTradeUnits::CUSTOMS_FIELDS);
+        }
+
         if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale'])) {
             $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
         }
@@ -521,6 +526,7 @@ class UpdateProduct extends OrgAction
             'country_of_origin'            => ['sometimes', 'nullable', 'string'],
             'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
             'tariff_code'                  => ['sometimes', 'nullable', 'string'],
+            'customs_trade_unit_id'        => ['sometimes', 'nullable', 'integer', Rule::exists('model_has_trade_units', 'trade_unit_id')->where('model_type', 'Product')->where('model_id', $this->product->id)],
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],
 

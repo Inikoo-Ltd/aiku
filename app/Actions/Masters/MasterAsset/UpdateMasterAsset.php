@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
@@ -454,6 +455,12 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($wasChanged('customs_trade_unit_id')) {
+            foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
+                ProductHydrateHeathAndSafetyFromTradeUnits::run($product, ProductHydrateHeathAndSafetyFromTradeUnits::CUSTOMS_FIELDS);
+            }
+        }
+
         if ($wasChanged('is_golden_product')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::make()->action($product, [
@@ -506,6 +513,7 @@ class UpdateMasterAsset extends OrgAction
                 ),
             ],
             'trade_units'                  => ['sometimes', 'array', 'nullable'],
+            'customs_trade_unit_id'        => ['sometimes', 'nullable', 'integer', Rule::exists('model_has_trade_units', 'trade_unit_id')->where('model_type', 'MasterAsset')->where('model_id', $this->masterAsset->id)],
             'name'                         => ['sometimes', 'required', 'max:250', 'string'],
             'price'                        => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'                  => ['sometimes', 'required', 'max:1500'],

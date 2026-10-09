@@ -139,6 +139,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cpnp_number
  * @property string|null $country_of_origin
  * @property string|null $tariff_code
+ * @property int|null $customs_trade_unit_id
  * @property string|null $duty_rate
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients

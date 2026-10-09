@@ -1102,6 +1102,43 @@ test('product ingredients and origin stop reflecting a trade unit once it is rem
     expect($product->country_of_origin)->toBeNull();
 });
 
+test('a multi part product declares only its main part to customs', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $lamp = $this->tradeUnit1;
+    $lamp->update(['tariff_code' => '9405990090', 'country_of_origin' => 'PAK']);
+    $base = $this->tradeUnit2;
+    $base->update(['tariff_code' => '4421999999', 'country_of_origin' => 'CHN']);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $lamp->id, 'quantity' => 1],
+        ['id' => $base->id, 'quantity' => 1],
+    ]);
+    $product = Product::find($product->id);
+    $product->update(['customs_trade_unit_id' => null]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits::run($product);
+
+    expect($product->refresh()->tariff_code)->toContain(',');
+
+    $product = UpdateProduct::make()->action($product, ['customs_trade_unit_id' => $lamp->id]);
+
+    expect($product->refresh()->tariff_code)->toBe($lamp->getTariffCodeForOrganisation($product->organisation_id))
+        ->and($product->country_of_origin)->toBe('PAK');
+
+    $product = UpdateProduct::make()->action($product, ['customs_trade_unit_id' => null]);
+
+    expect($product->refresh()->country_of_origin)->toContain('CHN')
+        ->and($product->country_of_origin)->toContain('PAK');
+
+    $outsider = \App\Models\Goods\TradeUnit::whereNotIn('id', [$lamp->id, $base->id])->first();
+    if ($outsider) {
+        expect(fn () => UpdateProduct::make()->action($product, ['customs_trade_unit_id' => $outsider->id]))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+});
+
 test('repair command resyncs product ingredients and origin from trade units', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
