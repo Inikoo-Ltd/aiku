@@ -1,8 +1,8 @@
 ---
 title: Práce s obrazovkou dílny
 summary: Průvodce pro řemeslníka - obrazovka Moje úkoly, seznam úkolů, který se sám aktualizuje, START a DONE, a co dělat, když vyrobíte míň, než bylo požadováno.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-10-09
+source_date: 2026-10-09
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -56,6 +56,31 @@ Zadejte skutečný počet a stiskněte **DONE**. Vstupní řádek se nahradí kr
 
 V obou případech se úkol, na kterém jste pracovali, uzavře a proplatí podle toho, co jste skutečně vyrobili. Nic vám v seznamu nezůstane napůl otevřené.
 
+## Když vyrobíte víc, než bylo požadováno
+
+Zadejte skutečné číslo a stiskněte **DONE**. Obrazovka upozorní *18 above target, a manager must authorise it* (18 nad cíl, musí to schválit vedoucí) a otevře **Manager authorisation required for overproduction**.
+
+- **Scan the badge** - vedoucí nebo mistr přiloží ke kameře svůj osobní QR kód (stejný, kterým se píchá při příchodu). Přijme se, jakmile je načten. **Switch camera** přepíná mezi přední a zadní kamerou.
+- **Use manager PIN** - když ho kamera nenačte, vedoucí místo toho zadá svůj docházkový PIN.
+
+Schválit může jen někdo, kdo vede tuto výrobní halu, a nikdy pro vlastní práci. Po pěti chybných kódech nebo PINech okno 15 minut odmítá.
+
+Po schválení úkol naroste na to, co se skutečně vyrobilo: sklad naskladní všechno, co žádná objednávka nechtěla, jde na sklad, a suroviny se odečtou za celou dávku. Další kroky téhož úkolu narostou také, aby další člověk mohl dokončit všechno. Stránka výrobní zakázky ukazuje, kdo vyrobil přebytek, kdo ho schválil, jak a kdy.
+
+## Jedna dávka pro několik řádků
+
+Někdy jedna dávka slouží více úkolům. Například 100 bochníků HCS-48 a 100 krájených bochníků SLHCS-48 se stejnou vůní se míchá, odlévá a formuje společně jako 200 bochníků.
+
+**Spojení (vedoucí).** Klepněte na jeden z řádků na obrazovce haly. Pod jeho detaily **Combine Production with other lines into one batch** vypíše ostatní otevřené řádky čekající na stejný krok. Zaškrtněte ty, které patří do stejné dávky, a stiskněte **Combine**. Řádek, který je už spojený, hotový nebo se na něm pracuje, se nenabízí.
+
+**Práce na ní (řemeslníci).** Řádky se teď zobrazují jako jeden řádek s 🔗 a kódy dohromady, *HCS-48 + SLHCS-48*, a celkem, *0/200*. Detaily vypíší každý řádek s jeho zakázkou. Stiskněte jednou **START**, vyrobte dávku, zadejte celkové vyrobené množství - 200 - a jednou stiskněte **DONE**.
+
+**Co s tím Aiku udělá.** Celek se rozdělí mezi řádky podle toho, kolik každý ještě měl vyrobit, v celých kusech: 100 pro HCS-48, 100 pro SLHCS-48. Čas se rozdělí stejně. Každý řádek pak pokračuje svými dalšími kroky - u jednoho balení do fólie, u druhého krájení a pak balení. Stránka zakázky ukazuje krok jako *One batch with* (jedna dávka s) druhým řádkem.
+
+**Odměna a cíle** se počítají za dávku jako celek: 200 bochníků za hodiny, které to trvalo, proti cíli kroku. Spojení zaplatí přesně tolik jako samostatné dávky při stejné rychlosti. Když mají řádky pro krok různé cíle, cíl dávky je ten, který zabere stejné hodiny jako samostatné dávky.
+
+Vyrobit víc, než chtěly všechny řádky dohromady, vyžaduje kód nebo PIN vedoucího, jako výše; přebytek se také rozdělí mezi řádky. Vedoucí může řádky znovu oddělit (**Separate**), kdykoli na nich nikdo nepracuje. Co už se vyrobilo společně, zůstává u každého řádku.
+
 ## Co je dobré vědět
 
 - **Jeden úkol najednou.** Dokud máte otevřený úkol, tlačítka START jsou vypnutá. Nejdřív ho uzavřete.
@@ -68,6 +93,7 @@ V obou případech se úkol, na kterém jste pracovali, uzavře a proplatí podl
 <li><b>Začít:</b> klepněte na řádek → <b>START</b>.</li>
 <li><b>Dokončit:</b> zadejte <b>Quantity made</b> → <b>DONE</b>.</li>
 <li><b>Míň, než bylo požadováno:</b> <b>DONE</b> → <b>Continue later</b> nebo <b>Job finished</b>.</li>
+<li><b>Jedna dávka pro několik řádků:</b> klepněte na řádek → <b>Combine … with other lines into one batch</b> → zaškrtněte řádky → <b>Combine</b>. Zrušení: klepněte na spojený řádek → <b>Separate</b>.</li>
 </ul>
 </aside>
 
@@ -76,5 +102,6 @@ V obou případech se úkol, na kterém jste pracovali, uzavře a proplatí podl
 <li>Pozice se nastavují na kartě zaměstnance v sekci Human Resources a nesou s sebou příslušná práva.</li>
 <li>Zobrazení vlastních úkolů, START a DONE: pozice <b>Operative</b> pro danou továrnu.</li>
 <li>Zobrazení a přebírání <b>Open jobs</b>, zaznamenávání zmetků: <b>Foreman</b>, <b>Mix preparer</b> nebo <b>Floor supervisor</b>.</li>
+<li>Spojování a oddělování řádků: vedoucí, kteří řídí výrobní halu, tytéž osoby, které mohou schválit nadvýrobu.</li>
 </ul>
 </aside>
