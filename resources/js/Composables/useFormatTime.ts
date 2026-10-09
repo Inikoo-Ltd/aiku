@@ -3,11 +3,12 @@ import { format, formatDuration, intervalToDuration, addSeconds, formatDistanceT
 import { formatInTimeZone } from 'date-fns-tz'
 import { zhCN, enUS, enGB, fr, de, id, ja, sk, es, bg, cs, hi, hr, hu, it, nl, pl, pt, ro, sv, tr, uk } from 'date-fns/locale'
 import { getActiveLanguage } from 'laravel-vue-i18n'
+import { ne } from '@/Composables/nepaliDateLocale'
 import { ctrans } from '@/Composables/useTrans'
 
 export const localesCode: any = {
     zhCN, enUS, enGB, fr, de, id, ja, sk, es,
-    'zh-Hans': zhCN, en: enGB, bg, cs, hi, hr, hu, it, nl, pl, pt, ro, sv, tr, uk,
+    'zh-Hans': zhCN, en: enGB, bg, cs, hi, hr, hu, it, ne, nl, pl, pt, ro, sv, tr, uk,
 }
 
 export interface OptionsTime {
