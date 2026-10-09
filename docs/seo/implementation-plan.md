@@ -527,14 +527,52 @@ them, so the monthly budget is watched and changed in Aiku instead of in each pr
   shows up here before anyone notices missing data.
 - Feature screens show no spend of their own.
 
+## Not planned yet
+
+Found on 9 October 2026 by comparing this plan with the marketing team's research ("AIKU SEO
+Strategy (Research)", 8 October 2026). None is built; each needs the team's go-ahead.
+
+- **Position history and alerts.** `seo_keyword_rankings` keeps every check, but the Rankings tab
+  shows only the latest position and its change. Add a position chart per keyword (with the Search
+  Console position beside it), and alerts when a keyword the team marks as important drops out of
+  the top 10 or loses more than a set number of places, as a notification in Aiku and an email.
+  No API cost.
+- **Tracking depth per keyword.** Checks read the top 30 weekly or the top 20 daily. The research
+  recommends daily top 100, about $486 a month for 2,700 keywords, against about $65 for top 100
+  weekly. Let the team choose the depth per keyword (20, 30 or 100), so positions 31 to 100 are
+  seen where they matter; the cost shows on the API usage page.
+- **Export and scheduled reports.** Aiku tables already support export links
+  (`InertiaTable::withExportLinks`), but no SEO table uses them. Add Excel exports to the SEO tables,
+  and a scheduled report (weekly or monthly, per shop or for all) emailed to the team: visibility,
+  winners and losers, audit health, new and lost backlinks.
+- **Portfolio view.** Every SEO page is per shop. Add a group page with one row per website: site
+  health, Search Console clicks and their change, keywords in the top 10, referring domains, AI
+  mentions, so the 27 to 29 websites can be compared in one place.
+- **Content briefs.** 3.4 only writes meta titles and descriptions. A brief for a keyword (the
+  headings, length, questions and terms of the pages ranking in the top 10, read by our crawler from
+  the SERP results of 2.2, written up through the AI gateway) is the part of Semrush's content tools
+  the research asks for. Optional.
+- **Competitor page changes.** The research proposes Apify to watch competitor pages. Our crawler
+  can fetch a short list of competitor URLs weekly and report title, content and price changes,
+  without Apify. Optional.
+
 ## Cancelling Semrush
 
-1. Run Aiku and Semrush side by side for at least one full Semrush billing cycle after Phase 3.
-2. Compare, for the same sites: audit issue counts, positions for a sample of tracked keywords,
-   referring domain counts. Write down where they differ and why.
-3. Export from Semrush whatever history the team wants to keep (position history, backlink history),
-   because Aiku's own history only starts on the day each fetch was switched on.
-4. Cancel when the team agrees the Aiku figures answer the same questions.
+Run as the pilot the marketing research proposes, with its owners:
+
+1. **Billing and usage audit** (account owner): the Semrush invoice broken down into plan, seats and
+   add-ons, and the tracked keywords with their devices and locations.
+2. **Pilot scope** (Aldo and Gita): two or three websites, their tracked keywords and competitors
+   set in Aiku, and which Semrush features the team uses each week.
+3. **Pilot on those websites** (Aldo and the SEO team), for at least one full Semrush billing cycle,
+   both tools side by side. Compare audit issue counts, positions for a sample of tracked keywords,
+   referring domain counts and keyword gap results; write down where they differ and why. Record the
+   actual API spend from the API usage page.
+4. **Build-or-buy decision** (Tomas): keep, reduce or cancel the paid Semrush features, against the
+   pilot criteria of the research: useful data coverage, reliable runs, team adoption, total monthly
+   cost and payback period.
+5. Before cancelling, export from Semrush whatever history the team wants to keep (position history,
+   backlink history), because Aiku's own history only starts on the day each fetch was switched on.
 
 ## Decisions needed
 
@@ -546,4 +584,5 @@ them, so the monthly budget is watched and changed in Aiku instead of in each pr
 | Competitor domains per shop (set in SEO > Competitors) | Phase 2 (positions) and Phase 3 (backlinks) |
 | Prompts for AI visibility, per brand (DataForSEO LLM Scraper and LLM Mentions decided) | Phase 3 |
 | Which non-Google platforms to collect search signals from, if any | Phase 3 |
-| How long to run side by side before cancelling | After Phase 3 |
+| Which two or three websites to pilot on, and how long to run side by side before cancelling | Pilot |
+| Whether to build the parts in [Not planned yet](#not-planned-yet) | Pilot |

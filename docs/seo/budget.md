@@ -7,9 +7,12 @@ approved.
 
 ## The goal
 
-Semrush costs about $800 a month today and covers every feature in the plan. The point of moving
-into Aiku is to spend less, so the providers must stay well under that, and the build and upkeep of
-Phase 2 and 3 have to be worth the difference.
+Semrush costs about $899.95 a month today, verified in the marketing team's research of
+8 October 2026 ("AIKU SEO Strategy (Research)"), for 27 websites; Aiku has 29 live websites. The
+invoice itself is not broken down yet. The research names two compositions close to it, the Business
+plan ($499.95, 40 websites and 5,000 tracked keywords) plus three extra users ($100 each), or plus
+Traffic & Market ($289). The point of moving into Aiku is to spend less, so the providers must stay
+well under that, and the build and upkeep of Phase 2 and 3 have to be worth the difference.
 
 ## Providers
 
@@ -73,8 +76,9 @@ and 5,000 keywords checked that way through DataForSEO cost about $900 a month o
 | **Expected spend** | | **~$160** |
 | **Cap** | One budget for all SEO APIs, `SEO_API_MONTHLY_BUDGET` | **$250** |
 
-Even at the cap that saves about $550 a month, about $6,600 a year, against Semrush; at the expected
-spend about $640 a month. Aiku also keeps what Semrush
+Even at the cap that saves about $650 a month, about $7,800 a year, against the $899.95 Semrush
+bill; at the expected spend about $740 a month. If the bill includes Traffic & Market and the team
+keeps it for competitor traffic from all channels, the saving is $289 a month less. Aiku also keeps what Semrush
 cannot give: SEO data joined to webpages, orders and conversions, history kept for as long as we
 want, and no price per user.
 
@@ -96,8 +100,11 @@ provider or feature. `SeoApiBudget` enforces it from the `seo_api_requests` log 
 
 ## Before approving
 
-- Find out what the $800 buys: the plan, the number of users and the add-ons (for example Trends
-  for competitor traffic). Money spent on seats or add-ons the team rarely uses is extra saving.
+- Find out what the $899.95 buys (step 1 of the pilot in
+  [implementation-plan.md](implementation-plan.md#cancelling-semrush)): the plan, the number of
+  users, the add-ons, and the tracked keywords with their devices and locations. Money spent on
+  seats or add-ons the team rarely uses is extra saving, and Traffic & Market is the one add-on
+  Aiku does not replace.
 - Confirm the prices above in the DataForSEO dashboard, those of the AI Optimization API first.
 - Semrush and Aiku run side by side during the build and for one billing cycle after Phase 3, so
   both are paid for that time.

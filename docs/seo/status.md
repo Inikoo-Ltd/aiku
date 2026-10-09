@@ -53,6 +53,19 @@ Nothing here has been deployed yet.
 | --- | --- |
 | API usage page: spend of all SEO APIs against one monthly budget (default 250 USD, set on the page), per provider and feature, with errors | Built after the paid providers of Phase 3 are in place |
 
+### Not planned yet
+
+Found against the marketing team's research of 8 October 2026; see
+[implementation-plan.md](implementation-plan.md#not-planned-yet).
+
+| Part | What has to happen first |
+| --- | --- |
+| Position history chart and alerts | The team's go-ahead; no API cost |
+| Tracking depth per keyword (top 20, 30 or 100) | The team's go-ahead; top 100 costs more per check |
+| Excel exports and scheduled SEO reports | The team's go-ahead |
+| Portfolio view of all websites | The team's go-ahead |
+| Content briefs, competitor page changes | Optional; the team's go-ahead |
+
 ### Still open in Phase 1
 
 - Compare Site Audit results with a Semrush Site Audit of the same website before the team relies on
