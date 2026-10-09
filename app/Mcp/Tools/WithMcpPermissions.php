@@ -42,6 +42,19 @@ trait WithMcpPermissions
     }
 
     /**
+     * Orders sent to the hub or a partner spend money and cannot be taken back from the AI changes
+     * log, so they need their own user switch.
+     */
+    protected function orderPlacingRefusal(Request $request): ?string
+    {
+        if (!$request->user()?->can_use_mcp_place_orders) {
+            return 'Placing orders is not enabled for this user. Do not retry; an administrator enrols it on the user\'s edit page. Nothing was changed.';
+        }
+
+        return null;
+    }
+
+    /**
      * @return Collection<int, array{slug: string, code: string, name: string}>
      */
     protected function accessibleShops(Request $request): Collection

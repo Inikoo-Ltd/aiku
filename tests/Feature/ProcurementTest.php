@@ -7248,6 +7248,47 @@ describe('partner shopping list', function () {
             ->assertHasErrors(['NOPE-999']);
     });
 
+    test('only users enrolled to place orders let the ai assistant submit the hub basket and change sent lines', function () {
+        $user         = $this->adminGuest->getUser();
+        $organisation = $this->orgPartner->organisation;
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        $user->update(['can_use_mcp' => true, 'can_use_mcp_procurement' => true, 'can_use_mcp_place_orders' => false]);
+        $tool      = fn (array $arguments) => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, ['organisation' => $organisation->slug, 'request_text' => 'add it and submit', ...$arguments]);
+        $line      = fn (ShoppingListItemStateEnum $state) => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('org_stock_id', $this->buyerOrgStock->id)->where('state', $state)->first();
+        $addAndSubmit = ['lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 4]], 'submit' => true];
+
+        $tool($addAndSubmit)->assertHasErrors(['Placing orders is not enabled']);
+        expect($line(ShoppingListItemStateEnum::DRAFT))->toBeNull();
+
+        $user->update(['can_use_mcp_place_orders' => true]);
+        $tool($addAndSubmit)->assertOk()->assertSee(['"submitted":1', 'order_log_id']);
+
+        $placed = App\Models\SysAdmin\McpChange::latest('id')->first();
+        expect($line(ShoppingListItemStateEnum::DRAFT))->toBeNull()
+            ->and((float) $line(ShoppingListItemStateEnum::OPEN)->quantity)->toBe(4.0)
+            ->and($placed->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PLACED_ORDER)
+            ->and($placed->canBeRevertedBy($user))->toBeFalse()
+            ->and(fn () => App\Actions\SysAdmin\McpChange\RevertMcpChange::run($placed, $user))->toThrow(ValidationException::class);
+
+        $changeSent = ['sent_lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 6]]];
+        $tool($changeSent)->assertHasErrors(['Dangerous']);
+        expect((float) $line(ShoppingListItemStateEnum::OPEN)->quantity)->toBe(4.0);
+
+        $tool([...$changeSent, 'accept' => ['change_submitted']])->assertOk()->assertSee('"sent_lines_changed":1');
+        expect((float) $line(ShoppingListItemStateEnum::OPEN)->refresh()->quantity)->toBe(6.0);
+
+        $line(ShoppingListItemStateEnum::OPEN)->update(['preparing_at' => now()]);
+        $tool([...$changeSent, 'accept' => ['change_submitted']])->assertOk()->assertSee('No sent line the hub has not started yet');
+
+
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
+        $user->update(['can_use_mcp_place_orders' => false]);
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\PartnerRescueOrderTool::class, ['organisation' => $organisation->slug])
+            ->assertOk()->assertSee('"partner":"'.$this->orgPartner->partner->code);
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\PartnerRescueOrderTool::class, ['organisation' => $organisation->slug, 'partner' => $this->orgPartner->partner->code, 'place' => true, 'request_text' => 'place the rescue order'])
+            ->assertHasErrors(['Placing orders is not enabled']);
+    });
+
     test('the ai planning rows cap the order at what sells before it expires, one year when shelf life is not recorded', function () {
         $user = $this->adminGuest->getUser();
         $this->buyerOrgStock->update(['quantity_available' => 10]);

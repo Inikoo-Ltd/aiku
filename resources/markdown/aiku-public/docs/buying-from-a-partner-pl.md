@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-10-02
-source_date: 2026-10-02
+date: 2026-10-09
+source_date: 2026-10-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -63,6 +63,16 @@ Jeśli Twoje konto jest włączone do tej funkcji, asystent AI, którego podłą
 - Każda zmiana jest zapisywana razem z Twoją prośbą i można ją cofnąć: poproś asystenta o jej wycofanie albo zrobi to administrator z dziennika AI changes (zmian AI).
 - Włączenie to przełącznik na Twoim koncie użytkownika, który ustawia administrator; potrzebujesz też uprawnienia do edycji zakupów dla swojej organizacji.
 
+### Składanie zamówienia przez asystenta
+
+Z drugim przełącznikiem na Twoim koncie asystent może zamówienie nie tylko przygotować, ale też złożyć:
+
+- **Wyślij koszyk** do manufacturing hub: *"wyślij to"*. Hub zaczyna produkować to, co wysłałeś, dokładnie tak, jakbyś nacisnął **Submit**.
+- **Zmień pozycję już wysłaną** do huba, dopóki hub jej nie rozpoczął (brak job order, nie jest wstępnie skompletowana ani w przygotowaniu). To niebezpieczne - hub może już planować wokół niej materiały i partie - więc asystent najpierw ostrzega i działa dalej tylko wtedy, gdy nalegasz.
+- **Zamówienia ratunkowe do pozostałych partnerów**: asystent pokazuje, co każdy partner może uratować (SKO, koszt, suma), a po potwierdzeniu przez Ciebie partnera i budżetu tworzy ratunkowe zamówienie zakupu i wysyła je do magazynu partnera.
+
+Złożone zamówienia są zapisywane razem z Twoją prośbą, ale **nie można ich cofnąć** z dziennika AI changes: anuluj je u partnera jak każde inne zamówienie.
+
 ## Kiedy lista mówi nie
 
 Dodawanie jest odrzucane celowo w trzech przypadkach: lista osiągnęła **budget** (budżet) dla tego partnera (pozycje rangi A i bez stanu magazynowego są zwolnione - awaria zawsze się zmieści), magazyn ma poniżej 5% wolnych lokalizacji, albo ten partner wykorzystał już swój sprawiedliwy udział w wolnych slotach produktami, których nigdy nie magazynowałeś. Zajmij się komunikatem zamiast szukać obejścia: ta sama blokada obejmuje dodawanie ręczne, hurtowe i Auto-fill. [Artykuł o pulpicie](/docs/reading-the-partner-shopping-dashboard-pl) wyjaśnia, skąd biorą się te limity.
@@ -80,6 +90,7 @@ Gdy partner wysyła towar, każda linia przychodzi z już wypełnionymi partiami
 <li><b>Zamów w pełnych partiach:</b> przycisk obok <i>full batches every N SKO</i> na pozycji albo na karcie produktu.</li>
 <li><b>Dostosuj otwarte pozycje:</b> zmień priorytet albo usuń pozycje w tabeli listy zakupowej; zmień ilości z kart produktów w <b>Browse</b> (Przeglądaj).</li>
 <li><b>Pozwól komuś uzupełniać listę przez jego asystenta AI (administratorzy):</b> <b>Sysadmin → Users</b> (Administracja systemu → Użytkownicy) → otwórz użytkownika → <b>Edit</b> → <b>Access</b> → włącz <b>Can connect AI assistant</b>, a potem <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
+<li><b>Pozwól komuś składać zamówienia przez jego asystenta AI (administratorzy):</b> ta sama karta <b>Access</b> → włącz <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
 <li><b>Wyłącz pozycję z auto-fill:</b> Twoja organizacja → <b>Warehouse → Inventory</b> (Magazyn → Zapasy) → otwórz SKO → <b>Edit SKO</b> (Edytuj SKO) → włącz <b>Do not auto order</b> (Nie zamawiaj automatycznie).</li>
 <li><b>Śledź i przyjmij przesyłkę:</b> ta sama strona partnera → <b>Stock deliveries</b> (Dostawy towaru) → gdy towar dotrze, <b>Receive</b> (Przyjmij) → sprawdź → rozmieść na lokalizacjach.</li>
 </ul>
