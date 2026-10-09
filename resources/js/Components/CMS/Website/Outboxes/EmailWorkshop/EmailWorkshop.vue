@@ -24,7 +24,7 @@ import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/C
 import { ctrans } from '@/Composables/useTrans'
 import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
-    createModule, createRow, dynamicContentSource, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
+    columnWidthPercent, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
     UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
     rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
@@ -207,7 +207,7 @@ const isStackedOnMobile = (row: EmailRow): boolean =>
     device.value === 'mobile' && row.content?.computedStyle?.rowColStackOnMobile !== false
 
 const columnStyle = (row: EmailRow, column: EmailColumn): string => {
-    const width = isStackedOnMobile(row) ? '100%' : `${(column['grid-columns'] ?? 12) / 12 * 100}%`
+    const width = isStackedOnMobile(row) ? '100%' : `${columnWidthPercent(column)}%`
     return `${styleToString(column.style)};width:${width}`
 }
 
@@ -351,10 +351,33 @@ const chooseDynamicContent = async (picker: typeof dynamicProductsRef.value | ty
     }
 }
 
+const replaceModuleWithRows = (module: EmailModule, rows: EmailRow[]) => {
+    const location = findModuleLocation(module.uuid ?? null)
+    if (!location || !rows.length) {
+        return
+    }
+    location.column.modules.splice(location.index, 1)
+    const rowIndex = email.value.page.rows.indexOf(location.row)
+    const isRowLeftEmpty = location.row.columns.every((column) => column.modules.length === 0)
+    email.value.page.rows.splice(isRowLeftEmpty ? rowIndex : rowIndex + 1, isRowLeftEmpty ? 1 : 0, ...rows)
+    selectRow(rows[0])
+}
+
+const chooseProducts = async (target: EmailModule) => {
+    try {
+        const selection = await dynamicProductsRef.value?.openModal({ withProductData: true }) as { products?: ProductCard[], appearance: ProductCardAppearance } | undefined
+        if (selection?.products?.length) {
+            replaceModuleWithRows(target, createProductRows(selection.products, selection.appearance, `${contentWidth.value}px`, createThemedModule))
+        }
+    } catch {
+        return
+    }
+}
+
 const openDynamicContentPicker = (module: EmailModule) => {
     const source = dynamicContentSource(module)
     if (source === 'products') {
-        chooseDynamicContent(dynamicProductsRef.value)
+        chooseProducts(module)
     } else if (source === 'blocks') {
         chooseDynamicContent(dynamicBlocksRef.value)
     } else {

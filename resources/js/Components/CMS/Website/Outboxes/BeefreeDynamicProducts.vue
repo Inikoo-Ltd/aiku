@@ -7,6 +7,7 @@ import { faSearch, faCheck, faTimes, faImage, faBoxOpen, faChevronLeft, faChevro
 import Dialog from 'primevue/dialog'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { ctrans } from '@/Composables/useTrans'
+import { readableTextColor } from './EmailWorkshop/emailWorkshopBlocks'
 
 library.add(faSearch, faCheck, faTimes, faImage, faBoxOpen, faChevronLeft, faChevronRight)
 
@@ -62,7 +63,8 @@ const showDescription = ref(true)
 const buttonLabel = ref('SHOP NOW')
 const buttonColor = ref('#1d252e')
 
-let resolveSelection: ((value: { name: string, value: string }) => void) | null = null
+let resolveSelection: ((value: Record<string, any>) => void) | null = null
+let wantsProductData = false
 let rejectSelection: (() => void) | null = null
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let latestRequestId = 0
@@ -198,17 +200,6 @@ const escapeHtml = (value: unknown): string =>
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
 
-const readableTextColor = (hexColor: string): string => {
-    const match = hexColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
-    if (!match) {
-        return '#ffffff'
-    }
-    const [red, green, blue] = match.slice(1).map((channel) => parseInt(channel, 16))
-    const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-
-    return luminance > 0.6 ? '#111111' : '#ffffff'
-}
-
 const productCardHtml = (product: DynamicProduct): string => {
     const title = product.name || product.code || ctrans('Product')
     const url = product.url || '#'
@@ -276,7 +267,14 @@ const insertSelected = () => {
     if (!selectedProducts.value.length) {
         return
     }
-    resolveSelection?.({ name: insertName.value, value: generatedHtml.value })
+    const selection = { name: insertName.value, value: generatedHtml.value }
+    resolveSelection?.(wantsProductData
+        ? {
+            ...selection,
+            products: [...selectedProducts.value],
+            appearance: { productsPerRow: productsPerRow.value, showDescription: showDescription.value, buttonLabel: buttonLabel.value, buttonColor: buttonColor.value },
+        }
+        : selection)
     resolveSelection = null
     rejectSelection = null
     isOpen.value = false
@@ -292,7 +290,8 @@ const close = () => {
     isOpen.value = false
 }
 
-const openModal = () => {
+const openModal = (options: { withProductData?: boolean } = {}) => {
+    wantsProductData = !!options.withProductData
     return new Promise((resolve, reject) => {
         resolveSelection = resolve
         rejectSelection = reject

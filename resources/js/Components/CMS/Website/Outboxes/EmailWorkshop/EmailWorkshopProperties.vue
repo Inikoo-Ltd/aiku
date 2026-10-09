@@ -8,6 +8,7 @@ import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import EmailWorkshopField from './EmailWorkshopField.vue'
 import EmailWorkshopPadding from './EmailWorkshopPadding.vue'
 import EmailWorkshopSection from './EmailWorkshopSection.vue'
+import EmailWorkshopColumns from './EmailWorkshopColumns.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import {
@@ -691,20 +692,7 @@ const contentSectionTitle = computed(() => ({
             </EmailWorkshopSection>
 
             <EmailWorkshopSection :title="ctrans('Column structure')">
-                <div class="space-y-2 py-2">
-                    <div class="flex gap-x-1">
-                        <div v-for="(column, index) in row.columns" :key="column.uuid ?? index"
-                            class="flex h-8 items-center justify-center rounded bg-[color-mix(in_srgb,var(--theme-color-4)_8%,white)] text-[11px] text-[var(--theme-color-4)]"
-                            :style="{ width: `${column['grid-columns'] / 12 * 100}%` }">
-                            {{ Math.round(column['grid-columns'] / 12 * 100) }}%
-                        </div>
-                    </div>
-                    <div v-for="(column, index) in row.columns" :key="`settings-${column.uuid ?? index}`" class="rounded border border-gray-200 px-3 py-1">
-                        <div class="pt-1.5 text-[12px] font-semibold text-gray-700">{{ ctrans('Column') }} {{ index + 1 }}</div>
-                        <EmailWorkshopField v-model="column.style['background-color']" type="color" :label="ctrans('Background color')" />
-                        <EmailWorkshopPadding :target="column.style" />
-                    </div>
-                </div>
+                <EmailWorkshopColumns :row="row" />
             </EmailWorkshopSection>
 
             <EmailWorkshopSection :title="ctrans('Responsive design')">

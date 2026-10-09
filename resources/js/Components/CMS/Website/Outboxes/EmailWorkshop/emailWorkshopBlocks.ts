@@ -405,6 +405,92 @@ export const rowLayouts: number[][] = [
     [8, 4],
 ]
 
+export const MIN_COLUMN_WIDTH = 10
+
+export const columnWidthPercent = (column: EmailColumn): number => {
+    const gridColumns = column['grid-columns'] ?? 12
+    const exactWidth = Number(column.aikuWidth)
+
+    return Number.isFinite(exactWidth) && Math.abs(exactWidth / 100 * 12 - gridColumns) < 1 ? exactWidth : gridColumns / 12 * 100
+}
+
+const gridColumnsForWidths = (widths: number[]): number[] => {
+    const exact = widths.map((width) => width / 100 * 12)
+    const gridColumns = exact.map((value) => Math.max(1, Math.floor(value)))
+    const byRemainder = exact.map((value, index) => ({ index, remainder: value - Math.floor(value) })).sort((a, b) => b.remainder - a.remainder)
+    for (let step = 0; gridColumns.reduce((sum, value) => sum + value, 0) < 12; step++) {
+        gridColumns[byRemainder[step % byRemainder.length].index] += 1
+    }
+    for (let step = 0; gridColumns.reduce((sum, value) => sum + value, 0) > 12; step++) {
+        const index = byRemainder[byRemainder.length - 1 - (step % byRemainder.length)].index
+        if (gridColumns[index] > 1) {
+            gridColumns[index] -= 1
+        }
+    }
+
+    return gridColumns
+}
+
+export const setColumnWidths = (row: EmailRow, widths: number[]): void => {
+    const gridColumns = gridColumnsForWidths(widths)
+    row.columns.forEach((column, index) => {
+        column.aikuWidth = Math.round(widths[index] * 100) / 100
+        column['grid-columns'] = gridColumns[index]
+    })
+}
+
+export const resizeColumn = (row: EmailRow, index: number, width: number): void => {
+    const widths = row.columns.map(columnWidthPercent)
+    const neighbour = index < widths.length - 1 ? index + 1 : index - 1
+    if (neighbour < 0) {
+        return
+    }
+    const pairTotal = widths[index] + widths[neighbour]
+    widths[index] = Math.min(Math.max(width, MIN_COLUMN_WIDTH), pairTotal - MIN_COLUMN_WIDTH)
+    widths[neighbour] = pairTotal - widths[index]
+    setColumnWidths(row, widths)
+}
+
+export const canAddColumn = (row: EmailRow): boolean =>
+    Math.max(...row.columns.map(columnWidthPercent)) / 2 >= MIN_COLUMN_WIDTH
+
+export const addColumn = (row: EmailRow): boolean => {
+    if (!canAddColumn(row)) {
+        return false
+    }
+    const widths = row.columns.map(columnWidthPercent)
+    const widest = widths.indexOf(Math.max(...widths))
+    widths[widest] /= 2
+    widths.push(widths[widest])
+    row.columns.push(createColumn(1))
+    setColumnWidths(row, widths)
+
+    return true
+}
+
+export const removeColumn = (row: EmailRow, index: number): boolean => {
+    if (row.columns.length <= 1 || !row.columns[index]) {
+        return false
+    }
+    const widths = row.columns.map(columnWidthPercent)
+    const neighbour = index > 0 ? index - 1 : 1
+    widths[neighbour] += widths[index]
+    row.columns[neighbour].modules.push(...row.columns[index].modules)
+    widths.splice(index, 1)
+    row.columns.splice(index, 1)
+    setColumnWidths(row, widths)
+
+    return true
+}
+
+const THIRD = 100 / 3
+
+export const columnRatioPresets = (columnCount: number): number[][] => ({
+    2: [[50, 50], [40, 60], [60, 40], [THIRD, 2 * THIRD], [2 * THIRD, THIRD], [30, 70], [70, 30], [25, 75], [75, 25]],
+    3: [[THIRD, THIRD, THIRD], [50, 25, 25], [25, 50, 25], [25, 25, 50], [20, 60, 20], [40, 30, 30]],
+    4: [[25, 25, 25, 25], [40, 20, 20, 20], [20, 20, 20, 40], [30, 20, 20, 30]],
+}[columnCount] ?? [])
+
 export const isUnsubscribeModule = (module: EmailModule | null | undefined): boolean =>
     module?.type === MODULE_TYPES.html && !!module.descriptor?.aikuUnsubscribe
 
@@ -580,6 +666,13 @@ export const createMergeContentModule = (name: string, value: string, source?: D
     },
 })
 
+const createColumn = (gridColumns: number): EmailColumn => ({
+    uuid: uuidv4(),
+    style: { 'background-color': 'transparent', 'padding-top': '5px', 'padding-right': '0px', 'padding-bottom': '5px', 'padding-left': '0px' },
+    modules: [],
+    'grid-columns': gridColumns,
+})
+
 export const createRow = (gridColumns: number[], width: string): EmailRow => ({
     type: gridColumns.length === 1 ? 'one-column-empty' : 'custom',
     uuid: uuidv4(),
@@ -606,13 +699,89 @@ export const createRow = (gridColumns: number[], width: string): EmailRow => ({
             'background-position': 'top left',
         },
     },
-    columns: gridColumns.map((gridColumn) => ({
-        uuid: uuidv4(),
-        style: { 'background-color': 'transparent', 'padding-top': '5px', 'padding-right': '0px', 'padding-bottom': '5px', 'padding-left': '0px' },
-        modules: [],
-        'grid-columns': gridColumn,
-    })),
+    columns: gridColumns.map(createColumn),
 })
+
+export interface ProductCard {
+    code: string
+    name: string | null
+    description: string | null
+    product_image: string | null
+    url: string | null
+}
+
+export interface ProductCardAppearance {
+    productsPerRow: number
+    showDescription: boolean
+    buttonLabel: string
+    buttonColor: string
+}
+
+const escapeText = (value: unknown): string =>
+    String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+export const readableTextColor = (hexColor: string): string => {
+    const match = hexColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+    if (!match) {
+        return '#ffffff'
+    }
+    const [red, green, blue] = match.slice(1).map((channel) => parseInt(channel, 16))
+
+    return (0.299 * red + 0.587 * green + 0.114 * blue) / 255 > 0.6 ? '#111111' : '#ffffff'
+}
+
+const createProductCardModules = (product: ProductCard, appearance: ProductCardAppearance, create: (type: string) => EmailModule): EmailModule[] => {
+    const title = product.name || product.code
+    const url = product.url ?? ''
+    const modules: EmailModule[] = []
+
+    if (product.product_image) {
+        const image = create(MODULE_TYPES.image)
+        Object.assign(image.descriptor.image, { src: product.product_image, href: url, alt: title })
+        modules.push(image)
+    }
+
+    const heading = create(MODULE_TYPES.heading)
+    heading.descriptor.heading.title = 'h3'
+    heading.descriptor.heading.text = escapeText(title)
+    heading.descriptor.heading.style['font-size'] = '18px'
+    modules.push(heading)
+
+    if (appearance.showDescription && product.description) {
+        const paragraph = create(MODULE_TYPES.paragraph)
+        paragraph.descriptor.paragraph.html = product.description
+        paragraph.descriptor.paragraph.style['text-align'] = 'center'
+        modules.push(paragraph)
+    }
+
+    const button = create(MODULE_TYPES.button)
+    button.descriptor.button.href = url
+    button.descriptor.button.label = `<p>${escapeText(appearance.buttonLabel || 'SHOP NOW')}</p>`
+    button.descriptor.button.style['background-color'] = appearance.buttonColor
+    button.descriptor.button.style.color = readableTextColor(appearance.buttonColor)
+    modules.push(button)
+
+    return modules
+}
+
+export const createProductRows = (
+    products: ProductCard[],
+    appearance: ProductCardAppearance,
+    width: string,
+    create: (type: string) => EmailModule = createModule,
+): EmailRow[] => {
+    const perRow = Math.min(3, Math.max(1, appearance.productsPerRow))
+    const rows: EmailRow[] = []
+    for (let index = 0; index < products.length; index += perRow) {
+        const row = createRow(Array(perRow).fill(12 / perRow), width)
+        products.slice(index, index + perRow).forEach((product, columnIndex) => {
+            row.columns[columnIndex].modules = createProductCardModules(product, appearance, create)
+        })
+        rows.push(row)
+    }
+
+    return rows
+}
 
 export const createEmptyEmail = (): EmailJson => ({
     page: {

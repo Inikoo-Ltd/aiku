@@ -8,6 +8,7 @@ import {
     EmailRow,
     MODULE_TYPES,
     UNSUBSCRIBE_URL_TAG,
+    columnWidthPercent,
     isEmptyMergeContent,
     isTableModule,
     isUnsubscribeModule,
@@ -515,10 +516,10 @@ export const rowWidth = (email: EmailJson, row: EmailRow): number =>
     pixels(row.content?.style?.width, messageWidth(email))
 
 export const columnWidth = (email: EmailJson, row: EmailRow, column: EmailColumn): number =>
-    rowWidth(email, row) * (column['grid-columns'] ?? 12) / 12 - horizontalPadding(column.style)
+    rowWidth(email, row) * columnWidthPercent(column) / 100 - horizontalPadding(column.style)
 
 const renderColumn = (email: EmailJson, row: EmailRow, column: EmailColumn, columnIndex: number, context: RenderContext): string => {
-    const percentage = Number(((column['grid-columns'] ?? 12) / 12 * 100).toFixed(4))
+    const percentage = Number(columnWidthPercent(column).toFixed(4))
     const verticalAlign = row.content?.computedStyle?.verticalAlign ?? 'top'
     context.columnWidth = columnWidth(email, row, column)
     const modules = column.modules.map((module) => renderModuleHtml(module, context)).join('')
