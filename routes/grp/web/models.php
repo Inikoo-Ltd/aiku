@@ -562,6 +562,8 @@ use App\Actions\Web\Seo\RequestSeoContentSuggestions;
 use App\Actions\Web\Seo\DeleteSeoTrackedKeyword;
 use App\Actions\Web\Seo\RunSeoBacklinkFetch;
 use App\Actions\Web\Seo\RunSeoRankChecks;
+use App\Actions\Web\Seo\ToggleSeoKeywordWatch;
+use App\Actions\Web\Seo\ToggleSeoReportSubscription;
 use App\Actions\Web\Seo\UpdateSeoApiBudget;
 use App\Actions\Web\Seo\StoreSeoCompetitor;
 use App\Actions\Web\Seo\StoreSeoTrackedKeyword;
@@ -1205,6 +1207,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('seo/competitors', StoreSeoCompetitor::class)->name('seo.competitor.store');
     Route::post('seo/rank-checks', RunSeoRankChecks::class)->name('seo.rank_checks.store');
     Route::post('seo/backlink-fetch', RunSeoBacklinkFetch::class)->name('seo.backlink_fetch.store');
+    Route::post('seo/report-subscription', ToggleSeoReportSubscription::class)->name('seo.report_subscription.toggle');
     Route::post('email-chat', [StartCustomerEmailChat::class, 'inShop'])->name('email_chat.store');
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
@@ -1319,6 +1322,7 @@ Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('or
 Route::patch('website-not-found-path/{websiteNotFoundPath:id}/ignored', UpdateWebsiteNotFoundPathIgnored::class)->name('website_not_found_path.ignored.update');
 Route::patch('seo-tracked-keyword/{seoTrackedKeyword:id}', UpdateSeoTrackedKeyword::class)->name('seo_tracked_keyword.update');
 Route::delete('seo-tracked-keyword/{seoTrackedKeyword:id}', DeleteSeoTrackedKeyword::class)->name('seo_tracked_keyword.delete');
+Route::post('seo-tracked-keyword/{seoTrackedKeyword:id}/watch', ToggleSeoKeywordWatch::class)->name('seo_tracked_keyword.watch');
 Route::delete('seo-competitor/{seoCompetitor:id}', DeleteSeoCompetitor::class)->name('seo_competitor.delete');
 Route::post('webpage/{webpage:id}/seo-content-suggestions', RequestSeoContentSuggestions::class)->name('webpage.seo_content_suggestions.store')->withoutScopedBindings();
 Route::patch('seo-content-suggestion/{seoContentSuggestion:id}/accept', AcceptSeoContentSuggestion::class)->name('seo_content_suggestion.accept');
@@ -1533,6 +1537,7 @@ Route::patch('stored-items/{storedItem:id}/mark-as-discontinuing', MarkStoredIte
 
 Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-settings.update');
 Route::patch('/group/seo-api-budget', UpdateSeoApiBudget::class)->name('group.seo_api_budget.update');
+Route::post('/group/seo-report-subscription', [ToggleSeoReportSubscription::class, 'inPortfolio'])->name('group.seo_report_subscription.toggle');
 
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
 Route::patch('/{mailshot:id}/mailshot/url-utm', UpdateMailshotUrlUtm::class)->name('shop.mailshot.url-utm.update');

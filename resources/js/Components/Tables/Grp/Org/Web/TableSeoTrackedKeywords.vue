@@ -7,6 +7,7 @@
 import { router, useForm } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import Table from "@/Components/Table/Table.vue"
+import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
@@ -111,6 +112,9 @@ const labelOf = (options: { value: string, label: string }[], value: string) => 
             </p>
         </form>
 
+        <div v-if="data" class="mx-4 mb-2 flex justify-end">
+            <SeoExportButton table="tracked_keywords" />
+        </div>
         <Table v-if="data" :resource="data" :name="tab">
             <template #cell(country_code)="{ item: trackedKeyword }: { item: TrackedKeywordRow }">
                 {{ labelOf(options.countries, trackedKeyword.country_code) }}

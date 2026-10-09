@@ -9,6 +9,7 @@
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
+use App\Actions\Web\Seo\Json\GetSeoKeywordHistory;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
@@ -191,6 +192,7 @@ use App\Http\Middleware\EnsurePartnerIsManufacturingHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
+Route::get('seo-tracked-keyword/{seoTrackedKeyword:id}/history', GetSeoKeywordHistory::class)->name('seo_tracked_keyword.history');
 Route::get('countries-address-data', GetAddressData::class)->name('countries_address_data');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
 Route::get('{website}/active-announcements', GetActiveAnnouncement::class)->name('announcement_active.index');

@@ -54,6 +54,9 @@ use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
 use App\Actions\Procurement\SupplierMessage\UI\ShowSupplierMessage;
 use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
+use App\Actions\SupplyChain\AspoDeposit\UI\IndexAgentDepositRequests;
+use App\Actions\SupplyChain\AspoDeposit\UI\IndexAgentDeposits;
+use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Procurement\AgentOrder\UI\IndexAgentOrders;
@@ -61,6 +64,12 @@ use App\Actions\Procurement\AgentOrder\UI\ShowAgentOrder;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentOrderPipeline;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgAgentSuppliers;
+use App\Actions\SupplyChain\AgentInvoice\PdfAgentInvoice;
+use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
+use App\Actions\SupplyChain\AgentInvoice\UI\IndexAgentInvoices;
+use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
+use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
+use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
@@ -108,6 +117,13 @@ Route::prefix('containers')->as('stock_deliveries.')->group(function () {
 });
 
 Route::get('barcodes', IndexAgentBarcodes::class)->name('agent_barcodes.index');
+
+Route::prefix('agent-accounting')->as('accounting.')->group(function () {
+    Route::get('', ShowAgentAccountingDashboard::class)->name('dashboard');
+    Route::get('deposits', IndexAgentDeposits::class)->name('deposits.index');
+    Route::get('deposit-requests', IndexAgentDepositRequests::class)->name('deposit_requests.index');
+    Route::get('invoices', IndexAgentInvoices::class)->name('invoices.index');
+});
 
 Route::prefix('labels')->as('agent_labels.')->group(function () {
     Route::get('', IndexAgentLabels::class)->name('index');
@@ -164,3 +180,11 @@ Route::prefix('agents/{orgAgent}')->as('org_agents.show')->group(function () {
     Route::get('supplier-products', [IndexOrgSupplierProducts::class, 'inOrgAgent'])->name('.supplier_products.index');
     Route::get('supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgAgent'])->name('.supplier_products.show');
 });
+
+Route::post('containers/{stockDelivery}/invoice', StoreAgentInvoice::class)->name('agent_invoices.store');
+Route::post('containers/{stockDelivery}/payments', StoreAgentPayment::class)->name('agent_payments.store');
+Route::prefix('agent-invoices/{agentInvoice}')->as('agent_invoices.')->group(function () {
+    Route::patch('charges', UpdateAgentInvoiceCharges::class)->name('charges.update');
+    Route::get('pdf', PdfAgentInvoice::class)->name('pdf');
+});
+Route::delete('agent-payments/{agentPayment}', DeleteAgentPayment::class)->name('agent_payments.destroy');

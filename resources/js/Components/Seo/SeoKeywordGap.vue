@@ -13,6 +13,7 @@ import Select from "primevue/select"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SeoDomainPicker from "@/Components/Seo/SeoDomainPicker.vue"
+import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -146,6 +147,7 @@ const numericPt = { columnHeaderContent: { class: "justify-end" }, bodyCell: { c
                 <SegmentedToggle v-model="group" :options="groupOptions" :ariaLabel="ctrans('Keyword group')" />
                 <Select v-model="intent" :options="intentOptions" optionLabel="label" optionValue="value" class="h-9 items-center" :aria-label="ctrans('Search intent')" />
                 <Select v-model="bestPosition" :options="positionOptions" optionLabel="label" optionValue="value" class="h-9 items-center" :aria-label="ctrans('Position')" />
+                <SeoExportButton class="ml-auto" table="keyword_gap" :extra="{ gap_domains: data.domains.join(','), group, intent, best: bestPosition }" />
             </div>
             <p class="border-b border-gray-100 px-5 py-2 text-xs text-gray-500">{{ groupLabels[group].hint }}. {{ ctrans(":count keywords", { count: locale.number(rows.length) }) }}</p>
 

@@ -141,7 +141,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
     expect($user->auth_type)->toBe(UserAuthTypeEnum::DEFAULT)
         ->and($user->legacy_password)->toBeNull()
         ->and(Hash::check('aurora-password', $user->password))->toBeTrue()
-        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'hr', 'agent_settings'])
+        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'agent_accounting', 'hr', 'agent_settings'])
         ->and($user->hasGroupAccess())->toBeFalse()
         ->and(array_keys(GetGroupNavigation::run($user)))->toBe(['tickets']);
 

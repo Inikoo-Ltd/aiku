@@ -39,6 +39,9 @@ class DispatchStockDelivery extends OrgAction
         if (!$this->asAction && $this->stockDelivery->isManagedByPartner()) {
             $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
         }
+        if (!$this->asAction && $this->stockDelivery->agent_id && !$this->stockDelivery->agentInvoice()->exists()) {
+            $validator->errors()->add('invoice', __('Make the invoice of this container before dispatching it'));
+        }
         if (!in_array($this->stockDelivery->state, self::DISPATCHABLE_STATES, true)) {
             $validator->errors()->add('state', __('You can not dispatch this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
         }

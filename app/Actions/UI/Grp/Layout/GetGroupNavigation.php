@@ -539,7 +539,30 @@ class GetGroupNavigation
             'route'   => [
                 'name' => 'grp.websites.index'
             ],
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('SEO portfolio'),
+                        'tooltip' => __('SEO figures of every live website side by side'),
+                        'icon'    => ['fal', 'fa-globe'],
+                        'root'    => 'grp.websites.seo.portfolio',
+                        'route'   => [
+                            'name'       => 'grp.websites.seo.portfolio',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
+                        'label'   => __('API usage'),
+                        'tooltip' => __('SEO API spend of all shops against the monthly budget'),
+                        'icon'    => ['fal', 'fa-tachometer-alt'],
+                        'root'    => 'grp.websites.seo.api_usage',
+                        'route'   => [
+                            'name'       => 'grp.websites.seo.api_usage',
+                            'parameters' => []
+                        ]
+                    ],
+                ]
+            ]
         ];
     }
 

@@ -24,6 +24,9 @@ use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\Maintenance\Procurement\SplitAgentPurchaseOrders;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
+use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
+use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
+use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
@@ -619,7 +622,7 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($agentUser->worksOnlyForAgents())->toBeTrue()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'hr', 'agent_settings'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_suppliers', 'agent_products', 'agent_purchase_orders', 'agent_containers', 'agent_accounting', 'hr', 'agent_settings'])
         ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
             'grp.org.agent.org_suppliers.',
         ]);
@@ -3956,6 +3959,42 @@ function createStockDeliveryWithItems($test, string $code, array $unitQuantities
 
     return $stockDelivery->refresh();
 }
+
+test('an agent invoices a container from its lines, adds its charges, takes off what was paid in advance and can not dispatch it without the invoice', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-INV-'.Str::random(6), [10, 4]);
+    $stockDelivery->updateQuietly(['agent_id' => $this->agent->id]);
+    [$first, $second] = $stockDelivery->items()->orderBy('id')->get()->all();
+    $first->updateQuietly(['net_amount' => 100]);
+    $second->updateQuietly(['net_amount' => 40]);
+
+    $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasErrors('invoice');
+
+    $invoice = StoreAgentInvoice::make()->handle($this->agent, $stockDelivery->refresh());
+
+    expect($invoice->number_lines)->toBe(2)
+        ->and((float) $invoice->goods_amount)->toBe(140.0)
+        ->and($invoice->lines[0]['unit_price'])->toEqual(10)
+        ->and($stockDelivery->refresh()->data['invoice_number'])->toBe($invoice->reference);
+
+    $invoice = UpdateAgentInvoiceCharges::make()->handle($invoice, ['charges' => [
+        ['description' => 'Commission', 'amount' => 12.5],
+        ['description' => 'Packing', 'amount' => 3],
+    ]]);
+    StoreAgentPayment::make()->handle($stockDelivery, ['date' => now()->toDateString(), 'amount' => 50, 'reference' => 'TT-1']);
+
+    $again = StoreAgentInvoice::make()->handle($this->agent, $stockDelivery->refresh());
+
+    expect($again->id)->toBe($invoice->id)
+        ->and($again->number)->toBe($invoice->number)
+        ->and((float) $again->total_amount)->toBe(155.5)
+        ->and($again->paidAmount())->toBe(50.0)
+        ->and($again->balanceDue())->toBe(105.5);
+
+    $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasNoErrors();
+
+    expect(fn () => StoreAgentInvoice::make()->handle($this->agent, $stockDelivery->refresh()))->toThrow(ValidationException::class)
+        ->and(fn () => UpdateAgentInvoiceCharges::make()->handle($again->refresh(), ['charges' => []]))->toThrow(ValidationException::class);
+});
 
 test('stock delivery counts under and over delivered items', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'UNDER-OVER', [10, 10, 10]);

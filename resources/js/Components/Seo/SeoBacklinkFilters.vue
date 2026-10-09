@@ -8,6 +8,7 @@ import { computed } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import ToggleSwitch from "primevue/toggleswitch"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
@@ -49,9 +50,12 @@ const includeOwnWebsites = computed({
 <template>
     <div class="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3">
         <SegmentedToggle v-model="status" :options="statuses" :ariaLabel="ctrans('Status')" />
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-            <ToggleSwitch v-model="includeOwnWebsites" />
-            {{ ctrans("Include links from our own websites") }}
-        </label>
+        <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-700">
+                <ToggleSwitch v-model="includeOwnWebsites" />
+                {{ ctrans("Include links from our own websites") }}
+            </label>
+            <SeoExportButton :table="tab" />
+        </div>
     </div>
 </template>

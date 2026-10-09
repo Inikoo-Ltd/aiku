@@ -22,7 +22,10 @@ Nothing here has been deployed yet.
 | 3.2 Competitor research | Competitor domains and the ones Google results suggest; domain comparison (links, organic keywords, estimated traffic, intent) and keyword gap against up to four domains, in the shop's market | SEO > Competitors |
 | 3.4 Content help | AI-written page titles and meta descriptions for the pages the audit flags and the pages with many impressions and few clicks, weekly or on request; never published until someone uses them | Webpage: SEO and sharing panel; SEO > Site audit > Suggested fixes |
 | 3.6 Top pages | Every webpage with visitors, page views and Search Console clicks, impressions and position against the previous period, filters Growing, Dropping, New and Lost, the number of queries and referring domains per page | SEO dashboard: Overview, Top pages |
-| API usage | Spend of all SEO APIs against one monthly budget (set on the page, default 250 USD), per feature and provider, per day and per month, with the latest failed requests | SEO dashboard: API usage tab (the same in every shop) |
+| API usage | Spend of all SEO APIs against one monthly budget (set on the page, default 250 USD), per feature and provider, per day and per month, with the latest failed requests | Website (group) > API usage, linked from every SEO dashboard |
+| Position history and alerts | A position chart per tracked keyword with competitors and the Search Console average; watched keywords that leave the top 10, drop out or fall 5 places send a notification and an email | SEO > Keywords: Rankings tab |
+| Exports and weekly report | Excel download of every SEO table with its filters; a weekly SEO report by email per shop or for every website, for whoever turns it on | Excel button on each table; Weekly report button on the SEO dashboard and the SEO portfolio |
+| Portfolio view | Every live website side by side: site health, visitors and Google clicks of the last 28 days against the 28 before, position, tracked keywords in the top 10, referring domains and rank | Website (group) > SEO portfolio, linked from every SEO dashboard |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -55,10 +58,7 @@ Found against the marketing team's research of 8 October 2026; see
 
 | Part | What has to happen first |
 | --- | --- |
-| Position history chart and alerts | The team's go-ahead; no API cost |
 | Tracking depth per keyword (top 20, 30 or 100) | The team's go-ahead; top 100 costs more per check |
-| Excel exports and scheduled SEO reports | The team's go-ahead |
-| Portfolio view of all websites | The team's go-ahead |
 | Content briefs, competitor page changes | Optional; the team's go-ahead |
 
 ### Still open in Phase 1
@@ -81,7 +81,8 @@ Found against the marketing team's research of 8 October 2026; see
 Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
 external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
 daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes, backlinks Mondays at
-01:00 UTC, competitor keywords Mondays at 02:00 UTC, content suggestions Tuesdays at 04:00 UTC.
+01:00 UTC, competitor keywords Mondays at 02:00 UTC, weekly SEO reports Mondays at 07:00 UTC, content
+suggestions Tuesdays at 04:00 UTC.
 
 ## Configuration
 
@@ -90,7 +91,7 @@ daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 
 | `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
 | `GOOGLE_CRUX_API_KEY` | Chrome UX Report: Real user speed and the Google side of 1.4. The key needs the Chrome UX Report API enabled in its Google Cloud project | Yes |
 | `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | Keyword research (2.1), and rank tracking, backlinks and competitor data later | Yes, for SEO > Keywords |
-| `SEO_API_MONTHLY_BUDGET` | Default of the monthly budget in USD for all paid SEO APIs together, until it is set in the API usage tab of the SEO dashboard | No, defaults to 250 |
+| `SEO_API_MONTHLY_BUDGET` | Default of the monthly budget in USD for all paid SEO APIs together, until it is set on Website (group) > API usage | No, defaults to 250 |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
 | `OPENROUTER_API_KEY` | Content help (3.4) | Yes, for content help |

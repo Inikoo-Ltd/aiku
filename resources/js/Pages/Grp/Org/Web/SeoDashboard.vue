@@ -7,16 +7,17 @@
 import { computed, provide, ref } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TableWebpagesPerformance from "@/Components/Tables/Grp/Org/Web/TableWebpagesPerformance.vue"
 import TableWebsiteConversionCustomers from "@/Components/Tables/Grp/Org/Web/TableWebsiteConversionCustomers.vue"
-import SeoApiUsage from "@/Components/Seo/SeoApiUsage.vue"
 import SeoDashboardMissingPages from "@/Components/Seo/SeoDashboardMissingPages.vue"
 import SeoDashboardPageViews from "@/Components/Seo/SeoDashboardPageViews.vue"
 import SeoDashboardVisitors from "@/Components/Seo/SeoDashboardVisitors.vue"
+import SeoReportToggle from "@/Components/Seo/SeoReportToggle.vue"
 import TableSearchConsoleQueries from "@/Components/Tables/Grp/Org/Web/TableSearchConsoleQueries.vue"
 import TableWebpagesPageSpeed from "@/Components/Tables/Grp/Org/Web/TableWebpagesPageSpeed.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -139,6 +140,8 @@ const props = defineProps<{
     search: SearchPerformance | null
     page_speed_summary: PageSpeedSummary | null
     page_speed?: object | null
+    groupLinks: { label: string, icon: string, route: routeType }[]
+    reportSubscription: { is_subscribed: boolean, route: routeType }
     pageTabs: {
         current: string
         navigation: Navigation
@@ -151,7 +154,6 @@ const props = defineProps<{
     visitors?: object | null
     page_views?: object | null
     missing_pages?: object | null
-    api_usage?: object | null
     conversions?: object | null
     search_queries?: object | null
     search_opportunities?: object | null
@@ -174,7 +176,6 @@ const pageTabComponent = computed(() => ({
     visitors: SeoDashboardVisitors,
     page_views: SeoDashboardPageViews,
     missing_pages: SeoDashboardMissingPages,
-    api_usage: SeoApiUsage,
 } as Record<string, unknown>)[currentPageTab.value])
 
 const currentTab = ref(props.tabs.current)
@@ -674,7 +675,14 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #other>
+            <SeoReportToggle :subscription="reportSubscription" />
+            <Link v-for="groupLink in groupLinks" :key="groupLink.route.name" :href="route(groupLink.route.name, groupLink.route.parameters)">
+                <Button type="tertiary" :icon="groupLink.icon" :label="groupLink.label" v-tooltip="ctrans('All shops together, at group level')" />
+            </Link>
+        </template>
+    </PageHeading>
     <Tabs :current="currentPageTab" :navigation="pageTabs.navigation" @update:tab="handlePageTabUpdate" />
 
     <component

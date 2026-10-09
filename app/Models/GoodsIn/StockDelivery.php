@@ -8,6 +8,8 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Models\SupplyChain\AgentInvoice;
+use App\Models\SupplyChain\AgentPayment;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\Helpers\Address;
@@ -29,6 +31,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -294,6 +297,16 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function parent(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function agentPayments(): HasMany
+    {
+        return $this->hasMany(AgentPayment::class);
+    }
+
+    public function agentInvoice(): HasOne
+    {
+        return $this->hasOne(AgentInvoice::class);
     }
 
     public function currency(): BelongsTo

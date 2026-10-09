@@ -11,6 +11,7 @@ use App\Actions\Web\Webpage\WithWebpageIdsByPath;
 use App\Models\Web\SeoCompetitor;
 use App\Models\Web\SeoCompetitorRanking;
 use App\Models\Web\SeoKeywordRanking;
+use App\Models\Web\SeoRankingAlert;
 use App\Models\Web\SeoTrackedKeyword;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -124,6 +125,15 @@ class StoreSerpResult
             ->where('date', '<', $ranking->date)
             ->orderByDesc('date')
             ->first();
+
+        $reason = $previous ? SeoRankingAlert::reason($previous->position, $ranking->position) : null;
+
+        if ($reason) {
+            SeoRankingAlert::updateOrCreate(
+                ['tracked_keyword_id' => $trackedKeyword->id, 'date' => $ranking->date],
+                ['reason' => $reason, 'previous_position' => $previous->position, 'position' => $ranking->position]
+            );
+        }
 
         $trackedKeyword->update([
             'pending_task_id'        => null,

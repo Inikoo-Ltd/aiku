@@ -89,6 +89,7 @@ use App\Actions\Web\Seo\FetchBacklinks;
 use App\Actions\Web\Seo\FetchCompetitorResearch;
 use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
+use App\Actions\Web\Seo\SendSeoWeeklyReports;
 use App\Actions\Web\Seo\SuggestSeoContent;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\WebsiteNotFoundPath\PruneWebsiteNotFoundPaths;
@@ -1378,6 +1379,17 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'FetchBacklinks',
                     ),
                 name: 'FetchBacklinks',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SendSeoWeeklyReports::makeJob())
+                    ->weeklyOn(1, '07:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'SendSeoWeeklyReports',
+                    ),
+                name: 'SendSeoWeeklyReports',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

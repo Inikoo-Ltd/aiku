@@ -20,6 +20,7 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliveryCostingChecklist.vue"
 import StockDeliveryInvoiceCosting from "@/Components/Procurement/StockDeliveryInvoiceCosting.vue"
+import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
@@ -152,6 +153,7 @@ const props = defineProps<{
 	attachments?: {}
 	attachmentScopes: { name: string; code: string }[]
 	invoice_costing: InstanceType<typeof StockDeliveryInvoiceCosting>["$props"]["invoices"]
+	agentInvoice?: InstanceType<typeof AgentContainerInvoicePanel>["$props"]["data"] | null
 	notes?: {}
 	note_store_route?: routeType
 	history?: {}
@@ -640,6 +642,8 @@ const confirmDeleteStockDelivery = (action: any) => {
 			:format-time="'MMMM d yyyy, HH:mm'"
 		/>
 	</div>
+
+	<AgentContainerInvoicePanel v-if="agentInvoice" :data="agentInvoice" :currencyCode="box_stats.third_block.currency ?? ''" class="mb-4" />
 
 	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
 		<!-- First Block -->
