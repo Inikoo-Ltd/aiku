@@ -21,18 +21,18 @@ to replace all of them before the subscription goes.
 | Organic Research (our own sites) | Phase 1 | Google Search Console |
 | Page speed and Core Web Vitals | Phase 1 | CrUX and our visitors' web vitals (HELP-3303 replaced the lab test) |
 | Keyword Overview, Keyword Magic Tool | Phase 2 | DataForSEO Labs (Google Ads volumes, difficulty, intent) |
-| Position Tracking | Phase 2 | A SERP data provider, plus Search Console for the positions Google reports itself |
-| Keyword intent | Phase 2 | The keyword data provider, or a classification prompt through our AI gateway |
-| Backlink Analytics (authority, referring domains, new, lost and broken backlinks), Backlink Gap | Phase 3 | A backlink data provider, checked against our own crawl and 404 log for broken links |
-| Domain Overview, Compare Domains, Organic Research (competitors), Keyword Gap | Phase 3 | A competitor data provider |
+| Position Tracking | Phase 2 | DataForSEO SERP API, plus Search Console for the positions Google reports itself |
+| Keyword intent | Phase 2 | DataForSEO Labs |
+| Backlink Analytics (authority, referring domains, new, lost and broken backlinks), Backlink Gap | Phase 3 | DataForSEO Backlinks, joined to our 404 log for broken links |
+| Domain Overview, Compare Domains, Organic Research (competitors), Keyword Gap | Phase 3 | DataForSEO Labs |
 | Top Pages (our own sites) | Phase 3, traffic part any time | Aiku's tracking and Search Console now; referring domains and AI citations per page with Phase 3 |
-| Traffic Analytics (competitor domains) | Phase 3 | Similarweb estimates, through an Apify actor or the Similarweb API |
-| AI visibility (ChatGPT, Gemini, Claude, Perplexity, AI Overviews) | Phase 3 | Prompts sent to the models with web search on through our AI gateway, and AI Overviews from the SERP provider |
+| Traffic Analytics (competitor domains) | Phase 3 | DataForSEO search traffic estimates with their history; traffic from other channels is not rebuilt |
+| AI visibility (ChatGPT, Gemini, Claude, Perplexity, AI Overviews) | Phase 3 | DataForSEO LLM Scraper (our prompts in ChatGPT as its users see it, per country) and LLM Mentions (share of voice), and AI Overviews from the rank checks |
 
-Two things Semrush shows cannot be rebuilt from our own data or from the SEO providers above: total
-traffic of a competitor's domain (Semrush gets it from clickstream panels) and search volumes
-outside Google. Apify actors can fill both, partly. What they return and what to watch out for is
-in [implementation-plan.md](implementation-plan.md#35-apify-for-competitor-traffic-and-non-google-search-demand).
+Two things Semrush shows are not rebuilt: the traffic of a competitor's domain from channels other
+than search (Semrush gets it from clickstream panels, and only Similarweb sells the same) and search
+volumes on platforms that publish none. See
+[implementation-plan.md](implementation-plan.md#35-competitor-traffic-and-non-google-search-demand).
 
 ## Where we start from
 
