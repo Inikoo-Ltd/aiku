@@ -1266,6 +1266,35 @@ test('purchase order needs a product available in both the supplier product and 
     DeletePurchaseOrder::make()->action($purchaseOrder);
 });
 
+test('reactivating a discontinued supplier product makes it available again unless told otherwise', function () {
+    $supplier        = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'REACT',
+        'name'             => 'Reactivated',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUED->value]);
+    expect($supplierProduct->refresh()->is_available)->toBeFalse();
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::ACTIVE->value]);
+    expect($supplierProduct->refresh()->is_available)->toBeTrue();
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => false]);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUING->value]);
+    expect($supplierProduct->refresh()->is_available)->toBeFalse();
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::DISCONTINUED->value]);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['state' => SupplierProductStateEnum::ACTIVE->value, 'is_available' => false]);
+    expect($supplierProduct->refresh()->is_available)->toBeFalse();
+});
+
 test('a supplier product without any SKO is refused on a purchase order with how to create its SKO', function () {
     $supplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
     $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
