@@ -126,7 +126,7 @@ const fetch2Fa = async () => {
 const resetSecret = () => {
     imageXml.value = '';
     secretKey.value = [];
-    value.secretKey = null;
+    value.value.secretKey = null;
     errorsMsg.value = '';
 }
 
@@ -135,6 +135,7 @@ const resetSwitch = (val: any) => {
         fetch2Fa()
     } else {
         resetSecret();
+        props.form[props.fieldName] = { ...props.form[props.fieldName], has_2fa: false, secretKey: null, one_time_password: null };
         props.submit();
         initialValue = false;
     }
