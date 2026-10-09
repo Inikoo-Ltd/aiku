@@ -1144,6 +1144,8 @@ test('create product category discount', function () {
             'type'                       => 'quantity',
             'trigger_data_item_quantity' => 2,
             'percentage_off'             => .25,
+            'free_quantity'              => null,
+            'free_product_id'            => null,
             'duration'                   => 'interval',
             'start_at'                   => now()->addDays(7)->toDateTimeString(),
             'end_at'                     => now()->addDays(14)->toDateTimeString(),

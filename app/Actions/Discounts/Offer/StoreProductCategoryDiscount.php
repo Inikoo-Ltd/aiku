@@ -96,6 +96,7 @@ class StoreProductCategoryDiscount extends OrgAction
         if ($freeQuantity = (int)Arr::pull($modelData, 'free_quantity')) {
             return $this->handleClearanceGift($productCategory, $modelData, $freeQuantity, $acceptResponsibility);
         }
+        Arr::forget($modelData, 'free_product_id');
 
         $categoryIds     = Arr::pull($modelData, 'category_ids', []);
         $categoryCodes   = $categoryIds ? ProductCategory::whereIn('id', $categoryIds)->pluck('code')->all() : [$productCategory->code];
