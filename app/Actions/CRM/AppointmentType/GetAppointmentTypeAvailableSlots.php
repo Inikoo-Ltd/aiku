@@ -74,7 +74,7 @@ class GetAppointmentTypeAvailableSlots
     private function bookedPeriods(AppointmentType $appointmentType, Carbon $from, Carbon $to, int $buffer): Collection
     {
         return Appointment::where('appointment_type_id', $appointmentType->id)
-            ->where('state', AppointmentStateEnum::BOOKED)
+            ->whereIn('state', AppointmentStateEnum::holdingSlot())
             ->where('starts_at', '<', $to)
             ->where('ends_at', '>', $from->copy()->subMinutes($buffer))
             ->get(['starts_at', 'ends_at'])

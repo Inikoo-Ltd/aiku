@@ -8,9 +8,9 @@ import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendar, faHistory, faTimesCircle } from "@fal"
+import { faCalendar, faHistory, faTimesCircle, faHourglassHalf } from "@fal"
 
-library.add(faCalendar, faHistory, faTimesCircle)
+library.add(faCalendar, faHistory, faTimesCircle, faHourglassHalf)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -19,6 +19,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    requested?: {}
     upcoming?: {}
     past?: {}
     cancelled?: {}
@@ -32,5 +33,5 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <TableAppointments :key="currentTab" :data="props[currentTab as 'upcoming' | 'past' | 'cancelled']" :tab="currentTab" />
+    <TableAppointments :key="currentTab" :data="props[currentTab as 'requested' | 'upcoming' | 'past' | 'cancelled']" :tab="currentTab" />
 </template>

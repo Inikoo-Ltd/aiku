@@ -47,10 +47,11 @@ class EditAppointment extends OrgAction
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => 'grp.org.shops.show.crm.appointments.index',
+                                'name'       => 'grp.org.shops.show.crm.appointments.show',
                                 'parameters' => [
                                     'organisation' => $this->shop->organisation->slug,
                                     'shop'         => $this->shop->slug,
+                                    'appointment'  => $appointment->id,
                                 ],
                             ],
                         ],

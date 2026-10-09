@@ -33,6 +33,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $number_visitors
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property \Illuminate\Support\Carbon|null $accepted_at
+ * @property \Illuminate\Support\Carbon|null $declined_at
+ * @property string|null $state_reason
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -58,6 +61,8 @@ class Appointment extends Model implements Auditable
         'starts_at'    => 'datetime',
         'ends_at'      => 'datetime',
         'cancelled_at' => 'datetime',
+        'accepted_at'  => 'datetime',
+        'declined_at'  => 'datetime',
         'data'         => 'array',
     ];
 
@@ -87,6 +92,7 @@ class Appointment extends Model implements Auditable
         'phone',
         'number_visitors',
         'notes',
+        'state_reason',
     ];
 
     public function appointmentType(): BelongsTo

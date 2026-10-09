@@ -3,47 +3,43 @@
 namespace App\Actions\CRM\Appointment;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Models\CRM\Appointment;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateAppointment extends OrgAction
+class AcceptAppointment extends OrgAction
 {
-    use WithActionUpdate;
-    use WithAppointmentRules;
+    use WithAppointmentStateChange;
 
     private Appointment $appointment;
 
-    /**
-     * @throws \Throwable
-     */
     public function handle(Appointment $appointment, array $modelData): Appointment
     {
-        return DB::transaction(function () use ($appointment, $modelData) {
-            $modelData = $this->prepareAppointmentData($appointment->shop, $modelData, $appointment);
+        $this->ensureStateIn($appointment, [AppointmentStateEnum::REQUESTED]);
 
-            return $this->update($appointment, $modelData);
-        });
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
+        return UpdateAppointment::make()->action($appointment, [
+            'state'   => AppointmentStateEnum::ACCEPTED->value,
+            'user_id' => $modelData['user_id'],
+        ]);
     }
 
     public function rules(): array
     {
         return [
-            ...$this->appointmentRules(isUpdate: true, appointment: $this->appointment),
-            'state'        => ['sometimes', Rule::enum(AppointmentStateEnum::class)],
-            'state_reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'user_id' => [
+                'required',
+                'integer',
+                Rule::exists('appointment_type_user', 'user_id')->where('appointment_type_id', $this->appointment->appointment_type_id),
+            ],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'user_id.required' => __('Choose who arranges this appointment.'),
+            'user_id.exists'   => __('This person does not arrange this type of appointment. Add them under Appointments › Staff first.'),
         ];
     }
 

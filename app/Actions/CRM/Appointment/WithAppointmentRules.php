@@ -76,6 +76,10 @@ trait WithAppointmentRules
         if (Arr::has($modelData, 'state')) {
             $state                     = $modelData['state'] instanceof AppointmentStateEnum ? $modelData['state'] : AppointmentStateEnum::from($modelData['state']);
             $modelData['cancelled_at'] = $state === AppointmentStateEnum::CANCELLED ? now() : null;
+            $modelData['declined_at']  = $state === AppointmentStateEnum::DECLINED ? now() : null;
+            if ($state === AppointmentStateEnum::ACCEPTED && !$appointment?->accepted_at) {
+                $modelData['accepted_at'] = now();
+            }
         }
 
         return $modelData;

@@ -22,7 +22,7 @@ trait WithAppointmentsSubNavigation
                     'parameters' => $routeParameters,
                 ],
                 'number'   => $shop->appointments()
-                    ->where('state', AppointmentStateEnum::BOOKED)
+                    ->whereIn('state', AppointmentStateEnum::holdingSlot())
                     ->where('ends_at', '>=', now())
                     ->count(),
                 'label'    => __('Appointments'),

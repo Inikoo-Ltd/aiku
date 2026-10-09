@@ -27,7 +27,7 @@ class StoreAppointment extends OrgAction
 
             data_set($modelData, 'group_id', $shop->group_id);
             data_set($modelData, 'organisation_id', $shop->organisation_id);
-            data_set($modelData, 'state', AppointmentStateEnum::BOOKED, overwrite: false);
+            data_set($modelData, 'state', AppointmentStateEnum::ACCEPTED, overwrite: false);
             data_set($modelData, 'source', AppointmentSourceEnum::STAFF, overwrite: false);
 
             /** @var Appointment $appointment */
@@ -54,6 +54,7 @@ class StoreAppointment extends OrgAction
             'created_by_user_id' => ['sometimes', 'nullable', 'integer'],
             'customer_id'        => ['sometimes', 'nullable', 'integer', Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)],
             'marketing_opt_in'   => ['sometimes', 'boolean'],
+            'state'              => ['sometimes', Rule::enum(AppointmentStateEnum::class)],
         ];
     }
 

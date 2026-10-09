@@ -41,6 +41,10 @@ use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\CRM\Favourite\UpdateFavourite;
+use App\Actions\CRM\Appointment\AcceptAppointment;
+use App\Actions\CRM\Appointment\Json\GetAppointmentActionOptions;
+use App\Actions\CRM\Appointment\DeclineAppointment;
+use App\Actions\CRM\Appointment\RescheduleAppointment;
 use App\Actions\CRM\Appointment\StoreAppointment;
 use App\Actions\CRM\Appointment\UpdateAppointment;
 use App\Actions\CRM\AppointmentStaff\StoreAppointmentStaff;
@@ -890,7 +894,7 @@ test('book an appointment for a visitor', function () {
     );
 
     expect($appointment)->toBeInstanceOf(Appointment::class)
-        ->and($appointment->state)->toBe(AppointmentStateEnum::BOOKED)
+        ->and($appointment->state)->toBe(AppointmentStateEnum::ACCEPTED)
         ->and($appointment->source)->toBe(AppointmentSourceEnum::STAFF)
         ->and($appointment->starts_at->equalTo($startsAt))->toBeTrue()
         ->and($appointment->ends_at->equalTo($startsAt->copy()->addMinutes(45)))->toBeTrue()
@@ -929,9 +933,9 @@ test('cancel and rebook an appointment', function (Appointment $appointment) {
     expect($appointment->state)->toBe(AppointmentStateEnum::CANCELLED)
         ->and($appointment->cancelled_at)->not->toBeNull();
 
-    $appointment = UpdateAppointment::make()->action($appointment, ['state' => AppointmentStateEnum::BOOKED->value]);
+    $appointment = UpdateAppointment::make()->action($appointment, ['state' => AppointmentStateEnum::ACCEPTED->value]);
 
-    expect($appointment->state)->toBe(AppointmentStateEnum::BOOKED)
+    expect($appointment->state)->toBe(AppointmentStateEnum::ACCEPTED)
         ->and($appointment->cancelled_at)->toBeNull();
 
     return $appointment;
@@ -1000,6 +1004,111 @@ test('a visitor with no email or phone is not linked', function (Appointment $ap
         ->and($booked->visitor_id)->toBeNull();
 })->depends('book an appointment for a visitor');
 
+test('staff accepts, reschedules and declines an appointment request', function () {
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'                => 'Requests '.Str::random(6),
+        'meeting_mode'        => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'duration_minutes'    => 60,
+        'min_notice_hours'    => 0,
+        'booking_window_days' => 14,
+        'capacity_per_slot'   => 1,
+        'availability'        => ['weekly' => array_fill_keys(range(1, 7), [['from' => '09:00', 'to' => '17:00']])],
+    ]);
+
+    $slots     = GetAppointmentTypeAvailableSlots::run($appointmentType);
+    $date      = array_key_last($slots);
+    [$firstTime, $secondTime] = $slots[$date];
+
+    $appointment = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $date.' '.$firstTime,
+        'contact_name'        => 'Requesting visitor',
+        'state'               => AppointmentStateEnum::REQUESTED->value,
+    ]);
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::REQUESTED)
+        ->and(GetAppointmentTypeAvailableSlots::make()->isAvailable($appointmentType, $date, $firstTime))->toBeFalse()
+        ->and(fn () => AcceptAppointment::make()->action($appointment, []))->toThrow(ValidationException::class)
+        ->and(fn () => AcceptAppointment::make()->action($appointment, ['user_id' => $this->user->id]))->toThrow(ValidationException::class);
+
+    $appointmentType->attendees()->syncWithoutDetaching([$this->user->id]);
+
+    $options = GetAppointmentActionOptions::run($appointment);
+    expect(collect($options['staff'])->pluck('id')->all())->toBe([$this->user->id])
+        ->and((array) $options['free_slots'])->toHaveKey($date);
+
+    $appointment = AcceptAppointment::make()->action($appointment, ['user_id' => $this->user->id]);
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::ACCEPTED)
+        ->and($appointment->accepted_at)->not->toBeNull()
+        ->and($appointment->user_id)->toBe($this->user->id)
+        ->and(fn () => AcceptAppointment::make()->action($appointment, ['user_id' => $this->user->id]))->toThrow(ValidationException::class);
+
+    $appointment = RescheduleAppointment::make()->action($appointment, ['date' => $date, 'time' => $secondTime]);
+    $timezone    = $this->shop->timezone?->name ?? 'UTC';
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::ACCEPTED)
+        ->and($appointment->starts_at->copy()->setTimezone($timezone)->format('Y-m-d H:i'))->toBe($date.' '.$secondTime)
+        ->and($appointment->ends_at->diffInMinutes($appointment->starts_at, true))->toEqual(60)
+        ->and(GetAppointmentTypeAvailableSlots::make()->isAvailable($appointmentType, $date, $firstTime))->toBeTrue()
+        ->and(GetAppointmentTypeAvailableSlots::make()->isAvailable($appointmentType, $date, $secondTime))->toBeFalse();
+
+    $appointment = DeclineAppointment::make()->action($appointment, ['reason' => 'Showroom closed for stock take']);
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::DECLINED)
+        ->and($appointment->declined_at)->not->toBeNull()
+        ->and($appointment->state_reason)->toBe('Showroom closed for stock take')
+        ->and(GetAppointmentTypeAvailableSlots::make()->isAvailable($appointmentType, $date, $secondTime))->toBeTrue()
+        ->and(fn () => RescheduleAppointment::make()->action($appointment, ['date' => $date, 'time' => $firstTime]))->toThrow(ValidationException::class);
+});
+
+test('an appointment cannot be moved to a time that has passed', function (Appointment $appointment) {
+    $timezone  = $this->shop->timezone?->name ?? 'UTC';
+    $yesterday = now($timezone)->subDay();
+
+    RescheduleAppointment::make()->action($appointment, ['date' => $yesterday->toDateString(), 'time' => '10:00']);
+})->depends('cancel and rebook an appointment')->throws(ValidationException::class);
+
+test('staff decline an appointment request from the list', function () {
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'             => 'Decline page '.Str::random(6),
+        'meeting_mode'     => AppointmentTypeMeetingModeEnum::VIDEO_CALL->value,
+        'duration_minutes' => 30,
+    ]);
+    $appointment = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => now()->addDays(3)->format('Y-m-d').' 10:00',
+        'contact_name'        => 'Page visitor',
+        'state'               => AppointmentStateEnum::REQUESTED->value,
+    ]);
+
+    $listUrl = route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'tab' => 'requested']);
+
+    $this->from($listUrl)
+        ->patch(route('grp.models.appointment.decline', ['appointment' => $appointment->id]), ['reason' => 'Fully booked'])
+        ->assertRedirect($listUrl);
+
+    $appointment->refresh();
+
+    expect($appointment->state)->toBe(AppointmentStateEnum::DECLINED)
+        ->and($appointment->state_reason)->toBe('Fully booked');
+});
+
+test('UI Show appointment', function (Appointment $appointment) {
+    $this->get(route('grp.org.shops.show.crm.appointments.show', [$this->organisation->slug, $this->shop->slug, $appointment->id]))
+        ->assertInertia(function (AssertableInertia $page) use ($appointment) {
+            $page
+                ->component('Org/Shop/CRM/Appointment')
+                ->has('breadcrumbs', 4)
+                ->where('pageHead.title', $appointment->contact_name)
+                ->where('appointment.id', $appointment->id)
+                ->where('appointment.state', AppointmentStateEnum::ACCEPTED->value)
+                ->where('appointment.can_accept', false)
+                ->where('appointment.can_reschedule', true)
+                ->where('canEdit', true);
+        });
+})->depends('cancel and rebook an appointment');
+
 test('book an appointment from the form', function (Appointment $appointment) {
     $contactName = 'Phone visitor '.Str::random(6);
 
@@ -1023,13 +1132,14 @@ test('book an appointment from the form', function (Appointment $appointment) {
 })->depends('book an appointment for a visitor');
 
 test('UI Index appointments', function (Appointment $appointment) {
-    $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug]))
+    $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'tab' => 'upcoming']))
         ->assertInertia(function (AssertableInertia $page) use ($appointment) {
             $page
                 ->component('Org/Shop/CRM/Appointments')
                 ->has('breadcrumbs', 3)
                 ->has('pageHead.subNavigation', 3)
                 ->where('tabs.current', 'upcoming')
+                ->has('tabs.navigation.requested')
                 ->where('upcoming.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
         });
 })->depends('cancel and rebook an appointment');
@@ -1051,7 +1161,7 @@ test('UI Edit appointment', function (Appointment $appointment) {
             $page
                 ->component('EditModel')
                 ->where('pageHead.title', $appointment->contact_name)
-                ->where('formData.blueprint.0.fields.state.value', AppointmentStateEnum::BOOKED->value)
+                ->where('formData.blueprint.0.fields.state.value', AppointmentStateEnum::ACCEPTED->value)
                 ->where('formData.args.updateRoute.name', 'grp.models.appointment.update');
         });
 })->depends('cancel and rebook an appointment');

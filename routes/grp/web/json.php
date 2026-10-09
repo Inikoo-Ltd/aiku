@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\Appointment\Json\GetAppointmentActionOptions;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
@@ -221,6 +222,7 @@ Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->n
 Route::get('/mailshot/{mailshot:id}/convert-to-page', BeefreeConvertEmailJsonToPageJson::class)->name('mailshot.convert-to-page');
 
 Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::class)->name('email.dispatched-email.copy');
+Route::get('appointment/{appointment:id}/action-options', GetAppointmentActionOptions::class)->name('appointment.action_options')->withoutScopedBindings();
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products-for-website-workshop', GetProductsInWorkshop::class)->name('shop.products_for_website_workshop');
 Route::get('shop/{shop}/products', GetProductsInShop::class)->name('shop.products');

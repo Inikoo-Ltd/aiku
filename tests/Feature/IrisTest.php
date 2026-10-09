@@ -36,6 +36,7 @@ use App\Models\CRM\Customer;
 use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\CRM\AppointmentType\StoreAppointmentType;
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
+use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Models\CRM\Appointment;
 use App\Models\CRM\Prospect;
@@ -674,6 +675,7 @@ test('visitor books an appointment on the website and becomes a prospect', funct
     $appointment = Appointment::where('appointment_type_id', $appointmentType->id)->sole();
 
     expect($appointment->source)->toBe(AppointmentSourceEnum::WEBSITE)
+        ->and($appointment->state)->toBe(AppointmentStateEnum::REQUESTED)
         ->and($appointment->number_visitors)->toBe(3)
         ->and($appointment->visitor)->toBeInstanceOf(Prospect::class)
         ->and($appointment->visitor->email)->toBe($email)
@@ -686,5 +688,5 @@ test('visitor books an appointment on the website and becomes a prospect', funct
 
     $this->postJson('http://'.$this->website->domain.'/models/appointment', [...$payload, 'time' => $slots[$date][1], 'website_url' => 'http://spam.example'])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('website_url');
+        ->assertJsonValidationErrors(['website_url' => 'reload the page']);
 });

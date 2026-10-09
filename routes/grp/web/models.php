@@ -139,6 +139,9 @@ use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
+use App\Actions\CRM\Appointment\AcceptAppointment;
+use App\Actions\CRM\Appointment\DeclineAppointment;
+use App\Actions\CRM\Appointment\RescheduleAppointment;
 use App\Actions\CRM\Appointment\StoreAppointment;
 use App\Actions\CRM\Appointment\UpdateAppointment;
 use App\Actions\CRM\AppointmentStaff\DeleteAppointmentStaff;
@@ -1748,7 +1751,12 @@ Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('ac
 
 Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');
 
-Route::patch('appointment/{appointment:id}', UpdateAppointment::class)->name('appointment.update');
+Route::name('appointment.')->prefix('appointment/{appointment:id}')->group(function () {
+    Route::patch('', UpdateAppointment::class)->name('update');
+    Route::patch('accept', AcceptAppointment::class)->name('accept');
+    Route::patch('decline', DeclineAppointment::class)->name('decline');
+    Route::patch('reschedule', RescheduleAppointment::class)->name('reschedule');
+});
 
 Route::name('appointment_type.')->prefix('appointment-type/{appointmentType:id}')->group(function () {
     Route::patch('', UpdateAppointmentType::class)->name('update');

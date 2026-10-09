@@ -23,6 +23,8 @@ const appointmentTypes = demoAppointmentTypes()
 const book = (payload: AppointmentBookingPayload) =>
     demoBook(appointmentTypes.find(type => type.id === payload.appointment_type_id), payload.date, payload.time)
 
+const hasText = (html?: string | null) => !!html?.replace(/<[^>]*>/g, "").trim()
+
 const editorToggle = [
     "heading1", "heading2", "heading3", "fontSize", "bold", "italic", "underline", "fontFamily",
     "alignLeft", "alignRight", "alignCenter", "customLink", "undo", "redo", "color", "clear",
@@ -49,6 +51,7 @@ const updateText = (key: "headline" | "description", value: string) => {
                 :appointmentTypes="appointmentTypes"
                 :timezone="Intl.DateTimeFormat().resolvedOptions().timeZone"
                 :organizerName="webpageData?.website?.name ?? webpageData?.shop?.name ?? ''"
+                :showPickerHeading="!hasText(modelValue?.value?.headline)"
                 :showMarketingOptIn="modelValue?.settings?.show_marketing_opt_in ?? true"
                 :book="book" />
         </div>

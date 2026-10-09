@@ -45,16 +45,20 @@ class IndexAppointments extends OrgAction
             ->with(['appointmentType', 'visitor', 'user', 'shop.timezone']);
 
         match ($tab) {
+            AppointmentsTabsEnum::REQUESTED => $queryBuilder
+                ->where('appointments.state', AppointmentStateEnum::REQUESTED)
+                ->where('appointments.ends_at', '>=', now())
+                ->defaultSort('appointments.starts_at'),
             AppointmentsTabsEnum::UPCOMING => $queryBuilder
-                ->where('appointments.state', AppointmentStateEnum::BOOKED)
+                ->where('appointments.state', AppointmentStateEnum::ACCEPTED)
                 ->where('appointments.ends_at', '>=', now())
                 ->defaultSort('appointments.starts_at'),
             AppointmentsTabsEnum::PAST => $queryBuilder
-                ->whereNot('appointments.state', AppointmentStateEnum::CANCELLED)
+                ->whereNotIn('appointments.state', AppointmentStateEnum::closed())
                 ->where('appointments.ends_at', '<', now())
                 ->defaultSort('-appointments.starts_at'),
             AppointmentsTabsEnum::CANCELLED => $queryBuilder
-                ->where('appointments.state', AppointmentStateEnum::CANCELLED)
+                ->whereIn('appointments.state', AppointmentStateEnum::closed())
                 ->defaultSort('-appointments.starts_at'),
         };
 
@@ -78,9 +82,10 @@ class IndexAppointments extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState([
                     'title'       => match ($tab) {
+                        AppointmentsTabsEnum::REQUESTED => __('No requests waiting'),
                         AppointmentsTabsEnum::UPCOMING  => __('No upcoming appointments'),
                         AppointmentsTabsEnum::PAST      => __('No past appointments'),
-                        AppointmentsTabsEnum::CANCELLED => __('No cancelled appointments'),
+                        AppointmentsTabsEnum::CANCELLED => __('No declined or cancelled appointments'),
                     },
                     'description' => $tab === AppointmentsTabsEnum::UPCOMING
                         ? __('Bookings from customers show up here. You can also add one yourself, for example after a phone call.')
@@ -103,6 +108,10 @@ class IndexAppointments extends OrgAction
                 ->column(key: 'contact_name', label: __('Visitor'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_visitors', label: __('People'), canBeHidden: true, align: 'right')
                 ->column(key: 'staff_name', label: __('Staff'), canBeHidden: false);
+
+            if ($this->canEdit && in_array($tab, [AppointmentsTabsEnum::REQUESTED, AppointmentsTabsEnum::UPCOMING], true)) {
+                $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
+            }
         };
     }
 
@@ -143,6 +152,7 @@ class IndexAppointments extends OrgAction
                     'actions'       => $actions,
                     'subNavigation' => $this->getAppointmentsSubNavigation($this->shop),
                 ],
+                'canEdit'     => $this->canEdit,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => AppointmentsTabsEnum::navigation(),
@@ -160,7 +170,15 @@ class IndexAppointments extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromShop($shop, $request)->withTab(AppointmentsTabsEnum::values());
+        $hasRequests = $shop->appointments()
+            ->where('state', AppointmentStateEnum::REQUESTED)
+            ->where('ends_at', '>=', now())
+            ->exists();
+
+        $this->initialisationFromShop($shop, $request)->withTab(
+            AppointmentsTabsEnum::values(),
+            $hasRequests ? AppointmentsTabsEnum::REQUESTED->value : AppointmentsTabsEnum::UPCOMING->value
+        );
 
         return $this->handle($shop, AppointmentsTabsEnum::from($this->tab));
     }

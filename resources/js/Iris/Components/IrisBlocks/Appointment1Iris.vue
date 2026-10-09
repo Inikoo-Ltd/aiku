@@ -38,6 +38,8 @@ onMounted(async () => {
     isLoading.value = false
 })
 
+const hasText = (html?: string | null) => !!html?.replace(/<[^>]*>/g, "").trim()
+
 const book = async (payload: AppointmentBookingPayload) => {
     if (!isLive) {
         return demoBook(appointmentTypes.value.find(type => type.id === payload.appointment_type_id), payload.date, payload.time)
@@ -53,12 +55,15 @@ const book = async (payload: AppointmentBookingPayload) => {
         component="appointment-1"
         :style="getStyles(fieldValue?.container?.properties, screenType)">
         <div class="mx-auto max-w-5xl px-4 py-10">
-            <div v-if="fieldValue?.value?.headline" class="mb-2 text-center text-2xl font-semibold" v-html="fieldValue.value.headline" />
-            <div v-if="fieldValue?.value?.description" class="mb-8 text-center" v-html="fieldValue.value.description" />
+            <div v-if="hasText(fieldValue?.value?.headline) || hasText(fieldValue?.value?.description)" class="mb-8 space-y-2 text-center">
+                <div v-if="hasText(fieldValue?.value?.headline)" class="text-2xl font-semibold" v-html="fieldValue.value.headline" />
+                <div v-if="hasText(fieldValue?.value?.description)" v-html="fieldValue.value.description" />
+            </div>
             <AppointmentBooking
                 :appointmentTypes="appointmentTypes"
                 :timezone="timezone"
                 :organizerName="organizerName"
+                :showPickerHeading="!hasText(fieldValue?.value?.headline)"
                 :isLoading="isLoading"
                 :showMarketingOptIn="fieldValue?.settings?.show_marketing_opt_in ?? true"
                 :prefill="{ contact_name: layout?.iris_variables?.name, email: layout?.iris_variables?.email }"

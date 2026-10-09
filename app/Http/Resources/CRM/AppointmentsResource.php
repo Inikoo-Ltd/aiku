@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Models\CRM\Appointment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +31,11 @@ class AppointmentsResource extends JsonResource
             'staff_name'            => $appointment->user?->chatName(),
             'state'                 => $appointment->state->value,
             'state_icon'            => $appointment->state->icon(),
+            'date_label'            => $startsAt->translatedFormat('l j F Y'),
+            'time'                  => $startsAt->format('H:i'),
+            'can_accept'            => $appointment->state === AppointmentStateEnum::REQUESTED,
+            'can_decline'           => $appointment->state->holdsSlot(),
+            'can_reschedule'        => $appointment->state->holdsSlot(),
         ];
     }
 }

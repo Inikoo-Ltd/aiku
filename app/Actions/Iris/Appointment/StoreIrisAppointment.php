@@ -6,6 +6,7 @@ use App\Actions\CRM\Appointment\StoreAppointment;
 use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\IrisAction;
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
+use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Appointment;
 use App\Models\CRM\AppointmentType;
@@ -43,6 +44,7 @@ class StoreIrisAppointment extends IrisAction
                 'marketing_opt_in'    => (bool) Arr::get($modelData, 'marketing_opt_in', false),
                 'customer_id'         => $customerId,
                 'source'              => AppointmentSourceEnum::WEBSITE->value,
+                'state'               => AppointmentStateEnum::REQUESTED->value,
             ], fn ($value) => !is_null($value) && $value !== ''));
         });
     }
@@ -67,6 +69,13 @@ class StoreIrisAppointment extends IrisAction
             'notes'               => ['nullable', 'string', 'max:2000'],
             'marketing_opt_in'    => ['sometimes', 'boolean'],
             'website_url'         => ['prohibited'],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'website_url.prohibited' => __('We could not send your request. Please reload the page and try again.'),
         ];
     }
 

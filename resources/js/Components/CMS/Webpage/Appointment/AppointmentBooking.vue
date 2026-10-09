@@ -48,6 +48,7 @@ export type AppointmentBookingResult = {
 const props = defineProps<{
     appointmentTypes: AppointmentTypeOption[]
     organizerName?: string
+    showPickerHeading?: boolean
     timezone?: string
     isLoading?: boolean
     showMarketingOptIn?: boolean
@@ -163,8 +164,12 @@ const submit = async () => {
         errors.value = Object.fromEntries(Object.entries(serverErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : String(messages)]))
         if (status === 429) {
             errors.value.general = ctrans("Too many attempts. Please wait a minute and try again.")
-        } else if (!Object.keys(errors.value).length) {
-            errors.value.general = ctrans("Something went wrong. Please try again.")
+        } else {
+            const fieldsWithMessage = ["contact_name", "email", "phone", "time"]
+            const otherMessages = Object.entries(errors.value).filter(([key]) => !fieldsWithMessage.includes(key)).map(([, message]) => message)
+            if (otherMessages.length || !Object.keys(errors.value).length) {
+                errors.value.general = otherMessages[0] ?? ctrans("Something went wrong. Please try again.")
+            }
         }
         if (errors.value.time) {
             step.value = "pick"
@@ -243,8 +248,8 @@ const datePickerPt = {
 
         <div v-else-if="result" class="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_1px_8px_rgba(0,0,0,0.08)]">
             <FontAwesomeIcon icon="fas fa-check-circle" class="text-5xl text-green-500" fixed-width aria-hidden="true" />
-            <h3 class="mt-4 text-xl font-bold text-slate-800">{{ ctrans("You are scheduled") }}</h3>
-            <p class="mt-1 text-slate-500">{{ ctrans("We look forward to seeing you.") }}</p>
+            <h3 class="mt-4 text-xl font-bold text-slate-800">{{ ctrans("Your request is sent") }}</h3>
+            <p class="mt-1 text-slate-500">{{ ctrans("We will confirm your appointment shortly.") }}</p>
             <div class="mx-auto mt-6 max-w-sm space-y-3 rounded-lg border border-slate-200 p-5 text-left text-sm font-semibold text-slate-600">
                 <div class="text-base font-bold text-slate-800">{{ result.appointment_type }}</div>
                 <div class="flex gap-3"><FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="mt-0.5 text-lg" />{{ result.starts_at.split(" ")[1] }}–{{ result.ends_at }}, {{ resultDate }}</div>
@@ -253,25 +258,39 @@ const datePickerPt = {
             </div>
         </div>
 
-        <div v-else-if="!selectedType" class="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white shadow-[0_1px_8px_rgba(0,0,0,0.08)]">
-            <div class="border-b border-slate-200 px-8 py-6">
+        <div v-else-if="!selectedType" class="mx-auto max-w-4xl">
+            <div v-if="showPickerHeading" class="mb-6 text-center">
                 <div v-if="organizerName" class="text-sm font-semibold text-slate-500">{{ organizerName }}</div>
                 <h3 class="mt-1 text-2xl font-bold text-slate-800">{{ ctrans("Choose a visit") }}</h3>
             </div>
-            <button
-                v-for="type in appointmentTypes" :key="type.id" type="button"
-                class="group flex w-full items-center gap-4 border-b border-slate-200 px-8 py-5 text-left transition last:border-b-0 hover:bg-slate-50"
-                @click="selectType(type.id)">
-                <span class="h-12 w-1.5 shrink-0 rounded-full bg-[var(--theme-color-0)]" aria-hidden="true" />
-                <span class="flex-1">
-                    <span class="block text-lg font-bold text-slate-800">{{ type.name }}</span>
-                    <span class="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-slate-500">
-                        <span><FontAwesomeIcon icon="fal fa-clock" fixed-width aria-hidden="true" /> {{ formatDuration(type.duration_minutes) }}</span>
-                        <span><FontAwesomeIcon :icon="type.meeting_mode === 'video_call' ? 'fal fa-video' : 'fal fa-store-alt'" fixed-width aria-hidden="true" /> {{ type.meeting_mode_label }}</span>
+            <div class="grid gap-5 sm:grid-cols-2">
+                <button
+                    v-for="type in appointmentTypes" :key="type.id" type="button"
+                    class="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white text-left shadow-[0_1px_8px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:border-[var(--theme-color-0)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--theme-color-0)]"
+                    @click="selectType(type.id)">
+                    <span class="h-1.5 w-full bg-[var(--theme-color-0)]" aria-hidden="true" />
+                    <span class="flex flex-1 flex-col p-6">
+                        <span class="flex items-center gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--theme-color-0)_12%,white)] text-lg text-[var(--theme-color-0)]">
+                                <FontAwesomeIcon :icon="type.meeting_mode === 'video_call' ? 'fal fa-video' : 'fal fa-store-alt'" fixed-width aria-hidden="true" />
+                            </span>
+                            <span class="text-lg font-bold leading-tight text-slate-800">{{ type.name }}</span>
+                        </span>
+                        <span class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-slate-500">
+                            <span><FontAwesomeIcon icon="fal fa-clock" fixed-width aria-hidden="true" /> {{ formatDuration(type.duration_minutes) }}</span>
+                            <span>{{ type.meeting_mode_label }}</span>
+                        </span>
+                        <span v-if="type.location" class="mt-2 flex gap-1 text-sm text-slate-500">
+                            <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" class="mt-0.5" />
+                            <span class="line-clamp-2">{{ type.location }}</span>
+                        </span>
+                        <span v-if="type.description" class="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600">{{ type.description }}</span>
+                        <span class="mt-auto pt-5 text-sm font-bold text-[var(--theme-color-0)]">
+                            {{ ctrans("Select") }} <span class="inline-block transition group-hover:translate-x-1" aria-hidden="true">→</span>
+                        </span>
                     </span>
-                </span>
-                <span class="text-sm font-semibold text-[var(--theme-color-0)]">›</span>
-            </button>
+                </button>
+            </div>
         </div>
 
         <div
@@ -377,7 +396,12 @@ const datePickerPt = {
             <form v-else class="flex-1 space-y-4 px-6 py-7" @submit.prevent="submit">
                 <h3 class="mb-2 text-xl font-bold text-slate-800">{{ ctrans("Enter Details") }}</h3>
 
-                <input v-model="form.website_url" type="text" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true" />
+                <div hidden aria-hidden="true">
+                    <label>
+                        {{ ctrans("Leave this field empty") }}
+                        <input v-model="form.website_url" type="text" name="appointment_hp" tabindex="-1" autocomplete="off" />
+                    </label>
+                </div>
 
                 <div class="text-sm">
                     <label for="appointment-name" class="mb-1.5 block font-bold text-slate-800">{{ ctrans("Name") }} *</label>
@@ -414,7 +438,7 @@ const datePickerPt = {
                     :disabled="isSubmitting"
                     class="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--theme-color-0)] px-6 py-3 text-sm font-bold text-[var(--theme-color-1)] transition hover:opacity-90 disabled:opacity-60">
                     <LoadingIcon v-if="isSubmitting" />
-                    {{ ctrans("Schedule Event") }}
+                    {{ ctrans("Request appointment") }}
                 </button>
             </form>
         </div>
