@@ -1371,5 +1371,6 @@
     "Choose :axis": "選択: :axis",
     "Choose :axis & quantities": "選択: :axis と数量",
     "Choose how many items you would like in each :axis.": "各オプション（:axis）の数量を選んでください。",
-    "Option names on the website": "ウェブサイト上のオプション名"
+    "Option names on the website": "ウェブサイト上のオプション名",
+    "Share of total": "割合"
 }
