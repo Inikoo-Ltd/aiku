@@ -17,6 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { computed, inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TimezoneDisplay from './TimezoneDisplay.vue'
+import FooterServers from './FooterServers.vue'
 import { useFormatTime } from '@/Composables/useFormatTime.js'
 import { Link } from '@inertiajs/vue3'
 
@@ -55,10 +56,10 @@ const deploymentTooltip = computed(() => {
                     <Link :href="route('grp.docs')" v-tooltip="ctrans('Docs')" aria-label="Docs" class="py-1 leading-none hover:text-white">
                         <FontAwesomeIcon icon="fal fa-file-alt" fixed-width aria-hidden="true" />
                     </Link>
-                    <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="aiku.io" class="hidden lg:inline">
+                    <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="aiku.io" class="hidden xl:inline">
                         <img class="h-3 select-none inline pl-1 pr-1" src="/art/invader.svg" alt="aiku" />
                     </a>
-                    <span class="hidden lg:inline whitespace-nowrap"
+                    <span class="hidden xl:inline whitespace-nowrap"
                         v-tooltip="ctrans('With help from the teams in the UK, Spain and Slovakia')">
                         {{ ctrans('Made with') }}
                         <FontAwesomeIcon icon='fas fa-heart' class="text-pink-500 mx-1" fixed-width aria-hidden='true' />
@@ -67,9 +68,11 @@ const deploymentTooltip = computed(() => {
                     </span>
                 </div>
                 
-                <div>
+                <div class="hidden sm:block">
                     <TimezoneDisplay />
                 </div>
+
+                <FooterServers v-if="layout?.can_view_devops" class="hidden md:flex" />
             </div>
 
             <!-- Right: Tab Section -->

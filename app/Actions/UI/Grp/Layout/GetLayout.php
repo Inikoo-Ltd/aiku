@@ -24,9 +24,12 @@ class GetLayout
             return [];
         }
 
+        $hasGroupAccess = $user->hasGroupAccess();
+
         return [
             'group'          => $this->getGroupData($user->group),
-            'has_group_access' => $user->hasGroupAccess() || $user->canViewSales(),
+            'has_group_access' => $hasGroupAccess || $user->canViewSales(),
+            'can_view_devops'  => $hasGroupAccess,
             'organisations'  => GetUserOrganisationLayout::make()->getOrganisations($user),
             'agents'         => GetUserOrganisationLayout::make()->getAgents($user),
             'digital_agency' => GetUserOrganisationLayout::make()->getDigitalAgencies($user),

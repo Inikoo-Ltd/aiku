@@ -90,6 +90,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Stubs\Migrations\HasSysAdminStats;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -2612,4 +2613,21 @@ test('supervisors borrow another user\'s permissions and give them back', functi
 
     actingAs($groupLender);
     post(route('grp.models.user.borrow_permissions', ['user' => $groupAdmin->id]))->assertForbidden();
+})->depends('create guest');
+
+test('only users with group access get the devops servers in the footer', function (Guest $guest) {
+    $group = $guest->group;
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'user.username', 'footer-devops-viewer');
+    $user = StoreGuest::make()->action($group, $guestData)->getUser();
+
+    expect(GetLayout::run($user)['can_view_devops'])->toBeFalse();
+
+    $user->assignRole(RolesEnum::GROUP_ADMIN->value);
+
+    expect($user->refresh()->hasGroupAccess())->toBeTrue()
+        ->and(GetLayout::run($user)['can_view_devops'])->toBeTrue();
 })->depends('create guest');
