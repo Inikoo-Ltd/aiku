@@ -3745,13 +3745,10 @@ test('to restock leaves out stocks whose only products are exclusive to a privat
 });
 
 test('to restock hides stocks one private customer took almost all of, once hydrated', function () {
-    $stocks    = createStocks($this->group);
-    $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
-
-    \App\Models\Production\Artefact::where('production_id', $this->production->id)
-        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
-        ->update(['org_stock_id' => null]);
-    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
+    $orgStocks = collect([0, 1])->map(fn () => \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))
+    ))->all();
 
     foreach ([0, 1] as $index) {
         $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-TOP'.$index, 'name' => 'Top customer '.$index]);
