@@ -32,14 +32,13 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
         }
 
         foreach ($stockDelivery->purchaseOrders as $purchaseOrder) {
-            $changed = false;
+            $changed = $this->syncSettlement($purchaseOrder, $stockDelivery, $deliveryState);
 
-            if ($purchaseOrder->delivery_state !== $deliveryState) {
+            $keepsSettledDeliveryState = $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED
+                && !in_array($deliveryState, self::SETTLED_DELIVERY_STATES, true);
+
+            if (!$keepsSettledDeliveryState && $purchaseOrder->delivery_state !== $deliveryState) {
                 $purchaseOrder->update(['delivery_state' => $deliveryState]);
-                $changed = true;
-            }
-
-            if ($this->syncSettlement($purchaseOrder, $stockDelivery, $deliveryState)) {
                 $changed = true;
             }
 
@@ -75,7 +74,7 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
             return true;
         }
 
-        if ($isAwaitingDelivery && $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED) {
+        if (!$shouldSettle && $updatedTransactions > 0 && $isAwaitingDelivery && $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED) {
             $purchaseOrder->update([
                 'state'      => PurchaseOrderStateEnum::CONFIRMED,
                 'settled_at' => null,

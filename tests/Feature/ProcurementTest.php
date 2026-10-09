@@ -2049,6 +2049,51 @@ test('purchase order delivered in two parts stays open for the remaining items',
         ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
 });
 
+test('a settled purchase order reopens only when a delivery takes back lines it had settled', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $historicSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'REOPEN-PO',
+        'name'             => 'Reopen check',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]))->supplierProduct->historicSupplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    $delivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+    $delivery->items()->update(['state' => StockDeliveryItemStateEnum::PLACED]);
+    $delivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($delivery->refresh());
+
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED);
+
+    $line->update(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+    $leftover = StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'REOPEN-LEFTOVER', 'date' => date('Y-m-d')]);
+    $leftover->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+    $leftover->update(['state' => StockDeliveryStateEnum::IN_PROCESS]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($leftover->refresh());
+
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED)
+        ->and($purchaseOrder->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::PLACED);
+
+    $line->update(['state' => PurchaseOrderTransactionStateEnum::SETTLED]);
+    $delivery->items()->update(['state' => StockDeliveryItemStateEnum::DISPATCHED]);
+    $delivery->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($delivery->refresh());
+
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($purchaseOrder->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
+});
+
 test('purchase order with an open aurora stock delivery refuses a second one', function (StockDelivery $stockDelivery) {
     $stockDelivery->update(['source_id' => '1:999999', 'state' => StockDeliveryStateEnum::DISPATCHED]);
     $purchaseOrder = $stockDelivery->purchaseOrders()->first();
