@@ -9,6 +9,7 @@ use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -18,7 +19,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $organisation_id
  * @property int $shop_id
  * @property int $appointment_type_id
- * @property int|null $customer_id
+ * @property string|null $visitor_type
+ * @property int|null $visitor_id
  * @property int|null $user_id
  * @property int|null $created_by_user_id
  * @property AppointmentStateEnum $state
@@ -36,7 +38,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read AppointmentType $appointmentType
- * @property-read Customer|null $customer
+ * @property-read Customer|Prospect|null $visitor
  * @property-read User|null $user
  * @property-read User|null $createdBy
  * @property-read \App\Models\SysAdmin\Group $group
@@ -74,6 +76,8 @@ class Appointment extends Model implements Auditable
 
     protected array $auditInclude = [
         'appointment_type_id',
+        'visitor_type',
+        'visitor_id',
         'user_id',
         'state',
         'starts_at',
@@ -90,9 +94,9 @@ class Appointment extends Model implements Auditable
         return $this->belongsTo(AppointmentType::class)->withTrashed();
     }
 
-    public function customer(): BelongsTo
+    public function visitor(): MorphTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->morphTo();
     }
 
     public function user(): BelongsTo

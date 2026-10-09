@@ -64,7 +64,7 @@ trait WithAppointmentForm
             'email'           => [
                 'type'        => 'input',
                 'label'       => __('Email'),
-                'information' => __('When it matches a customer of this shop, the appointment is linked to them.'),
+                'information' => __('Linked to the customer or prospect with this email or phone. Someone new is added as a prospect who gets no marketing emails.'),
                 'value'       => $appointment?->email ?? '',
             ],
             'phone'           => [

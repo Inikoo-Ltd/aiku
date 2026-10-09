@@ -280,5 +280,8 @@ class Prospect extends Model implements Auditable
         return $this->belongsTo(User::class);
     }
 
-
+    public function appointments(): MorphMany
+    {
+        return $this->morphMany(Appointment::class, 'visitor');
+    }
 }

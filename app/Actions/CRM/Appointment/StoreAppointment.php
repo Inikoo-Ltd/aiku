@@ -8,6 +8,7 @@ use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Appointment;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -16,19 +17,24 @@ class StoreAppointment extends OrgAction
 {
     use WithAppointmentRules;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Shop $shop, array $modelData): Appointment
     {
-        $modelData = $this->prepareAppointmentData($shop, $modelData);
+        return DB::transaction(function () use ($shop, $modelData) {
+            $modelData = $this->prepareAppointmentData($shop, $modelData);
 
-        data_set($modelData, 'group_id', $shop->group_id);
-        data_set($modelData, 'organisation_id', $shop->organisation_id);
-        data_set($modelData, 'state', AppointmentStateEnum::BOOKED, overwrite: false);
-        data_set($modelData, 'source', AppointmentSourceEnum::STAFF, overwrite: false);
+            data_set($modelData, 'group_id', $shop->group_id);
+            data_set($modelData, 'organisation_id', $shop->organisation_id);
+            data_set($modelData, 'state', AppointmentStateEnum::BOOKED, overwrite: false);
+            data_set($modelData, 'source', AppointmentSourceEnum::STAFF, overwrite: false);
 
-        /** @var Appointment $appointment */
-        $appointment = $shop->appointments()->create($modelData);
+            /** @var Appointment $appointment */
+            $appointment = $shop->appointments()->create($modelData);
 
-        return $appointment;
+            return $appointment;
+        });
     }
 
     public function authorize(ActionRequest $request): bool

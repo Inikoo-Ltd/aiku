@@ -704,4 +704,9 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(ReviewReaction::class);
     }
+
+    public function appointments(): MorphMany
+    {
+        return $this->morphMany(Appointment::class, 'visitor');
+    }
 }

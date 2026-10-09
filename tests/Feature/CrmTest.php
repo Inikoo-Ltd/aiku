@@ -893,7 +893,8 @@ test('book an appointment for a visitor', function () {
         ->and($appointment->source)->toBe(AppointmentSourceEnum::STAFF)
         ->and($appointment->starts_at->equalTo($startsAt))->toBeTrue()
         ->and($appointment->ends_at->equalTo($startsAt->copy()->addMinutes(45)))->toBeTrue()
-        ->and($appointment->customer_id)->toBe($customer->id)
+        ->and($appointment->visitor_type)->toBe('Customer')
+        ->and($appointment->visitor_id)->toBe($customer->id)
         ->and($appointment->user_id)->toBe($this->user->id)
         ->and($appointment->number_visitors)->toBe(2);
 
@@ -945,6 +946,59 @@ test('moving an appointment keeps its length', function (Appointment $appointmen
         ->and($appointment->ends_at->diffInMinutes($appointment->starts_at, true))->toEqual(45);
 })->depends('cancel and rebook an appointment');
 
+test('a new visitor becomes a prospect who gets no marketing emails', function (Appointment $appointment) {
+    $email = 'visitor-'.Str::lower(Str::random(10)).'@example.com';
+
+    $booked = StoreAppointment::make()->action(
+        $this->shop,
+        [
+            'appointment_type_id' => $appointment->appointment_type_id,
+            'starts_at'           => now()->addDays(6)->format('Y-m-d').' 10:00',
+            'contact_name'        => 'New visitor',
+            'email'               => $email,
+        ]
+    );
+
+    $prospect = $booked->visitor;
+
+    expect($prospect)->toBeInstanceOf(Prospect::class)
+        ->and($prospect->shop_id)->toBe($this->shop->id)
+        ->and($prospect->email)->toBe($email)
+        ->and($prospect->contact_name)->toBe('New visitor')
+        ->and($prospect->dont_contact_me)->toBeTrue()
+        ->and($prospect->is_opt_in)->toBeFalse()
+        ->and($prospect->can_contact_by_email)->toBeFalse()
+        ->and(Arr::get($prospect->data, 'source'))->toBe('appointment');
+
+    $bookedAgain = StoreAppointment::make()->action(
+        $this->shop,
+        [
+            'appointment_type_id' => $appointment->appointment_type_id,
+            'starts_at'           => now()->addDays(8)->format('Y-m-d').' 10:00',
+            'contact_name'        => 'New visitor',
+            'email'               => strtoupper($email),
+        ]
+    );
+
+    expect($bookedAgain->visitor_type)->toBe('Prospect')
+        ->and($bookedAgain->visitor_id)->toBe($prospect->id)
+        ->and($prospect->appointments()->count())->toBe(2);
+})->depends('book an appointment for a visitor');
+
+test('a visitor with no email or phone is not linked', function (Appointment $appointment) {
+    $booked = StoreAppointment::make()->action(
+        $this->shop,
+        [
+            'appointment_type_id' => $appointment->appointment_type_id,
+            'starts_at'           => now()->addDays(7)->format('Y-m-d').' 10:00',
+            'contact_name'        => 'Walk-in',
+        ]
+    );
+
+    expect($booked->visitor_type)->toBeNull()
+        ->and($booked->visitor_id)->toBeNull();
+})->depends('book an appointment for a visitor');
+
 test('book an appointment from the form', function (Appointment $appointment) {
     $contactName = 'Phone visitor '.Str::random(6);
 
@@ -963,7 +1017,8 @@ test('book an appointment from the form', function (Appointment $appointment) {
     expect($booked)->not->toBeNull()
         ->and($booked->created_by_user_id)->toBe($this->user->id)
         ->and($booked->user_id)->toBeNull()
-        ->and($booked->customer_id)->toBeNull();
+        ->and($booked->visitor)->toBeInstanceOf(Prospect::class)
+        ->and($booked->visitor->phone)->toBe('+441234567890');
 })->depends('book an appointment for a visitor');
 
 test('UI Index appointments', function (Appointment $appointment) {

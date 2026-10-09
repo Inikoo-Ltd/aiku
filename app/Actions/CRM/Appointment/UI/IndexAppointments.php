@@ -42,7 +42,7 @@ class IndexAppointments extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Appointment::class)
             ->where('appointments.shop_id', $shop->id)
-            ->with(['appointmentType', 'customer', 'user', 'shop.timezone']);
+            ->with(['appointmentType', 'visitor', 'user', 'shop.timezone']);
 
         match ($tab) {
             AppointmentsTabsEnum::UPCOMING => $queryBuilder

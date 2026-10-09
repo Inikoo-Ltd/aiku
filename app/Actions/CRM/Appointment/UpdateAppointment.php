@@ -6,6 +6,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Models\CRM\Appointment;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -16,11 +17,16 @@ class UpdateAppointment extends OrgAction
 
     private Appointment $appointment;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Appointment $appointment, array $modelData): Appointment
     {
-        $modelData = $this->prepareAppointmentData($appointment->shop, $modelData, $appointment);
+        return DB::transaction(function () use ($appointment, $modelData) {
+            $modelData = $this->prepareAppointmentData($appointment->shop, $modelData, $appointment);
 
-        return $this->update($appointment, $modelData);
+            return $this->update($appointment, $modelData);
+        });
     }
 
     public function authorize(ActionRequest $request): bool

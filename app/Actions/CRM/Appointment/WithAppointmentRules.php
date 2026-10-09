@@ -6,7 +6,9 @@ use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Appointment;
 use App\Models\CRM\AppointmentType;
+use App\Actions\CRM\Prospect\StoreProspect;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -53,10 +55,16 @@ trait WithAppointmentRules
             $modelData['ends_at'] = $startsAt->copy()->addMinutes($appointmentType->duration_minutes);
         }
 
-        if (Arr::has($modelData, 'email')) {
-            $modelData['customer_id'] = $modelData['email']
-                ? Customer::where('shop_id', $shop->id)->whereRaw('lower(email) = ?', [strtolower($modelData['email'])])->value('id')
-                : null;
+        if (!$appointment || Arr::hasAny($modelData, ['email', 'phone'])) {
+            $visitor = $this->resolveVisitor(
+                shop: $shop,
+                email: Arr::get($modelData, 'email', $appointment?->email),
+                phone: Arr::get($modelData, 'phone', $appointment?->phone),
+                contactName: Arr::get($modelData, 'contact_name', $appointment?->contact_name)
+            );
+
+            $modelData['visitor_type'] = $visitor?->getMorphClass();
+            $modelData['visitor_id']   = $visitor?->id;
         }
 
         if (Arr::has($modelData, 'state')) {
@@ -65,5 +73,56 @@ trait WithAppointmentRules
         }
 
         return $modelData;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    protected function resolveVisitor(Shop $shop, ?string $email, ?string $phone, ?string $contactName): Customer|Prospect|null
+    {
+        if (!$email && !$phone) {
+            return null;
+        }
+
+        $customer = $this->findInShop(Customer::class, $shop, $email, $phone);
+        if ($customer) {
+            return $customer;
+        }
+
+        /** @var Prospect|null $prospect */
+        $prospect = $this->findInShop(Prospect::class, $shop, $email, $phone);
+        if ($prospect) {
+            return $prospect->customer ?? $prospect;
+        }
+
+        return StoreProspect::make()->action(
+            $shop,
+            array_filter([
+                'contact_name'    => $contactName,
+                'email'           => $email,
+                'phone'           => $phone,
+                'dont_contact_me' => true,
+                'is_opt_in'       => false,
+                'data'            => ['source' => 'appointment'],
+            ], fn ($value) => !is_null($value) && $value !== ''),
+            strict: false
+        );
+    }
+
+    /**
+     * @param class-string<Customer|Prospect> $modelClass
+     */
+    private function findInShop(string $modelClass, Shop $shop, ?string $email, ?string $phone): Customer|Prospect|null
+    {
+        $query = $modelClass::where('shop_id', $shop->id);
+
+        if ($email) {
+            $byEmail = (clone $query)->whereRaw('lower(email) = ?', [strtolower($email)])->first();
+            if ($byEmail) {
+                return $byEmail;
+            }
+        }
+
+        return $phone ? (clone $query)->where('phone', $phone)->first() : null;
     }
 }

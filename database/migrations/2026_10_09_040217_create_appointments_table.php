@@ -17,8 +17,9 @@ return new class () extends Migration {
             $table->foreign('shop_id')->references('id')->on('shops');
             $table->unsignedInteger('appointment_type_id')->index();
             $table->foreign('appointment_type_id')->references('id')->on('appointment_types');
-            $table->unsignedInteger('customer_id')->nullable()->index();
-            $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
+            $table->string('visitor_type')->nullable();
+            $table->unsignedInteger('visitor_id')->nullable();
+            $table->index(['visitor_type', 'visitor_id']);
             $table->unsignedSmallInteger('user_id')->nullable()->index();
             $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
             $table->unsignedSmallInteger('created_by_user_id')->nullable();
