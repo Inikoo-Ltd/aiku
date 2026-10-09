@@ -1779,20 +1779,22 @@ test('web registration rejects a bare dial code when the shop requires a phone n
     $originalSettings = $this->shop->settings;
     $this->shop->update(['settings' => data_set($originalSettings, 'registration.require_phone_number', true)]);
 
-    auth()->logout();
-    post(route('retina.register_from_standalone.store'), [
-        'contact_name'                  => 'Dial Code Only',
-        'email'                         => 'registration-dial-code@example.com',
-        'password'                      => 'password',
-        'phone'                         => '+46',
-        'is_opt_in'                     => true,
-        'is_whatsapp_newsletter_opt_in' => false,
-        'contact_address'               => Address::factory()->definition(),
-    ])->assertSessionHasErrors('phone');
+    try {
+        auth()->logout();
+        post(route('retina.register_from_standalone.store'), [
+            'contact_name'                  => 'Dial Code Only',
+            'email'                         => 'registration-dial-code@example.com',
+            'password'                      => 'password',
+            'phone'                         => '+46',
+            'is_opt_in'                     => true,
+            'is_whatsapp_newsletter_opt_in' => false,
+            'contact_address'               => Address::factory()->definition(),
+        ])->assertSessionHasErrors('phone');
 
-    expect(Customer::where('email', 'registration-dial-code@example.com')->exists())->toBeFalse();
-
-    $this->shop->update(['settings' => $originalSettings]);
+        expect(Customer::where('email', 'registration-dial-code@example.com')->exists())->toBeFalse();
+    } finally {
+        $this->shop->update(['settings' => $originalSettings]);
+    }
 });
 
 test('a picked tax number country wins over the customer address country', function () {
