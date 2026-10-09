@@ -11,17 +11,24 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Image from "@common/Components/Image.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faHistory } from "@fal"
+library.add(faHistory)
 import { ctrans } from "@/Composables/useTrans"
 import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, sent_quantity: number, order_quantum: number }
+type OrderHistoryStage = "backlog" | "preparing" | "assigned" | "producing" | "made" | "picked_from_stock" | "waiting" | "handed_over"
+type OrderHistoryLine = { id: number, state: "open" | "ordered", stage: OrderHistoryStage, quantity: number, date: string }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, order_history: OrderHistoryLine[], order_history_count: number, order_quantum: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
-type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null, family_name: string | null }
-type MiniCart = { partner_name: string, count: number, total: number, currency: string, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } }
+type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null, family_name: string | null, created_at?: string }
+type MiniCart = { partner_name: string, title?: string, list_label?: string, count: number, total: number, currency: string, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] }, ordered?: { count: number, total: number, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } } }
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -39,6 +46,12 @@ const props = defineProps<{
     browseStats: { products: number, in_stock: number, departments: number, collections: number }
 }>()
 
+const browseUrl = () =>
+    route("grp.org.procurement.org_partners.show.browse.index", {
+        organisation: route().params["organisation"],
+        orgPartner: route().params["orgPartner"],
+    })
+
 const searchTerm = ref(props.filters.q ?? "")
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -48,7 +61,7 @@ watch(searchTerm, (value) => {
     }
 
     searchTimeout = setTimeout(() => {
-        router.get(route(route().current() as string, route().params), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true, replace: true })
+        router.get(browseUrl(), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true, replace: true })
     }, 350)
 })
 
@@ -70,13 +83,48 @@ function drillInto(category: { slug: string, type?: string }) {
 }
 
 function goTo(params: Record<string, string | number>) {
-    router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true })
+    router.get(browseUrl(), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true })
 }
 
 const browseTab = ref<"categories" | "collections">("categories")
 
 const quantities = ref<Record<number, number>>({})
 const commitTimers: Record<number, ReturnType<typeof setTimeout>> = {}
+
+const HISTORY_PREVIEW = 2
+
+const productionStage = (label: string, tone: string) => ({
+    label,
+    tooltip: ctrans("Production at :partner: :stage", { partner: props.miniCart.partner_name, stage: label }),
+    class: tone,
+})
+
+const historyStages: Record<OrderHistoryStage, { label: string, tooltip: string, class: string }> = {
+    backlog: productionStage(ctrans("Backlog"), "bg-gray-100 text-gray-600"),
+    preparing: productionStage(ctrans("Preparing"), "bg-amber-100 text-amber-800"),
+    assigned: productionStage(ctrans("Assigned"), "bg-amber-100 text-amber-800"),
+    producing: productionStage(ctrans("Producing"), "bg-amber-100 text-amber-800"),
+    made: productionStage(ctrans("Made"), "bg-emerald-50 text-emerald-700"),
+    picked_from_stock: {
+        label: ctrans("Picked from stock"),
+        tooltip: ctrans(":partner had it in stock, no need to make it", { partner: props.miniCart.partner_name }),
+        class: "bg-emerald-50 text-emerald-700",
+    },
+    waiting: {
+        label: ctrans("Waiting"),
+        tooltip: ctrans("Submitted to :partner, they have not picked or planned it yet", { partner: props.miniCart.partner_name }),
+        class: "bg-gray-100 text-gray-600",
+    },
+    handed_over: {
+        label: ctrans("Done"),
+        tooltip: ctrans(":partner already handed it over", { partner: props.miniCart.partner_name }),
+        class: "bg-emerald-100 text-emerald-800",
+    },
+}
+const expandedHistory = ref<Record<number, boolean>>({})
+
+const visibleHistory = (product: ProductCard) =>
+    expandedHistory.value[product.id] ? product.order_history : product.order_history.slice(0, HISTORY_PREVIEW)
 
 function quantityFor(product: ProductCard): number {
     return quantities.value[product.id] ?? product.ordered_quantity ?? 0
@@ -146,33 +194,33 @@ function commitQuantity(product: ProductCard) {
                 v-model="searchTerm"
                 type="text"
                 :placeholder="ctrans('Search products')"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
             />
         </div>
 
         <nav v-if="level !== 'search' && level !== 'cover'" class="flex flex-wrap items-center gap-2 text-sm">
-            <button class="rounded-full px-3 py-1" :class="level === 'root' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({})">
+            <button class="rounded-full px-3 py-1" :class="level === 'root' ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({})">
                 {{ ctrans("All") }} · {{ useLocaleStore().number(browseStats.products) }}
             </button>
             <template v-if="filters.department">
                 <span class="text-gray-300">/</span>
-                <button class="rounded-full px-3 py-1" :class="!filters.sub_department && !filters.family ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({ department: filters.department })">
+                <button class="rounded-full px-3 py-1" :class="!filters.sub_department && !filters.family ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({ department: filters.department })">
                     {{ filterNames.department ?? filters.department }}
                 </button>
             </template>
             <template v-if="filters.sub_department">
                 <span class="text-gray-300">/</span>
-                <button class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700" @click="goTo({ sub_department: filters.sub_department })">
+                <button class="rounded-full px-3 py-1 bg-[--app-accent-soft] text-[--app-accent-strong]" @click="goTo({ sub_department: filters.sub_department })">
                     {{ filterNames.sub_department ?? filters.sub_department }}
                 </button>
             </template>
             <template v-if="filters.family && level === 'family'">
                 <span class="text-gray-300">/</span>
-                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filterNames.family ?? filters.family }}</span>
+                <span class="rounded-full px-3 py-1 bg-[--app-accent-soft] text-[--app-accent-strong]">{{ filterNames.family ?? filters.family }}</span>
             </template>
             <template v-if="filters.collection && level === 'collection'">
                 <span class="text-gray-300">/</span>
-                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filterNames.collection ?? filters.collection }}</span>
+                <span class="rounded-full px-3 py-1 bg-[--app-accent-soft] text-[--app-accent-strong]">{{ filterNames.collection ?? filters.collection }}</span>
             </template>
         </nav>
 
@@ -180,14 +228,14 @@ function commitQuantity(product: ProductCard) {
             <nav class="-mb-px flex gap-6 text-sm">
                 <button
                     class="border-b-2 px-1 pb-2 font-medium"
-                    :class="browseTab === 'categories' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    :class="browseTab === 'categories' ? 'border-[--app-accent] text-[--app-accent]' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="browseTab = 'categories'"
                 >
                     {{ level === "root" ? ctrans("Departments") : ctrans("Categories") }}
                 </button>
                 <button
                     class="border-b-2 px-1 pb-2 font-medium"
-                    :class="browseTab === 'collections' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    :class="browseTab === 'collections' ? 'border-[--app-accent] text-[--app-accent]' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="browseTab = 'collections'"
                 >
                     {{ ctrans("Collections") }}
@@ -293,11 +341,6 @@ function commitQuantity(product: ProductCard) {
                                 noSaveButton
                                 @update:modelValue="(value: number) => setQuantity(product, value)"
                             />
-<span
-                                v-if="product.sent_quantity > 0"
-                                v-tooltip="ctrans('Already sent to the partner')"
-                                class="cursor-help whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500"
-                            >{{ ctrans(':count sent', { count: useLocaleStore().number(product.sent_quantity) }) }}</span>
                             <span
                                 v-if="product.order_quantum > 1"
                                 v-tooltip="ctrans('Made in batches: ordered in multiples of :quantum SKOs', { quantum: product.order_quantum })"
@@ -306,12 +349,55 @@ function commitQuantity(product: ProductCard) {
                             <button
                                 type="button"
                                 class="cursor-pointer rounded-md border border-dashed px-2 py-1 text-xs font-medium tabular-nums"
-                                :class="product.recommended_quantity ? 'border-indigo-300 text-indigo-600 hover:bg-indigo-50' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
+                                :class="product.recommended_quantity ? 'border-[--app-accent-muted] text-[--app-accent] hover:bg-[--app-accent-soft]' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
                                 :title="ctrans('Suggested order, click to fill')"
                                 @click="setQuantity(product, product.recommended_quantity ?? 0)"
                             >
                                 {{ useLocaleStore().number(product.recommended_quantity ?? 0) }}
                                 <span class="ml-0.5 font-normal text-gray-400">{{ ctrans("suggested") }}</span>
+                            </button>
+                        </div>
+
+                        <div v-if="product.order_history_count" class="mt-2 rounded border border-gray-200 text-xs">
+                            <div class="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50 px-2 py-1 text-gray-500">
+                                <span class="flex items-center gap-1.5">
+                                    <FontAwesomeIcon icon="fal fa-history" fixed-width aria-hidden="true" />
+                                    {{ ctrans("Ordered before") }}
+                                </span>
+                                <span class="tabular-nums">{{ ctrans(":count times", { count: product.order_history_count }) }}</span>
+                            </div>
+                            <ul class="divide-y divide-gray-100">
+                                <li
+                                    v-for="line in visibleHistory(product)"
+                                    :key="line.id"
+                                    class="flex items-center gap-2 px-2 py-1"
+                                >
+                                    <span class="tabular-nums text-gray-700">{{ useFormatTime(line.date, { formatTime: "d MMM yyyy" }) }}</span>
+                                    <b class="font-medium tabular-nums text-gray-900">{{ useLocaleStore().number(line.quantity) }}</b>
+                                    <span
+                                        v-tooltip="historyStages[line.stage].tooltip"
+                                        class="ml-auto cursor-help whitespace-nowrap rounded px-1.5 text-[11px]"
+                                        :class="historyStages[line.stage].class"
+                                    >
+                                        {{ historyStages[line.stage].label }}
+                                    </span>
+                                </li>
+                                <li
+                                    v-if="expandedHistory[product.id] && product.order_history_count > product.order_history.length"
+                                    class="px-2 py-1 text-gray-400"
+                                >
+                                    {{ ctrans("… and :count older", { count: product.order_history_count - product.order_history.length }) }}
+                                </li>
+                            </ul>
+                            <button
+                                v-if="product.order_history.length > HISTORY_PREVIEW"
+                                type="button"
+                                class="w-full border-t border-gray-100 px-2 py-1 text-left text-[--app-accent] hover:bg-[--app-accent-soft]"
+                                @click="expandedHistory[product.id] = !expandedHistory[product.id]"
+                            >
+                                {{ expandedHistory[product.id]
+                                    ? ctrans("Show less")
+                                    : ctrans("Show :count more", { count: product.order_history.length - HISTORY_PREVIEW }) }}
                             </button>
                         </div>
                     </div>
