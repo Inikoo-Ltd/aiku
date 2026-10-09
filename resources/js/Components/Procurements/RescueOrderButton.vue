@@ -250,7 +250,9 @@ onBeforeUnmount(stopTimer)
 			:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
 			:size="size"
 			:loading="isWorking"
-			@click="isAsking = true" />
+			@click="isAsking = true"
+			type="tertiary"
+		/>
 
 		<component
 			:is="inline ? 'section' : Modal"

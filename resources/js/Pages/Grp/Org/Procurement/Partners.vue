@@ -292,7 +292,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							'grp.org.procurement.org_partners.show.shopping.dashboard'
 						)
 					">
-					<Button :label="ctrans('Go shopping')" icon="fal fa-shopping-basket" size="s" />
+					<Button :label="ctrans('Go shopping')" icon="fal fa-shopping-basket" size="s" type="tertiary" />
 				</Link>
 				<Button
 					v-else-if="can_create_purchase_orders && !purchaseOrderInProcess(partner)"

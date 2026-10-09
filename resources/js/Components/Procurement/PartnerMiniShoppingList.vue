@@ -3,7 +3,8 @@ import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const props = defineProps<{
     miniCart: {
@@ -33,7 +34,7 @@ const groupedItems = computed(() => {
     <div class="w-full rounded-sm border border-gray-200 bg-white px-5 py-4 font-mono text-xs text-gray-700 shadow-md">
         <div class="text-center">
             <div class="text-sm font-semibold tracking-widest uppercase">{{ miniCart.partner_name }}</div>
-            <div class="mt-1 text-gray-400">{{ trans("Shopping list") }}</div>
+            <div class="mt-1 text-gray-400">{{ ctrans("Shopping list") }}</div>
         </div>
 
         <div class="my-3 border-t border-dashed border-gray-300" />
@@ -47,7 +48,7 @@ const groupedItems = computed(() => {
             <tbody v-for="[family, items] in groupedItems" :key="family">
                 <tr>
                     <td colspan="3" class="pt-2 pb-0.5 uppercase tracking-wide text-[10px] font-semibold text-indigo-500">
-                        {{ family || trans("Other") }}
+                        {{ family || ctrans("Other") }}
                     </td>
                 </tr>
                 <tr v-for="item in items" :key="item.id">
@@ -63,27 +64,29 @@ const groupedItems = computed(() => {
                             :href="route(miniCart.listRoute.name, miniCart.listRoute.parameters)"
                             class="text-gray-400 underline decoration-dotted underline-offset-2 hover:text-indigo-600"
                         >
-                            … + {{ useLocaleStore().number(miniCart.count - miniCart.items.length) }} {{ trans("more, see full list") }}
+                            … + {{ useLocaleStore().number(miniCart.count - miniCart.items.length) }} {{ ctrans("more, see full list") }}
                         </Link>
                     </td>
                 </tr>
             </tbody>
         </table>
-        <div v-else class="text-center text-gray-400">{{ trans("Empty") }}</div>
+        <div v-else class="text-center text-gray-400">{{ ctrans("Empty") }}</div>
 
         <div class="my-3 border-t border-dashed border-gray-300" />
 
         <div class="flex items-baseline justify-between text-sm font-semibold tabular-nums">
-            <span>{{ trans("Total") }} · {{ useLocaleStore().number(miniCart.count) }} {{ trans("items") }}</span>
+            <span>{{ ctrans("Total") }} · {{ useLocaleStore().number(miniCart.count) }} {{ ctrans("items") }}</span>
             <span v-if="miniCart.total">{{ useLocaleStore().currencyFormat(miniCart.currency, miniCart.total) }}</span>
         </div>
 
         <Link
             :href="route(miniCart.listRoute.name, miniCart.listRoute.parameters)"
-            class="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-indigo-500"
+            class="mt-4 block"
+            xclass="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-indigo-500"
         >
-            <FontAwesomeIcon icon="fal fa-shopping-basket" fixed-width aria-hidden="true" />
-            {{ trans("Go to Shopping list") }}
+            <Button full :label="ctrans('Go to Basket')" type="tertiary" icon="fal fa-shopping-basket" />
+            <!-- <FontAwesomeIcon icon="fal fa-shopping-basket" fixed-width aria-hidden="true" />
+            {{ ctrans("Go to Basket") }} -->
         </Link>
     </div>
 </template>

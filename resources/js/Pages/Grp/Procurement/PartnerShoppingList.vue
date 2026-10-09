@@ -493,7 +493,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				icon="fal fa-upload"
 				:label="ctrans('Upload')"
 				@click="isUploadOpen = true" />
-			<Button type="create" :label="ctrans('Add stocks')" @click="isModalOpen = true" />
+			<Button :label="ctrans('Add stocks')" @click="isModalOpen = true" type="tertiary" icon="far fa-plus" />
 			<Button
 				type="primary"
 				icon="fal fa-paper-plane"
