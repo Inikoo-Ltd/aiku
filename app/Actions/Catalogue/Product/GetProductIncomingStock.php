@@ -20,6 +20,7 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -54,16 +55,16 @@ class GetProductIncomingStock
 
     private const string PURCHASE_ORDER_TYPED_DATE = "coalesce(purchase_orders.estimated_received_at::date, nullif(purchase_orders.data->>'estimated_receiving_date', '')::date)";
 
-    // Used to check whether we only get Quantity and ETA or not
-    private bool $isObscured = false; 
-
     /**
      * @return array<int, array{type: string, supplier_name: string|null, supplier_code: string|null, supplier_type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
      */
     public function handle(Product $product, bool $isObscured = false): array
     {
-        $this->isObscured = $isObscured;
-        return $this->forOrgStocks($product->orgStocks->pluck('id')->all());
+        $lines = $this->forOrgStocks($product->orgStocks->pluck('id')->all());
+
+        return $isObscured
+            ? array_map(fn (array $line) => Arr::only($line, ['quantity', 'eta', 'is_estimate']), $lines)
+            : $lines;
     }
 
     /**
@@ -206,13 +207,7 @@ class GetProductIncomingStock
             ])
             ->get()
             ->filter(fn ($row) => $row->quantity > 0)
-            ->map(fn ($row) => $this->isObscured ? [
-                'quantity'          => (float) $row->quantity,
-                'eta'               => $row->typed_eta || $row->parent_type !== 'OrgPartner'
-                    ? $this->eta($row->typed_eta)
-                    : $this->partnerDeliveryEta($row),
-                'is_estimate'       => !$row->typed_eta && $row->parent_type === 'OrgPartner',
-            ] : [
+            ->map(fn ($row) => [
                 'type'              => 'stock_delivery',
                 'supplier_name'     => $row->parent_name,
                 'supplier_code'     => $row->parent_code,
@@ -294,13 +289,7 @@ class GetProductIncomingStock
             ])
             ->get()
             ->filter(fn ($row) => $row->quantity > 0)
-            ->map(fn ($row) => $this->isObscured ? [
-                'quantity'          => (float) $row->quantity,
-                'eta'               => $row->typed_eta || $row->parent_type !== 'OrgPartner'
-                    ? $this->eta($row->typed_eta)
-                    : $this->partnerDeliveryEta($row),
-                'is_estimate'       => !$row->typed_eta && $row->parent_type === 'OrgPartner',
-            ] : [
+            ->map(fn ($row) => [
                 'type'              => 'purchase_order',
                 'supplier_name'     => $row->parent_name,
                 'supplier_code'     => $row->parent_code,
@@ -415,11 +404,7 @@ class GetProductIncomingStock
             $orgPartner = $orgPartners->get($item->org_partner_id);
             $durations  = GetPartnerSupplyDurations::run($orgPartner);
             $toBuyer    = $durations['dispatch'] + $durations['transit'];
-            $line       = fn (string $reference, string $label, float $quantity, string $eta) => $this->isObscured ? [
-                'quantity'          => round($quantity, 3),
-                'eta'               => $eta,
-                'is_estimate'       => true,
-            ] : [
+            $line       = fn (string $reference, string $label, float $quantity, string $eta) => [
                 'type'              => 'partner_request',
                 'supplier_name'     => $item->partner_name,
                 'supplier_code'     => $item->partner_code,

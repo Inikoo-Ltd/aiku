@@ -1191,6 +1191,7 @@ class EditShop extends OrgAction
                                 'connected'        => $isMailboxConnected,
                                 'email'            => $mailboxEmail,
                                 'connected_at'     => $mailboxConnectedAt,
+                                'revoked_at'       => Arr::get($shop->settings, 'gmail.revoked_at'),
                                 'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]).($request->query('section') ? '?section='.$request->query('section') : ''),
                                 'disconnect_route' => [
                                     'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',

@@ -30,6 +30,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -327,7 +328,7 @@ class ShowOrgChatInbox extends OrgAction
                 'is_read_only' => !$this->userCanActOnChatOnShop($user, $shop),
                 // A shop with no mailbox connected can send nothing, so the inbox does not offer
                 // to write from it. The customer still has to have an address of their own.
-                'can_start_email' => filled(Arr::get($shop->settings, 'gmail.email')),
+                'can_start_email' => GmailClient::isShopMailboxUsable($shop),
             ];
         })->values()->all();
     }

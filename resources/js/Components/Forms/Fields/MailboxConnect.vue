@@ -3,7 +3,7 @@ import { ref, onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faEnvelope, faCheckCircle } from "@fal"
+import { faEnvelope, faCheckCircle, faExclamationTriangle } from "@fal"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -16,6 +16,7 @@ const props = defineProps<{
             connected: boolean
             email: string | null
             connected_at: string | null
+            revoked_at?: string | null
             connect_url: string
             disconnect_route: { name: string; parameters: any }
             inbox_url?: string
@@ -75,10 +76,18 @@ const disconnect = () => {
     <div class="w-full max-w-2xl rounded-md border border-gray-200 bg-white p-4">
         <template v-if="fieldData.value.connected">
             <div class="flex items-start gap-3">
-                <FontAwesomeIcon :icon="faCheckCircle" class="mt-0.5 text-green-500" fixed-width />
+                <FontAwesomeIcon v-if="fieldData.value.revoked_at" :icon="faExclamationTriangle" class="mt-0.5 text-amber-500" fixed-width />
+                <FontAwesomeIcon v-else :icon="faCheckCircle" class="mt-0.5 text-green-500" fixed-width />
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-medium text-gray-700 truncate">{{ fieldData.value.email }}</div>
-                    <div class="text-xs text-gray-500">
+                    <div v-if="fieldData.value.revoked_at" class="text-xs text-amber-700">
+                        {{ ctrans("Google stopped this connection") }} · {{ useFormatTime(fieldData.value.revoked_at) }}.
+                        {{ ctrans("No mail is fetched until it is reconnected.") }}
+                        <a :href="fieldData.value.connect_url" class="mt-2 block">
+                            <Button :label="ctrans('Reconnect Google mailbox')" :icon="faEnvelope" type="primary" size="xs" />
+                        </a>
+                    </div>
+                    <div v-else class="text-xs text-gray-500">
                         {{ ctrans("Connected") }}<template v-if="fieldData.value.connected_at"> · {{ useFormatTime(fieldData.value.connected_at) }}</template>
                     </div>
                     <p class="mt-2 text-xs text-gray-500">

@@ -20,6 +20,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\JsonResponse;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -189,7 +190,7 @@ class StoreOfflineMessage
     {
         $settings = $session->shop?->settings ?? [];
 
-        if (!Arr::get($settings, 'chat.email_offline_replies') || blank(Arr::get($settings, 'gmail.email'))) {
+        if (!Arr::get($settings, 'chat.email_offline_replies') || !$session->shop || !GmailClient::isShopMailboxUsable($session->shop)) {
             return;
         }
 

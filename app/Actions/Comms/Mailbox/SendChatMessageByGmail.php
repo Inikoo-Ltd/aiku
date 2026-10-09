@@ -18,6 +18,7 @@ use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\ReleaseWhenGmailRateLimited;
 use Illuminate\Support\Arr;
+use RuntimeException;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry\Laravel\Facade as Sentry;
@@ -50,6 +51,10 @@ class SendChatMessageByGmail
         $client = GmailClient::forShop($session->shop);
 
         if (! $client) {
+            if (filled(Arr::get($session->shop->settings, 'gmail.revoked_at'))) {
+                throw new RuntimeException("Reply {$chatMessage->id} not emailed: Google stopped the {$session->shop->slug} mailbox connection, it needs reconnecting");
+            }
+
             return;
         }
 

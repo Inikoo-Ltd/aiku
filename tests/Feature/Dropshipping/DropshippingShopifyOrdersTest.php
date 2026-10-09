@@ -572,6 +572,10 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
             ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, "HTTP $status");
     }
 
+    ShopifyFake::fake(['getUnfulfilledOrders' => Http::response(['errors' => [['message' => 'Access denied for orders field. Shop is under review.', 'extensions' => ['code' => 'SHOP_PENDING_TERMINATION']]]])]);
+    expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
+        ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, 'SHOP_PENDING_TERMINATION');
+
     ShopifyFake::fake([
         'getFulfilmentOrder' => ShopifyFake::graphql(['order' => $orderNode('gid://shopify/Order/5030', [$fulfilmentOrder('gid://shopify/FulfillmentOrder/6030', 'IN_PROGRESS')])]),
     ]);

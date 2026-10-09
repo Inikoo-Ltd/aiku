@@ -333,14 +333,18 @@ trait WithWixExternalShopApi
      */
     protected function setWixV1ProductInventory(WixUser $wixUser, string $productId, array $variantQuantities): array
     {
-        $inventoryItemId = Arr::get($this->wixRequest($wixUser, 'POST', '/stores/v2/inventoryItems/query', [
+        $query = $this->wixRequest($wixUser, 'POST', '/stores/v2/inventoryItems/query', [
             'query' => [
                 'filter' => json_encode(['productId' => ['$eq' => $productId]]),
                 'paging' => ['limit' => 1, 'offset' => 0],
             ],
-        ]), 'inventoryItems.0.id');
+        ]);
 
-        if (!$inventoryItemId) {
+        if (Arr::has($query, 'message')) {
+            return $query;
+        }
+
+        if (!$inventoryItemId = Arr::get($query, 'inventoryItems.0.id')) {
             return ['message' => 'Wix inventory item not found for product '.$productId];
         }
 

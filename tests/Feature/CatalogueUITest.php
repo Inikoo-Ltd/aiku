@@ -1250,6 +1250,16 @@ test('website pages swap imgproxy urls for short signed links that serve the sam
         ->assertSee('avif-bytes');
     $this->get(Str::after($shortOriginal, 'https://www.shop.test'))->assertOk();
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request->url() === $thumb);
+
+    config(['img-proxy.internal_url' => 'http://127.0.0.1:8094']);
+    \Illuminate\Support\Facades\Http::fake([
+        '127.0.0.1:8094/*' => \Illuminate\Support\Facades\Http::response('local-bytes', 200, ['Content-Type' => 'image/avif']),
+    ]);
+    $this->get(Str::after($shortThumb, 'https://www.shop.test'))->assertOk()->assertSee('local-bytes');
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request->url() === Str::replaceStart(config('img-proxy.base_url'), 'http://127.0.0.1:8094', $thumb));
+
+    \Illuminate\Support\Facades\Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 28'));
+    $this->get(Str::after($shortThumb, 'https://www.shop.test'))->assertStatus(504)->assertHeader('Cache-Control', 'max-age=60, public');
 });
 
 test('products export ends with the weight unit columns', function () {

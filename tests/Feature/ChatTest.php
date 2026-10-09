@@ -8831,6 +8831,31 @@ test('when gmail refuses the live fetch for its quota, the archive of that mailb
     expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeFalse();
 });
 
+test('a mailbox whose google token is revoked is marked and left alone until it is reconnected', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '100'];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::flush();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['error' => 'invalid_grant', 'error_description' => 'Token has been expired or revoked.'], 400),
+    ]);
+
+    expect(fn () => \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop))->toThrow(\Illuminate\Http\Client\RequestException::class)
+        ->and(Arr::get($this->shop->fresh()->settings, 'gmail.revoked_at'))->not->toBeNull();
+
+    $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
+
+    expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop->fresh()))->toBe(0)
+        ->and(count(\Illuminate\Support\Facades\Http::recorded()))->toBe($requestsBefore);
+
+    expect(\App\Services\Gmail\GmailClient::isShopMailboxUsable($this->shop->fresh()))->toBeFalse();
+
+    $settings = $this->shop->fresh()->settings;
+    Arr::forget($settings, 'gmail');
+    $this->shop->update(['settings' => $settings]);
+});
+
 test('the archive reads at most its hourly share of a mailbox, a hundred mails a page, and waits for the next hour once it is spent', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];

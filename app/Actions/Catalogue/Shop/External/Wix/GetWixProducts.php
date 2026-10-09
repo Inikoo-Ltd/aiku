@@ -87,7 +87,7 @@ class GetWixProducts extends OrgAction
             'code'                  => $sku,
             'name'                  => $wixVariant['name'],
             'description'           => $wixVariant['description'] ?? $wixVariant['name'],
-            'rrp'                   => $wixVariant['price'],
+            'rrp'                   => $wixVariant['price'] > 0 ? $wixVariant['price'] : null,
             'price'                 => $wixVariant['price'],
             'marketplace_id'        => $wixVariant['variant_id'],
             'marketplace_second_id' => $wixVariant['product_id'],

@@ -39,9 +39,14 @@ final class GmailClient
     {
     }
 
+    public static function isShopMailboxUsable(Shop $shop): bool
+    {
+        return filled(Arr::get($shop->settings, 'gmail.email')) && blank(Arr::get($shop->settings, 'gmail.revoked_at'));
+    }
+
     public static function forShop(Shop $shop): ?self
     {
-        if (blank(Arr::get($shop->settings, 'gmail.refresh_token'))) {
+        if (blank(Arr::get($shop->settings, 'gmail.refresh_token')) || filled(Arr::get($shop->settings, 'gmail.revoked_at'))) {
             return null;
         }
 
@@ -50,7 +55,7 @@ final class GmailClient
 
     public static function forProcurement(Organisation $organisation): ?self
     {
-        if (blank(Arr::get($organisation->settings, 'procurement.gmail.refresh_token'))) {
+        if (blank(Arr::get($organisation->settings, 'procurement.gmail.refresh_token')) || filled(Arr::get($organisation->settings, 'procurement.gmail.revoked_at'))) {
             return null;
         }
 
@@ -94,10 +99,25 @@ final class GmailClient
                 'client_secret' => config('services.gmail.client_secret'),
                 'refresh_token' => $refreshToken,
                 'grant_type'    => 'refresh_token',
-            ])->throw();
+            ]);
 
-            return $response->json('access_token');
+            if ($response->json('error') === 'invalid_grant') {
+                $this->markRevoked();
+            }
+
+            return $response->throw()->json('access_token');
         });
+    }
+
+    /**
+     * Google refuses a refresh token for good once it is revoked or expired, so the mailbox is
+     * left alone until someone reconnects it (the callback writes the connection afresh).
+     */
+    private function markRevoked(): void
+    {
+        $settings = $this->owner->settings ?? [];
+        data_set($settings, $this->settingsKey.'.revoked_at', now()->toIso8601String());
+        $this->owner->updateQuietly(['settings' => $settings]);
     }
 
     public function profile(): array

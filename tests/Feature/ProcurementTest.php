@@ -201,6 +201,7 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
@@ -5877,6 +5878,19 @@ describe('partner shopping list', function () {
         expect($line['reference'])->toBe($result['orders'][0]->reference)
             ->and($line['state_label'])->toStartWith('Picked by')
             ->and($line['quantity'])->toBe(3.0);
+    });
+
+    test('a website shows quantity and date only of a partner purchase order on its way', function () {
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
+        $purchaseOrder = $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->first()
+            ?? StorePurchaseOrder::make()->action($this->orgPartner->refresh(), PurchaseOrder::factory()->definition());
+        StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $this->buyerOrgStock, ['quantity_ordered' => 5]);
+        $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'delivery_state' => PurchaseOrderDeliveryStateEnum::CONFIRMED]);
+
+        $product = (new \App\Models\Catalogue\Product())->setRelation('orgStocks', collect([$this->buyerOrgStock]));
+        $line    = collect(GetProductIncomingStock::run($product, true))->firstWhere('quantity', 5.0);
+
+        expect($line)->toBe(['quantity' => 5.0, 'eta' => null, 'is_estimate' => false]);
     });
 
     test('a partner request in production shows its job order and who is making it', function () {

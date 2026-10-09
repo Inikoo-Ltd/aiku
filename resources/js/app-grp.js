@@ -23,6 +23,7 @@ import ConfirmationService from "primevue/confirmationservice";
 import { ZiggyVue } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { ctrans } from "@/Composables/useTrans";
+import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
   const options = {
@@ -111,6 +112,8 @@ createInertiaApp(
                       replaysSessionSampleRate: 0.01,
                       replaysOnErrorSampleRate: 1.0,
                       profilesSampleRate      : 1.0,
+                      ignoreErrors            : sentryIgnoreErrors,
+                      denyUrls                : sentryDenyUrls,
                       integrations            : [
                         new Sentry.BrowserTracing({
                                                     routingInstrumentation: inertiaRoutingInstrumentation,

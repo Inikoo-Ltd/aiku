@@ -844,6 +844,40 @@ test('a product can be priced at zero, free gifts are not editable otherwise', f
     expect((float)$product->refresh()->price)->toBe(0.0);
 })->depends('create family');
 
+test('a free Wix variant syncs onto an existing product without an rrp', function (ProductCategory $family) {
+    $product = StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10, 'rrp' => 12]
+    ));
+
+    $synced = \App\Actions\Catalogue\Shop\External\Wix\GetWixProducts::make()->upsertWixProduct($product->shop, [
+        'product_id'  => 'wix-free-gift',
+        'variant_id'  => 'wix-free-gift-variant',
+        'sku'         => $product->code,
+        'name'        => 'Free gift',
+        'description' => null,
+        'price'       => 0.0,
+        'image'       => null,
+        'visible'     => true,
+    ]);
+
+    expect($synced?->id)->toBe($product->id)
+        ->and((float) $synced->price)->toBe(0.0)
+        ->and($synced->rrp)->toBeNull();
+})->depends('create family');
+
+test('stock changes of several variants of one wix product queue a single inventory push', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $variant = fn (int $id, string $wixProductId) => (new Product())->forceFill(['id' => $id, 'shop_id' => 900001, 'marketplace_second_id' => $wixProductId]);
+    $wixProductId = 'wix-product-'.uniqid();
+
+    \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::dispatch($variant(1, $wixProductId));
+    \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::dispatch($variant(2, $wixProductId));
+    \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::dispatch($variant(3, $wixProductId.'-other'));
+
+    \App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity::assertPushed(2);
+});
+
 test('a product can be exclusive to several customers and only they can see it', function () {
     list($organisation, $user, $shop) = createShop();
 
