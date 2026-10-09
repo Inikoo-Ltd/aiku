@@ -84,6 +84,9 @@ use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\ExternalLink\RecheckExternalLinkStatuses;
+use App\Actions\Web\Seo\CollectSerpTasks;
+use App\Actions\Web\Seo\PostSerpTasks;
+use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\WebsiteNotFoundPath\PruneWebsiteNotFoundPaths;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -1360,6 +1363,39 @@ class Kernel extends ConsoleKernel
                     ),
                 name: 'AuditWebsites',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RefreshTrackedKeywordVolumes::makeJob())
+                    ->dailyAt('00:15')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'RefreshTrackedKeywordVolumes',
+                    ),
+                name: 'RefreshTrackedKeywordVolumes',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PostSerpTasks::makeJob())
+                    ->dailyAt('00:30')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'PostSerpTasks',
+                    ),
+                name: 'PostSerpTasks',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(CollectSerpTasks::makeJob())
+                    ->everyFifteenMinutes()
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'CollectSerpTasks',
+                    ),
+                name: 'CollectSerpTasks',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 

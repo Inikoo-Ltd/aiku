@@ -222,7 +222,7 @@ owner of HELP-3303 decides to drop them.
 
 ## Phase 2: keywords
 
-2.1 is built; 2.2 is not started. See [status.md](status.md).
+2.1 and 2.2 are built. See [status.md](status.md).
 
 ### 2.1 Keyword research
 
@@ -264,37 +264,37 @@ that contain the same words (last 90 days). Every result has a Track action.
 
 ### 2.2 Rank tracking
 
-**Build.**
+Built on 9 October 2026 on DataForSEO's SERP API.
 
-- Pick one SERP provider (DataForSEO, SerpApi, or similar) and one client class for it. Do not
-  scrape Google from our servers: it breaks Google's terms and needs a proxy pool.
-- `seo_tracked_keywords`: shop_id, keyword_id, location_code, language, device, target_webpage_id
-  (nullable), frequency (daily or weekly), is_active.
-- `seo_keyword_rankings`: tracked_keyword_id, date, position (null when not in the top 100),
-  ranking_url, webpage_id, serp_features (json: featured snippet, AI Overview, local pack, ads,
-  shopping), and whether our page is in the AI Overview.
-- `seo_competitors`: shop_id, domain, label. Competitor positions come from the same SERP response,
-  so they cost nothing extra: `seo_competitor_rankings` (tracked_keyword_id, competitor_id, date,
-  position, url).
-- Use the provider's queued mode where it is cheaper than live results; rankings are not needed in
-  real time.
-- Show the Search Console average position beside the tracked position. They measure different
-  things (an average over all impressions against one check from one location) and the team should
-  see both.
+- `PostSerpTasks` (daily 00:30 UTC) queues a Google check for every active tracked keyword that is
+  due: daily ones every day, weekly ones once seven days have passed. It uses the standard queue
+  ($0.0006 per page of 10 results), reading weekly keywords to the top 30 and daily ones to the top
+  20, as in [budget.md](budget.md). Tasks carry a tag with a hash of `APP_URL`, so environments
+  sharing the DataForSEO account never collect each other's tasks. A task with no result after 72
+  hours is posted again.
+- `CollectSerpTasks` (every 15 minutes) reads `tasks_ready` and stores the ready results through
+  `StoreSerpResult`. Reading results is free, so it is not stopped by the monthly budget; posting is.
+- `seo_keyword_rankings`: one row per keyword and day: our organic position (null when not within the
+  depth read), ranking URL and webpage, the SERP features shown (AI Overview, shopping, local pack,
+  ...), whether the AI Overview cites our domain, and the depth read.
+- `seo_competitor_rankings`: each competitor's position and URL from the same result, at no extra cost.
+- `seo_tracked_keywords` keeps the latest check (position, previous position and date, ranking URL,
+  SERP features, AI Overview) for the screen, and the pending task id.
+- `RefreshTrackedKeywordVolumes` (daily 00:15 UTC) refreshes volume, difficulty and intent of tracked
+  keywords older than 30 days through Labs `keyword_overview`, 700 keywords per request, so a keyword
+  added by hand gets its figures the next day.
+- Commands for a manual run: `seo:post_serp_tasks`, `seo:collect_serp_tasks`,
+  `seo:refresh_keyword_volumes`.
 
-**Cost control.** Cost grows with keywords × locations × devices × checks per month. Agree the list
-per shop and the frequency before switching it on, set the per-run budget cap, and show the month's
-spend on the dashboard.
+**Screen.** SEO > Keywords, tab Rankings:
 
-**Screens.** A Rankings tab:
-
-- Visibility: share of tracked keywords in the top 3, top 10 and top 100.
-- Position changes since the previous check, winners and losers.
-- Competitors on the same keywords: their position per keyword, and their visibility next to ours.
-- Intent overview: the share of tracked keywords per intent (for example 40% informational,
-  10% navigational, 30% commercial, 20% transactional), with our visibility within each intent, so
-  the team sees whether we win the buying searches or only the reading ones. Each share opens the
-  keyword list filtered to that intent.
+- Visibility: share of checked keywords in the top 3, 10 and 20, how many went up or down since the
+  previous check, how many AI Overviews cite us, the month's DataForSEO spend.
+- By search intent: share of keywords per intent and our top 10 share within it; each intent filters
+  the table.
+- Competitors on the same keywords: their top 3 and top 10 share next to ours.
+- Table: position, change (with New and Lost), the Search Console average position of the last 28
+  days beside it, ranking page, volume, intent, SERP features and the competitors' positions.
 
 ### Phase 2 is done when
 

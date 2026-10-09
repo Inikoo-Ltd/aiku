@@ -64,7 +64,7 @@ class DataForSeoClient
      */
     public function live(string $endpoint, array $task, ?Website $website = null): array
     {
-        $tasks = $this->send('post', $endpoint, [$task], $website);
+        $tasks = $this->send('post', $endpoint, [$task], $website, true);
 
         return $this->taskResult($tasks[0] ?? []);
     }
@@ -78,16 +78,19 @@ class DataForSeoClient
      */
     public function postTasks(string $endpoint, array $tasks, ?Website $website = null): array
     {
-        return $this->send('post', $endpoint, $tasks, $website);
+        return $this->send('post', $endpoint, $tasks, $website, true);
     }
 
     /**
+     * Reads what is already paid for or free (task results, ready lists, location lists), so it is not
+     * stopped by the monthly budget.
+     *
      * @return array<int, array>
      * @throws DataForSeoException
      */
     public function get(string $endpoint, ?Website $website = null): array
     {
-        $tasks = $this->send('get', $endpoint, null, $website);
+        $tasks = $this->send('get', $endpoint, null, $website, false);
 
         return $this->taskResult($tasks[0] ?? []);
     }
@@ -116,9 +119,9 @@ class DataForSeoClient
      * @return array<int, array>
      * @throws DataForSeoException
      */
-    private function send(string $method, string $endpoint, ?array $tasks, ?Website $website): array
+    private function send(string $method, string $endpoint, ?array $tasks, ?Website $website, bool $isBillable): array
     {
-        if (self::monthSpend() >= self::monthlyBudget()) {
+        if ($isBillable && self::monthSpend() >= self::monthlyBudget()) {
             throw new DataForSeoException(__('The DataForSEO budget for this month (:budget USD) has been reached.', ['budget' => self::monthlyBudget()]), DataForSeoException::BUDGET_REACHED);
         }
 

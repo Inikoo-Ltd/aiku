@@ -11,6 +11,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import SeoKeywordResearch from "@/Components/Seo/SeoKeywordResearch.vue"
 import TableSeoTrackedKeywords from "@/Components/Tables/Grp/Org/Web/TableSeoTrackedKeywords.vue"
 import SeoCompetitors from "@/Components/Seo/SeoCompetitors.vue"
+import SeoRankings from "@/Components/Seo/SeoRankings.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useTabChange } from "@/Composables/tab-change"
@@ -29,6 +30,7 @@ const props = defineProps<{
     spend: { month: number, budget: number }
     research?: object | null
     tracked_keywords?: object
+    rankings?: object
     competitors?: object[]
 }>()
 
@@ -38,6 +40,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const tabComponent = computed(() => ({
     research: SeoKeywordResearch,
     tracked_keywords: TableSeoTrackedKeywords,
+    rankings: SeoRankings,
     competitors: SeoCompetitors,
 })[currentTab.value])
 </script>
@@ -59,5 +62,6 @@ const tabComponent = computed(() => ({
         :canEdit="canEdit"
         :routes="routes"
         :options="options"
-        :query="query" />
+        :query="query"
+        :spend="spend" />
 </template>

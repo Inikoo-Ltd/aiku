@@ -174,7 +174,7 @@ class GetKeywordIdeas
         ];
     }
 
-    private function store(Shop $shop, array $ideas, string $countryCode, string $languageCode): void
+    public function store(Shop $shop, array $ideas, string $countryCode, string $languageCode): void
     {
         $now = now();
 

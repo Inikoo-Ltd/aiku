@@ -16,7 +16,8 @@ Nothing here has been deployed yet.
 | 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO > Missing pages |
 | 1.4 Page speed | Core Web Vitals (LCP, INP, CLS) from real visits, per website and per page, following HELP-3303: Google's Chrome UX Report and visitors' browsers | SEO dashboard: Page speed card and Page speed tab |
 | 2.1 Keyword research | Volume, 12 month trend, difficulty, intent and CPC for up to 5 seed keywords and the keywords that contain them, or the keywords a URL ranks for, through DataForSEO Labs; Search Console queries with the same words | SEO > Keywords: Research tab |
-| Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team; nothing is fetched for them until 2.2 | SEO > Keywords: Tracked keywords and Competitors tabs |
+| Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team | SEO > Keywords: Tracked keywords and Competitors tabs |
+| 2.2 Rank tracking | Google position of every tracked keyword, weekly (top 30) or daily (top 20), with SERP features, AI Overview citations and competitor positions; volumes refreshed monthly | SEO > Keywords: Rankings tab |
 | Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
 
 ## Skipped
@@ -31,8 +32,7 @@ Nothing here has been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 2.2 Rank tracking | Approve the monthly budget ([budget.md](budget.md)); the team fills the tracked keyword list and competitors |
-| 2.1 Monthly refresh of saved keywords | Built with 2.2 |
+| Switching rank tracking on | Approve the monthly budget ([budget.md](budget.md)) and fill the tracked keyword list and competitors; nothing is checked while the list is empty |
 
 ### Phase 3: the outside world
 
@@ -63,7 +63,8 @@ Nothing here has been deployed yet.
    property that is still missing.
 
 Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
-external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC.
+external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
+daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes.
 
 ## Configuration
 

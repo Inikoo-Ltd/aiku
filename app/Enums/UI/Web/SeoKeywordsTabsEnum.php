@@ -18,6 +18,7 @@ enum SeoKeywordsTabsEnum: string
 
     case RESEARCH         = 'research';
     case TRACKED_KEYWORDS = 'tracked_keywords';
+    case RANKINGS         = 'rankings';
     case COMPETITORS      = 'competitors';
 
     public function blueprint(): array
@@ -26,16 +27,21 @@ enum SeoKeywordsTabsEnum: string
             SeoKeywordsTabsEnum::RESEARCH => [
                 'title'   => __('Research'),
                 'icon'    => 'fal fa-search',
-                'tooltip' => __('Search volumes and related keywords from Google Ads Keyword Planner, plus the matching queries this website already gets from Google Search Console.'),
+                'tooltip' => __('Search volume, difficulty and intent of keywords and the longer keywords that contain them, from DataForSEO, plus the matching queries this website already gets from Google Search Console.'),
             ],
             SeoKeywordsTabsEnum::TRACKED_KEYWORDS => [
                 'title'   => __('Tracked keywords'),
                 'icon'    => 'fal fa-key',
-                'tooltip' => __('Keywords whose Google position will be checked for this shop, with the country, language, device and how often to check.'),
+                'tooltip' => __('Keywords whose Google position is checked for this shop, with the country, language, device and how often to check.'),
+            ],
+            SeoKeywordsTabsEnum::RANKINGS => [
+                'title'   => __('Rankings'),
+                'icon'    => 'fal fa-trophy',
+                'tooltip' => __('Google positions of the tracked keywords, with the competitors on the same keywords.'),
             ],
             SeoKeywordsTabsEnum::COMPETITORS => [
                 'title'   => __('Competitors'),
-                'icon'    => 'fal fa-trophy',
+                'icon'    => 'fal fa-users',
                 'tooltip' => __('Domains to compare against: their positions on the tracked keywords, and later their backlinks.'),
             ],
         };
