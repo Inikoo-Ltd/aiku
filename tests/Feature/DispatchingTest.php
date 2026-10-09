@@ -6046,7 +6046,6 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->where('completeness.rows', []));
 
     $tradeUnit->update(['packaging_family_id' => null]);
-    $build();
 
     $report()->assertInertia(fn (AssertableInertia $page) => $page
         ->where('completeness.summary.coverage', 0)
@@ -6059,7 +6058,7 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->where('completeness.rows.0.share', 100));
 });
 
-test('the UK packaging workbook loads as legacy packaging per trade unit, own brand by code prefix and candle glass left out', function () {
+test('the UK packaging workbook loads as legacy packaging per trade unit, own brand by code prefix and glass of the Candles sheet left out', function () {
     $sko = function (string $code, int $units, ?string $tariff = null) {
         $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
         $orgStock  = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, Stock::factory()->definition()));
@@ -6078,11 +6077,12 @@ test('the UK packaging workbook loads as legacy packaging per trade unit, own br
     $sheet->fromArray([
         ['Sku', 'SKO description', 'Tariff code', 'SKO weight (Kg)', 'Units per SKO', 'Weight shown in website (Kg)', 'Locations', 'Plastic (G)', 'Glass (G)', 'Paper (G)', 'aluminium (G)', 'Steel (G)', 'Wood (G)', 'Other (G)'],
         ["$prefix-01", 'Bowls', '6912', null, 4, null, null, 8, 0, 100, 0, 0, 0, 0],
-        ["X$prefix-02", 'Candle', '3406000000', null, 1, null, null, 0, 1000, 112, 0, 0, 0, 0],
+        ["X$prefix-02", 'Candle', null, null, 1, null, null, 0, 1000, 112, 0, 0, 0, 0],
         ["X$prefix-03", 'Nothing', null, null, 1, null, null, 0, 0, 0, 0, 0, 0, 0],
         ['NOT-IN-AIKU-'.$prefix, 'Missing', null, null, 1, null, null, 5, 0, 0, 0, 0, 0, 0],
     ]);
     $book->createSheet()->setTitle('AWA-Family')->fromArray([[$prefix]]);
+    $book->createSheet()->setTitle('Candles')->fromArray([[mb_strtolower("X$prefix-0")]]);
     $path = tempnam(sys_get_temp_dir(), 'epr').'.xlsx';
     (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($path);
 

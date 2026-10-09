@@ -26,8 +26,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 /**
  * Loads the packaging weights of the UK packaging workbook (Products and AWA-Family sheets) as one legacy packaging
  * family per SKO: a component per material with grams, divided by the trade units in the SKO so the weight is per
- * unit. Families from the AWA-Family prefixes are own brand. Candles (tariff 3406) lose their glass, as the workbook's
- * macro did, because the jar is the product. Trade units that already have packaging from anywhere else are left alone.
+ * unit. Families from the AWA-Family prefixes are own brand. Candles lose their glass, as the workbook's macro did,
+ * because the jar is the product: the SKOs whose code starts with an entry of the Candles sheet, or with tariff 3406
+ * when the workbook has no Candles sheet. Trade units that already have packaging from anywhere else are left alone.
  */
 class ImportLegacyUkPackaging
 {
@@ -163,8 +164,12 @@ class ImportLegacyUkPackaging
     {
         $reader = IOFactory::createReader('Xlsx');
         $reader->setReadDataOnly(true);
-        $reader->setLoadSheetsOnly(['Products', 'AWA-Family']);
+        $reader->setLoadSheetsOnly(['Products', 'AWA-Family', 'Candles']);
         $book = $reader->load($path);
+
+        $candlePrefixes = $book->getSheetByName('Candles')
+            ? array_values(array_filter(array_map(fn (array $row) => mb_strtolower(trim((string)$row[0])), $book->getSheetByName('Candles')->toArray(null, true, false, false))))
+            : null;
 
         $skos = [];
         foreach (array_slice($book->getSheetByName('Products')->toArray(null, true, false, false), 1) as $row) {
@@ -175,7 +180,9 @@ class ImportLegacyUkPackaging
             $skos[mb_strtolower($code)] = [
                 'code'   => $code,
                 'name'   => $row[1] ? trim((string)$row[1]) : null,
-                'candle' => str_starts_with(trim((string)$row[2]), '3406'),
+                'candle' => $candlePrefixes === null
+                    ? str_starts_with(trim((string)$row[2]), '3406')
+                    : collect($candlePrefixes)->contains(fn (string $prefix) => str_starts_with(mb_strtolower($code), $prefix)),
                 'grams'  => array_map(fn (int $column) => max(0.0, (float)$row[$column]), array_combine(array_keys(self::MATERIALS), array_keys(self::MATERIALS))),
             ];
         }

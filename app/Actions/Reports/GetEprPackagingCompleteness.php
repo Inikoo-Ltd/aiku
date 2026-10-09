@@ -79,17 +79,17 @@ class GetEprPackagingCompleteness
     {
         $rows = DB::select(
             <<<'SQL'
-            SELECT l.org_stock_id, os.code, os.name, l.trade_unit_id, tu.slug AS trade_unit_slug, l.packaging_family_id, pf.code AS packaging_family_code, pf.source,
-                (SELECT COUNT(*) FROM packaging_family_has_components c WHERE c.packaging_family_id = l.packaging_family_id) AS components,
+            SELECT l.org_stock_id, os.code, os.name, l.trade_unit_id, tu.slug AS trade_unit_slug, tu.packaging_family_id, pf.code AS packaging_family_code, pf.source,
+                (SELECT COUNT(*) FROM packaging_family_has_components c WHERE c.packaging_family_id = tu.packaging_family_id) AS components,
                 SUM(l.quantity) AS units,
                 SUM(l.quantity) FILTER (WHERE l.activity IN ('imported', 'bought_domestic', 'purchase_unknown_origin', 'packed_filled')) AS units_in,
                 SUM(l.quantity) FILTER (WHERE l.activity IN ('sold_domestic', 'exported', 'sale_unknown_country')) AS units_out
             FROM epr_flow_lines l
             LEFT JOIN org_stocks os ON os.id = l.org_stock_id
             LEFT JOIN trade_units tu ON tu.id = l.trade_unit_id
-            LEFT JOIN packaging_families pf ON pf.id = l.packaging_family_id
+            LEFT JOIN packaging_families pf ON pf.id = tu.packaging_family_id
             WHERE l.organisation_id = ? AND l.date BETWEEN ? AND ?
-            GROUP BY l.org_stock_id, os.code, os.name, l.trade_unit_id, tu.slug, l.packaging_family_id, pf.code, pf.source
+            GROUP BY l.org_stock_id, os.code, os.name, l.trade_unit_id, tu.slug, tu.packaging_family_id, pf.code, pf.source
             SQL,
             [$organisation->id, $from->toDateString(), $to->toDateString()]
         );
@@ -121,8 +121,9 @@ class GetEprPackagingCompleteness
         $rows = DB::select(
             <<<'SQL'
             SELECT l.activity, SUM(l.quantity) AS units,
-                SUM(l.quantity) FILTER (WHERE EXISTS (SELECT 1 FROM packaging_family_has_components c WHERE c.packaging_family_id = l.packaging_family_id)) AS covered
+                SUM(l.quantity) FILTER (WHERE EXISTS (SELECT 1 FROM packaging_family_has_components c WHERE c.packaging_family_id = tu.packaging_family_id)) AS covered
             FROM epr_flow_lines l
+            LEFT JOIN trade_units tu ON tu.id = l.trade_unit_id
             WHERE l.organisation_id = ? AND l.date BETWEEN ? AND ?
             GROUP BY l.activity
             SQL,

@@ -132,7 +132,8 @@ class GetUkPackagingReturn
             SELECT l.activity, pf.brand_ownership, pf.end_use, pc.packaging_level, pc.material_category, pc.ram_rating, pc.is_beverage_container,
                 SUM(l.quantity * pc.weight_g * fhc.quantity_per_unit) / 1000 AS kg
             FROM epr_flow_lines l
-            JOIN packaging_families pf ON pf.id = l.packaging_family_id AND NOT pf.is_product_itself
+            JOIN trade_units tu ON tu.id = l.trade_unit_id
+            JOIN packaging_families pf ON pf.id = tu.packaging_family_id AND NOT pf.is_product_itself
             JOIN packaging_family_has_components fhc ON fhc.packaging_family_id = pf.id
             JOIN packaging_components pc ON pc.id = fhc.packaging_component_id
             WHERE l.organisation_id = ? AND l.date BETWEEN ? AND ?

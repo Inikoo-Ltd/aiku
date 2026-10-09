@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * One goods movement line classified for packaging EPR, rebuilt from stock deliveries and delivery notes by BuildEprFlowLines.
+ * packaging_family_id is the trade unit's packaging when the line was built; reports read the trade unit's current one.
  *
  * @property int $id
  * @property int $group_id
