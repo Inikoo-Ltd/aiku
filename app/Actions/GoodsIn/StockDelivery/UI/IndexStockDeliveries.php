@@ -419,6 +419,8 @@ class IndexStockDeliveries extends OrgAction
 
         if ($this->onlyStagedContainers !== null) {
             $title = $this->onlyStagedContainers ? __('Current staged containers') : __('Past containers');
+        } elseif ($this->parent instanceof Organisation && $this->getParentOrganisationAgent($this->parent)) {
+            $title = __('Containers');
         }
 
         if ($this->parent instanceof OrgAgent) {

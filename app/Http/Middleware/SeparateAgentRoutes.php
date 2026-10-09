@@ -35,8 +35,8 @@ class SeparateAgentRoutes
         $route        = $request->route();
         $routeName    = (string) $route?->getName();
         $organisation = $route?->parameter('organisation');
-        $organisation = $organisation instanceof Organisation ? $organisation : Organisation::where('slug', $organisation)->first();
-        $isAgent      = $organisation?->type === OrganisationTypeEnum::AGENT;
+        $organisationType = $organisation instanceof Organisation ? $organisation->type : Organisation::where('slug', $organisation)->value('type');
+        $isAgent          = $organisationType === OrganisationTypeEnum::AGENT || $organisationType === OrganisationTypeEnum::AGENT->value;
 
         if (str_starts_with($routeName, self::AGENT_PREFIX)) {
             abort_unless($isAgent, 404);

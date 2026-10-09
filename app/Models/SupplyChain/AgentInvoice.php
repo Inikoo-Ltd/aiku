@@ -8,6 +8,7 @@
 
 namespace App\Models\SupplyChain;
 
+use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
@@ -25,7 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $agent_id
  * @property int $organisation_id
  * @property int $stock_delivery_id
- * @property int $number
+ * @property int|null $number
+ * @property StockDeliveryInvoiceSourceEnum $source
  * @property string $reference
  * @property \Illuminate\Support\Carbon $date
  * @property int $currency_id
@@ -35,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $total_amount
  * @property array<int, array{stock_delivery_item_id: int, org_stock_id: int|null, code: string|null, name: string|null, quantity: float, unit_price: float, amount: float}> $lines
  * @property array<int, array{description: string, type: string, amount: float}> $charges
+ * @property array<string, mixed> $data
  */
 class AgentInvoice extends Model
 {
@@ -42,12 +45,16 @@ class AgentInvoice extends Model
 
     protected $guarded = [];
 
+    private ?array $advancePaymentsCache = null;
+
     protected function casts(): array
     {
         return [
-            'date'  => 'date',
+            'date'    => 'date',
+            'source'  => StockDeliveryInvoiceSourceEnum::class,
             'lines'   => 'array',
             'charges' => 'array',
+            'data'    => 'array',
         ];
     }
 
@@ -79,6 +86,10 @@ class AgentInvoice extends Model
      */
     public function advancePayments(): array
     {
+        if ($this->advancePaymentsCache !== null) {
+            return $this->advancePaymentsCache;
+        }
+
         $deposits = $this->stockDelivery->depositApplications()
             ->with('aspoDeposit:id,reference')
             ->get()
@@ -99,7 +110,7 @@ class AgentInvoice extends Model
                 'amount'    => (float) $payment->amount,
             ]);
 
-        return $deposits->concat($payments)->values()->all();
+        return $this->advancePaymentsCache = $deposits->concat($payments)->values()->all();
     }
 
     public function paidAmount(): float

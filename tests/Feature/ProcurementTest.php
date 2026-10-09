@@ -8,6 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\SupplyChain\StockDeliveryInvoice\EstimateStockDeliveryInvoice;
+use App\Models\SupplyChain\SupplierInvoice;
+use App\Models\SupplyChain\AgentInvoice;
+use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Actions\Procurement\AgentOrder\SendAgentOrderToAgent;
 use App\Actions\Procurement\AgentOrder\SubmitAgentOrder;
 use App\Actions\Procurement\AgentOrder\StoreAgentOrderLine;
@@ -25,6 +29,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase
 use App\Actions\Maintenance\Procurement\SplitAgentPurchaseOrders;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
+use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
@@ -50,6 +55,7 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
@@ -3138,6 +3144,14 @@ test('new purchase orders use the default warehouse address and show empty physi
             ->etc());
 });
 
+test('an address without a country formats its lines instead of failing', function () {
+    $address = new Address(['address_line_1' => '1 Example Road', 'locality' => 'Trnava', 'postal_code' => '917 01']);
+
+    expect($address->formatted_address)->toBe("1 Example Road\nTrnava\n917 01")
+        ->and($address->getHtml())->toBe("1 Example Road<br />\nTrnava<br />\n917 01")
+        ->and((new Address())->formatted_address)->toBe('');
+});
+
 test('purchase order submit availability follows its submittable items', function () {
     $purchaseOrder = StorePurchaseOrder::make()->action(
         $this->orgSupplier,
@@ -3990,6 +4004,15 @@ test('an agent invoices a container from its lines, adds its charges, takes off 
         ->and((float) $again->total_amount)->toBe(155.5)
         ->and($again->paidAmount())->toBe(50.0)
         ->and($again->balanceDue())->toBe(105.5);
+
+    $summary = ShowStockDelivery::make()->getInvoiceSummary($stockDelivery->refresh());
+
+    expect($summary)->toMatchArray(['kind' => 'agent', 'source' => 'agent', 'reference' => $again->reference, 'goods' => 140.0, 'charges' => 15.5, 'total' => 155.5, 'paid' => 50.0, 'balance_due' => 105.5])
+        ->and($summary['org_currency'])->toBe($stockDelivery->organisation->currency->code);
+
+    $second->updateQuietly(['unit_quantity' => 5]);
+    $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasErrors('invoice');
+    $second->updateQuietly(['unit_quantity' => 4]);
 
     $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasNoErrors();
 
@@ -5798,7 +5821,6 @@ describe('partner shopping list', function () {
             StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
         }
         $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->delete();
-        $this->orgPartner->organisation->warehouses()->with('address')->get()->each(fn ($warehouse) => $warehouse->address?->update(['country_code' => $warehouse->address->country_code ?? 'GB']));
 
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $this->buyerOrgStock->update(['packed_in' => $sellerOrgStock->packed_in]);
@@ -9638,11 +9660,16 @@ test('a placed agent container is costed from its agent invoice and completes it
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
     foreach ($stockDelivery->items()->orderBy('id')->get() as $index => $item) {
-        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $index === 0 ? 10 : 15]);
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $index === 0 ? 12 : 15]);
         SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($this, $item)->id]);
     }
 
     $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+
+    expect($stockDelivery->costs()->count())->toBe(0);
+
+    ApproveAgentInvoiceCharges::make()->handle($stockDelivery);
+    $stockDelivery = $stockDelivery->fresh();
     $items         = $stockDelivery->items()->orderBy('id')->get();
     $costs         = $stockDelivery->costs()->get();
 
@@ -11362,4 +11389,89 @@ test('purchase order edit form takes the deposit amount as a number in the order
         ->assertSessionHasErrors('deposit_amount');
     $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['deposit_amount' => -5])
         ->assertSessionHasErrors('deposit_amount');
+});
+
+test('UI show stock delivery lists its purchase orders in a tab', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PO-TAB-'.Str::random(6), [10]);
+
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.'.StockDeliveryTabsEnum::PURCHASE_ORDERS->value));
+
+    $stockDelivery->purchaseOrders()->syncWithoutDetaching([$this->purchaseOrder->id]);
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::PURCHASE_ORDERS->value)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/StockDelivery')
+            ->has('tabs.navigation.'.StockDeliveryTabsEnum::PURCHASE_ORDERS->value)
+            ->has(StockDeliveryTabsEnum::PURCHASE_ORDERS->value.'.data', 1)
+            ->where(StockDeliveryTabsEnum::PURCHASE_ORDERS->value.'.data.0.reference', $this->purchaseOrder->reference));
+});
+
+test('an Aurora stock delivery gets an estimated supplier or agent invoice from what it recorded, once, and estimates never cost the container', function () {
+    $supplierDelivery = createStockDeliveryWithItems($this, 'EST-SUP-'.Str::random(6), [10, 4]);
+    $supplierDelivery->items()->orderBy('id')->get()->each(fn ($item, $index) => $item->updateQuietly(['net_amount' => [100, 40][$index]]));
+    $supplierDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null, 'cost_items' => 0, 'cost_shipping' => 20, 'cost_extra' => 5]);
+
+    $invoice = EstimateStockDeliveryInvoice::run($supplierDelivery->refresh());
+
+    expect($invoice)->toBeInstanceOf(SupplierInvoice::class)
+        ->and($invoice->source)->toBe(StockDeliveryInvoiceSourceEnum::ESTIMATED)
+        ->and((float) $invoice->goods_amount)->toBe(140.0)
+        ->and((float) $invoice->charges_amount)->toBe(0.0)
+        ->and((float) $invoice->total_amount)->toBe(140.0)
+        ->and(EstimateStockDeliveryInvoice::run($supplierDelivery))->toBeNull()
+        ->and(ShowStockDelivery::make()->getInvoiceSummary($supplierDelivery))->toMatchArray(['kind' => 'supplier', 'source' => 'estimated', 'total' => 140.0, 'paid' => null]);
+
+    $costedDelivery = createStockDeliveryWithItems($this, 'EST-COST-'.Str::random(6), [10, 4]);
+    $costedDelivery->items()->orderBy('id')->get()->each(fn ($item, $index) => $item->updateQuietly(['net_amount' => [100, 40][$index]]));
+    $costedDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null, 'cost_items' => 70, 'cost_extra' => 9]);
+
+    $costedInvoice = EstimateStockDeliveryInvoice::run($costedDelivery->refresh());
+
+    expect((float) $costedInvoice->goods_amount)->toBe(70.0)
+        ->and($costedInvoice->charges)->toBe([])
+        ->and(array_column($costedInvoice->lines, 'amount'))->toEqual([50, 20]);
+
+    $agentDelivery = createStockDeliveryWithItems($this, 'EST-AGT-'.Str::random(6), [10]);
+    $agentDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => $this->agent->id, 'state' => StockDeliveryStateEnum::PLACED, 'is_costed' => false]);
+
+    $agentInvoice = EstimateStockDeliveryInvoice::run($agentDelivery->refresh());
+
+    expect($agentInvoice)->toBeInstanceOf(AgentInvoice::class)
+        ->and($agentInvoice->number)->toBeNull()
+        ->and($agentInvoice->source)->toBe(StockDeliveryInvoiceSourceEnum::ESTIMATED)
+        ->and(ApplyAgentInvoiceCosting::run($agentDelivery->refresh()))->toBeNull();
+});
+
+test('staff enter the real invoice of a delivery in place of its estimate, keeping the estimate, but never over the agent own invoice', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'REAL-INV-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null, 'cost_shipping' => 20, 'cost_extra' => 0]);
+    $estimate = EstimateStockDeliveryInvoice::run($stockDelivery->refresh());
+
+    $this->post(route('grp.models.stock-delivery.invoice.store', $stockDelivery->id), [
+        'reference'    => 'SUP-778',
+        'date'         => '2026-03-02',
+        'goods_amount' => 130,
+        'charges'      => [['description' => 'Sea freight', 'type' => 'freight', 'amount' => 35.5]],
+    ])->assertSessionHasNoErrors();
+
+    $invoice = $stockDelivery->supplierInvoice()->first();
+
+    expect($invoice->id)->toBe($estimate->id)
+        ->and($invoice->source)->toBe(StockDeliveryInvoiceSourceEnum::ACTUAL)
+        ->and($invoice->reference)->toBe('SUP-778')
+        ->and((float) $invoice->total_amount)->toBe(165.5)
+        ->and((float) $invoice->data['estimate']['total_amount'])->toBe((float) $estimate->total_amount)
+        ->and($stockDelivery->refresh()->data['invoice_number'])->toBe('SUP-778');
+
+    $this->post(route('grp.models.stock-delivery.invoice.store', $stockDelivery->id), ['reference' => '', 'date' => 'x', 'goods_amount' => -1, 'charges' => [['description' => '']]])
+        ->assertSessionHasErrors(['reference', 'date', 'goods_amount', 'charges.0.description', 'charges.0.amount']);
+
+    $agentContainer = createStockDeliveryWithItems($this, 'REAL-AGT-'.Str::random(6), [4]);
+    $agentContainer->updateQuietly(['agent_id' => $this->agent->id]);
+    StoreAgentInvoice::make()->handle($this->agent, $agentContainer->refresh());
+
+    $this->post(route('grp.models.stock-delivery.invoice.store', $agentContainer->id), ['reference' => 'X', 'date' => '2026-03-02', 'goods_amount' => 1, 'charges' => []])
+        ->assertSessionHasErrors('invoice');
 });

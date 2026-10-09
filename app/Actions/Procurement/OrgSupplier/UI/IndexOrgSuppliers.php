@@ -138,7 +138,7 @@ class IndexOrgSuppliers extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_org_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_org_supplier_products', label: $parent->type === OrganisationTypeEnum::AGENT ? __('Products') : __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
@@ -184,8 +184,8 @@ class IndexOrgSuppliers extends OrgAction
                         $this->canEdit && $this->parent instanceof Organisation ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('Add supplier'),
-                            'label'   => __('Add supplier'),
+                            'tooltip' => $isAgent ? __('Add supplier') : __('Add suppliers'),
+                            'label'   => $isAgent ? __('Add supplier') : __('Add suppliers'),
                             'route'   => [
                                 'name'       => $isAgent ? 'grp.org.procurement.org_suppliers.create_new' : 'grp.org.procurement.org_suppliers.create',
                                 'parameters' => [$this->parent->slug],

@@ -22,6 +22,7 @@ import { useBoardDropZones } from "@/Composables/useBoardDropZones"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -763,6 +764,17 @@ const cancelAssign = () => {
 											@click.stop
 											>{{ element.reference }}</Link
 										>
+										<TicketUserHoverCard
+											v-if="element.reporter"
+											:name="element.reporter"
+											:avatar="element.reporter_avatar ?? null"
+											:username="element.reporter_username ?? null"
+											:reporterKey="element.reporter_key ?? null"
+											:profileUrl="element.reporter_profile_url ?? null"
+											:canMention="false"
+											:menuRole="{ key: 'reporter', label: ctrans('Reporter') }"
+											avatarOnly
+											size="xs" />
 										<span v-if="element.priority_icon" v-tooltip="{ content: ctrans('Urgency') + ': ' + element.priority_label, delay: 0 }" class="shrink-0">
 											<Icon :data="element.priority_icon" />
 										</span>

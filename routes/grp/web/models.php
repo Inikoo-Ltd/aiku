@@ -6,6 +6,10 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
+use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
+use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
+use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use App\Actions\Procurement\AgentOrder\StoreAgentOrder;
 use App\Actions\Procurement\AgentOrder\StoreAgentOrderLine;
 use App\Actions\Procurement\AgentOrder\SubmitAgentOrder;
@@ -1594,8 +1598,13 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inPurchaseOrder'])->name('attachment.detach')->withoutScopedBindings();
 });
 
+Route::delete('agent-payment/{agentPayment:id}', DeleteAgentPayment::class)->name('agent_payment.delete');
+
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
     Route::post('note', [StoreProcurementNote::class, 'inStockDelivery'])->name('note.store');
+    Route::post('invoice', StoreActualStockDeliveryInvoice::class)->name('invoice.store');
+    Route::post('agent-payment', StoreAgentPayment::class)->name('agent_payment.store');
+    Route::post('agent-invoice/approve-charges', ApproveAgentInvoiceCharges::class)->name('agent_invoice.approve_charges');
     Route::patch('update', UpdateStockDelivery::class)->name('update');
     Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
     Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');

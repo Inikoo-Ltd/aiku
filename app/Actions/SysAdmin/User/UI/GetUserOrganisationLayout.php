@@ -166,7 +166,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedShopOrganisations as $organisation) {
+        foreach ($user->authorisedShopOrganisations->load('country:id,code') as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 
@@ -177,7 +177,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedAgentsOrganisations as $organisation) {
+        foreach ($user->authorisedAgentsOrganisations->load('country:id,code') as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 
@@ -188,7 +188,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedDigitalAgencyOrganisations as $organisation) {
+        foreach ($user->authorisedDigitalAgencyOrganisations->load('country:id,code') as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 

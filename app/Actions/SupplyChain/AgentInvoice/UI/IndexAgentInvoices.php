@@ -35,7 +35,7 @@ class IndexAgentInvoices extends OrgAction
 
     public function handle(Agent $agent, ?string $search = null, ?string $filter = null): LengthAwarePaginator
     {
-        $paid = '(coalesce((select sum(amount) from stock_delivery_deposit_applications where stock_delivery_id = agent_invoices.stock_delivery_id), 0)'
+        $paid = '(coalesce((select sum(amount) from stock_delivery_deposit_applications where stock_delivery_id = agent_invoices.stock_delivery_id and deleted_at is null), 0)'
             .' + coalesce((select sum(amount) from agent_payments where stock_delivery_id = agent_invoices.stock_delivery_id and deleted_at is null), 0))';
 
         return AgentInvoice::query()

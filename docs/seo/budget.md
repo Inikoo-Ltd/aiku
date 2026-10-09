@@ -27,7 +27,7 @@ and, since 1 July 2026, no monthly commitment on any API, Backlinks included.
 | 3.1 Backlinks, referring domains, new and lost links, backlink gap | Backlinks | $0.024 per request + $0.000036 per row |
 | 3.2 Competitor ranked keywords, organic competitors, keyword gap | Labs | As above |
 | 3.3 AI visibility | AI Optimization: LLM Scraper (ChatGPT as its users see it, per country), LLM Mentions | Scraper: $0.004 per prompt live (used), $0.0012 through the standard queue (too slow: over 50 minutes for one prompt). Mentions: $0.10 to $0.102 per request, covering our domain and up to nine competitors. Logged by our first requests on 9 October 2026 |
-| 3.5 Competitor search traffic, with history back to October 2020 | Labs: bulk traffic estimation | Labs price per task, up to 1,000 domains in one task |
+| 3.5 Competitor search traffic, with history back to October 2020 | Labs: historical bulk traffic estimation | $0.1224 for a request with two domains and the full history; up to 1,000 domains per request. The price per extra domain is not measured yet |
 
 - Keyword volumes come from Google Ads data without our developer token, so 2.1 does not wait for
   Google Ads Basic access.
@@ -52,9 +52,9 @@ For the 29 live websites.
 | Competitor research and gap tools | $10 | $35 | Ranked keywords per competitor monthly, gap lookups as needed |
 | AI visibility, own prompts | $4 | $15 | 10 brands × 20 prompts / 29 shops × 30 prompts, ChatGPT through the LLM Scraper's live endpoint, weekly |
 | AI visibility, LLM Mentions | $4 | $4 | Monthly, one request per shop and platform: Google AI Overviews where LLM Mentions has the market, ChatGPT (United States) for shops in English |
-| Competitor search traffic | $1 | $1 | Monthly, all domains in one or two requests |
+| Competitor search traffic | $2 | $3 | Monthly, one request per market (about 15) for our websites and their competitors |
 | Content help | $1 | $4 | Up to 30 pages per website a week through the AI gateway |
-| **Total per month** | **~$68** | **~$270** | |
+| **Total per month** | **~$69** | **~$272** | |
 
 Plus about $50 once, to backfill volumes and classify intent for keywords that did not come from
 Labs.
@@ -92,6 +92,12 @@ want, and no price per user.
   competitors, up to nine per shop.
 - **Domains typed into the comparison and gap tools.** Each new domain is a fetch; the 30 day cache
   and the budget cap in the plan keep this bounded.
+
+The DataForSEO account is prepaid and separate from the cap: when its balance runs out every paid
+call fails ("Payment Required", 40200) whatever the budget says, and the runs stop as they do at the
+cap. On 9 October 2026 the account had $1.01 deposited in total and ran out during the 3.5 probes;
+it needs a deposit of at least a month's expected spend before the pilot. The API usage page shows
+the balance.
 
 The cap is one budget for all SEO APIs together (DataForSEO and the AI gateway), not one per
 provider or feature. `SeoApiBudget` enforces it from the `seo_api_requests` log in the

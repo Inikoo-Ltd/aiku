@@ -8,8 +8,11 @@
 namespace App\Actions\Web\Seo;
 
 use App\Models\Web\SeoApiRequest;
+use App\Services\DataForSeo\DataForSeoClient;
+use App\Services\DataForSeo\DataForSeoException;
 use App\Services\SeoApi\SeoApiBudget;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -27,6 +30,8 @@ class GetSeoApiUsage
 
     private const int LATEST_ERRORS = 20;
 
+    private const int BALANCE_CACHE_MINUTES = 10;
+
     /**
      * The feature an endpoint belongs to, first match wins. Labs `ranked_keywords` is used by both
      * keyword research (a URL) and competitor research; it is counted as competitor research.
@@ -39,8 +44,10 @@ class GetSeoApiUsage
         'backlinks/'                              => 'Backlinks',
         'dataforseo_labs/google/keyword_overview' => 'Keyword volumes',
         'dataforseo_labs/google/keyword_'         => 'Keyword research',
+        'dataforseo_labs/google/historical_bulk_' => 'Competitor traffic',
         'dataforseo_labs/google/'                 => 'Competitor research',
         'dataforseo_labs/locations'               => 'Location lists',
+        'appendix/'                               => 'Account balance',
         'searchanalytics'                         => 'Search Console',
         'sites.list'                              => 'Search Console',
     ];
@@ -108,6 +115,7 @@ class GetSeoApiUsage
                 ->map(fn (int $monthsBack) => $month->copy()->subMonths($monthsBack))
                 ->map(fn (Carbon $previous) => ['month' => $previous->toDateString(), 'cost' => round(SeoApiBudget::monthSpend($previous), 2)])
                 ->all(),
+            'provider_balance' => $isCurrent ? self::dataForSeoBalance() : null,
             'latest_errors' => SeoApiRequest::query()
                 ->where('is_success', false)
                 ->latest('id')
@@ -125,6 +133,27 @@ class GetSeoApiUsage
                 ])
                 ->all(),
         ];
+    }
+
+    /**
+     * The money left on the DataForSEO account, which is spent separately from our budget: when it
+     * runs out every paid call fails, whatever the budget says.
+     */
+    public static function dataForSeoBalance(): ?float
+    {
+        $client = DataForSeoClient::make();
+
+        if (!$client) {
+            return null;
+        }
+
+        return Cache::remember('dataforseo:balance', now()->addMinutes(self::BALANCE_CACHE_MINUTES), function () use ($client) {
+            try {
+                return $client->balance();
+            } catch (DataForSeoException) {
+                return null;
+            }
+        });
     }
 
     public static function feature(string $endpoint): string

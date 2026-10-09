@@ -123,6 +123,7 @@ const openLabelModal = async (row: AgentBarcodeRow, level: string) => {
 							</div>
 							<button v-if="barcode.number" type="button"
 								v-tooltip="ctrans('Print PDF label')"
+								:aria-label="ctrans('Print PDF label')"
 								class="shrink-0 rounded p-1.5 text-gray-400 transition hover:bg-[--app-accent-soft] hover:text-[--app-accent] disabled:cursor-wait"
 								:disabled="loadingKey !== null"
 								@click="openLabelModal(row, barcode.level)">

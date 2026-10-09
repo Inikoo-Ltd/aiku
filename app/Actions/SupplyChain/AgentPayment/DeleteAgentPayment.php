@@ -10,7 +10,6 @@ namespace App\Actions\SupplyChain\AgentPayment;
 
 use App\Actions\OrgAction;
 use App\Models\SupplyChain\AgentPayment;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -25,13 +24,12 @@ class DeleteAgentPayment extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $request->user()->authTo(["procurement.{$this->organisation->id}.edit", "accounting.{$this->organisation->id}.edit"]);
     }
 
-    public function asController(Organisation $organisation, AgentPayment $agentPayment, ActionRequest $request): AgentPayment
+    public function asController(AgentPayment $agentPayment, ActionRequest $request): AgentPayment
     {
-        abort_unless($organisation->agent?->id === $agentPayment->agent_id, 404);
-        $this->initialisation($organisation, $request);
+        $this->initialisation($agentPayment->organisation, $request);
 
         return $this->handle($agentPayment);
     }

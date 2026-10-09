@@ -1,19 +1,10 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Fri, 09 Oct 2026 Malaysia Time, Kuala Lumpur, Malaysia
-  - Copyright (c) 2026, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
-import Dialog from "primevue/dialog"
-import DatePicker from "primevue/datepicker"
 import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
-import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -45,7 +36,6 @@ interface Payment {
 	amount: number
 	reference: string | null
 	notes: string | null
-	destroy_route: routeType
 }
 
 const props = defineProps<{
@@ -63,13 +53,13 @@ const props = defineProps<{
 			advance_payments: AdvancePayment[]
 			paid_amount: number
 			balance_due: number
+			charges_approved: boolean
 			pdf_route: routeType
 		} | null
 		payments: Payment[]
 		is_open: boolean
 		store_route: routeType
 		charges_update_route: routeType | null
-		payment_store_route: routeType
 	}
 	currencyCode: string
 }>()
@@ -84,7 +74,7 @@ const money = (amount: number) => locale.currencyFormat(props.data.invoice?.curr
 
 const errorMessage = computed(() => {
 	const errors = (page.props.errors ?? {}) as Record<string, string>
-	return Object.entries(errors).find(([key]) => key === "invoice" || key.startsWith("charges") || ["date", "amount", "reference", "notes"].includes(key))?.[1]
+	return Object.entries(errors).find(([key]) => key === "invoice" || key.startsWith("charges"))?.[1]
 })
 
 const onError = (errors: Record<string, string>) =>
@@ -136,49 +126,6 @@ const saveCharges = () => {
 
 const deposits = computed(() => props.data.invoice?.advance_payments.filter(payment => payment.type === "deposit") ?? [])
 
-const isPaymentDialogOpen = ref(false)
-const paymentLoading = ref(false)
-const payment = ref<{ date: Date | null; amount: number | null; reference: string; notes: string }>({ date: new Date(), amount: null, reference: "", notes: "" })
-
-const openPaymentDialog = () => {
-	payment.value = { date: new Date(), amount: null, reference: "", notes: "" }
-	isPaymentDialogOpen.value = true
-}
-
-const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-
-const storePayment = () => {
-	if (!payment.value.date || !payment.value.amount) return
-	router.post(
-		route(props.data.payment_store_route.name, props.data.payment_store_route.parameters),
-		{ date: toIsoDate(payment.value.date), amount: payment.value.amount, reference: payment.value.reference || null, notes: payment.value.notes || null },
-		{
-			preserveScroll: true,
-			onStart: () => (paymentLoading.value = true),
-			onFinish: () => (paymentLoading.value = false),
-			onSuccess: () => {
-				isPaymentDialogOpen.value = false
-				notify({ title: ctrans("Payment recorded"), type: "success" })
-			},
-			onError,
-		}
-	)
-}
-
-const confirmDeletePayment = (row: Payment) =>
-	confirm.require({
-		message: ctrans("Remove the payment of :amount from :date?", { amount: String(money(row.amount)), date: useFormatTime(row.date) }),
-		header: ctrans("Remove payment"),
-		acceptLabel: ctrans("Remove"),
-		rejectLabel: ctrans("Cancel"),
-		acceptClass: "p-button-danger",
-		accept: () =>
-			router.delete(route(row.destroy_route.name, row.destroy_route.parameters), {
-				preserveScroll: true,
-				onSuccess: () => notify({ title: ctrans("Payment removed"), type: "success" }),
-				onError,
-			}),
-	})
 </script>
 
 <template>
@@ -237,13 +184,15 @@ const confirmDeletePayment = (row: Payment) =>
 					<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Your charges") }}</h3>
 					<Button v-if="data.is_open" type="transparent" size="xs" icon="fal fa-plus" :label="ctrans('Add')" @click="addCharge" />
 				</div>
+				<p v-if="data.invoice.charges.length && !data.invoice.charges_approved" class="mt-2 rounded bg-amber-50 px-2 py-1 text-sm text-amber-700">{{ ctrans("Your charges are waiting for approval by the organisation paying them") }}</p>
+				<p v-else-if="data.invoice.charges.length" class="mt-2 rounded bg-green-50 px-2 py-1 text-sm text-green-700">{{ ctrans("Charges approved") }}</p>
 				<template v-if="data.is_open">
-					<p v-if="!charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("Commission, packing, freight: anything on top of the goods. Mark freight as Freight, it becomes the container's shipping cost.") }}</p>
-					<div v-for="(charge, index) in charges" :key="index" class="mt-2 flex items-center gap-2">
-						<InputText v-model="charge.description" size="small" class="min-w-0 flex-1" :class="fieldFocusClass" :placeholder="ctrans('Description')" :aria-label="ctrans('Description')" />
+					<p v-if="!charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("Commission, packing, freight: anything on top of the goods. Mark freight charges as Freight so they count as the container's shipping cost.") }}</p>
+					<div v-for="(charge, index) in charges" :key="index" class="mt-2 flex flex-wrap items-center gap-2">
+						<InputText v-model="charge.description" size="small" class="min-w-0 basis-full flex-1 sm:basis-auto" :class="fieldFocusClass" :placeholder="ctrans('Description')" :aria-label="ctrans('Description')" />
 						<SegmentedToggle v-model="charge.type" :options="chargeTypeOptions" :ariaLabel="ctrans('Charge type')" />
 						<InputNumber v-model="charge.amount" mode="currency" :currency="data.invoice.currency_code" :min="0" size="small" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-32 !text-right' } } }" :aria-label="ctrans('Amount')" />
-						<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" @click="removeCharge(index)">
+						<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" :aria-label="ctrans('Remove')" @click="removeCharge(index)">
 							<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
 						</button>
 					</div>
@@ -266,7 +215,6 @@ const confirmDeletePayment = (row: Payment) =>
 			<div class="px-4 py-4">
 				<div class="flex items-center justify-between">
 					<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Paid in advance") }}</h3>
-					<Button type="transparent" size="xs" icon="fal fa-plus" :label="ctrans('Add payment')" @click="openPaymentDialog" />
 				</div>
 				<p v-if="!deposits.length && !data.payments.length" class="mt-2 text-sm text-gray-500">{{ ctrans("No deposits applied and no payments recorded yet.") }}</p>
 				<ul v-else class="mt-2 space-y-1.5 text-sm">
@@ -284,40 +232,10 @@ const confirmDeletePayment = (row: Payment) =>
 							{{ row.reference ?? "—" }}
 							<span class="text-gray-400"> · {{ useFormatTime(row.date) }}</span>
 						</span>
-						<span class="flex items-center gap-2">
-							<span class="tabular-nums text-gray-800">{{ money(row.amount) }}</span>
-							<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" @click="confirmDeletePayment(row)">
-								<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-							</button>
-						</span>
+						<span class="tabular-nums text-gray-800">{{ money(row.amount) }}</span>
 					</li>
 				</ul>
 			</div>
 		</div>
-
-		<Dialog v-model:visible="isPaymentDialogOpen" modal :header="ctrans('Add payment')" class="w-full max-w-md">
-			<div class="space-y-3">
-				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Date") }}</span>
-					<DatePicker v-model="payment.date" dateFormat="dd/mm/yy" :manualInput="false" showIcon iconDisplay="input" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
-				</label>
-				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Amount") }}</span>
-					<InputNumber v-model="payment.amount" mode="currency" :currency="data.invoice?.currency_code ?? currencyCode" :min="0" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
-				</label>
-				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Reference") }}</span>
-					<InputText v-model="payment.reference" class="mt-1 w-full" :class="fieldFocusClass" />
-				</label>
-				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Notes") }}</span>
-					<Textarea v-model="payment.notes" rows="2" class="mt-1 w-full" :class="fieldFocusClass" autoResize />
-				</label>
-			</div>
-			<template #footer>
-				<Button type="tertiary" :label="ctrans('Cancel')" @click="isPaymentDialogOpen = false" />
-				<Button type="save" :label="ctrans('Record payment')" :disabled="!payment.date || !payment.amount" :loading="paymentLoading" @click="storePayment" />
-			</template>
-		</Dialog>
 	</section>
 </template>

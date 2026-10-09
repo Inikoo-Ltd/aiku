@@ -14,6 +14,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Supplier;
@@ -75,6 +76,7 @@ class StoreOrgSupplier extends OrgAction
      */
     public function inOrganisation(Organisation $organisation, Supplier $supplier, ActionRequest $request): OrgSupplier
     {
+        abort_if($organisation->type === OrganisationTypeEnum::AGENT && $supplier->agent_id !== $organisation->agent?->id, 404);
         $this->initialisation($organisation, $request);
 
         $orgSupplier = $this->handle($organisation, $supplier, $this->validatedData);

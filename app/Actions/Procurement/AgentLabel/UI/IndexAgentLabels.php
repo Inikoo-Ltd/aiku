@@ -38,7 +38,6 @@ class IndexAgentLabels extends OrgAction
     {
         $isPublished = fn ($query) => $query->where('state', ArtefactLabelStateEnum::PUBLISHED);
 
-        // ponytail: one unpaginated list, only SKOs with a published label; paginate if an agent reaches a few hundred
         $orgStocks = GetAgentOrgStocks::run($agent)
             ->whereHas('labels', $isPublished)
             ->with(['organisation', 'labels' => $isPublished])
@@ -55,7 +54,7 @@ class IndexAgentLabels extends OrgAction
                     'id'          => $label->id,
                     'name'        => $label->name,
                     'run_sources' => DownloadArtefactLabelPdf::getRunSources($label),
-                    'pdf_url'     => route('grp.org.procurement.agent_labels.pdf', [
+                    'pdf_url'     => route('grp.org.agent.agent_labels.pdf', [
                         'organisation' => $this->organisation->slug,
                         'orgStock'     => $orgStock->id,
                         'label'        => $label->id,
@@ -106,7 +105,7 @@ class IndexAgentLabels extends OrgAction
                         'label' => __('Labels'),
                         'icon'  => 'fal fa-tags',
                         'route' => [
-                            'name'       => 'grp.org.procurement.agent_labels.index',
+                            'name'       => 'grp.org.agent.agent_labels.index',
                             'parameters' => ['organisation' => $routeParameters['organisation']],
                         ],
                     ],

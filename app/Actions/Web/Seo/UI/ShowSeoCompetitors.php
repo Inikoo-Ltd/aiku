@@ -12,15 +12,18 @@ use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Seo\GetDomainComparison;
 use App\Actions\Web\Seo\GetKeywordGap;
 use App\Actions\Web\Seo\GetOrganicCompetitors;
+use App\Actions\Web\Seo\StoreSerpResult;
 use App\Actions\Web\Website\UI\ShowSeoDashboard;
 use App\Enums\UI\Web\SeoCompetitorsTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\SeoCompetitor;
+use App\Models\Web\SeoDomainTraffic;
 use App\Services\DataForSeo\DataForSeoClient;
 use App\Services\DataForSeo\DataForSeoException;
 use Closure;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -50,14 +53,18 @@ class ShowSeoCompetitors extends OrgAction
             $error = $e->getMessage();
         }
 
+        $traffic   = $this->latestTraffic($shop);
+        $trafficOf = fn (string $domain) => isset($traffic[StoreSerpResult::normaliseDomain($domain)]) ? (float) $traffic[StoreSerpResult::normaliseDomain($domain)]->organic_traffic : null;
+
         return [
             'competitors'       => $shop->seoCompetitors()
                 ->orderBy('domain')
                 ->get()
                 ->map(fn (SeoCompetitor $competitor) => [
-                    'id'           => $competitor->id,
-                    'domain'       => $competitor->domain,
-                    'label'        => $competitor->label,
+                    'id'             => $competitor->id,
+                    'domain'         => $competitor->domain,
+                    'label'          => $competitor->label,
+                    'search_traffic' => $trafficOf($competitor->domain),
                     'delete_route' => [
                         'name'       => 'grp.models.seo_competitor.delete',
                         'parameters' => [$competitor->id],
@@ -65,9 +72,39 @@ class ShowSeoCompetitors extends OrgAction
                     ],
                 ])
                 ->all(),
+            'ours'              => $shop->website ? [
+                'domain'         => $shop->website->domain,
+                'search_traffic' => $trafficOf($shop->website->domain),
+            ] : null,
+            'traffic_month'     => $traffic->max('month')?->toDateString(),
             'suggestions'       => $suggestions,
             'suggestions_error' => $error,
         ];
+    }
+
+    /**
+     * The organic search traffic of the latest month with data for our domain and each competitor, in
+     * the shop's market.
+     *
+     * @return Collection<string, SeoDomainTraffic>
+     */
+    private function latestTraffic(Shop $shop): Collection
+    {
+        if (!$shop->website || !$shop->country || !$shop->language) {
+            return collect();
+        }
+
+        $domains = collect([$shop->website->domain, ...$shop->seoCompetitors->pluck('domain')->all()])->map(fn ($domain) => StoreSerpResult::normaliseDomain($domain))->all();
+
+        return SeoDomainTraffic::query()
+            ->whereIn('domain', $domains)
+            ->where('country_code', $shop->country->code)
+            ->where('language_code', strtolower($shop->language->code))
+            ->where('organic_keywords', '>', 0)
+            ->orderByDesc('month')
+            ->get(['domain', 'month', 'organic_traffic'])
+            ->unique('domain')
+            ->keyBy('domain');
     }
 
     /**

@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\AgentInvoice\UI;
 
+use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\AgentInvoice;
@@ -17,7 +18,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
  * What the agent sees of a container's invoice on the container page: the invoice if made, the payments taken off it,
- * and the routes to make it, change its charges and record a payment.
+ * and the routes to make it and change its charges. Payments are recorded by the paying organisation, the agent only
+ * sees them.
  */
 class GetAgentContainerInvoiceData
 {
@@ -35,10 +37,6 @@ class GetAgentContainerInvoiceData
                 'amount'        => (float) $payment->amount,
                 'reference'     => $payment->reference,
                 'notes'         => $payment->notes,
-                'destroy_route' => [
-                    'name'       => 'grp.org.agent.agent_payments.destroy',
-                    'parameters' => [$organisation->slug, $payment->id],
-                ],
             ])->values()->all(),
             'is_open'              => in_array($stockDelivery->state, StoreAgentInvoice::OPEN_STATES, true),
             'store_route'          => [
@@ -49,10 +47,6 @@ class GetAgentContainerInvoiceData
                 'name'       => 'grp.org.agent.agent_invoices.charges.update',
                 'parameters' => [$organisation->slug, $invoice->id],
             ] : null,
-            'payment_store_route'  => [
-                'name'       => 'grp.org.agent.agent_payments.store',
-                'parameters' => [$organisation->slug, $stockDelivery->slug],
-            ],
         ];
     }
 
@@ -66,6 +60,7 @@ class GetAgentContainerInvoiceData
             'goods_amount'     => (float) $invoice->goods_amount,
             'charges'          => $invoice->charges ?? [],
             'charges_amount'   => (float) $invoice->charges_amount,
+            'charges_approved' => ApproveAgentInvoiceCharges::isApproved($invoice),
             'total_amount'     => (float) $invoice->total_amount,
             'number_lines'     => $invoice->number_lines,
             'advance_payments' => $invoice->advancePayments(),

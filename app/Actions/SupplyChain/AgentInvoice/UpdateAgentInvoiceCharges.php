@@ -47,7 +47,12 @@ class UpdateAgentInvoiceCharges extends OrgAction
 
         $chargesAmount = round(array_sum(array_column($charges, 'amount')), 2);
 
+        if ($charges !== ($agentInvoice->charges ?? [])) {
+            ApproveAgentInvoiceCharges::clearApproval($agentInvoice);
+        }
+
         $agentInvoice->update([
+            'data'           => $agentInvoice->data,
             'charges'        => $charges,
             'charges_amount' => $chargesAmount,
             'total_amount'   => round((float) $agentInvoice->goods_amount + $chargesAmount, 2),

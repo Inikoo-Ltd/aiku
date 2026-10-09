@@ -11,6 +11,7 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 
 import ConfirmDialog from "primevue/confirmdialog"
+import Dialog from "primevue/dialog"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -20,8 +21,11 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliveryCostingChecklist.vue"
 import StockDeliveryInvoiceCosting from "@/Components/Procurement/StockDeliveryInvoiceCosting.vue"
+import StockDeliveryInvoiceEntry from "@/Components/Procurement/StockDeliveryInvoiceEntry.vue"
+import StockDeliveryAgentPayments from "@/Components/Procurement/StockDeliveryAgentPayments.vue"
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
+import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -76,10 +80,7 @@ const props = defineProps<{
 	timelines: {
 		[key: string]: TSTimeline
 	}
-	purchase_orders: {
-		reference: string
-		route: routeType
-	}[]
+	purchase_orders?: {}
 	box_stats: {
 		first_block: {
 			orderer: {
@@ -124,6 +125,30 @@ const props = defineProps<{
 			total: number | string
 			org_items: number | string
 		}
+		invoice_entry: { route: routeType; is_agent: boolean } | null
+		invoice: {
+			kind: "agent" | "supplier"
+			source: "agent" | "actual" | "estimated"
+			reference: string | null
+			date: string
+			charges_list: { description: string; type?: "freight" | "other"; amount: number }[]
+			currency: string
+			org_currency: string
+			org_exchange: number | null
+			goods: number
+			charges: number
+			total: number
+			paid: number | null
+			balance_due: number | null
+			agent: {
+				can_edit: boolean
+				charges_approved: boolean
+				approve_route: routeType
+				deposits: { type: string; reference: string | null; date: string | null; amount: number }[]
+				payments: { id: number; date: string; amount: number; reference: string | null; notes: string | null; delete_route: routeType }[]
+				payment_store_route: routeType
+			} | null
+		} | null
 	}
 	tabs: {
 		current: string
@@ -163,6 +188,8 @@ const locale = useLocaleStore()
 
 const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
+const isCostingOpen = ref(false)
+const isCostingVisible = computed(() => !["in_process", "confirmed", "ready_to_ship", "cancelled", "not_received"].includes(props.stock_delivery.state))
 
 const component = computed(() => {
 	const components: Component = {
@@ -170,6 +197,7 @@ const component = computed(() => {
 		pending_items: TableStockDeliveryItems,
 		done_items: TableStockDeliveryItems,
 		under_over_delivered: TableStockDeliveryItems,
+		purchase_orders: TablePurchaseOrders,
 		showcase: ProcurementOrderData,
 		attachments: TableAttachments,
 		notes: TableProcurementNotes,
@@ -268,15 +296,63 @@ const costBlocks = computed(() => {
 
 	const orgTotal = costRows.value.reduce((sum, row) => sum + orgAmount(row), 0)
 
-	const orderPerOrg = rate ? 1 / rate : null
-	const rateLabel = sameCurrency
-		? `${ctrans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
-		: orderPerOrg === null
-			? ""
-			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+	const rateLabel = `${ctrans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+
+	const agentInvoice = props.box_stats.invoice
+	const agentInvoiceRate = agentInvoice?.org_exchange ?? null
+	const agentInvoiceRow = (label: string, amount: number, isTotal = false) => ({
+		label,
+		value: agentInvoiceRate === null ? money(agentInvoice!.currency, amount) : money(agentInvoice!.org_currency, amount * agentInvoiceRate),
+		sub: agentInvoiceRate === null || agentInvoice!.currency === agentInvoice!.org_currency ? null : money(agentInvoice!.currency, amount),
+		isTotal,
+	})
+
+	const firstBlock = agentInvoice
+		? {
+			key: "invoice",
+			title: `${agentInvoice.kind === "agent" ? ctrans("Agent invoice") : ctrans("Supplier invoice")} ${agentInvoice.reference ?? ""}`.trim(),
+			badge: agentInvoice.source === "estimated" ? ctrans("Estimated") : null,
+			rows: [
+				agentInvoiceRow(ctrans("Goods"), agentInvoice.goods),
+				agentInvoiceRow(agentInvoice.kind === "agent" ? ctrans("Agent charges") : ctrans("Supplier charges"), agentInvoice.charges),
+				agentInvoiceRow(ctrans("Total"), agentInvoice.total, true),
+				...(agentInvoice.paid === null || agentInvoice.balance_due === null ? [] : [
+					agentInvoiceRow(ctrans("Deposits and payments"), -agentInvoice.paid),
+					agentInvoiceRow(ctrans("Balance due"), agentInvoice.balance_due, true),
+				]),
+			],
+		}
+		: supplierBlock
+
+	if (agentInvoice) {
+		const deliveryAmount = (key: string) => Number(props.box_stats.third_block[key as "extra"]) || 0
+		const agentInvoiceInDelivery = agentInvoice.currency === currency ? agentInvoice.charges : 0
+		const localCosts = [
+			{ label: ctrans("Customs duties"), amount: deliveryAmount("duties") },
+			{ label: ctrans("Import tax"), amount: deliveryAmount("tax") },
+			{ label: ctrans("Local shipping and other"), amount: deliveryAmount("shipping") + deliveryAmount("extra") - agentInvoiceInDelivery },
+		].filter(row => Math.abs(row.amount) > 0.005)
+		const localTotal = localCosts.reduce((sum, row) => sum + row.amount, 0) * rate
+		const agentTotal = agentInvoiceRate === null ? 0 : agentInvoice.total * agentInvoiceRate
+
+		return [
+			firstBlock,
+			{
+				key: "landed",
+				title: `${ctrans("Landed costs")} ${orgCurrency ?? ""}`.trim(),
+				rows: [
+					...(localCosts.length
+						? localCosts.map(row => ({ label: row.label, value: money(orgCurrency, row.amount * rate) }))
+						: [{ label: ctrans("No local costs entered yet"), value: "" }]),
+					{ label: ctrans("Local costs"), value: money(orgCurrency, localTotal), isTotal: true },
+					{ label: ctrans("Landed total"), value: money(orgCurrency, agentTotal + localTotal), sub: ctrans("agent invoice + local costs"), isTotal: true },
+				],
+			},
+		]
+	}
 
 	return [
-		supplierBlock,
+		firstBlock,
 		{
 			key: "org",
 			title: rateLabel,
@@ -311,10 +387,10 @@ const confirmDispatchStockDelivery = (action: any) => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { dispatchLoading.value = true },
 				onFinish: () => { dispatchLoading.value = false },
-				onError: () => {
+				onError: (errors) => {
 					notify({
 						title: ctrans("Something went wrong"),
-						text: ctrans("Failed to dispatch stock delivery"),
+						text: errors?.invoice ?? ctrans("Failed to dispatch stock delivery"),
 						type: "error",
 					})
 				},
@@ -622,20 +698,8 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</PageHeading>
 
 	<!-- Stock Delivery Timeline -->
-	<div v-if="timelines" class="flex items-center gap-x-4 py-2 border-b border-gray-300" :class="purchase_orders.length ? 'pl-4' : ''">
-		<div v-if="purchase_orders.length" class="flex flex-col gap-y-1">
-			<Link
-				v-for="purchaseOrder in purchase_orders"
-				:key="purchaseOrder.reference"
-				:href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)"
-				class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
-			>
-				<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
-				{{ purchaseOrder.reference }}
-			</Link>
-		</div>
+	<div v-if="timelines" class="py-2 border-b border-gray-300">
 		<Timeline
-			class="flex-1 min-w-0"
 			:options="timelines"
 			:state="stock_delivery.state"
 			:slidesPerView="6"
@@ -837,9 +901,10 @@ const confirmDeleteStockDelivery = (action: any) => {
 		</BoxStatPallet>
 
 		<!-- Third Block: costs -->
-		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
-			<div class="flex justify-center text-center">
+		<BoxStatPallet v-for="(block, blockIndex) in costBlocks" :key="block.key" class="p-4">
+			<div class="flex items-center justify-center gap-2 text-center">
 				{{ block.title }}
+				<span v-if="block.badge" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700" v-tooltip="ctrans('No invoice was entered for this delivery; these figures are estimated from what the delivery recorded')">{{ block.badge }}</span>
 			</div>
 
 			<hr class="my-1 border-t border-gray-300" />
@@ -852,26 +917,62 @@ const confirmDeleteStockDelivery = (action: any) => {
 					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
 				>
 					<span>{{ row.label }}</span>
-					<span>{{ row.value }}</span>
+					<span class="text-right">
+						{{ row.value }}
+						<span v-if="row.sub" class="block text-xs font-normal text-gray-400">{{ row.sub }}</span>
+					</span>
 				</div>
+			</div>
+			<div v-if="blockIndex === 0 && box_stats.invoice_entry" class="mt-3 flex justify-end">
+				<StockDeliveryInvoiceEntry
+					:route="box_stats.invoice_entry.route"
+					:isAgent="box_stats.invoice_entry.is_agent"
+					:invoice="box_stats.invoice"
+					:currencyCode="box_stats.invoice?.currency ?? box_stats.third_block.currency ?? ''"
+				/>
+			</div>
+			<StockDeliveryAgentPayments
+				v-if="blockIndex === 0 && box_stats.invoice?.agent"
+				:agent="box_stats.invoice.agent"
+				:currency="box_stats.invoice.currency"
+				:hasCharges="box_stats.invoice.charges_list.length > 0"
+			/>
+			<div v-if="isCostingVisible && blockIndex === costBlocks.length - 1" class="mt-3 flex justify-end">
+				<Button
+					type="tertiary"
+					size="xs"
+					:label="ctrans('Costing')"
+					:icon="costing.agent_invoice_missing || !costing.is_costed ? 'fal fa-exclamation-triangle' : 'fal fa-box-usd'"
+					@click="() => (isCostingOpen = true)"
+				/>
 			</div>
 		</BoxStatPallet>
 
-		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
+		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4">
+			<div v-if="isCostingVisible && !costBlocks.length && n === 1" class="mt-3 flex justify-end">
+				<Button
+					type="tertiary"
+					size="xs"
+					:label="ctrans('Costing')"
+					:icon="costing.agent_invoice_missing || !costing.is_costed ? 'fal fa-exclamation-triangle' : 'fal fa-box-usd'"
+					@click="() => (isCostingOpen = true)"
+				/>
+			</div>
+		</BoxStatPallet>
 	</div>
 
-	<StockDeliveryCostingChecklist
-		v-if="!['in_process', 'confirmed', 'ready_to_ship', 'cancelled', 'not_received'].includes(stock_delivery.state)"
-		:costing="costing"
-		:canEdit="costing.can_edit"
-		:canEditPayments="costing.can_edit_payments"
-	/>
-
-	<StockDeliveryInvoiceCosting
-		v-if="!costing.is_partner && !['in_process', 'confirmed', 'ready_to_ship', 'cancelled', 'not_received'].includes(stock_delivery.state)"
-		:invoices="invoice_costing"
-		:canEdit="costing.can_edit"
-	/>
+	<Dialog v-model:visible="isCostingOpen" modal dismissableMask :header="ctrans('Costing')" :style="{ width: '64rem' }" :breakpoints="{ '1024px': '95vw' }">
+		<StockDeliveryCostingChecklist
+			:costing="costing"
+			:canEdit="costing.can_edit"
+			:canEditPayments="costing.can_edit_payments"
+		/>
+		<StockDeliveryInvoiceCosting
+			v-if="!costing.is_partner"
+			:invoices="invoice_costing"
+			:canEdit="costing.can_edit"
+		/>
+	</Dialog>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component

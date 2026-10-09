@@ -88,6 +88,7 @@ use App\Actions\Web\Seo\AskSeoAiPrompts;
 use App\Actions\Web\Seo\CollectSerpTasks;
 use App\Actions\Web\Seo\FetchBacklinks;
 use App\Actions\Web\Seo\FetchCompetitorResearch;
+use App\Actions\Web\Seo\FetchCompetitorTraffic;
 use App\Actions\Web\Seo\FetchSeoAiMentions;
 use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
@@ -1469,6 +1470,17 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'FetchSeoAiMentions',
                     ),
                 name: 'FetchSeoAiMentions',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchCompetitorTraffic::makeJob())
+                    ->monthlyOn(2, '02:30')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchCompetitorTraffic',
+                    ),
+                name: 'FetchCompetitorTraffic',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

@@ -17,6 +17,7 @@
     </style>
 </head>
 <body>
+    @php($decimals = (int) ($invoice->currency->fraction_digits ?? 2))
     <table style="width: 100%">
         <tr>
             <td>
@@ -62,37 +63,37 @@
                     <td>{{ $line['code'] }}</td>
                     <td>{{ $line['name'] }}</td>
                     <td class="num">{{ number_format($line['quantity'], $line['quantity'] == floor($line['quantity']) ? 0 : 2) }}</td>
-                    <td class="num">{{ number_format($line['unit_price'], 2) }}</td>
-                    <td class="num">{{ number_format($line['amount'], 2) }}</td>
+                    <td class="num">{{ number_format($line['unit_price'], $decimals) }}</td>
+                    <td class="num">{{ number_format($line['amount'], $decimals) }}</td>
                 </tr>
             @endforeach
             @if(count($invoice->charges))
                 <tr>
                     <td colspan="4" class="num">{{ __("Goods") }}</td>
-                    <td class="num">{{ number_format((float) $invoice->goods_amount, 2) }}</td>
+                    <td class="num">{{ number_format((float) $invoice->goods_amount, $decimals) }}</td>
                 </tr>
                 @foreach($invoice->charges as $charge)
                     <tr>
                         <td colspan="4" class="num">{{ $charge['description'] }}</td>
-                        <td class="num">{{ number_format($charge['amount'], 2) }}</td>
+                        <td class="num">{{ number_format($charge['amount'], $decimals) }}</td>
                     </tr>
                 @endforeach
             @endif
             <tr class="total">
                 <td colspan="4" class="num">{{ __("Total") }} {{ $invoice->currency->code }}</td>
-                <td class="num">{{ number_format((float) $invoice->total_amount, 2) }}</td>
+                <td class="num">{{ number_format((float) $invoice->total_amount, $decimals) }}</td>
             </tr>
             @php($advancePayments = $invoice->advancePayments())
             @if(count($advancePayments))
                 @foreach($advancePayments as $payment)
                     <tr>
                         <td colspan="4" class="num">{{ $payment['type'] === 'deposit' ? __('Less deposit') : __('Less payment') }} {{ $payment['reference'] }} {{ $payment['date'] }}</td>
-                        <td class="num">-{{ number_format($payment['amount'], 2) }}</td>
+                        <td class="num">-{{ number_format($payment['amount'], $decimals) }}</td>
                     </tr>
                 @endforeach
                 <tr class="total">
                     <td colspan="4" class="num">{{ __("Balance due") }} {{ $invoice->currency->code }}</td>
-                    <td class="num">{{ number_format($invoice->balanceDue(), 2) }}</td>
+                    <td class="num">{{ number_format($invoice->balanceDue(), $decimals) }}</td>
                 </tr>
             @endif
         </tbody>

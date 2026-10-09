@@ -56,7 +56,7 @@ const props = defineProps<{
 const locale = inject("locale", aikuLocaleStructure)
 
 const money = (amount: number) => locale.currencyFormat(props.data.currency, amount)
-const monthLabel = (month: string) => new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "2-digit" })
+const monthLabel = (month: string) => useFormatTime(`${month}-01T00:00:00`, { formatTime: "MMM yy", keepTimezone: true })
 
 const monthlyChart = computed(() => ({
 	labels: props.data.months.map((month) => monthLabel(month.month)),

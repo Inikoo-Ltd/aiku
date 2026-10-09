@@ -84,6 +84,18 @@ class DataForSeoClient
     }
 
     /**
+     * What is left on the DataForSEO account in USD. Reading it is free.
+     *
+     * @throws DataForSeoException
+     */
+    public function balance(): ?float
+    {
+        $balance = Arr::get(Arr::first($this->get('appendix/user_data')) ?? [], 'money.balance');
+
+        return is_numeric($balance) ? round((float) $balance, 2) : null;
+    }
+
+    /**
      * @return array<int, array>
      * @throws DataForSeoException
      */
@@ -92,7 +104,7 @@ class DataForSeoClient
         $statusCode = (int) Arr::get($task, 'status_code');
 
         if ($statusCode !== self::SUCCESS) {
-            throw new DataForSeoException((string) Arr::get($task, 'status_message', __('DataForSEO returned no result.')), $statusCode ?: null);
+            throw new DataForSeoException(self::message($statusCode, (string) Arr::get($task, 'status_message', __('DataForSEO returned no result.'))), $statusCode ?: null);
         }
 
         return Arr::get($task, 'result') ?? [];
@@ -129,7 +141,7 @@ class DataForSeoClient
         $rows       = (int) $results->sum(fn (array $task) => collect(Arr::get($task, 'result') ?? [])->sum(fn ($result) => is_array($result) && array_key_exists('items_count', $result) ? (int) $result['items_count'] : 1));
 
         if ($statusCode !== self::SUCCESS) {
-            $message = (string) ($response->json('status_message') ?: $response->reason());
+            $message = self::message($statusCode, (string) ($response->json('status_message') ?: $response->reason()));
 
             $this->log($endpoint, $website, false, $rows, $cost, $startedAt, "$statusCode $message");
 
@@ -141,6 +153,11 @@ class DataForSeoClient
         $this->log($endpoint, $website, $taskError === null, $rows, $cost, $startedAt, $taskError ? Arr::get($taskError, 'status_code').' '.Arr::get($taskError, 'status_message') : null);
 
         return $results->all();
+    }
+
+    private static function message(int $statusCode, string $message): string
+    {
+        return $statusCode === DataForSeoException::OUT_OF_BALANCE ? __('The DataForSEO account has no balance left. Top it up on dataforseo.com.') : $message;
     }
 
     private function request(): PendingRequest
