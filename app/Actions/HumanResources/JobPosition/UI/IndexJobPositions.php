@@ -130,7 +130,7 @@ class IndexJobPositions extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Employee) {
-                $table->column(key: 'share', label: __('Share'), canBeHidden: false, sortable: true);
+                $table->column(key: 'share', label: __('Share of total'), canBeHidden: false, sortable: true);
             } else {
                 $table->column(key: 'number_employees_currently_working', label: __('Employees'), canBeHidden: false, sortable: true);
             }

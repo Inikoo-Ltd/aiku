@@ -222,7 +222,7 @@ const mentionChange = (row: MentionsPlatform["rows"][number]) => {
                         <tr class="text-left text-xs text-gray-500">
                             <th scope="col" class="px-5 py-2 font-medium">{{ ctrans("Domain") }}</th>
                             <th scope="col" class="px-3 py-2 text-right font-medium" v-tooltip="platform.previous_date ? ctrans('Answers mentioning the domain, with the change since :date', { date: useFormatTime(platform.previous_date) }) : ctrans('Answers mentioning the domain')">{{ ctrans("Mentions") }}</th>
-                            <th scope="col" class="px-3 py-2 text-right font-medium" v-tooltip="ctrans('Share of the mentions of all the domains here')">{{ ctrans("Share") }}</th>
+                            <th scope="col" class="px-3 py-2 text-right font-medium" v-tooltip="ctrans('Share of the mentions of all the domains here')">{{ ctrans("Share of total") }}</th>
                             <th scope="col" class="px-5 py-2 text-right font-medium" v-tooltip="ctrans('Estimated monthly searches behind the answers that mention the domain')">{{ ctrans("AI search volume") }}</th>
                         </tr>
                     </thead>

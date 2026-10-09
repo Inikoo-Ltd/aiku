@@ -89,7 +89,7 @@ class IndexJobPositionGuests
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'share', label: __('Share'), canBeHidden: false, sortable: true)
+                ->column(key: 'share', label: __('Share of total'), canBeHidden: false, sortable: true)
                 ->defaultSort('code');
         };
     }
