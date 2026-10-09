@@ -11153,7 +11153,7 @@ test('supplier documents in the procurement inbox go on the purchase order and i
         ->assertInertia(fn (AssertableInertia $page) => $page->has('messages.0.attachments.0.attached_to', 2));
 
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'attachments']))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('attachments.data', 2)->has('attachmentScopes', 4));
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('attachments.data', 2)->has('attachmentScopes', count(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum::cases())));
 
     $this->organisation->update(['settings' => $originalSettings]);
 });
