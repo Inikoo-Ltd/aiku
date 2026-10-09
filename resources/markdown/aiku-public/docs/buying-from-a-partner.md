@@ -90,7 +90,7 @@ When the partner dispatches, each line arrives with the batches the partner pick
 <li><b>Order in whole batches:</b> the button beside <i>full batches every N SKO</i> on the line or the product card.</li>
 <li><b>Adjust open lines:</b> change the priority or delete lines in the shopping list table; change quantities from the product cards in <b>Browse</b>.</li>
 <li><b>Let someone fill the list through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can connect AI assistant</b>, then <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Let someone place orders through their AI assistant (administrators):</b> same <b>Access</b> tab → switch on <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Let someone place orders through their AI assistant (administrators):</b> same <b>Access</b> tab → switch on <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Keep an item out of auto-fill:</b> your organisation → <b>Warehouse → Inventory</b> → open the SKO → <b>Edit SKO</b> → switch on <b>Do not auto order</b>.</li>
 <li><b>Watch and receive the shipment:</b> same partner page → <b>Stock deliveries</b> → when the goods arrive, <b>Receive</b> → check → place into locations.</li>
 </ul>

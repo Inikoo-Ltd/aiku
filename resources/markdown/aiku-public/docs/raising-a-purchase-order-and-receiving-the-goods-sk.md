@@ -1,7 +1,7 @@
 ---
 title: Vystavenie objednávky a prevzatie tovaru
 summary: Nákup od bežného dodávateľa - vystavte objednávku, nechajte si ju potvrdiť, potom premeňte dodávku na tovar, ktorý môžete predávať.
-date: 2026-09-01
+date: 2026-10-09
 source_date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
@@ -28,6 +28,15 @@ Kým je v stave in process:
 - **Delete** zmaže celú objednávku, pokiaľ dodávateľovi ešte nič nebolo odoslané.
 
 Keď máte pridané všetko, čo chcete, stlačte **Submit**. Tým sa objednávka odošle ďalej a presunie sa do stavu **Submitted**.
+
+## Cez vášho AI asistenta
+
+Ak vám administrátor zapol zadávanie objednávok, váš AI asistent môže objednávku vystaviť a odoslať za vás, aj pri dodávateľoch, od ktorých nakupujete cez agenta. Povedzte mu dodávateľa a čo chcete, napríklad *"objednaj 144 CIC-25 a 20 TIB-134SET od RME"*.
+
+- Najprv ukáže objednávku: dodávateľa, agenta, každý riadok s kusmi, kartónmi a cenou, súčet a prípadnú objednávku, ktorá sa pre tohto dodávateľa už pripravuje.
+- Množstvá sú v kusoch a zaokrúhľujú sa nahor na celé kartóny, nikdy pod minimálny počet kartónov dodávateľa.
+- Až po vašom potvrdení pridá riadky (do pripravovanej objednávky alebo novej) a odošle ju cez **Submit**. Neposiela ju e-mailom: dodávateľovi ju pošlite zo stránky objednávky.
+- Objednávka sa zaznamená s vašou požiadavkou, ale v zázname AI zmien sa **nedá vrátiť**: na objednávke použite **Undo Submit** alebo **Cancel**.
 
 ## Čo znamenajú jednotlivé stavy
 
@@ -69,6 +78,7 @@ V skratke: vystavte objednávku voči dodávateľovi, odošlite ju, počkajte, k
 <li><b>Posunúť ju ďalej:</b> na stránke objednávky použite <b>Confirm</b>, <b>Undo Submit</b>, alebo <b>Cancel</b>, kým je submitted; po potvrdení nastavte <b>Delivery date</b> a stlačte <b>New Delivery</b>.</li>
 <li><b>Prevziať tovar:</b> na stránke stock delivery postupujte cez <b>Mark as Dispatched → Mark as Received</b>, skontrolujte kartu <b>Items</b>, potom <b>Place</b>, keď je naskladnená.</li>
 <li>Dodávku môžete tiež založiť od začiatku v <b>Procurement → Stock Deliveries</b>.</li>
+<li><b>Nechať niekoho zadávať objednávky cez jeho AI asistenta (administrátori):</b> <b>Sysadmin → Users</b> → otvorte používateľa → <b>Edit</b> → <b>Access</b> → zapnite <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>. Potrebuje aj oprávnenie upravovať nákup.</li>
 </ul>
 </aside>
 

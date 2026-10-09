@@ -90,7 +90,7 @@ Kad partneris nosūta preces, katra rinda pienāk ar jau aizpildītām partijām
 <li><b>Pasūtīt pilnās partijās:</b> poga blakus <i>full batches every N SKO</i> uz rindas vai produkta kartītes.</li>
 <li><b>Pielāgot atklātās rindas:</b> maini prioritāti vai dzēs rindas iepirkumu saraksta tabulā; maini daudzumus no produktu kartītēm sadaļā <b>Browse</b>.</li>
 <li><b>Ļaut kādam aizpildīt sarakstu ar sava mākslīgā intelekta asistenta palīdzību (administratoriem):</b> <b>Sysadmin → Users</b> → atver lietotāju → <b>Edit</b> → <b>Access</b> → ieslēdz <b>Can connect AI assistant</b>, tad <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Ļaut kādam veikt pasūtījumus ar sava mākslīgā intelekta asistenta palīdzību (administratoriem):</b> tā pati cilne <b>Access</b> → ieslēdz <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Ļaut kādam veikt pasūtījumus ar sava mākslīgā intelekta asistenta palīdzību (administratoriem):</b> tā pati cilne <b>Access</b> → ieslēdz <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Izslēgt vienību no automātiskās aizpildes:</b> tava organizācija → <b>Warehouse → Inventory</b> → atver SKO → <b>Edit SKO</b> → ieslēdz <b>Do not auto order</b>.</li>
 <li><b>Sekot un saņemt piegādi:</b> tā pati partnera lapa → <b>Stock deliveries</b> → kad prece pienāk, <b>Receive</b> → pārbaudi → novieto vietās.</li>
 </ul>

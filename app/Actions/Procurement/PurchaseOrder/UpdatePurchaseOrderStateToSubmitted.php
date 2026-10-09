@@ -92,7 +92,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
         $purchaseOrder = $this->update($purchaseOrder, $updateData);
 
-        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder)->afterCommit();
 
         $this->purchaseOrderHydrate($purchaseOrder);
 

@@ -90,7 +90,7 @@ Cuando el socio despacha, cada línea llega con los lotes que el socio recogió 
 <li><b>Pedir en hornadas completas:</b> el botón junto a <i>full batches every N SKO</i> en la línea o en la ficha de producto.</li>
 <li><b>Ajustar líneas abiertas:</b> cambia la priority o elimina líneas en la tabla de la lista de la compra; cambia cantidades desde las fichas de producto en <b>Browse</b>.</li>
 <li><b>Dejar que alguien rellene la lista con su asistente de IA (administradores):</b> <b>Sysadmin → Users</b> → abre el usuario → <b>Edit</b> → <b>Access</b> → activa <b>Can connect AI assistant</b> y después <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Dejar que alguien haga pedidos con su asistente de IA (administradores):</b> la misma pestaña <b>Access</b> → activa <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Dejar que alguien haga pedidos con su asistente de IA (administradores):</b> la misma pestaña <b>Access</b> → activa <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Mantener un artículo fuera de auto-fill:</b> tu organización → <b>Warehouse → Inventory</b> → abre el SKO → <b>Edit SKO</b> → activa <b>Do not auto order</b>.</li>
 <li><b>Seguir y recibir el envío:</b> misma página del socio → <b>Stock deliveries</b> → cuando llega la mercancía, <b>Receive</b> → comprueba → coloca en ubicaciones.</li>
 </ul>

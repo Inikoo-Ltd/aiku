@@ -90,7 +90,7 @@ Gdy partner wysyła towar, każda linia przychodzi z już wypełnionymi partiami
 <li><b>Zamów w pełnych partiach:</b> przycisk obok <i>full batches every N SKO</i> na pozycji albo na karcie produktu.</li>
 <li><b>Dostosuj otwarte pozycje:</b> zmień priorytet albo usuń pozycje w tabeli listy zakupowej; zmień ilości z kart produktów w <b>Browse</b> (Przeglądaj).</li>
 <li><b>Pozwól komuś uzupełniać listę przez jego asystenta AI (administratorzy):</b> <b>Sysadmin → Users</b> (Administracja systemu → Użytkownicy) → otwórz użytkownika → <b>Edit</b> → <b>Access</b> → włącz <b>Can connect AI assistant</b>, a potem <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Pozwól komuś składać zamówienia przez jego asystenta AI (administratorzy):</b> ta sama karta <b>Access</b> → włącz <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Pozwól komuś składać zamówienia przez jego asystenta AI (administratorzy):</b> ta sama karta <b>Access</b> → włącz <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Wyłącz pozycję z auto-fill:</b> Twoja organizacja → <b>Warehouse → Inventory</b> (Magazyn → Zapasy) → otwórz SKO → <b>Edit SKO</b> (Edytuj SKO) → włącz <b>Do not auto order</b> (Nie zamawiaj automatycznie).</li>
 <li><b>Śledź i przyjmij przesyłkę:</b> ta sama strona partnera → <b>Stock deliveries</b> (Dostawy towaru) → gdy towar dotrze, <b>Receive</b> (Przyjmij) → sprawdź → rozmieść na lokalizacjach.</li>
 </ul>

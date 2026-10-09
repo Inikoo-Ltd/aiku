@@ -90,7 +90,7 @@ Když partner expeduje, každý řádek přijde s již vyplněnými dávkami, kt
 <li><b>Objednat v celých dávkách:</b> tlačítko vedle <i>full batches every N SKO</i> na řádku nebo na kartě produktu.</li>
 <li><b>Upravit otevřené řádky:</b> změnit prioritu nebo smazat řádky v tabulce nákupního seznamu; změnit množství na kartách produktů v <b>Browse</b>.</li>
 <li><b>Nechat někoho plnit seznam přes jeho AI asistenta (administrátoři):</b> <b>Sysadmin → Users</b> (Správa systému → Uživatelé) → otevřít uživatele → <b>Edit</b> (Upravit) → <b>Access</b> (Přístup) → zapnout <b>Can connect AI assistant</b>, poté <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Nechat někoho zadávat objednávky přes jeho AI asistenta (administrátoři):</b> stejná záložka <b>Access</b> → zapnout <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Nechat někoho zadávat objednávky přes jeho AI asistenta (administrátoři):</b> stejná záložka <b>Access</b> → zapnout <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Vyloučit položku z automatického doplnění:</b> vaše organizace → <b>Warehouse → Inventory</b> (Sklad → Zásoby) → otevřít SKO → <b>Edit SKO</b> (Upravit SKO) → zapnout <b>Do not auto order</b> (Neobjednávat automaticky).</li>
 <li><b>Sledovat a přijmout zásilku:</b> stejná stránka partnera → <b>Stock deliveries</b> (Skladové dodávky) → až zboží dorazí, <b>Receive</b> (Přijmout) → zkontrolovat → uložit na místa.</li>
 </ul>

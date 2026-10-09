@@ -27,16 +27,16 @@ trait HasPurchaseOrderHydrators
         $parent = $purchaseOrder->parent;
 
         if (class_basename($parent) == 'OrgSupplier') {
-            OrgSupplierHydratePurchaseOrders::dispatch($parent);
-            SupplierHydratePurchaseOrders::dispatch($parent->supplier);
+            OrgSupplierHydratePurchaseOrders::dispatch($parent)->afterCommit();
+            SupplierHydratePurchaseOrders::dispatch($parent->supplier)->afterCommit();
             if ($orgAgent = $purchaseOrder->orgAgentOfOrder()) {
-                OrgAgentHydratePurchaseOrders::dispatch($orgAgent);
-                AgentHydratePurchaseOrders::dispatch($orgAgent->agent);
+                OrgAgentHydratePurchaseOrders::dispatch($orgAgent)->afterCommit();
+                AgentHydratePurchaseOrders::dispatch($orgAgent->agent)->afterCommit();
             }
         } elseif (class_basename($parent) == 'OrgPartner') {
-            OrgPartnerHydratePurchaseOrders::dispatch($parent);
+            OrgPartnerHydratePurchaseOrders::dispatch($parent)->afterCommit();
         }
-        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group);
-        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation);
+        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->afterCommit();
+        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->afterCommit();
     }
 }

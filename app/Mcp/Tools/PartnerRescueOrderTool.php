@@ -59,7 +59,7 @@ class PartnerRescueOrderTool extends Tool
         $orgPartners = OrgPartner::where('organisation_id', $organisation->id)
             ->where('status', true)
             ->whereHas('partner', fn ($query) => $query->where('is_manufacturing_hub', false))
-            ->when($partnerCode, fn ($query) => $query->whereHas('partner', fn ($query) => $query->whereRaw('lower(code) = ? or lower(slug) = ?', [$partnerCode, $partnerCode])))
+            ->when($partnerCode, fn ($query) => $query->whereHas('partner', fn ($query) => $query->whereRaw('(lower(code) = ? or lower(slug) = ?)', [$partnerCode, $partnerCode])))
             ->with('partner')
             ->get();
         if ($orgPartners->isEmpty()) {

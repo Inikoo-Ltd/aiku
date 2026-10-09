@@ -1,7 +1,7 @@
 ---
 title: Cursar una orden de compra y recibir la mercancía
 summary: Compra a un proveedor ordinario - cursa la orden de compra, consigue que se confirme, y luego convierte la entrega en stock que puedas vender.
-date: 2026-09-01
+date: 2026-10-09
 source_date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
@@ -28,6 +28,15 @@ Mientras está en proceso:
 - **Delete** elimina la orden entera, siempre que todavía no se haya enviado nada al proveedor.
 
 Cuando hayas añadido todo lo que quieres, pulsa **Submit**. Esto envía la orden y la pasa a **Submitted**.
+
+## Hacerlo con tu asistente de IA
+
+Si un administrador te ha activado hacer pedidos, tu asistente de IA puede crear y enviar la orden por ti, también para proveedores que compras a través de un agente. Dile el proveedor y lo que quieres, por ejemplo *"pide 144 CIC-25 y 20 TIB-134SET a RME"*.
+
+- Primero te muestra la orden: el proveedor, el agente, cada línea con unidades, cajas y coste, el total, y cualquier orden que ya se esté preparando para ese proveedor.
+- Las cantidades son en unidades y se redondean hacia arriba a cajas completas, nunca por debajo del mínimo de cajas del proveedor.
+- Solo cuando confirmas añade las líneas (a la orden en preparación, o a una nueva) y la envía con **Submit**. No la manda por correo: envíala al proveedor desde la página de la orden.
+- La orden queda registrada con tu petición pero **no se puede deshacer** desde el registro de cambios de IA: usa **Undo Submit** o **Cancel** en la orden.
 
 ## Qué significan los estados
 
@@ -69,6 +78,7 @@ En resumen: cursa la orden contra el proveedor, envíala, espera a que el provee
 <li><b>Avanzarla:</b> en la página de la orden, usa <b>Confirm</b>, <b>Undo Submit</b> o <b>Cancel</b> mientras está enviada; una vez confirmada, fija la <b>Delivery date</b> y pulsa <b>New Delivery</b>.</li>
 <li><b>Recibir la mercancía:</b> en la página de la entrega de stock, avanza por <b>Mark as Dispatched → Mark as Received</b>, comprueba la pestaña <b>Items</b>, y luego <b>Place</b> en cuanto esté dada de alta.</li>
 <li>También puedes iniciar una entrega desde cero en <b>Procurement → Stock Deliveries</b>.</li>
+<li><b>Dejar que alguien haga pedidos con su asistente de IA (administradores):</b> <b>Sysadmin → Users</b> → abre el usuario → <b>Edit</b> → <b>Access</b> → activa <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>. También necesita permiso para editar compras.</li>
 </ul>
 </aside>
 

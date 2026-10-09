@@ -50,7 +50,7 @@ class RevertMcpChange
     public function handle(McpChange $mcpChange, User $user): McpChange
     {
         if ($mcpChange->type === McpChangeTypeEnum::PLACED_ORDER) {
-            throw ValidationException::withMessages(['message' => __('An order already sent cannot be taken back automatically. Cancel it with the partner.')]);
+            throw ValidationException::withMessages(['message' => __('An order already sent cannot be taken back automatically. Cancel it with the partner or supplier.')]);
         }
 
         if ($mcpChange->reverted_at) {

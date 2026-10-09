@@ -67,9 +67,14 @@ class GetMcpChangeSnapshot
         }
 
         if ($type === McpChangeTypeEnum::PLACED_ORDER) {
+            $purchaseOrders = collect($snapshot['purchase_orders'])->map(fn (array $purchaseOrder) => $purchaseOrder['reference'].': '.$purchaseOrder['state'].' '.$purchaseOrder['lines'].' lines');
+            if (isset($target['org_supplier_id'])) {
+                return $purchaseOrders->implode(', ') ?: 'no open purchase order';
+            }
+
             return trans_choice(':count line in the basket|:count lines in the basket', $snapshot['basket_lines'])
                 .($snapshot['sent_lines'] ? ', sent: '.collect($snapshot['sent_lines'])->implode(', ') : '')
-                .collect($snapshot['purchase_orders'])->map(fn (array $purchaseOrder) => ', '.$purchaseOrder['reference'].': '.$purchaseOrder['state'].' '.$purchaseOrder['lines'].' lines')->implode('');
+                .$purchaseOrders->map(fn (string $purchaseOrder) => ', '.$purchaseOrder)->implode('');
         }
 
         if ($type === McpChangeTypeEnum::PRODUCTION_RECORD) {
@@ -110,10 +115,15 @@ class GetMcpChangeSnapshot
 
     /**
      * The basket drafts and the purchase orders still being prepared or just sent, so the log shows
-     * what an order the assistant placed took from the basket and where it went.
+     * what an order the assistant placed took from the basket and where it went. A supplier order
+     * has no basket, only its purchase orders.
      */
     private function placedOrder(array $target): array
     {
+        if (isset($target['org_supplier_id'])) {
+            return ['purchase_orders' => $this->openPurchaseOrders('OrgSupplier', $target['org_supplier_id'])];
+        }
+
         return [
             'basket_lines'    => PartnerShoppingListItem::where('org_partner_id', $target['org_partner_id'])
                 ->where('state', ShoppingListItemStateEnum::DRAFT)
@@ -125,9 +135,15 @@ class GetMcpChangeSnapshot
                 ->pluck('quantity', 'id')
                 ->map(fn ($quantity) => (float) $quantity)
                 ->all(),
-            'purchase_orders' => DB::table('purchase_orders')
-                ->where('parent_type', 'OrgPartner')
-                ->where('parent_id', $target['org_partner_id'])
+            'purchase_orders' => $this->openPurchaseOrders('OrgPartner', $target['org_partner_id']),
+        ];
+    }
+
+    private function openPurchaseOrders(string $parentType, int $parentId): array
+    {
+        return DB::table('purchase_orders')
+                ->where('parent_type', $parentType)
+                ->where('parent_id', $parentId)
                 ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS->value, PurchaseOrderStateEnum::SUBMITTED->value])
                 ->whereNull('deleted_at')
                 ->orderByDesc('id')
@@ -140,8 +156,7 @@ class GetMcpChangeSnapshot
                     'state'     => $purchaseOrder->state,
                     'lines'     => (int) $purchaseOrder->number_lines,
                 ]])
-                ->all(),
-        ];
+                ->all();
     }
 
     private function partnerShoppingList(array $target): array

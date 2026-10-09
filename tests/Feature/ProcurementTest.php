@@ -7492,6 +7492,53 @@ describe('partner shopping list', function () {
             ->assertHasErrors(['Placing orders is not enabled']);
     });
 
+    test('an ai assistant previews and places a supplier purchase order in whole cartons', function () {
+        $user        = $this->adminGuest->getUser();
+        $orgSupplier = $this->orgSupplier;
+        $orgSupplier->update(['status' => true]);
+        $this->orgSupplierProduct->update(['state' => 'active']);
+        $this->supplierProduct->update(['units_per_carton' => 12, 'minimum_carton_order' => 2, 'cost' => 5, 'is_available' => true]);
+        $this->orgSupplierProduct->update(['is_available' => true]);
+        $orgSupplier->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->update(['state' => PurchaseOrderStateEnum::CANCELLED]);
+        if (OrgStockHasOrgSupplierProduct::where('org_supplier_product_id', $this->orgSupplierProduct->id)->doesntExist()) {
+            AttachOrgSupplierProductToOrgStock::make()->action(OrgStock::where('organisation_id', $orgSupplier->organisation_id)->where('state', OrgStockStateEnum::ACTIVE)->orderBy('id')->firstOrFail(), $this->orgSupplierProduct);
+        }
+        $user->update(['can_use_mcp' => true, 'can_use_mcp_place_orders' => false]);
+        $arguments = ['organisation' => $orgSupplier->organisation->slug, 'supplier' => $orgSupplier->supplier->code, 'lines' => [['code' => $this->supplierProduct->code, 'quantity' => 30]]];
+        $tool      = fn (array $extra = []) => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\SupplierPurchaseOrderTool::class, [...$arguments, ...$extra]);
+
+        $tool()->assertOk()->assertSee(['"units":36', '"cartons":3', '"new_lines_total":180', '"supplier":"'.$orgSupplier->supplier->code.' (']);
+
+        $otherSupplier = Supplier::where('id', '!=', $orgSupplier->supplier_id)->orderBy('id')->first() ?? StoreSupplier::make()->action($this->agent, Supplier::factory()->definition());
+        $tool(['supplier' => $otherSupplier->slug])->assertDontSee('"supplier":"'.$orgSupplier->supplier->code.' (');
+
+        $currencyId = $this->supplierProduct->currency_id;
+        $this->supplierProduct->update(['currency_id' => Currency::where('id', '!=', $orgSupplier->supplier->currency_id)->orderBy('id')->value('id')]);
+        $tool()->assertHasErrors(['priced in another currency']);
+        $this->supplierProduct->update(['currency_id' => $currencyId]);
+        $tool(['lines' => [['code' => $this->supplierProduct->code, 'quantity' => 5]]])->assertOk()->assertSee('"units":24');
+        $tool(['lines' => [['code' => $this->supplierProduct->code, 'quantity' => 20], ['code' => $this->supplierProduct->code, 'quantity' => 20]]])->assertOk()->assertSee(['"units_asked":40', '"units":48']);
+        $tool(['lines' => [['code' => 'NOPE-999', 'quantity' => 1]]])->assertHasErrors(['NOPE-999']);
+        $this->orgSupplierProduct->update(['is_available' => false]);
+        $tool()->assertHasErrors(['not an available product']);
+        $this->orgSupplierProduct->update(['is_available' => true]);
+
+        $place = ['place' => true, 'request_text' => 'order 30 from the supplier'];
+        $tool($place)->assertHasErrors(['Placing orders is not enabled']);
+        expect($orgSupplier->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->exists())->toBeFalse();
+
+        $user->update(['can_use_mcp_place_orders' => true]);
+        $tool($place)->assertOk()->assertSee('"state":"submitted"');
+
+        $purchaseOrder = $orgSupplier->purchaseOrders()->latest('id')->first();
+        $placed        = App\Models\SysAdmin\McpChange::latest('id')->first();
+        expect($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
+            ->and($purchaseOrder->buyer_id)->toBe($user->id)
+            ->and((float) $purchaseOrder->purchaseOrderTransactions()->sole()->quantity_ordered)->toBe(36.0)
+            ->and($placed->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PLACED_ORDER)
+            ->and($placed->data['after_text'])->toContain($purchaseOrder->reference.': submitted 1 lines');
+    });
+
     test('the ai planning rows cap the order at what sells before it expires, one year when shelf life is not recorded', function () {
         $user = $this->adminGuest->getUser();
         $this->buyerOrgStock->update(['quantity_available' => 10]);

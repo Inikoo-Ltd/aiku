@@ -1,7 +1,7 @@
 ---
 title: Raising a purchase order and receiving the goods
 summary: Buy from an ordinary supplier - raise the purchase order, get it confirmed, then turn the delivery into stock you can sell.
-date: 2026-10-08
+date: 2026-10-09
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 help_routes: grp.org.procurement.org_suppliers, grp.org.procurement.purchase_orders, grp.org.procurement.stock_deliveries
@@ -28,6 +28,15 @@ While it is in process:
 - **Delete** removes the whole order, as long as nothing has been sent to the supplier yet.
 
 Once you have added everything you want, press **Submit**. This sends the order onward and moves it to **Submitted**.
+
+## Placing it through your AI assistant
+
+If an administrator has switched on order placing for you, your AI assistant can raise and submit the order for you, also for suppliers bought through an agent. Tell it the supplier and what you want, for example *"order 144 CIC-25 and 20 TIB-134SET from RME"*.
+
+- It first shows the order: the supplier, the agent, each line with units, cartons and cost, the total, and any order already being prepared for that supplier.
+- Quantities are in units and are rounded up to whole cartons, and never below the supplier's minimum carton order.
+- Only after you confirm does it add the lines (to the order being prepared, or a new one) and **Submit** it. It does not email it: send it to the supplier from the purchase order page.
+- The order is logged with your request but **cannot be undone** from the AI changes log: use **Undo Submit** or **Cancel** on the order.
 
 ## What the states mean
 
@@ -69,6 +78,7 @@ In short: raise the order against the supplier, submit it, wait for the supplier
 <li><b>Move it forward:</b> on the order's page, use <b>Confirm</b>, <b>Undo Submit</b>, or <b>Cancel</b> while submitted; once confirmed, set the <b>Delivery date</b> and press <b>New Delivery</b>.</li>
 <li><b>Receive the goods:</b> on the stock delivery's page, work through <b>Mark as Dispatched → Mark as Received</b>, check the <b>Items</b> tab, then <b>Place</b> once it's booked in.</li>
 <li>You can also start a delivery from scratch under <b>Procurement → Stock Deliveries</b>.</li>
+<li><b>Let someone place orders through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>. They also need permission to edit procurement.</li>
 </ul>
 </aside>
 

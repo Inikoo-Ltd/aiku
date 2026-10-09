@@ -90,18 +90,18 @@ class StorePurchaseOrder extends OrgAction
         $purchaseOrder->refresh();
 
         if ($parent instanceof OrgSupplier) {
-            OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
-            SupplierHydratePurchaseOrders::dispatch($parent->supplier)->delay($this->hydratorsDelay);
+            OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay)->afterCommit();
+            SupplierHydratePurchaseOrders::dispatch($parent->supplier)->delay($this->hydratorsDelay)->afterCommit();
             if ($parent->orgAgent) {
-                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent)->delay($this->hydratorsDelay);
-                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent)->delay($this->hydratorsDelay);
+                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent)->delay($this->hydratorsDelay)->afterCommit();
+                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent)->delay($this->hydratorsDelay)->afterCommit();
             }
         } elseif ($parent instanceof OrgPartner) {
-            OrgPartnerHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
+            OrgPartnerHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay)->afterCommit();
         }
 
-        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->delay($this->hydratorsDelay);
-        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay);
+        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->delay($this->hydratorsDelay)->afterCommit();
+        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay)->afterCommit();
 
         return $purchaseOrder;
     }

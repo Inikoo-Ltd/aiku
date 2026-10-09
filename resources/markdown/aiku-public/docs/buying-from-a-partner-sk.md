@@ -90,7 +90,7 @@ Keď partner expeduje, každý riadok príde s už vyplnenými dávkami, ktoré 
 <li><b>Objednať v celých dávkach:</b> tlačidlo vedľa <i>full batches every N SKO</i> na riadku alebo na karte produktu.</li>
 <li><b>Upraviť otvorené riadky:</b> zmeňte prioritu alebo vymažte riadky v tabuľke nákupného zoznamu; množstvá meňte na kartách produktov v <b>Browse</b>.</li>
 <li><b>Nechať niekoho dopĺňať zoznam cez jeho AI asistenta (administrátori):</b> <b>Sysadmin → Users</b> → otvorte používateľa → <b>Edit</b> → <b>Access</b> → zapnite <b>Can connect AI assistant</b>, potom <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Nechať niekoho zadávať objednávky cez jeho AI asistenta (administrátori):</b> rovnaká záložka <b>Access</b> → zapnite <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Nechať niekoho zadávať objednávky cez jeho AI asistenta (administrátori):</b> rovnaká záložka <b>Access</b> → zapnite <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Vynechať položku z auto-fillu:</b> vaša organizácia → <b>Warehouse → Inventory</b> → otvorte SKO → <b>Edit SKO</b> → zapnite <b>Do not auto order</b>.</li>
 <li><b>Sledovať a prevziať zásielku:</b> tá istá stránka partnera → <b>Stock deliveries</b> → keď tovar dorazí, <b>Receive</b> → skontrolujte → uložte na lokácie.</li>
 </ul>

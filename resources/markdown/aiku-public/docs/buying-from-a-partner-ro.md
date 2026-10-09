@@ -90,7 +90,7 @@ Când partenerul expediază, fiecare linie sosește cu loturile pe care partener
 <li><b>Comandă în loturi întregi:</b> butonul de lângă <i>full batches every N SKO</i> pe linie sau pe fișa produsului.</li>
 <li><b>Ajustează liniile deschise:</b> schimbă prioritatea sau șterge linii în tabelul listei de cumpărături; schimbă cantități din fișele de produs în <b>Browse</b>.</li>
 <li><b>Lasă pe cineva să completeze lista prin asistentul lui AI (administratori):</b> <b>Sysadmin → Users</b> → deschide utilizatorul → <b>Edit</b> → <b>Access</b> → activează <b>Can connect AI assistant</b>, apoi <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
-<li><b>Lasă pe cineva să plaseze comenzi prin asistentul lui AI (administratori):</b> aceeași filă <b>Access</b> → activează <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
+<li><b>Lasă pe cineva să plaseze comenzi prin asistentul lui AI (administratori):</b> aceeași filă <b>Access</b> → activează <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Ține un articol în afara auto-completării:</b> organizația ta → <b>Warehouse → Inventory</b> → deschide SKO-ul → <b>Edit SKO</b> → activează <b>Do not auto order</b>.</li>
 <li><b>Urmărește și recepționează expedierea:</b> aceeași pagină de partener → <b>Stock deliveries</b> → când marfa ajunge, <b>Receive</b> → verifică → plasează în locații.</li>
 </ul>
