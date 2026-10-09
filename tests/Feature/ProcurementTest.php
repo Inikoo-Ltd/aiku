@@ -24,6 +24,7 @@ use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\Maintenance\Procurement\SplitAgentPurchaseOrders;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
+use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
@@ -7248,6 +7249,47 @@ describe('partner shopping list', function () {
             ->assertHasErrors(['NOPE-999']);
     });
 
+    test('only users enrolled to place orders let the ai assistant submit the hub basket and change sent lines', function () {
+        $user         = $this->adminGuest->getUser();
+        $organisation = $this->orgPartner->organisation;
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        $user->update(['can_use_mcp' => true, 'can_use_mcp_procurement' => true, 'can_use_mcp_place_orders' => false]);
+        $tool      = fn (array $arguments) => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, ['organisation' => $organisation->slug, 'request_text' => 'add it and submit', ...$arguments]);
+        $line      = fn (ShoppingListItemStateEnum $state) => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('org_stock_id', $this->buyerOrgStock->id)->where('state', $state)->first();
+        $addAndSubmit = ['lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 4]], 'submit' => true];
+
+        $tool($addAndSubmit)->assertHasErrors(['Placing orders is not enabled']);
+        expect($line(ShoppingListItemStateEnum::DRAFT))->toBeNull();
+
+        $user->update(['can_use_mcp_place_orders' => true]);
+        $tool($addAndSubmit)->assertOk()->assertSee(['"submitted":1', 'order_log_id']);
+
+        $placed = App\Models\SysAdmin\McpChange::latest('id')->first();
+        expect($line(ShoppingListItemStateEnum::DRAFT))->toBeNull()
+            ->and((float) $line(ShoppingListItemStateEnum::OPEN)->quantity)->toBe(4.0)
+            ->and($placed->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PLACED_ORDER)
+            ->and($placed->canBeRevertedBy($user))->toBeFalse()
+            ->and(fn () => App\Actions\SysAdmin\McpChange\RevertMcpChange::run($placed, $user))->toThrow(ValidationException::class);
+
+        $changeSent = ['sent_lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 6]]];
+        $tool($changeSent)->assertHasErrors(['Dangerous']);
+        expect((float) $line(ShoppingListItemStateEnum::OPEN)->quantity)->toBe(4.0);
+
+        $tool([...$changeSent, 'accept' => ['change_submitted']])->assertOk()->assertSee('"sent_lines_changed":1');
+        expect((float) $line(ShoppingListItemStateEnum::OPEN)->refresh()->quantity)->toBe(6.0);
+
+        $line(ShoppingListItemStateEnum::OPEN)->update(['preparing_at' => now()]);
+        $tool([...$changeSent, 'accept' => ['change_submitted']])->assertOk()->assertSee('No sent line the hub has not started yet');
+
+
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
+        $user->update(['can_use_mcp_place_orders' => false]);
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\PartnerRescueOrderTool::class, ['organisation' => $organisation->slug])
+            ->assertOk()->assertSee('"partner":"'.$this->orgPartner->partner->code);
+        App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\PartnerRescueOrderTool::class, ['organisation' => $organisation->slug, 'partner' => $this->orgPartner->partner->code, 'place' => true, 'request_text' => 'place the rescue order'])
+            ->assertHasErrors(['Placing orders is not enabled']);
+    });
+
     test('the ai planning rows cap the order at what sells before it expires, one year when shelf life is not recorded', function () {
         $user = $this->adminGuest->getUser();
         $this->buyerOrgStock->update(['quantity_available' => 10]);
@@ -9578,6 +9620,50 @@ test('stock put away from a delivery is valued at the line price, then at the la
         ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
 
     $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+test('a placed agent container is costed from its agent invoice and completes itself once our organisation adds the customs', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-COST-'.Str::random(6), [10, 20]);
+    $stockDelivery->updateQuietly(['agent_id' => $this->agent->id]);
+    $items = $stockDelivery->items()->orderBy('id')->get();
+    $items[0]->updateQuietly(['net_amount' => 100]);
+    $items[1]->updateQuietly(['net_amount' => 300]);
+
+    $invoice = StoreAgentInvoice::make()->handle($this->agent, $stockDelivery->refresh());
+    UpdateAgentInvoiceCharges::make()->handle($invoice, ['charges' => [
+        ['description' => 'Sea freight', 'type' => 'freight', 'amount' => 50],
+        ['description' => 'Commission', 'type' => 'other', 'amount' => 40],
+    ]]);
+
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    foreach ($stockDelivery->items()->orderBy('id')->get() as $index => $item) {
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $index === 0 ? 10 : 15]);
+        SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($this, $item)->id]);
+    }
+
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+    $costs         = $stockDelivery->costs()->get();
+
+    expect((float) $items[0]->cost_items)->toBe(100.0)
+        ->and((float) $items[1]->cost_items)->toBe(225.0)
+        ->and((float) $costs->firstWhere('type', StockDeliveryCostTypeEnum::SHIPPING)->amount)->toBe(50.0)
+        ->and((float) $costs->where('type', StockDeliveryCostTypeEnum::EXTRA)->sum('amount'))->toBe(40.0)
+        ->and((float) $costs->firstWhere('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->amount)->toBe(490.0)
+        ->and($stockDelivery->is_costed)->toBeFalse();
+
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'amount' => 65, 'received_at' => now()]);
+
+    $stockDelivery = $stockDelivery->fresh();
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and((float) $items->sum('cost_extra'))->toEqualWithDelta(40, 0.001)
+        ->and((float) $items->sum('cost_shipping'))->toEqualWithDelta(50, 0.001)
+        ->and((float) $items->sum('cost_duties'))->toEqualWithDelta(65 / (float) ($stockDelivery->org_exchange ?: 1), 0.02)
+        ->and((float) $items[1]->cost_extra)->toBeGreaterThan((float) $items[0]->cost_extra)
+        ->and(ApplyAgentInvoiceCosting::run($stockDelivery))->toBeNull();
 });
 
 function placedStockDeliveryWithTwoLines($test, string $code): StockDelivery

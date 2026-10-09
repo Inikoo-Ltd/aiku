@@ -56,6 +56,7 @@ class StoreAgentInvoice extends OrgAction
             ->orderBy('id')
             ->get()
             ->map(fn (StockDeliveryItem $item) => [
+                'stock_delivery_item_id' => $item->id,
                 'org_stock_id' => $item->org_stock_id,
                 'code'         => $item->orgStock?->code,
                 'name'         => $item->orgStock?->name,

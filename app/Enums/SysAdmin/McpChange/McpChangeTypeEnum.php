@@ -19,6 +19,7 @@ enum McpChangeTypeEnum: string
     case PARTNER_SHOPPING_LIST = 'partner_shopping_list';
     case PRODUCTION_RECORD = 'production_record';
     case PRODUCTION_RECIPE = 'production_recipe';
+    case PLACED_ORDER = 'placed_order';
 
     public static function labels(): array
     {
@@ -28,6 +29,7 @@ enum McpChangeTypeEnum: string
             'partner_shopping_list' => __('Hub shopping list'),
             'production_record'     => __('Artefact, raw material or task'),
             'production_recipe'     => __('Artefact recipe'),
+            'placed_order'          => __('Order placed'),
         ];
     }
 
@@ -41,6 +43,7 @@ enum McpChangeTypeEnum: string
             McpChangeTypeEnum::ORG_STOCK_STATE  => 'can_use_mcp_discontinue',
             McpChangeTypeEnum::PARTNER_SHOPPING_LIST => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE => 'can_use_mcp_production',
+            McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',
         };
     }
 }

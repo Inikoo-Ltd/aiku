@@ -15,6 +15,7 @@ import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFileInvoice, faFilePdf, faPlus, faTrashAlt } from "@fal"
@@ -27,6 +28,7 @@ library.add(faFileInvoice, faFilePdf, faPlus, faTrashAlt)
 
 interface Charge {
 	description: string
+	type?: "freight" | "other"
 	amount: number | null
 }
 
@@ -108,14 +110,18 @@ const confirmRemakeInvoice = () =>
 	})
 
 const charges = ref<Charge[]>([])
-const syncCharges = () => (charges.value = (props.data.invoice?.charges ?? []).map(charge => ({ ...charge })))
+const syncCharges = () => (charges.value = (props.data.invoice?.charges ?? []).map(charge => ({ ...charge, type: charge.type ?? "other" })))
+const chargeTypeOptions = [
+	{ label: ctrans("Freight"), value: "freight" },
+	{ label: ctrans("Other"), value: "other" },
+]
 watch(() => props.data.invoice?.charges, syncCharges, { immediate: true, deep: true })
 
-const chargesDirty = computed(() => JSON.stringify(charges.value) !== JSON.stringify(props.data.invoice?.charges ?? []))
+const chargesDirty = computed(() => JSON.stringify(charges.value) !== JSON.stringify((props.data.invoice?.charges ?? []).map(charge => ({ ...charge, type: charge.type ?? "other" }))))
 const chargesTotal = computed(() => charges.value.reduce((sum, charge) => sum + (Number(charge.amount) || 0), 0))
 const chargesLoading = ref(false)
 
-const addCharge = () => charges.value.push({ description: "", amount: null })
+const addCharge = () => charges.value.push({ description: "", type: "other", amount: null })
 const removeCharge = (index: number) => charges.value.splice(index, 1)
 const saveCharges = () => {
 	if (!props.data.charges_update_route) return
@@ -232,9 +238,10 @@ const confirmDeletePayment = (row: Payment) =>
 					<Button v-if="data.is_open" type="transparent" size="xs" icon="fal fa-plus" :label="ctrans('Add')" @click="addCharge" />
 				</div>
 				<template v-if="data.is_open">
-					<p v-if="!charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("Commission, packing, local freight: anything on top of the goods.") }}</p>
+					<p v-if="!charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("Commission, packing, freight: anything on top of the goods. Mark freight as Freight, it becomes the container's shipping cost.") }}</p>
 					<div v-for="(charge, index) in charges" :key="index" class="mt-2 flex items-center gap-2">
 						<InputText v-model="charge.description" size="small" class="min-w-0 flex-1" :class="fieldFocusClass" :placeholder="ctrans('Description')" :aria-label="ctrans('Description')" />
+						<SegmentedToggle v-model="charge.type" :options="chargeTypeOptions" :ariaLabel="ctrans('Charge type')" />
 						<InputNumber v-model="charge.amount" mode="currency" :currency="data.invoice.currency_code" :min="0" size="small" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-32 !text-right' } } }" :aria-label="ctrans('Amount')" />
 						<button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Remove')" @click="removeCharge(index)">
 							<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
@@ -249,7 +256,7 @@ const confirmDeletePayment = (row: Payment) =>
 					<p v-if="!data.invoice.charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("No charges.") }}</p>
 					<ul v-else class="mt-2 space-y-1 text-sm">
 						<li v-for="(charge, index) in data.invoice.charges" :key="index" class="flex justify-between gap-4">
-							<span class="text-gray-700">{{ charge.description }}</span>
+							<span class="text-gray-700">{{ charge.description }}<span v-if="charge.type === 'freight'" class="ml-1.5 text-xs text-gray-400">{{ ctrans("Freight") }}</span></span>
 							<span class="tabular-nums text-gray-800">{{ money(Number(charge.amount)) }}</span>
 						</li>
 					</ul>

@@ -16,6 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Http\RedirectResponse;
+use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -52,6 +53,11 @@ class StartStockDeliveryCosting extends OrgAction
         ]);
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
+
+        if ($stockDelivery->agent_id) {
+            ApplyAgentInvoiceCosting::run($stockDelivery);
+            $stockDelivery->refresh();
+        }
 
         if ($stockDelivery->parent_type === 'OrgPartner') {
             EvaluateStockDeliveryCosting::run($stockDelivery);

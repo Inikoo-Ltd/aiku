@@ -69,7 +69,7 @@ class McpChange extends Model
 
     public function canBeRevertedBy(User $user): bool
     {
-        if ($this->reverted_at) {
+        if ($this->reverted_at || $this->type === McpChangeTypeEnum::PLACED_ORDER) {
             return false;
         }
 

@@ -49,6 +49,10 @@ class RevertMcpChange
 
     public function handle(McpChange $mcpChange, User $user): McpChange
     {
+        if ($mcpChange->type === McpChangeTypeEnum::PLACED_ORDER) {
+            throw ValidationException::withMessages(['message' => __('An order already sent cannot be taken back automatically. Cancel it with the partner.')]);
+        }
+
         if ($mcpChange->reverted_at) {
             throw ValidationException::withMessages(['message' => __('This change was already reverted')]);
         }
@@ -67,6 +71,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->revertPartnerShoppingList($mcpChange->before, $mcpChange->after),
                 McpChangeTypeEnum::PRODUCTION_RECORD => $this->revertProductionRecord($target, $mcpChange->before),
                 McpChangeTypeEnum::PRODUCTION_RECIPE => $this->revertProductionRecipes($mcpChange->before),
+                McpChangeTypeEnum::PLACED_ORDER => null,
             };
 
             $mcpChange->update([

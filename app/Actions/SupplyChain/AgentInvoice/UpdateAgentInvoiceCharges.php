@@ -21,8 +21,12 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class UpdateAgentInvoiceCharges extends OrgAction
 {
+    public const string CHARGE_FREIGHT = 'freight';
+
+    public const string CHARGE_OTHER = 'other';
+
     /**
-     * @param  array{charges: array<int, array{description: string, amount: float|string}>}  $modelData
+     * @param  array{charges: array<int, array{description: string, type?: string, amount: float|string}>}  $modelData
      *
      * @throws ValidationException
      */
@@ -35,6 +39,7 @@ class UpdateAgentInvoiceCharges extends OrgAction
         $charges = collect(Arr::get($modelData, 'charges', []))
             ->map(fn (array $charge) => [
                 'description' => trim($charge['description']),
+                'type'        => $charge['type'] ?? self::CHARGE_OTHER,
                 'amount'      => round((float) $charge['amount'], 2),
             ])
             ->values()
@@ -56,6 +61,7 @@ class UpdateAgentInvoiceCharges extends OrgAction
         return [
             'charges'               => ['present', 'array', 'max:50'],
             'charges.*.description' => ['required', 'string', 'max:255'],
+            'charges.*.type'        => ['sometimes', 'string', 'in:'.self::CHARGE_FREIGHT.','.self::CHARGE_OTHER],
             'charges.*.amount'      => ['required', 'numeric', 'min:0', 'max:999999999999'],
         ];
     }

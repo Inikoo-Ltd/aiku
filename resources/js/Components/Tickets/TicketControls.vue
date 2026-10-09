@@ -196,7 +196,7 @@ const sendQaVerdict = () => {
 }
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
-const canGiveQaVerdict = computed(() => props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
+const canGiveQaVerdict = computed(() => isReadyForQa.value && props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
 const canSkipQa = computed(() => canGiveQaVerdict.value && !props.ticket.qa_requested_at)
 
 const qaVerdictCopy = computed(() => ({
@@ -209,7 +209,7 @@ const showQaTarget = computed(() => props.ticket.qa_status === "requested" || Bo
 
 const isReadyForQa = computed(() => !["open", "assigned"].includes(props.ticket.status))
 
-const canAskQa = computed(() => props.can_request_qa && props.ticket.qa_status !== "requested")
+const canAskQa = computed(() => isReadyForQa.value && props.can_request_qa && props.ticket.qa_status !== "requested")
 
 // Asking for a check is a question, and a question with nothing said about what changed makes
 // QA guess. The note is optional, since sometimes the ticket already says it.
@@ -473,7 +473,7 @@ const saveDeployComment = () => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter || (isReadyForQa && (can_qa || ticket.qa_status || canAskQa))" class="space-y-2">
+            <div v-if="can_manage || is_reporter || (ticket.qa_status || (isReadyForQa && (can_qa || canAskQa)))" class="space-y-2">
                 <div v-if="can_manage || is_reporter">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Status") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
@@ -497,7 +497,7 @@ const saveDeployComment = () => {
                         </button>
                 </div>
                 </div>
-                <div v-if="isReadyForQa && (can_qa || ticket.qa_status || canAskQa)">
+                <div v-if="ticket.qa_status || (isReadyForQa && (can_qa || canAskQa))">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                         <span v-if="ticket.qa_status" v-tooltip="ticket.qa_status_icon.tooltip" class="relative inline-flex items-center">
@@ -508,10 +508,10 @@ const saveDeployComment = () => {
                             <TicketQaTarget v-if="showQaTarget" class="-ml-3" :name="ticket.qa_user" :avatar="ticket.qa_user_avatar" size="sm" />
                         </span>
                         <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                        <button v-if="can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
-                        <span v-if="canGiveQaVerdict && (canAskQa || (can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
+                        <button v-if="isReadyForQa && can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
+                        <span v-if="canGiveQaVerdict && (canAskQa || (isReadyForQa && can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
                         <Button
-                            v-if="can_claim_qa"
+                            v-if="isReadyForQa && can_claim_qa"
                             type="secondary"
                             size="xs"
                             icon="fal fa-search"

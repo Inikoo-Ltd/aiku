@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\McpChange;
 
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Inventory\OrgStock;
@@ -45,6 +46,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->partnerShoppingList($target),
             McpChangeTypeEnum::PRODUCTION_RECORD => $this->productionRecord($target),
             McpChangeTypeEnum::PRODUCTION_RECIPE => $this->productionRecipes($target),
+            McpChangeTypeEnum::PLACED_ORDER => $this->placedOrder($target),
         };
     }
 
@@ -62,6 +64,12 @@ class GetMcpChangeSnapshot
             return collect($target['stock_ids'])
                 ->map(fn ($stockId) => ($codes[$stockId] ?? '#'.$stockId).': '.($snapshot['lines'][$stockId]['quantity'] ?? 'not on list'))
                 ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::PLACED_ORDER) {
+            return trans_choice(':count line in the basket|:count lines in the basket', $snapshot['basket_lines'])
+                .($snapshot['sent_lines'] ? ', sent: '.collect($snapshot['sent_lines'])->implode(', ') : '')
+                .collect($snapshot['purchase_orders'])->map(fn (array $purchaseOrder) => ', '.$purchaseOrder['reference'].': '.$purchaseOrder['state'].' '.$purchaseOrder['lines'].' lines')->implode('');
         }
 
         if ($type === McpChangeTypeEnum::PRODUCTION_RECORD) {
@@ -98,6 +106,42 @@ class GetMcpChangeSnapshot
             : DB::table('product_category_has_related_products')->where('product_category_id', $target['id'])->select('product_id as id');
 
         return ['ids' => $query->orderBy('position')->pluck('id')->map(fn ($id) => (int) $id)->all()];
+    }
+
+    /**
+     * The basket drafts and the purchase orders still being prepared or just sent, so the log shows
+     * what an order the assistant placed took from the basket and where it went.
+     */
+    private function placedOrder(array $target): array
+    {
+        return [
+            'basket_lines'    => PartnerShoppingListItem::where('org_partner_id', $target['org_partner_id'])
+                ->where('state', ShoppingListItemStateEnum::DRAFT)
+                ->count(),
+            'sent_lines'      => PartnerShoppingListItem::where('org_partner_id', $target['org_partner_id'])
+                ->whereIn('stock_id', $target['stock_ids'] ?? [])
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->orderBy('id')
+                ->pluck('quantity', 'id')
+                ->map(fn ($quantity) => (float) $quantity)
+                ->all(),
+            'purchase_orders' => DB::table('purchase_orders')
+                ->where('parent_type', 'OrgPartner')
+                ->where('parent_id', $target['org_partner_id'])
+                ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS->value, PurchaseOrderStateEnum::SUBMITTED->value])
+                ->whereNull('deleted_at')
+                ->orderByDesc('id')
+                ->limit(5)
+                ->select(['id', 'reference', 'state'])
+                ->selectRaw('(select count(*) from purchase_order_transactions where purchase_order_id = purchase_orders.id) as number_lines')
+                ->get()
+                ->mapWithKeys(fn ($purchaseOrder) => [$purchaseOrder->id => [
+                    'reference' => $purchaseOrder->reference,
+                    'state'     => $purchaseOrder->state,
+                    'lines'     => (int) $purchaseOrder->number_lines,
+                ]])
+                ->all(),
+        ];
     }
 
     private function partnerShoppingList(array $target): array

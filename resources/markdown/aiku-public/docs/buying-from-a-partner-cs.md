@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Průvodce pro kupujícího - začněte u nákupního dashboardu, naplňte seznam ručně, z partnerova katalogu nebo pomocí automatického doplnění, a přijměte zboží, když dorazí.
-date: 2026-10-02
-source_date: 2026-10-02
+date: 2026-10-09
+source_date: 2026-10-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -63,6 +63,16 @@ Pokud je váš účet zapojen, může vám AI asistent, kterého k aiku připoj�
 - Každá změna se zaznamená spolu s vaším požadavkem a lze ji vrátit: požádejte asistenta o vrácení, nebo to může udělat administrátor v logu AI změn (AI changes).
 - Zapojení je přepínač na vašem uživatelském účtu, který zapíná administrátor, a navíc potřebujete oprávnění upravovat nákup (procurement) pro vaši organizaci.
 
+### Zadání objednávky přes vašeho asistenta
+
+S druhým přepínačem na vašem účtu může asistent objednávku nejen připravit, ale i zadat:
+
+- **Odeslat koš** do výrobního hubu (manufacturing hub): *"odešli to"*. Hub začne vyrábět, co jste poslali, přesně tak, jako byste stiskli **Submit**.
+- **Změnit řádek, který už byl hubu odeslán**, dokud ho hub nezačal zpracovávat (žádná zakázka, není předpřipraveno ani se nepřipravuje). Je to nebezpečné — hub už může kolem něj plánovat materiály a dávky — proto vás asistent nejdřív varuje a pokračuje, jen když na tom trváte.
+- **Záchranné objednávky ostatním partnerům**: asistent ukáže, co může každý partner zachránit (SKO, náklady, celkem) a po potvrzení partnera a rozpočtu vytvoří záchrannou nákupní objednávku (purchase order) a odešle ji do partnerova skladu.
+
+Zadané objednávky se zaznamenávají spolu s vaším požadavkem, ale z logu AI změn je **nelze vrátit**: stornujte je u partnera jako jakoukoli jinou objednávku.
+
 ## Když seznam řekne ne
 
 Přidání je odmítnuto ve třech případech, záměrně: seznam dosáhl **budget** (rozpočtu) pro tohoto partnera (položky ranku A a bez skladu jsou z limitu vyňaty — nouzová situace se vejde vždy), sklad má pod 5 % volných míst, nebo tento partner už vyčerpal svůj spravedlivý podíl na volných místech u produktů, které jste nikdy neskladovali. Řešte tu zprávu, nehledejte jinou cestu — stejná pojistka platí pro ruční přidání, hromadné přidání i automatické doplnění. [Článek o dashboardu](/docs/reading-the-partner-shopping-dashboard-cs) vysvětluje, odkud tyto limity pocházejí.
@@ -80,6 +90,7 @@ Když partner expeduje, každý řádek přijde s již vyplněnými dávkami, kt
 <li><b>Objednat v celých dávkách:</b> tlačítko vedle <i>full batches every N SKO</i> na řádku nebo na kartě produktu.</li>
 <li><b>Upravit otevřené řádky:</b> změnit prioritu nebo smazat řádky v tabulce nákupního seznamu; změnit množství na kartách produktů v <b>Browse</b>.</li>
 <li><b>Nechat někoho plnit seznam přes jeho AI asistenta (administrátoři):</b> <b>Sysadmin → Users</b> (Správa systému → Uživatelé) → otevřít uživatele → <b>Edit</b> (Upravit) → <b>Access</b> (Přístup) → zapnout <b>Can connect AI assistant</b>, poté <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
+<li><b>Nechat někoho zadávat objednávky přes jeho AI asistenta (administrátoři):</b> stejná záložka <b>Access</b> → zapnout <b>Can place orders to the manufacturing hub and partners through their AI assistant</b>.</li>
 <li><b>Vyloučit položku z automatického doplnění:</b> vaše organizace → <b>Warehouse → Inventory</b> (Sklad → Zásoby) → otevřít SKO → <b>Edit SKO</b> (Upravit SKO) → zapnout <b>Do not auto order</b> (Neobjednávat automaticky).</li>
 <li><b>Sledovat a přijmout zásilku:</b> stejná stránka partnera → <b>Stock deliveries</b> (Skladové dodávky) → až zboží dorazí, <b>Receive</b> (Přijmout) → zkontrolovat → uložit na místa.</li>
 </ul>
