@@ -174,7 +174,7 @@ const updateCollection = (value: boolean) => {
                     </button>
                 </div>
                     <div class="font-semibold">
-                        {{ isCollection ? ctrans("Collection") : ctrans("Delivery Address") }}
+                        {{ isCollection ? ctrans("For collection") : ctrans("Delivery Address") }}
                     </div>
                     <div v-if="isCollection" class="pr-3 text-gray-600">
                         {{ ctrans("You will collect this order from :shop", { shop: layout?.iris?.shop?.name ?? '' }) }}.
