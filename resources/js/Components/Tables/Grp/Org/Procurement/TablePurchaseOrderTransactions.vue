@@ -20,14 +20,14 @@ import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSu
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
 import { useConfirm } from 'primevue/useconfirm'
 import Toggle from '@/Components/Pure/Toggle.vue'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faMinusCircle, faPeopleArrows)
+library.add(faBalanceScale, faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faMinusCircle, faPeopleArrows)
 
 const confirm = useConfirm()
 
@@ -51,12 +51,31 @@ const arrivedDeliveryStates = ['received', 'checked', 'settled', 'not_received',
 const isTransactionClosed = (item: { state?: string; delivery_state?: string }) =>
     closedStates.includes(props.state ?? '') || closedStates.includes(item.state ?? '') || arrivedDeliveryStates.includes(item.delivery_state ?? '')
 
-const levels = computed(() => getOrderingLevels().filter(l => !props.isPartner || l.key === 'skos'))
+const hasSupplierUnits = computed(() => !props.isPartner && ((props.data as any)?.data ?? []).some((item: any) => item.supplier_unit))
+
+const supplierLevel = {
+    key: 'supplier_units' as OrderingLevel,
+    icon: 'fal fa-balance-scale',
+    tab: ctrans('Ordering supplier units'),
+    description: ctrans('Supplier unit description'),
+    quantity: ctrans('Supplier units'),
+    cost: ctrans('Supplier unit cost'),
+    singular: ctrans('Supplier unit'),
+}
+
+const levels = computed(() => [
+    ...getOrderingLevels().filter(l => !props.isPartner || l.key === 'skos'),
+    ...(hasSupplierUnits.value ? [supplierLevel] : []),
+])
 
 const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
 
 function unitsPerLevel(item: any) {
     return unitsPerOrderingLevel(item, currentLevel.value)
+}
+
+function supplierUnitQuantity(item: any) {
+    return item.supplier_unit ? ` | ${formatQuantity(Number(item.quantity_ordered) / (Number(item.units_per_supplier_unit) || 1))} ${item.supplier_unit}` : ''
 }
 
 function skosPerCarton(item: any) {
@@ -101,7 +120,7 @@ function quantityBreakdown(item: any) {
         return `${formatQuantity(units / pack)}sko.`
     }
 
-    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.`
+    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.${supplierUnitQuantity(item)}`
 }
 
 function amount(item: any) {
@@ -459,8 +478,11 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         <template #cell(description)="{ item }">
             <div class="space-y-0.5">
                 <div>
-                    <span v-if="isInProcess && currentLevel !== 'units'" class="font-medium">
-                        {{ formatQuantity(unitsPerLevel(item)) }}x
+                    <span v-if="isInProcess && currentLevel === 'supplier_units' && !item.supplier_unit" v-tooltip="ctrans('The supplier counts this one in our units')" class="font-medium text-gray-400">
+                        1x
+                    </span>
+                    <span v-else-if="isInProcess && currentLevel !== 'units'" class="font-medium">
+                        {{ formatQuantity(unitsPerLevel(item)) }}x<template v-if="currentLevel === 'supplier_units'"> ({{ item.supplier_unit }})</template>
                     </span>
                     {{ item.name }}
                 </div>

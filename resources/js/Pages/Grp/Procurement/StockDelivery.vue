@@ -27,6 +27,8 @@ import StockDeliveryAgentPayments from "@/Components/Procurement/StockDeliveryAg
 import StockDeliveryServiceInvoices from "@/Components/Procurement/StockDeliveryServiceInvoices.vue"
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
+import TableStockDeliveryDiscrepancies from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryDiscrepancies.vue"
+import StockDeliveryCustoms from "@/Components/Procurement/StockDeliveryCustoms.vue"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
@@ -45,10 +47,12 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull } from "@fas"
 
 library.add(
+	faBalanceScale,
+	faPassport,
 	faInventory,
 	faWarehouse,
 	faPersonDolly,
@@ -108,6 +112,7 @@ const props = defineProps<{
 			show_delivery_discrepancy: boolean
 			total_under_delivered_items: number
 			total_over_delivered_items: number
+			total_possible_unit_mismatch_items: number
 			weight: number | null
 			volume: number | null
 			is_weight_partial: boolean
@@ -176,6 +181,7 @@ const props = defineProps<{
 	pending_items?: {}
 	done_items?: {}
 	under_over_delivered?: {}
+	customs?: {}
 	showcase?: {}
 	attachments?: {}
 	attachmentScopes: { name: string; code: string }[]
@@ -199,7 +205,8 @@ const component = computed(() => {
 		items: TableStockDeliveryItems,
 		pending_items: TableStockDeliveryItems,
 		done_items: TableStockDeliveryItems,
-		under_over_delivered: TableStockDeliveryItems,
+		under_over_delivered: TableStockDeliveryDiscrepancies,
+		customs: StockDeliveryCustoms,
 		purchase_orders: TablePurchaseOrders,
 		showcase: ProcurementOrderData,
 		attachments: TableAttachments,
@@ -944,6 +951,19 @@ const confirmDeleteStockDelivery = (action: any) => {
 						fixed-width
 					/>
 					<span>{{ box_stats.second_block.total_over_delivered_items }}</span>
+				</div>
+
+				<div
+					v-if="box_stats.second_block.total_possible_unit_mismatch_items"
+					class="flex items-center gap-1 text-orange-500"
+				>
+					<FontAwesomeIcon
+						v-tooltip="ctrans('Items whose count is a clean multiple of what was expected: probably invoiced in another unit')"
+						icon="fal fa-balance-scale"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ box_stats.second_block.total_possible_unit_mismatch_items }}</span>
 				</div>
 			</div>
 		</BoxStatPallet>

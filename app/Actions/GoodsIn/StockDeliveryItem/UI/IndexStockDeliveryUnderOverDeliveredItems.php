@@ -44,7 +44,7 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
         $query->where('stock_delivery_items.state', '!=', StockDeliveryItemStateEnum::CANCELLED);
         $query->whereColumn('stock_delivery_items.unit_quantity_checked', '!=', 'stock_delivery_items.unit_quantity');
 
-        $query->with(['supplierProduct']);
+        $query->with(['supplierProduct', 'organisation', 'claim.currency', 'customsLine']);
 
         return $query
             ->defaultSort('org_stocks.code')
@@ -53,6 +53,16 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
                 'stock_delivery_items.supplier_product_id',
                 'stock_delivery_items.unit_quantity',
                 'stock_delivery_items.unit_quantity_checked',
+                'stock_delivery_items.checked_at',
+                'stock_delivery_items.state',
+                'stock_delivery_items.organisation_id',
+                'stock_delivery_items.net_amount',
+                'stock_delivery_items.org_net_amount',
+                'stock_delivery_items.cost_duties',
+                'stock_delivery_items.stock_delivery_customs_line_id',
+                'stock_delivery_items.discrepancy_outcome',
+                'stock_delivery_items.discrepancy_resolved_at',
+                'stock_delivery_items.data',
                 'stock_delivery_items.org_stock_id',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
@@ -101,6 +111,8 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
                 ->column(key: 'difference_units', label: __('Units'), canBeHidden: false, sortable: true)
                 ->column(key: 'difference_skos', label: __('SKOs'), canBeHidden: false, sortable: true)
                 ->column(key: 'difference_amount', label: __('Value'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'discrepancy', label: __('Flag'), canBeHidden: false)
+                ->column(key: 'outcome', label: __('Outcome'), canBeHidden: false)
                 ->defaultSort('part');
         };
     }

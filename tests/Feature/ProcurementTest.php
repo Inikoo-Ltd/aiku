@@ -268,6 +268,16 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyOutcomeEnum;
+use App\Enums\GoodsIn\StockDeliveryClaimStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
+use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryInvoiceCosting;
+use App\Models\Tasks\StaffTask;
+use App\Actions\GoodsIn\StockDeliveryItem\ResolveStockDeliveryItemDiscrepancy;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
+use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -4222,7 +4232,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
     $this->get($url)->assertInertia(function (AssertableInertia $page) {
         $page
             ->where('queryBuilderProps.items.elementGroups.state.elements.placed.1', 0)
-            ->has('tabs.navigation', 7)
+            ->has('tabs.navigation', 8)
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value);
     });
 
@@ -4240,7 +4250,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
 
     $response->assertOk()
         ->assertJsonPath('props.queryBuilderProps.items.elementGroups.state.elements.placed.1', 1)
-        ->assertJsonCount(8, 'props.tabs.navigation')
+        ->assertJsonCount(9, 'props.tabs.navigation')
         ->assertJsonPath(
             'props.tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.title',
             StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->blueprint()['title']
@@ -11993,4 +12003,228 @@ test('staff enter the real invoice of a delivery in place of its estimate, keepi
 
     $this->post(route('grp.models.stock-delivery.invoice.store', $agentContainer->id), ['reference' => 'X', 'date' => '2026-03-02', 'goods_amount' => 1, 'charges' => []])
         ->assertSessionHasErrors('invoice');
+});
+
+test('a count that is a clean multiple of what was expected is a possible unit mismatch, and the tolerance hides small differences (HELP-3863)', function () {
+    expect(StockDeliveryItemDiscrepancyEnum::classify(80, 160, 100))->toBe(StockDeliveryItemDiscrepancyEnum::POSSIBLE_UNIT_MISMATCH)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(120, 24, 100))->toBe(StockDeliveryItemDiscrepancyEnum::POSSIBLE_UNIT_MISMATCH)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(80, 120, 100))->toBe(StockDeliveryItemDiscrepancyEnum::OVER)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(160, 120, 100))->toBe(StockDeliveryItemDiscrepancyEnum::UNDER)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(10, 0, 100))->toBe(StockDeliveryItemDiscrepancyEnum::UNDER)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(200, 202, 27000))->toBe(StockDeliveryItemDiscrepancyEnum::OVER)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(200, 202, 27000, tolerancePercentage: 2))->toBe(StockDeliveryItemDiscrepancyEnum::WITHIN_TOLERANCE)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(200, 202, 27000, tolerancePercentage: 2, toleranceAmount: 100))->toBe(StockDeliveryItemDiscrepancyEnum::OVER)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(200, 202, 27000, toleranceAmount: 300))->toBe(StockDeliveryItemDiscrepancyEnum::WITHIN_TOLERANCE)
+        ->and(StockDeliveryItemDiscrepancyEnum::classify(10, 10, 100))->toBeNull();
+
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNIT-MISMATCH-'.Str::random(6), [80, 80, 150]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+
+    foreach ([160, 120, 102] as $index => $checked) {
+        SetStockDeliveryItemCheckedQuantity::make()->action($items[$index], ['unit_quantity_checked' => $checked]);
+    }
+
+    $stockDelivery->refresh();
+
+    expect($stockDelivery->number_stock_delivery_items_possible_unit_mismatch)->toBe(1)
+        ->and($stockDelivery->number_stock_delivery_items_over_delivered)->toBe(1)
+        ->and($stockDelivery->number_stock_delivery_items_under_delivered)->toBe(1);
+});
+
+test('a supplier that sells by the kg converts on the supplier product, the purchase order line and the invoice review (HELP-3863)', function () {
+    $tradeUnit = new TradeUnit(['net_weight' => 500, 'gross_weight' => 510]);
+    $tradeUnit->setRelation('pivot', new \Illuminate\Database\Eloquent\Relations\Pivot(['quantity' => 1]));
+
+    $byWeight = new SupplierProduct(['supplier_unit' => SupplierUnitEnum::KG->value, 'units_per_supplier_unit' => 1]);
+    $byWeight->setRelation('tradeUnits', collect([$tradeUnit]));
+
+    expect($byWeight->unitsPerSupplierUnitByWeight())->toBe(2.0)
+        ->and($byWeight->supplierUnitWarning())->not->toBeNull()
+        ->and((new SupplierProduct())->unitsPerSupplierUnit())->toBe(1.0);
+
+    $stockDelivery = createStockDeliveryWithItems($this, 'BincS-'.Str::random(6), [160]);
+    $item          = $stockDelivery->items()->first();
+    $item->update(['net_amount' => 20240]);
+    $supplierProduct = $item->supplierProduct;
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['supplier_unit' => 'kg', 'units_per_supplier_unit' => 2]);
+
+    expect($supplierProduct->refresh()->supplier_unit)->toBe(SupplierUnitEnum::KG)
+        ->and($supplierProduct->unitsPerSupplierUnit())->toBe(2.0);
+
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('items.data.0.supplier_unit', 'kg')
+            ->where('items.data.0.units_per_supplier_unit', 2)
+            ->etc());
+
+    $review = GetStockDeliveryInvoiceCosting::make()->review($stockDelivery, [
+        'state'    => 'read',
+        'currency' => $stockDelivery->currency->code,
+        'total'    => 20240,
+        'charges'  => [],
+        'lines'    => [['code' => $supplierProduct->code, 'quantity' => 80, 'unit_price' => 253, 'amount' => 20240]],
+    ]);
+
+    expect($review['items'][0]['invoice_quantity'])->toEqual(160)
+        ->and($review['items'][0]['quantity_differs'])->toBeFalse()
+        ->and($review['items'][0]['proposed_cost'])->toEqual(20240);
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['supplier_unit' => null]);
+
+    expect($supplierProduct->refresh()->units_per_supplier_unit)->toBeNull();
+});
+
+test('a flagged line is closed by a recount, a unit correction that uncovers a shortage, a tracked supplier claim or an accepted surplus (HELP-3863)', function () {
+    $user          = $this->adminGuest->getUser();
+    $stockDelivery = createStockDeliveryWithItems($this, 'RESOLVE-'.Str::random(6), [80, 80, 200]);
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+    foreach ($items as $index => $item) {
+        $item->update(['net_amount' => [10120, 10120, 27000][$index]]);
+    }
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    foreach ([160, 120, 202] as $index => $checked) {
+        SetStockDeliveryItemCheckedQuantity::make()->action($items[$index]->refresh(), ['unit_quantity_checked' => $checked]);
+    }
+    [$mismatch, $hiddenShortage, $surplus] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    $tasksBefore = StaffTask::count();
+    $hiddenShortage = ResolveStockDeliveryItemDiscrepancy::make()->action($hiddenShortage, $user, ['outcome' => 'recount_requested']);
+    $task           = StaffTask::find($hiddenShortage->data['recount_staff_task_id']);
+
+    expect(StaffTask::count())->toBe($tasksBefore + 1)
+        ->and($task->department)->toBe('warehouse')
+        ->and($task->model_id)->toBe($hiddenShortage->org_stock_id)
+        ->and($hiddenShortage->discrepancy_outcome)->toBe(StockDeliveryItemDiscrepancyOutcomeEnum::RECOUNT_REQUESTED)
+        ->and($hiddenShortage->discrepancy_resolved_at)->toBeNull();
+
+    $mismatch = ResolveStockDeliveryItemDiscrepancy::make()->action($mismatch, $user, ['outcome' => 'unit_error_corrected', 'unit_quantity' => 160, 'net_amount' => 20240]);
+
+    expect((float) $mismatch->unit_quantity)->toBe(160.0)
+        ->and((float) $mismatch->unit_quantity_checked)->toBe(160.0)
+        ->and((float) $mismatch->net_amount)->toBe(20240.0)
+        ->and($mismatch->discrepancy_outcome)->toBe(StockDeliveryItemDiscrepancyOutcomeEnum::UNIT_ERROR_CORRECTED)
+        ->and($mismatch->discrepancy_resolved_by_id)->toBe($user->id)
+        ->and($mismatch->data['unit_corrections'][0]['unit_quantity'])->toEqual(80);
+
+    $hiddenShortage = ResolveStockDeliveryItemDiscrepancy::make()->action($hiddenShortage, $user, ['outcome' => 'unit_error_corrected', 'unit_quantity' => 160, 'net_amount' => 20240]);
+
+    expect($hiddenShortage->discrepancy())->toBe(StockDeliveryItemDiscrepancyEnum::UNDER)
+        ->and($hiddenShortage->discrepancy_outcome)->toBeNull();
+
+    expect(fn () => ResolveStockDeliveryItemDiscrepancy::make()->action($hiddenShortage, $user, ['outcome' => 'surplus_accepted']))->toThrow(ValidationException::class);
+
+    $hiddenShortage = ResolveStockDeliveryItemDiscrepancy::make()->action($hiddenShortage, $user, ['outcome' => 'supplier_claim', 'notes' => 'Short 20 kg']);
+    $claim          = $hiddenShortage->claim;
+
+    expect($hiddenShortage->discrepancy_outcome)->toBe(StockDeliveryItemDiscrepancyOutcomeEnum::SUPPLIER_CLAIM)
+        ->and($claim->state)->toBe(StockDeliveryClaimStateEnum::OPEN)
+        ->and((float) $claim->quantity)->toBe(40.0)
+        ->and((float) $claim->amount)->toBe(5060.0)
+        ->and($claim->currency_id)->toBe($stockDelivery->currency_id);
+
+    expect(fn () => UpdateStockDeliveryClaim::make()->action($claim, ['state' => 'credit_received']))->toThrow(ValidationException::class);
+
+    $claim = UpdateStockDeliveryClaim::make()->action($claim, ['state' => 'sent']);
+    expect($claim->sent_at)->not->toBeNull()
+        ->and($claim->closed_at)->toBeNull();
+
+    expect(fn () => ResolveStockDeliveryItemDiscrepancy::make()->action($hiddenShortage->refresh(), $user, ['outcome' => 'recount_requested']))->toThrow(ValidationException::class);
+
+    $claim = UpdateStockDeliveryClaim::make()->action($claim, ['state' => 'credit_received', 'credit_note_reference' => 'CN-26-002', 'credit_note_amount' => 5060, 'credit_note_date' => '2026-10-20']);
+    expect($claim->closed_at)->not->toBeNull()
+        ->and($claim->credit_note_reference)->toBe('CN-26-002')
+        ->and((float) $hiddenShortage->refresh()->cost_items)->toBe(20240.0);
+
+    $surplus = ResolveStockDeliveryItemDiscrepancy::make()->action($surplus, $user, ['outcome' => 'surplus_accepted']);
+    expect($surplus->discrepancy_outcome)->toBe(StockDeliveryItemDiscrepancyOutcomeEnum::SURPLUS_ACCEPTED)
+        ->and($surplus->discrepancy_resolved_at)->not->toBeNull();
+
+    $stockDelivery->refresh();
+    expect($stockDelivery->number_stock_delivery_items_under_delivered)->toBe(1)
+        ->and($stockDelivery->number_stock_delivery_items_over_delivered)->toBe(1)
+        ->and($stockDelivery->number_stock_delivery_items_possible_unit_mismatch)->toBe(0);
+
+    $stockDelivery->updateQuietly(['state' => StockDeliveryStateEnum::BOOKED_IN]);
+    $this->withoutExceptionHandling();
+    $rows = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value)
+        ->viewData('page')['props'][StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value]['data'];
+    $row = collect($rows)->firstWhere('id', $hiddenShortage->id);
+
+    expect($row['discrepancy'])->toBe('under')
+        ->and($row['outcome'])->toBe('supplier_claim')
+        ->and($row['claim']['state'])->toBe('credit_received')
+        ->and($row['claim']['credit_note_amount'])->toEqual(5060);
+});
+
+test('duty is shared by customs line: a duty-free line takes none, items on no line share what the lines leave (HELP-3863)', function () {
+    $declare = function (string $code, array $assignTo, float $duty): StockDelivery {
+        $stockDelivery = placedStockDeliveryWithTwoLines($this, $code);
+        $stockDelivery->update(['org_exchange' => 1]);
+
+        UpdateStockDeliveryCustoms::make()->action($stockDelivery, [
+            'customs_mrn'         => '26SK586480626590R2',
+            'customs_released_at' => '2026-09-17',
+            'lines'               => [
+                ['tariff_code' => '3307 41 00 00', 'duty_rate' => 0, 'customs_value' => 100],
+                ['tariff_code' => '6302 21 00 89', 'duty_rate' => 9.6, 'customs_value' => 312.5],
+            ],
+        ]);
+        $lines = $stockDelivery->customsLines()->orderBy('id')->get()->values();
+        foreach ($stockDelivery->items()->orderBy('id')->get()->values() as $index => $item) {
+            SetStockDeliveryItemCustomsLine::make()->action($item, ['stock_delivery_customs_line_id' => $assignTo[$index] === null ? null : $lines[$assignTo[$index]]->id]);
+        }
+        setShippingAndDuty($stockDelivery->refresh(), 0, $duty);
+
+        return $stockDelivery->refresh();
+    };
+
+    $stockDelivery = $declare('CUSTOMS-'.Str::random(6), [0, 1], 30);
+    [$first, $second] = $stockDelivery->items()->orderBy('id')->get()->all();
+    [$dutyFree, $textiles] = $stockDelivery->customsLines()->orderBy('id')->get()->all();
+
+    expect($stockDelivery->customs_mrn)->toBe('26SK586480626590R2')
+        ->and($dutyFree->tariff_code)->toBe('3307410000')
+        ->and((float) $textiles->duty_amount)->toBe(30.0)
+        ->and((float) $first->cost_duties)->toBe(0.0)
+        ->and((float) $second->cost_duties)->toBe(30.0);
+
+    expect(fn () => SetStockDeliveryItemCustomsLine::make()->action($first, ['stock_delivery_customs_line_id' => null]))->toThrow(ValidationException::class);
+
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::CUSTOMS->value)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/StockDelivery')
+            ->where('customs.customs_mrn', '26SK586480626590R2')
+            ->has('customs.lines', 2)
+            ->where('customs.lines.1.allocated', 30)
+            ->etc());
+
+    $partlyDeclared = $declare('CUSTOMS-PART-'.Str::random(6), [null, 1], 40);
+    [$first, $second] = $partlyDeclared->items()->orderBy('id')->get()->all();
+
+    expect((float) $first->cost_duties)->toBe(10.0)
+        ->and((float) $second->cost_duties)->toBe(30.0);
+});
+
+test('correcting a unit error reprices only the put-away of that line (HELP-3863)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'REPRICE-ONE-'.Str::random(6));
+    [$corrected, $untouched] = $stockDelivery->items()->orderBy('id')->get()->all();
+
+    $corrected->updateQuietly(['unit_quantity' => 50]);
+    $untouchedMovement = OrgStockMovement::whereIn('id', $untouched->sowings()->select('org_stock_movement_id'))->first();
+    $untouchedMovement->updateQuietly(['org_amount' => 123.456]);
+
+    ResolveStockDeliveryItemDiscrepancy::make()->action($corrected->refresh(), $this->adminGuest->getUser(), ['outcome' => 'unit_error_corrected', 'unit_quantity' => 10]);
+
+    $correctedMovement = OrgStockMovement::whereIn('id', $corrected->sowings()->select('org_stock_movement_id'))->first();
+    $expectedCost      = $corrected->refresh()->orgStockMovementCost()['cost_per_sku'];
+
+    expect($corrected->discrepancy_outcome)->toBe(StockDeliveryItemDiscrepancyOutcomeEnum::UNIT_ERROR_CORRECTED)
+        ->and((float) $correctedMovement->org_amount)->toEqual(round($expectedCost * (float) $correctedMovement->quantity, 3))
+        ->and((float) $untouchedMovement->refresh()->org_amount)->toBe(123.456);
 });

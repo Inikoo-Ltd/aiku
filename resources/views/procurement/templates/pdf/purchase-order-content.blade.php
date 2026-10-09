@@ -91,8 +91,13 @@
             <td>{{ $product?->name ?? $line->orgStock?->name }}</td>
             <td class="right">{{ $unitsPerCarton ? $quantity($unitsPerCarton) : '' }}</td>
             <td class="right">{{ $unitsPerCarton ? $quantity((float)$line->quantity_ordered / $unitsPerCarton) : '' }}</td>
-            <td class="right">{{ $quantity($line->quantity_ordered) }}</td>
-            <td class="right">{{ $price($line->unit_cost ?? $product?->cost) }}</td>
+            @if($product?->supplier_unit)
+                <td class="right">{{ $quantity((float)$line->quantity_ordered / $product->unitsPerSupplierUnit()) }} {{ $product->supplier_unit->value }}</td>
+                <td class="right">{{ $price(($line->unit_cost ?? $product->cost) * $product->unitsPerSupplierUnit()) }} / {{ $product->supplier_unit->value }}</td>
+            @else
+                <td class="right">{{ $quantity($line->quantity_ordered) }}</td>
+                <td class="right">{{ $price($line->unit_cost ?? $product?->cost) }}</td>
+            @endif
             <td class="right">{{ number_format((float)$line->net_amount, 2) }}{{ $singleCurrency ? '' : ' '.$lineCurrency }}</td>
         </tr>
     @endforeach

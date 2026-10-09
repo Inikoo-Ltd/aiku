@@ -199,6 +199,10 @@ class ShowStockDelivery extends OrgAction
                     fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
                     : Inertia::optional(fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))),
 
+                StockDeliveryTabsEnum::CUSTOMS->value => $this->tab == StockDeliveryTabsEnum::CUSTOMS->value ?
+                    fn () => GetStockDeliveryCustoms::run($stockDelivery)
+                    : Inertia::optional(fn () => GetStockDeliveryCustoms::run($stockDelivery)),
+
                 StockDeliveryTabsEnum::PURCHASE_ORDERS->value => $this->tab == StockDeliveryTabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($stockDelivery, StockDeliveryTabsEnum::PURCHASE_ORDERS->value))
                     : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($stockDelivery, StockDeliveryTabsEnum::PURCHASE_ORDERS->value))),
@@ -580,6 +584,7 @@ class ShowStockDelivery extends OrgAction
                 'show_delivery_discrepancy'    => $stockDelivery->checked_at !== null,
                 'total_under_delivered_items'  => $stockDelivery->number_stock_delivery_items_under_delivered,
                 'total_over_delivered_items'   => $stockDelivery->number_stock_delivery_items_over_delivered,
+                'total_possible_unit_mismatch_items' => $stockDelivery->number_stock_delivery_items_possible_unit_mismatch,
                 'weight'                       => Arr::get($weightAndVolume, 'gross_weight'),
                 'volume'                       => Arr::get($weightAndVolume, 'volume'),
                 'is_weight_partial'            => Arr::get($weightAndVolume, 'is_weight_partial'),
@@ -1000,6 +1005,10 @@ class ShowStockDelivery extends OrgAction
             unset($navigation[StockDeliveryTabsEnum::PURCHASE_ORDERS->value]);
         }
 
+        if (!$this->hasCustomsTab($stockDelivery)) {
+            unset($navigation[StockDeliveryTabsEnum::CUSTOMS->value]);
+        }
+
         if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['title'] = __('Items (costing)');
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['icon']  = 'fal fa-box-usd';
@@ -1013,9 +1022,17 @@ class ShowStockDelivery extends OrgAction
         return in_array($stockDelivery->state, [StockDeliveryStateEnum::BOOKED_IN, StockDeliveryStateEnum::PLACED], true);
     }
 
+    private function hasCustomsTab(StockDelivery $stockDelivery): bool
+    {
+        return !in_array($stockDelivery->state, [StockDeliveryStateEnum::IN_PROCESS, StockDeliveryStateEnum::CONFIRMED, StockDeliveryStateEnum::READY_TO_SHIP, StockDeliveryStateEnum::CANCELLED], true);
+    }
+
     private function getTabs(StockDelivery $stockDelivery): array
     {
         $tabs = StockDeliveryTabsEnum::values();
+        if (!$this->hasCustomsTab($stockDelivery)) {
+            $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::CUSTOMS->value]));
+        }
 
         if ($this->hasUnderOverDeliveredTab($stockDelivery)) {
             return $tabs;

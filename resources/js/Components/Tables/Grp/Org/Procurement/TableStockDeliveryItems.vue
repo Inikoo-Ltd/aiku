@@ -103,12 +103,16 @@ function skosPerCarton(item: any) {
     return carton / pack
 }
 
+function supplierUnitQuantity(item: any, units: number) {
+    return item.supplier_unit ? ` | ${formatQuantity(units / (Number(item.units_per_supplier_unit) || 1))} ${item.supplier_unit}` : ''
+}
+
 function quantityBreakdown(item: any) {
     const units = Number(item.unit_quantity)
     const pack = Number(item.units_per_pack) || 1
     const carton = Number(item.units_per_carton) || 1
 
-    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.`
+    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.${supplierUnitQuantity(item, units)}`
 }
 
 function differenceClass(value: number | null) {
@@ -124,7 +128,7 @@ function checkedQuantityBreakdown(item: any) {
     const pack = Number(item.units_per_pack) || 1
     const carton = Number(item.units_per_carton) || 1
 
-    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.`
+    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.${supplierUnitQuantity(item, units)}`
 }
 
 function amount(item: any) {

@@ -24,6 +24,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
+use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -67,6 +68,7 @@ class UpdateSupplierProduct extends OrgAction
         }
 
         $modelData = $this->pullSupplierProductJsonColumns($modelData);
+        $modelData = $this->fillUnitsPerSupplierUnitFromWeight($supplierProduct, $modelData);
 
         $supplierProduct = $this->update($supplierProduct, $modelData, ['data', 'settings']);
 
@@ -102,6 +104,26 @@ class UpdateSupplierProduct extends OrgAction
         return $supplierProduct;
     }
 
+    /**
+     * A supplier unit set by weight without saying how many of our units it holds takes the trade unit weight's answer.
+     */
+    private function fillUnitsPerSupplierUnitFromWeight(SupplierProduct $supplierProduct, array $modelData): array
+    {
+        if (empty($modelData['supplier_unit'])) {
+            if (Arr::exists($modelData, 'supplier_unit')) {
+                $modelData['units_per_supplier_unit'] = null;
+            }
+
+            return $modelData;
+        }
+
+        if (Arr::get($modelData, 'units_per_supplier_unit') === null && $supplierProduct->units_per_supplier_unit === null) {
+            $modelData['units_per_supplier_unit'] = $supplierProduct->unitsPerSupplierUnitByWeight(SupplierUnitEnum::from($modelData['supplier_unit']));
+        }
+
+        return $modelData;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -134,6 +156,8 @@ class UpdateSupplierProduct extends OrgAction
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'carton_weight'            => ['sometimes', 'nullable', 'integer', 'min:0'],
             'carton_net_weight'        => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'supplier_unit'            => ['sometimes', 'nullable', Rule::enum(SupplierUnitEnum::class)],
+            'units_per_supplier_unit'  => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ];
 
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());

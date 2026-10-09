@@ -114,6 +114,12 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.procurement.shop_ids', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'procurement_shop_ids')))));
         }
 
+        foreach (['delivery_tolerance_percentage', 'delivery_tolerance_amount'] as $toleranceField) {
+            if (Arr::has($modelData, $toleranceField)) {
+                data_set($modelData, 'settings.procurement.'.$toleranceField, (float) Arr::pull($modelData, $toleranceField));
+            }
+        }
+
         if (Arr::has($modelData, 'procurement_shop_id')) {
             data_set($modelData, 'settings.procurement.shop_id', Arr::pull($modelData, 'procurement_shop_id'));
         }
@@ -318,6 +324,8 @@ class UpdateOrganisation extends OrgAction
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'margin_break_even_pct'                 => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'default_shelf_life_days'               => ['sometimes', 'integer', 'min:1', 'max:3650'],
+            'delivery_tolerance_percentage'         => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'delivery_tolerance_amount'             => ['sometimes', 'numeric', 'min:0'],
             'procurement_shop_ids'                  => ['sometimes', 'array'],
             'procurement_shop_ids.*'                => ['integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)->whereNot('type', ShopTypeEnum::EXTERNAL->value)],
             'procurement_shop_id'                   => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],

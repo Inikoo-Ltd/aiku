@@ -9,8 +9,10 @@
 namespace App\Actions\GoodsIn\StockDelivery\Hydrators;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
@@ -50,6 +52,7 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
             'number_stock_delivery_items_except_cancelled' => $items - (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CANCELLED->value, 0),
             'number_stock_delivery_items_under_delivered'  => $discrepancy['under_delivered'],
             'number_stock_delivery_items_over_delivered'   => $discrepancy['over_delivered'],
+            'number_stock_delivery_items_possible_unit_mismatch' => $discrepancy['possible_unit_mismatch'],
             'gross_weight'                                 => $weights['gross_weight'],
             'net_weight'                                   => $weights['net_weight'],
         ];
@@ -75,16 +78,18 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
 
     private function getDeliveryDiscrepancy(StockDelivery $stockDelivery): array
     {
-        $counts = $stockDelivery->items()
+        $discrepancies = $stockDelivery->items()
             ->whereNotNull('checked_at')
             ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
-            ->selectRaw('count(*) filter (where unit_quantity_checked < unit_quantity) as under_delivered')
-            ->selectRaw('count(*) filter (where unit_quantity_checked > unit_quantity) as over_delivered')
-            ->first();
+            ->whereColumn('unit_quantity_checked', '!=', 'unit_quantity')
+            ->with('organisation')
+            ->get()
+            ->map(fn (StockDeliveryItem $item) => $item->discrepancy());
 
         return [
-            'under_delivered' => (int) $counts->under_delivered,
-            'over_delivered'  => (int) $counts->over_delivered,
+            'under_delivered'        => $discrepancies->filter(fn ($discrepancy) => $discrepancy === StockDeliveryItemDiscrepancyEnum::UNDER)->count(),
+            'over_delivered'         => $discrepancies->filter(fn ($discrepancy) => $discrepancy === StockDeliveryItemDiscrepancyEnum::OVER)->count(),
+            'possible_unit_mismatch' => $discrepancies->filter(fn ($discrepancy) => $discrepancy === StockDeliveryItemDiscrepancyEnum::POSSIBLE_UNIT_MISMATCH)->count(),
         ];
     }
 

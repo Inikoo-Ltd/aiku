@@ -95,6 +95,8 @@ class StockDeliveryItemResource extends JsonResource
             'name'                  => $supplierProduct?->name ?? $item->org_stock_name,
             'units_per_pack'        => $supplierProduct?->units_per_pack ?? $unitsPerSko,
             'units_per_carton'      => $supplierProduct?->units_per_carton ?? $unitsPerSko,
+            'supplier_unit'         => $supplierProduct?->supplier_unit?->value,
+            'units_per_supplier_unit' => $supplierProduct?->supplier_unit ? $supplierProduct->unitsPerSupplierUnit() : null,
             'unit_quantity'         => $item->unit_quantity,
             'unit_quantity_checked' => $item->unit_quantity_checked,
             'unit_quantity_placed'  => $item->unit_quantity_placed,

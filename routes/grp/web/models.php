@@ -319,6 +319,10 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
+use App\Actions\GoodsIn\StockDeliveryItem\ResolveStockDeliveryItemDiscrepancy;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms;
+use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemBatches;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
@@ -1627,6 +1631,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('reopen-costing', ReopenStockDeliveryCosting::class)->name('reopen-costing');
     Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
     Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
+    Route::patch('customs', UpdateStockDeliveryCustoms::class)->name('customs.update');
     Route::post('cost', StoreStockDeliveryCost::class)->name('cost.store');
     Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
@@ -1660,7 +1665,11 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
     Route::patch('place', UpsertStockDeliveryItemPlaced::class)->name('place')->withoutScopedBindings();
     Route::patch('place-all', SetStockDeliveryItemAsPlaced::class)->name('place-all')->withoutScopedBindings();
     Route::patch('update-cost', UpdateStockDeliveryItemCost::class)->name('update-cost')->withoutScopedBindings();
+    Route::post('resolve-discrepancy', ResolveStockDeliveryItemDiscrepancy::class)->name('resolve-discrepancy')->withoutScopedBindings();
+    Route::patch('customs-line', SetStockDeliveryItemCustomsLine::class)->name('customs-line')->withoutScopedBindings();
 });
+
+Route::post('stock-delivery-claim/{stockDeliveryClaim:id}/update', UpdateStockDeliveryClaim::class)->name('stock-delivery-claim.update');
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgSupplier'])->name('purchase-order.store');

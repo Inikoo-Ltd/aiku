@@ -71,7 +71,8 @@ class EvaluateStockDeliveryCosting
     }
 
     /**
-     * Shares shipping, duty and extra over the items that take part, except the costs split by hand.
+     * Shares shipping (by weight), duty (by customs line when the declaration is entered) and extra over the
+     * items that take part, except the costs split by hand.
      *
      * @param array<string, float>|null $amounts
      */
@@ -90,7 +91,11 @@ class EvaluateStockDeliveryCosting
                 $stockDelivery,
                 $field,
                 $amount,
-                $field === 'cost_shipping' ? DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_WEIGHT : DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_VALUE
+                match (true) {
+                    $field === 'cost_shipping' => DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_WEIGHT,
+                    $field === 'cost_duties' && $stockDelivery->customsLines()->exists() => DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_CUSTOMS_LINE,
+                    default => DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_VALUE,
+                }
             );
         }
 

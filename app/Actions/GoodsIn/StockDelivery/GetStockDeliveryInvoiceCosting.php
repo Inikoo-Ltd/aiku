@@ -72,7 +72,7 @@ class GetStockDeliveryInvoiceCosting
 
         $items = $stockDelivery->items()
             ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
-            ->with('supplierProduct:id,code,name')
+            ->with('supplierProduct:id,code,name,supplier_unit,units_per_supplier_unit')
             ->orderBy('id')
             ->get();
 
@@ -97,7 +97,7 @@ class GetStockDeliveryInvoiceCosting
             }
 
             $invoiced[$item->id]['amount']   = ($invoiced[$item->id]['amount'] ?? 0) + $amount;
-            $invoiced[$item->id]['quantity'] = ($invoiced[$item->id]['quantity'] ?? 0) + (float) ($line['quantity'] ?? 0);
+            $invoiced[$item->id]['quantity'] = ($invoiced[$item->id]['quantity'] ?? 0) + (float) ($line['quantity'] ?? 0) * $item->supplierProduct->unitsPerSupplierUnit();
         }
 
         $currency    = $stockDelivery->currency?->code;

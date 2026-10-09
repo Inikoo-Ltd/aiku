@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -116,6 +117,21 @@ class EditSupplierProduct extends OrgAction
                                     'label' => __('Units per carton'),
                                     'value' => $supplierProduct->units_per_carton,
                                 ],
+                                'supplier_unit' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Supplier sells in'),
+                                    'information' => __('Only when the supplier quotes and invoices in a unit that is not ours, e.g. incense by the kg that we count in 500 g bags. Leave empty when the supplier counts like us.'),
+                                    'placeholder' => __('Same unit as ours'),
+                                    'options'     => collect(SupplierUnitEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+                                    'value'       => $supplierProduct->supplier_unit?->value,
+                                    'mode'        => 'single',
+                                ],
+                                'units_per_supplier_unit' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Our units in one supplier unit'),
+                                    'information' => $this->supplierUnitInformation($supplierProduct),
+                                    'value'       => $supplierProduct->units_per_supplier_unit === null ? null : (float) $supplierProduct->units_per_supplier_unit,
+                                ],
                                 'cbm' => [
                                     'type'  => 'input',
                                     'label' => __('CBM'),
@@ -163,6 +179,22 @@ class EditSupplierProduct extends OrgAction
                 ],
             ]
         );
+    }
+
+    private function supplierUnitInformation(SupplierProduct $supplierProduct): string
+    {
+        $information = __('Quantities you order in the supplier unit are turned into our units with this, and the supplier price per unit is our unit cost times it.');
+
+        if ($warning = $supplierProduct->supplierUnitWarning()) {
+            return $information.' '.$warning;
+        }
+
+        $byWeight = $supplierProduct->unitsPerSupplierUnitByWeight(SupplierUnitEnum::KG);
+        if ($byWeight !== null) {
+            return $information.' '.__('By the weight of the trade unit, one kg holds :units units.', ['units' => (float) $byWeight]);
+        }
+
+        return $information;
     }
 
     public function getBreadcrumbs(SupplierProduct $supplierProduct, string $routeName, array $routeParameters): array

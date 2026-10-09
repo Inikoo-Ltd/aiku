@@ -29,6 +29,7 @@ class DistributeStockDeliveryExtraCost extends OrgAction
     public const DISTRIBUTION_EQUALLY = 'equally';
     public const DISTRIBUTION_BY_VALUE = 'by_value';
     public const DISTRIBUTION_BY_WEIGHT = 'by_weight';
+    public const DISTRIBUTION_BY_CUSTOMS_LINE = 'by_customs_line';
 
     private const LEFT_OUT_STATES = [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value];
 
@@ -76,7 +77,9 @@ class DistributeStockDeliveryExtraCost extends OrgAction
             $type = self::DISTRIBUTION_BY_VALUE;
         }
 
-        $shares = self::getShares($items, (int) round($amount * 100), $type);
+        $weights = $type === self::DISTRIBUTION_BY_CUSTOMS_LINE ? self::customsLineWeights($stockDelivery, $items, $amount) : null;
+
+        $shares = self::getShares($items, (int) round($amount * 100), $type, $weights);
 
         foreach ($items as $index => $item) {
             self::setItemCost($item, $field, $shares[$index] / 100);
@@ -139,9 +142,34 @@ class DistributeStockDeliveryExtraCost extends OrgAction
         return $unitQuantity / $item->unitsPerSko() * (float) $item->orgStock?->stock?->gross_weight;
     }
 
-    private static function getShares(Collection $items, int $amountInCents, string $type): array
+    /**
+     * Each item's share of its customs line's duty, by value among the items on that line. Items on no
+     * line share whatever duty the declared lines do not account for, by value, so a delivery whose
+     * declaration was only partly entered still spreads the whole duty.
+     *
+     * @return array<int, float> duty weight per item, in the organisation currency
+     */
+    private static function customsLineWeights(StockDelivery $stockDelivery, Collection $items, float $amount): array
     {
-        $weights = $type === self::DISTRIBUTION_BY_WEIGHT
+        $lines       = $stockDelivery->customsLines()->get()->keyBy('id');
+        $value       = fn (StockDeliveryItem $item) => max(0, (float) ($item->cost_items ?? $item->net_amount));
+        $lineValues  = $items->groupBy(fn (StockDeliveryItem $item) => $lines->has($item->stock_delivery_customs_line_id) ? $item->stock_delivery_customs_line_id : 0)
+            ->map(fn (Collection $lineItems) => $lineItems->sum($value));
+        $declared    = $lines->filter(fn ($line, $id) => $lineValues->get($id, 0) > 0)->sum(fn ($line) => (float) $line->duty_amount);
+        $unassigned  = max(0, $amount * (float) ($stockDelivery->org_exchange ?: 1) - $declared);
+
+        return $items->map(function (StockDeliveryItem $item) use ($lines, $lineValues, $value, $unassigned) {
+            $lineId = $lines->has($item->stock_delivery_customs_line_id) ? $item->stock_delivery_customs_line_id : 0;
+            $duty   = $lineId ? (float) $lines->get($lineId)->duty_amount : $unassigned;
+            $total  = (float) $lineValues->get($lineId, 0);
+
+            return $total > 0 ? $duty * $value($item) / $total : 0;
+        })->all();
+    }
+
+    private static function getShares(Collection $items, int $amountInCents, string $type, ?array $weights = null): array
+    {
+        $weights ??= $type === self::DISTRIBUTION_BY_WEIGHT
             ? $items->map(fn (StockDeliveryItem $item) => max(0, self::getWeight($item)))->all()
             : [];
 

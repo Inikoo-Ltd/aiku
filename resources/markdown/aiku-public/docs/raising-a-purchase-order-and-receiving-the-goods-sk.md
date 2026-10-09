@@ -1,9 +1,9 @@
 ---
 title: Vystavenie objednávky a prevzatie tovaru
 summary: Nákup od bežného dodávateľa - vystavte objednávku, nechajte si ju potvrdiť, potom premeňte dodávku na tovar, ktorý môžete predávať.
-date: 2026-10-09
-source_date: 2026-10-09
-tags: procurement, purchase orders, stock deliveries, suppliers
+date: 2026-10-10
+source_date: 2026-10-10
+tags: procurement, purchase orders, stock deliveries, suppliers, supplier claims, customs
 category: procurement
 ---
 
@@ -29,6 +29,16 @@ Kým je v stave in process:
 
 Keď máte pridané všetko, čo chcete, stlačte **Submit**. Tým sa objednávka odošle ďalej a presunie sa do stavu **Submitted**.
 
+## Dodávatelia, ktorí predávajú v inej jednotke
+
+Niektorí dodávatelia ponúkajú a fakturujú v jednotke, ktorá nie je naša - napríklad vonné tyčinky na **kg**, ktoré my počítame v 500 g vreckách. Na stránke **Edit** produktu dodávateľa nastavte **Supplier sells in** (kg, g, liter, meter, balenie, sada, tucet alebo kus) a **Our units in one supplier unit** (2 pre 500 g vrecko predávané na kg, 0,2 pre 5 kg balenie predávané na kg). Ak zvolíte kg alebo g a číslo necháte prázdne, aiku ho vypočíta z hmotnosti obchodnej jednotky a pomocný text poľa vás upozorní, keď sa zadané číslo s touto hmotnosťou nezhoduje.
+
+Množstvá sa stále ukladajú v našich jednotkách. Jednotka dodávateľa mení len to, ako ich zadávate a čítate:
+
+- Na objednávke v stave in process vám karta **Ordering supplier units** umožní zadať množstvo v jednotke dodávateľa a každý riadok ho ukazuje vedľa kusov, SKO a kartónov (napríklad *160u. | 160sko. | 1.6C. | 80 kg*).
+- PDF objednávky odoslané dodávateľovi zobrazuje tieto riadky v jednotke dodávateľa a s cenou za jednotku (*80 kg* za *253.00 / kg*).
+- Stock delivery ukazuje obe jednotky a kontrola faktúry na paneli **Costing** pred porovnaním prevedie kg z faktúry na naše jednotky.
+
 ## Cez vášho AI asistenta
 
 Ak vám administrátor zapol zadávanie objednávok, váš AI asistent môže objednávku vystaviť a odoslať za vás, aj pri dodávateľoch, od ktorých nakupujete cez agenta. Povedzte mu dodávateľa a čo chcete, napríklad *"objednaj 144 CIC-25 a 20 TIB-134SET od RME"*.
@@ -52,7 +62,7 @@ Odtiaľto sa objednávka usadí sama, ako postupujú jej dodávky - na samotnej 
 
 Stlačením **New Delivery** na potvrdenej objednávke sa za vás vytvorí stock delivery, už prepojená s riadkami danej objednávky. Môžete tiež založiť dodávku od začiatku v **Procurement → Stock Deliveries**, kde stačí zadať **number** a **date** dodávky.
 
-Stránka stock delivery má karty pre jej **Items**, ešte nevyriešené **Pending Items**, **Done Items**, **Attachments** a **History**.
+Stránka stock delivery má karty pre jej **Items**, ešte nevyriešené **Pending Items**, **Done Items**, **Under/Over delivered items**, keď je zaknihovaná, **Customs**, keď bola odoslaná, **Attachments** a **History**.
 
 Dodávka následne prechádza vlastnými stavmi:
 
@@ -67,6 +77,30 @@ Kontrola položky znamená potvrdenie, koľko z každého riadku skutočne doraz
 
 Pod skontrolovaným množstvom **Batch** (dávka) zaznamená kód dávky a dátum minimálnej trvanlivosti vytlačené na tovare. Jeden riadok môže mať viac dávok: stlačte **Add batch** a rozdeľte množstvo medzi ne. Pri naskladnení idú dávky na regál v poradí, v akom ste ich zadali, takže sklad vie, ktorá dávka je kde, a inventárne prehľady môžu ukázať dátumy minimálnej trvanlivosti. Rodiny označené ako **Batch tracked** (na stránke úpravy rodiny skladových položiek) zobrazujú upozornenie, kým každé skontrolované SKO nemá dávku, a označia dávku bez dátumu minimálnej trvanlivosti. Nič neblokuje príjem, takže dodávka bez vytlačených kódov môže ísť na regál aj tak. Dávku, ktorá už je na regáli, nemožno znížiť pod naskladnené množstvo; najprv zrušte to naskladnenie.
 
+## Keď sa dorazené líši od očakávaného
+
+Karta **Under/Over delivered items** vypisuje každý riadok, ktorého počet sa líši, s rozdielom v kusoch, SKO a hodnote a so značkou **Flag**:
+
+- **Under delivered** alebo **Over delivered** - skutočný rozdiel.
+- **Possible unit mismatch** - počet je presný násobok očakávaného (2×, 5×, 10× a podobne, v oboch smeroch). Takmer vždy ide o dodávateľa, ktorý fakturuje v inej jednotke, nie o stratený tovar, preto pred reklamáciou skontrolujte jednotku.
+- **Within tolerance** - dosť malý na zobrazenie, nie na označenie. Toleranciu nastavujú administrátori (percento, suma, alebo oboje) v **Organisations** → organizácia → **Edit** → **Procurement**; začína na 0, takže sa označí každý rozdiel.
+
+Stlačte **Resolve** pri riadku a vyberte, čo sa stalo:
+
+- **Recount** - sklad dostane úlohu riadok znova spočítať. Keď ju uzavrie, dostanete správu; potom sa vráťte a vyberte jeden z ostatných výsledkov.
+- **Unit error** - opravte, čo sa očakávalo (v našich jednotkách, alebo v jednotke dodávateľa, ak je nastavená), a hodnotu riadku. Spočítané množstvo sa nikdy nemení. Ak zostane skutočný rozdiel, riadok zostane označený, aby ste ho mohli reklamovať - riadok očakávaný ako 80 kg 500 g vreciek sa stane 160 očakávanými vreckami a 120 spočítaných sa zobrazí ako 40 chýbajúcich.
+- **Supplier claim** - len pre chýbajúci riadok. Zadajte reklamované kusy a hodnotu a pridajte fotografie z goods in; pridajú sa do príloh dodávky. Reklamácia začína ako **Open**: kliknutím na ňu v stĺpci **Outcome** ju označíte ako **Sent to supplier**, **Credit received** (s číslom dobropisu, sumou a dátumom) alebo **Rejected**. Reklamácia sa len sleduje - nemení kalkuláciu nákladov dodávky.
+- **Accept surplus** - len pre riadok navyše: ponechať prebytočné kusy.
+
+Oprava chyby jednotky na uloženej dodávke prepočíta cenu tovaru, ktorý sa z nej uložil, preto ju urobte pred dokončením kalkulácie nákladov; po dokončení treba kalkuláciu najprv znovu otvoriť.
+
+## Colné riadky a clo
+
+Na karte **Customs** prepíšte colné vyhlásenie: jeho **MRN**, **Release date** a jeho tarifné riadky, každý s tarifným kódom, clom v %, colnou hodnotou, clom a dovoznou DPH. aiku colné vyhlásenie nikdy nemení; to ostáva na colnom agentovi.
+
+Pri uložení sa každá položka priradí k riadku s najbližším tarifným kódom k tarifnému kódu jej obchodnej jednotky a pri každej položke to môžete zmeniť. Náklad na clo dodávky sa potom rozdelí po riadkoch: každá položka preberie svoj podiel cla vlastného riadku, podľa hodnoty medzi položkami na tomto riadku, takže riadok bez cla neberie nič. Položky bez riadku si rozdelia clo, ktoré riadky nepokrývajú. Dovozná DPH sa len eviduje; odpočíta sa v daňovom priznaní k DPH a nikdy sa nezahrnie do nákladov. Reklamácia dodávateľovi ukazuje, či jej riadok platil clo, aby nikto nežiadal colnú opravu pri riadku bez cla.
+
+
 ## Ako to celé zapadá
 
 V skratke: vystavte objednávku voči dodávateľovi, odošlite ju, počkajte, kým ju dodávateľ potvrdí, potom z potvrdenej objednávky vytvorte dodávku. Označte dodávku ako odoslanú, keď ju dodávateľ odošle, ako prijatú, keď dorazí, prekontrolujte jednotlivé položky a nakoniec ju uložte na miesto - vtedy je tovar v sklade a pripravený na predaj.
@@ -78,6 +112,10 @@ V skratke: vystavte objednávku voči dodávateľovi, odošlite ju, počkajte, k
 <li><b>Posunúť ju ďalej:</b> na stránke objednávky použite <b>Confirm</b>, <b>Undo Submit</b>, alebo <b>Cancel</b>, kým je submitted; po potvrdení nastavte <b>Delivery date</b> a stlačte <b>New Delivery</b>.</li>
 <li><b>Prevziať tovar:</b> na stránke stock delivery postupujte cez <b>Mark as Dispatched → Mark as Received</b>, skontrolujte kartu <b>Items</b>, potom <b>Place</b>, keď je naskladnená.</li>
 <li>Dodávku môžete tiež založiť od začiatku v <b>Procurement → Stock Deliveries</b>.</li>
+<li><b>Dodávateľ, ktorý predáva na kg:</b> produkt dodávateľa → <b>Edit</b> → <b>Supplier sells in</b> a <b>Our units in one supplier unit</b>.</li>
+<li><b>Uzavrieť chýbajúci alebo prebytočný riadok:</b> stock delivery → <b>Under/Over delivered items</b> → <b>Resolve</b>; reklamáciu sledujte v stĺpci <b>Outcome</b>.</li>
+<li><b>Zadať colné vyhlásenie:</b> stock delivery → <b>Customs</b> → <b>Add line</b> → <b>Save customs</b>.</li>
+<li><b>Nastaviť toleranciu dodávok (administrátori):</b> <b>Organisations</b> → organizácia → <b>Edit</b> → <b>Procurement</b>.</li>
 <li><b>Nechať niekoho zadávať objednávky cez jeho AI asistenta (administrátori):</b> <b>Sysadmin → Users</b> → otvorte používateľa → <b>Edit</b> → <b>Access</b> → zapnite <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>. Potrebuje aj oprávnenie upravovať nákup.</li>
 </ul>
 </aside>

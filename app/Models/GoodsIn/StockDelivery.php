@@ -138,6 +138,7 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'cost_data'        => 'array',
         'state'            => StockDeliveryStateEnum::class,
         'date'             => 'datetime',
+        'customs_released_at' => 'date',
         'confirmed_at'     => 'datetime',
         'ready_to_ship_at' => 'datetime',
         'dispatched_at'    => 'datetime',
@@ -188,6 +189,8 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'cost_shipping',
         'cost_duties',
         'is_costed',
+        'customs_mrn',
+        'customs_released_at',
     ];
 
     public function searchIndexShouldBeUpdated(): bool
@@ -288,6 +291,16 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function costs(): HasMany
     {
         return $this->hasMany(StockDeliveryCost::class);
+    }
+
+    public function customsLines(): HasMany
+    {
+        return $this->hasMany(StockDeliveryCustomsLine::class);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(StockDeliveryClaim::class);
     }
 
     public function serviceInvoices(): BelongsToMany

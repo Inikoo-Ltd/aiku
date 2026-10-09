@@ -1,8 +1,8 @@
 ---
 title: Raising a purchase order and receiving the goods
 summary: Buy from an ordinary supplier - raise the purchase order, get it confirmed, then turn the delivery into stock you can sell.
-date: 2026-10-09
-tags: procurement, purchase orders, stock deliveries, suppliers
+date: 2026-10-10
+tags: procurement, purchase orders, stock deliveries, suppliers, supplier claims, customs
 category: procurement
 help_routes: grp.org.procurement.org_suppliers, grp.org.procurement.purchase_orders, grp.org.procurement.stock_deliveries
 ---
@@ -29,6 +29,16 @@ While it is in process:
 
 Once you have added everything you want, press **Submit**. This sends the order onward and moves it to **Submitted**.
 
+## Suppliers who sell in another unit
+
+Some suppliers quote and invoice in a unit that is not ours - incense by the **kg** that we count in 500 g bags, for example. On the supplier product's **Edit** page, set **Supplier sells in** (kg, g, litre, metre, pack, set, dozen or piece) and **Our units in one supplier unit** (2 for a 500 g bag sold by the kg, 0.2 for a 5 kg pack sold by the kg). If you choose kg or g and leave the number empty, aiku works it out from the weight of the trade unit, and the field's help text warns you when the number you typed does not match that weight.
+
+Quantities are still stored in our units. The supplier unit only changes how you type and read them:
+
+- On a purchase order in process, the **Ordering supplier units** tab lets you type the quantity in the supplier's unit, and every line shows it next to units, SKOs and cartons (for example *160u. | 160sko. | 1.6C. | 80 kg*).
+- The purchase order PDF sent to the supplier shows those lines in the supplier's unit and price per unit (*80 kg* at *253.00 / kg*).
+- The stock delivery shows both units, and the invoice check on the **Costing** panel converts the invoice's kg into our units before comparing.
+
 ## Placing it through your AI assistant
 
 If an administrator has switched on order placing for you, your AI assistant can raise and submit the order for you, also for suppliers bought through an agent. Tell it the supplier and what you want, for example *"order 144 CIC-25 and 20 TIB-134SET from RME"*.
@@ -52,7 +62,7 @@ From here the order settles on its own as its stock deliveries progress - there'
 
 Pressing **New Delivery** on a confirmed purchase order creates the stock delivery for you, already linked to that order's lines. You can also start one from scratch under **Procurement → Stock Deliveries**, which just asks for a delivery **number** and **date**.
 
-A stock delivery's page has tabs for its **Items**, the **Pending Items** still to deal with, **Done Items**, **Attachments**, and **History**.
+A stock delivery's page has tabs for its **Items**, the **Pending Items** still to deal with, **Done Items**, **Under/Over delivered items** once it is booked in, **Customs** once it has been dispatched, **Attachments**, and **History**.
 
 The delivery then moves through its own states:
 
@@ -67,6 +77,30 @@ Checking an item means confirming how much of each line actually arrived - not e
 
 Under the checked quantity, **Batch** records the batch code and best-before date printed on the goods. One line can hold several batches: press **Add batch** and split the quantity between them. When you place the stock, the batches go onto the shelf in the order you entered them, so the warehouse knows which batch sits where and the inventory reports can show best-before dates. Families marked **Batch tracked** (on the stock family's edit page) show a warning until every checked SKO has a batch, and flag a batch with no best-before. Nothing blocks the booking in, so a delivery without printed codes can still go on the shelf. A batch that is already on a shelf cannot be cut below what was put away; undo that put-away first.
 
+## When what arrived differs from what was expected
+
+The **Under/Over delivered items** tab lists every line whose count differs, with the difference in units, SKOs and value, and a **Flag**:
+
+- **Under delivered** or **Over delivered** - a real difference.
+- **Possible unit mismatch** - the count is a clean multiple of what was expected (2×, 5×, 10× and so on, either way). That is almost always a supplier invoicing in another unit, not goods going missing, so check the unit before claiming anything.
+- **Within tolerance** - small enough to show but not to flag. Administrators set the tolerance (a percentage, an amount, or both) under **Organisations** → the organisation → **Edit** → **Procurement**; it starts at 0, so every difference is flagged.
+
+Press **Resolve** on a line and pick what happened:
+
+- **Recount** - the warehouse gets a task to count the line again. You are told when they close it; then come back and pick one of the other outcomes.
+- **Unit error** - correct what was expected (in our units, or in the supplier's unit when one is set) and the line's value. What was counted is never changed. If a real difference is still left, the line stays flagged so you can claim it - a line expected as 80 kg of 500 g bags becomes 160 bags expected, and 120 counted shows as 40 short.
+- **Supplier claim** - only for a short line. Enter the units and value claimed and add photos from goods in; they go on the delivery's attachments. The claim starts **Open**: click it in the **Outcome** column to mark it **Sent to supplier**, **Credit received** (with the credit note number, amount and date) or **Rejected**. A claim is tracked only - it does not change the delivery's costing.
+- **Accept surplus** - only for an over line: keep the extra units.
+
+Correcting a unit error on a placed delivery re-prices the stock that was put away from it, so do it before the costing is finished; once costed, the costing has to be reopened first.
+
+## Customs lines and duty
+
+On the **Customs** tab, copy the import declaration: its **MRN**, **Release date** and its tariff lines, each with the tariff code, duty %, customs value, duty and import VAT. aiku never changes the declaration; that stays with the customs agent.
+
+When you save, each item is matched to the line with the closest tariff code to its trade unit's, and you can change that per item. The delivery's duty cost is then shared line by line: each item takes its share of its own line's duty, by value among the items on that line, so a duty-free line takes none. Items on no line share whatever duty the lines do not account for. Import VAT is recorded only; it is deducted in the VAT return and never costed. A supplier claim shows whether its line paid any duty, so nobody asks for a customs amendment on a duty-free line.
+
+
 ## Putting it together
 
 In short: raise the order against the supplier, submit it, wait for the supplier to confirm, then create the delivery from the confirmed order. Mark the delivery dispatched when the supplier ships it, received when it lands, work through checking each item, and finally place it - at which point the stock is in the warehouse and ready to sell.
@@ -78,6 +112,10 @@ In short: raise the order against the supplier, submit it, wait for the supplier
 <li><b>Move it forward:</b> on the order's page, use <b>Confirm</b>, <b>Undo Submit</b>, or <b>Cancel</b> while submitted; once confirmed, set the <b>Delivery date</b> and press <b>New Delivery</b>.</li>
 <li><b>Receive the goods:</b> on the stock delivery's page, work through <b>Mark as Dispatched → Mark as Received</b>, check the <b>Items</b> tab, then <b>Place</b> once it's booked in.</li>
 <li>You can also start a delivery from scratch under <b>Procurement → Stock Deliveries</b>.</li>
+<li><b>A supplier that sells by the kg:</b> the supplier product → <b>Edit</b> → <b>Supplier sells in</b> and <b>Our units in one supplier unit</b>.</li>
+<li><b>Close a short or extra line:</b> the stock delivery → <b>Under/Over delivered items</b> → <b>Resolve</b>; follow a claim from the <b>Outcome</b> column.</li>
+<li><b>Enter the import declaration:</b> the stock delivery → <b>Customs</b> → <b>Add line</b> → <b>Save customs</b>.</li>
+<li><b>Set the delivery tolerance (administrators):</b> <b>Organisations</b> → the organisation → <b>Edit</b> → <b>Procurement</b>.</li>
 <li><b>Let someone place orders through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>. They also need permission to edit procurement.</li>
 </ul>
 </aside>

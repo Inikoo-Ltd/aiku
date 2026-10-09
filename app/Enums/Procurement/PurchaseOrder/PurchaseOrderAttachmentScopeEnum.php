@@ -18,6 +18,8 @@ enum PurchaseOrderAttachmentScopeEnum: string
     case PROFORMA     = 'Proforma';
     case INVOICE      = 'Invoice';
     case PACKING_LIST = 'Packing list';
+    case CLAIM        = 'Claim';
+    case CUSTOMS      = 'Customs declaration';
     case OTHER        = 'Other';
 
     public static function labels(): array
@@ -26,6 +28,8 @@ enum PurchaseOrderAttachmentScopeEnum: string
             'Proforma'     => __('Proforma'),
             'Invoice'      => __('Invoice'),
             'Packing list' => __('Packing list'),
+            'Claim'        => __('Claim'),
+            'Customs declaration' => __('Customs declaration'),
             'Other'        => __('Other'),
         ];
     }
@@ -51,6 +55,7 @@ enum PurchaseOrderAttachmentScopeEnum: string
         return match (true) {
             Str::contains($name, ['proforma', 'pro-forma', 'pro forma']) => self::PROFORMA,
             Str::contains($name, ['packing', 'packlist']) => self::PACKING_LIST,
+            Str::contains($name, ['customs', 'colny', 'colný', 'aduana', 'zoll']) => self::CUSTOMS,
             Str::contains($name, ['invoice', 'factura', 'faktura', 'rechnung', 'fattura']) => self::INVOICE,
             default => self::OTHER,
         };

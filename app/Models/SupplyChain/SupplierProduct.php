@@ -10,6 +10,7 @@ namespace App\Models\SupplyChain;
 
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductTradeUnitCompositionEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
@@ -113,6 +114,8 @@ class SupplierProduct extends Model implements HasMedia, Auditable
         'status'                 => 'boolean',
         'state'                  => SupplierProductStateEnum::class,
         'trade_unit_composition' => SupplierProductTradeUnitCompositionEnum::class,
+        'supplier_unit'          => SupplierUnitEnum::class,
+        'units_per_supplier_unit' => 'decimal:4',
         'fetched_at'             => 'datetime',
         'last_fetched_at'        => 'datetime',
     ];
@@ -154,6 +157,8 @@ class SupplierProduct extends Model implements HasMedia, Auditable
         'currency_id',
         'units_per_pack',
         'units_per_carton',
+        'supplier_unit',
+        'units_per_supplier_unit',
     ];
 
     public function searchIndexShouldBeUpdated(): bool
@@ -230,6 +235,49 @@ class SupplierProduct extends Model implements HasMedia, Auditable
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    public function unitsPerSupplierUnit(): float
+    {
+        return $this->supplier_unit && (float) $this->units_per_supplier_unit > 0 ? (float) $this->units_per_supplier_unit : 1.0;
+    }
+
+    /**
+     * How many of our units one supplier unit should hold, judged by the weight of the single trade unit
+     * we count in; null when the supplier unit is not a weight or the weight is unknown.
+     */
+    public function unitsPerSupplierUnitByWeight(?SupplierUnitEnum $supplierUnit = null): ?float
+    {
+        $grams = ($supplierUnit ?? $this->supplier_unit)?->grams();
+        if (!$grams || $this->tradeUnits->count() !== 1) {
+            return null;
+        }
+
+        $tradeUnit = $this->tradeUnits->first();
+        $weight    = (float) ($tradeUnit->net_weight ?: $tradeUnit->gross_weight) * (float) $tradeUnit->pivot->quantity;
+
+        return $weight > 0 ? round($grams / $weight, 4) : null;
+    }
+
+    /**
+     * A warning when the supplier unit says one thing and the weight of what we count says another.
+     */
+    public function supplierUnitWarning(): ?string
+    {
+        $byWeight = $this->unitsPerSupplierUnitByWeight();
+        if ($byWeight === null || !$this->supplier_unit) {
+            return null;
+        }
+
+        if (abs($this->unitsPerSupplierUnit() - $byWeight) > 0.01 * $byWeight) {
+            return __('One :unit should hold :expected units by the weight of the trade unit, but :factor is set.', [
+                'unit'     => $this->supplier_unit->value,
+                'expected' => (float) $byWeight,
+                'factor'   => $this->unitsPerSupplierUnit(),
+            ]);
+        }
+
+        return null;
     }
 
 }

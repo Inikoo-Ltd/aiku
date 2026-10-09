@@ -13,6 +13,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStockMovement\CalculateOrgStockMovementRunningValues;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Stock put away from a delivery goes in at the line's goods price; once the delivery is costed
  * its shipping, duties and extras are known, so the put-away movements take the landed cost.
+ * With one item, only that line's movements are repriced, so a correction on one line does not
+ * rewrite the rounding of every other line.
  */
 class RepriceStockDeliveryOrgStockMovements
 {
@@ -29,12 +32,12 @@ class RepriceStockDeliveryOrgStockMovements
     /**
      * @return array<int, string> first repriced movement date per org stock id
      */
-    public function handle(StockDelivery $stockDelivery): array
+    public function handle(StockDelivery $stockDelivery, ?StockDeliveryItem $onlyItem = null): array
     {
         $grpExchange    = GetCurrencyExchange::run($stockDelivery->organisation->currency, $stockDelivery->group->currency);
         $firstChangedOn = [];
 
-        foreach ($stockDelivery->items()->with('orgStock')->get() as $item) {
+        foreach ($stockDelivery->items()->when($onlyItem, fn ($query) => $query->where('id', $onlyItem->id))->with('orgStock')->get() as $item) {
             $cost = $item->orgStockMovementCost();
             if (!$cost) {
                 continue;
