@@ -35,6 +35,7 @@ import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
+import ButtonDownloadWithOptions from "@/Components/Utils/ButtonDownloadWithOptions.vue"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -736,6 +737,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 		<template #other>
 			<Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
+		</template>
+
+		<template #button-pdf="{ action }">
+			<ButtonDownloadWithOptions :action="action" />
 		</template>
 
 		<template #button-email-to-supplier="{ action }">
