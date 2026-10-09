@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -75,7 +76,7 @@ class IndexOrgPartners extends OrgAction
                     'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
                     'rescuable'                      => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit),
                     'current'                        => $this->shoppingListRows($orgPartner)->concat($this->stockDeliveryRows($orgPartner))->values()->all(),
-                    'production'                     => $this->productionLanes($orgPartner),
+                    'production'                     => GetPartnerProductionLanes::run($orgPartner),
                 ]
                 : $this->sisterStats($orgPartner, $topLimit),
         ];
@@ -127,56 +128,6 @@ class IndexOrgPartners extends OrgAction
                 'date'        => $stockDelivery['date'],
                 'url'         => route('grp.org.procurement.org_partners.show.stock-deliveries.show', [$orgPartner->organisation->slug, $orgPartner->id, $stockDelivery['slug']]),
             ]);
-    }
-
-    /**
-     * The submitted lines counted per lane of the hub's production board, with the same rules as
-     * IndexPartnerShippingList::getBoardLanes. Done lines are left out: the Orders keep growing,
-     * so a done count would only ever go up.
-     *
-     * @return array{backlog: int, preparing: int, assigned: int, producing: int}
-     */
-    public function productionLanes(OrgPartner $orgPartner): array
-    {
-        $taskStatesSql = 'from job_order_item_tasks
-            join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id
-            join artefacts as task_artefacts on task_artefacts.id = job_order_items.artefact_id
-            where job_order_items.job_order_id = job_orders.id and task_artefacts.org_stock_id = org_stocks.id';
-
-        $query = DB::table('partner_shopping_list_items')
-            ->join('org_stocks', function ($join) use ($orgPartner) {
-                $join->on('org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
-                    ->where('org_stocks.organisation_id', $orgPartner->partner_id);
-            })
-            ->leftJoin('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
-            ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
-            ->whereNull('partner_shopping_list_items.deleted_at')
-            ->whereExists(function ($query) {
-                $query->from('artefacts')
-                    ->whereColumn('artefacts.org_stock_id', 'org_stocks.id')
-                    ->whereNull('artefacts.deleted_at');
-            });
-
-        $byLane = PartnerShoppingListItem::whereRoutedToProduction($query)
-            ->selectRaw("case
-                when partner_shopping_list_items.job_order_id is null then
-                    case when partner_shopping_list_items.preparing_at is null then 'backlog' else 'preparing' end
-                when job_orders.state in ('in_process', 'submitted') then 'assigned'
-                when job_orders.state <> 'confirmed' then 'received'
-                when (select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') $taskStatesSql) then 'done'
-                when exists(select 1 $taskStatesSql and job_order_item_tasks.state = 'in_progress') then 'producing'
-                else 'assigned'
-            end as lane, count(*) as total")
-            ->groupBy('lane')
-            ->pluck('total', 'lane');
-
-        return [
-            'backlog'   => (int) ($byLane['backlog'] ?? 0),
-            'preparing' => (int) ($byLane['preparing'] ?? 0),
-            'assigned'  => (int) ($byLane['assigned'] ?? 0),
-            'producing' => (int) ($byLane['producing'] ?? 0),
-        ];
     }
 
     /**

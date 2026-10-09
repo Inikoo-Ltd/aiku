@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
@@ -32,6 +33,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,6 +46,8 @@ class ShowPartnerBrowse extends OrgAction
 
     private OrgPartner $orgPartner;
     private ?int $shopId;
+    public const int ORDER_HISTORY_LINES = 10;
+
     private ?Customer $intercompanyCustomer = null;
     private float $priceFactor = 1.0;
 
@@ -311,37 +315,17 @@ class ShowPartnerBrowse extends OrgAction
                 ->get()
                 ->keyBy('stock_id');
 
-            $openOrders = DB::table('partner_shopping_list_items')
-                ->where('org_partner_id', $this->orgPartner->id)
-                ->where('state', ShoppingListItemStateEnum::OPEN->value)
-                ->whereNull('deleted_at')
-                ->whereIn('stock_id', $buyerOrgStocks->keys())
-                ->groupBy('stock_id')
-                ->selectRaw('stock_id, sum(quantity) as quantity, min(created_at) as since')
-                ->get()
-                ->keyBy('stock_id');
-
-            $lastOrdered = DB::table('partner_shopping_list_items')
-                ->where('org_partner_id', $this->orgPartner->id)
-                ->where('state', ShoppingListItemStateEnum::ORDERED->value)
-                ->whereNull('deleted_at')
-                ->whereIn('stock_id', $buyerOrgStocks->keys())
-                ->orderBy('stock_id')
-                ->orderByDesc('created_at')
-                ->selectRaw('distinct on (stock_id) stock_id, quantity, created_at')
-                ->get()
-                ->keyBy('stock_id');
+            $orderHistory = $this->orderHistory($buyerOrgStocks->keys()->all());
 
             $exchange = $this->orgPartner->exchangeToOrgCurrency();
             $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $openOrders, $lastOrdered, $exchange, $quanta) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $orderHistory, $exchange, $quanta) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
                 $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
-                $openOrder      = $sellerOrgStock ? $openOrders->get($sellerOrgStock->stock_id) : null;
-                $lastOrder      = $sellerOrgStock ? $lastOrdered->get($sellerOrgStock->stock_id) : null;
+                $history        = $sellerOrgStock ? $orderHistory->get($sellerOrgStock->stock_id, collect()) : collect();
 
                 return [
                     'id'                => $product->id,
@@ -367,10 +351,14 @@ class ShowPartnerBrowse extends OrgAction
                         : null,
                     'shopping_list_item_id' => $openItem?->id,
                     'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
-                    'in_orders_quantity'    => $openOrder ? (float) $openOrder->quantity : 0,
-                    'in_orders_since'       => $openOrder?->since,
-                    'last_ordered_quantity' => $lastOrder ? (float) $lastOrder->quantity : null,
-                    'last_ordered_at'       => $lastOrder?->created_at,
+                    'order_history'         => $history->map(fn ($line) => [
+                        'id'       => $line->id,
+                        'state'    => $line->state,
+                        'stage'    => $line->stage,
+                        'quantity' => (float) $line->quantity,
+                        'date'     => $line->created_at,
+                    ])->values()->all(),
+                    'order_history_count'   => (int) ($history->first()?->total ?? 0),
                     'order_quantum'         => $quantum,
                 ];
             });
@@ -385,10 +373,61 @@ class ShowPartnerBrowse extends OrgAction
     }
 
     /**
+     * The latest lines sent to the partner for each stock, newest first, so the buyer sees what
+     * is already on the way before ordering it again.
+     *
+     * @param  array<int, int>  $stockIds
+     * @return SupportCollection<int, SupportCollection<int, object>>
+     */
+    private function orderHistory(array $stockIds): SupportCollection
+    {
+        if (!$stockIds) {
+            return collect();
+        }
+
+        $lines = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $this->orgPartner->id)
+            ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+            ->whereNull('deleted_at')
+            ->whereIn('stock_id', $stockIds)
+            ->select(['id', 'stock_id', 'state', 'quantity', 'pre_picked_at', 'created_at'])
+            ->selectRaw('row_number() over (partition by stock_id order by created_at desc, id desc) as position')
+            ->selectRaw('count(*) over (partition by stock_id) as total');
+
+        $history = DB::query()
+            ->fromSub($lines, 'lines')
+            ->where('position', '<=', self::ORDER_HISTORY_LINES)
+            ->orderBy('position')
+            ->get();
+
+        $lanes = GetPartnerProductionLanes::make()->ofLines(
+            $this->orgPartner,
+            $history->where('state', ShoppingListItemStateEnum::OPEN->value)->pluck('id')->all()
+        );
+
+        return $history
+            ->each(fn ($line) => $line->stage = $this->historyStage($line, $lanes[$line->id] ?? null))
+            ->groupBy('stock_id');
+    }
+
+    private function historyStage(object $line, ?string $lane): string
+    {
+        if ($line->state === ShoppingListItemStateEnum::ORDERED->value) {
+            return 'handed_over';
+        }
+
+        if ($lane) {
+            return in_array($lane, ['done', 'received']) ? 'made' : $lane;
+        }
+
+        return $line->pre_picked_at ? 'picked_from_stock' : 'waiting';
+    }
+
+    /**
      * The component that runs out first is the one the buyer has to decide about.
      *
-     * @param  \Illuminate\Support\Collection<int, OrgStock>  $components
-     * @param  \Illuminate\Support\Collection<int, OrgStock>  $buyerOrgStocks  keyed by stock id
+     * @param  SupportCollection<int, OrgStock>  $components
+     * @param  SupportCollection<int, OrgStock>  $buyerOrgStocks  keyed by stock id
      */
     public function tightestComponent($components, $buyerOrgStocks): ?OrgStock
     {

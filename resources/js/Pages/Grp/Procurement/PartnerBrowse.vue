@@ -14,14 +14,16 @@ import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faHistory } from "@fal"
-library.add(faPaperPlane, faHistory)
+import { faHistory } from "@fal"
+library.add(faHistory)
 import { ctrans } from "@/Composables/useTrans"
 import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, in_orders_quantity: number, in_orders_since: string | null, last_ordered_quantity: number | null, last_ordered_at: string | null, order_quantum: number }
+type OrderHistoryStage = "backlog" | "preparing" | "assigned" | "producing" | "made" | "picked_from_stock" | "waiting" | "handed_over"
+type OrderHistoryLine = { id: number, state: "open" | "ordered", stage: OrderHistoryStage, quantity: number, date: string }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, order_history: OrderHistoryLine[], order_history_count: number, order_quantum: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
@@ -82,6 +84,41 @@ const browseTab = ref<"categories" | "collections">("categories")
 
 const quantities = ref<Record<number, number>>({})
 const commitTimers: Record<number, ReturnType<typeof setTimeout>> = {}
+
+const HISTORY_PREVIEW = 2
+
+const productionStage = (label: string, tone: string) => ({
+    label,
+    tooltip: ctrans("Production at :partner: :stage", { partner: props.miniCart.partner_name, stage: label }),
+    class: tone,
+})
+
+const historyStages: Record<OrderHistoryStage, { label: string, tooltip: string, class: string }> = {
+    backlog: productionStage(ctrans("Backlog"), "bg-gray-100 text-gray-600"),
+    preparing: productionStage(ctrans("Preparing"), "bg-amber-100 text-amber-800"),
+    assigned: productionStage(ctrans("Assigned"), "bg-amber-100 text-amber-800"),
+    producing: productionStage(ctrans("Producing"), "bg-amber-100 text-amber-800"),
+    made: productionStage(ctrans("Made"), "bg-emerald-50 text-emerald-700"),
+    picked_from_stock: {
+        label: ctrans("Picked from stock"),
+        tooltip: ctrans(":partner had it in stock, no need to make it", { partner: props.miniCart.partner_name }),
+        class: "bg-emerald-50 text-emerald-700",
+    },
+    waiting: {
+        label: ctrans("Waiting"),
+        tooltip: ctrans("Submitted to :partner, they have not picked or planned it yet", { partner: props.miniCart.partner_name }),
+        class: "bg-gray-100 text-gray-600",
+    },
+    handed_over: {
+        label: ctrans("Done"),
+        tooltip: ctrans(":partner already handed it over", { partner: props.miniCart.partner_name }),
+        class: "bg-emerald-100 text-emerald-800",
+    },
+}
+const expandedHistory = ref<Record<number, boolean>>({})
+
+const visibleHistory = (product: ProductCard) =>
+    expandedHistory.value[product.id] ? product.order_history : product.order_history.slice(0, HISTORY_PREVIEW)
 
 function quantityFor(product: ProductCard): number {
     return quantities.value[product.id] ?? product.ordered_quantity ?? 0
@@ -288,34 +325,6 @@ function commitQuantity(product: ProductCard) {
                             </template>
                         </div>
 
-                        <div
-                            v-if="product.in_orders_quantity > 0"
-                            v-tooltip="ctrans('Submitted to :partner and not delivered yet', { partner: miniCart.partner_name })"
-                            class="mt-1 flex cursor-help items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800"
-                        >
-                            <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
-                            <span>
-                                {{ ctrans("Already ordered") }}:
-                                <b class="font-semibold tabular-nums">{{ useLocaleStore().number(product.in_orders_quantity) }}</b>
-                                <span v-if="product.in_orders_since" class="text-amber-600">
-                                    · {{ ctrans("since :date", { date: useFormatTime(product.in_orders_since, { formatTime: "d MMM" }) }) }}
-                                </span>
-                            </span>
-                        </div>
-                        <div
-                            v-else-if="product.last_ordered_at"
-                            class="mt-1 flex items-center gap-1.5 text-xs text-gray-500"
-                        >
-                            <FontAwesomeIcon icon="fal fa-history" fixed-width aria-hidden="true" />
-                            <span>
-                                {{ ctrans("Last ordered") }}:
-                                <span class="tabular-nums text-gray-700">{{ useFormatTime(product.last_ordered_at, { formatTime: "d MMM yyyy" }) }}</span>
-                                <template v-if="product.last_ordered_quantity">
-                                    · <b class="font-medium tabular-nums text-gray-700">{{ useLocaleStore().number(product.last_ordered_quantity) }}</b>
-                                </template>
-                            </span>
-                        </div>
-
                         <div v-if="product.org_stock_slug" class="mt-auto flex items-center gap-2 pt-2">
                             <NumberWithButtonSave
                                 :modelValue="quantityFor(product)"
@@ -340,6 +349,49 @@ function commitQuantity(product: ProductCard) {
                             >
                                 {{ useLocaleStore().number(product.recommended_quantity ?? 0) }}
                                 <span class="ml-0.5 font-normal text-gray-400">{{ ctrans("suggested") }}</span>
+                            </button>
+                        </div>
+
+                        <div v-if="product.order_history_count" class="mt-2 rounded border border-gray-200 text-xs">
+                            <div class="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50 px-2 py-1 text-gray-500">
+                                <span class="flex items-center gap-1.5">
+                                    <FontAwesomeIcon icon="fal fa-history" fixed-width aria-hidden="true" />
+                                    {{ ctrans("Ordered before") }}
+                                </span>
+                                <span class="tabular-nums">{{ ctrans(":count times", { count: product.order_history_count }) }}</span>
+                            </div>
+                            <ul class="divide-y divide-gray-100">
+                                <li
+                                    v-for="line in visibleHistory(product)"
+                                    :key="line.id"
+                                    class="flex items-center gap-2 px-2 py-1"
+                                >
+                                    <span class="tabular-nums text-gray-700">{{ useFormatTime(line.date, { formatTime: "d MMM yyyy" }) }}</span>
+                                    <b class="font-medium tabular-nums text-gray-900">{{ useLocaleStore().number(line.quantity) }}</b>
+                                    <span
+                                        v-tooltip="historyStages[line.stage].tooltip"
+                                        class="ml-auto cursor-help whitespace-nowrap rounded px-1.5 text-[11px]"
+                                        :class="historyStages[line.stage].class"
+                                    >
+                                        {{ historyStages[line.stage].label }}
+                                    </span>
+                                </li>
+                                <li
+                                    v-if="expandedHistory[product.id] && product.order_history_count > product.order_history.length"
+                                    class="px-2 py-1 text-gray-400"
+                                >
+                                    {{ ctrans("… and :count older", { count: product.order_history_count - product.order_history.length }) }}
+                                </li>
+                            </ul>
+                            <button
+                                v-if="product.order_history.length > HISTORY_PREVIEW"
+                                type="button"
+                                class="w-full border-t border-gray-100 px-2 py-1 text-left text-[--app-accent] hover:bg-[--app-accent-soft]"
+                                @click="expandedHistory[product.id] = !expandedHistory[product.id]"
+                            >
+                                {{ expandedHistory[product.id]
+                                    ? ctrans("Show less")
+                                    : ctrans("Show :count more", { count: product.order_history.length - HISTORY_PREVIEW }) }}
                             </button>
                         </div>
                     </div>
