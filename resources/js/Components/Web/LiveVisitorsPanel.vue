@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useIntervalFn } from "@vueuse/core"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -39,7 +39,7 @@ const regionNames = (() => {
 })()
 
 const countryName = (code?: string) =>
-    !code || code === "XX" ? trans("Unknown") : (regionNames?.of(code) ?? code)
+    !code || code === "XX" ? ctrans("Unknown") : (regionNames?.of(code) ?? code)
 
 const allVisitors = computed(() =>
     Array.from(props.visitors.values()).sort((a, b) => b.last_active - a.last_active)
@@ -47,7 +47,7 @@ const allVisitors = computed(() =>
 
 // Without an organising force the bubbles just collide into a column, so the mini view clusters
 // them by status. It is also the grouping that needs no explanation at a glance.
-const statusLabel = (status: string) => trans(liveVisitorStatusLabels[status] ?? status)
+const statusLabel = (status: string) => ctrans(liveVisitorStatusLabels[status] ?? status)
 
 const groupKeyOf = (v: LiveVisitor) => statusLabel(v.status)
 
@@ -102,10 +102,10 @@ const pageIcon = (v: LiveVisitor) => {
 const pageLabel = (v: LiveVisitor) => {
     const stage = funnelStage(v)
     if (stage) {
-        return stage === "basket" ? trans("Basket") : trans("Checkout")
+        return stage === "basket" ? ctrans("Basket") : ctrans("Checkout")
     }
 
-    return isHomepage(v) ? trans("Homepage") : pagePath(v)
+    return isHomepage(v) ? ctrans("Homepage") : pagePath(v)
 }
 
 const timeOnPage = (v: LiveVisitor) => shortDuration(v.page_since, clock.value)
@@ -125,9 +125,9 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <h3 class="text-base font-semibold text-gray-900">{{ trans("Live visitors") }}</h3>
+                <h3 class="text-base font-semibold text-gray-900">{{ ctrans("Live visitors") }}</h3>
                 <span class="text-sm text-gray-400 truncate">
-                    {{ counts.logged_in }} {{ trans("signed in") }} · {{ counts.logged_out }} {{ trans("guests") }}
+                    {{ counts.logged_in }} {{ ctrans("signed in") }} · {{ counts.logged_out }} {{ ctrans("guests") }}
                 </span>
             </div>
 
@@ -136,7 +136,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                 :href="liveUsersUrl"
                 class="primaryLink text-sm flex items-center gap-1.5 shrink-0"
             >
-                {{ trans("See all") }}
+                {{ ctrans("See all") }}
                 <FontAwesomeIcon :icon="faArrowRight" class="text-xs" fixed-width />
             </Link>
         </div>
@@ -147,8 +147,8 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                 <div class="grid grid-cols-2 border-b border-gray-100">
                     <div
                         v-for="pane in [
-                            { key: 'basket', label: trans('In basket'), visitors: inBasket, accent: '#f59e0b' },
-                            { key: 'checkout', label: trans('At checkout'), visitors: inCheckout, accent: '#10b981' },
+                            { key: 'basket', label: ctrans('In basket'), visitors: inBasket, accent: '#f59e0b' },
+                            { key: 'checkout', label: ctrans('At checkout'), visitors: inCheckout, accent: '#10b981' },
                         ]"
                         :key="pane.key"
                         class="relative h-20 border-r border-gray-100 last:border-r-0"
@@ -184,7 +184,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                     />
 
                     <div v-if="!browsing.length" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                        {{ trans("Nobody browsing right now.") }}
+                        {{ ctrans("Nobody browsing right now.") }}
                     </div>
                 </div>
 
@@ -232,7 +232,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                             </td>
 
                             <td class="py-2 pr-3 truncate" :title="visitor.customer_name">
-                                {{ visitor.customer_name ?? trans("Guest") }}
+                                {{ visitor.customer_name ?? ctrans("Guest") }}
                             </td>
 
                             <td class="py-2 pr-3" :title="visitor.url">
@@ -249,7 +249,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
 
                         <tr v-if="!identifiedVisitors.length">
                             <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-                                {{ trans("No signed-in visitors right now.") }}
+                                {{ ctrans("No signed-in visitors right now.") }}
                             </td>
                         </tr>
                     </tbody>

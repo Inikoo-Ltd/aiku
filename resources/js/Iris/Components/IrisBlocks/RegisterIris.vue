@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, provide, ref } from "vue"
 import axios from "axios"
 import { useForm } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Checkbox } from "primevue"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
@@ -159,7 +159,7 @@ const submit = async () => {
 	}
 
 	for (const { name, label } of missingAddressFields) {
-		form.setError(name, trans(":field is required", { field: label }))
+		form.setError(name, ctrans(":field is required", { field: label }))
 	}
 
 	if (missingAddressFields.length) {
@@ -236,9 +236,9 @@ const submit = async () => {
 						<div class="sm:col-span-6">
 							<label for="email" class="block text-sm font-medium text-gray-700">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="text-xxs text-red-500" fixed-width aria-hidden="true" />
-								{{ trans("Email") }}
+								{{ ctrans("Email") }}
 								<FontAwesomeIcon
-									v-tooltip="trans('Will be used as your username as well')"
+									v-tooltip="ctrans('Will be used as your username as well')"
 									icon="fal fa-info-circle"
 									class="text-gray-400 hover:text-gray-600"
 									fixed-width
@@ -270,7 +270,7 @@ const submit = async () => {
 						<div class="sm:col-span-3">
 							<label for="password" class="block text-sm font-medium capitalize text-gray-700">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="text-xxs text-red-500" fixed-width aria-hidden="true" />
-								{{ trans("Password") }}
+								{{ ctrans("Password") }}
 							</label>
 							<div class="password mt-2">
 								<PureInput
@@ -288,7 +288,7 @@ const submit = async () => {
 						<div class="sm:col-span-3">
 							<label for="password-confirmation" class="block text-sm font-medium capitalize text-gray-700">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="text-xxs text-red-500" fixed-width aria-hidden="true" />
-								{{ trans("Retype Password") }}
+								{{ ctrans("Retype Password") }}
 							</label>
 							<div class="password mt-2">
 								<PureInput
@@ -313,7 +313,7 @@ const submit = async () => {
 						<div class="flex gap-2 sm:col-span-6">
 							<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary class="mt-0.5" />
 							<label for="opt_in_newsletter">
-								{{ registrationSettings?.marketing_opt_in_label ?? trans("Opt in to our newsletter for updates and offers.") }}
+								{{ registrationSettings?.marketing_opt_in_label ?? ctrans("Opt in to our newsletter for updates and offers.") }}
 							</label>
 						</div>
 
@@ -325,7 +325,7 @@ const submit = async () => {
 								binary
 								class="mt-0.5" />
 							<label for="opt_in_whatsapp_newsletter">
-								{{ registrationSettings?.whatsapp_newsletter_label ?? trans("Opt in to receive our newsletter and offers via WhatsApp.") }}
+								{{ registrationSettings?.whatsapp_newsletter_label ?? ctrans("Opt in to receive our newsletter and offers via WhatsApp.") }}
 							</label>
 						</div>
 
@@ -344,7 +344,7 @@ const submit = async () => {
 									:target="termsLink.target"
 									:type="termsLink.type"
 									class="underline">
-									{{ fieldValue?.register?.terms?.text || trans("I agree with the terms and conditions") }}
+									{{ fieldValue?.register?.terms?.text || ctrans("I agree with the terms and conditions") }}
 								</LinkIris>
 							</label>
 						</div>
@@ -354,7 +354,7 @@ const submit = async () => {
 						<div
 							v-if="registrationWarning.tax_number"
 							class="mb-4 rounded border border-amber-300 bg-amber-100 px-4 py-2 text-amber-700">
-							<span class="font-bold">{{ trans("Warning") }}:</span>
+							<span class="font-bold">{{ ctrans("Warning") }}:</span>
 							<ul class="list-inside list-disc">
 								<li v-if="Array.isArray(registrationWarning.tax_number)" v-for="(msg, i) in registrationWarning.tax_number" :key="i">
 									{{ msg }}
@@ -368,7 +368,7 @@ const submit = async () => {
 						<div
 							v-if="Object.keys(form?.errors ?? {}).filter((key) => key !== 'tax_number').length"
 							class="mb-4 text-red-600">
-							<span class="font-bold">{{ trans("Errors") }}:</span>
+							<span class="font-bold">{{ ctrans("Errors") }}:</span>
 							<ul class="list-inside list-disc">
 								<template v-for="(error, key) in form.errors" :key="key">
 									<template v-if="key !== 'tax_number'">
@@ -385,7 +385,7 @@ const submit = async () => {
 								:disabled="isLoading"
 								class="inline-flex w-full cursor-pointer items-center justify-center gap-x-2 transition duration-75 ease-in-out disabled:opacity-70"
 								:style="getStyles(fieldValue?.register?.button?.container?.properties, screenType)">
-								{{ fieldValue?.register?.button?.text || trans("Register") }}
+								{{ fieldValue?.register?.button?.text || ctrans("Register") }}
 								<LoadingIcon v-if="isLoading" />
 							</button>
 							<div @click="() => (!isAgreeTnc ? (isErrorTnc = true) : submit())" class="absolute inset-0 cursor-pointer" />
@@ -407,16 +407,16 @@ const submit = async () => {
 
 						<div class="mt-3 text-center">
 							<div class="text-2xl font-semibold text-red-600">
-								{{ trans("Don't do that to us") }}!
+								{{ ctrans("Don't do that to us") }}!
 							</div>
 							<div class="mt-2 text-sm opacity-75">
-								{{ trans("Please remove the script before you submit") }}
+								{{ ctrans("Please remove the script before you submit") }}
 							</div>
 						</div>
 					</div>
 
 					<div class="mt-5 sm:mt-6">
-						<Button :label="trans('Okay')" full @click="() => (isModalRemoveScript = false)" />
+						<Button :label="ctrans('Okay')" full @click="() => (isModalRemoveScript = false)" />
 					</div>
 				</div>
 			</div>
@@ -432,16 +432,16 @@ const submit = async () => {
 
 						<div class="mt-3 text-center">
 							<div class="text-2xl font-semibold text-amber-600">
-								{{ trans("Remove the HTML code") }}!
+								{{ ctrans("Remove the HTML code") }}!
 							</div>
 							<div class="mt-2 text-sm opacity-75">
-								{{ trans("It looks like you have added HTML code. Please remove the HTML code before you submit.") }}
+								{{ ctrans("It looks like you have added HTML code. Please remove the HTML code before you submit.") }}
 							</div>
 						</div>
 					</div>
 
 					<div class="mt-5 sm:mt-6">
-						<Button :label="trans('Okay')" full @click="() => (isModalRemoveHtml = false)" />
+						<Button :label="ctrans('Okay')" full @click="() => (isModalRemoveHtml = false)" />
 					</div>
 				</div>
 			</div>

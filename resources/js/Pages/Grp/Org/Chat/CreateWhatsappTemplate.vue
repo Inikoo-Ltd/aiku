@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, defineAsyncComponent, onMounted, onUnmounted } from "vue"
 import { Head, useForm } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPlus,
@@ -113,48 +113,48 @@ const form = useForm<{
 const CATEGORIES = [
     {
         value: "MARKETING",
-        label: trans("Marketing"),
-        hint: trans("Offers, promotions, announcements, newsletters. Customers can opt out."),
+        label: ctrans("Marketing"),
+        hint: ctrans("Offers, promotions, announcements, newsletters. Customers can opt out."),
     },
     {
         value: "UTILITY",
-        label: trans("Utility"),
-        hint: trans("About an existing order or account — confirmations, updates, reminders."),
+        label: ctrans("Utility"),
+        hint: ctrans("About an existing order or account — confirmations, updates, reminders."),
     },
 ] as const
 
 const HEADER_FORMATS = [
-    { value: "NONE", label: trans("None"), icon: null },
-    { value: "TEXT", label: trans("Text"), icon: null },
-    { value: "IMAGE", label: trans("Image"), icon: faImage },
-    { value: "VIDEO", label: trans("Video"), icon: faVideo },
-    { value: "DOCUMENT", label: trans("PDF"), icon: faFilePdf },
+    { value: "NONE", label: ctrans("None"), icon: null },
+    { value: "TEXT", label: ctrans("Text"), icon: null },
+    { value: "IMAGE", label: ctrans("Image"), icon: faImage },
+    { value: "VIDEO", label: ctrans("Video"), icon: faVideo },
+    { value: "DOCUMENT", label: ctrans("PDF"), icon: faFilePdf },
 ] as const
 
 const BUTTON_TYPES = [
     {
         value: "QUICK_REPLY",
-        label: trans("Quick reply"),
+        label: ctrans("Quick reply"),
         icon: faReply,
-        hint: trans("Send response text — e.g. \"Yes\" or \"More info\""),
+        hint: ctrans("Send response text — e.g. \"Yes\" or \"More info\""),
     },
     {
         value: "URL",
-        label: trans("Static URL"),
+        label: ctrans("Static URL"),
         icon: faArrowUpRightFromSquare,
-        hint: trans("Static link to a webpage"),
+        hint: ctrans("Static link to a webpage"),
     },
     {
         value: "URL_DYNAMIC",
-        label: trans("Dynamic URL"),
+        label: ctrans("Dynamic URL"),
         icon: faLink,
-        hint: trans("Link ending in a placeholder, e.g. an order id"),
+        hint: ctrans("Link ending in a placeholder, e.g. an order id"),
     },
     {
         value: "PHONE_NUMBER",
-        label: trans("Phone number"),
+        label: ctrans("Phone number"),
         icon: faPhone,
-        hint: trans("Initiates a call on click"),
+        hint: ctrans("Initiates a call on click"),
     },
 ] as const
 
@@ -278,14 +278,14 @@ const languageLabel = computed(
     () => props.languages.find((language) => language.value === form.language)?.label ?? ""
 )
 
-const bodyPlaceholder = computed(() => trans("Enter text in :language", { language: languageLabel.value }))
+const bodyPlaceholder = computed(() => ctrans("Enter text in :language", { language: languageLabel.value }))
 
 const headerPlaceholder = computed(() =>
-    trans("Add a short line of text to the header of your message in :language", { language: languageLabel.value })
+    ctrans("Add a short line of text to the header of your message in :language", { language: languageLabel.value })
 )
 
 const footerPlaceholder = computed(() =>
-    trans("Add a short line of text to the bottom of your message in :language", { language: languageLabel.value })
+    ctrans("Add a short line of text to the bottom of your message in :language", { language: languageLabel.value })
 )
 
 /**
@@ -311,10 +311,10 @@ const applyFormat = (marker: string, closing = marker) => {
 }
 
 const FORMAT_ACTIONS = [
-    { label: "B", marker: "*", title: trans("Bold"), class: "font-bold" },
-    { label: "I", marker: "_", title: trans("Italic"), class: "italic" },
-    { label: "S", marker: "~", title: trans("Strikethrough"), class: "line-through" },
-    { label: "</>", marker: "```", title: trans("Monospace"), class: "font-mono text-[10px]" },
+    { label: "B", marker: "*", title: ctrans("Bold"), class: "font-bold" },
+    { label: "I", marker: "_", title: ctrans("Italic"), class: "italic" },
+    { label: "S", marker: "~", title: ctrans("Strikethrough"), class: "line-through" },
+    { label: "</>", marker: "```", title: ctrans("Monospace"), class: "font-mono text-[10px]" },
 ]
 
 const showEmojiPicker = ref(false)
@@ -362,14 +362,14 @@ const isFormatHelpOpen = ref(false)
 // characters, which is exactly why this cheatsheet is worth showing. Each row styles its
 // own label so the effect is demonstrated rather than described.
 const FORMAT_HELP = [
-    { style: trans("Italic"), syntax: "_text_", class: "italic" },
-    { style: trans("Bold"), syntax: "*text*", class: "font-bold" },
-    { style: trans("Strikethrough"), syntax: "~text~", class: "line-through" },
-    { style: trans("Monospace"), syntax: "```text```", class: "font-mono" },
-    { style: trans("Bullet list"), syntax: "- text", class: "", prefix: "•" },
-    { style: trans("Numbered list"), syntax: "1. text", class: "", prefix: "1." },
-    { style: trans("Quote"), syntax: "> text", class: "", quote: true },
-    { style: trans("Inline code"), syntax: "`text`", class: "font-mono text-[#c7254e] bg-[#f9f2f4] rounded px-1 py-0.5" },
+    { style: ctrans("Italic"), syntax: "_text_", class: "italic" },
+    { style: ctrans("Bold"), syntax: "*text*", class: "font-bold" },
+    { style: ctrans("Strikethrough"), syntax: "~text~", class: "line-through" },
+    { style: ctrans("Monospace"), syntax: "```text```", class: "font-mono" },
+    { style: ctrans("Bullet list"), syntax: "- text", class: "", prefix: "•" },
+    { style: ctrans("Numbered list"), syntax: "1. text", class: "", prefix: "1." },
+    { style: ctrans("Quote"), syntax: "> text", class: "", quote: true },
+    { style: ctrans("Inline code"), syntax: "`text`", class: "font-mono text-[#c7254e] bg-[#f9f2f4] rounded px-1 py-0.5" },
 ]
 
 const addButton = (type: ButtonKind) => {
@@ -405,8 +405,8 @@ const onMediaSelect = (event: Event) => {
 
         if (!rule.mime_types.includes(file.type)) {
             notify({
-                title: trans("Failed"),
-                text: trans("WhatsApp accepts :formats here.", { formats: rule.extensions.join(", ") }),
+                title: ctrans("Failed"),
+                text: ctrans("WhatsApp accepts :formats here.", { formats: rule.extensions.join(", ") }),
                 type: "error",
             })
             ;(event.target as HTMLInputElement).value = ""
@@ -415,8 +415,8 @@ const onMediaSelect = (event: Event) => {
 
         if (file.size > rule.max_kb * 1024) {
             notify({
-                title: trans("Failed"),
-                text: trans("Maximum size is :size MB.", { size: Math.round(rule.max_kb / 1024) }),
+                title: ctrans("Failed"),
+                text: ctrans("Maximum size is :size MB.", { size: Math.round(rule.max_kb / 1024) }),
                 type: "error",
             })
             ;(event.target as HTMLInputElement).value = ""
@@ -432,7 +432,7 @@ const onMediaSelect = (event: Event) => {
 
 const nameError = computed(() => {
     if (!form.name) return ""
-    return /^[a-z0-9_]+$/.test(form.name) ? "" : trans("Only lowercase letters, numbers and underscores.")
+    return /^[a-z0-9_]+$/.test(form.name) ? "" : ctrans("Only lowercase letters, numbers and underscores.")
 })
 
 const canSubmit = computed(() =>
@@ -490,8 +490,8 @@ const saveDraft = () => {
 // These carry literal {{n}} tokens, which Vue would try to interpret if they sat in the
 // template, so they are built here and only referenced above.
 const COPY = {
-    dynamicUrlHint: trans("The link must end with {{1}} — WhatsApp appends the value, it does not replace inside the URL."),
-    tagsExplainer: trans("WhatsApp only understands numbered slots, so Aiku turns the names above into {{1}}, {{2}} when submitting. The samples are what Meta's reviewer sees."),
+    dynamicUrlHint: ctrans("The link must end with {{1}} — WhatsApp appends the value, it does not replace inside the URL."),
+    tagsExplainer: ctrans("WhatsApp only understands numbered slots, so Aiku turns the names above into {{1}}, {{2}} when submitting. The samples are what Meta's reviewer sees."),
 }
 
 const variableToken = (index: number) => `{{${index + 1}}}`
@@ -513,7 +513,7 @@ const themeActiveCard = {
 
     <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <Message v-if="!isConfigured" severity="warn" :closable="false" class="mb-6">
-            {{ trans("Set the WhatsApp WABA ID in the shop settings before creating templates.") }}
+            {{ ctrans("Set the WhatsApp WABA ID in the shop settings before creating templates.") }}
         </Message>
 
         <div class="flex flex-col lg:flex-row gap-10 xl:gap-14">
@@ -522,26 +522,26 @@ const themeActiveCard = {
                 <!-- Basics -->
                 <section class="space-y-6">
                     <Message v-if="variantOf" severity="info" :closable="false" class="text-xs">
-                        {{ trans("Writing the :language version of :name. The wording below was copied from it — translate it, keep the same variables.", {
+                        {{ ctrans("Writing the :language version of :name. The wording below was copied from it — translate it, keep the same variables.", {
                             language: variantOf.language, name: variantOf.name,
                         }) }}
                     </Message>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-800">{{ trans("Template name") }}</label>
+                        <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Template name") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
                             {{ variantOf
-                                ? trans("Every language of a template shares one name.")
-                                : trans("The name is used for internal purposes only") }}
+                                ? ctrans("Every language of a template shares one name.")
+                                : ctrans("The name is used for internal purposes only") }}
                         </p>
                         <PureInput v-model="templateName" placeholder="birthday_30_percent" :disabled="!!variantOf" />
                         <p v-if="nameError" class="mt-1.5 text-xs text-red-500">{{ nameError }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-800">{{ trans("Template category") }}</label>
+                        <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Template category") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
-                            {{ trans("Choose what kind of message this is — Meta reviews it against the category") }}
+                            {{ ctrans("Choose what kind of message this is — Meta reviews it against the category") }}
                         </p>
                         <div class="grid sm:grid-cols-2 gap-3">
                             <button v-for="category in CATEGORIES" :key="category.value" type="button"
@@ -561,12 +561,12 @@ const themeActiveCard = {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-800">{{ trans("Language") }}</label>
+                        <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Language") }}</label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
-                            {{ trans("Languages your shops already use are listed first") }}
+                            {{ ctrans("Languages your shops already use are listed first") }}
                         </p>
                         <PureMultiselect v-model="form.language" :options="languages" searchable
-                            :placeholder="trans('Search language…')" />
+                            :placeholder="ctrans('Search language…')" />
                     </div>
                 </section>
 
@@ -576,11 +576,11 @@ const themeActiveCard = {
                 <section class="space-y-3">
                     <div>
                         <label class="block text-sm font-semibold text-gray-800">
-                            {{ trans("Header") }}
-                            <span class="ml-1.5 text-xs font-normal text-gray-400">{{ trans("Optional") }}</span>
+                            {{ ctrans("Header") }}
+                            <span class="ml-1.5 text-xs font-normal text-gray-400">{{ ctrans("Optional") }}</span>
                         </label>
                         <p class="text-xs text-gray-400 mt-0.5">
-                            {{ trans("A short title or a picture shown above the message") }}
+                            {{ ctrans("A short title or a picture shown above the message") }}
                         </p>
                     </div>
 
@@ -598,14 +598,14 @@ const themeActiveCard = {
 
                     <p v-if="!canUploadMedia" class="flex items-start gap-1.5 text-xs text-gray-400">
                         <FontAwesomeIcon :icon="faCircleInfo" class="mt-0.5" fixed-width />
-                        {{ trans("Media headers need WHATSAPP_APP_ID configured, so only text headers are available right now.") }}
+                        {{ ctrans("Media headers need WHATSAPP_APP_ID configured, so only text headers are available right now.") }}
                     </p>
 
                     <div v-if="form.header_format === 'TEXT'" class="space-y-2">
                         <PureInput v-model="form.header_text" :maxLength="60" counter
                             :placeholder="headerPlaceholder" />
                         <div class="text-xs text-gray-400">
-                            {{ trans("You can use one variable here — insert it from the message toolbar below.") }}
+                            {{ ctrans("You can use one variable here — insert it from the message toolbar below.") }}
                         </div>
                     </div>
 
@@ -616,19 +616,19 @@ const themeActiveCard = {
                             {{ form.header_media
                                 ? form.header_media.name
                                 : reusedHeaderMedia
-                                    ? trans("Replace :file", { file: reusedHeaderMedia.name })
-                                    : trans("Upload a sample file for Meta to review") }}
+                                    ? ctrans("Replace :file", { file: reusedHeaderMedia.name })
+                                    : ctrans("Upload a sample file for Meta to review") }}
                             <input type="file" class="hidden" @change="onMediaSelect"
                                 :accept="headerAccept" />
                         </label>
 
                         <p v-if="reusedHeaderMedia && !form.header_media" class="text-[11px] text-gray-400">
-                            {{ trans("The file from :language is reused unless you pick another one.", {
+                            {{ ctrans("The file from :language is reused unless you pick another one.", {
                                 language: variantOf!.language,
                             }) }}
                         </p>
                         <p class="text-xs text-gray-400">
-                            {{ trans("The real file is chosen when the template is sent.") }}
+                            {{ ctrans("The real file is chosen when the template is sent.") }}
                         </p>
                     </div>
                 </section>
@@ -639,14 +639,14 @@ const themeActiveCard = {
                 <section class="space-y-3">
                     <div class="flex items-end justify-between gap-3">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-800">{{ trans("Message") }}</label>
+                            <label class="block text-sm font-semibold text-gray-800">{{ ctrans("Message") }}</label>
                             <p class="text-xs text-gray-400 mt-0.5">
-                                {{ trans("This is the text your customer receives") }}
+                                {{ ctrans("This is the text your customer receives") }}
                             </p>
                         </div>
                         <button type="button" @click="isFormatHelpOpen = true"
                             class="text-xs hover:underline shrink-0 pb-0.5" :style="themeText">
-                            {{ trans("Format text") }}
+                            {{ ctrans("Format text") }}
                         </button>
                     </div>
 
@@ -658,7 +658,7 @@ const themeActiveCard = {
                         <div class="flex items-center gap-1 border-t border-gray-200 bg-gray-50 rounded-b-lg px-2 py-1.5">
                             <div ref="emojiPickerContainer" class="relative">
                                 <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
-                                    v-tooltip="trans('Emoji')"
+                                    v-tooltip="ctrans('Emoji')"
                                     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
                                     :class="showEmojiPicker ? 'bg-gray-200 text-gray-700' : 'text-gray-500'">
                                     <FontAwesomeIcon :icon="faFaceSmile" class="text-xs" fixed-width />
@@ -683,13 +683,13 @@ const themeActiveCard = {
                                     class="inline-flex items-center gap-1 px-2 h-7 rounded text-xs hover:bg-gray-200 transition-colors"
                                     :style="themeText">
                                     <FontAwesomeIcon :icon="faPlus" class="text-[9px]" fixed-width />
-                                    {{ trans("Add variable") }}
+                                    {{ ctrans("Add variable") }}
                                 </button>
 
                                 <div v-if="isTagPickerOpen"
                                     class="absolute bottom-full right-0 mb-1.5 z-40 w-72 rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden">
                                     <div class="p-2 border-b border-gray-100">
-                                        <input v-model="tagSearch" type="text" :placeholder="trans('Search…')" autofocus
+                                        <input v-model="tagSearch" type="text" :placeholder="ctrans('Search…')" autofocus
                                             class="w-full rounded-md border-gray-200 text-xs focus:border-gray-300 focus:ring-0" />
                                     </div>
                                     <div class="max-h-72 overflow-y-auto py-1">
@@ -706,7 +706,7 @@ const themeActiveCard = {
                                             </button>
                                         </template>
                                         <div v-if="!filteredTags.length" class="px-3 py-3 text-xs text-gray-400 text-center">
-                                            {{ trans("No variable found") }}
+                                            {{ ctrans("No variable found") }}
                                         </div>
                                     </div>
                                 </div>
@@ -715,17 +715,17 @@ const themeActiveCard = {
                     </div>
 
                     <div class="flex items-center justify-between text-xs">
-                        <span class="text-gray-400">{{ trans("Variables are replaced with real values when sending.") }}</span>
+                        <span class="text-gray-400">{{ ctrans("Variables are replaced with real values when sending.") }}</span>
                         <span class="text-gray-400">{{ form.body.length }}/1024</span>
                     </div>
 
                     <Message v-if="unknownTags.length" severity="error" :closable="false" class="text-xs">
-                        {{ trans("Not a known variable:") }} {{ unknownTags.map((tag) => `[${tag}]`).join(", ") }}
+                        {{ ctrans("Not a known variable:") }} {{ unknownTags.map((tag) => `[${tag}]`).join(", ") }}
                     </Message>
 
                     <div v-if="usedTags.length" class="rounded-xl bg-gray-50 p-4 space-y-2">
                         <div class="text-xs font-medium text-gray-600">
-                            {{ trans("Variables in this message") }}
+                            {{ ctrans("Variables in this message") }}
                         </div>
                         <div v-for="(tag, index) in usedTags" :key="tag.value"
                             class="flex items-center gap-3 text-xs">
@@ -747,11 +747,11 @@ const themeActiveCard = {
                 <section class="space-y-2">
                     <div>
                         <label class="block text-sm font-semibold text-gray-800">
-                            {{ trans("Footer") }}
-                            <span class="ml-1.5 text-xs font-normal text-gray-400">{{ trans("Optional") }}</span>
+                            {{ ctrans("Footer") }}
+                            <span class="ml-1.5 text-xs font-normal text-gray-400">{{ ctrans("Optional") }}</span>
                         </label>
                         <p class="text-xs text-gray-400 mt-0.5 mb-2">
-                            {{ trans("A small line under the message, e.g. how to opt out") }}
+                            {{ ctrans("A small line under the message, e.g. how to opt out") }}
                         </p>
                     </div>
                     <PureInput v-model="form.footer" :maxLength="60" counter
@@ -764,11 +764,11 @@ const themeActiveCard = {
                 <section class="space-y-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-800">
-                            {{ trans("Buttons") }}
-                            <span class="ml-1.5 text-xs font-normal text-gray-400">{{ trans("Optional, up to 10") }}</span>
+                            {{ ctrans("Buttons") }}
+                            <span class="ml-1.5 text-xs font-normal text-gray-400">{{ ctrans("Optional, up to 10") }}</span>
                         </label>
                         <p class="text-xs text-gray-400 mt-0.5">
-                            {{ trans("Let the customer respond or act with one tap") }}
+                            {{ ctrans("Let the customer respond or act with one tap") }}
                         </p>
                     </div>
 
@@ -782,7 +782,7 @@ const themeActiveCard = {
                     </div>
 
                     <Message v-if="linkButtonCount > 2" severity="error" :closable="false" class="text-xs">
-                        {{ trans("WhatsApp allows at most two link buttons.") }}
+                        {{ ctrans("WhatsApp allows at most two link buttons.") }}
                     </Message>
 
                     <div v-for="(button, index) in form.buttons" :key="index"
@@ -790,25 +790,25 @@ const themeActiveCard = {
                         <div class="flex items-start justify-between gap-2">
                             <div>
                                 <div class="text-sm font-semibold text-gray-800">
-                                    {{ trans("Button") }} {{ index + 1 }}
+                                    {{ ctrans("Button") }} {{ index + 1 }}
                                 </div>
                                 <div class="text-xs text-gray-400">
-                                    {{ trans("Shown in position :position of :total", { position: index + 1, total: form.buttons.length }) }}
+                                    {{ ctrans("Shown in position :position of :total", { position: index + 1, total: form.buttons.length }) }}
                                 </div>
                             </div>
 
                             <div class="flex items-center gap-1 shrink-0">
                                 <button type="button" @click="moveButton(index, -1)" :disabled="index === 0"
-                                    v-tooltip="trans('Move up')"
+                                    v-tooltip="ctrans('Move up')"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent">
                                     <FontAwesomeIcon :icon="faArrowUp" class="text-[10px]" fixed-width />
                                 </button>
                                 <button type="button" @click="moveButton(index, 1)"
-                                    :disabled="index === form.buttons.length - 1" v-tooltip="trans('Move down')"
+                                    :disabled="index === form.buttons.length - 1" v-tooltip="ctrans('Move down')"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent">
                                     <FontAwesomeIcon :icon="faArrowDown" class="text-[10px]" fixed-width />
                                 </button>
-                                <button type="button" @click="removeButton(index)" v-tooltip="trans('Remove')"
+                                <button type="button" @click="removeButton(index)" v-tooltip="ctrans('Remove')"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500">
                                     <FontAwesomeIcon :icon="faXmark" class="text-xs" fixed-width />
                                 </button>
@@ -816,12 +816,12 @@ const themeActiveCard = {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ trans("Type") }}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ ctrans("Type") }}</label>
                             <PureMultiselect v-model="button.type" :options="buttonTypeOptions" :caret="true" />
                             <p class="mt-1 text-xs text-gray-400">{{ buttonHint(button.type) }}</p>
                         </div>
 
-                        <PureInput v-model="button.text" :maxLength="25" counter :placeholder="trans('Button label')" />
+                        <PureInput v-model="button.text" :maxLength="25" counter :placeholder="ctrans('Button label')" />
 
                         <template v-if="isLinkButton(button.type)">
                             <PureInput v-model="button.url" type="url"
@@ -835,7 +835,7 @@ const themeActiveCard = {
                                     {{ COPY.dynamicUrlHint }}
                                 </p>
                                 <PureInput v-model="button.url_example"
-                                    :placeholder="trans('Sample link, e.g. https://www.ancientwisdom.biz/order/12345')" />
+                                    :placeholder="ctrans('Sample link, e.g. https://www.ancientwisdom.biz/order/12345')" />
                             </template>
                         </template>
 
@@ -850,14 +850,14 @@ const themeActiveCard = {
 
                 <div class="mt-8 pt-5 border-t border-gray-100 flex items-center justify-end gap-3">
                     <span class="mr-auto min-w-0 text-xs leading-relaxed text-gray-400">
-                        {{ trans("A draft stays in Aiku. Meta only sees the template once you submit it.") }}
+                        {{ ctrans("A draft stays in Aiku. Meta only sees the template once you submit it.") }}
                     </span>
 
-                    <Button type="tertiary" class="shrink-0 whitespace-nowrap" :label="trans('Save as draft')"
+                    <Button type="tertiary" class="shrink-0 whitespace-nowrap" :label="ctrans('Save as draft')"
                         :loading="isSavingDraft" :disabled="form.processing || !form.name || !!nameError"
                         @click="saveDraft" />
 
-                    <Button class="shrink-0 whitespace-nowrap" :label="trans('Submit for review')"
+                    <Button class="shrink-0 whitespace-nowrap" :label="ctrans('Submit for review')"
                         :loading="isSubmitting" :disabled="form.processing || !canSubmit" @click="submit" />
                 </div>
             </div>
@@ -875,11 +875,11 @@ const themeActiveCard = {
                         :mediaPreview="mediaPreview" />
 
                     <div class="rounded-xl bg-gray-50 border border-gray-200 p-4 text-xs text-gray-500 leading-relaxed">
-                        <div class="font-medium text-gray-600 mb-1.5">{{ trans("Before you submit") }}</div>
+                        <div class="font-medium text-gray-600 mb-1.5">{{ ctrans("Before you submit") }}</div>
                         <ul class="list-disc list-inside space-y-1">
-                            <li>{{ trans("Marketing templates need customers to have opted in.") }}</li>
-                            <li>{{ trans("Avoid promises Meta cannot verify, and keep links on your own domain.") }}</li>
-                            <li>{{ trans("Sample values are only for the reviewer, never sent to customers.") }}</li>
+                            <li>{{ ctrans("Marketing templates need customers to have opted in.") }}</li>
+                            <li>{{ ctrans("Avoid promises Meta cannot verify, and keep links on your own domain.") }}</li>
+                            <li>{{ ctrans("Sample values are only for the reviewer, never sent to customers.") }}</li>
                         </ul>
                     </div>
                 </div>
@@ -887,16 +887,16 @@ const themeActiveCard = {
         </div>
     </div>
 
-    <Dialog v-model:visible="isFormatHelpOpen" modal :header="trans('Text formatting for WhatsApp')"
+    <Dialog v-model:visible="isFormatHelpOpen" modal :header="ctrans('Text formatting for WhatsApp')"
         :style="{ width: '30rem' }">
         <p class="text-xs text-gray-500 mb-3">
-            {{ trans("Formatting only shows on WhatsApp. In Aiku you see the characters, your customer sees the styling.") }}
+            {{ ctrans("Formatting only shows on WhatsApp. In Aiku you see the characters, your customer sees the styling.") }}
         </p>
         <div class="rounded-lg border border-gray-200 overflow-hidden">
             <div
                 class="grid grid-cols-[1fr_auto_28px] items-center gap-3 bg-gray-50 px-3 py-2 text-[11px] font-medium text-gray-500 border-b border-gray-200">
-                <span>{{ trans("Style") }}</span>
-                <span>{{ trans("How to write it") }}</span>
+                <span>{{ ctrans("Style") }}</span>
+                <span>{{ ctrans("How to write it") }}</span>
                 <span></span>
             </div>
 

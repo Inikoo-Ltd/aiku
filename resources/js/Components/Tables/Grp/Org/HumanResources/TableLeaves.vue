@@ -4,7 +4,7 @@ import { useForm, usePage } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -412,24 +412,24 @@ const approvalProgressPercent = (leave: any): number => {
 
 const approvalStatusLabel = (leave: any): string => {
 	if (leave.status === "approved") {
-		return trans("Completed")
+		return ctrans("Completed")
 	}
 
 	if (leave.status === "rejected") {
-		return trans("Rejected")
+		return ctrans("Rejected")
 	}
 
-	return trans("In Progress")
+	return ctrans("In Progress")
 }
 
 const approvalProgressText = (leave: any): string => {
 	const total = approvalTotalSteps(leave)
 	if (total === 0) {
-		return trans("No steps")
+		return ctrans("No steps")
 	}
 
 	if (leave.status === "approved") {
-		return trans(":steps steps completed", { steps: String(total) })
+		return ctrans(":steps steps completed", { steps: String(total) })
 	}
 
 	const currentStep = Math.min(
@@ -437,7 +437,7 @@ const approvalProgressText = (leave: any): string => {
 		total
 	)
 
-	return trans("Level :current of :total", {
+	return ctrans("Level :current of :total", {
 		current: String(currentStep),
 		total: String(total),
 	})
@@ -554,13 +554,13 @@ const submitEdit = () => {
 			<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm text-gray-500">{{ trans("Annual Leave") }}</p>
+						<p class="text-sm text-gray-500">{{ ctrans("Annual Leave") }}</p>
 						<p class="text-2xl font-bold text-blue-600">
 							{{ annualRemaining }}
 						</p>
 						<p class="text-xs text-gray-400">
 							{{
-								trans(":submitted of :total days submitted", {
+								ctrans(":submitted of :total days submitted", {
 									submitted: String(annualSubmitted),
 									total: String(balanceSummary.annual_days),
 								})
@@ -576,12 +576,12 @@ const submitEdit = () => {
 			<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm text-gray-500">{{ trans("Medical Leave") }}</p>
+						<p class="text-sm text-gray-500">{{ ctrans("Medical Leave") }}</p>
 						<p class="text-2xl font-bold text-red-600">
 							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Days This Month") }}
+							{{ ctrans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
@@ -593,12 +593,12 @@ const submitEdit = () => {
 			<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm text-gray-500">{{ trans("Unpaid Leave") }}</p>
+						<p class="text-sm text-gray-500">{{ ctrans("Unpaid Leave") }}</p>
 						<p class="text-2xl font-bold text-gray-600">
 							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{ trans("Days This Month") }}
+							{{ ctrans("Days This Month") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
@@ -698,7 +698,7 @@ const submitEdit = () => {
 						">
 						<Button
 							@click="openEditModal(leave)"
-							:label="trans('Edit')"
+							:label="ctrans('Edit')"
 							size="xs"
 							type="transparent"
 							:icon="faEdit" />
@@ -712,14 +712,14 @@ const submitEdit = () => {
 			@onClose="closeCreateModal"
 			width="w-full max-w-lg">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4">
-				{{ trans("Request Leave") }}
+				{{ ctrans("Request Leave") }}
 			</h2>
 
 			<AlertMessage
 				v-if="hasErrors"
 				:alert="{
 					status: 'danger',
-					title: trans('There was a problem with your request.'),
+					title: ctrans('There was a problem with your request.'),
 					description: Object.values(errors)[0],
 				}"
 				class="mb-4" />
@@ -727,13 +727,13 @@ const submitEdit = () => {
 			<form @submit.prevent="submitLeave" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Leave Type")
+						ctrans("Leave Type")
 					}}</label>
 					<select
 						v-model="leaveForm.type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
 						<option value="" disabled>
-							{{ trans("Please Select Your Leave Type!") }}
+							{{ ctrans("Please Select Your Leave Type!") }}
 						</option>
 						<option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
 							{{ opt.label }}
@@ -750,7 +750,7 @@ const submitEdit = () => {
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700">{{
-							trans("Start Date")
+							ctrans("Start Date")
 						}}</label>
 						<DatePicker
 							:modelValue="
@@ -767,7 +767,7 @@ const submitEdit = () => {
 							:enableTimePicker="false"
 							:clearable="true"
 							:autoApply="true"
-							:placeholder="trans('Select start date')"
+							:placeholder="ctrans('Select start date')"
 							class="mt-1 block w-full"
 							inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 						<p v-if="leaveForm.errors.start_date" class="mt-1 text-sm text-red-600">
@@ -777,7 +777,7 @@ const submitEdit = () => {
 
 					<div>
 						<label class="block text-sm font-medium text-gray-700">{{
-							trans("End Date")
+							ctrans("End Date")
 						}}</label>
 						<DatePicker
 							:modelValue="leaveForm.end_date ? new Date(leaveForm.end_date) : null"
@@ -793,7 +793,7 @@ const submitEdit = () => {
 							:enableTimePicker="false"
 							:clearable="true"
 							:autoApply="true"
-							:placeholder="trans('Select end date')"
+							:placeholder="ctrans('Select end date')"
 							class="mt-1 block w-full"
 							inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 						<p v-if="leaveForm.errors.end_date" class="mt-1 text-sm text-red-600">
@@ -810,18 +810,18 @@ const submitEdit = () => {
 				</p>
 
 				<p v-if="leaveForm.is_half_day" class="text-xs text-gray-500">
-					{{ trans("Half day leave is applied to one date only.") }}
+					{{ ctrans("Half day leave is applied to one date only.") }}
 				</p>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Reason")
+						ctrans("Reason")
 					}}</label>
 					<textarea
 						v-model="leaveForm.reason"
 						rows="3"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-						:placeholder="trans('Please provide a reason for your leave request')" />
+						:placeholder="ctrans('Please provide a reason for your leave request')" />
 					<p v-if="leaveForm.errors.reason" class="mt-1 text-sm text-red-600">
 						{{ leaveForm.errors.reason }}
 					</p>
@@ -829,7 +829,7 @@ const submitEdit = () => {
 
 				<div v-if="isMedicalType">
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Medical Certificate")
+						ctrans("Medical Certificate")
 					}}</label>
 					<input
 						type="file"
@@ -842,24 +842,24 @@ const submitEdit = () => {
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
 						accept=".pdf,.jpg,.jpeg,.png" />
 					<p class="mt-1 text-xs text-gray-500">
-						{{ trans("Upload medical certificate (PDF, JPG, PNG)") }}
+						{{ ctrans("Upload medical certificate (PDF, JPG, PNG)") }}
 					</p>
 				</div>
 
 				<p v-if="!canSubmitLeave" class="text-sm text-red-600">
-					{{ trans("Sorry, your leave balance isn’t enough for this request") }}
+					{{ ctrans("Sorry, your leave balance isn’t enough for this request") }}
 				</p>
 
 				<div class="mt-6 flex justify-end gap-2">
 					<Button
 						@click="closeCreateModal"
-						:label="trans('Cancel')"
+						:label="ctrans('Cancel')"
 						type="tertiary"
 						nativeType="button" />
 					<Button
 						type="save"
 						nativeType="submit"
-						:label="trans('Submit Request')"
+						:label="ctrans('Submit Request')"
 						:loading="isSubmitting"
 						:disabled="!canSubmitLeave || exceedsLimit" />
 				</div>
@@ -868,16 +868,16 @@ const submitEdit = () => {
 
 		<Modal :isOpen="isEditModalOpen" @onClose="closeEditModal" width="w-full max-w-md">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4">
-				{{ trans("Edit Medical Certificate") }}
+				{{ ctrans("Edit Medical Certificate") }}
 			</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				{{ trans("Update medical certificate for your leave request") }}
+				{{ ctrans("Update medical certificate for your leave request") }}
 			</p>
 
 			<form @submit.prevent="submitEdit" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Medical Certificate")
+						ctrans("Medical Certificate")
 					}}</label>
 					<input
 						type="file"
@@ -890,7 +890,7 @@ const submitEdit = () => {
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
 						accept=".pdf,.jpg,.jpeg,.png" />
 					<p class="mt-1 text-xs text-gray-500">
-						{{ trans("Upload Medical Certificate (PDF, JPG, PNG)") }}
+						{{ ctrans("Upload Medical Certificate (PDF, JPG, PNG)") }}
 					</p>
 					<p v-if="editForm.errors.attachments" class="mt-1 text-sm text-red-600">
 						{{ editForm.errors.attachments }}
@@ -900,13 +900,13 @@ const submitEdit = () => {
 				<div class="mt-6 flex justify-end gap-2">
 					<Button
 						@click="closeEditModal"
-						:label="trans('Cancel')"
+						:label="ctrans('Cancel')"
 						type="tertiary"
 						nativeType="button" />
 					<Button
 						type="save"
 						nativeType="submit"
-						:label="trans('Save')"
+						:label="ctrans('Save')"
 						:loading="isSubmitting" />
 				</div>
 			</form>

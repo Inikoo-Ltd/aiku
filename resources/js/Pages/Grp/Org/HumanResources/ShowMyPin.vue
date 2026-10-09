@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 interface ClockingRecord {
 	id: number
@@ -39,7 +39,7 @@ const displayCode = computed(() => props.pin?.replace(/^\d+:/, "") ?? null)
 <template>
 	<div class="space-y-3 text-center sm:space-y-4">
 		<p class="text-xs sm:text-sm text-gray-500">
-			{{ trans("Enter this PIN on the clocking machine to clock in or out") }}
+			{{ ctrans("Enter this PIN on the clocking machine to clock in or out") }}
 		</p>
 
 		<div
@@ -50,7 +50,7 @@ const displayCode = computed(() => props.pin?.replace(/^\d+:/, "") ?? null)
 				{{ displayCode }}
 			</span>
 			<span v-else class="text-xs sm:text-sm text-amber-700">
-				{{ trans("No PIN has been generated for you yet. Please contact HR.") }}
+				{{ ctrans("No PIN has been generated for you yet. Please contact HR.") }}
 			</span>
 		</div>
 	</div>

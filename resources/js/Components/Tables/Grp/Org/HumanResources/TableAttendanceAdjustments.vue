@@ -5,7 +5,7 @@ import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { faPlus, faCheckCircle, faTimesCircle, faClock } from "@fal"
@@ -83,7 +83,7 @@ const closeCreateModal = () => {
 		<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
 			<p class="text-sm text-gray-600">
 				{{
-					trans(
+					ctrans(
 						"Request attendance corrections for dates where your clock-in/out times need adjustment. All requests require manager approval."
 					)
 				}}
@@ -93,7 +93,7 @@ const closeCreateModal = () => {
 		<div class="flex justify-end">
 			<Button
 				@click="isCreateModalOpen = true"
-				:label="trans('Request Adjustment')"
+				:label="ctrans('Request Adjustment')"
 				icon="fal fa-plus"
 				type="create" />
 		</div>
@@ -145,13 +145,13 @@ const closeCreateModal = () => {
 		<Modal :isOpen="isCreateModalOpen" @onClose="closeCreateModal" width="w-full max-w-lg">
 			<div class="p-6">
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">
-					{{ trans("Request Attendance Adjustment") }}
+					{{ ctrans("Request Attendance Adjustment") }}
 				</h3>
 
 				<form @submit.prevent="submitAdjustment" class="space-y-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Date")
+							ctrans("Date")
 						}}</label>
 						<input
 							v-model="adjustmentForm.date"
@@ -165,7 +165,7 @@ const closeCreateModal = () => {
 					<div class="grid grid-cols-2 gap-4">
 						<div>
 							<label class="block text-sm font-medium text-gray-700 mb-1">{{
-								trans("New Check-in Time")
+								ctrans("New Check-in Time")
 							}}</label>
 							<input
 								v-model="adjustmentForm.requested_start_at"
@@ -180,7 +180,7 @@ const closeCreateModal = () => {
 
 						<div>
 							<label class="block text-sm font-medium text-gray-700 mb-1">{{
-								trans("New Check-out Time")
+								ctrans("New Check-out Time")
 							}}</label>
 							<input
 								v-model="adjustmentForm.requested_end_at"
@@ -196,13 +196,13 @@ const closeCreateModal = () => {
 
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Reason for Adjustment")
+							ctrans("Reason for Adjustment")
 						}}</label>
 						<textarea
 							v-model="adjustmentForm.reason"
 							rows="3"
 							class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-							:placeholder="trans('Please explain why this adjustment is needed')" />
+							:placeholder="ctrans('Please explain why this adjustment is needed')" />
 						<p v-if="adjustmentForm.errors.reason" class="text-sm text-red-500 mt-1">
 							{{ adjustmentForm.errors.reason }}
 						</p>
@@ -210,7 +210,7 @@ const closeCreateModal = () => {
 
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Supporting Document (Optional)")
+							ctrans("Supporting Document (Optional)")
 						}}</label>
 						<input
 							type="file"
@@ -223,19 +223,19 @@ const closeCreateModal = () => {
 							class="w-full border border-gray-300 rounded-lg px-3 py-2"
 							accept=".pdf,.jpg,.jpeg,.png" />
 						<p class="text-xs text-gray-500 mt-1">
-							{{ trans("Upload supporting documentation (PDF, JPG, PNG)") }}
+							{{ ctrans("Upload supporting documentation (PDF, JPG, PNG)") }}
 						</p>
 					</div>
 
 					<div class="flex justify-end gap-3 pt-4">
 						<Button
 							@click="closeCreateModal"
-							:label="trans('Cancel')"
+							:label="ctrans('Cancel')"
 							type="tertiary" />
 							<Button
 								type="primary"
 								nativeType="submit"
-								:label="trans('Submit Request')"
+								:label="ctrans('Submit Request')"
 								:loading="isSubmitting" />
 					</div>
 				</form>

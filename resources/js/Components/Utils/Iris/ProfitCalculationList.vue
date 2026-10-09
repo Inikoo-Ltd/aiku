@@ -4,7 +4,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faMedal } from '@fas';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 
 const props = defineProps<{
@@ -21,7 +21,7 @@ const locale = inject('locale', aikuLocaleStructure)
   <div class="text-[0.65rem] sm:text-[0.8rem] leading-tight tracking-tight sm:tracking-normal md:w-max max-w-[96vw] sm:max-w-none shadow-sm bg-white rounded-b">
     
     <div class="font-semibold text-[1.1em] mb-1.5 pl-1.5 pt-2">
-      {{ trans("Profit Breakdown") }}:
+      {{ ctrans("Profit Breakdown") }}:
     </div>
 
     <div class="rounded-t overflow-hidden pb-1.5 sm:pb-3">
@@ -31,11 +31,11 @@ const locale = inject('locale', aikuLocaleStructure)
           <!-- Retail | Row 1 -->
           <tr v-if="product.rrp > 0">
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
-              {{ trans("Retail") }}:
+              {{ ctrans("Retail") }}:
             </td>
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-2.5 sm:pr-6 font-semibold">
               {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product.rrp) }}
-              <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+              <span class="font-normal text-slate-500">/{{ ctrans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-2.5 sm:pr-6 font-semibold">
               {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product.rrp_per_unit) }}
@@ -47,11 +47,11 @@ const locale = inject('locale', aikuLocaleStructure)
           <!-- Row 2 -->
           <tr>
             <td class="py-0.5 sm:py-1 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
-              {{ trans("Cost Price") }}:
+              {{ ctrans("Cost Price") }}:
             </td>
             <td class="py-0.5 sm:py-1 pr-2.5 sm:pr-6 font-semibold">
               {{ locale.currencyFormat(layout?.iris?.currency?.code, product.price) }}
-              <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+              <span class="font-normal text-slate-500">/{{ ctrans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="py-0.5 sm:py-1 pr-2.5 sm:pr-6 font-semibold">
               {{
@@ -76,13 +76,13 @@ const locale = inject('locale', aikuLocaleStructure)
           <tr class="border-b border-gray-400">
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
-                {{ trans("Profit") }}
+                {{ ctrans("Profit") }}
                 <span class="text-emerald-600 font-semibold text-[0.95em]">({{ product.margin }}):</span>
               </div>
             </td>
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pr-2.5 sm:pr-6 font-semibold text-emerald-600">
               {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit) }}
-              <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+              <span class="font-normal text-slate-500">/{{ ctrans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pr-2.5 sm:pr-6 font-semibold text-emerald-600">
               {{ locale.currencyFormat(layout?.iris?.currency?.code, product.profit_per_unit) }}
@@ -90,7 +90,7 @@ const locale = inject('locale', aikuLocaleStructure)
             </td>
             <td class="pt-0.5 sm:pt-1 pb-1.5 sm:pb-3 pr-1.5 sm:pr-3 text-right">
               <span class="inline-block text-[0.75em] sm:text-[0.8em] px-1 py-[1px] sm:px-1.5 sm:py-[2px] rounded-full bg-gray-200 border border-slate-300 text-slate-600 whitespace-nowrap">
-                {{ trans("Excl. Vat") }}
+                {{ ctrans("Excl. Vat") }}
               </span>
             </td>
           </tr>
@@ -101,13 +101,13 @@ const locale = inject('locale', aikuLocaleStructure)
           <tr>
             <td class="pt-1.5 sm:pt-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
-                {{ trans("Profit") }}
+                {{ ctrans("Profit") }}
                 <span class="text-[#E87928] font-semibold text-[0.95em]">({{ product.discounted_margin }}):</span>
               </div>
             </td>
             <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
               {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_profit) }}
-              <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
+              <span class="font-normal text-slate-500">/{{ ctrans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
               {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_profit_per_unit) }}
@@ -118,8 +118,8 @@ const locale = inject('locale', aikuLocaleStructure)
                <!--  <img :src="`/assets/promo/gr-aw.png`" alt="Gold Reward Logo" class="h-[1.2em] sm:h-[1.5em]" /> -->
                 <FontAwesomeIcon :icon="faMedal" v-tooltip="ctrans('Gold Reward')" class="text-xl w-auto shrink-0 text-[#E87928]" fixed-width/>
                 <span class="text-[0.65em] sm:text-[0.75em] leading-[1em] sm:leading-[1.1em] text-[#E87928] whitespace-normal text-left">
-                  {{ trans("Members") }} <br />
-                  & {{ trans("Volume") }}
+                  {{ ctrans("Members") }} <br />
+                  & {{ ctrans("Volume") }}
                 </span>
               </div>
             </td>

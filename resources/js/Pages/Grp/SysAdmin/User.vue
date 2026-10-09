@@ -29,7 +29,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 import { routeType } from "@/types/route";
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -97,8 +97,8 @@ const onGenerateApiToken = async () => {
 
     } catch (error) {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to create API Token"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to create API Token"),
             type: "error"
         });
     } finally {
@@ -137,11 +137,11 @@ const onClickCopyButton = async (text: string) => {
         <div class="mt-3">
             <div class="text-center sm:mt-5">
                 <div as="h3" class="text-base font-semibold">
-                    {{ trans("Generate API Token") }}
+                    {{ ctrans("Generate API Token") }}
                 </div>
 
                 <div class="text-sm text-gray-500">
-                    {{ trans("You can Generate a new API Token for this user. This token can be used to authenticate API requests.") }}
+                    {{ ctrans("You can Generate a new API Token for this user. This token can be used to authenticate API requests.") }}
                 </div>
             </div>
         </div>
@@ -150,7 +150,7 @@ const onClickCopyButton = async (text: string) => {
             <div v-if="newToken" class="w-full max-w-xl">
                 <div class="grid w-full max-w- mx-auto xflex items-center gap-x-2">
                     <div class="text-gray-500 text-sm text-center">
-                        {{ trans("Here is your new API Token") }}:
+                        {{ ctrans("Here is your new API Token") }}:
                     </div>
 
                     <div class="w-full max-w-full relative pr-10 overflow-hidden bg-gray-50 border border-gray-200 rounded-md px-3 py-3 text-gray-500 text-sm inline-flex items-center gap-x-2">
@@ -171,7 +171,7 @@ const onClickCopyButton = async (text: string) => {
 
                 <div class="mt-2 text-amber-500 text-sm items-center gap-x-2 text-center">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-lg" fixed-width aria-hidden="true" />
-                    <span class="text-center">{{ trans("Put this token in a safe place, you won't be able to see it again.") }}</span>
+                    <span class="text-center">{{ ctrans("Put this token in a safe place, you won't be able to see it again.") }}</span>
                 </div>
             </div>
 

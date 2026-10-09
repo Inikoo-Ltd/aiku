@@ -10,7 +10,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faChevronLeft)
 
 const layout = useLayoutStore()

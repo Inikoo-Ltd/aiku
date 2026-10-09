@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useRemoveHttps } from '@/Composables/useRemoveHttps'
 import { ref, onBeforeUnmount } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -65,6 +65,6 @@ onBeforeUnmount(() => {
             fixed-width
             aria-hidden="true"
         />
-        {{ data?.text?.length == 0 ? trans('Open') : data?.text }}
+        {{ data?.text?.length == 0 ? ctrans('Open') : data?.text }}
     </a>
 </template>

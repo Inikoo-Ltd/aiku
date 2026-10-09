@@ -9,7 +9,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import Rating from "primevue/rating"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { faStar as falStar } from "@fal"
 import { faStar } from "@fas"
@@ -97,16 +97,16 @@ const saveReview = async () => {
         isOpenDialog.value = false
         router.reload()
         notify({
-            title: trans("Success"),
-            text: trans("Review submitted successfully"),
+            title: ctrans("Success"),
+            text: ctrans("Review submitted successfully"),
             type: "success",
         })
     } catch (error: any) {
         reviewErrors.value = error?.response?.data?.errors || {}
 
         notify({
-            title: trans("Error"),
-            text: error?.response?.data?.message || trans("Failed to submit review"),
+            title: ctrans("Error"),
+            text: error?.response?.data?.message || ctrans("Failed to submit review"),
             type: "error",
         })
     } finally {
@@ -127,10 +127,10 @@ const saveReview = async () => {
 
         <template #cell(asset_name)="{ item }">
             <div class="flex items-center gap-2 text-sm">
-                <span v-tooltip="trans('code')" class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">
+                <span v-tooltip="ctrans('code')" class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">
                     {{ item.asset_code }}
                 </span>
-                <span v-tooltip="trans('name')">
+                <span v-tooltip="ctrans('name')">
                     {{ item.asset_name }}
                 </span>
             </div>
@@ -138,10 +138,10 @@ const saveReview = async () => {
 
         <template #cell(family_name)="{ item }">
             <div class="flex items-center gap-2 text-sm">
-                <span v-tooltip="trans('code')" class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">
+                <span v-tooltip="ctrans('code')" class="px-2 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">
                     {{ item.family_code }}
                 </span>
-                <span v-tooltip="trans('name')">
+                <span v-tooltip="ctrans('name')">
                     {{ item.family_name }}
                 </span>
             </div>
@@ -207,8 +207,8 @@ const saveReview = async () => {
             :errors="reviewErrors" />
         <template #footer v-if="!selectedItem?.review?.review_id">
             <div class="flex justify-end gap-5">
-                <Button :label="trans('Close')" type="secondary" @click="isOpenDialog = false" />
-                <Button :label="trans('Save')" type="save" :loading="loadingSave" @click="saveReview" />
+                <Button :label="ctrans('Close')" type="secondary" @click="isOpenDialog = false" />
+                <Button :label="ctrans('Save')" type="save" :loading="loadingSave" @click="saveReview" />
             </div>
         </template>
     </Dialog>

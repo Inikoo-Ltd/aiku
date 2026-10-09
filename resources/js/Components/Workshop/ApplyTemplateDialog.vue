@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import draggable from 'vuedraggable'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faArrowDown, faArrowUp, faCheck, faCodeMerge, faExclamationTriangle, faEyeSlash, faGripVertical, faLayerGroup, faLock, faPlus, faTrashAlt } from '@fal'
 
@@ -82,9 +82,9 @@ const incomingIds = computed(() => new Set(props.incoming.map((block) => block.i
 const resolvedKeys = computed(() => new Set(resolution.value.map((entry) => entry.key)))
 
 const modeOptions = [
-	{ value: 'current', label: trans('Keep current'), hint: trans('Discard the template and keep the page as it is') },
-	{ value: 'incoming', label: trans('Take incoming'), hint: trans('Replace the page with the template blocks, required blocks stay') },
-	{ value: 'both', label: trans('Accept both'), hint: trans('Keep the current blocks, then append the template blocks') },
+	{ value: 'current', label: ctrans('Keep current'), hint: ctrans('Discard the template and keep the page as it is') },
+	{ value: 'incoming', label: ctrans('Take incoming'), hint: ctrans('Replace the page with the template blocks, required blocks stay') },
+	{ value: 'both', label: ctrans('Accept both'), hint: ctrans('Keep the current blocks, then append the template blocks') },
 ]
 
 const getBlockName = (entry: MergeEntry) => {
@@ -103,13 +103,13 @@ const getBlockName = (entry: MergeEntry) => {
 const getBlockStatus = (entry: MergeEntry) => {
 	if (entry.side === 'incoming') {
 		return currentIds.value.has(entry.block.id)
-			? { label: trans('Already on page'), theme: 'bg-slate-100 text-slate-600' }
-			: { label: trans('New'), theme: 'bg-emerald-100 text-emerald-700' }
+			? { label: ctrans('Already on page'), theme: 'bg-slate-100 text-slate-600' }
+			: { label: ctrans('New'), theme: 'bg-emerald-100 text-emerald-700' }
 	}
 
 	return incomingIds.value.has(entry.block.id)
-		? { label: trans('In template'), theme: 'bg-slate-100 text-slate-600' }
-		: { label: trans('Not in template'), theme: 'bg-amber-100 text-amber-700' }
+		? { label: ctrans('In template'), theme: 'bg-slate-100 text-slate-600' }
+		: { label: ctrans('Not in template'), theme: 'bg-amber-100 text-amber-700' }
 }
 
 const isResolved = (entry: MergeEntry) => resolvedKeys.value.has(entry.key)
@@ -221,7 +221,7 @@ watch(visible, (isVisible) => {
 		v-model:visible="visible"
 		modal
 		maximizable
-		:header="template ? trans('Apply template: :name', { name: template.name }) : trans('Apply template')"
+		:header="template ? ctrans('Apply template: :name', { name: template.name }) : ctrans('Apply template')"
 		:style="{ width: '86rem' }"
 		:breakpoints="{ '1280px': '95vw' }">
 		<div class="flex flex-col gap-2 h-[70vh]">
@@ -243,7 +243,7 @@ watch(visible, (isVisible) => {
 				</div>
 
 				<span class="text-[11px] text-slate-400">
-					{{ trans('Pick the blocks you want to keep, the result is what the page will look like') }}
+					{{ ctrans('Pick the blocks you want to keep, the result is what the page will look like') }}
 				</span>
 			</div>
 
@@ -255,12 +255,12 @@ watch(visible, (isVisible) => {
 						class="mt-px shrink-0 text-[11px] text-amber-500"
 						fixed-width />
 					<span class="text-[13px] font-semibold">
-						{{ trans('Warning') }} <br>
+						{{ ctrans('Warning') }} <br>
 					</span>
 				</span>
 				<span class="text-[11px] leading-tight text-amber-800 pt-1">
 					<p>
-						{{ trans('Settings on individual or dynamic blocks (Product, Product List, etc) are not passed down from the template to the page') }} <br><br></br>
+						{{ ctrans('Settings on individual or dynamic blocks (Product, Product List, etc) are not passed down from the template to the page') }} <br><br></br>
 					</p>
 				</span>
 				
@@ -296,9 +296,9 @@ watch(visible, (isVisible) => {
 				<div class="flex flex-col min-h-0 rounded-md border border-blue-200 bg-blue-50/40">
 					<div class="shrink-0 flex items-center justify-between gap-2 px-2 py-1.5 border-b border-blue-200">
 						<span class="text-xs font-semibold text-blue-800">
-							{{ trans('Current') }}
+							{{ ctrans('Current') }}
 							<span class="ml-0.5 text-[10px] font-normal text-blue-600">
-								{{ trans('page') }}
+								{{ ctrans('page') }}
 							</span>
 						</span>
 						<span class="text-[10px] tabular-nums text-blue-600">
@@ -343,16 +343,16 @@ watch(visible, (isVisible) => {
 
 									<FontAwesomeIcon
 										v-if="!entry.block.show"
-										v-tooltip="trans('Hidden block')"
+										v-tooltip="ctrans('Hidden block')"
 										:icon="faEyeSlash"
 										class="shrink-0 text-[11px] text-amber-500"
 										fixed-width />
 
 									<span
 										v-if="isLocked(entry)"
-										v-tooltip="trans('This block is required, it always stays in the result')"
+										v-tooltip="ctrans('This block is required, it always stays in the result')"
 										class="shrink-0 px-1 py-px rounded text-[10px] font-medium leading-tight bg-blue-100 text-blue-700">
-										{{ trans('Required') }}
+										{{ ctrans('Required') }}
 									</span>
 
 									<span
@@ -374,7 +374,7 @@ watch(visible, (isVisible) => {
 						<div
 							v-if="!currentEntries.length"
 							class="px-3 py-5 text-center text-xs text-slate-400">
-							{{ trans('This page has no blocks') }}
+							{{ ctrans('This page has no blocks') }}
 						</div>
 					</div>
 				</div>
@@ -383,7 +383,7 @@ watch(visible, (isVisible) => {
 					<div class="shrink-0 flex items-center justify-between gap-2 px-2 py-1.5 border-b border-slate-200">
 						<span class="text-xs font-semibold text-slate-700">
 							<FontAwesomeIcon :icon="faCodeMerge" class="mr-1 text-[11px] text-slate-400" fixed-width />
-							{{ trans('Result') }}
+							{{ ctrans('Result') }}
 						</span>
 						<span class="text-[10px] tabular-nums text-slate-400">
 							{{ resolution.length }}
@@ -427,7 +427,7 @@ watch(visible, (isVisible) => {
 
 									<FontAwesomeIcon
 										v-if="isLocked(entry)"
-										v-tooltip="trans('This block is required, it can only be moved')"
+										v-tooltip="ctrans('This block is required, it can only be moved')"
 										:icon="faLock"
 										class="shrink-0 text-[11px] text-blue-500"
 										fixed-width />
@@ -437,13 +437,13 @@ watch(visible, (isVisible) => {
 										:class="entry.side === 'incoming'
 											? 'bg-emerald-100 text-emerald-700'
 											: 'bg-blue-100 text-blue-700'">
-										{{ entry.side === 'incoming' ? trans('Incoming') : trans('Current') }}
+										{{ entry.side === 'incoming' ? ctrans('Incoming') : ctrans('Current') }}
 									</span>
 
 									<div class="shrink-0 flex items-center opacity-0 group-hover:opacity-100">
 										<button
 											type="button"
-											v-tooltip="trans('Move up')"
+											v-tooltip="ctrans('Move up')"
 											class="h-5 w-5 flex items-center justify-center rounded text-[11px] text-slate-400 hover:bg-slate-200 hover:text-slate-700"
 											:disabled="index === 0"
 											@click="moveInResolution(index, -1)">
@@ -451,7 +451,7 @@ watch(visible, (isVisible) => {
 										</button>
 										<button
 											type="button"
-											v-tooltip="trans('Move down')"
+											v-tooltip="ctrans('Move down')"
 											class="h-5 w-5 flex items-center justify-center rounded text-[11px] text-slate-400 hover:bg-slate-200 hover:text-slate-700"
 											:disabled="index === resolution.length - 1"
 											@click="moveInResolution(index, 1)">
@@ -460,7 +460,7 @@ watch(visible, (isVisible) => {
 										<button
 											v-if="!isLocked(entry)"
 											type="button"
-											v-tooltip="trans('Remove from result')"
+											v-tooltip="ctrans('Remove from result')"
 											class="h-5 w-5 flex items-center justify-center rounded text-[11px] text-slate-400 hover:bg-red-100 hover:text-red-600"
 											@click="removeFromResolution(index)">
 											<FontAwesomeIcon :icon="faTrashAlt" fixed-width />
@@ -474,8 +474,8 @@ watch(visible, (isVisible) => {
 							v-if="!resolution.length"
 							class="pointer-events-none absolute inset-1 flex flex-col items-center justify-center gap-1 px-3 text-center rounded-md border border-dashed border-slate-200 text-slate-500">
 							<FontAwesomeIcon :icon="faLayerGroup" class="text-2xl text-slate-300" fixed-width />
-							<span class="text-xs font-medium">{{ trans('The page will end up with no blocks') }}</span>
-							<span class="text-[10px]">{{ trans('Drag blocks here, or pick them from either side') }}</span>
+							<span class="text-xs font-medium">{{ ctrans('The page will end up with no blocks') }}</span>
+							<span class="text-[10px]">{{ ctrans('Drag blocks here, or pick them from either side') }}</span>
 						</div>
 					</div>
 				</div>
@@ -484,9 +484,9 @@ watch(visible, (isVisible) => {
 				<div class="flex flex-col min-h-0 rounded-md border border-emerald-200 bg-emerald-50/40">
 					<div class="shrink-0 flex items-center justify-between gap-2 px-2 py-1.5 border-b border-emerald-200">
 						<span class="text-xs font-semibold text-emerald-800">
-							{{ trans('Incoming') }}
+							{{ ctrans('Incoming') }}
 							<span class="ml-0.5 text-[10px] font-normal text-emerald-600">
-								{{ trans('template') }}
+								{{ ctrans('template') }}
 							</span>
 						</span>
 						<span class="text-[10px] tabular-nums text-emerald-600">
@@ -531,7 +531,7 @@ watch(visible, (isVisible) => {
 
 									<FontAwesomeIcon
 										v-if="!entry.block.show"
-										v-tooltip="trans('Hidden block')"
+										v-tooltip="ctrans('Hidden block')"
 										:icon="faEyeSlash"
 										class="shrink-0 text-[11px] text-amber-500"
 										fixed-width />
@@ -554,7 +554,7 @@ watch(visible, (isVisible) => {
 						<div
 							v-if="!incomingEntries.length"
 							class="px-3 py-5 text-center text-xs text-slate-400">
-							{{ trans('This template has no blocks') }}
+							{{ ctrans('This template has no blocks') }}
 						</div>
 					</div>
 				</div>
@@ -566,16 +566,16 @@ watch(visible, (isVisible) => {
 			<div class="flex items-center justify-between gap-2">
 				<span class="text-[11px] text-slate-400">
 					<LoadingIcon v-if="isLoading" class="mr-1" />
-					{{ trans(':count blocks in the result', { count: String(resolution.length) }) }}
+					{{ ctrans(':count blocks in the result', { count: String(resolution.length) }) }}
 				</span>
 				<div class="flex items-center gap-2">
-					<Button type="tertiary" size="xs" :label="trans('Cancel')" @click="visible = false" />
+					<Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="visible = false" />
 					<Button
 						type="save"
 						size="xs"
 						:icon="faCodeMerge"
 						:loading="isLoading"
-						:label="trans('Apply result')"
+						:label="ctrans('Apply result')"
 						@click="onApply" />
 				</div>
 			</div>

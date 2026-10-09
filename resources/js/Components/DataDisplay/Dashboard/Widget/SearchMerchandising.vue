@@ -3,7 +3,7 @@ import { router } from "@inertiajs/vue3"
 import { computed, ref, watch } from "vue"
 import axios from "axios"
 import { debounce } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -200,7 +200,7 @@ const prefillSynonym = (query: string) => {
 const saveSynonym = async () => {
     const words = synonymWords.value.split(",").map(word => word.trim()).filter(Boolean)
     if (words.length < 2) {
-        synonymError.value = trans("Enter at least 2 comma-separated words")
+        synonymError.value = ctrans("Enter at least 2 comma-separated words")
         return
     }
     isSavingSynonym.value = true
@@ -210,7 +210,7 @@ const saveSynonym = async () => {
         synonymWords.value = ""
         await loadSynonyms()
     } catch (error: any) {
-        synonymError.value = error?.response?.data?.message ?? trans("Could not save synonym")
+        synonymError.value = error?.response?.data?.message ?? ctrans("Could not save synonym")
     } finally {
         isSavingSynonym.value = false
     }

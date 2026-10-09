@@ -4,7 +4,7 @@ import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '../../Common/Components/Image.vue'
@@ -65,8 +65,8 @@ const getWebpageList = async (url?: string) => {
   } catch (e) {
     console.error('Error', e)
     notify({
-      title: trans("Something went wrong."),
-      text: trans("Error while getting the webpage list."),
+      title: ctrans("Something went wrong."),
+      text: ctrans("Error while getting the webpage list."),
       type: "error"
     })
   } finally {
@@ -111,7 +111,7 @@ watch(() => props.valueToRefetch, () => {
   <div>
     <slot name="header">
       <div class="mx-auto text-center text-2xl font-semibold pb-4">
-        {{ headLabel ?? trans("Add webpages") }}
+        {{ headLabel ?? ctrans("Add webpages") }}
       </div>
     </slot>
 
@@ -126,7 +126,7 @@ watch(() => props.valueToRefetch, () => {
           <PureInput
             v-model="searchWebpageKeyword"
             @update:modelValue="() => debounceGetWebpageList()"
-            :placeholder="trans('Input to search webpages')"
+            :placeholder="ctrans('Input to search webpages')"
           />
           <slot name="afterInput" />
         </div>
@@ -139,7 +139,7 @@ watch(() => props.valueToRefetch, () => {
       <div class="text-base font-normal">
         <div class="flex justify-between items-center">
           <div class="font-semibold text-lg py-1">
-            {{ props.label_result ?? trans("Result") }} ({{ locale?.number(webpageMeta?.total || 0) }})
+            {{ props.label_result ?? ctrans("Result") }} ({{ locale?.number(webpageMeta?.total || 0) }})
           </div>
         </div>
         <div class="border-t border-gray-300 mb-1" />
@@ -162,10 +162,10 @@ watch(() => props.valueToRefetch, () => {
                     <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                     <div class="flex flex-col justify-between">
                       <div class="w-fit">
-                        <div v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic mb-1">
+                        <div v-tooltip="ctrans('Code')" class="w-fit text-xs text-gray-400 italic mb-1">
                           {{ item.title || 'no title' }}
                         </div>
-                        <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
+                        <div v-tooltip="ctrans('Name')" class="w-fit font-semibold leading-none mb-1">
                           {{ item.code || 'no code' }}
                         </div>
                       </div>
@@ -180,7 +180,7 @@ watch(() => props.valueToRefetch, () => {
                 </div>
               </template>
               <div v-else class="text-center text-gray-500 col-span-3">
-                {{ trans("No webpages found") }}
+                {{ ctrans("No webpages found") }}
               </div>
             </template>
 

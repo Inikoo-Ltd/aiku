@@ -8,7 +8,7 @@ import { faCheck, faEnvelope } from "@fal"
 import { set } from "lodash-es"
 import { ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faCheck, faEnvelope, faCheckCircle)
@@ -127,7 +127,7 @@ const onSubmitSubscribe = async () => {
 
 					<div v-else class="mx-auto mt-6 text-center text-green-500 flex flex-col items-center gap-y-2">
 						<FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
-						{{ trans("You have successfully subscribed") }}!
+						{{ ctrans("You have successfully subscribed") }}!
 					</div>
 				</Transition>
 			</div>

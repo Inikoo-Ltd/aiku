@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import StatsBoxNegativeList from '@/Components/Stats/StatsBoxNegativeList.vue'
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 import { clone } from 'lodash';
 
 const props = defineProps<{
@@ -54,7 +54,7 @@ const statsOnlyAdditional = Object.fromEntries(
         <div class="p-6 !pb-0">
             <div class="flex flex-col lg:flex-row gap-6">
                 <div class="flex-1">
-                    <span class="font-semibold"> {{ trans('Catalogue') }} </span>
+                    <span class="font-semibold"> {{ ctrans('Catalogue') }} </span>
                     <dl class="pt-2 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2"
                         :class="{ 'lg:grid-cols-4': !majorCurrencies.length }">
                         <StatsBox
@@ -65,7 +65,7 @@ const statsOnlyAdditional = Object.fromEntries(
                     </dl>
                 </div>
                 <div v-if="majorCurrencies.length" class="lg:w-96 shrink-0">
-                    <span class="font-semibold"> {{ trans('Currencies') }} </span>
+                    <span class="font-semibold"> {{ ctrans('Currencies') }} </span>
                     <div class="pt-2 flex flex-col items-start gap-2 lg:gap-5">
                         <div v-for="major in majorCurrencies" :key="major.code"
                             class="rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-3 w-full">
@@ -74,7 +74,7 @@ const statsOnlyAdditional = Object.fromEntries(
                                 <span v-if="major.symbol" class="text-gray-500">{{ major.symbol }}</span>
                                 <span class="text-xs text-gray-500">{{ major.name }}</span>
                                 <span class="ml-auto rounded-full bg-indigo-600 text-white text-xs px-2 py-0.5">
-                                    {{ trans('Major') }}
+                                    {{ ctrans('Major') }}
                                 </span>
                             </div>
                             <div v-if="minorCurrencies.some(minor => minor.major === major.code)" class="mt-2 space-y-1 border-t border-indigo-200 pt-2">
@@ -98,7 +98,7 @@ const statsOnlyAdditional = Object.fromEntries(
         </div>
 
         <div v-if="statsOnlyAdditional.additionalStatBox" class="p-6">
-            <span class="font-semibold"> {{ trans('Faulty Catalogue') }} </span>
+            <span class="font-semibold"> {{ ctrans('Faulty Catalogue') }} </span>
             <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5 gap-2">
                 <StatsBoxNegativeList :stats="statsOnlyAdditional.additionalStatBox" />
             </div>

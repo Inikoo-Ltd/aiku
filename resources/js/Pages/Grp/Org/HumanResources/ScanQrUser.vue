@@ -3,7 +3,7 @@ import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from "vue"
 import { QrcodeStream } from "vue-qrcode-reader"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera } from "@fal"
@@ -74,15 +74,15 @@ const hasLocation = computed(() => lat.value !== null && lng.value !== null)
 const canOpenCamera = computed(() => hasLocation.value || locationUnavailable.value)
 
 const locationTitle = computed(() => {
-	if (hasLocation.value) return trans("Location detected")
-	if (isDetectingLocation.value) return trans("Detecting your location…")
-	return trans("Location not detected")
+	if (hasLocation.value) return ctrans("Location detected")
+	if (isDetectingLocation.value) return ctrans("Detecting your location…")
+	return ctrans("Location not detected")
 })
 
 const locationSubtitle = computed(() => {
 	if (hasLocation.value) return `${lat.value?.toFixed(6)}, ${lng.value?.toFixed(6)}`
-	if (isDetectingLocation.value) return trans("Please wait a moment")
-	return trans("You can still scan, ask HR if it keeps failing")
+	if (isDetectingLocation.value) return ctrans("Please wait a moment")
+	return ctrans("You can still scan, ask HR if it keeps failing")
 })
 
 const showWorkHourModal = ref(false)
@@ -108,9 +108,9 @@ const handleExpiredLogin = (e: any): boolean => {
 		return false
 	}
 
-	errorMsg.value = trans("Your login has expired. Reloading so you can sign in again…")
+	errorMsg.value = ctrans("Your login has expired. Reloading so you can sign in again…")
 	notify({
-		title: trans("Login expired"),
+		title: ctrans("Login expired"),
 		text: errorMsg.value,
 		type: "error",
 	})
@@ -323,7 +323,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		}
 
 		notify({
-			title: trans("Failed Scan QR"),
+			title: ctrans("Failed Scan QR"),
 			text: e.response?.data?.message,
 			type: "error",
 		})
@@ -362,7 +362,7 @@ const workingHoursFormatted = computed(() => {
 
 watch(notes, cancelSuccessAutoClose)
 
-const notesPlaceholder = computed(() => trans("Input Notes"))
+const notesPlaceholder = computed(() => ctrans("Input Notes"))
 
 const submitNotes = async () => {
 	if (!clockingId.value) return
@@ -379,8 +379,8 @@ const submitNotes = async () => {
 		notes.value = ""
 		clockingId.value = null
 		notify({
-			title: trans("Success"),
-			text: trans(`submit notes`),
+			title: ctrans("Success"),
+			text: ctrans(`submit notes`),
 			type: "success",
 		})
 
@@ -391,7 +391,7 @@ const submitNotes = async () => {
 		}
 
 		notify({
-			title: trans("Failed submit notes"),
+			title: ctrans("Failed submit notes"),
 			text: e.response?.data?.message,
 			type: "error",
 		})
@@ -435,7 +435,7 @@ const trackFunction = () => ({
 							:href="`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`"
 							target="_blank"
 							class="block text-[11px] sm:text-xs text-green-700 underline truncate">
-							{{ locationSubtitle }} — {{ trans("view on map") }}
+							{{ locationSubtitle }} — {{ ctrans("view on map") }}
 						</a>
 						<p v-else class="text-[11px] sm:text-xs text-gray-500 truncate">
 							{{ locationSubtitle }}
@@ -444,7 +444,7 @@ const trackFunction = () => ({
 				</div>
 
 				<Button
-					:label="hasLocation ? trans('Update location') : trans('Detect my location')"
+					:label="hasLocation ? ctrans('Update location') : ctrans('Detect my location')"
 					:icon="hasLocation ? faSyncAlt : faMapMarkerAlt"
 					:loading="isDetectingLocation"
 					:disabled="isDetectingLocation"
@@ -457,10 +457,10 @@ const trackFunction = () => ({
 
 			<div class="space-y-2">
 				<p v-if="!canOpenCamera" class="text-center text-[11px] sm:text-xs text-gray-500">
-					{{ trans("Waiting for your location…") }}
+					{{ ctrans("Waiting for your location…") }}
 				</p>
 				<Button
-					:label="trans('Open camera')"
+					:label="ctrans('Open camera')"
 					:icon="faCamera"
 					type="primary"
 					size="l"
@@ -473,7 +473,7 @@ const trackFunction = () => ({
 		<Teleport to="body">
 			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col overflow-hidden">
 				<div class="flex justify-between items-center text-white p-3 sm:p-4">
-					<h3 class="text-sm sm:text-base font-semibold">{{ trans("Scan QR Code") }}</h3>
+					<h3 class="text-sm sm:text-base font-semibold">{{ ctrans("Scan QR Code") }}</h3>
 					<Button
 						@click="stopCamera"
 						class="!text-white text-2xl"
@@ -508,7 +508,7 @@ const trackFunction = () => ({
 					</div>
 				</div>
 				<div class="px-4 pb-4 sm:pb-6 text-center text-xs sm:text-sm text-white opacity-70">
-					{{ trans("Align QR code inside the frame") }}
+					{{ ctrans("Align QR code inside the frame") }}
 				</div>
 			</div>
 		</Teleport>
@@ -526,21 +526,21 @@ const trackFunction = () => ({
 				:class="clockType === 'clock_out' ? 'bg-sky-600' : 'bg-green-600'">
 				<FontAwesomeIcon :icon="faCheck" class="text-[7rem] sm:text-[9rem]" fixed-width />
 				<div class="text-4xl sm:text-6xl font-extrabold uppercase tracking-wide">
-					{{ clockType === "clock_out" ? trans("Clocked out") : trans("Clocked in") }}
+					{{ clockType === "clock_out" ? ctrans("Clocked out") : ctrans("Clocked in") }}
 				</div>
 				<div class="text-5xl sm:text-7xl font-black tabular-nums">{{ scanTime ?? "-" }}</div>
 				<div v-if="isVisitingOffice" class="text-base opacity-90">
-					{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+					{{ ctrans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
 				</div>
 				<div v-if="workingHours" class="text-base opacity-90">
-					{{ trans("Working hours") }}: {{ workingHoursFormatted }}
+					{{ ctrans("Working hours") }}: {{ workingHoursFormatted }}
 				</div>
 
 				<div class="w-full max-w-sm space-y-2 pt-4" @click.stop>
 					<InputText v-model="notes" class="w-full" :placeholder="notesPlaceholder" />
 					<div class="flex gap-2">
 						<Button
-							:label="trans('Close')"
+							:label="ctrans('Close')"
 							type="exit"
 							@click="
 								() => {
@@ -550,7 +550,7 @@ const trackFunction = () => ({
 								}
 							"
 							full />
-						<Button v-if="notes.trim()" :label="trans('Save note')" type="save" @click="submitNotes" full />
+						<Button v-if="notes.trim()" :label="ctrans('Save note')" type="save" @click="submitNotes" full />
 					</div>
 				</div>
 			</div>

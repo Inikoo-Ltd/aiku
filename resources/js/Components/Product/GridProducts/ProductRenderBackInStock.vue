@@ -5,7 +5,7 @@ import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faHeart } from '@far'
 import { faHeart as fasHeart, faMedal } from '@fas'
@@ -79,8 +79,8 @@ const onAddFavourite = (product: ProductResource) => {
             onError: errors => {
                 console.error(errors)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the product to favourites"),
                     type: "error"
                 })
             },
@@ -110,8 +110,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from favourites"),
                     type: "error"
                 })
             },
@@ -145,8 +145,8 @@ const onUnselectFavourite = (product: ProductResource) => {
 //             },
 //             onError: errors => {
 //                 notify({
-//                     title: trans("Something went wrong"),
-//                     text: trans("Failed to add the product to remind back in stock"),
+//                     title: ctrans("Something went wrong"),
+//                     text: ctrans("Failed to add the product to remind back in stock"),
 //                     type: "error"
 //                 })
 //             },
@@ -174,8 +174,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from remind back in stock"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from remind back in stock"),
                     type: "error"
                 })
             },
@@ -202,7 +202,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 }">
                 <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s />
 
-                <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
+                <span class="hidden md:inline">{{ ctrans("BESTSELLER") }}</span>
             </div>
 
 
@@ -215,7 +215,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                     <button
                         @click.prevent="()=> onUnselectBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="trans('You will be notified when product is back in stock')"
+                        v-tooltip="ctrans('You will be notified when product is back in stock')"
                     >
                         <LoadingIcon  v-if="isLoadingRemindBackInStock" />
                         <FontAwesomeIcon v-else :icon="faEnvelopeCircleCheck" fixed-width class="text-green-600" />
@@ -254,7 +254,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
                             <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
                                 class="text-pink-500" />
-                            <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
+                            <div v-else class="relative" v-tooltip="ctrans('Add To Favourite')">
                                 <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300" fixed-width />
                             </div>
 
@@ -267,7 +267,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                     class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
                     <div class="">
                         <div>
-                            {{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price || 0) }}</span>
+                            {{ ctrans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price || 0) }}</span>
                         </div>
                         <div>
                             <span class="text-sm text-gray-400 xtext-base font-normal">

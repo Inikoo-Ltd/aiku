@@ -10,7 +10,7 @@ import Drawer from "primevue/drawer";
 import Image from "primevue/image"; // ✅ added
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
 import { Textarea } from "primevue";
@@ -142,8 +142,8 @@ const submitForm = async (redirect = true) => {
             form.reset()
             key.value = ulid()
             notify({
-                title: trans("Success!"),
-                text: trans("Master family has been created"),
+                title: ctrans("Success!"),
+                text: ctrans("Master family has been created"),
                 type: "success",
             })
         }
@@ -155,14 +155,14 @@ const submitForm = async (redirect = true) => {
                 detailsVisible.value = true
             }
               notify({
-                title: trans("Something went wrong"),
-                text: error.response.data.message || trans("Please try again"),
+                title: ctrans("Something went wrong"),
+                text: error.response.data.message || ctrans("Please try again"),
                 type: 'error'
             })
         } else {
             notify({
-                title: trans("Something went wrong"),
-                text: error.message || trans("Please try again"),
+                title: ctrans("Something went wrong"),
+                text: error.message || ctrans("Please try again"),
                 type: 'error'
             })
         }
@@ -188,7 +188,7 @@ const toggleFull = () => {
         <!-- Header -->
         <template #header>
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
-                {{ trans("Create Master Family") }}
+                {{ ctrans("Create Master Family") }}
             </h2>
             <!-- Tombol Toggle Fullscreen -->
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
@@ -206,7 +206,7 @@ const toggleFull = () => {
                     class="w-full flex items-center justify-between border-b pb-2 text-lg font-semibold text-gray-600 hover:text-gray-800"
                     @click="detailsVisible = !detailsVisible">
                     <span>
-                        {{ trans("Family Detail") }}
+                        {{ ctrans("Family Detail") }}
                     </span>
                     <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
@@ -315,7 +315,7 @@ const toggleFull = () => {
                     class="w-full flex items-center justify-between border-b pb-2 text-lg font-semibold text-gray-600 hover:text-gray-800"
                     @click="tableVisible = !tableVisible">
                     <span>
-                        {{ trans("Shop Family") }}
+                        {{ ctrans("Shop Family") }}
                     </span>
                     <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
@@ -333,7 +333,7 @@ const toggleFull = () => {
         <!-- Footer -->
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
-                <Button :label="trans('Cancel')" type="negative" class="!px-5"
+                <Button :label="ctrans('Cancel')" type="negative" class="!px-5"
                     @click="emits('update:showDialog', false)" />
                 <Button type="secondary" :loading="loading == 'create'" class="!px-6" icon="fas fa-plus"
                     :label="'save & create another one'" @click="submitForm(false)" />

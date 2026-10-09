@@ -3,7 +3,7 @@ import Image from "@common/Components/Image.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle } from "@fas"
 import { Image as ImageTS } from "@/types/Image"
@@ -286,7 +286,7 @@ const openBundlePanel = (product:any) => {
                         v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
+                        v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
                         <LoadingIcon v-if="isLoadingRemindBackInStock" />
                         <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
@@ -299,7 +299,7 @@ const openBundlePanel = (product:any) => {
                         @click.prevent="openBundlePanel(product)"
                         class="rounded-full h-8 w-8 flex items-center justify-center transition"
                         type="primary"
-                        v-tooltip="trans('Create bundle')"
+                        v-tooltip="ctrans('Create bundle')"
                     >
                         <FontAwesomeIcon
                             icon="fas fa-layer-group"
@@ -338,10 +338,10 @@ const openBundlePanel = (product:any) => {
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" fixed-width />
                             <span>
                                 {{ product?.stock >= 250
-                                    ? trans("Unlimited quantity available")
+                                    ? ctrans("Unlimited quantity available")
                                     : (product.stock > 0
-                                        ? product.stock + ' ' + trans('available')
-                                        : '0 ' + trans('available'))
+                                        ? product.stock + ' ' + ctrans('available')
+                                        : '0 ' + ctrans('available'))
                                 }}
                             </span>
                         </span>
@@ -362,7 +362,7 @@ const openBundlePanel = (product:any) => {
                 <LinkIris v-if="product.url" :href="product.url" type="internal"
                     class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                     <template #default>
-                        <Button full :label="trans('Check Variants')" />
+                        <Button full :label="ctrans('Check Variants')" />
                     </template>
                 </LinkIris>
             </div>

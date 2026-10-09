@@ -7,7 +7,7 @@ import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
 import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue";
 import Dialog from "primevue/dialog";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { ulid } from "ulid";
 import { get, isPlainObject } from "lodash-es";
 
@@ -122,7 +122,7 @@ const title = computed(() => {
     result = rawVal?.[view] ?? rawVal?.desktop ?? ''
   }
 
-  return result || `<h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">${ trans("Browse By Sub-department") }</h2>`
+  return result || `<h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">${ ctrans("Browse By Sub-department") }</h2>`
 })
 
 const textVisible = computed(() => {
@@ -170,7 +170,7 @@ const textVisible = computed(() => {
 
     <div v-else class="text-center text-gray-500 py-6">
       <EmptyState :data="{
-        title: trans('There is no published sub-department webpages'),
+        title: ctrans('There is no published sub-department webpages'),
         description: 'Please make sure the sub-departments, have published webpage.',
       }" />
     </div>

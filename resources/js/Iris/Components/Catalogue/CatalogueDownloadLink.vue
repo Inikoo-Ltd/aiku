@@ -3,7 +3,7 @@ import { computed, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileCsv, faImages } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faFileCsv, faImages)
 
@@ -43,7 +43,7 @@ const downloadUrl = computed(() => {
 const icon = computed(() => (props.type === "images" ? faImages : faFileCsv))
 
 const label = computed(() =>
-    props.type === "images" ? trans("Download images (zip)") : trans("Download products (csv)")
+    props.type === "images" ? ctrans("Download images (zip)") : ctrans("Download products (csv)")
 )
 
 const linkClass = computed(() =>

@@ -2,7 +2,7 @@
 import { useFormatTime } from '@/Composables/useFormatTime'
 import UnderConstruction from '@/Pages/Grp/Disclosure/UnderConstruction.vue'
 import { Link } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     data: {
@@ -15,11 +15,11 @@ const props = defineProps<{
 <template>
     <div class="pl-6">
         <div class="mt-6 py-3 rounded border border-gray-300 px-6 space-y-3 max-w-lg">
-            <div class="font-semibold">{{ trans("Trolley Information") }}</div>
+            <div class="font-semibold">{{ ctrans("Trolley Information") }}</div>
 
             <div class="grid grid-cols-5 gap-x-10 text-sm">
                 <div class="col-span-2 text-gray-400">
-                    {{ trans("Date created") }}
+                    {{ ctrans("Date created") }}
                 </div>
                 
                 <div class="col-span-3 font-medium text-right lg:text-left">
@@ -29,7 +29,7 @@ const props = defineProps<{
 
             <div class="grid grid-cols-5 gap-x-10 text-sm">
                 <div class="col-span-2 text-gray-400">
-                    {{ trans("Name") }}
+                    {{ ctrans("Name") }}
                 </div>
                 
                 <div class="col-span-3 font-medium text-right lg:text-left">
@@ -39,7 +39,7 @@ const props = defineProps<{
 
             <div class="grid grid-cols-5 gap-x-10 text-sm">
                 <div class="col-span-2 text-gray-400">
-                    {{ trans("Delivery note") }}
+                    {{ ctrans("Delivery note") }}
                 </div>
 
                 <div class="col-span-3 font-medium text-right lg:text-left">

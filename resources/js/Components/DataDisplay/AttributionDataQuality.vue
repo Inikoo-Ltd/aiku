@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 defineProps<{
     data: {
@@ -47,7 +47,7 @@ const dotClass = {
 <template>
     <div class="px-4 py-4 space-y-3">
         <div class="text-xs text-gray-500">
-            {{ trans('Period') }}: {{ data.period_label }}
+            {{ ctrans('Period') }}: {{ data.period_label }}
         </div>
 
         <!-- Capture health: whether visitors arrive with a source we can name at all -->
@@ -55,27 +55,27 @@ const dotClass = {
             <div class="flex items-center gap-x-2">
                 <span class="w-2 h-2 rounded-full shrink-0"
                       :class="data.capture.arrivals === 0 ? 'bg-red-500' : 'bg-green-500'" />
-                <span class="text-sm">{{ trans('Traffic capture today') }}</span>
+                <span class="text-sm">{{ ctrans('Traffic capture today') }}</span>
                 <span class="ml-auto text-sm tabular-nums">
-                    {{ data.capture.arrivals }} {{ trans('arrivals') }}
+                    {{ data.capture.arrivals }} {{ ctrans('arrivals') }}
                     <span v-if="data.capture.identified_pct !== null" class="text-gray-500">
-                        · {{ data.capture.identified_pct }}% {{ trans('identified') }}
+                        · {{ data.capture.identified_pct }}% {{ ctrans('identified') }}
                     </span>
                 </span>
             </div>
             <div class="mt-1 pl-4 text-xs text-gray-500">
-                {{ trans('Counted across all shops. Arrivals are people landing on a storefront; page views inside the site are counted apart as browsing. No arrivals at all means the storefront is not reporting visits and nothing can be attributed.') }}
+                {{ ctrans('Counted across all shops. Arrivals are people landing on a storefront; page views inside the site are counted apart as browsing. No arrivals at all means the storefront is not reporting visits and nothing can be attributed.') }}
             </div>
 
             <table class="mt-2 ml-4 text-xs text-gray-600">
                 <thead>
                     <tr class="text-gray-400">
-                        <th class="text-left font-normal pr-4">{{ trans('Visitor') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Arrivals') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Source found') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Came direct') }}</th>
-                        <th class="text-right font-normal px-2">{{ trans('Browsing') }}</th>
-                        <th class="text-right font-normal pl-2">{{ trans('Identified') }}</th>
+                        <th class="text-left font-normal pr-4">{{ ctrans('Visitor') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Arrivals') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Source found') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Came direct') }}</th>
+                        <th class="text-right font-normal px-2">{{ ctrans('Browsing') }}</th>
+                        <th class="text-right font-normal pl-2">{{ ctrans('Identified') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,7 +92,7 @@ const dotClass = {
 
             <div v-if="data.capture.rejected.length" class="mt-3 ml-4">
                 <div class="text-xs text-gray-500">
-                    {{ trans('Referrers we did not record: our own systems, and anything malformed.') }}
+                    {{ ctrans('Referrers we did not record: our own systems, and anything malformed.') }}
                 </div>
                 <ul class="mt-1 text-xs text-gray-600 space-y-0.5">
                     <li v-for="host in data.capture.rejected" :key="host.host">

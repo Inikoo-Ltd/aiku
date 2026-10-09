@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const translationsObject = {
     translations: {
@@ -16,13 +16,13 @@ export default translationsObject.translations;
 
 export function getTranslations() {
     return {
-        next: trans("Next"),
-        no_results_found: trans("No results found"),
-        of: trans("of"),
-        per_page: trans("per page"),
-        previous: trans("Previous"),
-        results: trans("results"),
-        to: trans("to")
+        next: ctrans("Next"),
+        no_results_found: ctrans("No results found"),
+        of: ctrans("of"),
+        per_page: ctrans("per page"),
+        previous: ctrans("Previous"),
+        results: ctrans("results"),
+        to: ctrans("to")
     };
 }
 

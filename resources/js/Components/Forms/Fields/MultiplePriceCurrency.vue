@@ -7,7 +7,7 @@
 <script setup lang="ts">
 
 import { get } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { pendingCompositionUnits } from '@/Composables/usePendingCompositionUnits'
 import PureMultiplePriceCurrency from '@/Components/Pure/PureMultiplePriceCurrency.vue'
 
@@ -38,7 +38,7 @@ defineProps<{
         <!-- An unsaved composition change re-means every price on screen -->
         <div v-if="pendingCompositionUnits"
             class="mb-2 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-sm text-red-700">
-            {{ trans('Units are changing :from → :to — review these prices, their per-unit meaning changes.', pendingCompositionUnits) }}
+            {{ ctrans('Units are changing :from → :to — review these prices, their per-unit meaning changes.', pendingCompositionUnits) }}
         </div>
         <PureMultiplePriceCurrency
             :currencies="fieldData?.currencies ?? {}"

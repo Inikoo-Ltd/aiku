@@ -5,7 +5,7 @@ import { faLink, faUnlink } from "@fal";
 import { faExclamation, faCaretDown, faCaretLeft } from "@fortawesome/free-solid-svg-icons";
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue";
 import { provide, watch, onMounted, ref } from "vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route";
 import { get, set } from 'lodash-es';
 
@@ -20,7 +20,7 @@ const blueprint = [
   { key: ["source"], label: "Image", type: "upload_image", props_data: { altKey: ["properties", "alt"] } },
   {
     key: ["caption"],
-    label: trans("Caption"),
+    label: ctrans("Caption"),
     type: "editorhtml",
   },
   { key: ["link_data"], label: "Link", type: "link" },
@@ -61,14 +61,14 @@ const blueprint = [
   },
   {
     key: ["attributes", "fetchpriority"],
-    label: trans("Fetch Priority"),
-    information: trans("Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."),
+    label: ctrans("Fetch Priority"),
+    information: ctrans("Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."),
     type: "select",
     props_data: {
-      placeholder: trans("Priority"),
+      placeholder: ctrans("Priority"),
       options: [
-        { label: trans("High"), value: "high" },
-        { label: trans("Low"), value: "low" },
+        { label: ctrans("High"), value: "high" },
+        { label: ctrans("Low"), value: "low" },
       ],
     },
   },

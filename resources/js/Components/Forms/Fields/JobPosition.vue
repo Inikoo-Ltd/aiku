@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { watchEffect, reactive } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
@@ -35,7 +35,7 @@ const optionsJob = {
             "icon": "fal fa-user ",
             "code": "cus-m",
             "grade": "manager",
-            "department": trans("Customers Services"),
+            "department": ctrans("Customers Services"),
             "name": "Manager",
         }, {
             "code": "cus-c",

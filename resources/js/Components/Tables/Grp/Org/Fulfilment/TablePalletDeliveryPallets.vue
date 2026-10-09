@@ -25,7 +25,7 @@ import { routeType } from "@/types/route"
 import { Table as TSTable } from "@/types/Table"
 
 import '@/Composables/Icon/PalletStateEnum'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref } from "vue"
 import Tag from "@/Components/Tag.vue"
 
@@ -54,9 +54,9 @@ const emits = defineEmits<{
 
 
 const typePallet = [
-	{ label: trans('Pallet'), value: 'pallet' },
-	{ label: trans('Box'), value: 'box' },
-	{ label: trans('Oversize'), value: 'oversize' }
+	{ label: ctrans('Pallet'), value: 'pallet' },
+	{ label: ctrans('Box'), value: 'box' },
+	{ label: ctrans('Oversize'), value: 'oversize' }
 ]
 
 
@@ -156,8 +156,8 @@ const sendToServer = async (sendRoute: routeType, data : {}, replaceData?: boole
 			preserveState: true,
 			onError: (e) => {
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Failed to update the stored items"),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Failed to update the stored items"),
 					type: "error"
 				})
 			},
@@ -221,7 +221,7 @@ const sendToServer = async (sendRoute: routeType, data : {}, replaceData?: boole
 			<div v-else class="space-x-1 space-y-2">
 				<span v-if="item.customer_reference">{{ item.customer_reference }}</span>
 				<span v-if="item.notes" class="text-gray-400 text-xs">
-					<FontAwesomeIcon v-tooltip="trans('Note')" icon='fal fa-sticky-note' class='text-gray-400' fixed-width aria-hidden='true' />
+					<FontAwesomeIcon v-tooltip="ctrans('Note')" icon='fal fa-sticky-note' class='text-gray-400' fixed-width aria-hidden='true' />
 					{{ item.notes }}
 				</span>
                 <span v-else class="text-gray-400 text-xs">-</span>

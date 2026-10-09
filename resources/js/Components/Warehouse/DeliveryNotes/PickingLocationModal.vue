@@ -13,7 +13,6 @@ import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory } from "@fal"
 import { Dialog, RadioButton } from "primevue"
-import { trans } from "laravel-vue-i18n"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RouteParams } from "@/types/route-params"
 import { ctrans } from "@/Composables/useTrans"
@@ -49,7 +48,7 @@ const generateLocationRoute = (location: any): string => {
         :visible="isOpen"
         @update:visible="(value) => { if (!value) emit('close') }"
         modal
-        :header="`${trans('Location list for')} ${item?.org_stock_code ?? ''}`"
+        :header="`${ctrans('Location list for')} ${item?.org_stock_code ?? ''}`"
         :draggable="false"
         :dismissableMask="screenType === 'desktop'"
         :style="{ width: '48rem' }"
@@ -77,18 +76,18 @@ const generateLocationRoute = (location: any): string => {
                 <label :for="location.location_code" class="flex flex-wrap">
                     <span
                         v-if="location.location_code"
-                        v-tooltip="location.quantity <= 0 ? trans('Location has no stock') : ''"
+                        v-tooltip="location.quantity <= 0 ? ctrans('Location has no stock') : ''"
                         :class="location.quantity <= 0 ? 'text-gray-400' : ''"
                     >
                         <Link :href="generateLocationRoute(location)" class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 px-1">
                             {{ location.location_code }}
                         </Link>
                     </span>
-                    <span v-else class="text-gray-400 italic">({{ trans('Unknown') }})</span>
-                    <span v-tooltip="trans('Total stock in this location')" class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border  rounded px-1 text-xs"
+                    <span v-else class="text-gray-400 italic">({{ ctrans('Unknown') }})</span>
+                    <span v-tooltip="ctrans('Total stock in this location')" class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border  rounded px-1 text-xs"
                         :class="Number(location.quantity) > 0 ? 'border-gray-300' : 'border-red-300 opacity-70'"
                     >
-                        <span v-if="Number(location.quantity) > 0">{{ Number(location.quantity) }} {{ trans("stocks") }}</span>
+                        <span v-if="Number(location.quantity) > 0">{{ Number(location.quantity) }} {{ ctrans("stocks") }}</span>
                         <span v-else class="text-red-500 italic">{{ ctrans('Empty') }}</span>
                     </span>
                 </label>

@@ -11,7 +11,7 @@ import CustomerShowcase from "@/Components/Showcases/Grp/Customervue"
 import TablePlatformPortfolioLogs from "@/Components/Tables/Grp/Org/CRM/TablePlatformPortfolioLogs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { computed, ref } from "vue"
 import type { Component } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -37,15 +37,15 @@ const isModalAddress = ref(false)
 <template>
 	<div class="p-6 grid grid-cols-2 gap-x-4">
 		<div
-			aria-label="trans('Statistic')"
+			aria-label="ctrans('Statistic')"
 			class="h-fit border border-gray-300 rounded-lg w-full sm:max-w-lg">
 			<div
 				v-if="route().params.platform !== 'manual'"
 				class="py-3 px-2 flex items-center justify-between gap-x-4 w-full border-b border-gray-900/15">
 				<dl v-if="true" class="flex-auto pl-3">
-					<dt class="text-xs text-gray-400">{{ trans("Account name") }}</dt>
+					<dt class="text-xs text-gray-400">{{ ctrans("Account name") }}</dt>
 					<dd
-						v-tooltip="trans('Account name')"
+						v-tooltip="ctrans('Account name')"
 						class="w-fit mt text-xl font-semibold leading-6">
 						{{ data?.stats?.name }}
 					</dd>
@@ -114,7 +114,7 @@ const isModalAddress = ref(false)
 				<dl
 					v-if="data?.stats?.number_orders > -1"
 					class="flex items-center w-full flex-none gap-x-4">
-					<dt v-tooltip="trans('Orders')" class="flex-none">
+					<dt v-tooltip="ctrans('Orders')" class="flex-none">
 						<FontAwesomeIcon
 							icon="fal fa-shopping-cart"
 							class="text-gray-400"
@@ -128,7 +128,7 @@ const isModalAddress = ref(false)
 				<dl
 					v-if="data?.stats?.number_customer_clients > -1"
 					class="flex items-center w-full flex-none gap-x-4">
-					<dt v-tooltip="trans('Customer clients')" class="flex-none">
+					<dt v-tooltip="ctrans('Customer clients')" class="flex-none">
 						<FontAwesomeIcon
 							icon="fal fa-users"
 							class="text-gray-400"
@@ -142,7 +142,7 @@ const isModalAddress = ref(false)
 				<dl
 					v-if="data?.stats?.number_portfolios > -1"
 					class="flex items-center w-full flex-none gap-x-4">
-					<dt v-tooltip="trans('Portfolios')" class="flex-none">
+					<dt v-tooltip="ctrans('Portfolios')" class="flex-none">
 						<FontAwesomeIcon
 							icon="fal fa-cube"
 							class="text-gray-400"
@@ -156,7 +156,7 @@ const isModalAddress = ref(false)
 				<dl
 					v-if="data?.customer?.created_at"
 					class="flex items-center w-full flex-none gap-x-4">
-					<dt v-tooltip="trans('Created at')" class="flex-none">
+					<dt v-tooltip="ctrans('Created at')" class="flex-none">
 						<span class="sr-only">Created at</span>
 						<FontAwesomeIcon
 							icon="fal fa-calendar-alt"
@@ -172,7 +172,7 @@ const isModalAddress = ref(false)
 				</dl>
 				<!-- Field: Email -->
 				<dl v-if="data?.customer?.email" class="flex items-center w-full flex-none gap-x-4">
-					<dt v-tooltip="trans('Email')" class="flex-none">
+					<dt v-tooltip="ctrans('Email')" class="flex-none">
 						<span class="sr-only">Email</span>
 						<FontAwesomeIcon
 							icon="fal fa-envelope"
@@ -186,7 +186,7 @@ const isModalAddress = ref(false)
 				</dl>
 				<!-- Field: Phone -->
 				<dl v-if="data?.customer?.phone" class="flex items-center w-full flex-none gap-x-4">
-					<dt v-tooltip="trans('Phone')" class="flex-none">
+					<dt v-tooltip="ctrans('Phone')" class="flex-none">
 						<span class="sr-only">Phone</span>
 						<FontAwesomeIcon
 							icon="fal fa-phone"
@@ -216,7 +216,7 @@ const isModalAddress = ref(false)
 								v-if="data?.address_management.can_open_address_management"
 								@click="() => (isModalAddress = true)"
 								class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-								<span>{{ trans("Edit") }}</span>
+								<span>{{ ctrans("Edit") }}</span>
 							</div>
 						</div>
 					</dd>
@@ -240,7 +240,7 @@ const isModalAddress = ref(false)
 						class="text-red-500"
 						fixed-width
 						aria-hidden="true" />
-					{{ trans("App installed") }}
+					{{ ctrans("App installed") }}
 				</div>
 				<div
 					v-if="
@@ -260,7 +260,7 @@ const isModalAddress = ref(false)
 						class="text-red-500"
 						fixed-width
 						aria-hidden="true" />
-					{{ trans("Found old installation") }}
+					{{ ctrans("Found old installation") }}
 				</div>
 				<div
 					v-if="data?.customer_sales_channel?.can_connect_to_platform"
@@ -277,7 +277,7 @@ const isModalAddress = ref(false)
 						class="text-red-500"
 						fixed-width
 						aria-hidden="true" />
-					{{ trans("Connected") }}
+					{{ ctrans("Connected") }}
 				</div>
 			</div>
 
@@ -294,7 +294,7 @@ const isModalAddress = ref(false)
 						},
 						method: 'patch',
 					}"
-					xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+					xtitle="ctrans('Are you sure you want to delete brand') + ` ${option.name}?`"
 					xisFullLoading>
 					<template #default="{ isOpenModal, changeModel }">
 						<Button
@@ -311,7 +311,7 @@ const isModalAddress = ref(false)
 					class="border border-amber-300 bg-amber-50 rounded px-3 py-2 flex flex-col gap-y-1 w-full max-w-xl">
 					<span class="text-sm">
 						{{
-							trans(
+							ctrans(
 								"The store no longer accepts our keys. Only the store owner can authorise again: send them this link, it opens the authorisation screen in their WooCommerce and lands them back in their AW channel. It works for 7 days."
 							)
 						}}
@@ -340,10 +340,10 @@ const isModalAddress = ref(false)
 					}"
 					:description="
 						data?.platform?.type === 'woocommerce'
-							? trans(
+							? ctrans(
 									'Checking reconnects the channel. If the store answers, every order it still shows as processing from the last 14 days is imported and charged, so make sure the customer has closed the orders they handled themselves while the channel was down.'
 								)
-							: trans('Are you sure you want to check channel')
+							: ctrans('Are you sure you want to check channel')
 					"
 					xisFullLoading>
 					<template #default="{ isOpenModal, changeModel }">
@@ -368,7 +368,7 @@ const isModalAddress = ref(false)
 						},
 						method: 'post',
 					}"
-					:description="trans('Are you sure you want to revive channel')"
+					:description="ctrans('Are you sure you want to revive channel')"
 					xisFullLoading>
 					<template #default="{ isOpenModal, changeModel }">
 						<Button
@@ -391,7 +391,7 @@ const isModalAddress = ref(false)
 							customerSalesChannel: data?.customer_sales_channel?.id,
 						},
 					}"
-					xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+					xtitle="ctrans('Are you sure you want to delete brand') + ` ${option.name}?`"
 					isFullLoading>
 					<template #default="{ isOpenModal, changeModel }">
 						<Button @click.stop="changeModel" label="Delete" type="delete"> </Button>
@@ -407,7 +407,7 @@ const isModalAddress = ref(false)
 				"
 				class="border-t border-gray-300 pt-3">
 				<div class="font-semibold">
-					{{ trans("Fulfilment Policies") }} ({{ data.fulfilment_policies?.total }}):
+					{{ ctrans("Fulfilment Policies") }} ({{ data.fulfilment_policies?.total }}):
 				</div>
 
 				<div class="mt-1 grid grid-cols-2 gap-4">
@@ -424,41 +424,41 @@ const isModalAddress = ref(false)
 						<ul class="text-xs list-disc list-outside pl-4 mt-2">
 							<!-- List: Handling time -->
 							<li v-if="policy.handlingTime?.value">
-								{{ trans("Handling time") }}: {{ policy.handlingTime?.value }}
+								{{ ctrans("Handling time") }}: {{ policy.handlingTime?.value }}
 								{{ policy.handlingTime?.unit }}
 							</li>
 
 							<!-- List: Shipping Options -->
 							<li v-if="policy.shippingOptions?.length">
-								<span class="font-bold">{{ trans("Shipping Options:") }}</span>
+								<span class="font-bold">{{ ctrans("Shipping Options:") }}</span>
 								<div v-for="shippingOption in policy.shippingOptions">
 									<ul>
 										<li>
-											{{ trans("Type: ") }} {{ shippingOption.optionType }}
+											{{ ctrans("Type: ") }} {{ shippingOption.optionType }}
 										</li>
 										<li>
-											{{ trans("Cost Type: ") }} {{ shippingOption.costType }}
+											{{ ctrans("Cost Type: ") }} {{ shippingOption.costType }}
 										</li>
 										<span class="font-bold">{{
-											trans("Shipping Services:")
+											ctrans("Shipping Services:")
 										}}</span>
 										<div
 											v-for="shippingService in shippingOption.shippingServices">
 											<ul>
 												<li>
-													{{ trans("Carrier Code: ") }}
+													{{ ctrans("Carrier Code: ") }}
 													{{
 														shippingService?.shippingCarrierCode ?? "-"
 													}}
 												</li>
 												<li>
-													{{ trans("Service Code: ") }}
+													{{ ctrans("Service Code: ") }}
 													{{
 														shippingService?.shippingServiceCode ?? "-"
 													}}
 												</li>
 												<li>
-													{{ trans("Shipping Cost: ") }}
+													{{ ctrans("Shipping Cost: ") }}
 													{{ shippingService.shippingCost?.value ?? "-" }}
 													{{
 														shippingService.shippingCost?.currency ??
@@ -466,7 +466,7 @@ const isModalAddress = ref(false)
 													}}
 												</li>
 												<li>
-													{{ trans("Additional Shipping Cost: ") }}
+													{{ ctrans("Additional Shipping Cost: ") }}
 													{{
 														shippingService.additionalShippingCost
 															?.value ?? "-"
@@ -477,27 +477,27 @@ const isModalAddress = ref(false)
 													}}
 												</li>
 												<li>
-													{{ trans("Free Shipping: ") }}
+													{{ ctrans("Free Shipping: ") }}
 													{{
 														shippingService.freeShipping
-															? trans("Yes")
-															: trans("No")
+															? ctrans("Yes")
+															: ctrans("No")
 													}}
 												</li>
 												<li>
-													{{ trans("Buyer Responsible For Shipping: ") }}
+													{{ ctrans("Buyer Responsible For Shipping: ") }}
 													{{
 														shippingService.buyerResponsibleForShipping
-															? trans("Yes")
-															: trans("No")
+															? ctrans("Yes")
+															: ctrans("No")
 													}}
 												</li>
 												<li>
-													{{ trans("Buyer Responsible For Pickup: ") }}
+													{{ ctrans("Buyer Responsible For Pickup: ") }}
 													{{
 														shippingService.buyerResponsibleForPickup
-															? trans("Yes")
-															: trans("No")
+															? ctrans("Yes")
+															: ctrans("No")
 													}}
 												</li>
 											</ul>
@@ -508,19 +508,19 @@ const isModalAddress = ref(false)
 
 							<!-- List: Freight Shipping -->
 							<li v-if="typeof policy.freightShipping !== 'undefined'">
-								{{ trans("Freight Shipping") }}:
-								{{ policy.freightShipping ? trans("Yes") : trans("No") }}
+								{{ ctrans("Freight Shipping") }}:
+								{{ policy.freightShipping ? ctrans("Yes") : ctrans("No") }}
 							</li>
 
 							<!-- List: Global Shipping -->
 							<li v-if="typeof policy.globalShipping !== 'undefined'">
-								{{ trans("Global Shipping") }}:
-								{{ policy.globalShipping ? trans("Yes") : trans("No") }}
+								{{ ctrans("Global Shipping") }}:
+								{{ policy.globalShipping ? ctrans("Yes") : ctrans("No") }}
 							</li>
 
 							<!-- List: Region Excluded -->
 							<li v-if="policy.shipToLocations?.regionExcluded?.length">
-								{{ trans("Region excluded") }} ({{
+								{{ ctrans("Region excluded") }} ({{
 									policy.shipToLocations?.regionExcluded?.length
 								}}):
 								<span class="italic">{{
@@ -532,7 +532,7 @@ const isModalAddress = ref(false)
 
 							<!-- List: Category Types -->
 							<li v-if="policy.categoryTypes?.length">
-								{{ trans("Category Types") }}:
+								{{ ctrans("Category Types") }}:
 								<span class="italic">{{
 									policy.categoryTypes?.map((item) => item.name).join(", ")
 								}}</span>
@@ -540,26 +540,26 @@ const isModalAddress = ref(false)
 
 							<!-- List: Marketplace ID -->
 							<li v-if="policy.marketplaceId">
-								{{ trans("Marketplace ID") }}: {{ policy.marketplaceId }}
+								{{ ctrans("Marketplace ID") }}: {{ policy.marketplaceId }}
 							</li>
 
 							<!-- List: Fulfilment Policy ID -->
 							<li v-if="policy.fulfillmentPolicyId">
-								{{ trans("Fulfilment Policy ID") }}:
+								{{ ctrans("Fulfilment Policy ID") }}:
 								{{ policy.fulfillmentPolicyId }}
 							</li>
 
 							<!-- List: Rate Table ID -->
 							<li v-for="option in policy.shippingOptions">
 								<template v-if="option.rateTableId">
-									{{ trans("Rate Table ID") }}: {{ option.rateTableId }}
+									{{ ctrans("Rate Table ID") }}: {{ option.rateTableId }}
 								</template>
 							</li>
 
 							<!-- List: Shipping Discount Profile ID -->
 							<li v-for="option in policy.shippingOptions">
 								<template v-if="option.shippingDiscountProfileId">
-									{{ trans("Shipping Discount Profile ID") }}:
+									{{ ctrans("Shipping Discount Profile ID") }}:
 									{{ option.shippingDiscountProfileId }}
 								</template>
 							</li>
@@ -568,9 +568,9 @@ const isModalAddress = ref(false)
 							<li v-for="option in policy.shippingOptions">
 								<template
 									v-if="typeof option.shippingPromotionOffered !== 'undefined'">
-									{{ trans("Shipping Promotion Offered") }}:
+									{{ ctrans("Shipping Promotion Offered") }}:
 									{{
-										option.shippingPromotionOffered ? trans("Yes") : trans("No")
+										option.shippingPromotionOffered ? ctrans("Yes") : ctrans("No")
 									}}
 								</template>
 							</li>

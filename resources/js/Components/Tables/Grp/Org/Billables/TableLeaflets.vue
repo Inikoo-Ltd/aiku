@@ -16,7 +16,7 @@ import ToggleSwitch from "primevue/toggleswitch"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faTrashAlt } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faPencil, faTrashAlt)
 
@@ -96,13 +96,13 @@ const leafletEditRoute = (leaflet: { id: number }) => {
                 <ToggleSwitch
                     :modelValue="leaflet.state === 'active'"
                     :disabled="togglingStateId === leaflet.id"
-                    v-tooltip="leaflet.state === 'active' ? trans('Deactivate') : trans('Activate')"
+                    v-tooltip="leaflet.state === 'active' ? ctrans('Deactivate') : ctrans('Activate')"
                     @update:modelValue="(value: boolean) => toggleState(leaflet, value)"
                 />
                 <Link
                     :href="leafletEditRoute(leaflet)"
                     class="text-gray-400 hover:text-gray-600"
-                    v-tooltip="trans('Edit')"
+                    v-tooltip="ctrans('Edit')"
                 >
                     <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
                 </Link>
@@ -112,13 +112,13 @@ const leafletEditRoute = (leaflet: { id: number }) => {
                         name: 'grp.models.billables.leaflets.delete',
                         parameters: [leaflet.id],
                     }"
-                    :title="trans('Delete leaflet :name?', { name: leaflet.name })"
+                    :title="ctrans('Delete leaflet :name?', { name: leaflet.name })"
                     @success="router.reload()"
                 >
                     <template #default="{ changeModel }">
                         <button
                             class="text-red-400 hover:text-red-600"
-                            v-tooltip="trans('Delete')"
+                            v-tooltip="ctrans('Delete')"
                             @click="changeModel"
                         >
                             <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />

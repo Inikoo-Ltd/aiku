@@ -14,7 +14,7 @@ import { faTriangle, faEquals, faMinus } from '@fas'
 import { faChevronRight } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Table from '@/Components/Table/Table.vue'
 import { useLocaleStore } from '@/Stores/locale'
 
@@ -110,7 +110,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <button
                     v-if="item.organisations_route"
                     @click="toggleOrganisations(item)"
-                    v-tooltip="trans('Sales by organisation')"
+                    v-tooltip="ctrans('Sales by organisation')"
                     class="text-gray-400 hover:text-gray-600"
                 >
                     <FontAwesomeIcon
@@ -167,7 +167,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">
             <div v-if="item.sales_grp_currency_external_delta"
-                v-tooltip="trans('Same period last year') + ': ' + locale.currencyFormat(item.currency_code ?? currency, item.sales_grp_currency_external_ly)">
+                v-tooltip="ctrans('Same period last year') + ': ' + locale.currencyFormat(item.currency_code ?? currency, item.sales_grp_currency_external_ly)">
                 <span class="tabular-nums">{{ item.sales_grp_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
                     :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
@@ -207,7 +207,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(total_customers)="{ item }">
-            <div class="text-gray-500" v-tooltip="trans('Customers who ever bought, since the beginning')">
+            <div class="text-gray-500" v-tooltip="ctrans('Customers who ever bought, since the beginning')">
                 {{ locale.number(item.total_customers) }}
             </div>
         </template>
@@ -219,23 +219,23 @@ const getIntervalStateColor = (isPositive: boolean) => {
             >
                 <div v-if="loadingRows[recordAt(item.rowIndex).id]" class="flex items-center gap-x-2 py-2 text-xs text-gray-400">
                     <FontAwesomeIcon :icon="faSpinnerThird" class="animate-spin" fixed-width aria-hidden="true" />
-                    {{ trans('Loading') }}
+                    {{ ctrans('Loading') }}
                 </div>
 
                 <div v-else-if="!organisationRows[recordAt(item.rowIndex).id]?.length" class="py-2 text-xs text-gray-400">
-                    {{ trans('No sales in this period') }}
+                    {{ ctrans('No sales in this period') }}
                 </div>
 
                 <table v-else class="w-full text-xs">
                     <thead>
                         <tr class="text-gray-500">
-                            <th class="py-1 pl-6 text-left font-medium">{{ trans('Organisation') }}</th>
-                            <th class="py-1 pr-2 text-right font-medium">{{ trans('Sales') }}</th>
-                            <th class="py-1 pr-2 text-right font-medium">{{ trans('Δ 1Y') }}</th>
-                            <th class="py-1 pr-2 text-right font-medium">{{ trans('Invoices') }}</th>
-                            <th class="py-1 pr-2 text-right font-medium">{{ trans('Refunds') }}</th>
-                            <th class="py-1 pr-2 text-right font-medium">{{ trans('Customers') }}</th>
-                            <th class="py-1 pr-2 text-right font-medium">{{ trans('Total customers') }}</th>
+                            <th class="py-1 pl-6 text-left font-medium">{{ ctrans('Organisation') }}</th>
+                            <th class="py-1 pr-2 text-right font-medium">{{ ctrans('Sales') }}</th>
+                            <th class="py-1 pr-2 text-right font-medium">{{ ctrans('Δ 1Y') }}</th>
+                            <th class="py-1 pr-2 text-right font-medium">{{ ctrans('Invoices') }}</th>
+                            <th class="py-1 pr-2 text-right font-medium">{{ ctrans('Refunds') }}</th>
+                            <th class="py-1 pr-2 text-right font-medium">{{ ctrans('Customers') }}</th>
+                            <th class="py-1 pr-2 text-right font-medium">{{ ctrans('Total customers') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -247,7 +247,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                             <td class="py-1 pr-2 text-right tabular-nums">
                                 <span
                                     v-if="organisation.sales_grp_currency_external_delta"
-                                    v-tooltip="trans('Same period last year') + ': ' + locale.currencyFormat(organisation.currency_code ?? currency, organisation.sales_grp_currency_external_ly)"
+                                    v-tooltip="ctrans('Same period last year') + ': ' + locale.currencyFormat(organisation.currency_code ?? currency, organisation.sales_grp_currency_external_ly)"
                                     :class="getIntervalStateColor(organisation.sales_grp_currency_external_delta.is_positive)"
                                 >
                                     {{ organisation.sales_grp_currency_external_delta.formatted }}

@@ -13,7 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Modal from "@/Components/Utils/Modal.vue"
 import { ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import AccountProvidersForm from '@/Components/PaymentProviders/accountProvidersForm.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
@@ -160,7 +160,7 @@ const selectImage = (code: string) => {
         <template #cell(adoption)="{ item: item }">
             <div class="flex justify-center">
                 <template v-if="item.state == 'active'">
-                    <div v-if="item.number_payment_accounts && item.number_payment_accounts > 0" v-tooltip="trans('Account')">
+                    <div v-if="item.number_payment_accounts && item.number_payment_accounts > 0" v-tooltip="ctrans('Account')">
                         <FontAwesomeIcon icon='fal fa-check-double' class='' fixed-width aria-hidden='true' />
                     </div>
                     <div v-else v-tooltip="'Create Account'">
@@ -177,7 +177,7 @@ const selectImage = (code: string) => {
             <div class="w-20">
                 <img v-if="selectImage(paymentServiceProvider.code)" :src="selectImage(paymentServiceProvider.code)" :alt="paymentServiceProvider.name" :title="paymentServiceProvider.name" class="mx-auto aspect-auto h-auto max-h-7 w-auto max-w-20" loading="lazy" decoding="async">
                 <div v-else class="h-12 w-20 text-gray-400 flex items-center justify-center">
-                    {{ trans('No image') }}
+                    {{ ctrans('No image') }}
                 </div>
             </div>
         </template>

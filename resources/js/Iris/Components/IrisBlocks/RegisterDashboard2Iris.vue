@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { GoogleLogin } from "vue3-google-login"
 import { router, usePage } from "@inertiajs/vue3"
@@ -134,8 +134,8 @@ interface GoogleLoginResponse {
 const onGoogleLoginFailed = () => {
 	isLoadingGoogle.value = false
 	notify({
-		title: trans("Something went wrong"),
-		text: trans("Failed to login with Google. Please contact administrator."),
+		title: ctrans("Something went wrong"),
+		text: ctrans("Failed to login with Google. Please contact administrator."),
 		type: "error",
 	})
 }
@@ -259,7 +259,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 							<LinkIris :href="registerLink.href" :type="registerLink.type" :target="registerLink.target"
 								:canonical_url="registerLink.canonical_url" class="rd2-primary">
 								<slot name="editable" :path="['card', 'button', 'label']" :value="fieldValue?.card?.button?.label" placeholder="Create my wholesale account">
-									<span v-html="fieldValue?.card?.button?.label || trans('Create my wholesale account')" />
+									<span v-html="fieldValue?.card?.button?.label || ctrans('Create my wholesale account')" />
 								</slot>
 							</LinkIris>
 
@@ -291,7 +291,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 								</svg>
 								<span>
 									<slot name="editable" :path="['card', 'google', 'label']" :value="fieldValue?.card?.google?.label" placeholder="Register with Google">
-										<span v-html="fieldValue?.card?.google?.label || trans('Register with Google')" />
+										<span v-html="fieldValue?.card?.google?.label || ctrans('Register with Google')" />
 									</slot>
 								</span>
 							</button>
@@ -311,7 +311,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 									<path fill="#34A853"
 										d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 								</svg>
-										<span v-html="fieldValue?.card?.google?.label || trans('Register with Google')" />
+										<span v-html="fieldValue?.card?.google?.label || ctrans('Register with Google')" />
 									</div>
 								</template>
 							</GoogleLogin>
@@ -348,7 +348,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 			</div>
 
 			<div v-if="isWorkshop && !faqItems.length" class="rd2-faq-empty" data-rd-panel="faq-items">
-				{{ trans("No questions yet. Add them in FAQ questions.") }}
+				{{ ctrans("No questions yet. Add them in FAQ questions.") }}
 			</div>
 
 			<div v-if="faqItems.length" class="rd2-faq-list">

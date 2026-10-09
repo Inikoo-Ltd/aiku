@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BlogCardIris from "@/Iris/Components/IrisBlocks/BlogCardIris.vue"
 import type { BlogPost } from "@/types/Iris/Blog"
 import { getStyles } from "@/Composables/styles"
@@ -78,7 +78,7 @@ const columnClass = computed(() => {
 				<a
 					:href="fieldValue?.blog_index_url || '/blog'"
 					class="inline-flex items-center rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">
-					{{ fieldValue?.view_all_label || trans("View all posts") }}
+					{{ fieldValue?.view_all_label || ctrans("View all posts") }}
 				</a>
 			</div>
 		</div>

@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
 	blueprint: [
@@ -34,7 +34,7 @@ export default {
 		{
 			name: "video",
 			type: "slideVideo",
-			label: trans("Video"),
+			label: ctrans("Video"),
 			useIn: ["desktop", "tablet", "mobile"],
 			value: ["video"],
 		},

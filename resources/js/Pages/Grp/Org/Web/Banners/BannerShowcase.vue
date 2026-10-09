@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BannerPreview from '@/Components/Banners/BannerPreview.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { cloneDeep } from 'lodash-es'
@@ -53,12 +53,12 @@ const filteredData = computed(() => {
       :data="{
         title:
           filteredData.state !== 'switch_off'
-            ? trans('You do not have slides to show')
-            : trans('You turn off the banner'),
+            ? ctrans('You do not have slides to show')
+            : ctrans('You turn off the banner'),
         description:
           filteredData.state !== 'switch_off'
-            ? trans('Create new slides in the workshop to get started')
-            : trans('need re-publish the banner at workshop'),
+            ? ctrans('Create new slides in the workshop to get started')
+            : ctrans('need re-publish the banner at workshop'),
       }"
     />
   </div>

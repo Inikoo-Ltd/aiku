@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Fieldset from 'primevue/fieldset'
 
 import btree from '@/../art/payment_service_providers/btree.svg'
@@ -57,7 +57,7 @@ const selectImage = (code: string) => {
 
 <template>
     <div class="w-44">
-        <Fieldset :legend="trans('Logo Provider')">
+        <Fieldset :legend="ctrans('Logo Provider')">
             <div class="p-2 flex justify-center ">
                 <!-- {{ paymentServiceProvider.code }} -->
                 <img
@@ -68,7 +68,7 @@ const selectImage = (code: string) => {
                     class="aspect-auto h-auto max-h-20 w-auto max-w-full"
                 >
                 <div v-else class="h-12 w-20 text-gray-400 flex items-center justify-center">
-                    {{ trans('No image') }}
+                    {{ ctrans('No image') }}
                 </div>
             </div>
         </Fieldset>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, watchEffect } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faPlus, faTrash } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -80,7 +80,7 @@ const removeRow = (key: number) => {
                 :key="`label-${field.key}`"
                 class="flex-1">
                 <span v-if="field.label" class="block text-xs font-medium text-gray-500">
-                    {{ trans(field.label) }}
+                    {{ ctrans(field.label) }}
                 </span>
             </div>
             <div class="w-8 shrink-0" aria-hidden="true" />
@@ -99,7 +99,7 @@ const removeRow = (key: number) => {
                     v-model="row[field.key]"
                     class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">
-                        {{ field.placeholder ? trans(field.placeholder) : trans("Select") }}
+                        {{ field.placeholder ? ctrans(field.placeholder) : ctrans("Select") }}
                     </option>
                     <option
                         v-for="option in field.options"
@@ -112,7 +112,7 @@ const removeRow = (key: number) => {
                     v-else
                     v-model="row[field.key]"
                     type="text"
-                    :placeholder="field.placeholder ? trans(field.placeholder) : field.key"
+                    :placeholder="field.placeholder ? ctrans(field.placeholder) : field.key"
                     class="block w-full rounded-md px-3 py-2 text-sm border"
                     :class="errorFor(row, field.key)
                         ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -134,7 +134,7 @@ const removeRow = (key: number) => {
             @click.stop.prevent="addRow"
             class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
             <FontAwesomeIcon :icon="faPlus" class="h-3.5 w-3.5" fixed-width />
-            {{ fieldData?.addLabel ? trans(fieldData.addLabel) : trans("Add row") }}
+            {{ fieldData?.addLabel ? ctrans(fieldData.addLabel) : ctrans("Add row") }}
         </button>
 
         <p v-if="form?.errors?.[fieldName]" class="mt-1 text-sm text-red-600">

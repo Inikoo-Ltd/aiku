@@ -17,7 +17,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import InputNumber from 'primevue/inputnumber'
 import { set } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faTag,faTrashAlt)
 
 const props = defineProps<{
@@ -129,10 +129,10 @@ const locale = inject('locale', aikuLocaleStructure)
 					<NumberWithButtonSave v-model="item.quantity"   @onSave="(e)=>onUpdateQuantity(item.id,item.fulfilment_transaction_id, e)"/>
 				</div>
 				<div v-else-if="item.data.type == 'Pallet'">
-                    {{ locale.number(item.quantity) }} {{ item.quantity > 1 ? trans("days") : trans("day") }}
+                    {{ locale.number(item.quantity) }} {{ item.quantity > 1 ? ctrans("days") : ctrans("day") }}
 				</div>
 				<div v-else-if="item.data.type == 'Product'">
-                    {{ locale.number(item.quantity) }} {{ item.quantity > 1 ? trans("pcs") : trans("pc") }}
+                    {{ locale.number(item.quantity) }} {{ item.quantity > 1 ? ctrans("pcs") : ctrans("pc") }}
 				</div>
                 <div v-else class="text-gray-500">
                     

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, toRef } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faExternalLink, faTimes } from '@fal'
 import Image from '@common/Components/Image.vue'
@@ -37,48 +37,48 @@ const stateColor = computed(() => stateColors[webpage.value?.state ?? ''] ?? 'bg
 
 const textFields = computed(() => [
     {
-        label: trans('Code'),
+        label: ctrans('Code'),
         value: webpage.value?.code,
-        information: trans('Use for internal use'),
+        information: ctrans('Use for internal use'),
     },
     {
-        label: trans('Breadcrumb label'),
+        label: ctrans('Breadcrumb label'),
         value: webpage.value?.breadcrumb_label,
-        information: trans('To be used for the breadcrumbs, will use Meta Title if missing'),
+        information: ctrans('To be used for the breadcrumbs, will use Meta Title if missing'),
     },
     {
-        label: trans('Meta Title'),
+        label: ctrans('Meta Title'),
         value: webpage.value?.title,
-        information: trans('This will be used as the title displayed in the browser, meta title for SEO, and the search feature'),
+        information: ctrans('This will be used as the title displayed in the browser, meta title for SEO, and the search feature'),
     },
     {
-        label: trans('Meta Description'),
+        label: ctrans('Meta Description'),
         value: webpage.value?.description,
-        information: trans('This will be used for the meta description'),
+        information: ctrans('This will be used for the meta description'),
     },
     {
-        label: trans('Title Prefix'),
+        label: ctrans('Title Prefix'),
         value: webpage.value?.title_prefix,
-        information: trans('Would add the set prefix to all of the webpages title'),
+        information: ctrans('Would add the set prefix to all of the webpages title'),
     },
     {
-        label: trans('Title Suffix'),
+        label: ctrans('Title Suffix'),
         value: webpage.value?.title_suffix,
-        information: trans('Would add the set suffix to all of the webpages title'),
+        information: ctrans('Would add the set suffix to all of the webpages title'),
     },
 ])
 
 const toggleFields = computed(() => [
     {
-        label: trans('Show Price on Webpage'),
+        label: ctrans('Show Price on Webpage'),
         value: webpage.value?.show_price,
     },
     {
-        label: trans('Index Page'),
+        label: ctrans('Index Page'),
         value: webpage.value?.index_page,
     },
     {
-        label: trans('Follow Link'),
+        label: ctrans('Follow Link'),
         value: webpage.value?.follow_link,
     },
 ])
@@ -119,12 +119,12 @@ const toggleFields = computed(() => [
             </header>
 
             <p v-if="!webpage" class="text-sm text-gray-400">
-                {{ trans('This shop has no webpage') }}
+                {{ ctrans('This shop has no webpage') }}
             </p>
 
             <div v-else class="space-y-4">
                 <div class="rounded-lg border-l-2 border-sky-400 bg-sky-50/60 px-3 py-2">
-                    <h3 class="text-xs font-semibold uppercase tracking-wide text-sky-600">{{ trans('URL') }}</h3>
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-sky-600">{{ ctrans('URL') }}</h3>
                     <p class="break-all text-sm text-gray-700">
                         <span class="text-gray-400">{{ webpage.url_prefix }}</span><span class="font-semibold">{{ webpage.url }}</span>
                     </p>
@@ -143,11 +143,11 @@ const toggleFields = computed(() => [
                 </div>
 
                 <div class="border-t border-gray-200 pt-3">
-                    <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide" :style="{ color: primaryColor }">{{ trans('Share image') }}</h3>
+                    <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide" :style="{ color: primaryColor }">{{ ctrans('Share image') }}</h3>
                     <div v-if="webpage.seo_image" class="flex items-start gap-3">
                         <Image :src="webpage.seo_image" :alt="webpage.seo_image_alt" class="h-20 w-20 shrink-0 rounded border border-gray-200 object-cover" />
                         <div class="min-w-0">
-                            <div class="text-[10px] uppercase tracking-wide text-gray-400">{{ trans('Share image alt text') }}</div>
+                            <div class="text-[10px] uppercase tracking-wide text-gray-400">{{ ctrans('Share image alt text') }}</div>
                             <p class="text-sm" :class="webpage.seo_image_alt ? 'text-gray-600' : 'text-gray-400'">
                                 {{ webpage.seo_image_alt || '—' }}
                             </p>
@@ -177,7 +177,7 @@ const toggleFields = computed(() => [
                 </div>
 
                 <div v-if="webpage.structured_data" class="border-t border-gray-200 pt-3">
-                    <h3 class="mb-1 text-xs font-semibold uppercase tracking-wide" :style="{ color: primaryColor }">{{ trans('Structured data') }}</h3>
+                    <h3 class="mb-1 text-xs font-semibold uppercase tracking-wide" :style="{ color: primaryColor }">{{ ctrans('Structured data') }}</h3>
                     <pre class="max-h-48 overflow-auto rounded-lg border border-indigo-100 bg-indigo-50/60 p-2 text-[11px] text-indigo-900">{{ webpage.structured_data }}</pre>
                 </div>
             </div>

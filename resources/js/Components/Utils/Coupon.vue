@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 
 import { isBefore, parseISO } from 'date-fns'
@@ -56,7 +56,7 @@ const isOfferExpired = (endAt: string) => {
             <template v-if="['Category Ordered', 'Category Quantity Ordered'].includes(offer.type)">
                 <span class="text-2xl font-black">{{ Number(offer.data_allowance_signature?.percentage_off ?? 0)*100 }}%</span>
                 <span class="text-xxs tracking-[0.2em]">
-                    {{ trans("Discount") }}
+                    {{ ctrans("Discount") }}
                 </span>
             </template>
             <span v-else>
@@ -71,7 +71,7 @@ const isOfferExpired = (endAt: string) => {
 
         <div class="relative card-right px-4 py-3">
             <div v-if="isOfferExpired(offer.end_at)" class="absolute top-0 right-0 text-xxs bg-red-400 rounded-xs text-white px-1 w-fit">
-                {{ trans("Expired") }}
+                {{ ctrans("Expired") }}
             </div>
 
             <span class="text-xxs ixtalic font-normal opacity-100">
@@ -85,19 +85,19 @@ const isOfferExpired = (endAt: string) => {
             
             <div class="my-2 grid grid-cols-2 gap-x-2 gap-y-0">
                 <div v-if="['Amount AND Order Number'].includes(offer.type)" class="text-xxs">
-                    {{ trans("Min. amount") }}: {{ locale.currencyFormat(currency_code, offer.trigger_data?.min_amount ?? 0) }}
+                    {{ ctrans("Min. amount") }}: {{ locale.currencyFormat(currency_code, offer.trigger_data?.min_amount ?? 0) }}
                 </div>
                 <div v-if="['Amount AND Order Number'].includes(offer.type)" class="text-xxs">
-                    {{ trans("Min. order") }}: {{ offer.trigger_data?.order_number ?? '-' }}
+                    {{ ctrans("Min. order") }}: {{ offer.trigger_data?.order_number ?? '-' }}
                 </div>
                 <div v-if="['Category Quantity Ordered'].includes(offer.type)" class="text-xxs">
-                    {{ trans("Min. quantity") }}: {{ offer.trigger_data?.item_quantity ?? '-' }}
+                    {{ ctrans("Min. quantity") }}: {{ offer.trigger_data?.item_quantity ?? '-' }}
                 </div>
             </div>
 
             <!-- Section: Duration -->
             <span v-if="offer.duration_label" class="xmt-2 text-xxs italic font-normal opacity-70">{{ offer.duration_label }}</span>
-            <span v-else class="xmt-2 text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.start_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : trans('No Expiration') }}</span>
+            <span v-else class="xmt-2 text-xxs italic font-normal opacity-70">{{ useFormatTime(offer.start_at)}} - {{ offer.end_at ? useFormatTime(offer.end_at) : ctrans('No Expiration') }}</span>
         </div>
     </section>
 </template>

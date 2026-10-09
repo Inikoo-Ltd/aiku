@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faExclamationTriangle)
 
 const props = defineProps<{
@@ -48,7 +48,7 @@ const getAlertBorder = (alert: string) => {
         </div>
 
         <div class="">
-            <h3 class="text-base font-semibold">{{ alert.title || trans('Attention needed') }}</h3>
+            <h3 class="text-base font-semibold">{{ alert.title || ctrans('Attention needed') }}</h3>
             <div class="text-sm opacity-80 ">
                 {{ alert.description }}
             </div>

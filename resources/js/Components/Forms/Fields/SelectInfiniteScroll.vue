@@ -13,7 +13,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { routeType } from "@/types/route"
 import Icon from '@/Components/Icon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Tag from "@/Components/Tag.vue"
 import { toLower, upperFirst } from "lodash-es"
 library.add(faExclamationCircle, faCheckCircle)
@@ -84,11 +84,11 @@ function unsnakeCase(str?: string | null) {
 				:clear
 			>
 				<template v-if="props.fieldData.type_label == 'families'" #singlelabel="{ value }">
-                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
+                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ ctrans("products") }})</span></div>
                 </template>
 
 				<template v-if="props.fieldData.type_label == 'trade-unit-families'" #singlelabel="{ value }">
-                       <div class="">{{ value.code }} - {{ value.name }}<span class="text-sm text-gray-400">({{ locale.number(value.number_trade_units) }} {{ trans("trade units") }})</span></div>
+                       <div class="">{{ value.code }} - {{ value.name }}<span class="text-sm text-gray-400">({{ locale.number(value.number_trade_units) }} {{ ctrans("trade units") }})</span></div>
                 </template>
 
 				<template v-if="props.fieldData.type_label == 'department-and-sub-department'" #singlelabel="{ value }">
@@ -96,7 +96,7 @@ function unsnakeCase(str?: string | null) {
                 </template>
                 
                 <template v-if="props.fieldData.type_label == 'families'" #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
+                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ ctrans("products") }})</span></div>
                 </template>
 
 				 <template v-if="props.fieldData.type_label == 'department-and-sub-department'" #option="{ option, isSelected, isPointed }">

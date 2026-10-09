@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import { faArrowRight } from "@fas"
@@ -45,7 +45,7 @@ const onSubmitPlaceOrder = () => {
 
             <Button
                 full
-                :label="trans('Place order')"
+                :label="ctrans('Place order')"
                 class="mt-6"
                 @click="() => onSubmitPlaceOrder()"
                 :loading="isLoading"

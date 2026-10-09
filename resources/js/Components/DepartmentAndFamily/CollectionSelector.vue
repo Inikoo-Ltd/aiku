@@ -4,7 +4,7 @@ import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '../../Common/Components/Image.vue'
@@ -64,8 +64,8 @@ const getCollectionsList = async (url?: string) => {
     } catch (e) {
         console.error('Error', e)
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Error while get the products list."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Error while get the products list."),
             type: "error"
         })
     } finally {
@@ -110,7 +110,7 @@ watch(() => props.valueToRefetch, () => {
     <div>
         <slot name="header">
             <div class="mx-auto text-center text-2xl font-semibold pb-4">
-                {{ headLabel ?? trans("Add products") }}
+                {{ headLabel ?? ctrans("Add products") }}
             </div>
         </slot>
 
@@ -123,7 +123,7 @@ watch(() => props.valueToRefetch, () => {
                 <PureInput
                     v-model="collectionsPortofolio"
                     @update:modelValue="() => debounceGetCollectionsList()"
-                    :placeholder="trans('Input to search portfolios')"
+                    :placeholder="ctrans('Input to search portfolios')"
                 />
                 <slot name="afterInput" />
             </div>
@@ -132,7 +132,7 @@ watch(() => props.valueToRefetch, () => {
                 <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
                         <div class="font-semibold text-lg py-1">
-                            {{ props.label_result ?? trans("Result") }} ({{ locale?.number(collectionsMeta?.total || 0) }})
+                            {{ props.label_result ?? ctrans("Result") }} ({{ locale?.number(collectionsMeta?.total || 0) }})
                         </div>
                     </div>
                     <div class="border-t border-gray-300 mb-1" />
@@ -155,10 +155,10 @@ watch(() => props.valueToRefetch, () => {
                                             <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                                             <div class="flex flex-col justify-between">
                                                 <div class="w-fit">
-                                                    <div v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic mb-1">
+                                                    <div v-tooltip="ctrans('Code')" class="w-fit text-xs text-gray-400 italic mb-1">
                                                         {{ item.code || 'no code' }}
                                                     </div>
-                                                    <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
+                                                    <div v-tooltip="ctrans('Name')" class="w-fit font-semibold leading-none mb-1">
                                                         {{ item.name || 'no name' }}
                                                     </div>
                                                 </div>
@@ -173,7 +173,7 @@ watch(() => props.valueToRefetch, () => {
                                     </div>
                                 </template>
                                 <div v-else class="text-center text-gray-500 col-span-3">
-                                    {{ trans("No products found") }}
+                                    {{ ctrans("No products found") }}
                                 </div>
                             </template>
 
@@ -197,7 +197,7 @@ watch(() => props.valueToRefetch, () => {
 
                     <div v-if="selectedItems.length > 0" class="mt-4 flex justify-end">
                         <Button @click="saveSelection">
-                            {{ submitLabel ?? trans('Save') }}
+                            {{ submitLabel ?? ctrans('Save') }}
                         </Button>
                     </div>
                 </div>

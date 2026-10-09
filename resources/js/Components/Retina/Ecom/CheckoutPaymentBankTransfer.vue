@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import { faArrowRight } from "@fas"
@@ -26,11 +26,11 @@ const props = defineProps<{
 const bankRows = computed(() => {
     const bank = props.data?.data
     return [
-        { label: trans("Account number"), value: bank?.account_number, copy: true },
-        { label: trans("Sort code"), value: bank?.sort_code, copy: true },
+        { label: ctrans("Account number"), value: bank?.account_number, copy: true },
+        { label: ctrans("Sort code"), value: bank?.sort_code, copy: true },
         { label: "IBAN", value: bank?.iban, copy: true },
         { label: "SWIFT/BIC", value: bank?.swift, copy: true },
-        { label: trans("Recipient"), value: bank?.recipient, copy: false },
+        { label: ctrans("Recipient"), value: bank?.recipient, copy: false },
     ].filter((row) => row.value)
 })
 
@@ -69,7 +69,7 @@ const onSubmitPlaceOrder = () => {
 
             <Button
                 full
-                :label="trans('Place order')"
+                :label="ctrans('Place order')"
                 class="mt-6"
                 @click="() => onSubmitPlaceOrder()"
                 :loading="isLoading"

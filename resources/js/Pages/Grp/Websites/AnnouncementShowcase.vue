@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Tag from '@/Components/Tag.vue'
 

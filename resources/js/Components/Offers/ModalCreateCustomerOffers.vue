@@ -6,7 +6,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
@@ -205,8 +205,8 @@ const submitCustomerOffer = () => {
     )
     .then((response) => {
         notify({
-            title: trans("Success"),
-            text: trans("Successfully submit the data"),
+            title: ctrans("Success"),
+            text: ctrans("Successfully submit the data"),
             type: "success"
         })
         resetForm();
@@ -224,9 +224,9 @@ const submitCustomerOffer = () => {
     })
     .catch((error) => {
         const errors = error.response?.data?.errors || {}
-        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        const errMsg = Object.values(errors).join('. ') || ctrans("Failed to submit the data, please try again");
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: errMsg,
             type: "error"
         })
@@ -290,21 +290,21 @@ const isFormInvalid = computed(() => {
 
 <template>
     <div>
-        <Button :label="trans('Create Customer Offer')" @click="openModal" icon="fas fa-badge-percent" />
+        <Button :label="ctrans('Create Customer Offer')" @click="openModal" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="p-1 space-y-3">
-                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ ctrans('Create Customer Offer') }}</h2>
 
                 <!-- Customer -->
                 <div class="space-y-2" v-if="!props.customer_id">
                     <label class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Select Customer') }}:
+                        {{ ctrans('Select Customer') }}:
                     </label>
                     <PureMultiselectInfiniteScroll
                     v-model="customerId" :fetchRoute="customerFetchRoute" valueProp="id"
-                        labelProp="name" labelAdditionalProp="reference" :placeholder="trans('Select customer')">
+                        labelProp="name" labelAdditionalProp="reference" :placeholder="ctrans('Select customer')">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4 leading-4 truncate mr-2">
                                 {{ value.name }}
@@ -329,21 +329,21 @@ const isFormInvalid = computed(() => {
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Minimum purchase amount') }}:
+                        {{ ctrans('Minimum purchase amount') }}:
                     </label>
                     <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
                         :currency="props.shop_data.currency_code" locale="en-US"
-                        :placeholder="trans('Enter minimum amount')" />
+                        :placeholder="ctrans('Enter minimum amount')" />
                 </div>
 
                 <!-- Target -->
                 <div class="space-y-3">
                     <h3 class="text-sm text-gray-500">
-                        {{ trans('Choose where this offer will apply') }}
+                        {{ ctrans('Choose where this offer will apply') }}
                     </h3>
                     <label class="font-semibold">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Target') }}
+                        {{ ctrans('Target') }}
                     </label>
 
                     <div class="flex flex-wrap gap-4">
@@ -353,13 +353,13 @@ const isFormInvalid = computed(() => {
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="target" :value="opt.value" :inputId="`target-${opt.value}`" />
-                            <span>{{ trans(opt.label) }}</span>
+                            <span>{{ ctrans(opt.label) }}</span>
                         </label>
                     </div>
 
                     <div v-if="activeCategoryRoute" class="space-y-2">
                         <label class="font-medium">
-                            {{ trans('Select Item') }}
+                            {{ ctrans('Select Item') }}
                         </label>
                         <PureMultiselectInfiniteScroll :key="target ?? 'none'" v-model="categoryFilters"
                             :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name" />
@@ -367,7 +367,7 @@ const isFormInvalid = computed(() => {
 
                     <div v-if="target === 'collection'" class="space-y-2">
                         <label class="font-medium">
-                            {{ trans('Select Item') }}
+                            {{ ctrans('Select Item') }}
                         </label>
                         <PureMultiselectInfiniteScroll v-model="collectionFilters" :fetchRoute="collectionRoute"
                             valueProp="id" labelProp="name" />
@@ -375,7 +375,7 @@ const isFormInvalid = computed(() => {
 
                     <div v-if="target === 'product'" class="space-y-2">
                         <label class="font-medium">
-                            {{ trans('Select Item') }}
+                            {{ ctrans('Select Item') }}
                         </label>
                         <PureMultiselectInfiniteScroll v-model="productFilters" :fetchRoute="productFetchRoute"
                             valueProp="id" labelProp="name" />
@@ -386,18 +386,18 @@ const isFormInvalid = computed(() => {
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" fixed-width />
-                        {{ trans('Percentage Discount') }}
+                        {{ ctrans('Percentage Discount') }}
                     </label>
 
                     <InputNumber v-model="discountPercentage" inputId="offer_discount" suffix="%" :min="0" :max="100"
-                        class="w-full" :placeholder="trans('Enter percentage')" />
+                        class="w-full" :placeholder="ctrans('Enter percentage')" />
                 </div>
 
                 <!-- Offer Duration -->
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Offer Duration') }}:
+                        {{ ctrans('Offer Duration') }}:
                     </div>
 
                     <div class="flex flex-wrap items-center gap-4">
@@ -407,7 +407,7 @@ const isFormInvalid = computed(() => {
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <span>{{ trans('Permanent') }}</span>
+                            <span>{{ ctrans('Permanent') }}</span>
                         </label>
 
                         <label for="interval"
@@ -416,7 +416,7 @@ const isFormInvalid = computed(() => {
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <span>{{ trans('Interval') }}</span>
+                            <span>{{ ctrans('Interval') }}</span>
                         </label>
 
                         <button v-if="dateType === 'interval'" v-for="days in quickIntervalPresets" :key="days" type="button"
@@ -425,7 +425,7 @@ const isFormInvalid = computed(() => {
                             :class="quickIntervalDays === days
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
-                            {{ trans(':count day', { count: String(days) }) }}
+                            {{ ctrans(':count day', { count: String(days) }) }}
                         </button>
                     </div>
 
@@ -434,31 +434,31 @@ const isFormInvalid = computed(() => {
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
                                     class="font-light text-xs text-red-400 align-middle" fixed-width />
-                                {{ trans('Start Date') }}
+                                {{ ctrans('Start Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="ctrans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :placeholder="trans('Select start date')" />
+                                :placeholder="ctrans('Select start date')" />
                         </div>
 
                         <div v-if="dateType === 'interval'" class="space-y-2">
                             <label class="font-medium mb-2 block">
-                                {{ trans('End Date') }}
+                                {{ ctrans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If end date is empty, will treat as permanent')" />:
+                                    :information="ctrans('If end date is empty, will treat as permanent')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate ?? undefined" :placeholder="trans('Select end date')" />
+                                :minDate="startDate ?? undefined" :placeholder="ctrans('Select end date')" />
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="closeModal" type="cancel" />
-                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? ctrans('Loading') : ctrans('Save')"
                         @click="submitCustomerOffer" :loading="isLoadingSubmit"
                         :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>

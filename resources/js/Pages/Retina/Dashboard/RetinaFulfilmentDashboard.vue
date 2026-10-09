@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TabSelector from "@/Components/Elements/TabSelector.vue"
 
 import { computed, inject, ref } from "vue"
@@ -136,19 +136,19 @@ const layout = inject("layout", retinaLayoutStructure)
 const optionRadio = [
 	{
 		value: "pallets_storage",
-		label: trans("Storage"),
+		label: ctrans("Storage"),
 	},
 	{
 		value: "items_storage",
-		label: trans("Dropshipping"),
+		label: ctrans("Dropshipping"),
 	},
 	/*    {
             value: 'dropshipping',
-            label: trans('Dropshipping')
+            label: ctrans('Dropshipping')
         },*/
 	{
 		value: "space_rental",
-		label: trans("Space (Parking)"),
+		label: ctrans("Space (Parking)"),
 	},
 ]
 
@@ -181,7 +181,7 @@ const radioValue = ref<string[]>(
 				<div class="w-full flex justify-between items-center">
 					<div class="">
 						<div class="text-base">
-							{{ trans("balance") }}
+							{{ ctrans("balance") }}
 						</div>
 						<div class="text-xs text-gray-700/60">
 							{{ useFormatTime(new Date()) }}
@@ -249,7 +249,7 @@ const radioValue = ref<string[]>(
 						:style="{
 							borderLeft: `4px solid ${layout.app.theme[0]}`,
 						}">
-						<div class="block text-lg font-semibold">{{ trans("Current Bill") }}</div>
+						<div class="block text-lg font-semibold">{{ ctrans("Current Bill") }}</div>
 						<div class="text-sm flex items-center gap-x-1">
 							{{
 								locale.currencyFormat(
@@ -263,7 +263,7 @@ const radioValue = ref<string[]>(
 					<!-- State Date & End Date -->
 					<div class="pl-1 mt-4 grid grid-cols-9 gap-x-3">
 						<div class="col-span-4 text-sm">
-							<div class="text-gray-400">{{ trans("Start date") }}</div>
+							<div class="text-gray-400">{{ ctrans("Start date") }}</div>
 							<div class="font-medium">
 								{{ useFormatTime(data?.recurring_bill?.start_date) }}
 							</div>
@@ -278,7 +278,7 @@ const radioValue = ref<string[]>(
 						</div>
 
 						<div class="col-span-4 text-sm">
-							<div class="text-gray-400">{{ trans("End date") }}</div>
+							<div class="text-gray-400">{{ ctrans("End date") }}</div>
 							<div class="font-medium">
 								{{ useFormatTime(data?.recurring_bill?.end_date) }}
 							</div>
@@ -322,7 +322,7 @@ const radioValue = ref<string[]>(
 					<div
 						class="border-b border-gray-300 py-2 px-2 pl-4 flex items-center justify-between">
 						<div class="">
-							{{ trans("Rental Agreement") }}
+							{{ ctrans("Rental Agreement") }}
 							<span
 								v-if="data?.rental_agreement?.stats?.data?.reference"
 								class="text-gray-400 text-sm"
@@ -334,23 +334,23 @@ const radioValue = ref<string[]>(
 					<!-- Stats -->
 					<div v-if="data.rental_agreement.stats" class="p-5 space-y-2">
 						<div class="flex gap-x-1 items-center text-sm">
-							<div class="">{{ trans("Last updated") }}:</div>
+							<div class="">{{ ctrans("Last updated") }}:</div>
 							<div class="text-gray-500">
 								{{ useFormatTime(data?.rental_agreement?.updated_at) }}
 							</div>
 						</div>
 						<div class="flex gap-x-1 items-center text-sm">
-							<div class="">{{ trans("Billing Cycle") }}:</div>
+							<div class="">{{ ctrans("Billing Cycle") }}:</div>
 							<div class="text-gray-500">
 								{{ data.rental_agreement.stats?.data.billing_cycle }}
 							</div>
 						</div>
 						<div class="flex gap-x-1 items-center text-sm">
-							<div class="">{{ trans("Pallet Limit") }}:</div>
+							<div class="">{{ ctrans("Pallet Limit") }}:</div>
 							<div class="text-gray-500">
 								{{
 									data?.rental_agreement.stats?.data.pallets_limit ||
-									`(${trans("No limit")})`
+									`(${ctrans("No limit")})`
 								}}
 							</div>
 						</div>
@@ -386,11 +386,11 @@ const radioValue = ref<string[]>(
 		<div
 			class="col-span-3 bg-green-50 rounded-lg shadow overflow-hidden border border-green-300 p-6">
 			<h4 class="text-lg font-semibold text-green-800">
-				{{ trans("Thank you for applying!") }}
+				{{ ctrans("Thank you for applying!") }}
 			</h4>
 			<p class="mt-2 text-sm text-green-700">
 				{{
-					trans(
+					ctrans(
 						"Your application is under review. Please wait for further information from us."
 					)
 				}}
@@ -400,40 +400,40 @@ const radioValue = ref<string[]>(
 		<div
 			class="col-span-2 bg-white rounded-lg shadow overflow-hidden border xhover:shadow-2xl transition-shadow duration-300">
 			<div class="px-6 py-4 border-b border-gray-200">
-				<h3 class="text-xl font-semibold ">{{ trans("My Details") }}</h3>
+				<h3 class="text-xl font-semibold ">{{ ctrans("My Details") }}</h3>
 				<p class="mt-1 text-sm text-gray-500">
-					{{ trans("Company and contact information.") }}
+					{{ ctrans("Company and contact information.") }}
 				</p>
 			</div>
 			<div class="p-6 grid grid-cols-2 gap-4">
 				<div>
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Company Name") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Company Name") }}</h4>
 					<p class="mt-1 text-lg font-semibold ">
 						{{ props?.data?.fulfilment_customer?.customer?.company_name }}
 					</p>
 				</div>
 				<div>
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Contact Name") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Contact Name") }}</h4>
 					<p class="mt-1 text-lg font-semibold ">
 						{{ props?.data?.fulfilment_customer?.customer?.contact_name }}
 					</p>
 				</div>
 				<div>
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Email") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Email") }}</h4>
 					<p class="mt-1 text-lg font-semibold ">{{ props?.data?.fulfilment_customer?.customer?.email }}</p>
 				</div>
 				<div>
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Phone") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Phone") }}</h4>
 					<p class="mt-1 text-lg font-semibold ">{{ props?.data?.fulfilment_customer?.customer?.phone }}</p>
 				</div>
 				<div class="col-span-2">
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Address") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Address") }}</h4>
 					<p
 						class="mt-1 text-sm text-gray-700"
 						v-html="props?.data?.fulfilment_customer?.customer?.address.formatted_address"></p>
 				</div>
 				<div>
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Status") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Status") }}</h4>
 					<p
 						class="mt-1 text-sm font-semibold"
 						:class="{
@@ -449,11 +449,11 @@ const radioValue = ref<string[]>(
 		<div class="rounded-lg shadow overflow-hidden border border-[#0F1626] h-fit">
 			<div
 				class="px-6 py-4 border-b border-[#0F1626] bg-gradient-to-r from-gray-900 to-gray-800">
-				<h4 class="text-2xl font-bold text-white">{{ trans("Contact Us") }}</h4>
+				<h4 class="text-2xl font-bold text-white">{{ ctrans("Contact Us") }}</h4>
 			</div>
 			<div class="p-6 bg-white">
 				<div class="mb-6">
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Email") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Email") }}</h4>
 					<p class="mt-2 text-lg font-semibold text-[#0F1626] hover:text-gray-500">
 						<a :href="'mailto:' + 'info@aw-fulfilment.co.uk'" class="hover:underline">{{
 							props?.data?.fulfilment_customer.customer?.email
@@ -461,13 +461,13 @@ const radioValue = ref<string[]>(
 					</p>
 				</div>
 				<div class="mb-6">
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Phone") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Phone") }}</h4>
 					<p class="mt-2 text-lg font-semibold text-[#0F1626] hover:text-gray-500">
 						{{ props?.data?.fulfilment_customer.customer?.phone }}
 					</p>
 				</div>
 				<div class="mb-6">
-					<h4 class="text-sm font-medium text-gray-500">{{ trans("Office Address") }}</h4>
+					<h4 class="text-sm font-medium text-gray-500">{{ ctrans("Office Address") }}</h4>
 					<div
 						v-html="props?.data?.fulfilment_customer.customer?.address?.formatted_address"
 						class="mt-2 text-lg font-semibold " />

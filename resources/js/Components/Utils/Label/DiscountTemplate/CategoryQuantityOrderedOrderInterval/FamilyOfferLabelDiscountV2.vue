@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
 import { Popover } from 'primevue'
 import { computed, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -39,8 +38,8 @@ const triggersLabel = computed<string>(() => props.offer?.triggers_labels?.join(
 <template>
     <section class="vd-label" aria-label="Volume Discount Offer Label">
         <div class="vd-title">
-            <span>{{ trans('Volume') }}</span>
-            <span>{{ trans('Discount') }}</span>
+            <span>{{ ctrans('Volume') }}</span>
+            <span>{{ ctrans('Discount') }}</span>
         </div>
 
         <div class="vd-content">
@@ -65,15 +64,15 @@ const triggersLabel = computed<string>(() => props.offer?.triggers_labels?.join(
 
         <Popover ref="_popoverInfoCircle" class="vd-popover">
             <div class="vd-popover-content">
-                <p class="vd-popover-title">{{ trans("VOLUME DISCOUNT") }}</p>
+                <p class="vd-popover-title">{{ ctrans("VOLUME DISCOUNT") }}</p>
 
                 <p class="vd-popover-text">
-                    {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                    {{ ctrans("You don't need Gold Reward status to access the lower price") }}.
                 </p>
 
                 <p class="vd-popover-text">
-                    {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
-                    {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                    {{ ctrans("Order the listed volume and the member price applies automatically at checkout") }}.
+                    {{ ctrans("The volume can be made up from the whole product family, not just the same item") }}.
                 </p>
             </div>
         </Popover>

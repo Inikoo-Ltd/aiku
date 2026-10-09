@@ -11,7 +11,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import InputNumber from "primevue/inputnumber"
@@ -100,28 +100,28 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
     <form class="p-4 sm:p-6 mx-auto w-full max-w-5xl space-y-6" @submit.prevent="submit">
         <!-- Shared family fields -->
         <section class="rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
-            <h2 class="text-base font-semibold mb-4">{{ trans("Family") }}</h2>
+            <h2 class="text-base font-semibold mb-4">{{ ctrans("Family") }}</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium mb-1">
-                        {{ trans("Family code") }} <span class="text-red-500">*</span>
+                        {{ ctrans("Family code") }} <span class="text-red-500">*</span>
                     </label>
-                    <PureInput v-model="form.family_code" :placeholder="trans('e.g. GIFT-BOX')" required />
+                    <PureInput v-model="form.family_code" :placeholder="ctrans('e.g. GIFT-BOX')" required />
                     <p class="mt-1 text-xs text-gray-500">
-                        {{ trans("Groups size variants of the same packaging, e.g. GIFT-BOX for its small, medium and large sizes") }}
+                        {{ ctrans("Groups size variants of the same packaging, e.g. GIFT-BOX for its small, medium and large sizes") }}
                     </p>
                     <p v-if="form.errors.family_code" class="mt-1 text-xs text-red-500">{{ form.errors.family_code }}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">
-                        {{ trans("Type") }} <span class="text-red-500">*</span>
+                        {{ ctrans("Type") }} <span class="text-red-500">*</span>
                     </label>
                     <Select
                         v-model="form.type"
                         :options="typeOptions"
                         optionLabel="label"
                         optionValue="value"
-                        :placeholder="trans('Select a type')"
+                        :placeholder="ctrans('Select a type')"
                         class="w-full"
                     />
                     <p v-if="form.errors.type" class="mt-1 text-xs text-red-500">{{ form.errors.type }}</p>
@@ -132,8 +132,8 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
         <!-- Variants -->
         <section class="rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-base font-semibold">{{ trans("Packagings in this family") }}</h2>
-                <Button type="tertiary" icon="fal fa-plus" :label="trans('Add packaging')" @click="addVariant" />
+                <h2 class="text-base font-semibold">{{ ctrans("Packagings in this family") }}</h2>
+                <Button type="tertiary" icon="fal fa-plus" :label="ctrans('Add packaging')" @click="addVariant" />
             </div>
 
             <div class="space-y-4">
@@ -143,13 +143,13 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
                     class="relative rounded-lg border border-gray-200 p-4"
                 >
                     <div v-if="form.packagings.length > 1" class="absolute right-3 top-3">
-                        <Button type="delete" size="xs" :tooltip="trans('Remove')" @click="removeVariant(index)" />
+                        <Button type="delete" size="xs" :tooltip="ctrans('Remove')" @click="removeVariant(index)" />
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4">
                         <!-- Image picker -->
                         <div class="shrink-0">
-                            <label class="block text-sm font-medium mb-1">{{ trans("Image") }}</label>
+                            <label class="block text-sm font-medium mb-1">{{ ctrans("Image") }}</label>
                             <label
                                 class="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 hover:border-gray-400 overflow-hidden"
                             >
@@ -162,7 +162,7 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
                                 type="negative"
                                 size="xxs"
                                 class="mt-1"
-                                :label="trans('Remove image')"
+                                :label="ctrans('Remove image')"
                                 @click="clearImage(index)"
                             />
                             <p v-if="variantError(index, 'image')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'image') }}</p>
@@ -171,21 +171,21 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
                         <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-1">
-                                    {{ trans("Code") }} <span class="text-red-500">*</span>
+                                    {{ ctrans("Code") }} <span class="text-red-500">*</span>
                                 </label>
-                                <PureInput v-model="variant.code" :placeholder="trans('e.g. GIFT-BOX-S')" required />
+                                <PureInput v-model="variant.code" :placeholder="ctrans('e.g. GIFT-BOX-S')" required />
                                 <p v-if="variantError(index, 'code')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'code') }}</p>
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-medium mb-1">
-                                    {{ trans("Name") }} <span class="text-red-500">*</span>
+                                    {{ ctrans("Name") }} <span class="text-red-500">*</span>
                                 </label>
-                                <PureInput v-model="variant.name" :placeholder="trans('e.g. Gift Box Small')" required />
+                                <PureInput v-model="variant.name" :placeholder="ctrans('e.g. Gift Box Small')" required />
                                 <p v-if="variantError(index, 'name')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'name') }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1">
-                                    {{ trans("Price") }} <span class="text-red-500">*</span>
+                                    {{ ctrans("Price") }} <span class="text-red-500">*</span>
                                 </label>
                                 <InputNumber
                                     v-model="variant.price"
@@ -199,18 +199,18 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
                                 <p v-if="variantError(index, 'price')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'price') }}</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1">{{ trans("Width (mm)") }}</label>
+                                <label class="block text-sm font-medium mb-1">{{ ctrans("Width (mm)") }}</label>
                                 <InputNumber v-model="variant.width" :min="0" fluid />
                                 <p v-if="variantError(index, 'width')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'width') }}</p>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-1">{{ trans("Height (mm)") }}</label>
+                                    <label class="block text-sm font-medium mb-1">{{ ctrans("Height (mm)") }}</label>
                                     <InputNumber v-model="variant.height" :min="0" fluid />
                                     <p v-if="variantError(index, 'height')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'height') }}</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium mb-1">{{ trans("Depth (mm)") }}</label>
+                                    <label class="block text-sm font-medium mb-1">{{ ctrans("Depth (mm)") }}</label>
                                     <InputNumber v-model="variant.depth" :min="0" fluid />
                                     <p v-if="variantError(index, 'depth')" class="mt-1 text-xs text-red-500">{{ variantError(index, 'depth') }}</p>
                                 </div>
@@ -224,7 +224,7 @@ const variantError = (index: number, field: string) => (form.errors as Record<st
         </section>
 
         <div class="flex justify-end">
-            <Button type="save" :loading="form.processing" :label="trans('Save')" @click="submit" />
+            <Button type="save" :loading="form.processing" :label="ctrans('Save')" @click="submit" />
         </div>
     </form>
 </template>

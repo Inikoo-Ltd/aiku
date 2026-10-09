@@ -2,7 +2,7 @@
 import { computed, ref } from "vue"
 import { Head } from "@inertiajs/vue3"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faUsers, faBolt } from "@fortawesome/free-solid-svg-icons"
@@ -72,7 +72,7 @@ const persist = async (payload: Record<string, unknown>) => {
         await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), payload)
     } catch (error: any) {
         saveError.value =
-            error?.response?.data?.message ?? trans("Could not save the campaign, please try again.")
+            error?.response?.data?.message ?? ctrans("Could not save the campaign, please try again.")
     }
 }
 
@@ -141,7 +141,7 @@ const applyTemplate = async (value: number | null, resetRecipients = false) => {
         recipientsCount.value = data?.recipients_count ?? 0
     } catch (error: any) {
         saveError.value =
-            error?.response?.data?.message ?? trans("Could not clear the recipients, please try again.")
+            error?.response?.data?.message ?? ctrans("Could not clear the recipients, please try again.")
     } finally {
         isResettingRecipients.value = false
     }
@@ -185,20 +185,20 @@ const confirmTemplateChange = async () => {
 
     <PageHeading :data="pageHeadData">
         <template #afterTitle2>
-            <MailshotJourney :steps="journey" :disabledTooltip="trans('Choose a template first')" class="ml-4" />
+            <MailshotJourney :steps="journey" :disabledTooltip="ctrans('Choose a template first')" class="ml-4" />
         </template>
         <template #other>
             <ModalConfirmationDelete
                 v-if="isDeletable"
                 :routeDelete="deleteRoute"
-                :title="trans('Are you sure you want to delete this campaign?')"
-                :description="trans('This campaign and its draft audience will be removed.')"
-                :noLabel="trans('Delete campaign')">
+                :title="ctrans('Are you sure you want to delete this campaign?')"
+                :description="ctrans('This campaign and its draft audience will be removed.')"
+                :noLabel="ctrans('Delete campaign')">
                 <template #default="{ changeModel }">
                     <Button
                         icon="fal fa-trash-alt"
                         type="negative"
-                        :tooltip="trans('Delete campaign')"
+                        :tooltip="ctrans('Delete campaign')"
                         @click="changeModel" />
                 </template>
             </ModalConfirmationDelete>
@@ -207,23 +207,23 @@ const confirmTemplateChange = async () => {
 
     <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <Message v-if="!isEditable" severity="info" :closable="false">
-            {{ trans("This campaign is no longer editable, cancel its schedule to change it.") }}
+            {{ ctrans("This campaign is no longer editable, cancel its schedule to change it.") }}
         </Message>
 
         <Message v-if="!isConfigured" severity="warn" :closable="false">
-            {{ trans("WhatsApp is not configured for this shop yet, so this campaign cannot be sent.") }}
+            {{ ctrans("WhatsApp is not configured for this shop yet, so this campaign cannot be sent.") }}
         </Message>
 
         <Message v-if="saveError" severity="error" :closable="false">{{ saveError }}</Message>
 
         <section class="rounded-xl border border-gray-200 overflow-hidden">
             <header class="bg-gray-50 border-b border-gray-200 px-4 py-3 text-sm font-medium text-gray-700">
-                {{ trans("Campaign details") }}
+                {{ ctrans("Campaign details") }}
             </header>
 
             <div class="p-4 max-w-md">
-                <label class="block text-sm font-medium text-gray-700">{{ trans("Campaign name") }}</label>
-                <p class="text-xs text-gray-500 mb-2">{{ trans("The name is only used internally") }}</p>
+                <label class="block text-sm font-medium text-gray-700">{{ ctrans("Campaign name") }}</label>
+                <p class="text-xs text-gray-500 mb-2">{{ ctrans("The name is only used internally") }}</p>
                 <PureInput v-model="name" :disabled="!isEditable" @blur="onNameBlur" />
             </div>
         </section>
@@ -232,26 +232,26 @@ const confirmTemplateChange = async () => {
              rounds its own top corners instead -->
         <section class="rounded-xl border border-gray-200">
             <header class="bg-gray-50 border-b border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 rounded-t-xl">
-                {{ trans("Channel and Content") }}
+                {{ ctrans("Channel and Content") }}
             </header>
 
             <div class="p-4 flex flex-col lg:flex-row gap-6">
                 <div class="flex-1 space-y-4 max-w-md relative z-10">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ trans("WhatsApp number") }}
+                            {{ ctrans("WhatsApp number") }}
                         </label>
                         <!-- ponytail: a shop has exactly one WhatsApp number in settings, so this
                              shows it rather than offering a picker over a list that does not exist -->
                         <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">
                             <FontAwesomeIcon :icon="faWhatsapp" class="text-green-500" fixed-width />
-                            {{ whatsappNumber ?? trans("No WhatsApp number configured") }}
+                            {{ whatsappNumber ?? ctrans("No WhatsApp number configured") }}
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ trans("WhatsApp template") }}
+                            {{ ctrans("WhatsApp template") }}
                         </label>
                         <PureMultiselect
                             :key="selectKey"
@@ -264,14 +264,14 @@ const confirmTemplateChange = async () => {
                             valueProp="value"
                             searchable
                             :classes="{ dropdown: 'multiselect-dropdown !z-[1000]' }"
-                            :placeholder="trans('Select a template')" />
+                            :placeholder="ctrans('Select a template')" />
                         <p v-if="!templates.length" class="text-xs text-gray-500 mt-2">
-                            {{ trans("No approved templates yet. Create one and wait for Meta to approve it.") }}
+                            {{ ctrans("No approved templates yet. Create one and wait for Meta to approve it.") }}
                         </p>
 
                         <ButtonWithLink
                             :routeTarget="createTemplateRoute"
-                            :label="trans('Create Template')"
+                            :label="ctrans('Create Template')"
                             type="tertiary"
                             size="xs"
                             icon="fal fa-plus"
@@ -287,46 +287,46 @@ const confirmTemplateChange = async () => {
                         :buttons="selectedTemplate?.buttons ?? []"
                         :businessName="businessName"
                         :mergeTags="selectedTemplate?.mergeTags ?? []"
-                        :placeholder="trans('Select a template to preview it here…')" />
+                        :placeholder="ctrans('Select a template to preview it here…')" />
                 </div>
             </div>
         </section>
 
         <section class="rounded-xl border border-gray-200 overflow-hidden">
             <header class="bg-gray-50 border-b border-gray-200 px-4 py-3 text-sm font-medium text-gray-700">
-                {{ trans("Recipient") }}
+                {{ ctrans("Recipient") }}
             </header>
 
             <div class="p-4 max-w-md">
                 <div class="rounded-lg border border-gray-200 p-4 flex items-center justify-between gap-4">
                     <div>
                         <div class="text-sm font-medium text-gray-700">
-                            {{ trans(":count contacts selected", { count: recipientsCount }) }}
+                            {{ ctrans(":count contacts selected", { count: recipientsCount }) }}
                         </div>
                         <p class="text-xs text-gray-500 mt-1">
-                            {{ trans("Choose which contacts receive this campaign.") }}
+                            {{ ctrans("Choose which contacts receive this campaign.") }}
                         </p>
                     </div>
                     <ButtonWithLink
                         v-if="isEditable"
                         :routeTarget="savedTemplateId ? recipientsRoute : undefined"
-                        :label="trans('Edit')"
+                        :label="ctrans('Edit')"
                         type="tertiary"
                         size="xs"
                         icon="fal fa-pencil"
                         :disabled="!savedTemplateId"
                         :loading="isResettingRecipients || isSavingTemplate"
-                        :tooltip="savedTemplateId ? undefined : trans('Choose a template first')"
+                        :tooltip="savedTemplateId ? undefined : ctrans('Choose a template first')"
                         class="shrink-0" />
                 </div>
 
                 <p v-if="isEditable && !savedTemplateId" class="mt-2 text-xs text-gray-500">
-                    {{ trans("A template's merge tags decide who can be reached, so recipients are chosen after it.") }}
+                    {{ ctrans("A template's merge tags decide who can be reached, so recipients are chosen after it.") }}
                 </p>
 
                 <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
                     <FontAwesomeIcon :icon="faUsers" class="text-gray-400" fixed-width />
-                    {{ trans("Number of recipients") }}: {{ recipientsCount }}
+                    {{ ctrans("Number of recipients") }}: {{ recipientsCount }}
                 </div>
             </div>
         </section>
@@ -334,22 +334,22 @@ const confirmTemplateChange = async () => {
         <section class="rounded-xl border border-gray-200 overflow-hidden opacity-60">
             <header class="bg-gray-50 border-b border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 flex items-center gap-2">
                 <FontAwesomeIcon :icon="faBolt" class="text-gray-400 text-xs" fixed-width />
-                {{ trans("Automation") }}
-                <span class="text-xs font-normal text-gray-400">({{ trans("coming soon") }})</span>
+                {{ ctrans("Automation") }}
+                <span class="text-xs font-normal text-gray-400">({{ ctrans("coming soon") }})</span>
             </header>
         </section>
 
         <Modal :isOpen="isConfirmingReset" width="w-full max-w-lg" @onClose="cancelTemplateChange">
             <h3 class="text-base font-medium text-gray-800">
-                {{ trans("This template needs different information") }}
+                {{ ctrans("This template needs different information") }}
             </h3>
             <p class="mt-2 text-sm text-gray-500">
-                {{ trans("Your :count selected contacts were chosen for the current template's merge tags. This template needs different ones, so the selection will be cleared and you will need to choose recipients again.", { count: recipientsCount }) }}
+                {{ ctrans("Your :count selected contacts were chosen for the current template's merge tags. This template needs different ones, so the selection will be cleared and you will need to choose recipients again.", { count: recipientsCount }) }}
             </p>
             <div class="mt-6 flex justify-end gap-2">
-                <Button :label="trans('Cancel')" type="tertiary" @click="cancelTemplateChange" />
+                <Button :label="ctrans('Cancel')" type="tertiary" @click="cancelTemplateChange" />
                 <Button
-                    :label="trans('Change template and clear recipients')"
+                    :label="ctrans('Change template and clear recipients')"
                     type="primary"
                     :loading="isResettingRecipients"
                     @click="confirmTemplateChange" />

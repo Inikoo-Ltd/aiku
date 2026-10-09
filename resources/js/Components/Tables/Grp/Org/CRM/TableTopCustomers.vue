@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, provide } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
@@ -79,17 +79,17 @@ function formatCurrency(value: number, currencyCode: string): string {
                     <thead>
                         <tr class="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wider text-left text-xs">
                             <th class="px-4 py-3 text-center w-12">#</th>
-                            <th class="px-4 py-3">{{ trans('Customer') }}</th>
-                            <th class="px-4 py-3">{{ trans('Reference') }}</th>
-                            <th class="px-4 py-3 text-center">{{ trans('Invoices') }}</th>
-                            <th class="px-4 py-3 text-center">{{ trans('Last Invoiced') }}</th>
-                            <th class="px-4 py-3 text-right">{{ trans('Total Sales') }}</th>
+                            <th class="px-4 py-3">{{ ctrans('Customer') }}</th>
+                            <th class="px-4 py-3">{{ ctrans('Reference') }}</th>
+                            <th class="px-4 py-3 text-center">{{ ctrans('Invoices') }}</th>
+                            <th class="px-4 py-3 text-center">{{ ctrans('Last Invoiced') }}</th>
+                            <th class="px-4 py-3 text-right">{{ ctrans('Total Sales') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
                         <tr v-if="!props.data.topCustomers || props.data.topCustomers.length === 0">
                             <td colspan="6" class="px-4 py-8 text-center text-gray-400 italic">
-                                {{ trans('No customer records found for this period') }}
+                                {{ ctrans('No customer records found for this period') }}
                             </td>
                         </tr>
                         <tr

@@ -2,7 +2,7 @@
 import { ref, computed } from "vue"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { Pie } from "vue-chartjs"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUsers, faUserCheck, faUserSlash, faUserPlus, faMoneyBillWave } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -175,7 +175,7 @@ const isLoadingVisit = ref<number | null>(null)
 						<div class="flex gap-x-2 items-end">
 							{{ locale.number(customerStats.count) }}
 							<span class="text-sm font-medium leading-4 text-gray-500">
-								{{ trans("in total") }}
+								{{ ctrans("in total") }}
 							</span>
 						</div>
 

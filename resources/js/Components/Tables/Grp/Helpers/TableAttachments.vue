@@ -10,7 +10,7 @@ import { router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { ref } from "vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ConfirmPopup from "primevue/confirmpopup"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
@@ -48,8 +48,8 @@ const isLoading = ref<number[]>([])
 const onDelete = (media_id: number, id: number) => {
     if (!props.detachRoute?.name) {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("No detach route provided"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("No detach route provided"),
             type: "error"
         })
     }
@@ -75,7 +75,7 @@ const onDelete = (media_id: number, id: number) => {
 const confirmDelete = (event, media_id: number, id: number) => {
     confirm.require({
         target: event.currentTarget,
-        message: trans("Are you sure you want to delete?"),
+        message: ctrans("Are you sure you want to delete?"),
         group: "headless",
         accept: () => {
             onDelete(media_id, id)
@@ -98,7 +98,7 @@ const confirmDelete = (event, media_id: number, id: number) => {
                     <Button
                         type="tertiary"
                         icon="fal fa-download"
-                        v-tooltip="trans('Download attachment')"
+                        v-tooltip="ctrans('Download attachment')"
                     />
                 </a>
 
@@ -110,7 +110,7 @@ const confirmDelete = (event, media_id: number, id: number) => {
                     type="negative"
                     icon="fal fa-trash-alt"
                     :loading="isLoading.includes(attachment.id)"
-                    v-tooltip="trans('Delete attachment')"
+                    v-tooltip="ctrans('Delete attachment')"
                 />
 
                 <ConfirmPopup group="headless">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     product: {
@@ -12,6 +12,6 @@ const props = defineProps<{
 
 <template>
     <span class="bg-yellow-400/50 border border-yellow-400 text-yellow-700 px-3 rounded-sm rounded-tr-xl rounded-bl-xl">
-        {{ product.status_label ?? trans("Coming soon") }}
+        {{ product.status_label ?? ctrans("Coming soon") }}
     </span>
 </template>

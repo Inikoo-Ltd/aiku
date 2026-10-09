@@ -4,7 +4,6 @@ import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { onMounted, ref, watch } from 'vue'
 import { router } from "@inertiajs/vue3"
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
 import Image from "@common/Components/Image.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Image as ImageTS } from '@/types/Image'
@@ -52,7 +51,7 @@ const onPassItemToCs = async () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
+                    title: ctrans("Success"),
                     text: ctrans("Successfully pass :itemCode as waiting to CS", { itemCode: props.transaction?.org_stock_code ?? '' }),
                     type: "success"
                 })
@@ -61,8 +60,8 @@ const onPassItemToCs = async () => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set item as waiting. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to set item as waiting. Try again"),
                     type: "error"
                 })
             },

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import {get} from 'lodash-es';
 import {capitalize} from "@/Composables/capitalize";
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -60,7 +60,7 @@ const layout = useLayoutStore()
                 <FontAwesomeIcon :icon="menu.icon"
                     class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70 transition duration-100 ease-in-out"
                     fixed-width aria-hidden="true"/>
-                <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ trans(menu.label) }}</span>
+                <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ ctrans(menu.label) }}</span>
                 <!-- The line appear on hover and active state -->
                 <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
             </Link>
@@ -76,7 +76,7 @@ const layout = useLayoutStore()
                 <FontAwesomeIcon :icon="menu.icon"
                     class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70 transition duration-100 ease-in-out"
                     fixed-width aria-hidden="true"/>
-                <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ trans(menu.label) }}</span>
+                <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ ctrans(menu.label) }}</span>
                 <!-- The line appear on hover and active state -->
                 <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
             </Link>

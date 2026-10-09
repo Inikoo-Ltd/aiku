@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import Image from '../Common/Components/Image.vue'
 import Pagination from '@/Components/Table/Pagination.vue'
@@ -101,7 +101,7 @@ defineExpose({ open })
       <PureInput 
         v-model="query" 
         @update:modelValue="debounceFetch"
-        :placeholder="trans('Search...')" 
+        :placeholder="ctrans('Search...')" 
       />
     </div>
 
@@ -140,7 +140,7 @@ defineExpose({ open })
 
       <!-- EMPTY -->
       <div v-if="!isLoading && !list.length" class="col-span-full text-center text-gray-400 py-6">
-        {{ trans('No products found') }}
+        {{ ctrans('No products found') }}
       </div>
 
     </div>

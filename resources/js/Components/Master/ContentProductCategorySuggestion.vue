@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, toRef } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useMasterShopsContent } from '@/Composables/useMasterShopsContent'
 import ShopContentTabs from './ShopContentTabs.vue'
@@ -28,9 +28,9 @@ const { shops, isLoading, error, selectedShopId, selectedShop, fetchShops } = us
 )
 
 const fields: { key: ComparableField, label: string, isHtml: boolean }[] = [
-    { key: 'name', label: trans('Name'), isHtml: false },
-    { key: 'description', label: trans('Description'), isHtml: true },
-    { key: 'description_extra', label: trans('Description extra'), isHtml: true },
+    { key: 'name', label: ctrans('Name'), isHtml: false },
+    { key: 'description', label: ctrans('Description'), isHtml: true },
+    { key: 'description_extra', label: ctrans('Description extra'), isHtml: true },
 ]
 
 const masterValue = (field: ComparableField) => props.data?.[field] || ''
@@ -59,18 +59,18 @@ const isFieldDifferent = (field: ComparableField) => {
 
         <div class="grid grid-cols-1 gap-x-8 md:grid-cols-2">
             <div class="mb-2 hidden rounded-lg px-3 py-2 md:block" :style="{ backgroundColor: `${primaryColor}14` }">
-                <span class="text-sm font-semibold" :style="{ color: primaryColor }">{{ trans('Master') }}</span>
+                <span class="text-sm font-semibold" :style="{ color: primaryColor }">{{ ctrans('Master') }}</span>
             </div>
 
             <div class="mb-2 hidden items-center justify-between gap-2 rounded-lg bg-sky-50 px-3 py-2 md:flex">
                 <span class="truncate text-sm font-semibold text-sky-700">
-                    {{ selectedShop?.shop_name || trans('No shop uses this master yet') }}
+                    {{ selectedShop?.shop_name || ctrans('No shop uses this master yet') }}
                 </span>
                 <span
                     v-if="selectedShop?.follow_master"
                     class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"
                 >
-                    {{ trans('Follow master') }}
+                    {{ ctrans('Follow master') }}
                 </span>
             </div>
 
@@ -81,7 +81,7 @@ const isFieldDifferent = (field: ComparableField) => {
 
                 <div class="mb-3 rounded-lg border-l-2 px-3 py-2" :style="{ borderColor: primaryColor, backgroundColor: `${primaryColor}0d` }">
                     <div class="mb-0.5 text-[10px] uppercase tracking-wide md:hidden" :style="{ color: primaryColor }">
-                        {{ trans('Master') }}
+                        {{ ctrans('Master') }}
                     </div>
                     <p v-if="!masterValue(field.key)" class="text-sm text-gray-400">—</p>
                     <p
@@ -94,7 +94,7 @@ const isFieldDifferent = (field: ComparableField) => {
 
                 <div class="mb-3 rounded-lg border-l-2 border-sky-400 bg-sky-50/60 px-3 py-2">
                     <div class="mb-0.5 text-[10px] uppercase tracking-wide text-sky-600 md:hidden">
-                        {{ selectedShop?.shop_code || trans('Shop') }}
+                        {{ selectedShop?.shop_code || ctrans('Shop') }}
                     </div>
                     <p v-if="!shopValue(field.key)" class="text-sm text-gray-400">—</p>
                     <p

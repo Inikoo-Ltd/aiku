@@ -5,7 +5,7 @@ import Image from "@/Common/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { router, Link } from "@inertiajs/vue3"
 import ReviewReply from "@/Components/Reviews/ReviewReply.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faPencil, faReply, faCheck, faReplyAll, faArrowUp, faArrowDown, faExclamationTriangle, faBan } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -72,8 +72,8 @@ const approveReview = (event: MouseEvent, item: any) => {
 
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: trans("Approve and publish this review?"),
-        acceptLabel: trans("Approve"),
+        message: ctrans("Approve and publish this review?"),
+        acceptLabel: ctrans("Approve"),
         acceptType: "positive",
         accept: () => {
             approvingId.value = item.id
@@ -99,8 +99,8 @@ const rejectReview = (event: MouseEvent, item: any) => {
 
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: trans("Reject this review?"),
-        acceptLabel: trans("Reject"),
+        message: ctrans("Reject this review?"),
+        acceptLabel: ctrans("Reject"),
         acceptType: "negative",
         accept: () => {
             rejectingId.value = item.id
@@ -153,7 +153,7 @@ const rejectReview = (event: MouseEvent, item: any) => {
                     v-if="item.has_reply && item.existing_reply?.body"
                     class="border-l-2 border-gray-200 pl-3 text-sm italic text-gray-500"
                 >
-                    <span class="font-medium italic text-gray-400">{{ trans('Reply') }}:</span>
+                    <span class="font-medium italic text-gray-400">{{ ctrans('Reply') }}:</span>
                     {{ item.existing_reply.body }}
                 </div>
             </div>
@@ -186,7 +186,7 @@ const rejectReview = (event: MouseEvent, item: any) => {
                     :icon="faCheck"
                     size="xs"
                     :loading="approvingId === item.id"
-                    v-tooltip="trans('Approve')"
+                    v-tooltip="ctrans('Approve')"
                     @click="(event) => approveReview(event, item)"
                 />
                 <Button
@@ -195,10 +195,10 @@ const rejectReview = (event: MouseEvent, item: any) => {
                     :icon="faBan"
                     size="xs"
                     :loading="rejectingId === item.id"
-                    v-tooltip="trans('Reject')"
+                    v-tooltip="ctrans('Reject')"
                     @click="(event) => rejectReview(event, item)"
                 />
-                <Button type="tertiary" :icon="faReplyAll" size="xs" v-tooltip="trans('Reply')" @click="() => openModal(item)" />
+                <Button type="tertiary" :icon="faReplyAll" size="xs" v-tooltip="ctrans('Reply')" @click="() => openModal(item)" />
             </div>
         </template>
     </Table>
@@ -211,8 +211,8 @@ const rejectReview = (event: MouseEvent, item: any) => {
                     <p class="whitespace-nowrap text-sm text-gray-700">{{ message.message }}</p>
                 </div>
                 <div class="mt-3 flex justify-end gap-2">
-                    <Button type="tertiary" size="xs" :label="trans('Cancel')" @click="rejectCallback" />
-                    <Button :type="message.acceptType || 'positive'" size="xs" :label="message.acceptLabel || trans('Approve')" @click="acceptCallback" />
+                    <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="rejectCallback" />
+                    <Button :type="message.acceptType || 'positive'" size="xs" :label="message.acceptLabel || ctrans('Approve')" @click="acceptCallback" />
                 </div>
             </div>
         </template>

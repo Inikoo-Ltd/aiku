@@ -2,7 +2,7 @@
 import { ref, watch, onBeforeMount } from 'vue'
 import { router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Select from 'primevue/select'
 
 const props = defineProps<{
@@ -11,11 +11,11 @@ const props = defineProps<{
 
 // Frequency options matching TimeSeriesFrequencyEnum
 const frequencyOptions = [
-    { label: trans('Daily'), value: 'daily' },
-    { label: trans('Weekly'), value: 'weekly' },
-    { label: trans('Monthly'), value: 'monthly' },
-    { label: trans('Quarterly'), value: 'quarterly' },
-    { label: trans('Yearly'), value: 'yearly' },
+    { label: ctrans('Daily'), value: 'daily' },
+    { label: ctrans('Weekly'), value: 'weekly' },
+    { label: ctrans('Monthly'), value: 'monthly' },
+    { label: ctrans('Quarterly'), value: 'quarterly' },
+    { label: ctrans('Yearly'), value: 'yearly' },
 ]
 
 const isLoadingReload = ref(false)
@@ -49,7 +49,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-    <div class="flex items-center gap-2 rounded-md" v-tooltip="trans('Select frequency')">
+    <div class="flex items-center gap-2 rounded-md" v-tooltip="ctrans('Select frequency')">
         <div class="relative">
             <Select
                 v-model="selectedFrequency"

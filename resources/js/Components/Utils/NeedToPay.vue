@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -27,7 +27,7 @@ const locale = inject('locale', aikuLocaleStructure)
     >
         <!-- Block: Corner label (fully paid) -->
         <Transition>
-            <div v-if="isPaidOff || Number(payAmount) <= 0" v-tooltip="trans('Fully paid')"
+            <div v-if="isPaidOff || Number(payAmount) <= 0" v-tooltip="ctrans('Fully paid')"
                 class="absolute top-0 right-0 text-green-500 p-1 text-xxs">
                 <div
                     class="absolute top-0 right-0 w-0 h-0 border-b-[25px] border-r-[25px] border-transparent border-r-green-500">
@@ -37,17 +37,17 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
         </Transition>
 
-        <div v-tooltip="trans('Amount need to pay by customer')" class="text-sm w-fit">
+        <div v-tooltip="ctrans('Amount need to pay by customer')" class="text-sm w-fit">
             {{ locale.currencyFormat(currencyCode, Number(totalAmount)) }}
-            <span v-if="Number(paidAmount) > 0" class='text-gray-400'>. {{ trans("Paid") }}</span>
+            <span v-if="Number(paidAmount) > 0" class='text-gray-400'>. {{ ctrans("Paid") }}</span>
         </div>
 
         <div v-if="paidAmount !== undefined && payAmount !== 0" class="text-xs text-gray-500 font-light">
-            {{ trans('Paid') }}: {{ locale.currencyFormat(currencyCode, Number(paidAmount)) }}
+            {{ ctrans('Paid') }}: {{ locale.currencyFormat(currencyCode, Number(paidAmount)) }}
         </div>
         
         <div v-if="paidAmount !== undefined && payAmount > 0" class="text-xs text-gray-500 font-light whitespace-nowrap">
-            {{ trans('Need to pay') }}: {{ locale.currencyFormat(currencyCode, Number(payAmount)) }}
+            {{ ctrans('Need to pay') }}: {{ locale.currencyFormat(currencyCode, Number(payAmount)) }}
         </div>
 
         <slot name="default" />

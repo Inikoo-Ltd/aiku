@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime";
 
 const props = defineProps<{
@@ -33,7 +33,7 @@ const flagUrl = (code: string) => `/flags/${code.toLowerCase()}.png`
         <template #cell(status)="{ item }">
             <span
                 class="relative flex h-3 w-3"
-                :title="item.was_blocked ? trans('Blocked') : trans('Allowed')"
+                :title="item.was_blocked ? ctrans('Blocked') : ctrans('Allowed')"
             >
                 <span
                     v-if="item.was_blocked"

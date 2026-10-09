@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle } from '@fal'
 import { faFacebook, faLinkedin, faGoogle, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Fieldset, InputNumber } from 'primevue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { routeType } from '@/types/route'
@@ -33,7 +33,7 @@ const onDeleteParcel = (index: number) => {
 <template>
     <div class="max-w-2xl rounded-md">
 
-        <Fieldset :legend="`${trans('Parts')} (${props.form[props.fieldName].length})`" xclass="mb-4">
+        <Fieldset :legend="`${ctrans('Parts')} (${props.form[props.fieldName].length})`" xclass="mb-4">
             
             <!--  -->
             <div class="grid gap-y-2 xmax-h-64 xoverflow-y-auto xpr-2">
@@ -77,7 +77,7 @@ const onDeleteParcel = (index: number) => {
                                 v-model="part.org_stock_id"
                                 aupdate:modelValue="(e) => (set(data, ['brand', 'id'], e), onAttachBrand(e))"
                                 :fetchRoute="fieldData.fetch_route"
-                                :placeholder="trans('Select brand')"
+                                :placeholder="ctrans('Select brand')"
                                 valueProp="id"
                                 required
                                 aoptionsList="(options) => dataServiceList = options"
@@ -111,7 +111,7 @@ const onDeleteParcel = (index: number) => {
                                 v-model="part.notes"
                                 xclass="w-32"
                                 size="small"
-                                :placeholder="trans('Note')"
+                                :placeholder="ctrans('Note')"
                                 rows="3"
                             />
                         </div>
@@ -119,7 +119,7 @@ const onDeleteParcel = (index: number) => {
                 </TransitionGroup>
 
                 <div v-else class="text-center text-gray-400">
-                    {{ trans('No Parts yet') }}
+                    {{ ctrans('No Parts yet') }}
                 </div>
                 
             </div>
@@ -129,7 +129,7 @@ const onDeleteParcel = (index: number) => {
                 <!-- <div></div> -->
                 <div @click="() => props.form[props.fieldName].push({ org_stock_id: null, quantity: 1, notes: ''})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-                    {{ trans("Add another Part") }}
+                    {{ ctrans("Add another Part") }}
                 </div>
             </div>
         </Fieldset>

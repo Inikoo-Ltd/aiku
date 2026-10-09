@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -64,7 +64,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('Master Text Changed') }}
+            {{ ctrans('Master Text Changed') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
@@ -105,7 +105,7 @@ function toggleOrg(orgSlug: string): void {
                         >
                             <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-emerald-700">
                                 <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-emerald-400" fixed-width />
-                                <span>{{ trans('Products with updated master text') }}</span>
+                                <span>{{ ctrans('Products with updated master text') }}</span>
                             </div>
                             <span class="text-xs font-semibold text-emerald-600 bg-emerald-100 rounded-full px-1.5 py-0.5">
                                 {{ shop.needs_review_items.count }}
@@ -115,7 +115,7 @@ function toggleOrg(orgSlug: string): void {
                             v-else
                             class="px-2 py-1 text-xs text-gray-400 italic"
                         >
-                            {{ trans('No products to review') }}
+                            {{ ctrans('No products to review') }}
                         </div>
                     </div>
                 </div>

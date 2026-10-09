@@ -9,7 +9,7 @@ import TableMasterCollections from '@/Components/Tables/Grp/Goods/TableMasterCol
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -82,8 +82,8 @@ const onSubmitAttach = async ({
         onSuccess: () => {
             closeModal()
             notify({
-                title: trans('Success'),
-                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
+                title: ctrans('Success'),
+                text: ctrans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -91,8 +91,8 @@ const onSubmitAttach = async ({
         onError: (errors: any) => {
             errorMessage.value = errors
             notify({
-                title: trans('Something went wrong.'),
-                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
+                title: ctrans('Something went wrong.'),
+                text: ctrans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },
@@ -118,7 +118,7 @@ const resetSelectionByScope = {
                 label="Attach Collections"
                 icon="fal fa-plus"
                 @click="isModalOpen.collections.value = true"
-                :tooltip="trans('Link another collection to this collections')"
+                :tooltip="ctrans('Link another collection to this collections')"
             />
             <!-- Modal: Collections -->
             <Modal
@@ -127,7 +127,7 @@ const resetSelectionByScope = {
                 width="w-full max-w-6xl"
             >
                 <ListSelector
-                    :headLabel="`${trans('Add collections to collection')}`"
+                    :headLabel="`${ctrans('Add collections to collection')}`"
                     :routeFetch="routes.dataList"
                     :isLoadingSubmit="isLoading"
                     @submit="(ids) =>

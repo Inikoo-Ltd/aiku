@@ -4,7 +4,7 @@ import { faCheck, faTimes } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 // Tambahkan ikon ke library FontAwesome
 library.add(faCheck, faTimes, faSpinnerThird)
@@ -62,7 +62,7 @@ const statusClass = computed(() => {
       <!-- Centered Text -->
       <div class="absolute inset-0 flex items-center justify-center text-[11px] text-gray-700 font-medium pointer-events-none z-10">
         <span>
-          {{ isDone ? `${finished} / ${total}` : trans("Loading...") + ` (${finished} / ${total})` }}
+          {{ isDone ? `${finished} / ${total}` : ctrans("Loading...") + ` (${finished} / ${total})` }}
         </span>
       </div>
     </div>

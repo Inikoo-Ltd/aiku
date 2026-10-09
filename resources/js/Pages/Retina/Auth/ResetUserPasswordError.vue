@@ -8,7 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 
 
 library.add(faArrowLeft, faTimesCircle);
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 
 defineOptions({ layout: LayoutRetinaAuth });
 defineProps({
@@ -29,10 +29,10 @@ defineProps({
 
   <Link :href="route('retina.reset-password.edit')" class="absolute left-4 top-4 text-sm text-gray-600 hover:underline">
     <FontAwesomeIcon icon='fal fa-arrow-left' class='' fixed-width aria-hidden='true' />
-    {{trans("Back to reset password")}}
+    {{ctrans("Back to reset password")}}
   </Link>
 
-  <div class="text-center font-bold text-xl mt-7">{{ trans("Error resetting password") }}</div>
+  <div class="text-center font-bold text-xl mt-7">{{ ctrans("Error resetting password") }}</div>
   <div class="text-center">
     <FontAwesomeIcon icon="fal fa-times-circle" class="text-red-500 text-4xl mb-4 mt-4" fixed-width aria-hidden="true" />
   </div>

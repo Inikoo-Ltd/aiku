@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -82,7 +82,7 @@ const onSubmitSubscribe = async () => {
 		currentState.value = "success"
 	} catch (error: any) {
 		currentState.value = "error"
-		errorMessage.value = error?.errors?.email || trans("An error occurred while subscribing.")
+		errorMessage.value = error?.errors?.email || ctrans("An error occurred while subscribing.")
 	}
 
 	isLoadingSubmit.value = false
@@ -94,7 +94,7 @@ const onSubmitSubscribe = async () => {
 		<section>
 			<div class="mx-auto max-w-7xl px-4 pt-12 text-center sm:px-6 sm:pt-12 lg:px-8">
 				<h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
-					{{ displayTitle ?? trans('Our Blog') }}
+					{{ displayTitle ?? ctrans('Our Blog') }}
 				</h1>
 				<div v-if="subtitle" class="mx-auto mt-4  text-base text-gray-500">
 					{{ subtitle }}
@@ -120,28 +120,28 @@ const onSubmitSubscribe = async () => {
 				<div
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-[color-mix(in_srgb,var(--theme-color-0)_7%,white)] p-8 ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_18%,white)]">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
-						{{ explore?.eyebrow ?? trans('New here?') }}
+						{{ explore?.eyebrow ?? ctrans('New here?') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ explore?.title ?? trans('Start exploring') }}
+						{{ explore?.title ?? ctrans('Start exploring') }}
 					</h2>
 					<p class="max-w-md text-sm leading-relaxed text-gray-500">
-						{{ explore?.description ?? trans('Dive into the latest stories, guides, and tips across all categories.') }}
+						{{ explore?.description ?? ctrans('Dive into the latest stories, guides, and tips across all categories.') }}
 					</p>
 					<a
 						href="#all-blogs"
 						class="mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[var(--theme-color-0)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_30%,white)] transition hover:bg-[var(--theme-color-0)] hover:text-[var(--theme-color-1)]">
-						{{ explore?.label ?? trans('Browse All Blogs') }}
+						{{ explore?.label ?? ctrans('Browse All Blogs') }}
 						<span aria-hidden="true">→</span>
 					</a>
 				</div>
 
 				<div class="flex flex-col justify-center gap-3 rounded-2xl bg-gray-50 p-8 ring-1 ring-gray-200">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-						{{ newsletter?.eyebrow ?? trans('Stay in the loop') }}
+						{{ newsletter?.eyebrow ?? ctrans('Stay in the loop') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ newsletter?.title ?? trans('Get the newsletter') }}
+						{{ newsletter?.title ?? ctrans('Get the newsletter') }}
 					</h2>
 					<p class="max-w-md text-sm leading-relaxed text-gray-500">
 						{{ newsletter?.description }}
@@ -150,7 +150,7 @@ const onSubmitSubscribe = async () => {
 					<Transition>
 						<div v-if="currentState !== 'success'" class="flex flex-col">
 							<form class="mt-2 flex flex-col gap-2 sm:flex-row" @submit.prevent="onSubmitSubscribe">
-								<label for="blog-newsletter-email" class="sr-only">{{ trans('Email address') }}</label>
+								<label for="blog-newsletter-email" class="sr-only">{{ ctrans('Email address') }}</label>
 
 								<input
 									v-model="hiddenField"
@@ -169,7 +169,7 @@ const onSubmitSubscribe = async () => {
 										autocomplete="email"
 										required
 										:disabled="isLoadingSubmit"
-										:placeholder="trans('Enter your email')"
+										:placeholder="ctrans('Enter your email')"
 										class="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-[var(--theme-color-0)]" />
 									<FontAwesomeIcon
 										icon="fal fa-envelope"
@@ -186,7 +186,7 @@ const onSubmitSubscribe = async () => {
 										<LoadingIcon v-if="isLoadingSubmit" />
 									</Transition>
 									<FontAwesomeIcon v-if="!isLoadingSubmit" icon="fal fa-envelope" fixed-width aria-hidden="true" />
-									{{ trans('Subscribe') }}
+									{{ ctrans('Subscribe') }}
 								</button>
 							</form>
 
@@ -197,7 +197,7 @@ const onSubmitSubscribe = async () => {
 
 						<div v-else class="mt-2 flex items-center gap-2 text-sm font-medium text-green-600">
 							<FontAwesomeIcon icon="fas fa-check-circle" class="text-lg" fixed-width aria-hidden="true" />
-							{{ trans('You have successfully subscribed') }}!
+							{{ ctrans('You have successfully subscribed') }}!
 						</div>
 					</Transition>
 				</div>
@@ -208,7 +208,7 @@ const onSubmitSubscribe = async () => {
 			<GridProducts
 				:resource="data"
 				name="blogs"
-				:label="trans('blog')"
+				:label="ctrans('blog')"
 				:preserve-scroll="true"
 				:gridClass="'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4'"
 				:hideDefault="true"

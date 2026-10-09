@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useLayoutStore } from "@/Stores/layout"
 import FooterTab from '@/Components/Footer/FooterTab.vue'
 import { useLiveUsers } from '@/Stores/active-users'
@@ -62,7 +62,7 @@ const layout = useLayoutStore()
                                             </Transition>
                                         </div>
                                     </div>
-                                    <!-- <span v-if="dataUser.loggedIn" class="text-gray-800">{{ dataUser.route?.name ? trans(dataUser.route.label ?? '') : '' }}</span>
+                                    <!-- <span v-if="dataUser.loggedIn" class="text-gray-800">{{ dataUser.route?.name ? ctrans(dataUser.route.label ?? '') : '' }}</span>
                                             <span v-else-if="getAwayStatus(dataUser.last_active)" class="text-gray-800">{{ getAwayStatus(dataUser.last_active) ? 'Away' : '' }}</span> -->
                                     <!-- <span v-if="dataUser.route.subject" class="text-gray-300">{{ dataUser.route.subject }}</span> -->
                                 </Link>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { computed, onMounted } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 type LeaveItem = {
 	id: number
@@ -65,13 +65,13 @@ const props = defineProps<{
 }>()
 
 const weekdayLabels = [
-	trans("Su"),
-	trans("Mo"),
-	trans("Tu"),
-	trans("We"),
-	trans("Th"),
-	trans("Fr"),
-	trans("Sa"),
+	ctrans("Su"),
+	ctrans("Mo"),
+	ctrans("Tu"),
+	ctrans("We"),
+	ctrans("Th"),
+	ctrans("Fr"),
+	ctrans("Sa"),
 ]
 const generatedAt = new Date()
 
@@ -238,7 +238,7 @@ const getEmployeeSubtitle = (employee: EmployeeLeaveRow): string => {
 		return `${employee.job_title} / ${employee.department}`
 	}
 
-	return employee.job_title || employee.department || trans("No role assigned")
+	return employee.job_title || employee.department || ctrans("No role assigned")
 }
 
 const getRowHeight = (laneCount: number): string => {
@@ -292,12 +292,12 @@ onMounted(() => {
 				<table class="leave-table">
 					<thead>
 						<tr>
-							<th class="table-header">{{ trans("Type") }}</th>
-							<th class="table-header">{{ trans("Start") }}</th>
-							<th class="table-header">{{ trans("End") }}</th>
-							<th class="table-header">{{ trans("Days") }}</th>
-							<th class="table-header">{{ trans("Status") }}</th>
-							<th class="table-header">{{ trans("Reason") }}</th>
+							<th class="table-header">{{ ctrans("Type") }}</th>
+							<th class="table-header">{{ ctrans("Start") }}</th>
+							<th class="table-header">{{ ctrans("End") }}</th>
+							<th class="table-header">{{ ctrans("Days") }}</th>
+							<th class="table-header">{{ ctrans("Status") }}</th>
+							<th class="table-header">{{ ctrans("Reason") }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -343,12 +343,12 @@ onMounted(() => {
 						{{ organisation.name }}
 					</p>
 					<h1 class="mt-1 text-[16px] font-semibold text-[#1F2937]">
-						{{ trans("Leave Calendar") }}
+						{{ ctrans("Leave Calendar") }}
 					</h1>
 					<p class="mt-2 text-[13px] text-[#555555]">{{ monthLabel }}</p>
 					<p class="mt-1 text-[13px] text-[#555555]">
-						{{ trans("From") }}: {{ formatShortDate(visibleRange.start) }} -
-						{{ trans("To") }}: {{ formatShortDate(visibleRange.end) }}
+						{{ ctrans("From") }}: {{ formatShortDate(visibleRange.start) }} -
+						{{ ctrans("To") }}: {{ formatShortDate(visibleRange.end) }}
 					</p>
 				</header>
 
@@ -360,7 +360,7 @@ onMounted(() => {
 								:style="{ gridTemplateColumns }">
 								<div
 									class="sticky left-0 z-20 border-b border-r border-[#D9D9D9] bg-[#F0F0F0] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-[#374151] print:static">
-									{{ trans("Employee") }}
+									{{ ctrans("Employee") }}
 								</div>
 								<div
 									v-for="day in visibleDays"
@@ -432,7 +432,7 @@ onMounted(() => {
 
 				<section class="mt-8 border-t border-[#D6D6D6] pt-5">
 					<h2 class="text-[16px] font-semibold text-[#1F2937]">
-						{{ trans("Leave Details") }}
+						{{ ctrans("Leave Details") }}
 					</h2>
 
 					<div
@@ -448,27 +448,27 @@ onMounted(() => {
 								<tr class="bg-[#F0F0F0]">
 									<th
 										class="border border-[#D9D9D9] px-3 py-2 text-left text-[12px] font-semibold">
-										{{ trans("Type") }}
+										{{ ctrans("Type") }}
 									</th>
 									<th
 										class="border border-[#D9D9D9] px-3 py-2 text-left text-[12px] font-semibold">
-										{{ trans("Start") }}
+										{{ ctrans("Start") }}
 									</th>
 									<th
 										class="border border-[#D9D9D9] px-3 py-2 text-left text-[12px] font-semibold">
-										{{ trans("End") }}
+										{{ ctrans("End") }}
 									</th>
 									<th
 										class="border border-[#D9D9D9] px-3 py-2 text-left text-[12px] font-semibold">
-										{{ trans("Days") }}
+										{{ ctrans("Days") }}
 									</th>
 									<th
 										class="border border-[#D9D9D9] px-3 py-2 text-left text-[12px] font-semibold">
-										{{ trans("Status") }}
+										{{ ctrans("Status") }}
 									</th>
 									<th
 										class="border border-[#D9D9D9] px-3 py-2 text-left text-[12px] font-semibold">
-										{{ trans("Reason") }}
+										{{ ctrans("Reason") }}
 									</th>
 								</tr>
 							</thead>
@@ -522,7 +522,7 @@ onMounted(() => {
 
 				<footer
 					class="mt-8 border-t border-[#D6D6D6] pt-4 text-left text-[11px] text-[#AAAAAA]">
-					{{ trans("Generated on") }}: {{ formatGeneratedAt(generatedAt) }}
+					{{ ctrans("Generated on") }}: {{ formatGeneratedAt(generatedAt) }}
 				</footer>
 			</div>
 		</div>

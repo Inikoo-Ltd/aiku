@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { ref, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faUndoAlt } from "@fal";
@@ -140,12 +140,12 @@ watch(() => props.src_image, (val) => {
                     class="absolute top-2 right-2 px-2 py-1 text-white border border-gray-300 rounded cursor-pointer hover:bg-white/80 hover:text-gray-700"
                 >
                     <FontAwesomeIcon icon="fal fa-undo-alt" fixed-width />
-                    {{ trans("Refresh") }}
+                    {{ ctrans("Refresh") }}
                 </div>
             </div>
 
             <div class="text-gray-500 italic text-xs mt-2">
-                {{ trans("Use mouse scroll to zoom in and zoom out") }}
+                {{ ctrans("Use mouse scroll to zoom in and zoom out") }}
             </div>
 
             <div class="w-full mt-6">
@@ -174,7 +174,7 @@ watch(() => props.src_image, (val) => {
                 for="input-avatar"
                 class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm opacity-0 hover:opacity-100 cursor-pointer"
             >
-                {{ trans("Change") }}
+                {{ ctrans("Change") }}
 
                 <input
                     id="input-avatar"

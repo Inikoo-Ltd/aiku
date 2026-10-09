@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faSpinnerThird, faSave as fadSave } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faClipboard, faSpinner, faPencil, faDownload, faFileExport, faPlus as falPlus, faHistory, faListAlt, IconDefinition, faExternalLink } from "@fal"
@@ -117,19 +117,19 @@ const getActionLabel = (label: string | undefined) => {
             case "edit":
                 return null
             case "save":
-                return trans("Save")
+                return ctrans("Save")
             case "create":
-                return trans("Create")
+                return ctrans("Create")
             case "exit":
-                return trans("Exit")
+                return ctrans("Exit")
             case "exitEdit":
-                return trans("Exit edit")
+                return ctrans("Exit edit")
             case "cancel":
-                return trans("Cancel")
+                return ctrans("Cancel")
             case "delete":
-                return trans("Delete")
+                return ctrans("Delete")
             case "clearMulti":
-                return trans("Clear")
+                return ctrans("Clear")
             default:
                 return ""
         }

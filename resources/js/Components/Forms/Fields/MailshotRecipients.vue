@@ -13,7 +13,7 @@ import AccordionHeader from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
 import Multiselect from "@vueform/multiselect"
 import "@vueform/multiselect/themes/default.css"
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 import Tag from '@/Components/Tag.vue';
 import PureInput from '@/Components/Pure/PureInput.vue';
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue';
@@ -58,12 +58,12 @@ const queryData = ref({
     range: 'week'
 })
 const contact = [
-    { label: trans("Never"), value: false },
-    { label: trans("Last Contact"), value: true },
+    { label: ctrans("Never"), value: false },
+    { label: ctrans("Last Contact"), value: true },
 ]
 const logic = [
-    { label: trans("All"), value: "all" },
-    { label: trans("Any"), value: "any" },
+    { label: ctrans("All"), value: "all" },
+    { label: ctrans("Any"), value: "any" },
 ]
 const Intervals = [
     {
@@ -133,14 +133,14 @@ onMounted(() => {
                 class="bg-gradient-to-tr text-white flex flex-col justify-between px-6 py-2 rounded-lg shadow-lg sm:h-auto">
                 <div class="flex justify-between items-center mb-2">
                     <div>
-                        <div class="text-[15px] font-semibold capitalize">{{trans("Prospects last contacted (within interval)")}}
+                        <div class="text-[15px] font-semibold capitalize">{{ctrans("Prospects last contacted (within interval)")}}
                         </div>
                     </div>
                     <FontAwesomeIcon :icon="form[fieldName].query ? faCheckCircle : faCircle" class="text-xl" fixed-width />
                 </div>
                 <div @contextmenu="toggle">
                     <div class="text-2xl font-bold capitalize">{{ queryData?.day ?? 1 }} {{ queryData?.range ?? 'week' }}</div>
-                    <div class="text-sm text-white/80">{{trans("have a 4567 people to send")}}</div>
+                    <div class="text-sm text-white/80">{{ctrans("have a 4567 people to send")}}</div>
                     <Popover ref="_popover">
                         <div class="flex  gap-4 w-[15rem]">
                             <div class="w-1/4">
@@ -161,13 +161,13 @@ onMounted(() => {
                 class="bg-gradient-to-tr text-white flex flex-col justify-between px-6 py-2 rounded-lg shadow-lg sm:h-auto">
                 <div class="flex justify-between items-center mb-2">
                     <div>
-                        <div class="text-[15px] font-semibold capitalize">{{trans("Prospects not contacted")}}</div>
+                        <div class="text-[15px] font-semibold capitalize">{{ctrans("Prospects not contacted")}}</div>
                     </div>
                     <FontAwesomeIcon :icon="!form[fieldName].query ? faCheckCircle : faCircle" class="text-xl" fixed-width />
                 </div>
                 <div>
                     <div class="text-2xl font-bold">-</div>
-                    <div class="text-sm text-white/80">{{trans("have a 4567 people to send")}}</div>
+                    <div class="text-sm text-white/80">{{ctrans("have a 4567 people to send")}}</div>
                 </div>
             </div>
         </div>
@@ -182,7 +182,7 @@ onMounted(() => {
                     <AccordionContent>
                         <div>
                             <div class="mb-2">
-                                <span class="font-bold text-sm block mb-1">{{ trans("Included Tags") }} :</span>
+                                <span class="font-bold text-sm block mb-1">{{ ctrans("Included Tags") }} :</span>
                                 <Multiselect v-model="form[fieldName].custom_prospects_query.tags.tag_ids" mode="tags"
                                     placeholder="Select the tag" valueProp="id" trackBy="name" label="name"
                                     :close-on-select="false" :searchable="true" :caret="false" :options="options.tags.data"
@@ -218,7 +218,7 @@ onMounted(() => {
                             </div>
 
                             <div>
-                                <span class="font-bold text-sm block mb-2">{{ trans("Tags not included") }} :</span>
+                                <span class="font-bold text-sm block mb-2">{{ ctrans("Tags not included") }} :</span>
                                 <Multiselect v-model="form[fieldName].custom_prospects_query.tags.negative_tag_ids"
                                     mode="tags" placeholder="Select the tag" valueProp="id" trackBy="name" label="name"
                                     :close-on-select="false" :searchable="true" :caret="false" :options="options.tags.data"
@@ -285,7 +285,7 @@ onMounted(() => {
         <PickList v-model="prospect" dataKey="id">
             <template #sourceheader>
                 <div class="border-b p-3">
-                    <PureInput v-model="search" :placeholder="trans('Search')" :suffix="true">
+                    <PureInput v-model="search" :placeholder="ctrans('Search')" :suffix="true">
                     <template #suffix>
                         <div
                             class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">
@@ -297,7 +297,7 @@ onMounted(() => {
             </template>
             <template #targetheader>
                 <div class="border-b p-3">
-                    <PureInput v-model="search" :placeholder="trans('Search')" :suffix="true">
+                    <PureInput v-model="search" :placeholder="ctrans('Search')" :suffix="true">
                     <template #suffix>
                         <div
                             class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">

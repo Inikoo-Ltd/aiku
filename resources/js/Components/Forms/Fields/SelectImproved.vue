@@ -2,7 +2,7 @@
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import { ref, computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -128,7 +128,7 @@ const onRemoveValue = (value: string | number) => {
                 :options="optionsList"
                 :optionLabel="labelProp"
                 :optionValue="valueProp"
-                :placeholder="fieldData?.placeholder ?? trans('Select an option')"
+                :placeholder="fieldData?.placeholder ?? ctrans('Select an option')"
                 filter
                 showClear
                 class="w-full md:w-80"
@@ -145,7 +145,7 @@ const onRemoveValue = (value: string | number) => {
                 :optionLabel="labelProp"
                 :optionValue="valueProp"
                 :optionDisabled="(option) => formSelectedValues.includes(option[valueProp])"
-                :placeholder="fieldData?.placeholder ?? trans('Select options')"
+                :placeholder="fieldData?.placeholder ?? ctrans('Select options')"
                 :maxSelectedLabels="3"
                 filter
                 class="w-full md:w-80"
@@ -155,7 +155,7 @@ const onRemoveValue = (value: string | number) => {
                     <div class="cursor-pointer border-t border-gray-300 p-2 flex flex-col gap-y-2 justify-center items-center text-center">
                         <Button
                             @click="() => (_multiselect?.hide())"
-                            :label="trans('Close')"
+                            :label="ctrans('Close')"
                             full
                             type="tertiary"
                         />

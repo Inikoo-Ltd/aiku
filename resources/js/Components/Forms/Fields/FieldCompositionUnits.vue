@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faRobot, faSave as falSave } from "@fal"
 import { faSave as fadSave, faSpinnerThird } from "@fad"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faRobot, falSave, fadSave, faSpinnerThird)
 
@@ -49,9 +49,9 @@ const backToAuto = () => {
             class="group inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
         >
             <FontAwesomeIcon icon="fal fa-robot" class="text-gray-400" fixed-width aria-hidden="true" />
-            {{ trans("Units auto assigned") }}: {{ form[fieldName] }}
+            {{ ctrans("Units auto assigned") }}: {{ form[fieldName] }}
             <span class="text-gray-400 group-hover:text-[var(--app-accent)] underline underline-offset-2">
-                {{ trans("click to change") }}
+                {{ ctrans("click to change") }}
             </span>
         </button>
 
@@ -76,7 +76,7 @@ const backToAuto = () => {
                 @click="backToAuto"
                 class="text-xs text-gray-400 hover:text-[var(--app-accent)] underline underline-offset-2"
             >
-                {{ trans("use the composition") }}
+                {{ ctrans("use the composition") }}
             </button>
         </div>
     </div>

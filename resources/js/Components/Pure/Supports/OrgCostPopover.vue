@@ -4,7 +4,7 @@ import Popover from "primevue/popover";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle } from "@far";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faInfoCircle);
 
@@ -40,7 +40,7 @@ const toggle = (event: Event) => {
         <button
             type="button"
             class="text-blue-500 transition-colors hover:text-blue-700"
-            v-tooltip="trans('Organisation cost breakdown')"
+            v-tooltip="ctrans('Organisation cost breakdown')"
             @click.stop="toggle"
         >
             <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
@@ -49,7 +49,7 @@ const toggle = (event: Event) => {
         <Popover ref="popover">
             <div class="min-w-[22rem]">
                 <div class="mb-2 text-xs font-semibold text-gray-700">
-                    {{ trans('Organisation costs') }}
+                    {{ ctrans('Organisation costs') }}
                     <span v-if="currency" class="text-gray-400">({{ currency.code }})</span>
                 </div>
 
@@ -57,9 +57,9 @@ const toggle = (event: Event) => {
                     <table class="w-full border-collapse text-xs">
                         <thead>
                             <tr class="bg-gray-100 text-left text-gray-600">
-                                <th class="border px-3 py-1.5">{{ trans('Organisation') }}</th>
-                                <th class="border px-3 py-1.5 text-right">{{ trans('Stock') }}</th>
-                                <th class="border px-3 py-1.5 text-right">{{ trans('Cost') }}</th>
+                                <th class="border px-3 py-1.5">{{ ctrans('Organisation') }}</th>
+                                <th class="border px-3 py-1.5 text-right">{{ ctrans('Stock') }}</th>
+                                <th class="border px-3 py-1.5 text-right">{{ ctrans('Cost') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -74,7 +74,7 @@ const toggle = (event: Event) => {
                     </table>
                 </div>
                 <div v-else class="py-3 text-center text-xs italic text-gray-500">
-                    {{ trans('No organisation data available') }}
+                    {{ ctrans('No organisation data available') }}
                 </div>
             </div>
         </Popover>

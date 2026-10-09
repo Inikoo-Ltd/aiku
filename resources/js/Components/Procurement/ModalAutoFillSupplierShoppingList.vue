@@ -11,7 +11,7 @@ import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -90,8 +90,8 @@ async function generate() {
         proposal.value = (response.data.lines ?? []).map((line: ProposalLine) => ({ ...line, selected: true }))
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Could not generate a proposal"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Could not generate a proposal"),
             type: "error",
         })
     } finally {
@@ -115,16 +115,16 @@ async function commit() {
             }
         )
         notify({
-            title: trans("Success"),
-            text: `${selectedLines.value.length} ${trans("items added to the shopping list")}`,
+            title: ctrans("Success"),
+            text: `${selectedLines.value.length} ${ctrans("items added to the shopping list")}`,
             type: "success",
         })
         closeModal()
         router.reload()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Could not add the items"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message || ctrans("Could not add the items"),
             type: "error",
         })
     } finally {
@@ -137,23 +137,23 @@ async function commit() {
     <Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-4xl">
         <div class="flex h-[600px] flex-col px-4">
             <div class="mb-3 flex justify-center py-2 font-medium text-gray-600">
-                <h2>{{ trans("Auto-fill shopping list") }}</h2>
+                <h2>{{ ctrans("Auto-fill shopping list") }}</h2>
             </div>
             <div v-if="scopeLabel" class="mb-2 text-center text-sm text-gray-500">
-                {{ trans("Limited to") }}: <span class="font-medium text-gray-700">{{ scopeLabel }}</span>
+                {{ ctrans("Limited to") }}: <span class="font-medium text-gray-700">{{ scopeLabel }}</span>
             </div>
 
             <div class="flex items-end gap-3">
                 <div>
-                    <label class="text-sm text-gray-500">{{ trans("Budget") }} ({{ currency }})</label>
+                    <label class="text-sm text-gray-500">{{ ctrans("Budget") }} ({{ currency }})</label>
                     <input v-model.number="budget" type="number" min="1" step="1" class="block w-32 rounded border-gray-300" />
                 </div>
                 <div class="flex-1 text-xs text-gray-500">
-                    {{ trans("Quantities are the forecaster's recommended order, rounded up to whole cartons, tightest cover first.") }}
+                    {{ ctrans("Quantities are the forecaster's recommended order, rounded up to whole cartons, tightest cover first.") }}
                 </div>
                 <Button
                     type="create"
-                    :label="isGenerating ? trans('Generating…') : proposal ? trans('Regenerate') : trans('Generate proposal')"
+                    :label="isGenerating ? ctrans('Generating…') : proposal ? ctrans('Regenerate') : ctrans('Generate proposal')"
                     :loading="isGenerating"
                     :disabled="!budget"
                     @click="generate"
@@ -161,12 +161,12 @@ async function commit() {
             </div>
 
             <div v-if="isGenerating" class="mt-8 text-center text-gray-500">
-                {{ trans("Working out what we need from this supplier…") }}
+                {{ ctrans("Working out what we need from this supplier…") }}
             </div>
 
             <template v-else-if="proposal">
                 <div v-if="!proposal.length" class="mt-8 text-center text-gray-500">
-                    {{ trans("Nothing to suggest: no usage history for the products this supplier sells us") }}
+                    {{ ctrans("Nothing to suggest: no usage history for the products this supplier sells us") }}
                 </div>
 
                 <template v-else>
@@ -175,11 +175,11 @@ async function commit() {
                             <thead class="sticky top-0 bg-white">
                                 <tr class="border-b border-gray-200 text-left text-gray-500">
                                     <th class="py-1"></th>
-                                    <th class="py-1">{{ trans("Product") }}</th>
-                                    <th class="py-1">{{ trans("Reason") }}</th>
-                                    <th class="py-1 text-right">{{ trans("Units") }}</th>
-                                    <th class="py-1 text-right">{{ trans("Cartons") }}</th>
-                                    <th class="py-1 text-right">{{ trans("Amount") }} ({{ currency }})</th>
+                                    <th class="py-1">{{ ctrans("Product") }}</th>
+                                    <th class="py-1">{{ ctrans("Reason") }}</th>
+                                    <th class="py-1 text-right">{{ ctrans("Units") }}</th>
+                                    <th class="py-1 text-right">{{ ctrans("Cartons") }}</th>
+                                    <th class="py-1 text-right">{{ ctrans("Amount") }} ({{ currency }})</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,11 +193,11 @@ async function commit() {
                                     <td class="py-1 text-right tabular-nums" :class="belowMoq(line) ? 'text-amber-600' : 'text-gray-500'">
                                         <template v-if="line.cartons !== null">
                                             {{ line.cartons }}
-                                            <span v-if="line.minimum_carton_order" class="text-gray-400">/ {{ line.minimum_carton_order }} {{ trans("min") }}</span>
+                                            <span v-if="line.minimum_carton_order" class="text-gray-400">/ {{ line.minimum_carton_order }} {{ ctrans("min") }}</span>
                                         </template>
                                         <template v-else>—</template>
                                     </td>
-                                    <td class="py-1 text-right tabular-nums" :title="`${locale.currencyFormat(currency, line.cost_per_unit)} / ${trans('unit')}`">
+                                    <td class="py-1 text-right tabular-nums" :title="`${locale.currencyFormat(currency, line.cost_per_unit)} / ${ctrans('unit')}`">
                                         {{ locale.currencyFormat(currency, Math.round(line.quantity * line.cost_per_unit * 100) / 100) }}
                                     </td>
                                 </tr>
@@ -207,18 +207,18 @@ async function commit() {
 
                     <div class="flex items-center justify-between border-t border-gray-200 bg-white py-3">
                         <div :class="overBudget ? 'font-medium text-red-600' : 'text-gray-600'">
-                            {{ trans("Total") }}: {{ locale.currencyFormat(currency, selectedTotal) }}
+                            {{ ctrans("Total") }}: {{ locale.currencyFormat(currency, selectedTotal) }}
                             <span class="text-gray-400">/ {{ locale.currencyFormat(currency, budget ?? 0) }}</span>
-                            <span v-if="overBudget"> — {{ trans("over budget") }}</span>
+                            <span v-if="overBudget"> — {{ ctrans("over budget") }}</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span v-if="exceedsOrderBudget" class="flex items-center gap-1.5 text-sm font-medium text-red-600">
                                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
-                                {{ trans("Warning: budget exceeded") }}
+                                {{ ctrans("Warning: budget exceeded") }}
                             </span>
                             <Button
                                 type="save"
-                                :label="`${trans('Add')} ${selectedLines.length} ${trans('items to shopping list')}`"
+                                :label="`${ctrans('Add')} ${selectedLines.length} ${ctrans('items to shopping list')}`"
                                 :loading="isCommitting"
                                 :disabled="!selectedLines.length"
                                 @click="commit"

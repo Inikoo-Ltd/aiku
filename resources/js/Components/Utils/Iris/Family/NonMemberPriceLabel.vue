@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Popover } from "primevue"
 import { ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -18,11 +18,11 @@ const _popoverQuestionCircle = ref(null)
 <template>
     <div class="member-price-wrapper">
         <div class="member-badge">
-            {{ trans("Member Price") }}
+            {{ ctrans("Member Price") }}
         </div>
 
         <div class="member-text">
-            {{ trans("Not a member?") }}
+            {{ ctrans("Not a member?") }}
             <span
                 class="question-trigger"
                 @click="_popoverQuestionCircle?.toggle"
@@ -35,15 +35,15 @@ const _popoverQuestionCircle = ref(null)
 
         <Popover ref="_popoverQuestionCircle" class="member-popover ">
             <div class="popover-content">
-                <p class="popover-title">{{ trans("VOLUME DISCOUNT") }}</p>
+                <p class="popover-title">{{ ctrans("VOLUME DISCOUNT") }}</p>
 
                 <p class="popover-paragraph">
-                    {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                    {{ ctrans("You don't need Gold Reward status to access the lower price") }}.
                 </p>
 
                 <p class="popover-paragraph">
-                    {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
-                    {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                    {{ ctrans("Order the listed volume and the member price applies automatically at checkout") }}.
+                    {{ ctrans("The volume can be made up from the whole product family, not just the same item") }}.
                 </p>
             </div>
         </Popover>

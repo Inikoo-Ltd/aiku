@@ -8,7 +8,7 @@
 import { ufo404 } from '@/Assets/Iconscout/404_ufo'
 import { rocket_falling } from '@/Assets/Iconscout/rocket_falling'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 
 defineProps<{
@@ -30,10 +30,10 @@ const layout = inject('layout', layoutStructure)
                     {{ status || 404 }}
                 </p>
                 <h1 class="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">
-                    {{ status == 404 ? trans('Page not found') : trans('Something went wrong') }}
+                    {{ status == 404 ? ctrans('Page not found') : ctrans('Something went wrong') }}
                 </h1>
                 <p class="mt-4 text-base leading-7 text-gray-400">
-                    {{ trans('Sorry, we could not find the page you’re looking for.') }}
+                    {{ ctrans('Sorry, we could not find the page you’re looking for.') }}
                 </p>
             </div>
         </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash } from "@fal"
 import { faDotCircle as fasDotCircle } from "@fas"
@@ -44,8 +44,8 @@ const handleUnlink = (loc: { id: any }) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Location unlinked successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("Location unlinked successfully"),
                     type: "success"
                 })
                 locationToUnlink.value = null
@@ -90,7 +90,7 @@ const handleUnlink = (loc: { id: any }) => {
                             @click="unlinkingLocationId === loc.id ? null : (Number(loc.quantity) > 0 ? locationToUnlink = loc : handleUnlink(loc))"
                             class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
                             :class="{ 'pointer-events-none': unlinkingLocationId === loc.id }"
-                            v-tooltip="Number(loc.quantity) > 0 ? trans('Unlink Location') : trans('Unlink Location (no stock)')"
+                            v-tooltip="Number(loc.quantity) > 0 ? ctrans('Unlink Location') : ctrans('Unlink Location (no stock)')"
                         >
                             <LoadingIcon v-if="unlinkingLocationId === loc.id" />
                             <FontAwesomeIcon v-else icon="fal fa-unlink" fixed-width />
@@ -103,23 +103,23 @@ const handleUnlink = (loc: { id: any }) => {
                 class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
             >
                 <div class="text-gray-600 font-medium">
-                    {{ trans("No locations available") }}
+                    {{ ctrans("No locations available") }}
                 </div>
 
                 <div class="text-sm text-gray-400 mt-1">
-                    {{ trans("You haven't added any locations yet") }}
+                    {{ ctrans("You haven't added any locations yet") }}
                 </div>
             </div>
         </div>
         <!-- Section: buttons -->
         <div class="shrink-0 relative flex gap-x-2 isolate z-30 pt-3 mt-2 border-t bg-white">
-            <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
+            <Button :label="ctrans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 
         <Dialog
             v-model:visible="isConfirmUnlinkOpen"
             modal
-            :header="trans('Are you sure you want to unlink location?')"
+            :header="ctrans('Are you sure you want to unlink location?')"
             :dismissableMask="screenType === 'desktop'"
             :draggable="false"
             :style="{ width: '32rem' }"
@@ -130,7 +130,7 @@ const handleUnlink = (loc: { id: any }) => {
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600" fixed-width aria-hidden="true" />
                 </div>
                 <p class="text-sm text-gray-500">
-                    {{ trans(':qty stock will be removed and marked as lost!', { qty: Number(locationToUnlink?.quantity ?? 0) }) }}
+                    {{ ctrans(':qty stock will be removed and marked as lost!', { qty: Number(locationToUnlink?.quantity ?? 0) }) }}
                 </p>
             </div>
 
@@ -138,13 +138,13 @@ const handleUnlink = (loc: { id: any }) => {
                 <Button
                     type="red"
                     icon="fal fa-unlink"
-                    :label="trans('Yes, unlink location :xloc', { xloc: locationToUnlink?.code ?? '' })"
+                    :label="ctrans('Yes, unlink location :xloc', { xloc: locationToUnlink?.code ?? '' })"
                     :loading="unlinkingLocationId === locationToUnlink?.id"
                     @click="() => locationToUnlink && handleUnlink(locationToUnlink)"
                 />
                 <Button
                     type="tertiary"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     @click="locationToUnlink = null"
                 />
             </div>

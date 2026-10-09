@@ -17,7 +17,7 @@ import ScreenView from "@/Components/ScreenView.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 
 import type { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import "@/../css/Iris/editor.css"
 
@@ -151,7 +151,7 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium">{{ trans("Login")}}</span>
+          <span class="text-sm font-medium">{{ ctrans("Login")}}</span>
           <ToggleSwitch v-model="localLayout.iris.is_logged_in" />
         </div>
       </div>

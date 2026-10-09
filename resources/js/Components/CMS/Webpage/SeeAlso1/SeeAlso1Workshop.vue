@@ -20,7 +20,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
 import TrendingNowProducts from "@/Iris/Components/IrisBlocks/SeeAlso/TrendingNowProducts.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 library.add(faChevronLeft, faChevronRight)
 

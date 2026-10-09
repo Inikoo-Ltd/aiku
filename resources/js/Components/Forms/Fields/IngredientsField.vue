@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import SelectInfiniteScroll from "@/Components/Forms/Fields/SelectInfiniteScroll.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -61,8 +61,8 @@ const parse = async (commit: boolean, replace = false) => {
         props.submit?.()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.response?.data?.message ?? trans("Failed to parse the ingredients"),
+            title: ctrans("Something went wrong"),
+            text: error.response?.data?.message ?? ctrans("Failed to parse the ingredients"),
             type: "error",
         })
     } finally {
@@ -92,31 +92,31 @@ const closeModal = () => {
                 type="tertiary"
                 size="xs"
                 icon="fal fa-paste"
-                :label="trans('Paste list')"
+                :label="ctrans('Paste list')"
                 @click="isModalOpen = true"
             />
         </div>
 
         <Modal :isOpen="isModalOpen" @onClose="closeModal" width="w-full max-w-2xl">
             <div class="text-left">
-                <div class="text-lg mb-2">{{ trans("Paste ingredients") }}</div>
+                <div class="text-lg mb-2">{{ ctrans("Paste ingredients") }}</div>
                 <div class="text-sm text-gray-500 mb-3">
-                    {{ trans("Separated by commas or new lines. Trailing asterisks are ignored.") }}
+                    {{ ctrans("Separated by commas or new lines. Trailing asterisks are ignored.") }}
                 </div>
 
                 <textarea
                     v-model="pastedText"
                     rows="6"
                     class="w-full rounded border-gray-300 text-sm"
-                    :placeholder="trans('Aqua, Glycerin, Parfum, Linalool*')"
+                    :placeholder="ctrans('Aqua, Glycerin, Parfum, Linalool*')"
                     @input="preview = null"
                 />
 
                 <div v-if="preview" class="mt-3">
                     <div class="text-sm text-gray-500 mb-1">
-                        {{ trans("Preview") }}: {{ preview.length }}
+                        {{ ctrans("Preview") }}: {{ preview.length }}
                         <span v-if="preview.some((ingredient) => ingredient.is_new)">
-                            ({{ preview.filter((ingredient) => ingredient.is_new).length }} {{ trans("new") }})
+                            ({{ preview.filter((ingredient) => ingredient.is_new).length }} {{ ctrans("new") }})
                         </span>
                     </div>
                     <div class="flex flex-wrap gap-1 max-h-60 overflow-y-auto">
@@ -134,7 +134,7 @@ const closeModal = () => {
                 <div class="mt-4 flex items-center justify-end gap-2 whitespace-nowrap">
                     <div v-if="preview" class="mr-auto text-xs text-gray-500 whitespace-normal">
                         {{
-                            trans("Replace all removes the :count ingredient(s) currently selected. Add to current keeps them.", {
+                            ctrans("Replace all removes the :count ingredient(s) currently selected. Add to current keeps them.", {
                                 count: (form[fieldName] ?? []).length,
                             })
                         }}
@@ -142,7 +142,7 @@ const closeModal = () => {
 
                     <Button
                         v-if="!preview"
-                        :label="trans('Next')"
+                        :label="ctrans('Next')"
                         :disabled="!pastedText.trim()"
                         :loading="isLoading"
                         @click="parse(false)"
@@ -151,13 +151,13 @@ const closeModal = () => {
                         <Button
                             type="tertiary"
                             icon="fad fa-save"
-                            :label="trans('Replace all')"
+                            :label="ctrans('Replace all')"
                             :loading="isLoading"
                             @click="parse(true, true)"
                         />
                         <Button
                             icon="fad fa-save"
-                            :label="trans('Add to current')"
+                            :label="ctrans('Add to current')"
                             :loading="isLoading"
                             @click="parse(true)"
                         />

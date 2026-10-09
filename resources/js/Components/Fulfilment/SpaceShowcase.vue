@@ -2,7 +2,7 @@
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { Link } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 
 const props = defineProps<{
@@ -40,21 +40,21 @@ const layout = inject('layout', layoutStructure)
                 
                 <dl class="-my-3 divide-y divide-gray-100 px-6 py-4 text-sm/6">                    
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("State") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("State") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             {{ data.state_label }}
                         </dd>
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Exclude weekend") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Exclude weekend") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <div class="font-medium">{{ data.exclude_weekend ? 'Yes' : 'No' }}</div>
                         </dd>
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Rental") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Rental") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <Link v-if="data.rental" :href="route('grp.org.fulfilments.show.catalogue.rentals.show', [route().params.organisation, route().params.fulfilment, data.rental?.slug])" class="font-medium secondaryLink">{{ data.rental?.name || '-' }}</Link>
                             <span v-else>-</span>
@@ -62,7 +62,7 @@ const layout = inject('layout', layoutStructure)
                     </div>
 
                     <div class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ trans("Recurring Bill") }}</dt>
+                        <dt class="text-gray-500">{{ ctrans("Recurring Bill") }}</dt>
                         <dd class="flex items-start gap-x-2">
                             <Link v-if="data.recurring_bill" :href="route('grp.org.fulfilments.show.catalogue.rentals.show', [route().params.organisation, route().params.fulfilment, data.recurring_bill?.slug])" class="font-medium secondaryLink">{{ data.recurring_bill?.reference || '-' }}</Link>
                             <span v-else>-</span>

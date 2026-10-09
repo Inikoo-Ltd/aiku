@@ -10,7 +10,6 @@ import { useConfirm } from "primevue/useconfirm"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
-import { trans } from "laravel-vue-i18n"
 
 /**
  * Both controls reach a live ad account, so both confirm first and neither is optimistic: the value
@@ -90,14 +89,14 @@ const saveBudget = () => {
 <template>
     <div class="mt-5 border-t border-gray-100 pt-4">
         <h3 class="text-xs font-medium uppercase tracking-wide text-gray-500">
-            {{ trans("Manage in Google Ads") }}
+            {{ ctrans("Manage in Google Ads") }}
         </h3>
 
         <div class="mt-3 space-y-4">
             <div>
                 <Button
                     :type="isEnabled ? 'warning' : 'positive'"
-                    :label="isEnabled ? trans('Pause campaign') : trans('Resume campaign')"
+                    :label="isEnabled ? ctrans('Pause campaign') : ctrans('Resume campaign')"
                     :loading="isPausing"
                     :disabled="isPausing || status === null"
                     full
@@ -107,7 +106,7 @@ const saveBudget = () => {
 
             <div>
                 <label :for="'gads-budget'" class="block text-xs text-gray-500">
-                    {{ trans("Daily budget") }} ({{ currency }})
+                    {{ ctrans("Daily budget") }} ({{ currency }})
                 </label>
 
                 <div class="mt-1 flex items-center gap-2">
@@ -122,14 +121,14 @@ const saveBudget = () => {
                         class="w-32 rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500" />
                     <Button
                         type="tertiary"
-                        :label="trans('Save')"
+                        :label="ctrans('Save')"
                         :loading="isSavingBudget"
                         :disabled="budgetIsShared || !budgetChanged || isSavingBudget"
                         @click="saveBudget" />
                 </div>
 
                 <p v-if="budgetIsShared" id="gads-budget-shared" class="mt-1 text-xs text-[#a15c00]">
-                    {{ trans("Shared with other campaigns, so it has to be changed in Google Ads.") }}
+                    {{ ctrans("Shared with other campaigns, so it has to be changed in Google Ads.") }}
                 </p>
                 <p v-else-if="budgetError" class="mt-1 text-xs text-[#d03b3b]">{{ budgetError }}</p>
             </div>

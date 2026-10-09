@@ -5,17 +5,17 @@
  * Copyright 2026
 */
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export type TicketStatusAction = { status: string; label: string; icon: string; class: string }
 
 export const useTicketStatusActions = () => {
-    const start: TicketStatusAction = { status: "in_progress", label: trans("Start"), icon: "fal fa-play", class: "text-blue-600" }
-    const done: TicketStatusAction = { status: "resolved", label: trans("Done"), icon: "fal fa-check", class: "text-green-600" }
-    const cancel: TicketStatusAction = { status: "cancelled", label: trans("Cancel"), icon: "fal fa-ban", class: "text-red-500" }
-    const resume: TicketStatusAction = { ...start, label: trans("Resume") }
-    const askReporter: TicketStatusAction = { status: "waiting", label: trans("Ask reporter"), icon: "fal fa-question-circle", class: "text-blue-500" }
-    const reopen: TicketStatusAction = { status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }
+    const start: TicketStatusAction = { status: "in_progress", label: ctrans("Start"), icon: "fal fa-play", class: "text-blue-600" }
+    const done: TicketStatusAction = { status: "resolved", label: ctrans("Done"), icon: "fal fa-check", class: "text-green-600" }
+    const cancel: TicketStatusAction = { status: "cancelled", label: ctrans("Cancel"), icon: "fal fa-ban", class: "text-red-500" }
+    const resume: TicketStatusAction = { ...start, label: ctrans("Resume") }
+    const askReporter: TicketStatusAction = { status: "waiting", label: ctrans("Ask reporter"), icon: "fal fa-question-circle", class: "text-blue-500" }
+    const reopen: TicketStatusAction = { status: "open", label: ctrans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }
 
     const reopenAsReporter: TicketStatusAction = { ...reopen, status: "answered" }
 
@@ -24,13 +24,13 @@ export const useTicketStatusActions = () => {
         assigned: [start, done, cancel],
         in_progress: [
             askReporter,
-            { status: "assigned", label: trans("Stop, back to assigned"), icon: "fal fa-stop", class: "text-gray-600" },
+            { status: "assigned", label: ctrans("Stop, back to assigned"), icon: "fal fa-stop", class: "text-gray-600" },
             done,
             cancel,
         ],
         waiting: [resume, done, cancel],
-        answered: [resume, { ...askReporter, label: trans("Ask again") }, done, cancel],
-        pending_deploy: [{ ...start, label: trans("Back to in progress") }, done, cancel],
+        answered: [resume, { ...askReporter, label: ctrans("Ask again") }, done, cancel],
+        pending_deploy: [{ ...start, label: ctrans("Back to in progress") }, done, cancel],
         resolved: [reopen],
         cancelled: [reopen],
     }

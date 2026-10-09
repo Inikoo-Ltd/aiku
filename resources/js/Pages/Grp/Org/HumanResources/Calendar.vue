@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -105,18 +105,18 @@ const yearOptions = computed(() => {
 })
 
 const monthOptions = [
-    { value: '1', label: trans('January') },
-    { value: '2', label: trans('February') },
-    { value: '3', label: trans('March') },
-    { value: '4', label: trans('April') },
-    { value: '5', label: trans('May') },
-    { value: '6', label: trans('June') },
-    { value: '7', label: trans('July') },
-    { value: '8', label: trans('August') },
-    { value: '9', label: trans('September') },
-    { value: '10', label: trans('October') },
-    { value: '11', label: trans('November') },
-    { value: '12', label: trans('December') },
+    { value: '1', label: ctrans('January') },
+    { value: '2', label: ctrans('February') },
+    { value: '3', label: ctrans('March') },
+    { value: '4', label: ctrans('April') },
+    { value: '5', label: ctrans('May') },
+    { value: '6', label: ctrans('June') },
+    { value: '7', label: ctrans('July') },
+    { value: '8', label: ctrans('August') },
+    { value: '9', label: ctrans('September') },
+    { value: '10', label: ctrans('October') },
+    { value: '11', label: ctrans('November') },
+    { value: '12', label: ctrans('December') },
 ]
 
 const holidaysMap = computed<Record<string, CalendarHoliday>>(() => {
@@ -132,18 +132,18 @@ const holidaysMap = computed<Record<string, CalendarHoliday>>(() => {
 })
 
 const monthNames = [
-    trans('January'),
-    trans('February'),
-    trans('March'),
-    trans('April'),
-    trans('May'),
-    trans('June'),
-    trans('July'),
-    trans('August'),
-    trans('September'),
-    trans('October'),
-    trans('November'),
-    trans('December'),
+    ctrans('January'),
+    ctrans('February'),
+    ctrans('March'),
+    ctrans('April'),
+    ctrans('May'),
+    ctrans('June'),
+    ctrans('July'),
+    ctrans('August'),
+    ctrans('September'),
+    ctrans('October'),
+    ctrans('November'),
+    ctrans('December'),
 ]
 
 const calendarMonths = computed<CalendarMonth[]>(() => {
@@ -286,13 +286,13 @@ const holidaySummariesByMonth = computed<Record<string, { fromDay: number; toDay
 })
 
 const weekdayLabels = [
-    trans('Mo'),
-    trans('Tu'),
-    trans('We'),
-    trans('Th'),
-    trans('Fr'),
-    trans('Sa'),
-    trans('Su'),
+    ctrans('Mo'),
+    ctrans('Tu'),
+    ctrans('We'),
+    ctrans('Th'),
+    ctrans('Fr'),
+    ctrans('Sa'),
+    ctrans('Su'),
 ]
 
 const isWeekendColumn = (index: number): boolean => index === 5 || index === 6
@@ -408,7 +408,7 @@ const goNext = () => {
                             {{ monthNames[Number(filterMonth) - 1] }} {{ filterYear }}
                         </template>
                         <template v-else>
-                            {{ trans('Year') }} {{ filterYear }}
+                            {{ ctrans('Year') }} {{ filterYear }}
                         </template>
                     </h2>
 
@@ -456,7 +456,7 @@ const goNext = () => {
                             class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                         >
                             <option value="">
-                                {{ trans('All months') }}
+                                {{ ctrans('All months') }}
                             </option>
                             <option
                                 v-for="option in monthOptions"
@@ -469,7 +469,7 @@ const goNext = () => {
                     </template>
 
                     <div v-if="allHolidayYears && allHolidayYears.length" class="flex items-center gap-2 ml-2">
-                        <span class="text-sm text-gray-600">{{ trans('Holiday Year') }}</span>
+                        <span class="text-sm text-gray-600">{{ ctrans('Holiday Year') }}</span>
                         <Toggle v-model="useHolidayYearPeriod" />
                     </div>
 
@@ -487,7 +487,7 @@ const goNext = () => {
                             type="secondary"
                             size="sm"
                             :icon="faDownload"
-                            :label="trans('Export')"
+                            :label="ctrans('Export')"
                         />
                     </a>
                 </div>

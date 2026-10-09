@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
 import { ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPlus, faTrashAlt } from '@fal'
@@ -116,10 +116,10 @@ function destroy(item: ComplianceItem) {
         <table class="w-full text-sm">
             <thead>
                 <tr class="text-left border-b border-gray-200 text-gray-500">
-                    <th class="py-2 pr-4">{{ trans('Type') }}</th>
-                    <th class="py-2 pr-4">{{ trans('Reference') }}</th>
-                    <th class="py-2 pr-4">{{ trans('Required') }}</th>
-                    <th class="py-2 pr-4">{{ trans('Valid until') }}</th>
+                    <th class="py-2 pr-4">{{ ctrans('Type') }}</th>
+                    <th class="py-2 pr-4">{{ ctrans('Reference') }}</th>
+                    <th class="py-2 pr-4">{{ ctrans('Required') }}</th>
+                    <th class="py-2 pr-4">{{ ctrans('Valid until') }}</th>
                     <th class="py-2 w-10"></th>
                 </tr>
             </thead>
@@ -154,7 +154,7 @@ function destroy(item: ComplianceItem) {
                             type="button"
                             class="text-gray-400 hover:text-red-600 disabled:opacity-50"
                             :disabled="processing"
-                            :title="trans('Remove compliance item')"
+                            :title="ctrans('Remove compliance item')"
                             @click="destroy(item)"
                         >
                             <FontAwesomeIcon :icon="['fal', 'trash-alt']" fixed-width />
@@ -163,7 +163,7 @@ function destroy(item: ComplianceItem) {
                 </tr>
                 <tr v-if="!data.items.length">
                     <td colspan="5" class="py-6 text-center text-gray-400">
-                        {{ trans('No compliance items configured for this artefact.') }}
+                        {{ ctrans('No compliance items configured for this artefact.') }}
                     </td>
                 </tr>
             </tbody>
@@ -171,25 +171,25 @@ function destroy(item: ComplianceItem) {
 
         <div class="mt-4 flex items-end gap-3">
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans('Type') }}</label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Type') }}</label>
                 <select v-model="newType" class="rounded border-gray-300 text-sm min-w-40">
-                    <option :value="null" disabled>{{ trans('Select type') }}</option>
+                    <option :value="null" disabled>{{ ctrans('Select type') }}</option>
                     <option v-for="option in data.type_options" :key="option.value" :value="option.value">
                         {{ option.label }}
                     </option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans('Reference') }}</label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Reference') }}</label>
                 <input type="text" v-model="newReference" class="w-40 rounded border-gray-300 text-sm" />
             </div>
             <div>
-                <label class="block text-xs text-gray-500 mb-1">{{ trans('Valid until') }}</label>
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Valid until') }}</label>
                 <input type="date" v-model="newValidUntil" class="rounded border-gray-300 text-sm" />
             </div>
             <div class="flex items-center gap-1 pb-2">
                 <input type="checkbox" v-model="newIsRequired" id="new-is-required" />
-                <label for="new-is-required" class="text-xs text-gray-500">{{ trans('Required') }}</label>
+                <label for="new-is-required" class="text-xs text-gray-500">{{ ctrans('Required') }}</label>
             </div>
             <button
                 type="button"
@@ -198,7 +198,7 @@ function destroy(item: ComplianceItem) {
                 @click="store"
             >
                 <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width class="mr-1" />
-                {{ trans('Add') }}
+                {{ ctrans('Add') }}
             </button>
         </div>
     </div>

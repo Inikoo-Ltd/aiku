@@ -14,7 +14,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { useTimeCountdown } from '@/Composables/useFormatTime'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from '@/types/route'
 library.add(faSync)
 
@@ -96,7 +96,7 @@ const setCountdown = (duration: number) => {
                         <FontAwesomeIcon icon='fal fa-sync' :class="isRegenerating ? 'animate-spin' : ''" class='h-5' fixed-width aria-hidden='true' />
                     </div>
                 </div>
-                <p v-if="timeCountdown" class="mt-4 text-sm text-gray-500 tabular-nums">{{trans('This QR Code valid for')}} {{ timeCountdown }}.</p>
+                <p v-if="timeCountdown" class="mt-4 text-sm text-gray-500 tabular-nums">{{ctrans('This QR Code valid for')}} {{ timeCountdown }}.</p>
             </template>
             <div v-else class="h-[200px] aspect-square skeleton" />
         </div>

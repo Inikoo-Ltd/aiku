@@ -15,7 +15,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import Dialog from 'primevue/dialog';
 import axios from "axios";
 import {notify} from "@kyvg/vue3-notification";
-import {trans} from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"
@@ -88,7 +88,7 @@ const onSaveChangeParent = async () => {
             );
 
         if (response.status !== 200) {
-            notify({title: trans("Error updating parent"), type: "error"});
+            notify({title: ctrans("Error updating parent"), type: "error"});
         }
 
         visibleDialog.value = false;
@@ -161,7 +161,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
            <template #add-on-button>
             <div v-if="selectedSubDepartment.length != 0">
-                <Button :icon="faFolderTree" :label="trans('Assign to another department')" @click="visibleDialog = true" :size="'xs'"
+                <Button :icon="faFolderTree" :label="ctrans('Assign to another department')" @click="visibleDialog = true" :size="'xs'"
                     type="secondary" />
             </div>
         </template>

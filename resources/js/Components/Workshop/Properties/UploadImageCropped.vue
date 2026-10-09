@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import Image from "@common/Components/Image.vue"
@@ -225,15 +225,15 @@ const formatRatioLabel = (ratio: number | null) => {
         <input type="file" accept="image/*" ref="fileInput" class="hidden" @change="onFileChange" />
 
         <div v-if="!modelValue" class="text-sm py-3">
-            <p>{{ trans("Drag Images Here.") }}</p>
-            <p class="text-xs">{{ trans("PNG, JPG, GIF up to 10MB") }}</p>
+            <p>{{ ctrans("Drag Images Here.") }}</p>
+            <p class="text-xs">{{ ctrans("PNG, JPG, GIF up to 10MB") }}</p>
         </div>
 
         <div v-else class="h-32 relative flex justify-center items-center">
             <Image :src="modelValue" class="w-auto h-fit" />
             <div
                 class="absolute hover:bg-black/60 z-10 inset-0 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100">
-                {{ trans("Upload image") }}
+                {{ ctrans("Upload image") }}
             </div>
         </div>
     </div>

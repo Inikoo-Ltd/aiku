@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Popover, PopoverButton, PopoverPanel, Switch } from '@headlessui/vue'
 import { faBorderTop, faBorderLeft, faBorderBottom, faBorderRight, faBorderOuter, faArrowsAltV, faArrowsH } from "@fad"
 import { faLink, faUnlink } from "@fal"
@@ -27,7 +27,7 @@ const customWidthEnabled = ref(false)
     <div class="rounded-lg border border-gray-200 bg-white shadow-sm p-4">
       <div class="flex justify-between items-center mb-3">
         <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">
-          {{ trans('Height') }}
+          {{ ctrans('Height') }}
         </span>
         <Popover v-slot="{ open }" class="relative">
           <PopoverButton :class="open ? 'text-indigo-600 font-semibold' : 'text-gray-500'" class="text-xs underline">
@@ -87,14 +87,14 @@ const customWidthEnabled = ref(false)
           :class="customWidthEnabled ? 'translate-x-5' : 'translate-x-0'"
         />
       </Switch>
-      <span class="text-sm text-gray-700">{{ trans('Customize Width') }}</span>
+      <span class="text-sm text-gray-700">{{ ctrans('Customize Width') }}</span>
     </div>
 
     <!-- Section: Width -->
     <div v-if="customWidthEnabled" class="rounded-lg border border-gray-200 bg-white shadow-sm p-4">
       <div class="flex justify-between items-center mb-3">
         <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">
-          {{ trans('Width') }}
+          {{ ctrans('Width') }}
         </span>
         <Popover v-slot="{ open }" class="relative">
           <PopoverButton :class="open ? 'text-indigo-600 font-semibold' : 'text-gray-500'" class="text-xs underline">

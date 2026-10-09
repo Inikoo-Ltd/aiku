@@ -15,7 +15,7 @@ import { faBars,faBallot, faBookmark, faTrashAlt, faQuestionCircle } from '@fal'
 import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark, faArrowUp } from '@fas'
 import { routeType } from '@/types/route'
 import { Bookmark } from '@/types/Bookmark'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -114,8 +114,8 @@ const persistBookmarks = async (nextBookmarks: Bookmark[]) => {
     } catch (error) {
         props.layout.bookmarks = previousBookmarks
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to save bookmarks'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Failed to save bookmarks'),
             type: 'error'
         })
     } finally {
@@ -304,8 +304,8 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             <!-- Button: Help article -->
             <a v-if="help" :href="help.url" target="_blank" rel="noopener"
                 class="rounded flex items-center justify-center w-12 xl:w-8 h-full opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
-                v-tooltip="trans('Guide') + ': ' + help.title"
-                :aria-label="trans('Guide') + ': ' + help.title"
+                v-tooltip="ctrans('Guide') + ': ' + help.title"
+                :aria-label="ctrans('Guide') + ': ' + help.title"
             >
                 <FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
             </a>
@@ -316,7 +316,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     <template #button>
                         <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-indigo-500"
                             :class="isCurrentPageBookmarked ? 'text-indigo-500' : 'opacity-70 hover:opacity-100'"
-                            v-tooltip="isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page')"
+                            v-tooltip="isCurrentPageBookmarked ? ctrans('Remove bookmark') : ctrans('Bookmark this page')"
                         >
                             <LoadingIcon v-if="isSavingBookmarks" />
                             <FontAwesomeIcon v-else :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" fixed-width aria-hidden="true" />
@@ -330,13 +330,13 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"
                             >
                                 <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-indigo-500' : ''" fixed-width aria-hidden="true" />
-                                <span>{{ isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page') }}</span>
+                                <span>{{ isCurrentPageBookmarked ? ctrans('Remove bookmark') : ctrans('Bookmark this page') }}</span>
                             </button>
 
                             <div class="border-t border-gray-200 my-2" />
 
                             <div v-if="!bookmarks.length" class="px-2 py-1.5 text-gray-400 italic">
-                                {{ trans('No bookmarks yet') }}
+                                {{ ctrans('No bookmarks yet') }}
                             </div>
 
                             <div v-else class="max-h-64 overflow-y-auto space-y-0.5">
@@ -347,7 +347,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                             {{ getBookmarkSubtitle(bookmark) }}
                                         </div>
                                     </Link>
-                                    <button @click="removeBookmark(bookmark)" class="flex-shrink-0 p-1 text-red-500 opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Remove bookmark')">
+                                    <button @click="removeBookmark(bookmark)" class="flex-shrink-0 p-1 text-red-500 opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="ctrans('Remove bookmark')">
                                         <FontAwesomeIcon icon="fal fa-trash-alt" class="h-3 w-3" fixed-width aria-hidden="true" />
                                     </button>
                                 </div>

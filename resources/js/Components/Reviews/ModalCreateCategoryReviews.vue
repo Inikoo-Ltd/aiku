@@ -9,7 +9,7 @@ import { Textarea } from "primevue"
 import ImagePrime from "primevue/image"
 import Select from "primevue/select"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 
 const props = defineProps<{
@@ -106,12 +106,12 @@ const isDetailMode = computed(() => mode.value === "detail")
 const isUpdateMode = computed(() => mode.value === "update")
 const modalTitle = computed(() => {
     if (isDetailMode.value) {
-        return trans("Review Detail")
+        return ctrans("Review Detail")
     }
     if (isUpdateMode.value) {
-        return trans("Update Review")
+        return ctrans("Update Review")
     }
-    return trans("Create New Review")
+    return ctrans("Create New Review")
 })
 
 const dimensionRatingKeyMap: Record<string, "rating_a" | "rating_b" | "rating_c" | "rating_d" | "rating_e"> = {
@@ -162,22 +162,22 @@ const mainRatingStars = computed(() => "★".repeat(Math.max(0, Math.min(5, aver
 const mainRatingEmptyStars = computed(() => "☆".repeat(Math.max(0, 5 - averageRating.value)))
 
 const reviewStatusOptions = computed(() => [
-    { value: "pending", label: trans("Pending") },
-    { value: "approved", label: trans("Approved") },
-    { value: "rejected", label: trans("Rejected") },
+    { value: "pending", label: ctrans("Pending") },
+    { value: "approved", label: ctrans("Approved") },
+    { value: "rejected", label: ctrans("Rejected") },
 ])
 const reviewCustomerName = computed(() => props.review?.contact_name ?? props.review?.customer_name ?? "-")
 const detailStatusValue = computed(() => (props.review?.status ?? selectedStatus.value ?? "pending"))
 const detailStatusLabel = computed(() => {
     if (detailStatusValue.value === "approved") {
-        return trans("Approved")
+        return ctrans("Approved")
     }
 
     if (detailStatusValue.value === "rejected") {
-        return trans("Rejected")
+        return ctrans("Rejected")
     }
 
-    return trans("Pending")
+    return ctrans("Pending")
 })
 const detailStatusTheme = computed(() => {
     if (detailStatusValue.value === "approved") {
@@ -209,7 +209,7 @@ const existingReplyVisibility = computed(() => {
         return null
     }
 
-    return existingReply.value.is_public ? trans("Public reply") : trans("Private reply")
+    return existingReply.value.is_public ? ctrans("Public reply") : ctrans("Private reply")
 })
 const reviewThumbnails = computed<ImageProxy[]>(() => {
     const images = props.review?.image_gallery ?? props.review?.image_thumbnails
@@ -365,8 +365,8 @@ const fetchCustomers = async (reset: boolean): Promise<void> => {
         }
     } catch {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to load customers"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to load customers"),
             type: "error",
         })
     } finally {
@@ -528,8 +528,8 @@ const submitReview = (): void => {
 
     request.then(() => {
             notify({
-                title: trans("Success"),
-                text: isUpdateMode.value ? trans("Review updated successfully") : trans("Review created successfully"),
+                title: ctrans("Success"),
+                text: isUpdateMode.value ? ctrans("Review updated successfully") : ctrans("Review created successfully"),
                 type: "success",
             })
             router.reload()
@@ -538,8 +538,8 @@ const submitReview = (): void => {
         .catch((error) => {
             errors.value = error.response?.data?.errors ?? {}
             notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to create review"),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Failed to create review"),
                 type: "error",
             })
         })
@@ -558,7 +558,7 @@ onBeforeUnmount(() => {
         <slot name="trigger" :openModal="openModal">
             <Button
                 v-if="!hideDefaultButton"
-                :label="buttonLabel ?? trans('Create New Review')"
+                :label="buttonLabel ?? ctrans('Create New Review')"
                 :icon="buttonIcon ?? 'fas fa-star'"
                 @click="openModal"
             />
@@ -571,9 +571,9 @@ onBeforeUnmount(() => {
                 <template v-if="isDetailMode">
                     <div class="space-y-3">
                         <div class="space-y-2">
-                            <label class="text-sm font-medium">{{ trans("Ratings") }}</label>
+                            <label class="text-sm font-medium">{{ ctrans("Ratings") }}</label>
                             <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                                <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ trans("Main rating") }}</div>
+                                <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ ctrans("Main rating") }}</div>
                                 <div class="mt-1 flex items-center gap-2">
                                     <div class="text-2xl leading-none text-amber-500">
                                         <span>{{ mainRatingStars }}</span>
@@ -625,7 +625,7 @@ onBeforeUnmount(() => {
                                 <div class="max-h-24 overflow-y-auto text-sm text-gray-800">{{ existingReply.body || "-" }}</div>
                             </div>
                             <div v-else class="text-sm text-gray-500">
-                                {{ trans("No reply yet") }}
+                                {{ ctrans("No reply yet") }}
                             </div>
                         </div>
                     </div>
@@ -633,9 +633,9 @@ onBeforeUnmount(() => {
 
                 <template v-else>
                     <div class="space-y-2">
-                        <label class="text-sm font-medium">{{ trans("Ratings") }}</label>
+                        <label class="text-sm font-medium">{{ ctrans("Ratings") }}</label>
                         <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ trans("Main rating") }}</div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ ctrans("Main rating") }}</div>
                             <div class="mt-1 flex items-center gap-2">
                                 <div class="text-2xl leading-none text-amber-500">
                                     <span>{{ mainRatingStars }}</span>
@@ -667,10 +667,10 @@ onBeforeUnmount(() => {
                         </div>
                         <div v-else class="space-y-2">
                             <div class="text-sm text-amber-600">
-                                {{ trans("Rating labels are not configured for this shop.") }}
+                                {{ ctrans("Rating labels are not configured for this shop.") }}
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="text-sm font-medium text-amber-700">{{ trans("Your rating") }}</div>
+                                <div class="text-sm font-medium text-amber-700">{{ ctrans("Your rating") }}</div>
                                 <div class="flex items-center gap-1">
                                     <button
                                         v-for="star in 5"
@@ -690,7 +690,7 @@ onBeforeUnmount(() => {
 
                     <div :class="isUpdateMode ? 'grid grid-cols-1 gap-3 md:grid-cols-2' : 'space-y-3'">
                         <div class="space-y-2">
-                            <label class="text-sm font-medium">{{ trans("Customer") }}</label>
+                            <label class="text-sm font-medium">{{ ctrans("Customer") }}</label>
                             <Select
                                 v-model="selectedCustomerId"
                                 :options="customerOptions"
@@ -699,7 +699,7 @@ onBeforeUnmount(() => {
                                 filter
                                 class="w-full"
                                 :loading="isLoadingCustomers"
-                                :placeholder="trans('Select customer')"
+                                :placeholder="ctrans('Select customer')"
                                 @show="onCustomerSelectShow"
                                 @hide="onCustomerSelectHide"
                                 @filter="onCustomerFilter"
@@ -708,26 +708,26 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div v-if="isUpdateMode" class="space-y-2">
-                            <label class="text-sm font-medium">{{ trans("Status") }}</label>
+                            <label class="text-sm font-medium">{{ ctrans("Status") }}</label>
                             <Select
                                 v-model="selectedStatus"
                                 :options="reviewStatusOptions"
                                 optionLabel="label"
                                 optionValue="value"
                                 class="w-full"
-                                :placeholder="trans('Select status')"
+                                :placeholder="ctrans('Select status')"
                             />
                             <div v-if="errors.status?.[0]" class="text-sm text-red-500">{{ errors.status[0] }}</div>
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="text-sm font-medium">{{ trans("Message") }}</label>
+                        <label class="text-sm font-medium">{{ ctrans("Message") }}</label>
                         <Textarea v-model="message" rows="4" class="w-full" />
                         <div v-if="errors.message?.[0]" class="text-sm text-red-500">{{ errors.message[0] }}</div>
                     </div>
 
-                    <label class="font-medium">{{ trans("Images") }}</label>
+                    <label class="font-medium">{{ ctrans("Images") }}</label>
                     <input
                         type="file"
                         accept="image/*"
@@ -735,7 +735,7 @@ onBeforeUnmount(() => {
                         class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
                         @change="onSelectImages"
                     >
-                    <div v-if="imageFiles.length" class="text-xs text-gray-500">{{ imageFiles.length }} {{ trans("file selected") }}</div>
+                    <div v-if="imageFiles.length" class="text-xs text-gray-500">{{ imageFiles.length }} {{ ctrans("file selected") }}</div>
                     <div v-if="errors.images?.[0]" class="text-sm text-red-500">{{ errors.images[0] }}</div>
                     <div v-if="errors['images.0']?.[0]" class="text-sm text-red-500">{{ errors['images.0'][0] }}</div>
                 </template>
@@ -744,7 +744,7 @@ onBeforeUnmount(() => {
                     <Button type="cancel" @click="closeModal" />
                     <Button
                         v-if="!isDetailMode"
-                        :label="isUpdateMode ? trans('Update') : trans('Save')"
+                        :label="isUpdateMode ? ctrans('Update') : ctrans('Save')"
                         :isLoading="isLoadingSubmit"
                         :disabled="isLoadingSubmit"
                         @click="submitReview"

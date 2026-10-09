@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { computed, inject, ref } from 'vue'
 
 import Address from "@/Components/Forms/Fields/Address.vue"
@@ -97,7 +97,7 @@ const selectedCountryCode = computed(
             class="capitalize block text-sm font-medium text-gray-700"
         >
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{ trans("Name") }}
+            {{ ctrans("Name") }}
         </label>
 
         <div class="mt-2">
@@ -127,14 +127,14 @@ const selectedCountryCode = computed(
             class="capitalize block text-sm font-medium text-gray-700"
         >
             <FontAwesomeIcon v-if="props.requiresPhoneNumber" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{ trans("Phone Number") }}
+            {{ ctrans("Phone Number") }}
         </label>
         <div class="mt-2">
             <Phone
                 :form="form"
                 fieldName="phone"
                 :options="{ defaultCountry: selectedCountryCode || 'GB' }"
-                :fieldData="{ placeholder: trans('Enter phone number') }"
+                :fieldData="{ placeholder: ctrans('Enter phone number') }"
             />
         </div>
     </div>
@@ -146,7 +146,7 @@ const selectedCountryCode = computed(
             class="capitalize block text-sm font-medium text-gray-700"
         >
             <!-- <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" /> -->
-            {{  registration_settings.company_name_label ??  trans("Business Name") }}
+            {{  registration_settings.company_name_label ??  ctrans("Business Name") }}
         </label>
         <div class="mt-2">
             <IconField class="w-full" :class="form.errors.company_name ? 'errorShake' : ''">
@@ -175,7 +175,7 @@ const selectedCountryCode = computed(
         <label
             for="website"
             class="capitalize block text-sm font-medium text-gray-700"
-            >{{ trans("Website") }}</label
+            >{{ ctrans("Website") }}</label
         >
         <div class="mt-2">
             <IconField class="w-full" :class="form.errors.contact_website ? 'errorShake' : ''">
@@ -198,7 +198,7 @@ const selectedCountryCode = computed(
     <div class="sm:col-span-6">
         <label for="address" class="block text-sm font-medium text-gray-700 mb-2" >
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{ trans("Country") }}
+            {{ ctrans("Country") }}
         </label >
         <Address
             v-model="form.contact_address"
@@ -214,7 +214,7 @@ const selectedCountryCode = computed(
     <div class="sm:col-span-6">
         <label for="tax_number" class="mb-2 block text-sm font-medium text-gray-700" >
             <FontAwesomeIcon v-if="registration_settings.tax_number_is_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{ trans("Tax number") }}
+            {{ ctrans("Tax number") }}
         </label >
         <TaxNumber
             :form="form"
@@ -274,7 +274,7 @@ const selectedCountryCode = computed(
         <div class="sm:col-span-6 flex flex-col">
             <label class="capitalize block text-sm font-medium text-gray-700">
                 <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-                {{ trans("User Interests") }}
+                {{ ctrans("User Interests") }}
             </label>
             <div class="mt-2 gap-x-6 gap-y-4 grid grid-cols-2" :class="form.errors.interest ? 'errorShake' : ''">
                 <!-- Loop through the interests -->

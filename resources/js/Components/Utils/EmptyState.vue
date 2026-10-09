@@ -4,7 +4,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faCactus, faIslandTropical, faSkullCow, faFish } from "@fal"
 import { faPlus } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { ref } from "vue"
 
@@ -32,13 +32,13 @@ const isLoading = ref(false)
 
 <template>
     <div class="text-center border-gray-200 p-14">
-        <h3 v-if="data?.title" class="text-lg font-light text-[#4b525b] tracking-wide pb-2">{{ data?.title || trans("No records found") }}</h3>
+        <h3 v-if="data?.title" class="text-lg font-light text-[#4b525b] tracking-wide pb-2">{{ data?.title || ctrans("No records found") }}</h3>
         <p v-if="data?.description" class="text-sm text-gray-500 inline-block">{{ data?.description }}</p>
 
         <!-- <div v-html="box" /> -->
         <img
             v-if="!isNoIcon" 
-            :alt="trans('Guy holding an empty box')"
+            :alt="ctrans('Guy holding an empty box')"
             class="mb-6 h-64 aspect-square text-indigo-600 mx-auto"
             src="/cdn/empty-space/guy_carry_a_empty_box.svg"
         />

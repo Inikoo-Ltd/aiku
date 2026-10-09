@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { googleTokenLogin } from "vue3-google-login"
 import { getStyles } from "@/Composables/styles"
@@ -147,8 +147,8 @@ const loginWithGoogle = async () => {
 		isOpenGoogleRegistration.value = true
 	} catch (error: any) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to login with Google. Please contact administrator."),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to login with Google. Please contact administrator."),
 			type: "error",
 		})
 	}
@@ -241,7 +241,7 @@ const loginWithGoogle = async () => {
 
 					<div v-if="isGoogleLoginVisible" class="space-y-3">
 						<div class="text-center text-sm">
-							{{ fieldValue?.login?.google?.note || trans("or use your Google account to login") }}
+							{{ fieldValue?.login?.google?.note || ctrans("or use your Google account to login") }}
 						</div>
 
 						<button
@@ -255,7 +255,7 @@ const loginWithGoogle = async () => {
 								<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
 								<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 							</svg>
-							{{ fieldValue?.login?.google?.text || trans("Login with Google") }}
+							{{ fieldValue?.login?.google?.text || ctrans("Login with Google") }}
 							<LoadingIcon v-if="isLoadingGoogle" />
 						</button>
 					</div>
@@ -293,13 +293,13 @@ const loginWithGoogle = async () => {
 		<Modal :isOpen="isOpenGoogleRegistration" width="max-w-lg w-full" @onClose="isOpenGoogleRegistration = false">
 			<div class="p-6">
 				<h2 class="mb-2 text-center text-lg">
-					{{ trans("Hello") }}, <span class="font-semibold">{{ googleAccount?.name }}</span>!
+					{{ ctrans("Hello") }}, <span class="font-semibold">{{ googleAccount?.name }}</span>!
 				</h2>
 
 				<div class="mb-4 text-center text-gray-600">
 					<div class="mb-3 italic">{{ googleAccount?.email }}</div>
-					<p>{{ trans("This email was not found in our database") }}</p>
-					<p>{{ trans("Do you want to create an account?") }}</p>
+					<p>{{ ctrans("This email was not found in our database") }}</p>
+					<p>{{ ctrans("Do you want to create an account?") }}</p>
 				</div>
 
 				<div class="flex justify-center gap-x-3">
@@ -307,7 +307,7 @@ const loginWithGoogle = async () => {
 						type="button"
 						class="cursor-pointer rounded-sm border border-gray-400 px-4 py-2 text-sm"
 						@click="isOpenGoogleRegistration = false">
-						{{ trans("No, thanks") }}
+						{{ ctrans("No, thanks") }}
 					</button>
 
 					<LinkIris
@@ -316,7 +316,7 @@ const loginWithGoogle = async () => {
 						:type="registerWithGoogleLink.type"
 						class="cursor-pointer rounded-sm px-4 py-2 text-sm"
 						:style="getStyles(fieldValue?.register?.button?.container?.properties, screenType)">
-						{{ trans("Yes") }}
+						{{ ctrans("Yes") }}
 					</LinkIris>
 				</div>
 			</div>

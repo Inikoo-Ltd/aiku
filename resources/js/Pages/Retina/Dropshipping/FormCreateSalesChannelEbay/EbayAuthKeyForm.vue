@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { inject, ref } from "vue";
 import { faInfoCircle } from "@fal";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -39,7 +39,7 @@ const onSubmitEbay = async () => {
     } catch (err) {
         isLoadingStep.value = false;
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: err.response?.data?.message,
             type: "error"
         });
@@ -68,14 +68,14 @@ const submitForm = async () => {
 
 <template>
     <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("Authentication Settings") }}</span>
-        <span class="text-sm">{{ trans("This is where you need to auth your store to our system.") }}</span>
+        <span class="text-lg font-semibold">{{ ctrans("Authentication Settings") }}</span>
+        <span class="text-sm">{{ ctrans("This is where you need to auth your store to our system.") }}</span>
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
         <div class="flex items-center gap-2 w-full md:w-80">
-            <Button size="sm" :loading="isLoadingStep" @click="onSubmitEbay">{{ trans("Auth Store") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="onSubmitEbay">{{ ctrans("Auth Store") }}</Button>
             <FontAwesomeIcon
-                v-tooltip="trans('Requests a token from eBay so we can sync without you entering your account details each time')"
+                v-tooltip="ctrans('Requests a token from eBay so we can sync without you entering your account details each time')"
                 icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width/>
         </div>
         <p v-if="errors.message" class="text-sm text-red-600 mt-1">{{ errors.message?.[0] }}</p>
@@ -83,8 +83,8 @@ const submitForm = async () => {
         <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ ctrans("Cancel") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ ctrans("Next") }}</Button>
         </div>
     </form>
 </template>

@@ -9,7 +9,7 @@ import {inject, ref} from "vue"
 import Timeline from '@/Components/Utils/Timeline.vue'
 
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
-import {trans} from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -114,7 +114,7 @@ const onSubmitReconnect = async () => {
 		window.location.href = response.data
 	} catch (err) {
 		notify({
-			title: trans("Something went wrong"),
+			title: ctrans("Something went wrong"),
 			type: "error"
 		});
 	}
@@ -184,12 +184,12 @@ const layout = inject('layout', layoutStructure)
                     {{ customer_sales_channel.name || 'n/a' }}
                     <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span>
                     <span v-if="can_connect_to_platform" class="ml-2 whitespace-nowrap">
-                        <FontAwesomeIcon v-if="can_connect_to_platform" v-tooltip="trans('App installed')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-else v-tooltip="trans('App not installed yet')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-if="exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-if="platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="can_connect_to_platform" v-tooltip="ctrans('App installed')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-else v-tooltip="ctrans('App not installed yet')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="exist_in_platform" v-tooltip="ctrans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                     </span>
                 </h3>
 
@@ -204,10 +204,10 @@ const layout = inject('layout', layoutStructure)
                             },
                             method: 'delete'
                         }"
-                        :title="trans('Are you sure you want to delete channel')"
-                        xdescription="trans('This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
+                        :title="ctrans('Are you sure you want to delete channel')"
+                        xdescription="ctrans('This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
                         isFullLoading
-                        :noLabel="trans('Yes, delete channel')"
+                        :noLabel="ctrans('Yes, delete channel')"
                     >
                         <template #default="{ isOpenModal, changeModel }">
                             <Button
@@ -232,16 +232,16 @@ const layout = inject('layout', layoutStructure)
                                 customerSalesChannel: customer_sales_channel?.id,
                             }
                         }"
-                        :title="trans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name || '' })"
-                        :description="trans('This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.')"
+                        :title="ctrans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name || '' })"
+                        :description="ctrans('This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.')"
                         isFullLoading
-                        :noLabel="trans('Yes, reset channel')"
+                        :noLabel="ctrans('Yes, reset channel')"
                     >
                         <template #default="{ isOpenModal, changeModel }">
                             <Button
                                 @click="changeModel"
-                                v-tooltip="trans('This will reset the products')"
-                                :label="trans('Reset channel')"
+                                v-tooltip="ctrans('This will reset the products')"
+                                :label="ctrans('Reset channel')"
                                 type="negative"
                             >
 
@@ -253,7 +253,7 @@ const layout = inject('layout', layoutStructure)
 				<div class="flex flex-nowrap items-center gap-2">
 					<div v-if="['ebay', 'allegro'].includes(customer_sales_channel?.type) && !platform_status && !deleted_notice">
 						<ButtonWithLink @click="onSubmitReconnect" type="tertiary"
-										:label="trans('Reconnect')"
+										:label="ctrans('Reconnect')"
 										:icon="['fas', 'fa-spinner']">
 						</ButtonWithLink>
 					</div>
@@ -261,7 +261,7 @@ const layout = inject('layout', layoutStructure)
 						<ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
 										type="tertiary"
 										:icon="['fal', 'fa-pencil']"
-										:label="trans('Manage Sales Channel')">
+										:label="ctrans('Manage Sales Channel')">
 						</ButtonWithLink>
 					</div>
 				</div>
@@ -304,9 +304,9 @@ const layout = inject('layout', layoutStructure)
                 <!-- Notice: eBay will not list until the seller account is finished -->
                 <Message v-if="ebay_registration_notice" severity="error" class="mt-5">
                     <div class="ml-2 font-normal text-sm">
-                        <div class="font-bold">{{ trans("eBay has not finished setting up your seller account") }}</div>
+                        <div class="font-bold">{{ ctrans("eBay has not finished setting up your seller account") }}</div>
                         <div class="mt-1">
-                            {{ trans("Until it is complete eBay refuses every listing, so uploads and drafts here cannot go live. Sign in to eBay and finish the outstanding registration details, then upload again.") }}
+                            {{ ctrans("Until it is complete eBay refuses every listing, so uploads and drafts here cannot go live. Sign in to eBay and finish the outstanding registration details, then upload again.") }}
                         </div>
                     </div>
                 </Message>
@@ -323,12 +323,12 @@ const layout = inject('layout', layoutStructure)
                                     fixed-width aria-hidden="true" />
                                 <p class="ml-3 text-sm" :class="stock_update_notice.enabled ? 'text-blue-700' : 'text-yellow-700'">
                                     <template v-if="stock_update_notice.enabled">
-                                        <strong>{{ trans('Stock Update is enabled:') }}</strong>
-                                        {{ trans('We automatically sync your stock levels to this channel. You can set the maximum quantity advertised and the stock threshold at which products show as out of stock, or disable stock updates entirely.') }}
+                                        <strong>{{ ctrans('Stock Update is enabled:') }}</strong>
+                                        {{ ctrans('We automatically sync your stock levels to this channel. You can set the maximum quantity advertised and the stock threshold at which products show as out of stock, or disable stock updates entirely.') }}
                                     </template>
                                     <template v-else>
-                                        <strong>{{ trans('Stock Update is disabled:') }}</strong>
-                                        {{ trans('Your stock levels are not synced to this channel, so quantities shown on the channel may not match your available stock. You can enable automatic stock updates in the channel settings.') }}
+                                        <strong>{{ ctrans('Stock Update is disabled:') }}</strong>
+                                        {{ ctrans('Your stock levels are not synced to this channel, so quantities shown on the channel may not match your available stock. You can enable automatic stock updates in the channel settings.') }}
                                     </template>
                                 </p>
                             </div>
@@ -337,7 +337,7 @@ const layout = inject('layout', layoutStructure)
                                     :url="route(stock_update_notice.edit_route.name, stock_update_notice.edit_route.parameters)"
                                     type="tertiary"
                                     :icon="['fal', 'fa-pencil']"
-                                    :label="trans('Manage stock settings')"
+                                    :label="ctrans('Manage stock settings')"
                                 />
                             </div>
                         </div>
@@ -356,27 +356,27 @@ const layout = inject('layout', layoutStructure)
                                     fixed-width aria-hidden="true" />
                                 <p class="ml-3 text-sm" :class="pricing_notice.mode === 'none' ? 'text-yellow-700' : 'text-blue-700'">
                                     <template v-if="pricing_notice.mode === 'manual'">
-                                        <strong>{{ trans('You manage prices yourself:') }}</strong>
-                                        {{ trans('We never upload or overwrite prices on eBay for this channel.') }}
+                                        <strong>{{ ctrans('You manage prices yourself:') }}</strong>
+                                        {{ ctrans('We never upload or overwrite prices on eBay for this channel.') }}
                                     </template>
                                     <template v-else-if="pricing_notice.mode === 'all_products'">
-                                        <strong>{{ trans('All products follow the pricing rule:') }}</strong>
+                                        <strong>{{ ctrans('All products follow the pricing rule:') }}</strong>
                                         {{ pricing_notice.pricing_type === 'percent'
-                                            ? trans('prices are set at base price :value% and kept in sync. Products where you set your own price are not touched.', { value: (pricing_notice.pricing_value >= 0 ? '+' : '') + pricing_notice.pricing_value })
-                                            : trans('prices are set at base price + :value and kept in sync. Products where you set your own price are not touched.', { value: pricing_notice.pricing_value }) }}
+                                            ? ctrans('prices are set at base price :value% and kept in sync. Products where you set your own price are not touched.', { value: (pricing_notice.pricing_value >= 0 ? '+' : '') + pricing_notice.pricing_value })
+                                            : ctrans('prices are set at base price + :value and kept in sync. Products where you set your own price are not touched.', { value: pricing_notice.pricing_value }) }}
                                         <template v-if="pricing_notice.number_not_following">
-                                            {{ trans(':count products have their own price and do not follow the rule.', { count: locale.number(pricing_notice.number_not_following) }) }}
+                                            {{ ctrans(':count products have their own price and do not follow the rule.', { count: locale.number(pricing_notice.number_not_following) }) }}
                                         </template>
                                     </template>
                                     <template v-else-if="pricing_notice.mode === 'new_only'">
-                                        <strong>{{ trans('Pricing rule for new products:') }}</strong>
+                                        <strong>{{ ctrans('Pricing rule for new products:') }}</strong>
                                         {{ pricing_notice.pricing_type === 'percent'
-                                            ? trans('products are priced at base price :value% when you add them. Existing products keep their own prices.', { value: (pricing_notice.pricing_value >= 0 ? '+' : '') + pricing_notice.pricing_value })
-                                            : trans('products are priced at base price + :value when you add them. Existing products keep their own prices.', { value: pricing_notice.pricing_value }) }}
+                                            ? ctrans('products are priced at base price :value% when you add them. Existing products keep their own prices.', { value: (pricing_notice.pricing_value >= 0 ? '+' : '') + pricing_notice.pricing_value })
+                                            : ctrans('products are priced at base price + :value when you add them. Existing products keep their own prices.', { value: pricing_notice.pricing_value }) }}
                                     </template>
                                     <template v-else>
-                                        <strong>{{ trans('No pricing rule set:') }}</strong>
-                                        {{ trans('products are priced at their base price (RRP) when added. You can set a channel pricing rule, or manage each product individually.') }}
+                                        <strong>{{ ctrans('No pricing rule set:') }}</strong>
+                                        {{ ctrans('products are priced at their base price (RRP) when added. You can set a channel pricing rule, or manage each product individually.') }}
                                     </template>
                                 </p>
                             </div>
@@ -385,7 +385,7 @@ const layout = inject('layout', layoutStructure)
                                     :url="route(pricing_notice.edit_route.name, pricing_notice.edit_route.parameters)"
                                     type="tertiary"
                                     :icon="['fal', 'fa-pencil']"
-                                    :label="trans('Manage pricing settings')"
+                                    :label="ctrans('Manage pricing settings')"
                                 />
                             </div>
                         </div>
@@ -403,20 +403,20 @@ const layout = inject('layout', layoutStructure)
                                           d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                                           clip-rule="evenodd"></path>
                                 </svg>
-                                <strong class="text-sm text-red-700 sm:hidden">{{ trans('Important Notice:') }}</strong>
+                                <strong class="text-sm text-red-700 sm:hidden">{{ ctrans('Important Notice:') }}</strong>
                             </div>
                             <div class="sm:ml-3">
                                 <p class="text-sm text-red-700">
-                                    <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
-                                    {{ trans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.customer_country + '.' }} </strong>
-                                    {{  trans('In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas.') }}
+                                    <strong class="hidden sm:inline">{{ ctrans('Important Notice:') }}</strong>
+                                    {{ ctrans('We noticed your account is registered in') }} <strong> {{ ebay_warehouse_policy_msg.customer_country + '.' }} </strong>
+                                    {{  ctrans('In accordance to eBay’s Overseas Warehouse Block Policy, listings from this region may be blocked when the item is stored overseas.') }}
                                     <a href="https://export.ebay.com/en/fees-regulations-policies/ebay-policies/overseas-warehouse-block-policy-authorization-requirements-for-forward-deployed-inventory/"
                                        target="_blank"
                                        class="underline text-red-800 hover:text-red-900">
                                         [eBay Overseas Warehouse Block Policy]
                                     </a>
                                     <br> <br>
-                                    {{ trans('If this happens, please contact eBay Support to request approval or further assistance:') }}
+                                    {{ ctrans('If this happens, please contact eBay Support to request approval or further assistance:') }}
                                     <a href="https://www.ebay.com/help/contact_us?id=4105&st=10"
                                        target="_blank"
                                        class="underline text-red-800 hover:text-red-900">
@@ -438,12 +438,12 @@ const layout = inject('layout', layoutStructure)
                                           d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                                           clip-rule="evenodd"></path>
                                 </svg>
-                                <strong class="text-sm text-yellow-700 sm:hidden">{{ trans('Important Notice:') }}</strong>
+                                <strong class="text-sm text-yellow-700 sm:hidden">{{ ctrans('Important Notice:') }}</strong>
                             </div>
                             <div class="sm:ml-3">
                                 <p class="text-sm text-yellow-700">
-                                    <strong class="hidden sm:inline">{{ trans('Important Notice:') }}</strong>
-                                    {{ trans('To prevent any issues or misunderstandings with the eBay platform, please ensure your eBay account is registered as a seller account. For more information, visit:') }}
+                                    <strong class="hidden sm:inline">{{ ctrans('Important Notice:') }}</strong>
+                                    {{ ctrans('To prevent any issues or misunderstandings with the eBay platform, please ensure your eBay account is registered as a seller account. For more information, visit:') }}
                                     <a href="https://www.ebay.com/help/selling/getting-paid/registering-seller?id=4792"
                                        target="_blank"
                                        class="underline text-yellow-800 hover:text-yellow-900">
@@ -456,20 +456,20 @@ const layout = inject('layout', layoutStructure)
                             <button type="button"
                                 class="text-xs text-yellow-700 underline hover:text-yellow-900"
                                 @click="dismissNotice('ebay_seller')">
-                                {{ trans("I understand, hide this message") }}
+                                {{ ctrans("I understand, hide this message") }}
                             </button>
                         </div>
                     </div>
                 </div>
                 <div v-if="fetch_orders_route" class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Button
-                        :label="trans('Fetch orders')"
+                        :label="ctrans('Fetch orders')"
                         :icon="faSyncAlt"
                         type="tertiary"
                         :loading="isFetchingOrders"
                         @click="onFetchOrders" />
                     <span class="text-xs text-gray-500">
-                        {{ trans("Checks :platform for orders that have not reached us yet.", { platform: platform.name }) }}
+                        {{ ctrans("Checks :platform for orders that have not reached us yet.", { platform: platform.name }) }}
                     </span>
                 </div>
 

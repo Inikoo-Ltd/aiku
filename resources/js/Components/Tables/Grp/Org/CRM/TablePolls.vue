@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 
 const props = defineProps<{
@@ -26,7 +26,7 @@ const props = defineProps<{
         </template>
 
         <template #cell(in_registration)="{ item }">
-            <div v-if="item.in_registration" v-tooltip="trans('Will show in registration')" class="text-center text-green-500">
+            <div v-if="item.in_registration" v-tooltip="ctrans('Will show in registration')" class="text-center text-green-500">
                 <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
             </div>
             <div v-else>

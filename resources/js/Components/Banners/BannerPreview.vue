@@ -4,7 +4,7 @@ import { useRangeFromNow } from '@/Composables/useFormatTime'
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
 import Image from '../../Common/Components/Image.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
   data: {
@@ -85,7 +85,7 @@ const publishedAgo = computed(() => {
         </div>
 
         <div v-else class="text-gray-400 italic text-sm">
-          {{ trans("Not published yet") }}
+          {{ ctrans("Not published yet") }}
         </div>
 
         <div

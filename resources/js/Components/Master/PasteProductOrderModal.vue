@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -155,40 +155,40 @@ const apply = async () => {
         <div class="p-1">
             <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-800">
                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                {{ trans("Paste order") }}
+                {{ ctrans("Paste order") }}
             </h2>
 
             <div class="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
                 <p class="flex items-center gap-2 font-medium">
                     <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true" />
-                    {{ trans("One code per line, in the order you want them") }}
+                    {{ ctrans("One code per line, in the order you want them") }}
                 </p>
                 <div class="mt-2 grid gap-3 sm:grid-cols-2">
                     <pre class="rounded bg-white/70 p-2 font-mono leading-5">1. VEDIC-08
 2. VEDIC-12
 3. VEDIC-03</pre>
                     <ul class="space-y-1">
-                        <li>{{ trans("Numbering like 1. 2) or - is ignored, the line order is what counts") }}</li>
-                        <li>{{ trans("Anything after the code is ignored, e.g. 3. VEDIC-03 Rose incense") }}</li>
-                        <li>{{ trans("Upper or lower case both work, blank lines are skipped") }}</li>
+                        <li>{{ ctrans("Numbering like 1. 2) or - is ignored, the line order is what counts") }}</li>
+                        <li>{{ ctrans("Anything after the code is ignored, e.g. 3. VEDIC-03 Rose incense") }}</li>
+                        <li>{{ ctrans("Upper or lower case both work, blank lines are skipped") }}</li>
                     </ul>
                 </div>
             </div>
 
             <p v-if="items.length" class="mt-2 text-xs text-gray-500">
-                {{ trans("Matching against the :count rows on this tab, e.g.", { count: String(items.length) }) }}
+                {{ ctrans("Matching against the :count rows on this tab, e.g.", { count: String(items.length) }) }}
                 <span class="font-mono">{{ sampleCodes }}</span>
             </p>
             <p v-else class="mt-2 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
                 <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
-                {{ trans("This tab has no rows loaded, so nothing can be matched") }}
+                {{ ctrans("This tab has no rows loaded, so nothing can be matched") }}
             </p>
 
             <textarea
                 v-model="pastedText"
                 rows="10"
                 spellcheck="false"
-                :placeholder="trans('Paste the list here')"
+                :placeholder="ctrans('Paste the list here')"
                 class="mt-3 w-full rounded-md border-gray-300 font-mono text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 
             <div v-if="parsedCodes.length" class="mt-3 space-y-2 text-sm">
@@ -196,33 +196,33 @@ const apply = async () => {
                     <p class="flex items-center gap-2 border-b border-gray-100 px-3 py-2 text-gray-700">
                         <FontAwesomeIcon v-if="isLooking" icon="fal fa-spinner" spin fixed-width class="text-gray-400" aria-hidden="true" />
                         <FontAwesomeIcon v-else icon="fal fa-check-circle" fixed-width class="text-green-600" aria-hidden="true" />
-                        {{ trans(":matched of :total lines matched", { matched: String(preview.ordered.length), total: String(parsedCodes.length) }) }}
+                        {{ ctrans(":matched of :total lines matched", { matched: String(preview.ordered.length), total: String(parsedCodes.length) }) }}
                     </p>
                     <ul class="divide-y divide-gray-100 text-xs">
                         <li v-if="preview.added.length" class="flex items-start gap-2 px-3 py-1.5 text-gray-600">
                             <FontAwesomeIcon icon="fal fa-info-circle" fixed-width class="mt-0.5 shrink-0 text-gray-400" aria-hidden="true" />
-                            <span>{{ trans("Pulled in, not on this tab:") }} <span class="font-mono">{{ preview.added.map((item) => item.code).join(", ") }}</span></span>
+                            <span>{{ ctrans("Pulled in, not on this tab:") }} <span class="font-mono">{{ preview.added.map((item) => item.code).join(", ") }}</span></span>
                         </li>
                         <li v-if="preview.unlisted.length" class="flex items-center gap-2 px-3 py-1.5 text-gray-600">
                             <FontAwesomeIcon icon="fal fa-info-circle" fixed-width class="shrink-0 text-gray-400" aria-hidden="true" />
-                            <span class="min-w-0 flex-1">{{ trans(":count rows on this tab are not in your list", { count: String(preview.unlisted.length) }) }}</span>
+                            <span class="min-w-0 flex-1">{{ ctrans(":count rows on this tab are not in your list", { count: String(preview.unlisted.length) }) }}</span>
                             <select v-model="unlistedMode" class="shrink-0 rounded-md border-gray-300 py-0.5 pl-2 pr-7 text-xs focus:border-[--app-accent] focus:ring-[--app-accent]">
-                                <option value="after">{{ trans("Keep them, after the pasted ones") }}</option>
-                                <option value="before">{{ trans("Keep them, before the pasted ones") }}</option>
-                                <option value="drop">{{ trans("Only keep the pasted ones") }}</option>
+                                <option value="after">{{ ctrans("Keep them, after the pasted ones") }}</option>
+                                <option value="before">{{ ctrans("Keep them, before the pasted ones") }}</option>
+                                <option value="drop">{{ ctrans("Only keep the pasted ones") }}</option>
                             </select>
                         </li>
                         <li v-if="preview.duplicates.length" class="flex items-start gap-2 bg-amber-50 px-3 py-1.5 text-amber-800">
                             <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width class="mt-0.5 shrink-0" aria-hidden="true" />
-                            <span>{{ trans("Listed more than once, first one counts:") }} <span class="font-mono">{{ preview.duplicates.join(", ") }}</span></span>
+                            <span>{{ ctrans("Listed more than once, first one counts:") }} <span class="font-mono">{{ preview.duplicates.join(", ") }}</span></span>
                         </li>
                         <li v-if="preview.unmatched.length" class="flex items-start gap-2 bg-amber-50 px-3 py-1.5 text-amber-800">
                             <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width class="mt-0.5 shrink-0" aria-hidden="true" />
-                            <span>{{ trans("Not found here, left out:") }} <span class="font-mono">{{ preview.unmatched.join(", ") }}</span></span>
+                            <span>{{ ctrans("Not found here, left out:") }} <span class="font-mono">{{ preview.unmatched.join(", ") }}</span></span>
                         </li>
                         <li v-if="lookupFailed" class="flex items-start gap-2 bg-amber-50 px-3 py-1.5 text-amber-800">
                             <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width class="mt-0.5" aria-hidden="true" />
-                            <span>{{ trans("Could not check the codes that are not on this tab") }}</span>
+                            <span>{{ ctrans("Could not check the codes that are not on this tab") }}</span>
                         </li>
                     </ul>
                 </div>
@@ -239,11 +239,11 @@ const apply = async () => {
             </div>
 
             <div class="mt-4 flex items-center justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="emits('close')" />
-                <Button type="save" :label="trans('Apply order')" :loading="isApplying" :disabled="!parsedCodes.length" @click="apply" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="emits('close')" />
+                <Button type="save" :label="ctrans('Apply order')" :loading="isApplying" :disabled="!parsedCodes.length" @click="apply" />
             </div>
 
-            <p class="mt-2 text-right text-xs text-gray-400">{{ trans("Nothing is saved until you press Save order") }}</p>
+            <p class="mt-2 text-right text-xs text-gray-400">{{ ctrans("Nothing is saved until you press Save order") }}</p>
         </div>
     </Modal>
 </template>

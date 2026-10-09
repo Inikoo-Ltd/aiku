@@ -17,7 +17,7 @@ import { UploadPallet } from "@/types/Pallet"
 import { ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 // import Link from '@/Components/CMS/Fields/Link.vue'
 library.add(faNarwhal)
@@ -46,8 +46,8 @@ const isModalUploadSpreadsheet = ref(false)
 
 const onNoStructureUpload = () => {
 	notify({
-		title: trans("Something went wrong"),
-		text: trans("Upload structure is not provided. Please contact support."),
+		title: ctrans("Something went wrong"),
+		text: ctrans("Upload structure is not provided. Please contact support."),
 		type: "error",
 	})
 }

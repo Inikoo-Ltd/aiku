@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { get } from "lodash-es"
 import { seedFormRows } from "./seedFormRows"
 import { useEchoMasterProductCategory } from "@/Stores/echo-master-product-category"
@@ -33,18 +33,18 @@ const props = defineProps<{
 const defaultColumns: StorageColumn[] = [
 	{
 		value: "storage",
-		label: trans("Storage"),
-		placeholder: trans("e.g. Store in a cool, dry place away from direct sunlight and heat."),
+		label: ctrans("Storage"),
+		placeholder: ctrans("e.g. Store in a cool, dry place away from direct sunlight and heat."),
 	},
 	{
 		value: "shelf_life",
-		label: trans("Shelf Life"),
-		placeholder: trans("e.g. 24 months from date of manufacture (see batch number)."),
+		label: ctrans("Shelf Life"),
+		placeholder: ctrans("e.g. 24 months from date of manufacture (see batch number)."),
 	},
 	{
 		value: "after_opening",
-		label: trans("POA (After Opening)"),
-		placeholder: trans("e.g. Use within 12 months of opening."),
+		label: ctrans("POA (After Opening)"),
+		placeholder: ctrans("e.g. Use within 12 months of opening."),
 	},
 ]
 

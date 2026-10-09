@@ -11,7 +11,7 @@ import Image from "@common/Components/Image.vue"
 import { notify } from '@kyvg/vue3-notification'
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ImageData } from '@/types/Image'
 import { Images } from "@/types/Images"
@@ -59,8 +59,8 @@ const toggleImageSelection = (imageId: number) => {
             selectedIdImages.value.push(imageId);
         } else {
             notify({
-                title: trans('Selection limit reached'),
-                text: trans(`You can only select up to :maxSelected images.`, { maxSelected: props.maxSelected ?? '0' }),
+                title: ctrans('Selection limit reached'),
+                text: ctrans(`You can only select up to :maxSelected images.`, { maxSelected: props.maxSelected ?? '0' }),
                 type: 'warning',
             });
         }
@@ -89,7 +89,7 @@ const submitSelectedImages = () => {
                 },
                 onError: (err) => {
                     notify({
-                        title: trans('Something went wrong.'),
+                        title: ctrans('Something went wrong.'),
                         text: err?.message || '',
                         type: 'error',
                     })
@@ -138,8 +138,8 @@ const fetchProductList = async (url?: string) => {
     } catch (error) {
         // console.log(error)
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch product list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to fetch product list'),
             type: 'error',
         })
     }
@@ -186,7 +186,7 @@ onUnmounted(() => {
             <div class="sticky top-0 pb-2 z-10 bg-white ">
                 <div class="pb-2 flex justify-between border-b border-gray-300 ">
                     <div class="text-2xl font-semibold tabular-nums">
-                        <!-- {{ trans('Select images') }} ({{ selectedImages.length }}/{{ optionsList.length }}) -->
+                        <!-- {{ ctrans('Select images') }} ({{ selectedImages.length }}/{{ optionsList.length }}) -->
                         <PureInputWithAddOn
                             @update:model-value="(val) => onSearchQuery(val)"
                             :leftAddOn="{ icon: 'fal fa-search' }"
@@ -198,7 +198,7 @@ onUnmounted(() => {
                             class=""
                             :class="selectedIdImages.length ? 'underline cursor-pointer' : 'text-gray-400'"
                         >
-                            {{ trans('Unselect all') }}
+                            {{ ctrans('Unselect all') }}
                         </div>
                         <Button
                             :label="`Select image ${selectedIdImages.length}/${maxSelected || optionsList.length}`"
@@ -231,12 +231,12 @@ onUnmounted(() => {
                     </div>
             
                     <div v-if="optionsLinks?.next" class="mt-8 flex justify-center">
-                        <Button @click="onFetchNext" :label="trans('Load more')" :loading="!!isLoading" type="tertiary" />
+                        <Button @click="onFetchNext" :label="ctrans('Load more')" :loading="!!isLoading" type="tertiary" />
                     </div>
                 </template>
 
                 <div v-else-if="!isLoading" class="flex justify-center col-span-4">
-                    <EmptyState :data="{ title : trans('You dont have images'), description : ''}"/>
+                    <EmptyState :data="{ title : ctrans('You dont have images'), description : ''}"/>
                 </div>
 
                 <div v-else class="flex gap-x-2">

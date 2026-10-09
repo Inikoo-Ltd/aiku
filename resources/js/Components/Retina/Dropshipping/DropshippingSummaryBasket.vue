@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { inject, onMounted, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { AddressManagement } from "@/types/PureComponent/Address"
@@ -114,8 +114,8 @@ const updateCollection = async (value: boolean) => {
         onError: (error) => {
             console.error(error)
             notify({
-                title: trans("Something went wrong."),
-                text: trans("Failed to update to collection"),
+                title: ctrans("Something went wrong."),
+                text: ctrans("Failed to update to collection"),
                 type: "error",
             })
         },
@@ -132,9 +132,9 @@ const validateTaxNum = async () => {
             router.visit(route(route().current(), route().params))
             let text;
             if(orderSummary.data.data.customer.tax_number.valid) {
-                text = trans('Your tax number is valid. Order Tax Category has been updated');
+                text = ctrans('Your tax number is valid. Order Tax Category has been updated');
             }else{
-                text = trans('Failed to validate your tax number (Please make sure to use your correct tax number)');
+                text = ctrans('Failed to validate your tax number (Please make sure to use your correct tax number)');
             }
             notify({
                 text: text,
@@ -156,7 +156,7 @@ onMounted(() => {
         <div class="col-span-2 mb-4 md:mb-0">
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Platform')" class="flex-none">
+                <div v-tooltip="ctrans('Platform')" class="flex-none">
                     <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width/>
                 </div>
                 <div class="flex items-center gap-x-2">
@@ -167,7 +167,7 @@ onMounted(() => {
 
             <!-- Field: Reference Number -->
 
-            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="trans('Client')"
+            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="ctrans('Client')"
                   :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                   class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
@@ -179,7 +179,7 @@ onMounted(() => {
             </Link>
 
             <!-- Field: Contact name -->
-            <div v-if="summary?.customer_client?.contact_name" v-tooltip="trans('Contact name')"
+            <div v-if="summary?.customer_client?.contact_name" v-tooltip="ctrans('Contact name')"
                  class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true'/>
@@ -188,7 +188,7 @@ onMounted(() => {
             </div>
 
             <!-- Field: Company name -->
-            <div v-if="summary?.customer_client?.company_name" v-tooltip="trans('Company name')"
+            <div v-if="summary?.customer_client?.company_name" v-tooltip="ctrans('Company name')"
                  class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true'/>
@@ -198,7 +198,7 @@ onMounted(() => {
 
             <!-- Field: Email -->
             <div v-if="summary?.customer_client?.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Email')" class="flex-none">
+                <div v-tooltip="ctrans('Email')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
                 <a :href="`mailto:${summary?.customer_client.email}`" v-tooltip="'Click to send email'"
@@ -207,7 +207,7 @@ onMounted(() => {
 
             <!-- Field: Phone -->
             <div v-if="summary?.customer_client?.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Phone')" class="flex-none">
+                <div v-tooltip="ctrans('Phone')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
                 <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
@@ -215,36 +215,36 @@ onMounted(() => {
             </div>
 
             <div v-if="summary?.customer.tax_number.number" class="pl-1 flex flex-wrap items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Tax Number')" class="flex-none mb-auto mt-0">
+                <div v-tooltip="ctrans('Tax Number')" class="flex-none mb-auto mt-0">
                     <FontAwesomeIcon :icon="faReceipt" class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
                 <div class="grow text-sm text-gray-500">    
                     <div class="flex align-center items-center min-h-6">    
                         {{summary?.customer.tax_number.number }} 
-                        <FontAwesomeIcon v-if="summary?.customer.tax_number.valid" :icon="faCheckCircle" v-tooltip="trans('Tax number is valid')"  class='text-green-400 ms-1' fixed-width aria-hidden='true'/>
-                        <FontAwesomeIcon v-else :icon="faExclamationCircle" v-tooltip="trans('Tax number is invalid')" class='text-red-400 ms-1' fixed-width aria-hidden='true'/>
+                        <FontAwesomeIcon v-if="summary?.customer.tax_number.valid" :icon="faCheckCircle" v-tooltip="ctrans('Tax number is valid')"  class='text-green-400 ms-1' fixed-width aria-hidden='true'/>
+                        <FontAwesomeIcon v-else :icon="faExclamationCircle" v-tooltip="ctrans('Tax number is invalid')" class='text-red-400 ms-1' fixed-width aria-hidden='true'/>
                     </div>
                     <div v-if="!summary?.customer.tax_number.valid" class="w-full text-xs text-gray-500 hover:text-gray-700 hover:cursor-pointer">
-                        <span v-tooltip="trans('Click here to revalidate your tax number.')" v-on:click="validateTaxNum">
-                            ({{ trans('Click to revalidate') }})
+                        <span v-tooltip="ctrans('Click here to revalidate your tax number.')" v-on:click="validateTaxNum">
+                            ({{ ctrans('Click to revalidate') }})
                         </span>
                     </div>
                 </div>
             </div>
 
             <div v-if="is_forbidden_billing" class="text-red-500 mt-3 text-xs">
-                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
             </div>
         </div>
 
         <div class="col-span-2 mb-2 md:mb-0 pl-1.5 md:pl-3">
             <!-- Field: Weight -->
             <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                <dt v-tooltip="trans('Weight')" class="flex-none">
+                <dt v-tooltip="ctrans('Weight')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400"/>
                 </dt>
 
-                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products')">
+                <dd class="xtext-gray-500" v-tooltip="ctrans('Estimated weight of all products')">
                     {{ summary.order_properties?.weight ?? '-' }}
                 </dd>
             </dl>
@@ -260,8 +260,8 @@ onMounted(() => {
                     :disabled="props.order?.state !== 'creating'"
                 />
                 <span class="text-sm text-gray-500">
-                    {{ trans("Collection") }}
-                    <InformationIcon :information="trans('Select this option if you would like to collect the order yourself or arrange your courier company to collect from our premises')" class="align-middle" />
+                    {{ ctrans("Collection") }}
+                    <InformationIcon :information="ctrans('Select this option if you would like to collect the order yourself or arrange your courier company to collect from our premises')" class="align-middle" />
                 </span>
             </div>
 
@@ -274,12 +274,12 @@ onMounted(() => {
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
                         <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
                             class="underline cursor-pointer hover:text-gray-700">
-                            {{ trans("Edit") }}
+                            {{ ctrans("Edit") }}
                             <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                         </div>
                     </dd>
                     <div v-if="is_forbidden_delivery" class="text-red-500 mt-2 text-xs">
-                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ ctrans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
                 </div>
             </div>
@@ -289,7 +289,7 @@ onMounted(() => {
                 <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                     <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width/>
                     <div class="text-sm font-semibold text-gray-800">
-                        {{ trans('Delivery Notes') }}
+                        {{ ctrans('Delivery Notes') }}
                     </div>
                 </div>
 
@@ -306,7 +306,7 @@ onMounted(() => {
 
                     <!-- Shipments -->
                     <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
-                        <p class="text-gray-700 font-medium mb-1">{{ trans('Shipments') }}:</p>
+                        <p class="text-gray-700 font-medium mb-1">{{ ctrans('Shipments') }}:</p>
                         <ul class="pl-4 space-y-1">
                             <li v-for="(shipment, i) in note.shipments" :key="i">
                                 <template v-if="shipment?.formatted_tracking_urls?.length">
@@ -314,7 +314,7 @@ onMounted(() => {
 
                                         {{ shipment.name }}
                                         <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
-                                           class="secondaryLink" v-tooltip="trans('Click to track shipment')">
+                                           class="secondaryLink" v-tooltip="ctrans('Click to track shipment')">
                                             {{ trackingData.tracking }}
                                         </a>
                                     </div>
@@ -324,7 +324,7 @@ onMounted(() => {
                                         {{ shipment.name }}: {{ shipment.tracking }}
                                     </div>
                                     <a class="secondaryLink" target="_parent" v-if="shipment.shipper_url"
-                                       :href="shipment.shipper_url">{{ trans('Tracking url') }} </a>
+                                       :href="shipment.shipper_url">{{ ctrans('Tracking url') }} </a>
 
                                 </template>
                             </li>
@@ -333,7 +333,7 @@ onMounted(() => {
                     </div>
 
                     <div v-else class="mt-1 text-xs italic text-gray-400">
-                        {{ trans('No shipments') }}
+                        {{ ctrans('No shipments') }}
                     </div>
                 </div>
             </div>
@@ -343,7 +343,7 @@ onMounted(() => {
                 <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                     <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
                     <div class="text-sm font-semibold text-gray-800">
-                        {{ trans('Invoices') }}
+                        {{ ctrans('Invoices') }}
                     </div>
                 </div>
 
@@ -354,13 +354,13 @@ onMounted(() => {
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
                               class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                            <div class="text-gray-500 " v-tooltip="trans('Invoice')">
+                            <div class="text-gray-500 " v-tooltip="ctrans('Invoice')">
                                 {{ invoice?.reference }}
                             </div>
                         </Link>
                         <a :href="route(invoice?.routes?.download?.name, invoice?.routes?.download?.parameters)"
                            target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded cursor-pointer"
-                           v-tooltip="trans('Download invoice')">
+                           v-tooltip="ctrans('Download invoice')">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
                         </a>
                     </div>
@@ -369,7 +369,7 @@ onMounted(() => {
 
             <!-- Section: Shipment -->
             <!--  <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
-                <FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1'
+                <FontAwesomeIcon v-tooltip="ctrans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1'
                     fixed-width aria-hidden='true' />
                 <div class="group w-full overflow-x-auto border border-gray-200 rounded">
 
@@ -378,11 +378,11 @@ onMounted(() => {
                             <tr>
                                 <th scope="col"
                                     class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ trans("Shipper") }}
+                                    {{ ctrans("Shipper") }}
                                 </th>
                                 <th scope="col"
                                     class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ trans("Tracking Number") }}
+                                    {{ ctrans("Tracking Number") }}
                                 </th>
                             </tr>
                         </thead>
@@ -399,7 +399,7 @@ onMounted(() => {
                                             :key="trackingIdx" class="mb-1 last:mb-0">
                                             <a :href="trackingItem.url" target="_blank"
                                                 class="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
-                                                v-tooltip="trans('Click to track shipment')">
+                                                v-tooltip="ctrans('Click to track shipment')">
                                                 {{ trackingItem.tracking }}
                                             </a>
                                         </div>
@@ -408,7 +408,7 @@ onMounted(() => {
                                         {{ shipment.tracking }}
                                     </div>
                                     <div v-else>
-                                        {{ trans("No tracking information") }}
+                                        {{ ctrans("No tracking information") }}
                                     </div>
                                 </td>
                             </tr>
@@ -422,7 +422,7 @@ onMounted(() => {
         <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">
             <div v-if="balance"
                  class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
-                <div class="">{{ trans("Current balance") }}:</div>
+                <div class="">{{ ctrans("Current balance") }}:</div>
                 <div class="">
                     {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
                 </div>

@@ -5,7 +5,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
@@ -250,7 +250,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
              sm:whitespace-normal sm:max-w-full" :class="{
               '!w-full !text-xs': screenType === 'mobile'
             }">
-                        {{ trans("View All") }}
+                        {{ ctrans("View All") }}
                       </span>
                     </div>
                   </div>

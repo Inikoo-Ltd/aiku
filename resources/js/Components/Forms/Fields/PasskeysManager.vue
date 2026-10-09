@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Passkeys, UserCancelledError, PasskeyExistsError } from '@laravel/passkeys'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTrashAlt } from '@fal'
@@ -34,14 +34,14 @@ const addPasskey = async () => {
     isAdding.value = true
     errorMessage.value = null
     try {
-        const passkey = await Passkeys.register({ name: newPasskeyName.value || trans('My device') })
+        const passkey = await Passkeys.register({ name: newPasskeyName.value || ctrans('My device') })
         passkeys.value.push(passkey)
         newPasskeyName.value = ''
     } catch (error) {
         if (error instanceof PasskeyExistsError) {
-            errorMessage.value = trans('This device already has a passkey for this account')
+            errorMessage.value = ctrans('This device already has a passkey for this account')
         } else if (!(error instanceof UserCancelledError)) {
-            errorMessage.value = trans('Could not create passkey')
+            errorMessage.value = ctrans('Could not create passkey')
             console.error(error)
         }
     } finally {
@@ -56,7 +56,7 @@ const deletePasskey = async (id: number | string) => {
         await axios.delete(route('grp.passkey.destroy', id))
         passkeys.value = passkeys.value.filter(passkey => passkey.id !== id)
     } catch (error) {
-        errorMessage.value = trans('Could not delete passkey')
+        errorMessage.value = ctrans('Could not delete passkey')
         console.error(error)
     } finally {
         deletingId.value = null
@@ -67,7 +67,7 @@ const deletePasskey = async (id: number | string) => {
 <template>
     <div class="space-y-4">
         <p v-if="!isSupported" class="text-sm text-gray-500">
-            {{ trans('This browser does not support passkeys') }}
+            {{ ctrans('This browser does not support passkeys') }}
         </p>
 
         <template v-else>
@@ -76,9 +76,9 @@ const deletePasskey = async (id: number | string) => {
                     <div>
                         <div class="text-sm font-medium">{{ passkey.name }}</div>
                         <div v-if="passkey.created_at" class="text-xs text-gray-500">
-                            {{ trans('Added') }} {{ useFormatTime(passkey.created_at) }}
+                            {{ ctrans('Added') }} {{ useFormatTime(passkey.created_at) }}
                             <template v-if="passkey.last_used_at">
-                                &middot; {{ trans('Last used') }} {{ useFormatTime(passkey.last_used_at) }}
+                                &middot; {{ ctrans('Last used') }} {{ useFormatTime(passkey.last_used_at) }}
                             </template>
                         </div>
                     </div>
@@ -93,18 +93,18 @@ const deletePasskey = async (id: number | string) => {
                 </li>
             </ul>
             <p v-else class="text-sm text-gray-500">
-                {{ trans('No passkeys yet. Add one to sign in without a password.') }}
+                {{ ctrans('No passkeys yet. Add one to sign in without a password.') }}
             </p>
 
             <div class="flex gap-2">
                 <input
                     v-model="newPasskeyName"
-                    :placeholder="trans('Passkey name (e.g. My laptop)')"
+                    :placeholder="ctrans('Passkey name (e.g. My laptop)')"
                     class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     @keydown.enter.prevent="addPasskey"
                 />
                 <Button
-                    :label="trans('Add passkey')"
+                    :label="ctrans('Add passkey')"
                     :loading="isAdding"
                     :disabled="isAdding"
                     @click.prevent="addPasskey"

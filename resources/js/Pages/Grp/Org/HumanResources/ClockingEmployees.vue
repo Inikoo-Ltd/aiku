@@ -34,7 +34,7 @@ import {
 	faPlus,
 } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TableTimesheetsEmployee from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheetsEmployee.vue"
 import TableLeaves from "@/Components/Tables/Grp/Org/HumanResources/TableLeaves.vue"
 import TableAttendanceAdjustments from "@/Components/Tables/Grp/Org/HumanResources/TableAttendanceAdjustments.vue"
@@ -145,7 +145,7 @@ const component = computed(() => {
 		<template #other>
 			<Button
 				v-if="currentTab === 'leaves'"
-				:label="trans('Request Leave')"
+				:label="ctrans('Request Leave')"
 				icon="fal fa-plus"
 				type="create"
 				@click="openRequestLeaveModal" />

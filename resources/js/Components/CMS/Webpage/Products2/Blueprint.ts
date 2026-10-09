@@ -1,7 +1,7 @@
 import { faShoppingCart } from "@far"
 import { faPlus } from "@fas"
 import { faBasketShopping } from "@fortawesome/free-solid-svg-icons"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
     blueprint: [
@@ -19,7 +19,7 @@ export default {
                     key: ["is_hide_filter"],
                     label: "Hide Filter?",
                     type: "switch",
-                    information: trans('Hide filter on products page i.e filter price, tags, brands'),
+                    information: ctrans('Hide filter on products page i.e filter price, tags, brands'),
                     // useIn : ["desktop", "tablet", "mobile"],
                 },
             ],

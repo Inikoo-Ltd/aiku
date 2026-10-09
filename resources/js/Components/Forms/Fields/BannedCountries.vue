@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Multiselect from "@vueform/multiselect"
 import InputText from "primevue/inputtext"
 import DataTable from "primevue/datatable"
@@ -220,7 +220,7 @@ const closeRegexTest = () => {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon
                                 v-if="data.read_only"
-                                v-tooltip="trans('Inherited from Organisation')"
+                                v-tooltip="ctrans('Inherited from Organisation')"
                                 :icon="faLock"
                                 class="text-gray-400"
                                 fixed-width
@@ -231,7 +231,7 @@ const closeRegexTest = () => {
                                 :options="countryOptions"
                                 :filter="true"
                                 :disabled="data.read_only || isDisabled"
-                                :placeholder="fieldData?.placeholder ?? trans('Select country')"
+                                :placeholder="fieldData?.placeholder ?? ctrans('Select country')"
                                 class="w-full"
                             /> -->
                             <Select v-model="data.country"
@@ -350,7 +350,7 @@ const closeRegexTest = () => {
 
                 <template #empty>
                     <div class="text-center text-gray-400 py-4">
-                        {{ trans("No banned countries yet") }}
+                        {{ ctrans("No banned countries yet") }}
                     </div>
                 </template>
             </DataTable>
@@ -362,7 +362,7 @@ const closeRegexTest = () => {
                 @click="addRow"
             >
                 <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
-                {{ trans("Add country") }}
+                {{ ctrans("Add country") }}
             </button>
         </div>
 

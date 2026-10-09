@@ -4,7 +4,7 @@ import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
@@ -89,8 +89,8 @@ const onAddFavourite = (product: ProductResource) => {
             onError: errors => {
                 console.error(errors)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the product to favourites"),
                     type: "error"
                 })
             },
@@ -115,8 +115,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
+                //     title: ctrans("Success"),
+                //     text: ctrans("Added to portfolio"),
                 //     type: "success"
                 // })
                 layout.reload_handle()
@@ -124,8 +124,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from favourites"),
                     type: "error"
                 })
             },
@@ -157,8 +157,8 @@ const onAddBackInStock = async (product: ProductResource) => {
 		emits("afterOnAddBackInStock", product)
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to add the product to remind back in stock"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to add the product to remind back in stock"),
 			type: "error"
 		})
 	} finally {
@@ -182,8 +182,8 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 		emits("afterOnUnselectBackInStock", product)
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to remove the product from remind back in stock"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to remove the product from remind back in stock"),
 			type: "error"
 		})
 	} finally {

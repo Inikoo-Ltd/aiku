@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBarcode, faCalendarAlt, faHashtag } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
@@ -21,9 +21,9 @@ defineProps<{
 }>()
 
 const SOURCE_BADGES: Record<string, { icon: string, label: string }> = {
-    batch_code: { icon: "fal fa-hashtag", label: trans("Batch code") },
-    expiry_date: { icon: "fal fa-calendar-alt", label: trans("Expiry date") },
-    barcode: { icon: "fal fa-barcode", label: trans("Barcode") },
+    batch_code: { icon: "fal fa-hashtag", label: ctrans("Batch code") },
+    expiry_date: { icon: "fal fa-calendar-alt", label: ctrans("Expiry date") },
+    barcode: { icon: "fal fa-barcode", label: ctrans("Barcode") },
 }
 
 const artefactRoute = (label: { artefact_slug: string }) =>

@@ -5,7 +5,7 @@ import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { computed, ref } from "vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle as faCheckCircleSolid } from "@fas"
@@ -38,8 +38,8 @@ const isEditLoading = ref<boolean>(false)
 const onSubmitEditAddress = () => {
     if (!props.updateRoute) {
         notify({
-            title: trans("Failed to update the address"),
-            text: trans("Please contact the administrator to fix."),
+            title: ctrans("Failed to update the address"),
+            text: ctrans("Please contact the administrator to fix."),
             type: "error",
         })
 
@@ -69,14 +69,14 @@ const onSubmitEditAddress = () => {
             onSuccess: () => {
                 emits("onHasChange")
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully update the address."),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully update the address."),
                     type: "success"
                 })
             },
             onError: () => notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to update the address, try again."),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Failed to update the address, try again."),
                 type: "error"
             })
         }
@@ -91,7 +91,7 @@ const onSubmitEditAddress = () => {
     <div class="min-h-[400px] px-2 py-1 overflow-auto">
         <div class="xflex justify-between items-center xborder-b border-gray-300 py-2">
             <div class="text-2xl font-bold text-center xflex gap-x-2 mb-6">
-                {{ address_modal_title ?? trans('Manage address') }}
+                {{ address_modal_title ?? ctrans('Manage address') }}
             </div>
 
             <PureAddress

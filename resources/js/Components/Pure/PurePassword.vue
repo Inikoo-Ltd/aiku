@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -31,7 +31,7 @@ const showPassword = ref(true);
             @input="(e: any) => emits('update:modelValue', e.target.value)"
             :id='name'
             :type="showPassword ? 'password' : 'text'" autocomplete="off"
-            :placeholder="trans(props.placeholder)"
+            :placeholder="ctrans(props.placeholder)"
             class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
             
         <button type="button" @click="showPassword = !showPassword" :id="'show-password-' + name"

@@ -5,7 +5,7 @@ import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '../../Common/Components/Image.vue'
@@ -74,8 +74,8 @@ const getPortfoliosList = async (url?: string) => {
         console.error('Error', e)
         isLoadingFetch.value = false
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Error while get the products list."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Error while get the products list."),
             type: "error"
         })
     }
@@ -107,7 +107,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
     <div>
         <slot name="header">
             <div class="mx-auto text-center text-lg md:text-2xl font-semibold pb-4">
-                {{ headLabel ?? trans("Add products") }}
+                {{ headLabel ?? ctrans("Add products") }}
             </div>
         </slot>
 
@@ -120,7 +120,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                 <PureInput
                     v-model="queryPortfolio"
                     @update:modelValue="() => debounceGetPortfoliosList()"
-                    :placeholder="trans('Input to search portfolios')"
+                    :placeholder="ctrans('Input to search portfolios')"
                 />
                 <slot name="afterInput">
                 </slot>
@@ -129,7 +129,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
             <div class="h-full md:h-[500px] text-base font-normal">
                 <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
-                        <div class="font-semibold text-base md:text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                        <div class="font-semibold text-base md:text-lg py-1">{{ props.label_result ?? ctrans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
                     <div class="max-h-[380px] md:h-[400px] overflow-auto py-2 relative">
@@ -156,15 +156,15 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                             <div class="flex flex-col justify-between h-full">
                                                 <div>
                                                     <div class="w-fit" xclick="() => selectProduct(item)">
-                                                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xxs md:text-xs text-gray-400 italic mt-2 md:mt-0 md:mb-1">{{ item.code || 'no code' }}</div>
-                                                        <div v-tooltip="trans('Name')" class="w-fit text-justify md:text-left font-semibold leading-none mb-1 text-sm md:text-base">{{ item.name || 'no name' }}</div>
-                                                        <div v-tooltip="trans('Available stock')" class="w-fit text-xxs md:text-xs xtext-gray-400 italic mb-1">{{ trans("Stock") }}: {{ locale.number(item.available_quantity || 0) }} {{ trans("available") }}</div>
-                                                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
-                                                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                                        <div v-if="!item.no_code" v-tooltip="ctrans('Code')" class="w-fit text-xxs md:text-xs text-gray-400 italic mt-2 md:mt-0 md:mb-1">{{ item.code || 'no code' }}</div>
+                                                        <div v-tooltip="ctrans('Name')" class="w-fit text-justify md:text-left font-semibold leading-none mb-1 text-sm md:text-base">{{ item.name || 'no name' }}</div>
+                                                        <div v-tooltip="ctrans('Available stock')" class="w-fit text-xxs md:text-xs xtext-gray-400 italic mb-1">{{ ctrans("Stock") }}: {{ locale.number(item.available_quantity || 0) }} {{ ctrans("available") }}</div>
+                                                        <div v-if="item.reference" v-tooltip="ctrans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                                                        <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                                                     </div>
 
                                                     <!-- Section: Price -->
-                                                    <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="mb-2 w-fit text-xs text-gray-x500">
+                                                    <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="ctrans('Price')" class="mb-2 w-fit text-xs text-gray-x500">
                                                         {{ locale?.currencyFormat(layout?.iris?.currency?.code, item.price || 0) }}
                                                     </div>
                                                 </div>
@@ -194,7 +194,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                     </div>
                                 </template>
                                 <div v-else class="text-center text-gray-500 col-span-3">
-                                    {{ trans("No products found") }}
+                                    {{ ctrans("No products found") }}
                                 </div>
                             </template>
                             <div

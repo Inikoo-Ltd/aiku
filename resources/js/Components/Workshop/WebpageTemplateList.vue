@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
@@ -104,10 +104,10 @@ const onConfirmDeleteTemplate = (template: WebLayoutTemplate) => {
 
 	confirm.require({
 		group: DELETE_CONFIRM_GROUP,
-		header: trans('Delete template'),
-		message: trans('Delete :name? This action can\'t be undone.', { name: template.name }),
-		rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
-		acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
+		header: ctrans('Delete template'),
+		message: ctrans('Delete :name? This action can\'t be undone.', { name: template.name }),
+		rejectProps: { label: ctrans('Cancel'), severity: 'secondary', outlined: true },
+		acceptProps: { label: ctrans('Yes, delete'), severity: 'danger' },
 		accept: () => emits('delete', template),
 	})
 }
@@ -121,8 +121,8 @@ const onGoToPage = (url: string | null) => {
 }
 
 const filterOptions = computed<{ label: string; value: WebLayoutTemplateFilter }[]>(() => [
-	{ label: trans('All'), value: 'all' },
-	{ label: trans('Matching'), value: 'matching' },
+	{ label: ctrans('All'), value: 'all' },
+	{ label: ctrans('Matching'), value: 'matching' },
 ])
 
 const isMatchingFilterActive = computed(() => props.filter === 'matching')
@@ -166,14 +166,14 @@ const onShowAllTemplates = () => {
 				<input
 					v-model="search"
 					type="search"
-					:aria-label="trans('Search template or author')"
-					:placeholder="trans('Search template or author')"
+					:aria-label="ctrans('Search template or author')"
+					:placeholder="ctrans('Search template or author')"
 					class="w-full text-xs border border-slate-300 rounded pl-6 pr-1.5 py-1 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400" />
 			</div>
 			<select
 				id="web-layout-template-filter"
-				:aria-label="trans('Show')"
-				v-tooltip="trans('Show every template or only the ones matching this page')"
+				:aria-label="ctrans('Show')"
+				v-tooltip="ctrans('Show every template or only the ones matching this page')"
 				class="w-24 shrink-0 text-xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
 				:value="filter"
 				:disabled="isLoading"
@@ -187,7 +187,7 @@ const onShowAllTemplates = () => {
 			</select>
 			<button
 				type="button"
-				v-tooltip="trans('Reload templates')"
+				v-tooltip="ctrans('Reload templates')"
 				class="h-6 w-6 shrink-0 flex items-center justify-center rounded text-[11px] text-slate-400 hover:bg-slate-100 hover:text-slate-700"
 				:disabled="isLoading"
 				@click="emits('refresh')">
@@ -195,7 +195,7 @@ const onShowAllTemplates = () => {
 				<FontAwesomeIcon v-else :icon="faSync" fixed-width />
 			</button>
 			<span
-				v-tooltip="trans('Total templates available')"
+				v-tooltip="ctrans('Total templates available')"
 				class="shrink-0 text-[10px] tabular-nums text-slate-400">
 				{{ total }}
 			</span>
@@ -213,13 +213,13 @@ const onShowAllTemplates = () => {
 				v-else-if="errorMessage"
 				class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-red-200 text-slate-500">
 				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-2xl mb-1 text-red-300" fixed-width />
-				<span class="text-xs font-medium">{{ trans('Unable to load templates') }}</span>
+				<span class="text-xs font-medium">{{ ctrans('Unable to load templates') }}</span>
 				<span class="text-[11px] text-slate-400">{{ errorMessage }}</span>
 				<button
 					type="button"
 					class="mt-1 text-[11px] underline text-slate-500 hover:text-slate-800"
 					@click="emits('refresh')">
-					{{ trans('Try again') }}
+					{{ ctrans('Try again') }}
 				</button>
 			</div>
 
@@ -240,7 +240,7 @@ const onShowAllTemplates = () => {
 							{{ template.name }}
 						</span>
 						<span class="block text-[10px] leading-tight truncate text-slate-400">
-							{{ getBlockCount(template) }} {{ trans('blocks') }}
+							{{ getBlockCount(template) }} {{ ctrans('blocks') }}
 							<template v-if="template.username">
 								·
 								<FontAwesomeIcon :icon="faUser" class="text-[9px]" fixed-width />
@@ -260,7 +260,7 @@ const onShowAllTemplates = () => {
 
 					<button
 						type="button"
-						v-tooltip="trans('Delete this template')"
+						v-tooltip="ctrans('Delete this template')"
 						class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[11px] transition-colors text-slate-400 hover:bg-red-100 hover:text-red-600"
 						:class="isDeleting(template) ? '' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'"
 						:disabled="isBusy"
@@ -272,8 +272,8 @@ const onShowAllTemplates = () => {
 					<button
 						type="button"
 						v-tooltip="editable
-							? trans('Replace the page blocks with this template')
-							: trans('This page is not editable')"
+							? ctrans('Replace the page blocks with this template')
+							: ctrans('This page is not editable')"
 						class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[11px] transition-colors text-slate-400 hover:bg-slate-200 hover:text-slate-700"
 						:class="isApplying(template) ? '' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'"
 						:disabled="!editable || isBusy"
@@ -291,20 +291,20 @@ const onShowAllTemplates = () => {
 				<template v-if="search || isMatchingFilterActive">
 					<span class="text-xs font-medium">
 						{{ isMatchingFilterActive && !search
-							? trans('No template matches this page')
-							: trans('No template matches this search') }}
+							? ctrans('No template matches this page')
+							: ctrans('No template matches this search') }}
 					</span>
 					<button
 						type="button"
 						class="text-[11px] underline text-slate-500 hover:text-slate-800"
 						@click="onShowAllTemplates">
-						{{ trans('Show all templates') }}
+						{{ ctrans('Show all templates') }}
 					</button>
 				</template>
 				<template v-else>
-					<span class="text-xs font-medium">{{ trans("You don't have any template") }}</span>
+					<span class="text-xs font-medium">{{ ctrans("You don't have any template") }}</span>
 					<span class="text-[11px] text-slate-400">
-						{{ trans('Save a page as template to reuse its blocks here.') }}
+						{{ ctrans('Save a page as template to reuse its blocks here.') }}
 					</span>
 				</template>
 			</div>
@@ -315,7 +315,7 @@ const onShowAllTemplates = () => {
 			class="shrink-0 mt-1.5 pt-1.5 flex items-center justify-between gap-1.5 border-t border-slate-200">
 			<button
 				type="button"
-				v-tooltip="trans('Previous page')"
+				v-tooltip="ctrans('Previous page')"
 				class="h-6 w-6 flex items-center justify-center rounded text-[11px]"
 				:class="previousPageUrl && !isLoading
 					? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
@@ -331,7 +331,7 @@ const onShowAllTemplates = () => {
 
 			<button
 				type="button"
-				v-tooltip="trans('Next page')"
+				v-tooltip="ctrans('Next page')"
 				class="h-6 w-6 flex items-center justify-center rounded text-[11px]"
 				:class="nextPageUrl && !isLoading
 					? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'

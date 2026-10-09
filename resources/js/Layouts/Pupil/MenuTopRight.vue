@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Link } from '@inertiajs/vue3'
 import { inject, onMounted, onUnmounted, ref } from 'vue'
 import SearchBar from "@/Components/SearchBar.vue"
@@ -36,7 +36,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 class="h-8 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 :class="showSearchDialog ? 'bg-gray-700/20' : 'hover:bg-gray-200 hover:text-gray-500'"
             >
-                <span class="sr-only">{{ trans("Search") }}</span>
+                <span class="sr-only">{{ ctrans("Search") }}</span>
                 <FontAwesomeIcon fixed-width aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
                     <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded">⌘</span>
@@ -52,7 +52,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 class="pl-3 pr-1 flex gap-x-2 items-center rounded-full"
                 :class="layout?.currentRoute.includes('pupil.home') ? 'bg-gray-200 ring-1 ring-gray-300' : 'hover:bg-gray-200'">
 
-                <span class="sr-only">{{ trans("Open user menu") }}</span>
+                <span class="sr-only">{{ ctrans("Open user menu") }}</span>
                 <div class="h-8 aspect-square rounded-full overflow-hidden border border-gray-300">
                     <Image v-if="layout?.avatar_thumbnail" :src="layout?.avatar_thumbnail" alt="" />
                     <img v-else src="/retina-default-user.svg" alt="Retina default avatar" class="p-0.5">

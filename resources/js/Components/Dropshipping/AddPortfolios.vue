@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "../Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
@@ -42,7 +42,7 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
         onBefore: () => isLoadingSubmit.value = true,
         onError: (error) => {
             notify({
-                title: trans("Something went wrong."),
+                title: ctrans("Something went wrong."),
                 text: error.products || undefined,
                 type: "error"
             })
@@ -50,8 +50,8 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
         onSuccess: () => {
             router.reload({ only: ["pageHead", "products"] })
             notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                title: ctrans("Success!"),
+                text: ctrans("Successfully added portfolios"),
                 type: "success"
             })
             emits("onDone")
@@ -64,19 +64,19 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
 // Filter portfolios by type
 const filterList = [
     {
-        label: trans("Product"),
+        label: ctrans("Product"),
         value: "product"
     },
     {
-        label: trans("Department"),
+        label: ctrans("Department"),
         value: "department"
     },
     {
-        label: trans("Sub-department"),
+        label: ctrans("Sub-department"),
         value: "sub_department"
     },
     {
-        label: trans("Family"),
+        label: ctrans("Family"),
         value: "family"
     }
 ]
@@ -118,15 +118,15 @@ const selectedList = ref(filterList[0])
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans("Add products to your product") }}
-                <FontAwesomeIcon v-tooltip="trans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                {{ ctrans("Add products to your product") }}
+                <FontAwesomeIcon v-tooltip="ctrans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
         </div>
 
         <!-- 0: Select Product -->
         <KeepAlive>
             <ProductsSelector
-                :headLabel="trans('Add products to portfolios')"
+                :headLabel="ctrans('Add products to portfolios')"
                 :route-fetch="{
                     name: props.routes.itemRoute.name,
                     parameters: {
@@ -162,8 +162,8 @@ const selectedList = ref(filterList[0])
                         <Button
                             @click="() => onSubmitAddPortfolios(selectedProduct.map((product: any) => product.id))"
                             :disabled="selectedProduct.length < 1"
-                            v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                            :label="`${trans('Add')} ${selectedProduct.length} products and close`"
+                            v-tooltip="selectedProduct.length < 1 ? ctrans('Select at least one product') : ''"
+                            :label="`${ctrans('Add')} ${selectedProduct.length} products and close`"
                             type="primary"
                             full
                             icon="fas fa-plus"

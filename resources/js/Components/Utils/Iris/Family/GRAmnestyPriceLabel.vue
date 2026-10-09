@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue';
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

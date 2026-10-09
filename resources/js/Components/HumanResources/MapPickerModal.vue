@@ -6,7 +6,7 @@ import axios from "axios"
 import { debounce } from "lodash-es"
 import Button from "../Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faMapPin } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -47,13 +47,13 @@ const close = () => emit("update:modelValue", false)
 const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
     switch (err?.code) {
         case err?.PERMISSION_DENIED:
-            return trans("Location blocked. Please allow GPS access in your browser settings.")
+            return ctrans("Location blocked. Please allow GPS access in your browser settings.")
         case err?.POSITION_UNAVAILABLE:
-            return trans("Location unavailable. Please try again.")
+            return ctrans("Location unavailable. Please try again.")
         case err?.TIMEOUT:
-            return trans("Location request timed out. Please try again.")
+            return ctrans("Location request timed out. Please try again.")
         default:
-            return trans("Unable to detect your location. Please allow GPS in your browser.")
+            return ctrans("Unable to detect your location. Please allow GPS in your browser.")
     }
 }
 
@@ -114,8 +114,8 @@ const onMarkerDrag = (e: any) => {
 const detectMyLocation = () => {
     if (!navigator.geolocation) {
         notify({
-            title: trans("Error"),
-            text: trans("This browser does not support geolocation."),
+            title: ctrans("Error"),
+            text: ctrans("This browser does not support geolocation."),
             type: "error",
         })
         return
@@ -131,7 +131,7 @@ const detectMyLocation = () => {
         },
         (err) => {
             notify({
-                title: trans("Error"),
+                title: ctrans("Error"),
                 text: getGeolocationErrorMessage(err),
                 type: "error",
             })

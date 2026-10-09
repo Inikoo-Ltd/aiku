@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from '@inertiajs/vue3'
 import { Tooltip } from 'floating-vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -71,12 +71,12 @@ const getStatusColor = (status: string, valid: boolean) => {
 
 const getStatusText = (status: string, valid: boolean) => {
     if (status === 'invalid' || !valid) {
-        return trans('Invalid')
+        return ctrans('Invalid')
     }
     if (status === 'valid' || valid) {
-        return trans('Valid')
+        return ctrans('Valid')
     }
-    return trans('Pending')
+    return ctrans('Pending')
 }
 
 </script>
@@ -112,8 +112,8 @@ const getStatusText = (status: string, valid: boolean) => {
                                         <div class="p-1 max-w-xs">
                                             <div class="space-y-2">
                                                 <div class="text-sm space-y-1">
-                                                    <p><span class="font-medium">{{ trans('Country') }}:</span> {{ tax_number.country.data.name }}</p>
-                                                    <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ tax_number.country.data.code }}</p>
+                                                    <p><span class="font-medium">{{ ctrans('Country') }}:</span> {{ tax_number.country.data.name }}</p>
+                                                    <p><span class="font-medium">{{ ctrans('Country Code') }}:</span> {{ tax_number.country.data.code }}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -122,7 +122,7 @@ const getStatusText = (status: string, valid: boolean) => {
 
                                 <!-- Last checked date -->
                                 <span v-if="tax_number.checked_at"
-                                    v-tooltip="trans('Last checked :date', { date: formatDate(tax_number.checked_at) || '-' })"
+                                    v-tooltip="ctrans('Last checked :date', { date: formatDate(tax_number.checked_at) || '-' })"
                                     class="ml-1 cursor-default hover:underline">
                                     {{ formatDate(tax_number.checked_at) }}
                                 </span>
@@ -130,9 +130,9 @@ const getStatusText = (status: string, valid: boolean) => {
                         </div>
                     </div>
 
-                    <span v-if="show_view_history_button && view_history_link" class="justify-self-end ml-6 h-full whitespace-nowrap hover:underline cursor-pointer hover:text-gray-500" v-tooltip="trans('View Tax Number Validation History')" v-on:click="router.visit(route(view_history_link))">
+                    <span v-if="show_view_history_button && view_history_link" class="justify-self-end ml-6 h-full whitespace-nowrap hover:underline cursor-pointer hover:text-gray-500" v-tooltip="ctrans('View Tax Number Validation History')" v-on:click="router.visit(route(view_history_link))">
                         <span class="text-xs h-full mr-1 hidden md:inline">
-                            {{ trans('View History') }}
+                            {{ ctrans('View History') }}
                         </span>
                         <FontAwesomeIcon :icon="faHistory" fixed-width/>
                     </span>

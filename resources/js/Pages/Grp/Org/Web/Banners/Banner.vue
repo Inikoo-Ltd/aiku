@@ -19,7 +19,7 @@ import TableSnapshots from '@/Components/Tables/TableSnapshots.vue';
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import BannerShowcase from "@/Pages/Grp/Org/Web/Banners/BannerShowcase.vue";
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faSign, faRocketLaunch, faGlobe, faPencil, faSeedling, faPaste, faLayerGroup)
 
@@ -64,8 +64,8 @@ const component = computed(() => {
         <template #banner-snapshot="{ item }">
             <ButtonWithLink
                 v-if="item.state_value != 'live'"
-                v-tooltip="trans('Publish this snapshot as current active banner')"
-                :label="trans('Checkout')"
+                v-tooltip="ctrans('Publish this snapshot as current active banner')"
+                :label="ctrans('Checkout')"
                 size="xs"
                 icon="far fa-rocket-launch"
                 type="tertiary"

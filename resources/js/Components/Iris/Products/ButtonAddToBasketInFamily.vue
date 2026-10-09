@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
@@ -62,8 +62,8 @@ const onAddToBasket = async (product: ProductResource) => {
     } catch (error: any) {
         setStatus('error')
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Failed to add product to basket"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Failed to add product to basket"),
             type: "error"
         })
     } finally {
@@ -98,8 +98,8 @@ const onUpdateQuantity = (product: ProductResource) => {
             onError: errors => {
                 setStatus('error')
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to update product quantity in basket"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.message || ctrans("Failed to update product quantity in basket"),
                     type: "error"
                 })
             },
@@ -175,7 +175,7 @@ const compIsValueDirty = computed(() => {
         >
             <template #label>
                 <span class="whitespace-nowrap">
-                    {{ trans('Add to basket') }}
+                    {{ ctrans('Add to basket') }}
                 </span>
             </template>
         </Button>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import JsBarcode from "jsbarcode"
 
 interface ClockingRecord {
@@ -57,7 +57,7 @@ watch(displayCode, renderBarcode)
 <template>
 	<div class="space-y-3 text-center sm:space-y-4">
 		<p class="text-xs sm:text-sm text-gray-500">
-			{{ trans("Show this barcode to the scanner to clock in or out") }}
+			{{ ctrans("Show this barcode to the scanner to clock in or out") }}
 		</p>
 
 		<div
@@ -66,7 +66,7 @@ watch(displayCode, renderBarcode)
 				<svg id="employeeBarcode" class="mx-auto block h-auto max-w-full"></svg>
 			</div>
 			<span v-else class="text-xs sm:text-sm text-amber-700">
-				{{ trans("No barcode has been generated for you yet. Please contact HR.") }}
+				{{ ctrans("No barcode has been generated for you yet. Please contact HR.") }}
 			</span>
 		</div>
 	</div>

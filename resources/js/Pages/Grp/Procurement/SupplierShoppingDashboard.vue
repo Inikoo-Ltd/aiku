@@ -9,7 +9,7 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import { ref, computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -94,10 +94,10 @@ const warehouseSegment = (part: number) => `${(part / Math.max(props.orderCapaci
 const meterTone = (share: number) => (share >= 1 ? "bg-red-500" : share >= 0.8 ? "bg-amber-500" : "bg-green-500")
 
 const stockDeliveryColumns = computed(() => [
-    { key: "being_prepared", label: trans("Being prepared"), states: ["in_process", "confirmed"], card: "bg-white", dot: "bg-indigo-200", badge: "bg-indigo-50 text-indigo-600" },
-    { key: "ready_to_ship", label: trans("Ready to ship"), states: ["ready_to_ship"], card: "bg-white", dot: "bg-indigo-300", badge: "bg-indigo-50 text-indigo-600" },
-    { key: "in_transit", label: trans("In transit"), states: ["dispatched"], card: "bg-white", dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
-    { key: "arrived", label: trans("Arrived, booking in"), states: ["received", "checked", "booking_in"], card: "bg-white", dot: "bg-indigo-700", badge: "bg-indigo-100 text-indigo-700" },
+    { key: "being_prepared", label: ctrans("Being prepared"), states: ["in_process", "confirmed"], card: "bg-white", dot: "bg-indigo-200", badge: "bg-indigo-50 text-indigo-600" },
+    { key: "ready_to_ship", label: ctrans("Ready to ship"), states: ["ready_to_ship"], card: "bg-white", dot: "bg-indigo-300", badge: "bg-indigo-50 text-indigo-600" },
+    { key: "in_transit", label: ctrans("In transit"), states: ["dispatched"], card: "bg-white", dot: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
+    { key: "arrived", label: ctrans("Arrived, booking in"), states: ["received", "checked", "booking_in"], card: "bg-white", dot: "bg-indigo-700", badge: "bg-indigo-100 text-indigo-700" },
 ].map((column) => ({
     ...column,
     deliveries: props.openStockDeliveries.filter((sd) => column.states.includes(sd.state)),
@@ -128,8 +128,8 @@ const rankClasses: Record<string, string> = {
     <div class="mx-4 mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
-                <span>{{ trans("Order budget used") }}</span>
-                <span v-if="orderCapacity.blocked.at_capacity" class="font-medium text-red-600">{{ trans("at capacity") }}</span>
+                <span>{{ ctrans("Order budget used") }}</span>
+                <span v-if="orderCapacity.blocked.at_capacity" class="font-medium text-red-600">{{ ctrans("at capacity") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
                 {{ useLocaleStore().currencyFormat(orgSupplier.currency, stats.estimated_total) }}
@@ -143,25 +143,25 @@ const rankClasses: Record<string, string> = {
                 </div>
                 <div class="mt-1 text-xs text-gray-500">
                     <template v-if="orderCapacity.supplier_capacity.source === 'measured'">
-                        {{ trans("one order cycle of what they historically deliver to us, measured from :n deliveries", { n: orderCapacity.supplier_capacity.samples }) }}
+                        {{ ctrans("one order cycle of what they historically deliver to us, measured from :n deliveries", { n: orderCapacity.supplier_capacity.samples }) }}
                     </template>
                     <template v-else>
-                        {{ trans("budget = one order cycle (:days days) of what we actually sell of their products, at their cost", { days: Math.min(leadTime.days + 7, 30) }) }}
+                        {{ ctrans("budget = one order cycle (:days days) of what we actually sell of their products, at their cost", { days: Math.min(leadTime.days + 7, 30) }) }}
                     </template>
                 </div>
             </template>
             <div v-else class="mt-2 text-xs text-gray-500">
-                {{ trans("No budget: no delivery history and no dispatch data yet — the list is uncapped.") }}
+                {{ ctrans("No budget: no delivery history and no dispatch data yet — the list is uncapped.") }}
             </div>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
-                <span>{{ trans("Warehouse space") }}</span>
-                <span v-if="orderCapacity.blocked.warehouse_full" class="font-medium text-red-600">{{ trans("full") }}</span>
+                <span>{{ ctrans("Warehouse space") }}</span>
+                <span v-if="orderCapacity.blocked.warehouse_full" class="font-medium text-red-600">{{ ctrans("full") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
                 {{ orderCapacity.warehouse.empty_locations.toLocaleString() }}
-                <span class="text-sm font-normal text-gray-400">/ {{ orderCapacity.warehouse.total_locations.toLocaleString() }} {{ trans("locations free") }}</span>
+                <span class="text-sm font-normal text-gray-400">/ {{ orderCapacity.warehouse.total_locations.toLocaleString() }} {{ ctrans("locations free") }}</span>
             </div>
             <div class="mt-2 flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-gray-100">
                 <div class="h-1.5 bg-gray-400" :style="{ width: warehouseSegment(orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations) }" />
@@ -169,35 +169,35 @@ const rankClasses: Record<string, string> = {
                 <div class="h-1.5 bg-violet-400" :style="{ width: warehouseSegment(orderCapacity.list.lines) }" />
             </div>
             <div class="mt-1 flex flex-wrap gap-x-3 text-xs tabular-nums text-gray-500">
-                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-gray-400" />{{ (orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations).toLocaleString() }} {{ trans("in use") }}</span>
-                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-indigo-400" />{{ orderCapacity.warehouse.inbound_open_po_lines.toLocaleString() }} {{ trans("inbound PO/SD lines") }}</span>
-                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />{{ orderCapacity.list.lines }} {{ trans("this shopping list") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-gray-400" />{{ (orderCapacity.warehouse.total_locations - orderCapacity.warehouse.empty_locations).toLocaleString() }} {{ ctrans("in use") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-indigo-400" />{{ orderCapacity.warehouse.inbound_open_po_lines.toLocaleString() }} {{ ctrans("inbound PO/SD lines") }}</span>
+                <span><span class="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />{{ orderCapacity.list.lines }} {{ ctrans("this shopping list") }}</span>
             </div>
             <div class="mt-1 text-xs text-gray-500">
-                {{ trans("new products from this supplier: :used of :limit free slots (their fair share)", { used: orderCapacity.warehouse.supplier_share_used, limit: orderCapacity.warehouse.supplier_share_limit }) }}
+                {{ ctrans("new products from this supplier: :used of :limit free slots (their fair share)", { used: orderCapacity.warehouse.supplier_share_used, limit: orderCapacity.warehouse.supplier_share_limit }) }}
             </div>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4">
             <div class="flex items-baseline justify-between text-sm text-gray-500">
                 <span>{{ orgSupplier.name }}</span>
-                <span v-if="latePurchaseOrders.length" class="font-medium text-red-600">{{ latePurchaseOrders.length }} {{ trans("late") }}</span>
+                <span v-if="latePurchaseOrders.length" class="font-medium text-red-600">{{ latePurchaseOrders.length }} {{ ctrans("late") }}</span>
             </div>
             <div class="mt-1 text-2xl font-semibold text-gray-900">
-                {{ leadTime.days }} <span class="text-sm font-normal text-gray-400">{{ trans("days order → booked in") }}</span>
+                {{ leadTime.days }} <span class="text-sm font-normal text-gray-400">{{ ctrans("days order → booked in") }}</span>
             </div>
             <div class="mt-2 text-xs text-gray-500">
                 <template v-if="leadTime.source === 'measured'">
-                    {{ trans("median across their products, measured on :measured of :total from :samples deliveries", { measured: leadTime.measured_products, total: leadTime.products, samples: leadTime.samples }) }}
+                    {{ ctrans("median across their products, measured on :measured of :total from :samples deliveries", { measured: leadTime.measured_products, total: leadTime.products, samples: leadTime.samples }) }}
                 </template>
                 <template v-else>
-                    {{ trans("estimate — set per product") }}
-                    <Link class="underline" :href="route(productsRoute.name, productsRoute.parameters)">{{ trans("in their product list") }}</Link>
+                    {{ ctrans("estimate — set per product") }}
+                    <Link class="underline" :href="route(productsRoute.name, productsRoute.parameters)">{{ ctrans("in their product list") }}</Link>
                 </template>
             </div>
             <div v-if="latePurchaseOrders.length" class="mt-1 text-xs text-red-600">
-                {{ trans("worst delay :days days", { days: latePurchaseOrders[0].days_late }) }}
+                {{ ctrans("worst delay :days days", { days: latePurchaseOrders[0].days_late }) }}
             </div>
-            <div class="mt-1 text-xs text-gray-400">{{ trans(":total products they sell us", { total: coverTotal.toLocaleString() }) }}</div>
+            <div class="mt-1 text-xs text-gray-400">{{ ctrans(":total products they sell us", { total: coverTotal.toLocaleString() }) }}</div>
         </div>
     </div>
 
@@ -215,29 +215,29 @@ const rankClasses: Record<string, string> = {
                     <span v-if="bucket.bucket === 'dead'" class="ml-auto text-xs tabular-nums opacity-70">
                         {{ useLocaleStore().currencyFormat(orgSupplier.currency, bucket.stock_value) }}
                     </span>
-                    <span v-if="shouldNotBeOrdered(bucket)" class="text-xs font-medium tabular-nums text-red-600" :title="trans('On the shopping list but not short of stock')">
+                    <span v-if="shouldNotBeOrdered(bucket)" class="text-xs font-medium tabular-nums text-red-600" :title="ctrans('On the shopping list but not short of stock')">
                         <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
-                        {{ bucket.on_list }} {{ trans("on list") }}
+                        {{ bucket.on_list }} {{ ctrans("on list") }}
                         <button type="button" class="ml-0.5 rounded border border-red-300 px-1 text-[10px] hover:bg-red-100" @click.prevent.stop="removeMisplaced(bucket.bucket)">
-                            {{ trans("remove") }}
+                            {{ ctrans("remove") }}
                         </button>
                     </span>
                     <span v-else-if="needsAction(bucket)" class="text-xs font-medium tabular-nums">
-                        {{ trans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
+                        {{ ctrans(":count need action", { count: bucket.untouched.toLocaleString() }) }}
                     </span>
                     <span v-else-if="bucket.count && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="text-xs tabular-nums opacity-70">
-                        {{ trans("all handled") }}
+                        {{ ctrans("all handled") }}
                     </span>
                 </div>
                 <div class="text-xs leading-4">{{ bucket.label }}</div>
                 <div v-if="(bucket.on_the_way || bucket.on_list) && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-1.5 flex h-1 w-full gap-px overflow-hidden rounded-full bg-gray-100">
-                    <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="trans('on the way')" />
-                    <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="trans('on the shopping list')" />
+                    <div v-if="bucket.on_the_way" class="h-1 bg-current" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" :title="ctrans('on the way')" />
+                    <div v-if="bucket.on_list" class="h-1 bg-current opacity-40" :style="{ width: segmentWidth(bucket, bucket.on_list) }" :title="ctrans('on the shopping list')" />
                 </div>
                 <div v-if="(bucket.on_the_way || bucket.on_list) && !['ok', 'dead', 'never'].includes(bucket.bucket)" class="mt-0.5 text-[10px] tabular-nums opacity-70">
-                    <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ trans("on the way") }}</span>
+                    <span v-if="bucket.on_the_way">{{ bucket.on_the_way }} {{ ctrans("on the way") }}</span>
                     <span v-if="bucket.on_the_way && bucket.on_list"> · </span>
-                    <span v-if="bucket.on_list">{{ bucket.on_list }} {{ trans("on list") }}</span>
+                    <span v-if="bucket.on_list">{{ bucket.on_list }} {{ ctrans("on list") }}</span>
                 </div>
                 <div v-if="bucket.bucket !== 'never'" class="mt-auto flex gap-2 pt-1.5 text-xs tabular-nums">
                     <Link
@@ -254,10 +254,10 @@ const rankClasses: Record<string, string> = {
                         v-if="!['ok', 'dead', 'never'].includes(bucket.bucket) && bucket.ranks.some((rank) => rank.count > rank.on_list)"
                         type="button"
                         class="ml-auto rounded border border-current px-1 text-[10px] opacity-60 hover:opacity-100"
-                        :title="trans('Auto-fill the shopping list from this bucket')"
+                        :title="ctrans('Auto-fill the shopping list from this bucket')"
                         @click.prevent.stop="openAutoFill(bucket)"
                     >
-                        + {{ trans("fill") }}
+                        + {{ ctrans("fill") }}
                     </button>
                 </div>
             </Link>
@@ -267,7 +267,7 @@ const rankClasses: Record<string, string> = {
     <div class="mx-4 mt-6">
         <h3 class="text-sm font-semibold text-gray-700">
             <Link class="hover:underline" :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)">
-                {{ trans("Order pipeline") }}
+                {{ ctrans("Order pipeline") }}
             </Link>
         </h3>
         <div class="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -275,15 +275,15 @@ const rankClasses: Record<string, string> = {
                 <div class="mb-2 flex items-center justify-between px-1">
                     <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                         <span class="h-2 w-2 rounded-full bg-indigo-100 ring-1 ring-indigo-300" />
-                        {{ trans("On shopping list") }}
+                        {{ ctrans("On shopping list") }}
                     </span>
                     <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium tabular-nums text-indigo-600">{{ stats.open_items_count }}</span>
                 </div>
                 <Link :href="route(shoppingListRoute.name, shoppingListRoute.parameters)" class="block rounded-md bg-white p-2 shadow-sm hover:bg-indigo-50">
-                    <div class="text-sm font-bold text-gray-900">{{ stats.open_items_count }} {{ trans("items") }}</div>
-                    <div class="text-xs text-gray-500">{{ useLocaleStore().currencyFormat(orgSupplier.currency, stats.estimated_total) }} {{ trans("waiting to be ordered") }}</div>
+                    <div class="text-sm font-bold text-gray-900">{{ stats.open_items_count }} {{ ctrans("items") }}</div>
+                    <div class="text-xs text-gray-500">{{ useLocaleStore().currencyFormat(orgSupplier.currency, stats.estimated_total) }} {{ ctrans("waiting to be ordered") }}</div>
                     <div v-if="stats.oldest_item_at" class="mt-1 text-xs text-gray-500">
-                        {{ trans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
+                        {{ ctrans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
                     </div>
                 </Link>
             </div>
@@ -294,8 +294,8 @@ const rankClasses: Record<string, string> = {
                         {{ column.label }}
                     </span>
                     <span class="flex items-center gap-1">
-                        <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge" :title="trans('deliveries')">{{ column.deliveries.length }}</span>
-                        <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium tabular-nums text-violet-700" :title="trans('items')">{{ column.deliveries.reduce((sum, sd) => sum + sd.items, 0) }} {{ trans("items") }}</span>
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums" :class="column.badge" :title="ctrans('deliveries')">{{ column.deliveries.length }}</span>
+                        <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium tabular-nums text-violet-700" :title="ctrans('items')">{{ column.deliveries.reduce((sum, sd) => sum + sd.items, 0) }} {{ ctrans("items") }}</span>
                     </span>
                 </div>
                 <div class="flex flex-col gap-2">
@@ -310,13 +310,13 @@ const rankClasses: Record<string, string> = {
                             <span class="whitespace-nowrap text-sm font-bold" :class="isProblemOrder(sd) ? 'text-red-700' : 'text-gray-900'">{{ sd.reference }}</span>
                             <span class="whitespace-nowrap text-xs tabular-nums" :class="ageClasses(sd.days_old)">{{ useFormatTime(sd.date, { formatTime: "mdy" }) }}</span>
                         </div>
-                        <div class="text-xs text-gray-500">{{ sd.items }} {{ trans("items") }} · {{ sd.state.replace("_", " ") }}</div>
+                        <div class="text-xs text-gray-500">{{ sd.items }} {{ ctrans("items") }} · {{ sd.state.replace("_", " ") }}</div>
                         <div
                             v-if="column.key === 'in_transit' && sd.days_in_transit !== null"
                             class="mt-1 text-xs font-semibold tabular-nums"
                             :class="sd.days_in_transit > 14 ? 'text-amber-600' : 'text-gray-600'"
                         >
-                            {{ sd.days_in_transit }} {{ trans("days in transit") }}
+                            {{ sd.days_in_transit }} {{ ctrans("days in transit") }}
                         </div>
                     </Link>
                     <div v-if="!column.deliveries.length" class="px-1 py-2 text-xs text-gray-400">—</div>
@@ -326,7 +326,7 @@ const rankClasses: Record<string, string> = {
     </div>
 
     <div v-if="latePurchaseOrders.length" class="mx-4 mt-6 max-w-3xl">
-        <h3 class="text-sm font-semibold text-gray-700">{{ trans("Late from this supplier") }}</h3>
+        <h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Late from this supplier") }}</h3>
         <ul class="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
             <li v-for="purchaseOrder in latePurchaseOrders" :key="purchaseOrder.id" class="flex items-center justify-between gap-3 px-4 py-3">
                 <div>
@@ -339,8 +339,8 @@ const rankClasses: Record<string, string> = {
                     <div class="text-xs text-gray-500">{{ purchaseOrder.state }}</div>
                 </div>
                 <div class="text-right text-sm font-semibold tabular-nums" :class="purchaseOrder.days_late > 14 ? 'text-red-600' : 'text-amber-600'">
-                    {{ purchaseOrder.days_late }} {{ trans("days late") }}
-                    <div v-if="purchaseOrder.no_eta" class="text-xs font-normal text-gray-400">{{ trans("no delivery date given") }}</div>
+                    {{ purchaseOrder.days_late }} {{ ctrans("days late") }}
+                    <div v-if="purchaseOrder.no_eta" class="text-xs font-normal text-gray-400">{{ ctrans("no delivery date given") }}</div>
                 </div>
             </li>
         </ul>

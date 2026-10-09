@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faBadgeCheck, faClock, faStar, faTimesCircle, faClipboardList } from "@fal"
 
 library.add(faClipboardList, faStar, faBadgeCheck, faClock, faTimesCircle)
@@ -52,17 +52,17 @@ const normalizedStats = computed(() => ({
 }))
 
 const scopes = [
-    { key: "overall", label: trans("Overall") },
-    { key: "family", label: trans("Family") },
-    { key: "product", label: trans("Product") },
+    { key: "overall", label: ctrans("Overall") },
+    { key: "family", label: ctrans("Family") },
+    { key: "product", label: ctrans("Product") },
 ]
 
 const cards = computed(() => [
-    { label: trans("Total Reviews"), icon: "fal fa-clipboard-list", iconBg: "bg-indigo-50", iconColor: "text-indigo-500", value: normalizedStats.value.total, field: "total" },
-    { label: trans("Average Rating"), icon: "fal fa-star", iconBg: "bg-amber-50", iconColor: "text-amber-500", value: normalizedStats.value.averageRating, field: "average_rating", isRating: true },
-    { label: trans("Approved"), icon: "fal fa-badge-check", iconBg: "bg-emerald-50", iconColor: "text-emerald-500", value: normalizedStats.value.statusApproved, field: "status_approved" },
-    { label: trans("Pending"), icon: "fal fa-clock", iconBg: "bg-amber-50", iconColor: "text-amber-500", value: normalizedStats.value.statusPending, field: "status_pending" },
-    { label: trans("Rejected"), icon: "fal fa-times-circle", iconBg: "bg-rose-50", iconColor: "text-rose-500", value: normalizedStats.value.statusRejected, field: "status_rejected" },
+    { label: ctrans("Total Reviews"), icon: "fal fa-clipboard-list", iconBg: "bg-indigo-50", iconColor: "text-indigo-500", value: normalizedStats.value.total, field: "total" },
+    { label: ctrans("Average Rating"), icon: "fal fa-star", iconBg: "bg-amber-50", iconColor: "text-amber-500", value: normalizedStats.value.averageRating, field: "average_rating", isRating: true },
+    { label: ctrans("Approved"), icon: "fal fa-badge-check", iconBg: "bg-emerald-50", iconColor: "text-emerald-500", value: normalizedStats.value.statusApproved, field: "status_approved" },
+    { label: ctrans("Pending"), icon: "fal fa-clock", iconBg: "bg-amber-50", iconColor: "text-amber-500", value: normalizedStats.value.statusPending, field: "status_pending" },
+    { label: ctrans("Rejected"), icon: "fal fa-times-circle", iconBg: "bg-rose-50", iconColor: "text-rose-500", value: normalizedStats.value.statusRejected, field: "status_rejected" },
 ])
 
 const scopeMetas = (field: string, isRating = false) => {

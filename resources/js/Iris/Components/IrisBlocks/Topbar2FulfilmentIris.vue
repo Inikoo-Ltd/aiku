@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
@@ -96,12 +96,12 @@ const onErrorLogout = () => {
                 :style="getStyles(model?.profile.container?.properties)"
 
             >
-                <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
+                <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="ctrans('Profile')" fixed-width aria-hidden='true' />
                 <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
             </a> -->
 			<ButtonWithLink
 				v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-				v-tooltip="trans('Profile')"
+				v-tooltip="ctrans('Profile')"
 				url="/app/profile"
 				icon="fal fa-user"
 				type="transparent">
@@ -118,7 +118,7 @@ const onErrorLogout = () => {
 			class="row-start-1 md:row-start-auto grid grid-cols-5 justify-between md:flex md:justify-center items-center">
 			<ButtonWithLink
                 v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')"
+                v-tooltip="ctrans('Profile')"
                 url="/app/profile"
                 icon="fal fa-user"
                 class="col-span-2 md:hidden space-x-1.5 flex flex-nowrap items-center "
@@ -156,7 +156,7 @@ const onErrorLogout = () => {
                 :style="getStyles(model?.logout.container?.properties)"
 
             >
-                <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
+                <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="ctrans('Log out')" class='' fixed-width aria-hidden='true' />
                 <span class="hidden md:inline" v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
             </a> -->
             <ButtonWithLink

@@ -5,7 +5,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faImage } from "@fas";
 import { set } from 'lodash-es';
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route";
 
 library.add(faImage);
@@ -63,7 +63,7 @@ const onSubmitLayout = (layoutType: string) => {
           </div>
         </div>
         <div class="absolute inset-0 bg-black/50 text-white opacity-0 hover:opacity-100 flex items-center justify-center">
-          {{ trans('Change layout') }}
+          {{ ctrans('Change layout') }}
         </div>
       </div>
       <div v-else>Change Layout</div>
@@ -72,7 +72,7 @@ const onSubmitLayout = (layoutType: string) => {
 
   <Modal :isOpen="isModalOpen" @onClose="() => (isModalOpen = false)">
     <div class="h-auto px-2 overflow-auto">
-      <div class="text-xl font-semibold mb-2">{{ trans("Select a Layout Type") }}</div>
+      <div class="text-xl font-semibold mb-2">{{ ctrans("Select a Layout Type") }}</div>
       <div class="grid grid-cols-3 gap-4">
         <div v-for="layout in layouts" :key="layout.layout_type"
           class="p-2 cursor-pointer transition-all group relative"

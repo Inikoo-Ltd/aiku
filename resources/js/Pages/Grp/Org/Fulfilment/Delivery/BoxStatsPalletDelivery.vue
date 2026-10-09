@@ -5,7 +5,7 @@ import DatePicker from "@vuepic/vue-datepicker"
 import { useFormatTime, useDaysLeftFromToday } from "@/Composables/useFormatTime"
 import { PalletDelivery, BoxStats } from "@/types/Pallet"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Popover from "@/Components/Popover.vue"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -88,16 +88,16 @@ const onUpdateCustomerReference = () => {
 			onStart: () => (isLoadingSaveCustomer.value = true),
 			onError: () => {
 				notify({
-					title: trans("Failed"),
-					text: trans("Failed to update the Customer reference, try again."),
+					title: ctrans("Failed"),
+					text: ctrans("Failed to update the Customer reference, try again."),
 					type: "error",
 				})
 			},
 			onSuccess: () => {
 				;(showModalEdit.value = false),
 					notify({
-						title: trans("Success"),
-						text: trans("Customer reference updated successfully."),
+						title: ctrans("Success"),
+						text: ctrans("Customer reference updated successfully."),
 						type: "success",
 					}),
 					(cloneCustomerReference.value = props.dataPalletDelivery.customer_reference)
@@ -180,7 +180,7 @@ const onUpdateCustomerReference = () => {
 			<div
 				v-if="boxStats?.fulfilment_customer?.customer.email"
 				class="flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Email')" class="flex-none">
+				<dt v-tooltip="ctrans('Email')" class="flex-none">
 					<span class="sr-only">Email</span>
 					<FontAwesomeIcon
 						icon="fal fa-envelope"
@@ -285,7 +285,7 @@ const onUpdateCustomerReference = () => {
 						</div>
 
 						<div v-else class="text-gray-500 hover:text-gray-600 underline">
-							{{ trans("Set estimated date") }}
+							{{ ctrans("Set estimated date") }}
 						</div>
 					</template>
 
@@ -310,14 +310,14 @@ const onUpdateCustomerReference = () => {
 						useFormatTime(dataPalletDelivery.estimated_delivery_date)
 					}}</span>
 					<span v-else class="text-gray-400">{{
-						trans("Estimated date is not set")
+						ctrans("Estimated date is not set")
 					}}</span>
 				</div>
 			</div>
 
 			<!-- Stats: count Pallets, Services, Physical Goods -->
 			<div class="border-t border-gray-300 mt-2 pt-2 space-y-0.5">
-				<div v-tooltip="trans('Count of pallets')" class="w-fit flex items-center gap-x-3">
+				<div v-tooltip="ctrans('Count of pallets')" class="w-fit flex items-center gap-x-3">
 					<dt class="flex-none">
 						<FontAwesomeIcon
 							icon="fal fa-pallet"
@@ -330,14 +330,14 @@ const onUpdateCustomerReference = () => {
 						{{ dataPalletDelivery.number_pallets }}
 						<span class="text-gray-400 font-normal">{{
 							dataPalletDelivery.number_pallets > 1
-								? trans("Pallets")
-								: trans("Pallet")
+								? ctrans("Pallets")
+								: ctrans("Pallet")
 						}}</span>
 					</dd>
 				</div>
 				<div
 					v-if="dataPalletDelivery.number_boxes != 0"
-					v-tooltip="trans('Count of boxes')"
+					v-tooltip="ctrans('Count of boxes')"
 					class="w-fit flex items-center gap-x-3">
 					<dt class="flex-none">
 						<FontAwesomeIcon
@@ -350,13 +350,13 @@ const onUpdateCustomerReference = () => {
 					<dd class="text-gray-500 text-base font-medium tabular-nums">
 						{{ dataPalletDelivery.number_boxes }}
 						<span class="text-gray-400 font-normal">{{
-							dataPalletDelivery.number_boxes > 1 ? trans("Boxes") : trans("Box")
+							dataPalletDelivery.number_boxes > 1 ? ctrans("Boxes") : ctrans("Box")
 						}}</span>
 					</dd>
 				</div>
 				<div
 					v-if="dataPalletDelivery.number_oversizes != 0"
-					v-tooltip="trans('Count of oversizes')"
+					v-tooltip="ctrans('Count of oversizes')"
 					class="w-fit flex items-center gap-x-3">
 					<dt class="flex-none">
 						<FontAwesomeIcon
@@ -370,8 +370,8 @@ const onUpdateCustomerReference = () => {
 						{{ dataPalletDelivery.number_oversizes }}
 						<span class="text-gray-400 font-normal">{{
 							dataPalletDelivery.number_oversizes > 1
-								? trans("Oversizes")
-								: trans("Oversize")
+								? ctrans("Oversizes")
+								: ctrans("Oversize")
 						}}</span>
 					</dd>
 				</div>

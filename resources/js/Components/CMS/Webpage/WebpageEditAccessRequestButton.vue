@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faKey } from '@fal'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -36,7 +36,7 @@ const submitRequest = () => {
         type="secondary"
         :size="size"
         :icon="faKey"
-        :label="lock.has_requested_access ? trans('Edit access requested') : trans('Request Edit Access')"
+        :label="lock.has_requested_access ? ctrans('Edit access requested') : ctrans('Request Edit Access')"
         :disabled="lock.has_requested_access"
         @click="isRequestModalOpen = true"
     />
@@ -44,17 +44,17 @@ const submitRequest = () => {
     <Modal :isOpen="isRequestModalOpen" @onClose="isRequestModalOpen = false" width="w-full max-w-lg">
         <form class="space-y-3" @submit.prevent="submitRequest">
             <div class="text-lg font-semibold">
-                <FontAwesomeIcon :icon="faKey" fixed-width aria-hidden="true" /> {{ trans('Request Edit Access') }}
+                <FontAwesomeIcon :icon="faKey" fixed-width aria-hidden="true" /> {{ ctrans('Request Edit Access') }}
             </div>
             <div class="text-sm text-gray-600">{{ lock.message }}</div>
             <label class="block text-sm">
-                {{ trans('What do you need to change?') }}
+                {{ ctrans('What do you need to change?') }}
                 <textarea v-model="requestForm.note" rows="3" maxlength="1000" class="mt-1 w-full rounded border-gray-300 text-sm" />
                 <span v-if="requestForm.errors.note" class="text-xs text-red-500">{{ requestForm.errors.note }}</span>
             </label>
             <div class="flex justify-end gap-2 pt-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isRequestModalOpen = false" />
-                <Button :label="trans('Send request')" :loading="requestForm.processing" @click="submitRequest" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="isRequestModalOpen = false" />
+                <Button :label="ctrans('Send request')" :loading="requestForm.processing" @click="submitRequest" />
             </div>
         </form>
     </Modal>

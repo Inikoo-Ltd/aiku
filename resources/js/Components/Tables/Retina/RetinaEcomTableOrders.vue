@@ -7,7 +7,7 @@ import Icon from "@/Components/Icon.vue"
 import { inject } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { GridProducts } from "@/Components/Product"
@@ -61,11 +61,11 @@ function orderRoute(order) {
                 </Link>
 
                 <span class="whitespace-nowrap text-yellow-500">
-                    <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="trans('Premium dispatch')"
+                    <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')"
                         :icon="faStar" class="" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart"
+                    <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart"
                         class="" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
+                    <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt"
                         class="" fixed-width aria-hidden="true" />
                 </span>
             </template>
@@ -93,11 +93,11 @@ function orderRoute(order) {
 
             <template #cell(actions)="{ item: order }">
                 <ModalConfirmationDelete v-if="order.delete_route" :routeDelete="order.delete_route"
-                    :title="trans('Are you sure you want to delete this order?')" isFullLoading>
+                    :title="ctrans('Are you sure you want to delete this order?')" isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
                         <div class="w-fit mx-auto">
-                            <Button v-tooltip="trans('Delete basket')" @click="() => changeModel()" type="negative"
-                                icon="fal fa-trash-alt" :label="trans('Delete')" size="s" :key="1" />
+                            <Button v-tooltip="ctrans('Delete basket')" @click="() => changeModel()" type="negative"
+                                icon="fal fa-trash-alt" :label="ctrans('Delete')" size="s" :key="1" />
                         </div>
                     </template>
                 </ModalConfirmationDelete>
@@ -124,12 +124,12 @@ function orderRoute(order) {
 
                     <div class="flex shrink-0 items-center gap-1 text-xs text-yellow-500">
                         <FontAwesomeIcon v-if="item.is_premium_dispatch" :icon="faStar"
-                            v-tooltip="trans('Premium dispatch')" fixed-width />
+                            v-tooltip="ctrans('Premium dispatch')" fixed-width />
 
                         <FontAwesomeIcon v-if="item.has_extra_packing" :icon="faBoxHeart"
-                            v-tooltip="trans('Extra packing')" fixed-width />
+                            v-tooltip="ctrans('Extra packing')" fixed-width />
 
-                        <FontAwesomeIcon v-if="item.has_insurance" :icon="faShieldAlt" v-tooltip="trans('Insurance')"
+                        <FontAwesomeIcon v-if="item.has_insurance" :icon="faShieldAlt" v-tooltip="ctrans('Insurance')"
                             fixed-width />
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import Dialog from 'primevue/dialog'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faEye, faEyeSlash, faLayerPlus, faBrowser } from '@fal'
 
@@ -48,13 +48,13 @@ const _previewIframe = ref<HTMLIFrameElement | null>(null)
 const scopeOptions = [
 	{
 		value: 'shown',
-		label: trans('Shown blocks'),
-		hint: trans('Only the blocks visible on the page'),
+		label: ctrans('Shown blocks'),
+		hint: ctrans('Only the blocks visible on the page'),
 	},
 	{
 		value: 'all',
-		label: trans('All blocks'),
-		hint: trans('Every block, hidden ones included'),
+		label: ctrans('All blocks'),
+		hint: ctrans('Every block, hidden ones included'),
 	},
 ]
 
@@ -175,7 +175,7 @@ watch(visible, (isVisible) => {
 		v-model:visible="visible"
 		modal
 		maximizable
-		:header="trans('Create as template')"
+		:header="ctrans('Create as template')"
 		:style="{ width: '80rem' }"
 		:breakpoints="{ '1280px': '95vw' }">
 		<div class="flex flex-col lg:flex-row gap-3 h-[70vh]">
@@ -184,7 +184,7 @@ watch(visible, (isVisible) => {
 				<div
 					class="flex shrink-0 items-center justify-between gap-2 px-2 py-1 border-b border-slate-200 bg-white rounded-t-md">
 					<span class="text-xs font-medium text-slate-600">
-						{{ trans('Preview') }}
+						{{ ctrans('Preview') }}
 					</span>
 					<div class="flex items-center rounded border border-slate-200 overflow-hidden">
 						<ScreenView v-model="currentView" />
@@ -196,12 +196,12 @@ watch(visible, (isVisible) => {
 						v-if="isPreviewLoading"
 						class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white">
 						<LoadingIcon class="w-12 h-12 text-4xl text-slate-400" />
-						<span class="text-sm text-slate-400">{{ trans('Loading preview…') }}</span>
+						<span class="text-sm text-slate-400">{{ ctrans('Loading preview…') }}</span>
 					</div>
 					<iframe
 						ref="_previewIframe"
 						:src="previewSrc"
-						:title="trans('Template preview')"
+						:title="ctrans('Template preview')"
 						:class="[iframeClass, isPreviewLoading ? 'invisible' : '', 'h-full border-0 bg-white']"
 						@load="onPreviewLoaded" />
 				</div>
@@ -210,17 +210,17 @@ watch(visible, (isVisible) => {
 			<!-- Blocks -->
 			<div class="w-full lg:w-[340px] shrink-0 flex flex-col min-h-0">
 				<label class="block text-xs font-medium text-slate-600 mb-1" for="template-name">
-					{{ trans('Template name') }}
+					{{ ctrans('Template name') }}
 				</label>
 				<input
 					id="template-name"
 					v-model="templateName"
 					type="text"
-					:placeholder="trans('Template name')"
+					:placeholder="ctrans('Template name')"
 					class="mb-2 w-full text-xs border border-slate-300 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400" />
 
 				<span class="block text-xs font-medium text-slate-600 mb-1">
-					{{ trans('Take blocks from') }}
+					{{ ctrans('Take blocks from') }}
 				</span>
 				<div class="shrink-0 mb-2 grid grid-cols-2 gap-1">
 					<button
@@ -245,7 +245,7 @@ watch(visible, (isVisible) => {
 
 				<div class="shrink-0 flex items-center justify-between gap-2 mb-1.5">
 					<span class="text-xs font-medium text-slate-600">
-						{{ trans('Blocks') }}
+						{{ ctrans('Blocks') }}
 						<span class="text-[10px] tabular-nums text-slate-400">
 							{{ selectedBlocks.length }}/{{ listedBlocks.length }}
 						</span>
@@ -255,14 +255,14 @@ watch(visible, (isVisible) => {
 							type="button"
 							class="underline text-slate-500 hover:text-slate-800"
 							@click="setAllBlocks(true)">
-							{{ trans('Show all') }}
+							{{ ctrans('Show all') }}
 						</button>
 						<span class="h-3 w-px bg-slate-200" aria-hidden="true" />
 						<button
 							type="button"
 							class="underline text-slate-500 hover:text-slate-800"
 							@click="setAllBlocks(false)">
-							{{ trans('Hide all') }}
+							{{ ctrans('Hide all') }}
 						</button>
 					</div>
 				</div>
@@ -293,22 +293,22 @@ watch(visible, (isVisible) => {
 
 							<span
 								v-if="!block.show"
-								v-tooltip="trans('This block is hidden on the page')"
+								v-tooltip="ctrans('This block is hidden on the page')"
 								class="shrink-0 px-1 py-px rounded text-[10px] font-medium leading-tight bg-amber-100 text-amber-700">
-								{{ trans('Hidden on page') }}
+								{{ ctrans('Hidden on page') }}
 							</span>
 
 							<span
 								v-else-if="!isBlockIncluded(block)"
 								class="shrink-0 px-1 py-px rounded text-[10px] font-medium leading-tight bg-slate-100 text-slate-500">
-								{{ trans('Excluded') }}
+								{{ ctrans('Excluded') }}
 							</span>
 
 							<button
 								type="button"
 								v-tooltip="isBlockIncluded(block)
-									? trans('Hide this block in the template')
-									: trans('Show this block in the template')"
+									? ctrans('Hide this block in the template')
+									: ctrans('Show this block in the template')"
 								class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[11px] text-slate-400 hover:bg-slate-200 hover:text-slate-700"
 								@click.stop="toggleBlock(block)">
 								<FontAwesomeIcon
@@ -323,16 +323,16 @@ watch(visible, (isVisible) => {
 						class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
 						<FontAwesomeIcon :icon="faBrowser" class="text-2xl mb-1 text-slate-300" fixed-width />
 						<template v-if="webBlocks.length">
-							<span class="text-xs font-medium">{{ trans('No shown blocks on this page') }}</span>
+							<span class="text-xs font-medium">{{ ctrans('No shown blocks on this page') }}</span>
 							<button
 								type="button"
 								class="text-[11px] underline text-slate-500 hover:text-slate-800"
 								@click="setBlockScope('all')">
-								{{ trans('Use all blocks, hidden ones included') }}
+								{{ ctrans('Use all blocks, hidden ones included') }}
 							</button>
 						</template>
 						<span v-else class="text-xs font-medium">
-							{{ trans("You don't have any blocks") }}
+							{{ ctrans("You don't have any blocks") }}
 						</span>
 					</div>
 				</div>
@@ -344,7 +344,7 @@ watch(visible, (isVisible) => {
 				<Button
 					type="tertiary"
 					size="xs"
-					:label="trans('Cancel')"
+					:label="ctrans('Cancel')"
 					@click="visible = false" />
 				<Button
 					type="save"
@@ -352,7 +352,7 @@ watch(visible, (isVisible) => {
 					:icon="faLayerPlus"
 					:loading="isLoading"
 					:disabled="!templateName.trim() || !selectedBlocks.length"
-					:label="trans('Create template')"
+					:label="ctrans('Create template')"
 					@click="onCreate" />
 			</div>
 		</template>

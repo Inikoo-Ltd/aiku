@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TicketMiniList from "@/Components/Tickets/TicketMiniList.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -27,9 +27,9 @@ const emit = defineEmits<{
 type RecentScope = "unread" | "mentions" | "all"
 
 const scopes: { key: RecentScope; label: string }[] = [
-    { key: "unread", label: trans("Unread") },
-    { key: "mentions", label: trans("Mentions") },
-    { key: "all", label: trans("All") },
+    { key: "unread", label: ctrans("Unread") },
+    { key: "mentions", label: ctrans("Mentions") },
+    { key: "all", label: ctrans("All") },
 ]
 
 const readStoredScope = (): RecentScope => {
@@ -91,7 +91,7 @@ onMounted(refresh)
     <div v-if="recentTickets === null" class="space-y-2 p-4">
         <div v-for="placeholder in 4" :key="placeholder" class="h-6 animate-pulse rounded bg-gray-100" />
     </div>
-    <TicketMiniList v-else flat :title="trans('Latest first')" :tickets="recentTickets" :empty="recentScope === 'unread' ? trans('All caught up') : trans('Nothing here yet')" date-key="notified_at" sort-key="notified_at" :per-page="10" :class="isLoading && 'opacity-60 transition-opacity duration-200'">
+    <TicketMiniList v-else flat :title="ctrans('Latest first')" :tickets="recentTickets" :empty="recentScope === 'unread' ? ctrans('All caught up') : ctrans('Nothing here yet')" date-key="notified_at" sort-key="notified_at" :per-page="10" :class="isLoading && 'opacity-60 transition-opacity duration-200'">
         <template #filters>
             <span class="inline-flex rounded-full bg-gray-100 p-0.5 text-xs">
                 <button

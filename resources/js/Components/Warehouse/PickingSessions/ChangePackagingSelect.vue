@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onBeforeUnmount, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -132,7 +132,7 @@ onBeforeUnmount(close)
         >
             <span class="flex items-center gap-1.5">
                 <FontAwesomeIcon v-if="loading" :icon="['fad', 'spinner-third']" class="animate-spin" fixed-width aria-hidden="true" />
-                {{ trans("Change packaging") }}
+                {{ ctrans("Change packaging") }}
             </span>
             <FontAwesomeIcon :icon="['fal', 'chevron-down']" class="text-[10px] transition" :class="open ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
         </button>
@@ -147,7 +147,7 @@ onBeforeUnmount(close)
                 :style="menuStyle"
             >
                 <div class="shrink-0 px-3 py-2 text-xs font-semibold text-gray-700">
-                    {{ trans("Select most suitable packaging") }}
+                    {{ ctrans("Select most suitable packaging") }}
                 </div>
 
                 <div class="min-h-0 flex-1 overflow-y-auto">
@@ -185,15 +185,15 @@ onBeforeUnmount(close)
                                 <span v-if="option.dimensions">{{ option.dimensions }}</span>
                                 <span class="font-bold text-gray-800">
                                     {{ option.is_free
-                                        ? trans("No extra charge")
+                                        ? ctrans("No extra charge")
                                         : locale.currencyFormat(option.currency_code ?? "", option.price) }}
                                 </span>
                             </div>
                             <div v-if="option.is_fallback" class="text-xs text-gray-500">
-                                {{ trans("Fallback when the items do not fit") }}
+                                {{ ctrans("Fallback when the items do not fit") }}
                             </div>
                             <div v-if="option.is_downgrade" class="text-xs text-amber-600">
-                                {{ trans("Cheaper than the customer paid") }}
+                                {{ ctrans("Cheaper than the customer paid") }}
                             </div>
                         </div>
                     </button>
@@ -202,7 +202,7 @@ onBeforeUnmount(close)
 
                 <div class="flex shrink-0 items-start gap-2 bg-gray-50 px-3 py-2 text-xs text-gray-500">
                     <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
-                    {{ trans("Choose the packaging that best fits the items in this order.") }}
+                    {{ ctrans("Choose the packaging that best fits the items in this order.") }}
                 </div>
             </div>
         </Teleport>

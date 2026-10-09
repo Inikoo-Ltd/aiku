@@ -5,7 +5,7 @@ import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Family1Render from "@/Iris/Components/Families1Render.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
 <template>
     <div :id="fieldValue.id ?? `families-1${indexBlock}`" component="families-1">
         <div v-if="hasFamilies" class="px-4 py-10 mx-[30px]" :style="containerStyles">
-            <h2 class="text-2xl font-bold mb-6">{{ trans("Browse By Product Lines:") }}</h2>
+            <h2 class="text-2xl font-bold mb-6">{{ ctrans("Browse By Product Lines:") }}</h2>
             <div :class="['grid gap-8', responsiveGridClass]">
 
                 <template v-if="showOverviewButton">
@@ -156,7 +156,7 @@ onBeforeUnmount(() => {
                         <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden">
                             <div :style="buttonStyles" class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100">
                                 <span class="text-base font-semibold text-center">
-                                    {{ trans("View All") }}
+                                    {{ ctrans("View All") }}
                                 </span>
                             </div>
                         </div>

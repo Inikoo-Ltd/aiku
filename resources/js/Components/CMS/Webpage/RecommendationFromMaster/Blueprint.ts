@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default (data?: { website_id?: number }) => {
     return {
@@ -15,15 +15,15 @@ export default (data?: { website_id?: number }) => {
             //     replaceForm: [
             //         {
             //             key: ["per_row"],
-            //             label: trans("Number slides per row"),
+            //             label: ctrans("Number slides per row"),
             //             type: "number",
             //             useIn: ["desktop", "tablet", "mobile"],
-            //             information: trans("Can use decimal e.g. 4.5 to show half of next slide"),
+            //             information: ctrans("Can use decimal e.g. 4.5 to show half of next slide"),
             //         },
             //     ],
             // },
             {
-                name: trans("Related Products Web Block"),
+                name: ctrans("Related Products Web Block"),
                 key: ["recommendation_settings"],
                 type: "related-products-block-settings",
                 props_data: {

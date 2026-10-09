@@ -17,7 +17,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar, faDownload } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCalendarDay, faCalendarWeek, faCalendarAlt, faCalendar, faDownload)
 

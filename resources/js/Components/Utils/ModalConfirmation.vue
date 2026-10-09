@@ -8,7 +8,7 @@ import { faTimes, faExclamationTriangle } from '@fal'
 import { faAsterisk } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Icon } from '@/types/Utils/Icon'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
@@ -57,7 +57,7 @@ const showSuccessMessage = () => {
     if (!props.successMessage) return;
     
     notify({
-        title: trans("Success!"),
+        title: ctrans("Success!"),
         text: props.successMessage,
         type: "success",
     })
@@ -81,7 +81,7 @@ const onClickYesButton = () => {
                     },
                     onError: (e) => {
                         notify({
-                            title: trans("Something went wrong"),
+                            title: ctrans("Something went wrong"),
                             text: e.message || '',
                             type: "error",
                         })
@@ -110,7 +110,7 @@ const onClickYesButton = () => {
                     },
                     onError: (e) => {
                         notify({
-                            title: trans("Something went wrong"),
+                            title: ctrans("Something went wrong"),
                             text: e.message || '',
                             type: "error",
                         })
@@ -190,26 +190,26 @@ watch(isOpenModal, (val) => {
                                     >
                                         <DialogTitle as="h3" class="text-base font-semibold">
                                             <slot name="title">
-                                                {{ title || trans("Are you sure?") }}
+                                                {{ title || ctrans("Are you sure?") }}
                                             </slot>
                                         </DialogTitle>
                                         <slot name="description">
                                             <div class="mt-2">
                                                 <p class="text-sm text-gray-500">
-                                                    {{ description || trans("The data will be permanently 😥 .This action cannot be undone.")}}
+                                                    {{ description || ctrans("The data will be permanently 😥 .This action cannot be undone.")}}
                                                 </p>
                                             </div>
                                         </slot>
                                       
                                         <div v-if="props.isWithMessage" class="mt-4">
                                             <label for="" class="flex items-start text-sm text-gray-500 leading-none mb-1">
-                                                {{ whyLabel || trans("Why you deleting this?") }}
+                                                {{ whyLabel || ctrans("Why you deleting this?") }}
                                                 <FontAwesomeIcon icon='far fa-asterisk' class='text-red-500 h-2' size="xs" fixed-width aria-hidden='true' />
                                             </label>
 
                                             <PureTextarea
                                                 v-model="messageDelete"
-                                                :placeholder="props.message?.placeholder || trans('Enter the reason for deleting')"
+                                                :placeholder="props.message?.placeholder || ctrans('Enter the reason for deleting')"
                                                 v-bind="props.message"
                                             />
                                         </div>
@@ -218,25 +218,25 @@ watch(isOpenModal, (val) => {
                                                 <Button
                                                     :loading="isLoadingdelete"
                                                     @click="() => (onClickYesButton(), emits('onYes'))"
-                                                    :label="trans('Yes')"
+                                                    :label="ctrans('Yes')"
                                                     :disabled="isWithMessage ? !messageDelete : false"
                                                 />
                                             </slot>
         
                                             <!-- <button type="button"
                                                 class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto"
-                                                @click="() => ">{{ trans("Yes, delete") }}</button> -->
+                                                @click="() => ">{{ ctrans("Yes, delete") }}</button> -->
                                             <Button
                                                 v-if="!hideCancel"
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
-                                                :label="noLabel ?? trans('cancel')"
+                                                :label="noLabel ?? ctrans('cancel')"
                                                 
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />
                                             <!-- <button type="button"
                                                 class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold ring-1 shadow-xs ring-gray-300 ring-inset hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                                                >{{ trans("Cancel") }}</button> -->
+                                                >{{ ctrans("Cancel") }}</button> -->
         
                                         </div>
                                     </div>

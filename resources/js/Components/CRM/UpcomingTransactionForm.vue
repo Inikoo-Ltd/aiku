@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGift, faRepeat, faCubes } from "@fal"
 import { faAsterisk, faFragile } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -130,10 +130,10 @@ const submit = () => {
     request
         .then(() => {
             notify({
-                title: trans("Success"),
+                title: ctrans("Success"),
                 text: isEditing.value
-                    ? trans("Upcoming transaction updated")
-                    : trans("Upcoming transaction created"),
+                    ? ctrans("Upcoming transaction updated")
+                    : ctrans("Upcoming transaction created"),
                 type: "success",
             })
             emits("saved")
@@ -142,10 +142,10 @@ const submit = () => {
             const errors = error.response?.data?.errors || {}
             const errMsg =
                 Object.values(errors).flat().join(". ") ||
-                trans("Failed to submit the data, please try again")
+                ctrans("Failed to submit the data, please try again")
 
             notify({
-                title: trans("Something went wrong"),
+                title: ctrans("Something went wrong"),
                 text: errMsg,
                 type: "error",
             })
@@ -160,17 +160,17 @@ const submit = () => {
     <div class="p-1 space-y-5">
         <div class="space-y-1">
             <h2 class="text-xl font-bold text-gray-900">
-                {{ isEditing ? trans("Edit Upcoming Transaction") : trans("Add Upcoming Transaction") }}
+                {{ isEditing ? ctrans("Edit Upcoming Transaction") : ctrans("Add Upcoming Transaction") }}
             </h2>
             <p class="text-sm text-gray-500">
-                {{ trans("Reserve a product to be sent as a gift or added to the customer's next order.") }}
+                {{ ctrans("Reserve a product to be sent as a gift or added to the customer's next order.") }}
             </p>
         </div>
 
         <div class="space-y-2">
             <label class="font-medium flex items-center gap-x-1 text-sm text-gray-700">
                 <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                {{ trans("Select product") }}
+                {{ ctrans("Select product") }}
             </label>
 
             <PureMultiselectInfiniteScroll
@@ -181,7 +181,7 @@ const submit = () => {
                 valueProp="id"
                 mode="single"
                 :required="true"
-                :placeholder="trans('Select product')"
+                :placeholder="ctrans('Select product')"
                 @selectedObject="onSelectProduct"
             >
                 <template #singlelabel="{ value }">
@@ -189,7 +189,7 @@ const submit = () => {
                         {{ value.code }}
                         <span class="text-sm text-gray-400">({{ value.name }})</span>
                         <span v-if="value.stock !== undefined" class="text-sm text-gray-400">
-                            · {{ trans("Stock") }}: {{ value.stock ?? 0 }}
+                            · {{ ctrans("Stock") }}: {{ value.stock ?? 0 }}
                         </span>
                     </div>
                 </template>
@@ -206,7 +206,7 @@ const submit = () => {
                             class="text-sm whitespace-nowrap"
                             :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'"
                         >
-                            {{ trans("Stock") }}: {{ option.stock ?? 0 }}
+                            {{ ctrans("Stock") }}: {{ option.stock ?? 0 }}
                         </span>
                     </div>
                 </template>
@@ -227,7 +227,7 @@ const submit = () => {
         <div class="space-y-2">
             <label for="upcoming_quantity" class="font-medium flex items-center gap-x-1 text-sm text-gray-700">
                 <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                {{ trans("Quantity") }}
+                {{ ctrans("Quantity") }}
             </label>
 
             <div class="flex items-center gap-x-2">
@@ -241,7 +241,7 @@ const submit = () => {
                     :suffix="` /${productUnits}`"
                     class="w-48"
                     inputClass="w-full"
-                    :placeholder="trans('Enter units')"
+                    :placeholder="ctrans('Enter units')"
                     key="units"
                 />
                 <InputNumber
@@ -254,12 +254,12 @@ const submit = () => {
                     :maxFractionDigits="6"
                     class="w-48"
                     inputClass="w-full"
-                    :placeholder="trans('Enter quantity')"
+                    :placeholder="ctrans('Enter quantity')"
                     key="packs"
                 />                
                 <span                    
                     @click="toggleCutView"
-                    v-tooltip="trans('Cut view')"
+                    v-tooltip="ctrans('Cut view')"
                     class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
                     :class="isCutView ? 'text-orange-500' : ''"
                 >
@@ -270,9 +270,9 @@ const submit = () => {
             <div v-if="isCutView" class="text-xs flex items-center gap-x-1" :class="productUnits > 1 ? 'text-gray-500' : 'text-amber-600'">
                 =
                 <FractionDisplay :fractionData="unitsFraction" />
-                {{ trans("of a pack of :units units", { units: String(productUnits) }) }}
+                {{ ctrans("of a pack of :units units", { units: String(productUnits) }) }}
                 <span v-if="productUnits <= 1">
-                    · {{ trans("this product has only 1 unit per pack, so it cannot be split") }}
+                    · {{ ctrans("this product has only 1 unit per pack, so it cannot be split") }}
                 </span>
             </div>
         </div>
@@ -280,7 +280,7 @@ const submit = () => {
         <div class="space-y-2">
             <div class="font-medium flex items-center gap-x-1 text-sm text-gray-700">
                 <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                {{ trans("Transaction type") }}
+                {{ ctrans("Transaction type") }}
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -300,9 +300,9 @@ const submit = () => {
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon :icon="option.icon" :class="option.iconClass" fixed-width />
-                            <span>{{ trans(option.label) }}</span>
+                            <span>{{ ctrans(option.label) }}</span>
                         </div>
-                        <p class="mt-1 text-xs font-normal text-gray-500">{{ trans(option.description) }}</p>
+                        <p class="mt-1 text-xs font-normal text-gray-500">{{ ctrans(option.description) }}</p>
                     </div>
                 </label>
             </div>
@@ -312,7 +312,7 @@ const submit = () => {
             <div class="grid grid-cols-2 gap-2">
                 <div class="col">
                     <label for="upcoming_notes" class="font-medium text-sm text-gray-700 block">
-                        {{ trans("Public Note") }}
+                        {{ ctrans("Public Note") }}
                     </label>
 
                     <PureTextarea
@@ -321,12 +321,12 @@ const submit = () => {
                         inputName="upcoming_notes"
                         :rows="3"
                         :maxlength="500"
-                        :placeholder="trans('Add a note for the warehouse or customer service...')"
+                        :placeholder="ctrans('Add a note for the warehouse or customer service...')"
                     />
                 </div>
                 <div class="col">
                     <label for="upcoming_notes" class="font-medium text-sm text-gray-700 block">
-                        {{ trans("Private Note") }}
+                        {{ ctrans("Private Note") }}
                     </label>
 
                     <PureTextarea
@@ -335,7 +335,7 @@ const submit = () => {
                         inputName="upcoming_notes"
                         :rows="3"
                         :maxlength="500"
-                        :placeholder="trans('Add a note for the warehouse or customer service...')"
+                        :placeholder="ctrans('Add a note for the warehouse or customer service...')"
                     />
                 </div>
             </div>
@@ -345,7 +345,7 @@ const submit = () => {
             <Button type="cancel" :disabled="isLoadingSubmit" @click="emits('close')" />
             <Button
                 icon="fad fa-save"
-                :label="isEditing ? trans('Update') : trans('Save')"
+                :label="isEditing ? ctrans('Update') : ctrans('Save')"
                 :loading="isLoadingSubmit"
                 :disabled="isFormInvalid || isLoadingSubmit"
                 @click="submit"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
 import { ref, watch } from 'vue'
@@ -60,8 +60,8 @@ const onAddToBasket = async (product: ProductResource) => {
     } catch (error: any) {
         setStatus('error')
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Failed to add product to basket"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Failed to add product to basket"),
             type: "error"
         })
     } finally {
@@ -96,8 +96,8 @@ const onUpdateQuantity = (product: ProductResource) => {
             onError: errors => {
                 setStatus('error')
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to update product quantity in basket"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.message || ctrans("Failed to update product quantity in basket"),
                     type: "error"
                 })
             },
@@ -155,7 +155,7 @@ const debAddAndUpdateProduct = debounce(() => {
             v-if="!product.quantity_ordered"
             @click="() => onAddToBasket(product)"
             icon="fal fa-shopping-cart"
-            :label="trans('Add to basket')"
+            :label="ctrans('Add to basket')"
             type="secondary"
             full
             :loading="isLoadingSubmitQuantityProduct"
@@ -165,7 +165,7 @@ const debAddAndUpdateProduct = debounce(() => {
             v-else-if="product.quantity_ordered_new === 0"
             @click="() => onUpdateQuantity(product)"
             icon="fal fa-trash-alt"
-            :label="trans('Remove from basket')"
+            :label="ctrans('Remove from basket')"
             type="negative"
             full
             :loading="isLoadingSubmitQuantityProduct"
@@ -175,7 +175,7 @@ const debAddAndUpdateProduct = debounce(() => {
             v-else
             @click="() => onUpdateQuantity(product)"
             icon="fal fa-plus"
-            :label="trans('Update quantity in basket')"
+            :label="ctrans('Update quantity in basket')"
             type="tertiary"
             full
             :loading="isLoadingSubmitQuantityProduct"

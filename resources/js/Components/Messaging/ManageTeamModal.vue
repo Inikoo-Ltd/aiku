@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faPlus, faUser } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -70,7 +70,7 @@ onMounted(() => {
 <template>
     <Modal :is-open="isOpen" width="w-full max-w-md" @on-close="closeModal">
         <div class="flex items-center justify-between mb-4">
-            <span class="text-base font-semibold text-gray-900">{{ trans('My team') }}</span>
+            <span class="text-base font-semibold text-gray-900">{{ ctrans('My team') }}</span>
             <button class="text-gray-400 hover:text-gray-600" @click="closeModal">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
@@ -80,11 +80,11 @@ onMounted(() => {
             ref="searchInput"
             v-model="search"
             type="text"
-            :placeholder="trans('Find a coworker…')"
+            :placeholder="ctrans('Find a coworker…')"
             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-4"
             @input="onSearchInput" />
 
-        <div class="text-xs text-gray-400 mb-1">{{ trans('In my team') }} ({{ teamMembers.length }})</div>
+        <div class="text-xs text-gray-400 mb-1">{{ ctrans('In my team') }} ({{ teamMembers.length }})</div>
         <div class="h-32 overflow-y-auto mb-4 divide-y divide-gray-100">
             <div v-for="coworker in teamMembers" :key="'team-' + coworker.id" class="flex items-center gap-x-2 py-2">
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-gray-100 shrink-0">
@@ -93,14 +93,14 @@ onMounted(() => {
                     <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white" :class="isOnline(coworker.id) ? 'bg-green-500' : 'bg-gray-400'" />
                 </div>
                 <span class="flex-1 text-sm truncate text-gray-900">{{ coworker.name }}</span>
-                <button class="text-gray-400 hover:text-red-500 shrink-0" @click="toggleTeam(coworker)" v-tooltip="trans('Remove from my team')">
+                <button class="text-gray-400 hover:text-red-500 shrink-0" @click="toggleTeam(coworker)" v-tooltip="ctrans('Remove from my team')">
                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                 </button>
             </div>
-            <div v-if="!teamMembers.length" class="text-sm text-gray-400 py-2">{{ trans('No one in your team yet') }}</div>
+            <div v-if="!teamMembers.length" class="text-sm text-gray-400 py-2">{{ ctrans('No one in your team yet') }}</div>
         </div>
 
-        <div class="text-xs text-gray-400 mb-1">{{ trans('Coworkers') }}</div>
+        <div class="text-xs text-gray-400 mb-1">{{ ctrans('Coworkers') }}</div>
         <div class="h-64 overflow-y-auto divide-y divide-gray-100">
             <div v-for="coworker in otherCoworkers" :key="'other-' + coworker.id" class="flex items-center gap-x-2 py-2">
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-gray-100 shrink-0">
@@ -109,11 +109,11 @@ onMounted(() => {
                     <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-white" :class="isOnline(coworker.id) ? 'bg-green-500' : 'bg-gray-400'" />
                 </div>
                 <span class="flex-1 text-sm truncate text-gray-900">{{ coworker.name }}</span>
-                <button class="text-gray-400 hover:text-indigo-600 shrink-0" @click="toggleTeam(coworker)" v-tooltip="trans('Add to my team')">
+                <button class="text-gray-400 hover:text-indigo-600 shrink-0" @click="toggleTeam(coworker)" v-tooltip="ctrans('Add to my team')">
                     <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                 </button>
             </div>
-            <div v-if="!otherCoworkers.length" class="text-sm text-gray-400 py-2">{{ trans('No coworkers found') }}</div>
+            <div v-if="!otherCoworkers.length" class="text-sm text-gray-400 py-2">{{ ctrans('No coworkers found') }}</div>
         </div>
     </Modal>
 </template>

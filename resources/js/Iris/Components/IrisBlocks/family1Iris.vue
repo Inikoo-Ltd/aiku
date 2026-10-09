@@ -5,7 +5,7 @@ import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import { getBestOffer } from '@/Composables/useOffers'
 
@@ -127,7 +127,7 @@ const cleanedDescription = computed(() => {
         </transition>
         <button @click="toggleShowExtra"
           class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors py-4">
-          {{ showExtra ? trans("Show Less") : trans("Read More") }}
+          {{ showExtra ? ctrans("Show Less") : ctrans("Read More") }}
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faQrcode, faHashtag, faBarcode, faCamera, faCheck } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -49,10 +49,10 @@ const props = defineProps<{
 }>()
 
 const methodDefinitions: Record<string, { label: string; icon: any; component: any }> = {
-	qr_code: { label: trans("QR Code"), icon: faQrcode, component: ScanQrUser },
-	pin: { label: trans("PIN"), icon: faHashtag, component: ShowMyPin },
-	barcode: { label: trans("Barcode"), icon: faBarcode, component: ShowMyBarcode },
-	camera_qr: { label: trans("Camera QR"), icon: faCamera, component: ShowMyQr },
+	qr_code: { label: ctrans("QR Code"), icon: faQrcode, component: ScanQrUser },
+	pin: { label: ctrans("PIN"), icon: faHashtag, component: ShowMyPin },
+	barcode: { label: ctrans("Barcode"), icon: faBarcode, component: ShowMyBarcode },
+	camera_qr: { label: ctrans("Camera QR"), icon: faCamera, component: ShowMyQr },
 }
 
 const availableMethods = computed(() => props.availableMethods ?? [])
@@ -114,17 +114,17 @@ onUnmounted(() => {
 		<div class="overflow-hidden rounded-2xl sm:border sm:border-gray-200 bg-white shadow-sm">
 			<div class="border-b border-gray-200 px-4 py-4 text-center sm:px-5">
 				<h2 class="text-base sm:text-lg md:text-xl font-bold text-gray-800">
-					{{ trans("Employee Clocking") }}
+					{{ ctrans("Employee Clocking") }}
 				</h2>
 				<p class="mt-0.5 text-[11px] sm:text-xs text-gray-500">
-					{{ trans("Clock in or out with your preferred method") }}
+					{{ ctrans("Clock in or out with your preferred method") }}
 				</p>
 			</div>
 
 			<div
 				v-if="!methodOptions.length"
 				class="px-4 py-10 text-center text-sm text-gray-500 sm:px-5">
-				{{ trans("No clocking method is currently enabled for your organisation. Please contact HR.") }}
+				{{ ctrans("No clocking method is currently enabled for your organisation. Please contact HR.") }}
 			</div>
 
 			<template v-else>
@@ -187,8 +187,8 @@ onUnmounted(() => {
 				<h3 class="text-lg sm:text-xl font-semibold text-gray-800">
 					{{
 						clockEventResult.actionType === "clock_in"
-							? trans("Clocked In")
-							: trans("Clocked Out")
+							? ctrans("Clocked In")
+							: ctrans("Clocked Out")
 					}}
 				</h3>
 
@@ -196,7 +196,7 @@ onUnmounted(() => {
 					v-if="clockEventResult.clockedAt"
 					class="text-xs sm:text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
 					<div class="flex justify-between gap-3 text-left">
-						<span class="text-gray-500">{{ trans("Time") }}</span>
+						<span class="text-gray-500">{{ ctrans("Time") }}</span>
 						<span class="text-right font-semibold text-gray-800">
 							{{ useFormatTime(clockEventResult.clockedAt, { formatTime: "hms" }) }}
 						</span>

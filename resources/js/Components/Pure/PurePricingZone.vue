@@ -7,7 +7,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InputNumber from 'primevue/inputnumber'
 import Button from '../Elements/Buttons/Button.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faInfinity, faPlus, faTrash, faMoneyBill, faWeight, faQuestionCircle, faCheckCircle)
 
@@ -29,17 +29,17 @@ const emit = defineEmits<{
 const options = computed(() => [
   {
     value: 'Step Order Items Net Amount',
-    label: trans('Items net amount'),
+    label: ctrans('Items net amount'),
     icon: faMoneyBill
   },
   {
     value: 'Step Order Estimated Weight',
-    label: trans('Weight'),
+    label: ctrans('Weight'),
     icon: faWeight
   },
   {
     value: 'TBC',
-    label: trans('To be confirmed'),
+    label: ctrans('To be confirmed'),
     icon: faQuestionCircle
   }
 ])
@@ -115,10 +115,10 @@ function removeStep(index: number) {
     <!-- Type Selector -->
     <div>
       <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-        {{ trans('Type') }}
+        {{ ctrans('Type') }}
       </label>
 
-      <div role="radiogroup" :aria-label="trans('Type')" class="flex flex-wrap gap-2">
+      <div role="radiogroup" :aria-label="ctrans('Type')" class="flex flex-wrap gap-2">
         <button
           v-for="option in options"
           :key="option.value"
@@ -159,16 +159,16 @@ function removeStep(index: number) {
     <div v-if="modelValue.type !== 'TBC'" class="rounded-lg border border-gray-200">
       <div class="flex items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 rounded-t-lg">
         <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {{ isWeightPricing ? trans('Weight steps') : trans('Amount steps') }}
+          {{ isWeightPricing ? ctrans('Weight steps') : ctrans('Amount steps') }}
         </div>
-        <Button :icon="faPlus" :label="trans('Add Step')" type="create" size="xs" @click="() => addStepBeforeInfinity()" />
+        <Button :icon="faPlus" :label="ctrans('Add Step')" type="create" size="xs" @click="() => addStepBeforeInfinity()" />
       </div>
 
       <div class="flex gap-2 border-b border-gray-200 px-3 py-2 text-xs font-semibold text-gray-500">
-        <div class="flex-1">{{ trans('From') }}</div>
-        <div class="flex-1">{{ trans('To') }}</div>
-        <div class="flex-[1.6]">{{ trans('Price') }}</div>
-        <div class="w-10 shrink-0 text-right">{{ trans('Action') }}</div>
+        <div class="flex-1">{{ ctrans('From') }}</div>
+        <div class="flex-1">{{ ctrans('To') }}</div>
+        <div class="flex-[1.6]">{{ ctrans('Price') }}</div>
+        <div class="w-10 shrink-0 text-right">{{ ctrans('Action') }}</div>
       </div>
 
       <div
@@ -200,7 +200,7 @@ function removeStep(index: number) {
           </template>
           <div
             v-else
-            v-tooltip="trans('No upper limit')"
+            v-tooltip="ctrans('No upper limit')"
             class="flex h-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 py-2 text-gray-500"
           >
             <FontAwesomeIcon :icon="faInfinity" fixed-width aria-hidden="true" />
@@ -213,7 +213,7 @@ function removeStep(index: number) {
             v-if="item.price === 'TBC'"
             class="flex h-full min-w-0 flex-1 items-center rounded-md border border-dashed border-gray-300 bg-gray-50 px-2 py-2 text-xs italic text-gray-500"
           >
-            {{ trans('To be confirmed') }}
+            {{ ctrans('To be confirmed') }}
           </div>
           <InputNumber
             v-else
@@ -228,7 +228,7 @@ function removeStep(index: number) {
           <div
             class="shrink-0 cursor-pointer select-none rounded border px-1.5 py-1 text-xs font-medium transition-colors"
             :class="item.price === 'TBC' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-500 hover:text-gray-700'"
-            :title="trans('To be confirmed: the price is decided later, it is not free')"
+            :title="ctrans('To be confirmed: the price is decided later, it is not free')"
             @click="updateStep(index, 'price', item.price === 'TBC' ? 0 : 'TBC')"
           >
             TBC
@@ -241,7 +241,7 @@ function removeStep(index: number) {
             v-if="item.to !== 'INF'"
             class="cursor-pointer rounded p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700"
             @click="removeStep(index)"
-            :title="trans('Remove Step')"
+            :title="ctrans('Remove Step')"
           >
             <FontAwesomeIcon :icon="faTrash" fixed-width />
           </div>
@@ -252,7 +252,7 @@ function removeStep(index: number) {
     <!-- To be confirmed -->
     <div v-else class="flex items-start gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2.5 text-xs text-gray-500">
       <FontAwesomeIcon :icon="faQuestionCircle" class="mt-0.5 shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-      <span>{{ trans('No steps are needed, the shipping price of this zone is quoted after the order is placed') }}</span>
+      <span>{{ ctrans('No steps are needed, the shipping price of this zone is quoted after the order is placed') }}</span>
     </div>
   </div>
 </template>

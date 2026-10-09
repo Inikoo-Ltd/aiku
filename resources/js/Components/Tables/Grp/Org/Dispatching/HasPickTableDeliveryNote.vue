@@ -14,7 +14,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale";
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -54,7 +54,7 @@ const onClickPick = () => {
             onError: (errors) => {
                 isErrorPicker.value = errors.messages
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: isErrorPicker.value,
                     type: "error",
                 })
@@ -199,20 +199,20 @@ const warehouseDaysClass = (days?: number | null) => {
                     </Link>
                     <span
                         v-if="deliveryNote.handled_in_aurora"
-                        v-tooltip="trans('Submitted in Aurora: process it in Aurora, not here')"
+                        v-tooltip="ctrans('Submitted in Aurora: process it in Aurora, not here')"
                         class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white">
                         Aurora
                     </span>
-                    <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                    <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="ctrans('Priority dispatch')"
                         icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon
                         v-if="deliveryNote.is_customer_vip"
-                        v-tooltip="trans('VIP Customer')"
+                        v-tooltip="ctrans('VIP Customer')"
                         :icon="faCertificate"
                         color="#191970"
                         fixed-width
                     />
-                    <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
+                    <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="ctrans('Extra packing')"
                         icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
                     <NotesDisplay :item="deliveryNote" reference-field="reference" />
                     
@@ -255,7 +255,7 @@ const warehouseDaysClass = (days?: number | null) => {
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
-            <Button v-if="!deliveryNote.handled_in_aurora" @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
+            <Button v-if="!deliveryNote.handled_in_aurora" @click="() => isModalPick = deliveryNote" type="secondary" :label="ctrans('Pick')" size="xs" />
         </template>
     </Table>
 
@@ -264,19 +264,19 @@ const warehouseDaysClass = (days?: number | null) => {
         <div class="sm:flex sm:items-start w-full">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <DialogTitle as="h3" class="text-base font-semibold">
-                    {{ trans("Are you sure to pick the delivery?") }}
+                    {{ ctrans("Are you sure to pick the delivery?") }}
                 </DialogTitle>
                 <div class="mt-2">
                     <p class="text-sm text-gray-500">
-                        {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
+                        {{ ctrans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
                         }}</strong>
-                        {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
+                        {{ ctrans('with') }} {{ isModalPick?.number_items }} {{ ctrans('items') }}
                     </p>
                 </div>
 
                 <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
-                    <Button :loading="isLoadingPick" @click="() => onClickPick()" :label="trans('Yes')" full />
-                    <Button type="tertiary" icccon="far fa-arrow-left" :label="trans('cancel')"
+                    <Button :loading="isLoadingPick" @click="() => onClickPick()" :label="ctrans('Yes')" full />
+                    <Button type="tertiary" icccon="far fa-arrow-left" :label="ctrans('cancel')"
                         @click="() => (isModalPick = null)" />
                 </div>
 

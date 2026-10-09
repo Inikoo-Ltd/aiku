@@ -13,7 +13,7 @@ import { faHeart, faComputerClassic } from '@fas'
 import { faDiscord } from '@fortawesome/free-brands-svg-icons'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLayoutStore } from '@/Stores/retinaLayout'
 
 const layout = useLayoutStore()
@@ -32,9 +32,9 @@ library.add(faHeart, faComputerClassic, faDiscord)
             <div class="pl-4 flex items-center gap-x-1.5 py-1">
                 <Image class="h-4 select-none hidden md:inline" :src="logoSrc" alt="T-aiku" />
                 <span class="text-slate-400	text-xs hidden md:inline">
-                    {{ trans('Made with') }}
+                    {{ ctrans('Made with') }}
                     <FontAwesomeIcon icon='fas fa-heart' class="text-red-500 mx-1" fixed-width aria-hidden='true' />
-                    {{ trans('and') }}
+                    {{ ctrans('and') }}
                     <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" fixed-width aria-hidden='true' /> {{ 'in KL|Bali' }}
                 </span>
             </div>
@@ -43,8 +43,8 @@ library.add(faHeart, faComputerClassic, faDiscord)
                 <a href="https://discord.gg/C7bCmMaTxP" target="_blank">
                     <span class="text-slate-400	 text-xs">
                         <FontAwesomeIcon :icon="['fab', 'discord']" class="text-white mx-1" aria-hidden='true' />
-                        <span class="hidden sm:inline">{{ trans("Join our community") }}</span> <span
-                            class="hidden lg:inline">{{ trans('announcements/feedback/wishlists') }}</span>
+                        <span class="hidden sm:inline">{{ ctrans("Join our community") }}</span> <span
+                            class="hidden lg:inline">{{ ctrans('announcements/feedback/wishlists') }}</span>
                     </span>
                 </a>
             </div> -->

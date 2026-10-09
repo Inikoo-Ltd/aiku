@@ -9,7 +9,7 @@ import { Link, router } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 import { faExpandAlt, faMonument, faYinYang } from '@fal';
 import Modal from '@/Components/Utils/Modal.vue';
 import { ref } from 'vue';
@@ -86,7 +86,7 @@ const deletePickBay = (pickedBay: any) => {
 		onSuccess: () => {
 			notify({
 				title: "Success",
-				text: trans("Picked Bay has been successfully deleted"),
+				text: ctrans("Picked Bay has been successfully deleted"),
 				type: "success",
 			})
 		}, 
@@ -94,7 +94,7 @@ const deletePickBay = (pickedBay: any) => {
 			const errMsg = err.pickedBay;
 			notify({
 				title: "Failed",
-				text: errMsg ??  trans("Failed to delete Picked Bay"),
+				text: errMsg ??  ctrans("Failed to delete Picked Bay"),
 				type: "error",
 			})
 		}, 
@@ -117,18 +117,18 @@ const deletePickBay = (pickedBay: any) => {
 
 		<template #cell(delivery_notes)="{ item: bay }">
 			<span v-if="bay.delivery_notes.length" class="border rounded-md border-yellow-400 px-2 py-1 text-yellow-600 bg-yellow-200 cursor-pointer pulse-animate hover:opacity-[80%] ease-in-out transition" @click="openModalPickBay(bay.delivery_notes)">
-				{{ trans("Used in :_countDeliveryNotes Delivery Notes", {_countDeliveryNotes: bay.delivery_notes.length}) }}
+				{{ ctrans("Used in :_countDeliveryNotes Delivery Notes", {_countDeliveryNotes: bay.delivery_notes.length}) }}
 				<FontAwesomeIcon :icon="faExpandAlt" class="ml-2" fixed-width/>
 			</span>
             <span v-else class="italic text-xs opacity-60">
-                {{ trans('No current delivery note') }}
+                {{ ctrans('No current delivery note') }}
             </span>
 		</template>
 
 		<template #cell(actions)="{item: bay}">
 			<Button
 				v-if="!bay.delivery_notes.length"
-				v-tooltip="trans('Delete picking bay')"
+				v-tooltip="ctrans('Delete picking bay')"
 				@click="deletePickBay(bay)"
 				:type="'negative'"
 				icon="fal fa-skull"
@@ -142,7 +142,7 @@ const deletePickBay = (pickedBay: any) => {
 		<div class="px-4 pb-2 pt-2">
 			<FontAwesomeIcon :icon="faMonument" class="mr-2" fixed-width /> 
 			<span class="font-medium">
-				{{ trans("Picked Bays - Delivery Notes") }}
+				{{ ctrans("Picked Bays - Delivery Notes") }}
 			</span>
 		</div>
 		<hr class="border-gray-500">
@@ -152,16 +152,16 @@ const deletePickBay = (pickedBay: any) => {
 					<FontAwesomeIcon :icon="faYinYang" fixed-width />
 				</span>
 				<span class="col-span-3">
-					{{ trans("Reference") }}
+					{{ ctrans("Reference") }}
 				</span>
 				<span class="col-span-4 text-right">
-                	{{ trans("Date") }}
+                	{{ ctrans("Date") }}
 				</span>
 				<span class="col-span-2 text-right">
-					{{ trans("Weight")}}
+					{{ ctrans("Weight")}}
 				</span>
 				<span class="col-span-2 text-right pr-2">
-                	{{ trans("Items") }}
+                	{{ ctrans("Items") }}
 				</span>
 			</div>
 			<div v-for="deliveryNote in selectedDeliveryNotes" class="grid grid-cols-12 py-2">

@@ -5,7 +5,6 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
 
 /**
@@ -62,7 +61,7 @@ const coverage = computed(() =>
 <template>
     <div v-if="mix">
         <div class="flex items-baseline justify-between gap-4">
-            <h3 class="text-sm font-medium text-gray-700">{{ trans("Who the ads reached") }}</h3>
+            <h3 class="text-sm font-medium text-gray-700">{{ ctrans("Who the ads reached") }}</h3>
             <span class="text-xs text-gray-500">
                 {{ ctrans("Counted within :days days of the click", { days: mix.window_days }) }}
             </span>
@@ -80,7 +79,7 @@ const coverage = computed(() =>
             <div
                 class="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100"
                 role="img"
-                :aria-label="trans('Audience split')">
+                :aria-label="ctrans('Audience split')">
                 <div
                     v-for="bucket in known"
                     :key="bucket.key"
@@ -118,7 +117,7 @@ const coverage = computed(() =>
 
         <p v-else class="mt-3 text-xs text-gray-500">
             {{
-                trans(
+                ctrans(
                     "Nobody who clicked was signed in, so there is no split to show yet. It fills in as visitors sign in or register after an ad."
                 )
             }}
@@ -131,7 +130,7 @@ const coverage = computed(() =>
                     total: (mix.total ?? 0).toLocaleString(),
                 })
             }}
-            <span v-if="coverage < 25">{{ trans("Read the split as a sample, not a census.") }}</span>
+            <span v-if="coverage < 25">{{ ctrans("Read the split as a sample, not a census.") }}</span>
         </p>
 
         <p v-if="mix.measured_from" class="mt-1 text-xs text-gray-400">

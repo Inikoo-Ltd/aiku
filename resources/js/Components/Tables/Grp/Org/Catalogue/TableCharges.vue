@@ -14,7 +14,7 @@ import Icon from "@/Components/Icon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { faTrashAlt } from "@far"
 
@@ -89,7 +89,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <div class="flex justify-end">
                 <FontAwesomeIcon
                     v-if="charge.is_used"
-                    v-tooltip="trans('Used on orders, discontinue it instead of deleting')"
+                    v-tooltip="ctrans('Used on orders, discontinue it instead of deleting')"
                     :icon="faTrashAlt"
                     fixed-width
                     aria-hidden="true"
@@ -101,7 +101,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         name: 'grp.models.charge.delete',
                         parameters: [charge.id],
                     }"
-                    :title="`${trans('Delete charge')} &quot;${charge.name}&quot;?`"
+                    :title="`${ctrans('Delete charge')} &quot;${charge.name}&quot;?`"
                     @success="router.reload()"
                 >
                     <template #default="{ changeModel }">

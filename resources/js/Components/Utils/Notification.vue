@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimesCircle, faCheckCircle, faExclamationCircle, faInfoCircle, faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faTimesCircle, faCheckCircle, faExclamationCircle, faInfoCircle, faTimes)
 
@@ -66,7 +66,7 @@ const textParts = computed(() =>
 
             </div>
         </div>
-        <button type="button" class="ml-auto self-start opacity-70 hover:opacity-100" :aria-label="trans('Close')" @click.stop="props.notification.close">
+        <button type="button" class="ml-auto self-start opacity-70 hover:opacity-100" :aria-label="ctrans('Close')" @click.stop="props.notification.close">
             <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
         </button>
     </div>

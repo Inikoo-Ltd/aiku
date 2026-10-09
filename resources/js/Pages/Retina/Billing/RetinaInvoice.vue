@@ -8,7 +8,7 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import { routeType } from "@/types/route"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -122,12 +122,12 @@ const getStatusColor = (status: string, valid: boolean) => {
 
 const taxNumberStatusText = computed(() => {
     if (props.invoice.tax_number_status === 'invalid' || !props.invoice.tax_number_valid) {
-        return trans('Invalid')
+        return ctrans('Invalid')
     }
     if (props.invoice.tax_number_status === 'valid' || props.invoice.tax_number_valid) {
-        return trans('Valid')
+        return ctrans('Valid')
     }
-    return trans('Pending')
+    return ctrans('Pending')
 })
 
 </script>
@@ -140,7 +140,7 @@ const taxNumberStatusText = computed(() => {
         <!-- Button: PDF -->
         <template #other>
             <a v-if="exportPdfRoute?.name" :href="route(exportPdfRoute.name, exportPdfRoute.parameters)" target="_blank"
-               class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
+               class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none text-base" v-tooltip="ctrans('Download in')">
                 <Button label="PDF" icon="fas fa-file-pdf" type="tertiary" />
             </a>
             <a v-if="exportTransactionsRoute?.name" :href="
@@ -149,7 +149,7 @@ const taxNumberStatusText = computed(() => {
                         : `${urlPage.origin}${urlPage.pathname}/export?type=xlsx&${cleanedSearchUrl}`
                 "
                target="_blank"
-               class="mt-4  sm:mt-0 sm:flex-none text-base" v-tooltip="trans('Download in')">
+               class="mt-4  sm:mt-0 sm:flex-none text-base" v-tooltip="ctrans('Download in')">
                 <Button label="Excel" icon="fas fa-file-excel" type="tertiary" />
             </a>
         </template>
@@ -161,7 +161,7 @@ const taxNumberStatusText = computed(() => {
             <!-- Field: Contact name -->
             <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="'Contact name'" class="flex-none">
-                    <span class="sr-only">{{ trans("Contact name") }}</span>
+                    <span class="sr-only">{{ ctrans("Contact name") }}</span>
                     <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true" />
                 </dt>
@@ -171,7 +171,7 @@ const taxNumberStatusText = computed(() => {
             <!-- Field: Company name -->
             <dl v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="'Company name'" class="flex-none">
-                    <span class="sr-only">{{ trans("Company name") }}</span>
+                    <span class="sr-only">{{ ctrans("Company name") }}</span>
                     <FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true" />
                 </dt>
@@ -190,7 +190,7 @@ const taxNumberStatusText = computed(() => {
 
             <!-- Field: Tax Number -->
             <dl v-if="invoice.tax_number && invoice.tax_number_valid" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Tax Number')" class="flex-none">
+                <dt v-tooltip="ctrans('Tax Number')" class="flex-none">
                     <span class="sr-only">Tax Number</span>
                     <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
@@ -244,7 +244,7 @@ const taxNumberStatusText = computed(() => {
                     </div>
 
                     <div v-else class="text-gray-400 italic">
-                        {{ trans("No address") }}
+                        {{ ctrans("No address") }}
                     </div>
                 </dd>
             </dl>

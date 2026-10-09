@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLock, faLockOpen } from '@fal'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -71,16 +71,16 @@ const submit = () => {
     <Button
         type="tertiary"
         :icon="faLock"
-        :label="trans('Lock family webpages')"
+        :label="ctrans('Lock family webpages')"
         :disabled="!hasWebpages"
-        v-tooltip="hasWebpages ? trans('Lock this family webpage on the websites you choose') : trans('No webpages for this family yet')"
+        v-tooltip="hasWebpages ? ctrans('Lock this family webpage on the websites you choose') : ctrans('No webpages for this family yet')"
         @click="openModal('lock')"
     />
     <Button
         v-if="lockedWebpages.length"
         type="tertiary"
         :icon="faLockOpen"
-        :label="trans('Unlock family webpages')"
+        :label="ctrans('Unlock family webpages')"
         @click="openModal('unlock')"
     />
 
@@ -88,12 +88,12 @@ const submit = () => {
         <form class="space-y-3" @submit.prevent="submit">
             <div class="text-lg font-semibold">
                 <FontAwesomeIcon :icon="mode === 'unlock' ? faLockOpen : faLock" fixed-width aria-hidden="true" />
-                {{ mode === 'unlock' ? trans('Unlock this family on selected websites') : trans('Lock this family across selected websites') }}
+                {{ mode === 'unlock' ? ctrans('Unlock this family on selected websites') : ctrans('Lock this family across selected websites') }}
             </div>
             <div class="text-sm text-gray-600">
                 {{ mode === 'unlock'
-                    ? trans('Only the websites you tick are unlocked. Pages you leave unticked stay locked.')
-                    : trans('Only the websites you tick are locked. Pages you leave unticked stay editable, for example translations that still need work.') }}
+                    ? ctrans('Only the websites you tick are unlocked. Pages you leave unticked stay locked.')
+                    : ctrans('Only the websites you tick are locked. Pages you leave unticked stay editable, for example translations that still need work.') }}
             </div>
 
             <div class="max-h-72 divide-y divide-gray-100 overflow-y-auto rounded border border-gray-200">
@@ -120,8 +120,8 @@ const submit = () => {
                         v-if="webpage.is_locked"
                         class="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800"
                         v-tooltip="canSelect(webpage)
-                            ? (webpage.lock_scope === 'master_family' ? trans('Family lock') : trans('This webpage only'))
-                            : trans('Only the person who created this lock can change it')"
+                            ? (webpage.lock_scope === 'master_family' ? ctrans('Family lock') : ctrans('This webpage only'))
+                            : ctrans('Only the person who created this lock can change it')"
                     >
                         <FontAwesomeIcon :icon="faLock" fixed-width aria-hidden="true" /> {{ webpage.locked_by }}
                     </span>
@@ -130,22 +130,22 @@ const submit = () => {
             <span v-if="form.errors.webpage_ids" class="text-xs text-red-500">{{ form.errors.webpage_ids }}</span>
 
             <label class="block text-sm">
-                {{ trans('Reason') }} <span class="text-red-500">*</span>
+                {{ ctrans('Reason') }} <span class="text-red-500">*</span>
                 <input v-model="form.reason" required maxlength="255" class="mt-1 w-full rounded border-gray-300 text-sm" />
                 <span v-if="form.errors.reason" class="text-xs text-red-500">{{ form.errors.reason }}</span>
             </label>
             <label v-if="mode === 'lock'" class="block text-sm">
-                {{ trans('Note') }}
+                {{ ctrans('Note') }}
                 <textarea v-model="form.note" rows="2" class="mt-1 w-full rounded border-gray-300 text-sm" />
             </label>
 
             <div class="flex items-center justify-between gap-2 pt-2">
-                <span class="text-xs text-gray-500">{{ trans(':count selected', { count: String(form.webpage_ids.length) }) }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans(':count selected', { count: String(form.webpage_ids.length) }) }}</span>
                 <div class="flex gap-2">
-                    <Button type="tertiary" :label="trans('Cancel')" @click="mode = null" />
+                    <Button type="tertiary" :label="ctrans('Cancel')" @click="mode = null" />
                     <Button
                         :type="mode === 'unlock' ? 'negative' : 'primary'"
-                        :label="mode === 'unlock' ? trans('Unlock selected webpages') : trans('Lock selected webpages')"
+                        :label="mode === 'unlock' ? ctrans('Unlock selected webpages') : ctrans('Lock selected webpages')"
                         :disabled="!form.webpage_ids.length"
                         :loading="form.processing"
                         @click="submit"

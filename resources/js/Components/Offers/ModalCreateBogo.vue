@@ -7,7 +7,7 @@ import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faGift } from '@fal'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { router } from '@inertiajs/vue3'
 
@@ -149,44 +149,44 @@ resetForm()
 
 <template>
     <div>
-        <Button :label="trans('Buy One Get One Free')" @click="openModal" icon="fal fa-gift" />
+        <Button :label="ctrans('Buy One Get One Free')" @click="openModal" icon="fal fa-gift" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="p-1 space-y-3">
-                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Buy One Get One Free') }}</h2>
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ ctrans('Create Buy One Get One Free') }}</h2>
 
                 <!-- <div class="space-y-2">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
-                        {{ trans('Offer name') }}:
+                        {{ ctrans('Offer name') }}:
                     </label>
 
-                    <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
+                    <PureInput v-model="offerLabel" :placeholder="ctrans('Enter offer name')" />
                 </div> -->
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                            {{ trans('Buy quantity') }}
-                            <InformationIcon :information="trans('Quantity the customer must buy to trigger the offer')" />:
+                            {{ ctrans('Buy quantity') }}
+                            <InformationIcon :information="ctrans('Quantity the customer must buy to trigger the offer')" />:
                         </label>
 
                         <InputNumber v-model="buyQuantity" inputId="bogo_buy_quantity" :min="1" class="w-full"
-                            :placeholder="trans('Enter quantity')"
-                            :suffix="' ' + ((buyQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
+                            :placeholder="ctrans('Enter quantity')"
+                            :suffix="' ' + ((buyQuantity ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
                     </div>
 
                     <div class="space-y-2">
                         <label class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                            {{ trans('Free quantity') }}
-                            <InformationIcon :information="trans('Quantity of the same product given for free')" />:
+                            {{ ctrans('Free quantity') }}
+                            <InformationIcon :information="ctrans('Quantity of the same product given for free')" />:
                         </label>
 
                         <InputNumber v-model="freeQuantity" inputId="bogo_free_quantity" :min="1" class="w-full"
-                            :placeholder="trans('Enter quantity')"
-                            :suffix="' ' + ((freeQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
+                            :placeholder="ctrans('Enter quantity')"
+                            :suffix="' ' + ((freeQuantity ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
                     </div>
                 </div>
 
@@ -194,7 +194,7 @@ resetForm()
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Offer Duration') }}:
+                        {{ ctrans('Offer Duration') }}:
                     </div>
 
                     <div class="flex flex-wrap items-center gap-4">
@@ -204,7 +204,7 @@ resetForm()
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="bogo-permanent" value="permanent" />
-                            <span>{{ trans('Permanent') }}</span>
+                            <span>{{ ctrans('Permanent') }}</span>
                         </label>
 
                         <label for="bogo-interval"
@@ -213,7 +213,7 @@ resetForm()
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="bogo-interval" value="interval" />
-                            <span>{{ trans('Interval') }}</span>
+                            <span>{{ ctrans('Interval') }}</span>
                         </label>
 
                         <button v-if="dateType === 'interval'" v-for="days in quickIntervalPresets" :key="days"
@@ -222,7 +222,7 @@ resetForm()
                             :class="quickIntervalDays === days
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
-                            {{ trans(':count day', { count: String(days) }) }}
+                            {{ ctrans(':count day', { count: String(days) }) }}
                         </button>
                     </div>
 
@@ -232,32 +232,32 @@ resetForm()
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
                                     class="font-light text-xs text-red-400 align-middle" fixed-width />
-                                {{ trans('Start Date') }}
+                                {{ ctrans('Start Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="ctrans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd"
-                                class="w-full" :placeholder="trans('Select start date')" />
+                                class="w-full" :placeholder="ctrans('Select start date')" />
                         </div>
 
                         <!-- End Date (Only for Interval) -->
                         <div v-if="dateType === 'interval'" class="space-y-2">
                             <label class="font-medium mb-2 block">
-                                {{ trans('End Date') }}
+                                {{ ctrans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If end date is empty, will treat as permanent')" />:
+                                    :information="ctrans('If end date is empty, will treat as permanent')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate || undefined" :placeholder="trans('Select end date')" />
+                                :minDate="startDate || undefined" :placeholder="ctrans('Select end date')" />
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="closeModal" type="cancel" />
-                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? ctrans('Loading') : ctrans('Save')"
                         @click="submitBogoOffer" :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit">
                     </Button>
                 </div>

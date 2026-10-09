@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { get } from "lodash-es"
 import { seedFormRows } from "./seedFormRows"
 import { useEchoMasterProductCategory } from "@/Stores/echo-master-product-category"
@@ -41,12 +41,12 @@ const props = defineProps<{
 }>()
 
 const defaultOptions: CustomizeOption[] = [
-	{ value: "packaging", label: trans("Packaging"), icon: "fal fa-box" },
-	{ value: "fragrance", label: trans("Fragrance"), icon: "fal fa-smoke" },
-	{ value: "colour", label: trans("Colour"), icon: "fal fa-tint" },
-	{ value: "formulation", label: trans("Formulation"), icon: "fal fa-flask" },
-	{ value: "labeling", label: trans("Labeling"), icon: "fal fa-tags" },
-	{ value: "pack_sizes", label: trans("Pack Sizes"), icon: "fal fa-box-open" },
+	{ value: "packaging", label: ctrans("Packaging"), icon: "fal fa-box" },
+	{ value: "fragrance", label: ctrans("Fragrance"), icon: "fal fa-smoke" },
+	{ value: "colour", label: ctrans("Colour"), icon: "fal fa-tint" },
+	{ value: "formulation", label: ctrans("Formulation"), icon: "fal fa-flask" },
+	{ value: "labeling", label: ctrans("Labeling"), icon: "fal fa-tags" },
+	{ value: "pack_sizes", label: ctrans("Pack Sizes"), icon: "fal fa-box-open" },
 ]
 
 const options = computed<CustomizeOption[]>(() =>
@@ -115,23 +115,23 @@ const error = computed(() => get(props.form, ["errors", props.fieldName]))
 			<div v-if="row.available" class="mt-4 grid gap-3 md:grid-cols-1">
 				<div>
 					<label class="mb-1 block text-xs font-medium text-gray-500">
-						{{ trans("MOQ") }}
+						{{ ctrans("MOQ") }}
 					</label>
 
 					<PureInput
 						v-model="row.moq"
-						:placeholder="trans('e.g. £500+')"
+						:placeholder="ctrans('e.g. £500+')"
 						:inputName="`${fieldName}_${row.key}_moq`" />
 				</div>
 
 				<div>
 					<label class="mb-1 block text-xs font-medium text-gray-500">
-						{{ trans("Notes") }}
+						{{ ctrans("Notes") }}
 					</label>
 
 					<Editor
 						v-model="row.notes"
-						:placeholder="trans('Describe what can be customised')"
+						:placeholder="ctrans('Describe what can be customised')"
 						
 						:toggle=" ['bold', 'italic','fontSize', 'underline', 'bulletList', 'link', 'undo', 'redo', 'highlight', 'color', 'clear']"
 						>

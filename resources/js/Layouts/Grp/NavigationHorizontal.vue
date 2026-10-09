@@ -19,7 +19,7 @@ import { faParachuteBox } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { capitalize } from '@/Composables/capitalize'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { set } from 'lodash-es'
 library.add(faChevronLeft, faChevronRight, faParachuteBox)
@@ -218,15 +218,15 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 </Transition>
 
                 <Transition name="spin-to-down">
-                    <FontAwesomeIcon v-if="currentNavigation()?.value.type === 'b2b'" icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('E-commerce')" />
-                    <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'fulfilment'" icon="fal fa-hand-holding-box" class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Fulfilment')" />
-                    <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'dropshipping'" icon="fal fa-parachute-box " class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Dropshipping')" />
-                    <FontAwesomeIcon v-else-if="currentNavigation()?.type === 'shop'" icon="fal fa-store-alt " class='text-xs' fixed-width aria-hidden='true' v-tooltip="trans('Shop')" />
+                    <FontAwesomeIcon v-if="currentNavigation()?.value.type === 'b2b'" icon="fal fa-fax" class='text-xs' fixed-width aria-hidden='true' v-tooltip="ctrans('E-commerce')" />
+                    <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'fulfilment'" icon="fal fa-hand-holding-box" class='text-xs' fixed-width aria-hidden='true' v-tooltip="ctrans('Fulfilment')" />
+                    <FontAwesomeIcon v-else-if="currentNavigation()?.value.type === 'dropshipping'" icon="fal fa-parachute-box " class='text-xs' fixed-width aria-hidden='true' v-tooltip="ctrans('Dropshipping')" />
+                    <FontAwesomeIcon v-else-if="currentNavigation()?.type === 'shop'" icon="fal fa-store-alt " class='text-xs' fixed-width aria-hidden='true' v-tooltip="ctrans('Shop')" />
                 </Transition>
 
                 <Transition name="slide-to-left">
                     <div v-if="layout.leftSidebar.show && (numberOptions || 0) > 1" @click="() => set(layout, ['organisationsState', layout?.currentParams?.organisation, generateCurrentString(currentNavigation()?.type)], '')" class="text-red-300 hover:text-red-500 cursor-pointer hover:underline text-xxs w-fit px-0.5 py leading-[8px]">
-                        {{ trans("Unselect") }}
+                        {{ ctrans("Unselect") }}
                     </div>
                 </Transition>
             </div>

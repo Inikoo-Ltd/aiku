@@ -12,7 +12,7 @@ import { faTrashAlt } from '@fal'
 import ColorPicker from './ColorPicker.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import SideEditorInputHTML from '@/Components/CMS/Fields/SideEditorInputHTML.vue'
 
 library.add(faTrashAlt)
@@ -157,7 +157,7 @@ const normalizedCards = computed(() => Object.fromEntries(
 
         <!-- EMPTY -->
         <div v-if="Object.keys(cards ?? {}).length === 0" class="text-center text-gray-400">
-            {{ trans("No cards added yet") }}
+            {{ ctrans("No cards added yet") }}
         </div>
 
         <div class="shadow-lg">

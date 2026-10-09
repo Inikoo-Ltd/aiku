@@ -20,7 +20,7 @@ import { routeType } from '@/types/route'
 import Tag from '@/Components/Tag.vue'
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 
@@ -111,7 +111,7 @@ const userCanEdit = (item) => {
 		<!-- Column: Code -->
 		<template #cell(code)="{ item }">
 			{{ item.code || '-' }}
-			<FontAwesomeIcon v-if="item.is_auto_assign" v-tooltip="trans('Auto assign')" :icon="faUserRobot" fixed-width />
+			<FontAwesomeIcon v-if="item.is_auto_assign" v-tooltip="ctrans('Auto assign')" :icon="faUserRobot" fixed-width />
 		</template>
 
 		<!-- Column: Name -->
@@ -180,7 +180,7 @@ const userCanEdit = (item) => {
 						:loading="isLoadingdelete"
 						icon="fal fa-trash-alt"
 						type="negative"
-						v-tooltip="trans('Unselect this field')"
+						v-tooltip="ctrans('Unselect this field')"
 					/>
 				</template>
 

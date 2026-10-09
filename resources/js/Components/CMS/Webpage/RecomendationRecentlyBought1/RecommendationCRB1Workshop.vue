@@ -19,7 +19,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RecommendationProduct } from "@/types/RecommendationProduct"
 import { notify } from "@kyvg/vue3-notification"
 import RecommendationCRBSlideIris from "@/Components/Iris/Recommendations/RecommendationCRBSlideIris.vue"
@@ -84,7 +84,7 @@ const fetchRecommenders = async () => {
     } else {
         setTimeout(() => {
             notify({
-                title: trans("Something went wrong"),
+                title: ctrans("Something went wrong"),
                 text: "Recommendation CRB is not set properly. Reach developers to fix.",
                 type: "error",
             })
@@ -105,7 +105,7 @@ onMounted(()=> {
     }">
         <!-- Title -->
         <div class="px-4 py-6 pb-2 text-3xl font-semibold">
-            <p style="text-align: center">{{ trans("Customers Recently Bought") }}</p>
+            <p style="text-align: center">{{ ctrans("Customers Recently Bought") }}</p>
             <!-- <EditorV2
                 v-model="modelValue.title"
                 @focus="() => {
@@ -142,8 +142,8 @@ onMounted(()=> {
                     </SwiperSlide>
                 </template>
                 <div v-else class="h-64 flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200">
-                    <div>{{ trans("No products to show") }}</div>
-                    <div class="text-sm italic text-gray-400">{{ trans("This will not appear in live website") }}</div>
+                    <div>{{ ctrans("No products to show") }}</div>
+                    <div class="text-sm italic text-gray-400">{{ ctrans("This will not appear in live website") }}</div>
                 </div>
             </Swiper>
         </div>

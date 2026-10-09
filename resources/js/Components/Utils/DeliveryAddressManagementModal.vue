@@ -5,7 +5,7 @@ import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification";
 import { computed, ref } from "vue";
 import { routeType } from "@/types/route";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { Address, AddressManagement } from "@/types/PureComponent/Address";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheckCircle as faCheckCircleSolid } from "@fas";
@@ -57,14 +57,14 @@ const onSubmitNewAddress = async (address: Address) => {
       onSuccess: () => {
         emits("onHasChange")
         notify({
-          title: trans("Success"),
-          text: trans("Successfully create new address."),
+          title: ctrans("Success"),
+          text: ctrans("Successfully create new address."),
           type: "success"
         });
       },
       onError: () => notify({
-        title: trans("Failed"),
-        text: trans("Failed to submit the address, try again"),
+        title: ctrans("Failed"),
+        text: ctrans("Failed to submit the address, try again"),
         type: "error"
       })
     }
@@ -84,8 +84,8 @@ const onEditAddress = (address: Address) => {
 const onSubmitEditAddress = (address: Address) => {
   if (!props.updateRoute) {
     notify({
-        title: trans("Failed to update the address"),
-        text: trans("Please contact the administrator to fix."),
+        title: ctrans("Failed to update the address"),
+        text: ctrans("Please contact the administrator to fix."),
         type: "error",
     })
 
@@ -115,14 +115,14 @@ const onSubmitEditAddress = (address: Address) => {
       onSuccess: () => {
         emits("onHasChange")
         notify({
-          title: trans("Success"),
-          text: trans("Successfully update the address."),
+          title: ctrans("Success"),
+          text: ctrans("Successfully update the address."),
           type: "success"
         });
       },
       onError: () => notify({
-        title: trans("Failed"),
-        text: trans("Failed to update the address, try again."),
+        title: ctrans("Failed"),
+        text: ctrans("Failed to update the address, try again."),
         type: "error"
       })
     }
@@ -166,7 +166,7 @@ const onPinnedAddress = (addressID: number) => {
         isLoading.value = false;
       },
       onError: () => notify({
-        title: trans("Failed"),
+        title: ctrans("Failed"),
         text: "Failed to pinned the address, try again.",
         type: "error"
       })
@@ -190,8 +190,8 @@ const onDeleteAddress = (addressID: number) => {
         isLoading.value = false;
       },
       onError: () => notify({
-        title: trans("Failed"),
-        text: trans("Failed to delete the address, try again"),
+        title: ctrans("Failed"),
+        text: ctrans("Failed to delete the address, try again"),
         type: "error"
       })
     }
@@ -205,12 +205,12 @@ const onDeleteAddress = (addressID: number) => {
   <div class="h-[600px] px-2 py-1 overflow-auto">
     <div class="flex justify-between items-center border-b border-gray-300 py-2">
       <div class="text-2xl font-bold text-center flex gap-x-2">
-        {{ address_modal_title ?? trans('Manage address') }}
+        {{ address_modal_title ?? ctrans('Manage address') }}
 
         <div class="relative">
           <Transition name="slide-to-right">
-            <div v-if="isEditAddress" class="inline text-gray-400 italic text-base font-normal">({{ trans("Edit") }})</div>
-            <div v-else-if="isCreateNewAddress" class="inline text-gray-400 italic text-base font-normal">({{ trans("Create new") }})</div>
+            <div v-if="isEditAddress" class="inline text-gray-400 italic text-base font-normal">({{ ctrans("Edit") }})</div>
+            <div v-else-if="isCreateNewAddress" class="inline text-gray-400 italic text-base font-normal">({{ ctrans("Create new") }})</div>
             <div v-else></div>
           </Transition>
         </div>
@@ -224,7 +224,7 @@ const onDeleteAddress = (addressID: number) => {
 
     <div class="relative transition-all">
       <div v-if="isCreateNewAddress" class="mx-auto max-w-96 py-4">
-        <div class="mb-2">{{ trans("Create new address") }}</div>
+        <div class="mb-2">{{ ctrans("Create new address") }}</div>
         <div class="border border-gray-300 rounded-lg relative p-3 ">
           <PureAddress
             v-model="selectedAddress"
@@ -258,7 +258,7 @@ const onDeleteAddress = (addressID: number) => {
                 {{ [...addresses.address_list.data].find(xxx => xxx.id === selectedAddress?.id)?.label }}
               </div>
               <div v-else class="text-xs italic whitespace-nowrap text-gray-400">
-                ({{ trans("No label") }})
+                ({{ ctrans("No label") }})
               </div>
               <div class="relative">
                 <Transition name="spin-to-right">
@@ -294,7 +294,7 @@ const onDeleteAddress = (addressID: number) => {
           <div class="mt-6 flex justify-center">
             <Button
               @click="() => onSubmitEditAddress(selectedAddress)"
-              :label="trans('Save')"
+              :label="ctrans('Save')"
               :loading="isSubmitAddressLoading"
               full
             />
@@ -341,10 +341,10 @@ const onDeleteAddress = (addressID: number) => {
                   <FontAwesomeIcon v-else-if="addresses.address_list.data?.length > 1" @click="() => onPinnedAddress(homeAddress.id)" class="px-0.5 py-1 cursor-pointer "
                                    :icon="addresses.pinned_address_id === homeAddress?.id ?  faThumbtackSolid: faThumbtack"
                                    :class="addresses.pinned_address_id  === homeAddress?.id ? 'text-green-600' : 'text-gray-500 '" fixed-width aria-hidden="true"
-                                   v-tooltip="(addresses.pinned_address_id  === homeAddress?.id ? trans('Current default delivery address') :trans('Select as default delivery address'))"
+                                   v-tooltip="(addresses.pinned_address_id  === homeAddress?.id ? ctrans('Current default delivery address') :ctrans('Select as default delivery address'))"
                   />
                   <FontAwesomeIcon @click="() => onEditAddress(homeAddress)" icon="fal fa-pencil" class="px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true"
-                                   v-tooltip="trans('Edit this address')" />
+                                   v-tooltip="ctrans('Edit this address')" />
                 </div>
               </div>
 
@@ -370,7 +370,7 @@ const onDeleteAddress = (addressID: number) => {
                       {{ useTruncate(address.label, 14) }}
                     </div>
                     <div v-else class="text-xs italic whitespace-nowrap text-gray-400">
-                      ({{ trans("No label") }})
+                      ({{ ctrans("No label") }})
                     </div>
                     <div class="relative">
                       <Transition name="spin-to-right">
@@ -401,17 +401,17 @@ const onDeleteAddress = (addressID: number) => {
                                      :class="addresses.pinned_address_id === address.id ? 'text-green-600' : 'text-gray-500 '"
                                      fixed-width
                                      aria-hidden="true"
-                                     v-tooltip="(addresses.pinned_address_id === address.id  ? trans('Current default delivery address') :trans('Select as default delivery address'))"
+                                     v-tooltip="(addresses.pinned_address_id === address.id  ? ctrans('Current default delivery address') :ctrans('Select as default delivery address'))"
 
                     />
 
                     <FontAwesomeIcon v-if="address.can_edit" @click="() => onEditAddress(address)" icon="fal fa-pencil" class="px-0.5 py-1 text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true"
-                                     v-tooltip="trans('Edit this address')" />
+                                     v-tooltip="ctrans('Edit this address')" />
 
                     <template v-if="address.can_delete">
                       <LoadingIcon v-if="isLoading === 'onDelete' + address.id" class="text-sm px-[1px]" />
                       <FontAwesomeIcon v-else @click="() => onDeleteAddress(address.id)" icon="fal fa-trash-alt" class="px-0.5 py-1 text-gray-400 hover:text-red-500 cursor-pointer" fixed-width aria-hidden="true"
-                                       v-tooltip="trans('Delete this address')" />
+                                       v-tooltip="ctrans('Delete this address')" />
                     </template>
                   </div>
                 </div>
@@ -422,7 +422,7 @@ const onDeleteAddress = (addressID: number) => {
         </template>
 
         <div v-else class="text-sm flex items-center justify-center h-3/4 font-medium text-center text-gray-400">
-          {{ trans("No address history found") }}
+          {{ ctrans("No address history found") }}
         </div>
       </div>
 

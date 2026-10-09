@@ -8,7 +8,7 @@ import { faTimes, faExclamationTriangle } from "@fal"
 import { faAsterisk } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Icon } from "@/types/Utils/Icon"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
@@ -86,7 +86,7 @@ const onClickDelete = () => {
 			},
 			onError: (e) => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: e.message || "Please try again later or contact administrator.",
 					type: "error",
 				})
@@ -168,13 +168,13 @@ const messageDelete = ref("")
 
 									<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
 										<DialogTitle as="h3" class="text-base font-semibold pr-4">
-											{{ title || trans("Are you sure want to delete?") }}
+											{{ title || ctrans("Are you sure want to delete?") }}
 										</DialogTitle>
 										<div class="mt-2">
 											<p class="text-sm text-gray-500">
 												{{
 													description ||
-													trans(
+													ctrans(
 														"The data will be permanently delete 😥 .This action cannot be undone."
 													)
 												}}
@@ -187,7 +187,7 @@ const messageDelete = ref("")
 											<label
 												for=""
 												class="flex items-start text-sm text-gray-500 leading-none mb-1">
-												{{ whyLabel || trans("Why you deleting this?") }}
+												{{ whyLabel || ctrans("Why you deleting this?") }}
 												<FontAwesomeIcon
 													icon="far fa-asterisk"
 													class="text-red-500 h-2"
@@ -202,7 +202,7 @@ const messageDelete = ref("")
 												v-bind="props.message"
 												:placeholder="
 													props.message?.placeholder ||
-													trans('Enter the reason for deleting')
+													ctrans('Enter the reason for deleting')
 												"
 												:disabled="isLoadingdelete" />
 										</div>
@@ -212,7 +212,7 @@ const messageDelete = ref("")
 													:loading="isLoadingdelete || loadingSubmit"
 													@click="() => (onClickDelete(), emits('onYes'))"
 													type="red"
-													xlabel="props.noLabel ?? trans('Delete')"
+													xlabel="props.noLabel ?? ctrans('Delete')"
 													:disabled="
 														isWithMessage ? !messageDelete : false
 													"
@@ -220,7 +220,7 @@ const messageDelete = ref("")
 													full>
 													<template #label>
 														<span class="whitespace-nowrap">{{
-															props.noLabel ?? trans("Delete")
+															props.noLabel ?? ctrans("Delete")
 														}}</span>
 													</template>
 												</Button>
@@ -228,11 +228,11 @@ const messageDelete = ref("")
 
 											<!-- <button type="button"
                                                 class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto"
-                                                @click="() => ">{{ trans("Yes, delete") }}</button> -->
+                                                @click="() => ">{{ ctrans("Yes, delete") }}</button> -->
 											<Button
 												type="tertiary"
 												icccon="far fa-arrow-left"
-												:label="cancelLabel ?? trans('Cancel')"
+												:label="cancelLabel ?? ctrans('Cancel')"
 												:disabled="isLoadingdelete || loadingSubmit"
 												full
 												@click="
@@ -240,7 +240,7 @@ const messageDelete = ref("")
 												" />
 											<!-- <button type="button"
                                                 class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold ring-1 shadow-xs ring-gray-300 ring-inset hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                                                >{{ trans("Cancel") }}</button> -->
+                                                >{{ ctrans("Cancel") }}</button> -->
 										</div>
 									</div>
 								</div>

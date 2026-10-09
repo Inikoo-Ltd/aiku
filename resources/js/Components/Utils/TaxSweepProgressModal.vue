@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onUnmounted } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 
 type Progress = {
@@ -93,7 +93,7 @@ onUnmounted(unsubscribe)
             :class="isRunning ? 'border-indigo-200 bg-indigo-50' : 'border-green-200 bg-green-50'">
             <div class="flex justify-between text-xs mb-1">
                 <span :class="isRunning ? 'text-indigo-700' : 'text-green-700'">
-                    {{ isRunning ? trans("Retaxing open baskets…") : trans("Baskets retaxed") }}
+                    {{ isRunning ? ctrans("Retaxing open baskets…") : ctrans("Baskets retaxed") }}
                 </span>
                 <span class="tabular-nums text-gray-600">{{ progress.baskets_done }} / {{ progress.baskets_total }}</span>
             </div>
@@ -108,17 +108,17 @@ onUnmounted(unsubscribe)
         <Modal :isOpen="isOpen" @onClose="closeModal" width="w-full max-w-md">
             <div class="space-y-4">
                 <h3 class="text-base font-semibold text-gray-800">
-                    {{ isRunning ? trans("Retaxing open baskets…") : trans("Baskets retaxed") }}
+                    {{ isRunning ? ctrans("Retaxing open baskets…") : ctrans("Baskets retaxed") }}
                 </h3>
 
                 <p class="text-sm text-gray-500">
-                    {{ trans("Open baskets holding this product are being recalculated at the new tax treatment. Orders already submitted keep the tax they were sold under.") }}
+                    {{ ctrans("Open baskets holding this product are being recalculated at the new tax treatment. Orders already submitted keep the tax they were sold under.") }}
                 </p>
 
                 <div v-if="progress" class="space-y-1.5">
                     <div class="flex justify-between text-sm">
                         <span :class="isRunning ? 'text-indigo-700' : 'text-green-700'">
-                            {{ isRunning ? trans("In progress") : trans("Done") }}
+                            {{ isRunning ? ctrans("In progress") : ctrans("Done") }}
                         </span>
                         <span class="tabular-nums text-gray-600">
                             {{ progress.baskets_done }} / {{ progress.baskets_total }}
@@ -133,7 +133,7 @@ onUnmounted(unsubscribe)
                     <p
                         v-if="isRunning && progress?.pending_large"
                         class="text-xs text-gray-500 italic">
-                        {{ trans(':n large basket(s) still processing, they take a few minutes', { n: `${progress.pending_large}` }) }}
+                        {{ ctrans(':n large basket(s) still processing, they take a few minutes', { n: `${progress.pending_large}` }) }}
                     </p>
                 </div>
 
@@ -145,7 +145,7 @@ onUnmounted(unsubscribe)
                         :class="!isRunning
                             ? 'bg-indigo-600 text-white hover:bg-indigo-500'
                             : 'text-gray-500 hover:bg-gray-50'">
-                        {{ !isRunning ? trans("Close") : trans("Run in background") }}
+                        {{ !isRunning ? ctrans("Close") : ctrans("Run in background") }}
                     </button>
                 </div>
             </div>

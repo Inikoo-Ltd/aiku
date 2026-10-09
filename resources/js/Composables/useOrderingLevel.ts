@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export type OrderingLevel = "cartons" | "skos" | "units"
 
@@ -6,29 +6,29 @@ export const getOrderingLevels = () => [
 	{
 		key: "cartons" as OrderingLevel,
 		icon: "fal fa-pallet",
-		tab: trans("Ordering Cartons"),
-		description: trans("Carton description"),
-		quantity: trans("Cartons"),
-		cost: trans("Carton cost"),
-		singular: trans("Carton"),
+		tab: ctrans("Ordering Cartons"),
+		description: ctrans("Carton description"),
+		quantity: ctrans("Cartons"),
+		cost: ctrans("Carton cost"),
+		singular: ctrans("Carton"),
 	},
 	{
 		key: "skos" as OrderingLevel,
 		icon: "fal fa-box",
-		tab: trans("Ordering SKOs"),
-		description: trans("SKO description"),
-		quantity: trans("SKOs"),
-		cost: trans("SKO cost"),
-		singular: trans("SKO"),
+		tab: ctrans("Ordering SKOs"),
+		description: ctrans("SKO description"),
+		quantity: ctrans("SKOs"),
+		cost: ctrans("SKO cost"),
+		singular: ctrans("SKO"),
 	},
 	{
 		key: "units" as OrderingLevel,
 		icon: "fal fa-stop-circle",
-		tab: trans("Ordering Units"),
-		description: trans("Unit description"),
-		quantity: trans("Units"),
-		cost: trans("Unit cost"),
-		singular: trans("Unit"),
+		tab: ctrans("Ordering Units"),
+		description: ctrans("Unit description"),
+		quantity: ctrans("Units"),
+		cost: ctrans("Unit cost"),
+		singular: ctrans("Unit"),
 	},
 ]
 

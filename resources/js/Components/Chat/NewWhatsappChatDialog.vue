@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
@@ -38,10 +38,10 @@ const phoneError = computed(() => {
     const value = searchTerm.value.trim()
     if (!value || !looksLikePhone.value) return ""
     if (!value.startsWith("+")) {
-        return trans("Phone number must start with '+' and the country code")
+        return ctrans("Phone number must start with '+' and the country code")
     }
     if (!/^\+[1-9]\d{7,14}$/.test(normalisedPhone.value)) {
-        return trans("Enter a valid phone number")
+        return ctrans("Enter a valid phone number")
     }
     return ""
 })
@@ -106,7 +106,7 @@ const startChat = async () => {
         emits("created", res.data.data ?? res.data)
         visible.value = false
     } catch (e: any) {
-        error.value = e?.response?.data?.message ?? trans("Failed to start the chat.")
+        error.value = e?.response?.data?.message ?? ctrans("Failed to start the chat.")
     } finally {
         submitting.value = false
     }
@@ -125,15 +125,15 @@ watch(visible, (isVisible) => {
 </script>
 
 <template>
-    <Dialog v-model:visible="visible" modal :header="trans('New WhatsApp chat')"
+    <Dialog v-model:visible="visible" modal :header="ctrans('New WhatsApp chat')"
         :style="{ width: '90vw', maxWidth: '440px' }" :breakpoints="{ '640px': '95vw' }">
         <div class="flex flex-col gap-3">
             <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ trans("Customer / Phone number") }}</label>
+                <label class="text-xs font-medium text-gray-600">{{ ctrans("Customer / Phone number") }}</label>
                 <PureMultiselectInfiniteScroll :key="shopId" v-model="customerId" :fetchRoute="fetchRoute"
                     valueProp="id" labelProp="name" labelAdditionalProp="reference"
-                    :placeholder="trans('Search customer or type +phone number')"
-                    :noOptionsText="trans('No customer found')"
+                    :placeholder="ctrans('Search customer or type +phone number')"
+                    :noOptionsText="ctrans('No customer found')"
                     @selectedObject="onSelectCustomer" @optionsList="onOptionsList"
                     @searchChange="onSearchChange">
                     <template #singlelabel="{ value }">
@@ -160,15 +160,15 @@ watch(visible, (isVisible) => {
 
             <div v-if="showNewContact" class="flex flex-col gap-1">
                 <p class="text-xs text-gray-500 leading-snug">
-                    {{ trans("No customer found with this number. A new contact will be created.") }}
+                    {{ ctrans("No customer found with this number. A new contact will be created.") }}
                 </p>
-                <label class="text-xs font-medium text-gray-600">{{ trans("Contact name") }}</label>
-                <input v-model="contactName" type="text" :placeholder="trans('Optional')"
+                <label class="text-xs font-medium text-gray-600">{{ ctrans("Contact name") }}</label>
+                <input v-model="contactName" type="text" :placeholder="ctrans('Optional')"
                     class="w-full text-sm border border-gray-300 rounded-lg px-3 py-1.5 text-gray-700" />
             </div>
 
             <p class="text-xs text-gray-400 leading-snug">
-                {{ trans("WhatsApp requires an approved template for the first message to a new contact.") }}
+                {{ ctrans("WhatsApp requires an approved template for the first message to a new contact.") }}
             </p>
 
             <p v-if="error" class="text-xs text-red-500 leading-snug">{{ error }}</p>
@@ -176,12 +176,12 @@ watch(visible, (isVisible) => {
             <div class="flex items-center justify-end gap-2 pt-1">
                 <button type="button" class="px-3 py-1.5 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
                     @click="visible = false">
-                    {{ trans("Cancel") }}
+                    {{ ctrans("Cancel") }}
                 </button>
                 <button type="button" :disabled="!canStart" @click="startChat"
                     class="px-3 py-1.5 text-sm text-white rounded-lg"
                     :class="!canStart ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'">
-                    {{ submitting ? trans("Starting...") : trans("Start chat") }}
+                    {{ submitting ? ctrans("Starting...") : ctrans("Start chat") }}
                 </button>
             </div>
         </div>

@@ -1,5 +1,5 @@
 <script setup>
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref } from "vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle } from '@fas'
@@ -44,7 +44,7 @@ const avatarUploaded = (file) => {
                         class="group relative flex items-center justify-center rounded-md border border-gray-300 py-2 px-3 focus-within:ring-2 focus-within:ring-gray-500 focus-within:ring-offset-2 hover:bg-gray-50">
                         <label for="input-avatar-small"
                             class="pointer-events-none relative text-sm font-medium leading-4 text-gray-700">
-                            <span>{{ trans("Change") }}</span>
+                            <span>{{ ctrans("Change") }}</span>
                         </label>
                         <input id="input-avatar-small" name="user-photo" type="file"
                             @input="avatarUploaded($event.target.files[0])"
@@ -59,7 +59,7 @@ const avatarUploaded = (file) => {
             <Image class="h-full rounded-full" :src="temporaryAvatar" alt="" />
             <label id="input-avatar-large-mask" for="input-avatar-large"
                 class="absolute inset-0 flex h-full w-full items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100">
-                <span>{{ trans("Change") }}</span>
+                <span>{{ ctrans("Change") }}</span>
                 <input type="file" @input="avatarUploaded($event.target.files[0])" id="input-avatar-large" name="input-avatar-large" accept="image/*"
                     class="absolute inset-0 h-full w-full cursor-pointer rounded-md border-gray-300 opacity-0" />
             </label>

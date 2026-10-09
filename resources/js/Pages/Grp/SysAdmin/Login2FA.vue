@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, onMounted, onBeforeUnmount, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
@@ -80,7 +80,7 @@ const onLogoutAuth = () => {
     <form class="relative z-10 space-y-6" @submit.prevent="submit">
         <div>
             <label for="one_time_password" class="block text-sm font-medium text-gray-700">
-                {{ trans('Enter OTP from your Authenticator App') }}
+                {{ ctrans('Enter OTP from your Authenticator App') }}
             </label>
 
             <input v-model="form.one_time_password" ref="inputOneTimePassword" id="one_time_password" required

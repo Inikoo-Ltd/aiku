@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import ProductResource from "./ProductResource.vue"
@@ -129,26 +129,26 @@ library.add(
 				<div class="space-y-3">
 					<!-- Section: Since -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Since") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Since") }}</dt>
 						<dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
 					</div>
 
 					<!-- Section: Units -->
 					<div class="flex justify-between flex-wrap gap-1" v-if="data.unit && data.unit">
-						<dt class="text-gray-500">{{ trans("Units") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Units") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} ({{ data.unit }}) </dd>
 					</div>
 
 
 					<div class="flex justify-between flex-wrap gap-1" v-else>
-						<dt class="text-gray-500">{{ trans("Unit label") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Unit label") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }} </dd>
 					</div>
 
 					<!-- Section: Weight marketing -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Weight") }} <span
-								class="text-xs font-light text-gray-500">({{ trans('Marketing') }})</span></dt>
+						<dt class="text-gray-500">{{ ctrans("Weight") }} <span
+								class="text-xs font-light text-gray-500">({{ ctrans('Marketing') }})</span></dt>
 						<dd class="font-medium">
 							{{ data?.marketing_weight }}
 						</dd>
@@ -156,8 +156,8 @@ library.add(
 
 					<!-- Section: Weight shipping -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Weight") }} <span
-								class="text-xs font-light text-gray-500">({{ trans('Shipping') }})</span></dt>
+						<dt class="text-gray-500">{{ ctrans("Weight") }} <span
+								class="text-xs font-light text-gray-500">({{ ctrans('Shipping') }})</span></dt>
 						<dd class="font-medium">
 							{{ data?.gross_weight }}
 						</dd>
@@ -165,7 +165,7 @@ library.add(
 
 					<!-- Section: Marketing Dimensions -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Dimensions") }}</dt>
+						<dt class="text-gray-500">{{ ctrans("Dimensions") }}</dt>
 						<dd class="font-medium">
 							{{ data?.marketing_dimensions }}
 						</dd>
@@ -173,7 +173,7 @@ library.add(
 
 					<!-- Section: Barcode -->
 					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Barcode") }}
+						<dt class="text-gray-500">{{ ctrans("Barcode") }}
 							<FontAwesomeIcon :icon="faBarcode" fixed-width />
 						</dt>
 						<dd class="font-medium">

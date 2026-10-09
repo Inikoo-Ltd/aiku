@@ -21,7 +21,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faThumbsDown, faChair, faLaugh } from '@fal';
 import { faCheck, faTimes } from '@far';
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faThumbsDown, faChair, faLaugh, faCheck, faTimes)
 
 interface tag {
@@ -124,7 +124,7 @@ function prospectRoute(prospect: Prospect) {
             <div class="text-center">
                 <FontAwesomeIcon 
                     v-if="prospect.is_opt_in" 
-                    v-tooltip="trans('Opted in to newsletter')" 
+                    v-tooltip="ctrans('Opted in to newsletter')" 
                     icon="far fa-check" 
                     class="text-green-500" 
                     fixed-width 
@@ -132,7 +132,7 @@ function prospectRoute(prospect: Prospect) {
                 />
                 <FontAwesomeIcon 
                     v-else 
-                    v-tooltip="trans('Not opted in to newsletter')" 
+                    v-tooltip="ctrans('Not opted in to newsletter')" 
                     icon="far fa-times" 
                     class="text-red-500" 
                     fixed-width 

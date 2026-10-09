@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
 import { ref, watch, onBeforeMount  } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faExclamationCircle, faCheckCircle)
 defineOptions({ inheritAttrs: false })
 
@@ -29,7 +29,7 @@ const isInitialInvalid = ref(false)
 
 onBeforeMount(() => {
     if (phone.value && !phone.value.startsWith('+')) {
-        phoneError.value = trans('Invalid phone number format')
+        phoneError.value = ctrans('Invalid phone number format')
         isInitialInvalid.value = true
     }
 })
@@ -61,7 +61,7 @@ const onValidate = (data: any) => {
         return
     }
 
-    phoneError.value = data?.valid ? '' : trans('Invalid phone number format')
+    phoneError.value = data?.valid ? '' : ctrans('Invalid phone number format')
 }
 
 watch(phone, (val) => {
@@ -84,7 +84,7 @@ watch(phone, (val) => {
                 ]"
                 :inputOptions="{
                     showDialCode: true,
-                    placeholder: fieldData.placeholder || trans('Enter a phone number'),
+                    placeholder: fieldData.placeholder || ctrans('Enter a phone number'),
                     styleClasses: 'placeholder:text-gray-400 rounded-r-lg qwezxc focus:border-none focus:ring-0'
                 }"
                 mode="international"

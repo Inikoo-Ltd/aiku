@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -18,10 +18,10 @@ const props = defineProps<{
 }>()
 
 const kioskDescription = props.clockingMachine.type === 'barcode-scanner'
-    ? trans('Open this link on the tablet used at this clocking machine so employees can clock in and out by scanning their barcode.')
+    ? ctrans('Open this link on the tablet used at this clocking machine so employees can clock in and out by scanning their barcode.')
     : props.clockingMachine.type === 'camera-qr'
-        ? trans('Open this link on the tablet used at this clocking machine so its camera can clock employees in and out by scanning the QR code on their phone.')
-        : trans('Open this link on the tablet used at this clocking machine so employees can clock in and out with their PIN.')
+        ? ctrans('Open this link on the tablet used at this clocking machine so its camera can clock employees in and out by scanning the QR code on their phone.')
+        : ctrans('Open this link on the tablet used at this clocking machine so employees can clock in and out with their PIN.')
 
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
@@ -51,14 +51,14 @@ const generateLink = async () => {
         kioskUrl.value = data.kiosk_url
 
         notify({
-            title: trans('Success'),
-            text: trans('Kiosk link successfully generated'),
+            title: ctrans('Success'),
+            text: ctrans('Kiosk link successfully generated'),
             type: 'success',
         })
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to generate the kiosk link, please try again'),
+            title: ctrans('Something went wrong'),
+            text: ctrans('Failed to generate the kiosk link, please try again'),
             type: 'error',
         })
     } finally {
@@ -71,8 +71,8 @@ const copyLink = async () => {
 
     await navigator.clipboard.writeText(kioskUrl.value)
     notify({
-        title: trans('Copied'),
-        text: trans('Kiosk link copied to clipboard'),
+        title: ctrans('Copied'),
+        text: ctrans('Kiosk link copied to clipboard'),
         type: 'success',
     })
 }
@@ -80,12 +80,12 @@ const copyLink = async () => {
 
 <template>
     <div>
-        <Button type="tertiary" size="xs" icon="fal fa-tablet-alt" :tooltip="trans('Tablet link')" @click="openModal" />
+        <Button type="tertiary" size="xs" icon="fal fa-tablet-alt" :tooltip="ctrans('Tablet link')" @click="openModal" />
 
         <Modal :isOpen="isModalOpen" width="w-full max-w-lg" @onClose="closeModal">
             <div class="p-1 space-y-4">
                 <h2 class="text-2xl font-bold text-center">
-                    {{ trans('Kiosk tablet link') }}
+                    {{ ctrans('Kiosk tablet link') }}
                 </h2>
 
                 <p class="text-sm text-gray-500 text-center">
@@ -106,11 +106,11 @@ const copyLink = async () => {
                     </div>
 
                     <div class="flex justify-end gap-x-2">
-                        <Button type="tertiary" icon="fal fa-copy" :label="trans('Copy')" @click="copyLink" />
+                        <Button type="tertiary" icon="fal fa-copy" :label="ctrans('Copy')" @click="copyLink" />
                         <Button
                             type="tertiary"
                             icon="fal fa-sync-alt"
-                            :label="isSubmitting ? trans('Loading') : trans('Regenerate')"
+                            :label="isSubmitting ? ctrans('Loading') : ctrans('Regenerate')"
                             :disabled="isSubmitting"
                             :loading="isSubmitting"
                             @click="generateLink"
@@ -121,7 +121,7 @@ const copyLink = async () => {
                 <div v-else class="mt-4 flex justify-center">
                     <Button
                         icon="fal fa-tablet-alt"
-                        :label="isSubmitting ? trans('Loading') : trans('Generate link')"
+                        :label="isSubmitting ? ctrans('Loading') : ctrans('Generate link')"
                         :disabled="isSubmitting"
                         :loading="isSubmitting"
                         @click="generateLink"

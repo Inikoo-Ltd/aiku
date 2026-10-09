@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import PaddingMarginProperty from '@/Components/Workshop/Properties/PaddingMarginProperty.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { cloneDeep, defaultsDeep } from 'lodash-es'
 
 // Props and emits
@@ -41,7 +41,7 @@ onMounted(() => {
 
 <template>
   <div class="pb-3">
-    <PaddingMarginProperty :modelValue="localValue" :scope="trans('Shadow')" @update:model-value="(value) => {
+    <PaddingMarginProperty :modelValue="localValue" :scope="ctrans('Shadow')" @update:model-value="(value) => {
       emit('update:modelValue', value)
     }" />
   </div>

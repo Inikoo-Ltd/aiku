@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Icon from '@/Components/Icon.vue'
 import { notify } from '@kyvg/vue3-notification';
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -61,7 +61,7 @@ const deleteTrolley = (trolley: any) => {
 		onSuccess: () => {
 			notify({
 				title: "Success",
-				text: trans("Trolley has been successfully deleted"),
+				text: ctrans("Trolley has been successfully deleted"),
 				type: "success",
 			})
 		}, 
@@ -69,7 +69,7 @@ const deleteTrolley = (trolley: any) => {
 			const errMsg = err.trolley;
 			notify({
 				title: "Failed",
-				text: errMsg ??  trans("Failed to delete Trolley"),
+				text: errMsg ??  ctrans("Failed to delete Trolley"),
 				type: "error",
 			})
 		}, 
@@ -94,20 +94,20 @@ const deleteTrolley = (trolley: any) => {
             <Link v-if="trolley['current_delivery_note']" :href="deliveryNoteRoute(trolley)" class="primaryLink w-fit">
                 {{ trolley['current_delivery_note']['reference'] }}
                 <Icon :data="trolley['current_delivery_note']['state_icon']" />
-                <span v-tooltip="trans('Number of the total items')" class="tabular-nums">
+                <span v-tooltip="ctrans('Number of the total items')" class="tabular-nums">
                     ({{ trolley['current_delivery_note']['number_items'] }}
-                        {{ trolley['current_delivery_note']['number_items'] > 1 ? trans('items') : trans('item') }})
+                        {{ trolley['current_delivery_note']['number_items'] > 1 ? ctrans('items') : ctrans('item') }})
                 </span>
             </Link>
             <span v-else class="italic text-xs opacity-60">
-                {{ trans('No current delivery note') }}
+                {{ ctrans('No current delivery note') }}
             </span>
         </template>
 
 		<template #cell(actions)="{item: trolley}">
 			<Button
 				v-if="!trolley.current_delivery_note?.id"
-				v-tooltip="trans('Delete trolley')"
+				v-tooltip="ctrans('Delete trolley')"
 				@click="deleteTrolley(trolley)"
 				:type="'negative'"
 				icon="fal fa-skull"

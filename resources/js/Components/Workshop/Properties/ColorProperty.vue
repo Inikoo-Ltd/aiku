@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 
 
@@ -26,7 +26,7 @@ const handleColorChange = (newColor: any) => {
 <template>
   <div class="flex flex-col pt-1 pb-3">
     <div class="px-3 flex justify-between items-center mb-2">
-      <div class="text-xs">{{ trans('Color') }}</div>
+      <div class="text-xs">{{ ctrans('Color') }}</div>
       <ColorPicker
         :color="localColor"
         @changeColor="handleColorChange"

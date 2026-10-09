@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -89,7 +89,7 @@ onBeforeUnmount(() => observer.disconnect())
 <template>
     <div>
         <div v-if="!items.length" class="py-10 text-center text-sm text-gray-500">
-            {{ trans("No templates here yet") }}
+            {{ ctrans("No templates here yet") }}
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
@@ -124,7 +124,7 @@ onBeforeUnmount(() => observer.disconnect())
 
                 <div class="px-3 pb-3">
                     <Button
-                        :label="trans('Use Template')"
+                        :label="ctrans('Use Template')"
                         type="secondary"
                         size="xs"
                         class="w-full"

@@ -22,7 +22,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import Modal from "@/Components/Utils/Modal.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { useLayoutStore } from "@/Stores/layout";
 
 library.add( faCube, faFolder, faFolderTree )
@@ -94,12 +94,12 @@ const redirectToTarget = (engine: string) => {
 
     <Modal :isOpen="isCreateShopModal" @onClose="isCreateShopModal = false" width="w-full max-w-[500px]">
         <div class="text-center font-semibold text-lg mb-4">
-            {{ trans("Select shop type to create:") }}
+            {{ ctrans("Select shop type to create:") }}
         </div>
 
         <div class="flex flex-row justify-center gap-2">
             <Button v-for="engine in engines" :key="engine"
-                    :label="capitalize(trans(engine))"
+                    :label="capitalize(ctrans(engine))"
                     type="tertiary"
                     @click="redirectToTarget(engine)"
             />

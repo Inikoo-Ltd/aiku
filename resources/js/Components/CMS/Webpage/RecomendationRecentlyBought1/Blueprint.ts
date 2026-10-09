@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export const blueprint = (data?: {}) => {
 	return {
@@ -18,7 +18,7 @@ export const blueprint = (data?: {}) => {
                     label: "Show Each Row",
                     type: "number",
                     useIn : ["desktop", "tablet", "mobile"],
-                    information: trans("Can use decimal e.g. 4.5 to show half of next slide"),
+                    information: ctrans("Can use decimal e.g. 4.5 to show half of next slide"),
                 },
                 // {
                 //     key: ["products_data"],

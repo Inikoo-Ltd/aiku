@@ -12,7 +12,7 @@ import { faArrowRight, faExternalLinkAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faArrowRight, faExternalLinkAlt)
 
 const props = defineProps<{
@@ -52,15 +52,15 @@ const onSubmitCreateOrder = () => {
             onSuccess: () => {
                 isModalCreateOrder.value = false
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully submit the data"),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to set location"),
                     type: "error"
                 })
             },
@@ -94,13 +94,13 @@ const onSubmitCreateOrder = () => {
     <Modal v-if="is_show_button_create_order" :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">
         <div>
             <div class="text-lg font-semibold mb-4 text-center">
-                {{ trans("Create Order") }}
+                {{ ctrans("Create Order") }}
             </div>
 
             <div>
                 <div class="mb-4">
                     <div class="text-sm xmb-2">
-                        {{ trans("Select Customer Client") }}
+                        {{ ctrans("Select Customer Client") }}
                     </div>
                     <PureMultiselectInfiniteScroll
                         v-model="selectedCustomerClientId"
@@ -124,7 +124,7 @@ const onSubmitCreateOrder = () => {
 
                         <template #afterlist>
                             <div class="m-2 cursor-auto text-gray-400 text-sm">
-                                {{ trans("Can't find the client?") }}
+                                {{ ctrans("Can't find the client?") }}
                                 
                                 <Link
                                     :href="route('retina.dropshipping.customer_sales_channels.client.create', {
@@ -132,7 +132,7 @@ const onSubmitCreateOrder = () => {
                                     })"
                                     class="hover:underline hover:text-gray-700 cursor-pointer"
                                 >
-                                    {{ trans("Create new client here") }}
+                                    {{ ctrans("Create new client here") }}
                                 </Link>
                             </div>
                         </template>

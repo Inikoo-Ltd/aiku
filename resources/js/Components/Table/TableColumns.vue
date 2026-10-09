@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithDropdown from "./ButtonWithDropdown.vue"
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -36,9 +36,9 @@ const props = defineProps<{
 const labelOf = (column: Column): string => {
     const written =
         typeof column.label === "string"
-            ? trans(column.label)
+            ? ctrans(column.label)
             : column.label && !Array.isArray(column.label) && typeof column.label.data === "string"
-              ? trans(column.label.data)
+              ? ctrans(column.label.data)
               : ""
 
     return written || column.shortLabel || column.tooltip || column.key
@@ -50,8 +50,8 @@ const hiddenCount = computed(() => props.columns.filter((column) => column.hidde
    table rather than a success or a warning, so the shape carries it and the colour stays neutral. */
 const buttonTooltip = computed(() =>
     hiddenCount.value
-        ? trans("Choose and order columns, :count hidden", { count: String(hiddenCount.value) })
-        : trans("Choose and order columns")
+        ? ctrans("Choose and order columns, :count hidden", { count: String(hiddenCount.value) })
+        : ctrans("Choose and order columns")
 )
 </script>
 
@@ -78,7 +78,7 @@ const buttonTooltip = computed(() =>
                         <button
                             type="button"
                             :disabled="index === 0"
-                            :aria-label="trans('Move :column up', { column: labelOf(column) })"
+                            :aria-label="ctrans('Move :column up', { column: labelOf(column) })"
                             class="rounded p-1 text-gray-400 transition hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-30 disabled:hover:text-gray-400"
                             @click.prevent="onMove(column.key, -1)">
                             <FontAwesomeIcon icon="fal fa-chevron-up" fixed-width aria-hidden="true" />
@@ -86,7 +86,7 @@ const buttonTooltip = computed(() =>
                         <button
                             type="button"
                             :disabled="index === props.columns.length - 1"
-                            :aria-label="trans('Move :column down', { column: labelOf(column) })"
+                            :aria-label="ctrans('Move :column down', { column: labelOf(column) })"
                             class="rounded p-1 text-gray-400 transition hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-30 disabled:hover:text-gray-400"
                             @click.prevent="onMove(column.key, 1)">
                             <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
@@ -118,7 +118,7 @@ const buttonTooltip = computed(() =>
                             :class="column.hidden ? 'translate-x-0' : 'translate-x-5'"
                             class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
                     </button>
-                    <span v-else class="text-xs text-gray-400">{{ trans("always shown") }}</span>
+                    <span v-else class="text-xs text-gray-400">{{ ctrans("always shown") }}</span>
                 </li>
             </ul>
         </div>

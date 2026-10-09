@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import Dialog from "primevue/dialog"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
   show: boolean
@@ -26,7 +26,7 @@ function onSubmit() {
 <template>
   <Dialog
     v-model:visible="props.show"
-    :header="trans('Add YouTube video')"
+    :header="ctrans('Add YouTube video')"
     modal
     :style="{ width: '30rem' }"
     :breakpoints="{ '960px': '90vw', '640px': '95vw' }"
@@ -49,13 +49,13 @@ function onSubmit() {
           class="rounded-md px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
           @click="closeDialog"
         >
-          {{ trans("Cancel") }}
+          {{ ctrans("Cancel") }}
         </button>
         <button
           type="submit"
           class="rounded-md bg-blue-700 px-4 py-3 text-sm font-medium text-white hover:bg-opacity-80"
         >
-          {{ trans("Add") }}
+          {{ ctrans("Add") }}
         </button>
       </div>
     </form>

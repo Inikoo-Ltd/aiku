@@ -43,7 +43,7 @@ library.add(
 )
 import { faListUl, faEye } from "@far"
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
 import RetinaBottomNavigationOnMobile from "./Retina/RetinaBottomNavigationOnMobile.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
@@ -82,7 +82,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 	<div class="-z-[1] fixed inset-0 bg-gray-100" />
 
 	<ScreenWarning v-if="layout.app.environment === 'staging'">
-		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+		{{ ctrans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
 	</ScreenWarning>
 
 	<div class="isolate relative transition-all pb-12 md:pb-0"
@@ -139,7 +139,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 									v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris_variables?.reference}`"
 								>
 									<div class="text-xxs text-gray-500 -mb-1 italic">
-										{{ trans("Customer reference:") }}
+										{{ ctrans("Customer reference:") }}
 									</div>
 
 									<div class="text-xl text-[#1d252e] font-semibold flex items-center gap-2">
@@ -156,7 +156,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 								:href="route('retina.top_up.dashboard')"
 								class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
 							>
-								{{ trans("My balance") }}:
+								{{ ctrans("My balance") }}:
 								<span class="font-semibold tabular-nums">
 									{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0) }}
 								</span>
@@ -179,9 +179,9 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
         <Modal :isOpen="isOpenModalCreditCard" @onClose="isOpenModalCreditCard = false" width="w-[600px]">
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl mb-2">{{ trans("Add Credit Card") }}</h2>
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl mb-2">{{ ctrans("Add Credit Card") }}</h2>
                     <p class="text-sm leading-5 text-gray-400">
-                        {{ trans("Important Update: To ensure the fastest and most seamless experience with our fully automated order processing system via our sales channels, we strongly recommend saving your payment card in your account. This allows your future orders to be processed instantly and without any manual delays") }}
+                        {{ ctrans("Important Update: To ensure the fastest and most seamless experience with our fully automated order processing system via our sales channels, we strongly recommend saving your payment card in your account. This allows your future orders to be processed instantly and without any manual delays") }}
                     </p>
                 </div>
 
@@ -202,7 +202,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
                         v-if="layout.retina?.portal_link"
                         :href="layout.retina.portal_link"
                         class="relative group flex items-center px-2 text-[20px] gap-x-2 navigation"
-                        v-tooltip="{ content: trans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                        v-tooltip="{ content: ctrans('Open help portal'), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
                         :style="{
                             color: layout?.app?.theme[1],
                         }"

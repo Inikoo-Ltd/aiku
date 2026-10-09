@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import TaxPresetCards from "@/Components/Utils/TaxPresetCards.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -61,13 +61,13 @@ const progressPct = computed(() =>
     <Modal :isOpen="isOpen" @onClose="emit('close')" width="w-full max-w-lg">
         <div v-if="phase !== 'sweep'" class="space-y-4">
             <h3 class="text-base font-semibold text-gray-800">
-                {{ trans("Tax treatment") }} — {{ subjectLabel }}
+                {{ ctrans("Tax treatment") }} — {{ subjectLabel }}
             </h3>
 
             <TaxPresetCards v-model="picked" :options="options" :savedValue="initial" :disabled="isSaving" />
 
             <p class="text-sm text-gray-500">
-                {{ trans("Every open basket holding these products will be retaxed. Orders already submitted keep the tax they were sold under.") }}
+                {{ ctrans("Every open basket holding these products will be retaxed. Orders already submitted keep the tax they were sold under.") }}
             </p>
 
             <div class="flex justify-end gap-2">
@@ -75,7 +75,7 @@ const progressPct = computed(() =>
                     type="button"
                     @click="emit('close')"
                     class="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
-                    {{ trans("Cancel") }}
+                    {{ ctrans("Cancel") }}
                 </button>
                 <button
                     type="button"
@@ -83,7 +83,7 @@ const progressPct = computed(() =>
                     @click="emit('save', picked)"
                     class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
                     <span v-if="isSaving" class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white align-middle mr-1.5" />
-                    {{ trans("Yes, change the tax") }}
+                    {{ ctrans("Yes, change the tax") }}
                 </button>
             </div>
         </div>
@@ -91,7 +91,7 @@ const progressPct = computed(() =>
         <!-- Same dialog, second act: the sweep this save triggered. -->
         <div v-else class="space-y-4">
             <h3 class="text-base font-semibold text-gray-800">
-                {{ sweepRunning || !progress ? trans("Retaxing open baskets…") : trans("Baskets retaxed") }}
+                {{ sweepRunning || !progress ? ctrans("Retaxing open baskets…") : ctrans("Baskets retaxed") }}
                 — {{ subjectLabel }}
             </h3>
 
@@ -111,13 +111,13 @@ const progressPct = computed(() =>
             </div>
 
             <p class="text-sm text-gray-500">
-                {{ trans("Open baskets holding these products are being recalculated at the new tax treatment. Orders already submitted keep the tax they were sold under.") }}
+                {{ ctrans("Open baskets holding these products are being recalculated at the new tax treatment. Orders already submitted keep the tax they were sold under.") }}
             </p>
 
             <div v-if="progress" class="space-y-1.5">
                 <div class="flex justify-between text-sm">
                     <span :class="sweepRunning ? 'text-indigo-700' : 'text-green-700'">
-                        {{ sweepRunning ? trans("In progress") : trans("Done") }}
+                        {{ sweepRunning ? ctrans("In progress") : ctrans("Done") }}
                     </span>
                     <span class="tabular-nums text-gray-600">
                         {{ progress.baskets_done }} / {{ progress.baskets_total }}
@@ -132,12 +132,12 @@ const progressPct = computed(() =>
             <p
                 v-if="progress && progress.state !== 'finished' && progress.pending_large"
                 class="text-xs text-gray-500 italic">
-                {{ trans(':n large basket(s) still processing, they take a few minutes', { n: `${progress.pending_large}` }) }}
+                {{ ctrans(':n large basket(s) still processing, they take a few minutes', { n: `${progress.pending_large}` }) }}
             </p>
             </div>
             <div v-else class="flex items-center gap-2 text-sm text-gray-500">
                 <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-500" />
-                {{ trans("Counting the baskets…") }}
+                {{ ctrans("Counting the baskets…") }}
             </div>
 
             <div class="flex justify-end">
@@ -148,7 +148,7 @@ const progressPct = computed(() =>
                     :class="progress && !sweepRunning
                         ? 'bg-indigo-600 text-white hover:bg-indigo-500'
                         : 'text-gray-500 hover:bg-gray-50'">
-                    {{ progress && !sweepRunning ? trans("Close") : trans("Run in background") }}
+                    {{ progress && !sweepRunning ? ctrans("Close") : ctrans("Run in background") }}
                 </button>
             </div>
         </div>

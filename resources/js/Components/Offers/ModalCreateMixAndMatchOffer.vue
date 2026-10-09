@@ -3,7 +3,6 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch, nextTick } from 'vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
-import { trans } from 'laravel-vue-i18n'
 import { ctrans } from '@/Composables/useTrans'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
@@ -124,8 +123,8 @@ const submitOffer = () => {
     )
         .then((response) => {
             notify({
-                title: trans('Success'),
-                text: trans('Successfully submit the data'),
+                title: ctrans('Success'),
+                text: ctrans('Successfully submit the data'),
                 type: 'success'
             })
             closeModal()
@@ -144,9 +143,9 @@ const submitOffer = () => {
         })
         .catch((error) => {
             const errors = error.response?.data?.errors || {}
-            const errMsg = Object.values(errors).join('. ') || trans('Failed to submit the data, please try again')
+            const errMsg = Object.values(errors).join('. ') || ctrans('Failed to submit the data, please try again')
             notify({
-                title: trans('Something went wrong'),
+                title: ctrans('Something went wrong'),
                 text: errMsg,
                 type: 'error'
             })
@@ -178,47 +177,47 @@ watch(freeQuantityMax, (max) => {
 
 <template>
     <div>
-        <Button :label="trans('Mix & Match')" @click="openModal" icon="fas fa-layer-group" />
+        <Button :label="ctrans('Mix & Match')" @click="openModal" icon="fas fa-layer-group" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="p-1 space-y-3">
-                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Mix & Match Offer') }}</h2>
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ ctrans('Create Mix & Match Offer') }}</h2>
 
                 <div class="space-y-2">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Offer name') }}:
+                        {{ ctrans('Offer name') }}:
                     </label>
-                    <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
+                    <PureInput v-model="offerLabel" :placeholder="ctrans('Enter offer name')" />
                 </div>
 
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Rule') }}:
-                        <InformationIcon :information="trans('Customer buys any mix of products in this family and gets the cheapest ones free')" />
+                        {{ ctrans('Rule') }}:
+                        <InformationIcon :information="ctrans('Customer buys any mix of products in this family and gets the cheapest ones free')" />
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3">
-                        <span>{{ trans('Buy') }}</span>
+                        <span>{{ ctrans('Buy') }}</span>
                         <InputNumber v-model="buyQuantity" inputId="buy_quantity" :min="2" class="w-40" inputClass="w-full"
-                            :suffix="' ' + ((buyQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
-                        <span>{{ trans('get') }}</span>
+                            :suffix="' ' + ((buyQuantity ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
+                        <span>{{ ctrans('get') }}</span>
                         <InputNumber v-model="freeQuantity" inputId="free_quantity" :min="1" :max="freeQuantityMax"
                             class="w-40" inputClass="w-full"
-                            :suffix="' ' + ((freeQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
-                        <span>{{ trans('cheapest for free') }}</span>
+                            :suffix="' ' + ((freeQuantity ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
+                        <span>{{ ctrans('cheapest for free') }}</span>
                     </div>
 
                     <p class="text-sm text-gray-500">
-                        {{ trans('e.g. buy :buy, get :free cheapest free', { buy: String(buyQuantity ?? 0), free: String(freeQuantity ?? 0) }) }}
+                        {{ ctrans('e.g. buy :buy, get :free cheapest free', { buy: String(buyQuantity ?? 0), free: String(freeQuantity ?? 0) }) }}
                     </p>
                 </div>
 
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Offer Duration') }}:
+                        {{ ctrans('Offer Duration') }}:
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3">
@@ -228,7 +227,7 @@ watch(freeQuantityMax, (max) => {
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="mm-permanent" value="permanent" />
-                            <span>{{ trans('Permanent') }}</span>
+                            <span>{{ ctrans('Permanent') }}</span>
                         </label>
 
                         <label for="mm-interval"
@@ -237,7 +236,7 @@ watch(freeQuantityMax, (max) => {
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="mm-interval" value="interval" />
-                            <span>{{ trans('Interval') }}</span>
+                            <span>{{ ctrans('Interval') }}</span>
                         </label>
 
                         <button v-if="dateType === 'interval'" v-for="days in quickIntervalPresets" :key="days" type="button"
@@ -254,20 +253,20 @@ watch(freeQuantityMax, (max) => {
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                                {{ trans('Start Date') }}
-                                <InformationIcon :information="trans('If start date is empty, will start immediately')" />:
+                                {{ ctrans('Start Date') }}
+                                <InformationIcon :information="ctrans('If start date is empty, will start immediately')" />:
                             </label>
                             <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :placeholder="trans('Select start date')" />
+                                :placeholder="ctrans('Select start date')" />
                         </div>
 
                         <div v-if="dateType === 'interval'" class="space-y-2">
                             <label class="font-medium mb-2 block">
-                                {{ trans('End Date') }}
-                                <InformationIcon :information="trans('If start date is empty, will start immediately')" />:
+                                {{ ctrans('End Date') }}
+                                <InformationIcon :information="ctrans('If start date is empty, will start immediately')" />:
                             </label>
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate || undefined" :placeholder="trans('Select end date')" />
+                                :minDate="startDate || undefined" :placeholder="ctrans('Select end date')" />
                         </div>
                     </div>
                 </div>
@@ -277,7 +276,7 @@ watch(freeQuantityMax, (max) => {
                     <Button
                         full
                         icon="fad fa-save"
-                        :label="isLoadingSubmit ? trans('Loading') : trans('Save')"
+                        :label="isLoadingSubmit ? ctrans('Loading') : ctrans('Save')"
                         @click="submitOffer"
                         :disabled="isFormInvalid || isLoadingSubmit"
                         :loading="isLoadingSubmit"
