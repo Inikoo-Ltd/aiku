@@ -166,6 +166,7 @@
         "Cloning Portfolios...": "Portfolios werden geklont...",
         "Closing chats saved": "Einstellungen zum Schließen von Chats gespeichert",
         "Cold Emails": "Kaltakquise-E-Mails",
+        "Collection": "Kollektion",
         "Collection doesn't have any collections": "Die Kollektion hat keine Kollektionen",
         "Collection doesn't have any families": "Die Kollektion hat keine Familien",
         "Collection status updated successfully": "Kollektionsstatus erfolgreich aktualisiert",
@@ -2760,6 +2761,7 @@
         "Clone portfolio from channel:": "Cloner le portefeuille à partir du canal :",
         "Close channel": "Fermer le canal",
         "Cold Emails": "E-mails de prospection",
+        "Collection": "Collection",
         "Collection Content Follow Master": "Contenu de la collection – suivre le maître",
         "Commodity Codes": "Codes douaniers",
         "Complete": "Complet",
@@ -3790,6 +3792,7 @@
         "channels": "canaux",
         "charge": "frais",
         "chat session": "session de chat",
+        "collection": "collection",
         "cooldown": "période de transition",
         "create picked bay": "créer une zone de préparation",
         "creating fulfilment shop": "création d'une boutique logistique",
@@ -13967,7 +13970,8 @@
         "Trade units": "Ticari birimler",
         "VAT": "KDV",
         "Warehouse": "Depo",
-        "Warehouses": "Depolar"
+        "Warehouses": "Depolar",
+        "collection": "koleksiyon"
     },
     "id": {
         "(In Process)": "(Dalam Proses)",
@@ -15909,6 +15913,7 @@
         "Closed": "Zatvorené",
         "Code": "Kód",
         "Collected": "Vyzdvihnuté",
+        "Collection": "Kolekcia",
         "Collections": "Kolekcie",
         "Color background": "Farba pozadia",
         "Color border": "Farba okraja",
@@ -17098,6 +17103,7 @@
         "Closed by User": "Fechado pelo utilizador",
         "Closing Down": "A encerrar",
         "Collected": "Recolhido",
+        "Collection": "Coleção",
         "Collection by:": "Recolha por:",
         "Collection doesn't have any collections": "A coleção não tem coleções",
         "Collection doesn't have any families": "A coleção não tem famílias",
@@ -21507,19 +21513,23 @@
     "bg": {
         ":_fieldname stops following master": ":_fieldname вече не следва основния",
         ":_fieldname will follow master": ":_fieldname ще следва основния",
+        "Collection": "Колекция",
         "For collection": "За лично вземане",
         "Share of total": "Дял",
         "The list of column file: portfolios": "Списък с колоните на файла: portfolios"
     },
     "cs": {
         ":_order items ordered; :_dispatched items shipped": "Objednané položky: :_order; odeslané položky: :_dispatched",
+        "Collection": "Kolekce",
         "For collection": "Osobní odběr",
-        "Share of total": "Podíl"
+        "Share of total": "Podíl",
+        "collection": "kolekce"
     },
     "hr": {
         ":_fieldName of the Master": ":_fieldName glavnog proizvoda",
         ":_fieldname will follow master": ":_fieldname će slijediti glavni proizvod",
         ":_order items ordered; :_dispatched items shipped": "Naručeni artikli: :_order; poslani artikli: :_dispatched",
+        "Collection": "Kolekcija",
         "Create New (:_count)": "Stvori novo (:_count)",
         "Displays random products from the current family (:_family)": "Prikazuje nasumične proizvode iz trenutne obitelji (:_family)",
         "Displays the top-selling products from the current family (:_family)": "Prikazuje najprodavanije proizvode iz trenutne obitelji (:_family)",
@@ -21532,6 +21542,7 @@
     "hu": {
         ":_fieldName of the Master": "A fő termék :_fieldName mezője",
         ":_order items ordered; :_dispatched items shipped": "Megrendelt tételek: :_order; kiszállított tételek: :_dispatched",
+        "Collection": "Kollekció",
         "For collection": "Személyes átvétel",
         "Master Variant :_masterVarCode has been created successfully.": "A(z) :_masterVarCode fő variáns sikeresen létrejött.",
         "Share of total": "Arány",
@@ -23947,6 +23958,7 @@
         "Clockings": "Rejestracje czasu pracy",
         "Close": "Zamknij",
         "Collapse": "Zwiń",
+        "Collection": "Kolekcja",
         "Collection Content Follow Master": "Zawartość kolekcji podąża za kolekcją główną",
         "Collection by:": "Odbiór przez:",
         "Color border": "Kolor obramowania",
@@ -25313,15 +25325,19 @@
     },
     "ro": {
         ":_order items ordered; :_dispatched items shipped": "Articole comandate: :_order; articole expediate: :_dispatched",
+        "Collection": "Colecție",
         "For collection": "Ridicare personală",
-        "Share of total": "Pondere"
+        "Share of total": "Pondere",
+        "collection": "colecție"
     },
     "sv": {
+        "Collection": "Samling",
         "Order before :_selectedDate will be marked": "Beställningar före :_selectedDate kommer att markeras",
         "Share of total": "Andel"
     },
     "uk": {
         ":_order items ordered; :_dispatched items shipped": "Замовлено товарів: :_order; відправлено товарів: :_dispatched",
+        "Collection": "Колекція",
         "For collection": "Самовивіз",
         "Share of total": "Частка"
     }
