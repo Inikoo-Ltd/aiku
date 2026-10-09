@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Seo\GetSeoAiVisibility;
 use App\Actions\Web\WebsiteConversionEvent\GetVisitorLandingWebpage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
@@ -145,12 +146,22 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw('COUNT(*) as backlinks')
             ->selectRaw('COUNT(DISTINCT source_domain) as referring_domains');
 
+        $aiPrompts = DB::table('seo_ai_citations')
+            ->join('seo_ai_answers', 'seo_ai_answers.id', '=', 'seo_ai_citations.answer_id')
+            ->where('seo_ai_citations.website_id', $website->id)
+            ->whereNotNull('seo_ai_citations.webpage_id')
+            ->where('seo_ai_answers.date', '>=', today()->subDays(GetSeoAiVisibility::DAYS - 1)->toDateString())
+            ->groupBy('seo_ai_citations.webpage_id')
+            ->select('seo_ai_citations.webpage_id')
+            ->selectRaw('COUNT(DISTINCT seo_ai_answers.prompt_id) as ai_prompts');
+
         $queryBuilder = QueryBuilder::for(Webpage::class)
             ->where('webpages.website_id', $website->id)
             ->leftJoinSub($performance, 'performance', 'performance.webpage_id', '=', 'webpages.id')
             ->leftJoinSub($search, 'search', 'search.webpage_id', '=', 'webpages.id')
             ->leftJoinSub($queries, 'queries', 'queries.webpage_id', '=', 'webpages.id')
             ->leftJoinSub($backlinks, 'backlinks', 'backlinks.target_webpage_id', '=', 'webpages.id')
+            ->leftJoinSub($aiPrompts, 'ai_prompts', 'ai_prompts.webpage_id', '=', 'webpages.id')
             ->when($previousPerformance, fn ($query) => $query->leftJoinSub($previousPerformance, 'previous_performance', 'previous_performance.webpage_id', '=', 'webpages.id'))
             ->when($previousSearch, fn ($query) => $query->leftJoinSub($previousSearch, 'previous_search', 'previous_search.webpage_id', '=', 'webpages.id'))
             ->where(fn ($query) => $query
@@ -191,6 +202,7 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw('COALESCE(queries.search_queries, 0) as search_queries')
             ->selectRaw('COALESCE(backlinks.backlinks, 0) as backlinks')
             ->selectRaw('COALESCE(backlinks.referring_domains, 0) as referring_domains')
+            ->selectRaw('COALESCE(ai_prompts.ai_prompts, 0) as ai_prompts')
             ->selectRaw($previousPerformance ? 'COALESCE(previous_performance.visitors, 0) as previous_visitors' : 'NULL as previous_visitors')
             ->selectRaw($previousPerformance ? 'COALESCE(previous_performance.page_views, 0) as previous_page_views' : 'NULL as previous_page_views')
             ->selectRaw($previousSearch ? 'COALESCE(previous_search.search_clicks, 0) as previous_search_clicks' : 'NULL as previous_search_clicks')
@@ -198,7 +210,7 @@ class IndexWebpagesPerformance extends OrgAction
             ->selectRaw($previousSearch ? 'CASE WHEN previous_search.search_impressions > 0 THEN ROUND(previous_search.search_weighted_position / previous_search.search_impressions, 1) END as previous_search_position' : 'NULL as previous_search_position')
             ->selectRaw($previousPerformance ? 'COALESCE(performance.visitors, 0) - COALESCE(previous_performance.visitors, 0) as visitors_change' : 'NULL as visitors_change')
             ->selectRaw($previousSearch ? 'COALESCE(search.search_clicks, 0) - COALESCE(previous_search.search_clicks, 0) as search_clicks_change' : 'NULL as search_clicks_change')
-            ->allowedSorts(['code', 'title', 'visitors', 'page_views', 'avg_time_on_page', 'conversion_rate', 'search_clicks', 'search_impressions', 'search_position', 'search_queries', 'referring_domains', 'visitors_change', 'search_clicks_change'])
+            ->allowedSorts(['code', 'title', 'visitors', 'page_views', 'avg_time_on_page', 'conversion_rate', 'search_clicks', 'search_impressions', 'search_position', 'search_queries', 'referring_domains', 'ai_prompts', 'visitors_change', 'search_clicks_change'])
             ->allowedFilters([
                 $globalSearch,
                 AllowedFilter::callback('trend', function ($query, $value) use ($previousPerformance) {
@@ -250,6 +262,7 @@ class IndexWebpagesPerformance extends OrgAction
                 ->column(key: 'search_position', label: __('Position'), tooltip: __('Average position in Google Search, weighted by impressions. 1 is the top result'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'search_queries', label: __('Queries'), tooltip: __('Different Google searches the page appeared for, from Search Console'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'referring_domains', label: __('Referring domains'), tooltip: __('Other websites linking to the page, from our monthly backlink list, our own websites left out. The list holds one link per linking domain, so it counts domains better than links'), sortable: true, align: 'right', tooltipIcon: true)
+                ->column(key: 'ai_prompts', label: __('AI prompts'), tooltip: __('Our AI visibility prompts whose ChatGPT answer cited the page in the last :days days, whatever the interval', ['days' => GetSeoAiVisibility::DAYS]), sortable: true, align: 'right', tooltipIcon: true)
                 ->defaultSort('-visitors');
         };
     }

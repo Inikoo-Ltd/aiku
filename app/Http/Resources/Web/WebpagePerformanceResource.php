@@ -37,6 +37,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $search_queries
  * @property mixed $backlinks
  * @property mixed $referring_domains
+ * @property mixed $ai_prompts
  * @property mixed $previous_visitors
  * @property mixed $previous_page_views
  * @property mixed $previous_search_clicks
@@ -77,6 +78,7 @@ class WebpagePerformanceResource extends JsonResource
             'search_queries'     => (int) $this->search_queries,
             'backlinks'          => (int) $this->backlinks,
             'referring_domains'  => (int) $this->referring_domains,
+            'ai_prompts'         => (int) $this->ai_prompts,
             'previous'           => [
                 'visitors'           => $this->previous_visitors !== null ? (int) $this->previous_visitors : null,
                 'page_views'         => $this->previous_page_views !== null ? (int) $this->previous_page_views : null,

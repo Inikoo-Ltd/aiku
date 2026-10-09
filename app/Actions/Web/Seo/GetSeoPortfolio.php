@@ -19,8 +19,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
 /**
  * One row per live website with the SEO figures the team compares across the portfolio: site
  * health, visitors and Google Search clicks of the last 28 days against the 28 before, tracked
- * keywords in the top 10, and referring domains with their weekly change. Every figure comes from
- * data Aiku already stores; nothing here calls a provider.
+ * keywords in the top 10, referring domains with their weekly change, and how often ChatGPT names
+ * the shop in the answers to its prompts. Every figure comes from data Aiku already stores; nothing
+ * here calls a provider.
  */
 class GetSeoPortfolio
 {
@@ -45,12 +46,13 @@ class GetSeoPortfolio
         $audits      = $this->audits($ids);
         $keywords    = $this->trackedKeywords($websites->pluck('shop_id')->all());
         $backlinks   = $this->backlinks($websites);
+        $ai          = $this->aiAnswers($websites->pluck('shop_id')->all());
 
         return [
             'days'      => self::DAYS,
             'traffic'   => $this->period($trafficTo),
             'search'    => $searchTo ? $this->period($searchTo) : null,
-            'websites'  => $websites->map(function (Website $website) use ($visitors, $search, $audits, $keywords, $backlinks) {
+            'websites'  => $websites->map(function (Website $website) use ($visitors, $search, $audits, $keywords, $backlinks, $ai) {
                 $domain = StoreSerpResult::normaliseDomain($website->domain);
 
                 return [
@@ -76,6 +78,8 @@ class GetSeoPortfolio
                     'new_referring'     => $backlinks->get($domain)?->new_referring_domains,
                     'lost_referring'    => $backlinks->get($domain)?->lost_referring_domains,
                     'rank'              => $backlinks->get($domain)?->rank,
+                    'ai_answers'        => (int) ($ai->get($website->shop_id)->answers ?? 0),
+                    'ai_mentioned'      => (int) ($ai->get($website->shop_id)->mentioned ?? 0),
                 ];
             })->all(),
         ];
@@ -158,6 +162,20 @@ class GetSeoPortfolio
             ->selectRaw('COUNT(*) AS tracked')
             ->selectRaw('COUNT(last_checked_at) AS checked')
             ->selectRaw('COUNT(*) FILTER (WHERE position <= 10) AS top_10')
+            ->get()
+            ->keyBy('shop_id');
+    }
+
+    private function aiAnswers(array $shopIds): Collection
+    {
+        return DB::table('seo_ai_answers')
+            ->join('seo_ai_prompts', 'seo_ai_prompts.id', '=', 'seo_ai_answers.prompt_id')
+            ->whereIn('seo_ai_prompts.shop_id', $shopIds)
+            ->where('seo_ai_answers.date', '>=', today()->subDays(GetSeoAiVisibility::DAYS - 1)->toDateString())
+            ->groupBy('seo_ai_prompts.shop_id')
+            ->select('seo_ai_prompts.shop_id')
+            ->selectRaw('COUNT(*) AS answers')
+            ->selectRaw('COUNT(*) FILTER (WHERE seo_ai_answers.is_mentioned) AS mentioned')
             ->get()
             ->keyBy('shop_id');
     }

@@ -148,7 +148,7 @@ class ExportSeoTable extends OrgAction
         $rows = $this->allRows('webpages', fn () => IndexWebpagesPerformance::make()->handle($website, $fromDate, $toDate, 'webpages'));
 
         return [
-            ['Code', 'Title', 'URL', 'Visitors', 'Previous visitors', 'Page views', 'Previous page views', 'Avg. time on page (s)', 'Conversion %', 'Search clicks', 'Previous search clicks', 'Impressions', 'Previous impressions', 'Position', 'Previous position', 'Queries', 'Referring domains', 'Backlinks'],
+            ['Code', 'Title', 'URL', 'Visitors', 'Previous visitors', 'Page views', 'Previous page views', 'Avg. time on page (s)', 'Conversion %', 'Search clicks', 'Previous search clicks', 'Impressions', 'Previous impressions', 'Position', 'Previous position', 'Queries', 'Referring domains', 'Backlinks', 'AI prompts citing (28 days)'],
             $rows->map(fn ($row) => [
                 $row->code,
                 $row->title,
@@ -168,6 +168,7 @@ class ExportSeoTable extends OrgAction
                 (int) $row->search_queries,
                 (int) $row->referring_domains,
                 (int) $row->backlinks,
+                (int) $row->ai_prompts,
             ])->all(),
         ];
     }

@@ -29,7 +29,7 @@ class ExportSeoPortfolio extends OrgAction
         $portfolio = GetSeoPortfolio::run();
 
         return Excel::download(new SeoTableExport(
-            ['Website', 'Shop', 'Site health', 'Previous site health', 'Visitors (28 days)', 'Previous visitors', 'Google clicks (28 days)', 'Previous Google clicks', 'Position', 'Tracked keywords', 'Checked keywords', 'In the top 10', 'Referring domains', 'New referring domains', 'Lost referring domains', 'Rank'],
+            ['Website', 'Shop', 'Site health', 'Previous site health', 'Visitors (28 days)', 'Previous visitors', 'Google clicks (28 days)', 'Previous Google clicks', 'Position', 'Tracked keywords', 'Checked keywords', 'In the top 10', 'Referring domains', 'New referring domains', 'Lost referring domains', 'Rank', 'ChatGPT answers (28 days)', 'Answers naming us'],
             collect($portfolio['websites'])->map(fn (array $row) => [
                 $row['domain'],
                 $row['shop'],
@@ -47,6 +47,8 @@ class ExportSeoPortfolio extends OrgAction
                 $row['new_referring'],
                 $row['lost_referring'],
                 $row['rank'],
+                $row['ai_answers'],
+                $row['ai_mentioned'],
             ])->all()
         ), now()->format('Y-m-d').'-seo-portfolio.xlsx');
     }

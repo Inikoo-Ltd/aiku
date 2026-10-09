@@ -11,6 +11,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Web\SeoAiAnswer;
 use App\Models\Web\SeoBacklinkSummary;
 use App\Models\Web\SeoContentSuggestion;
 use App\Models\Web\SeoTrackedKeyword;
@@ -20,8 +21,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
  * The week of one shop in a few lines for the weekly SEO email: traffic and Google clicks against
- * the week before, keyword winners and losers, site health, referring domains, new missing pages and
- * the suggested fixes waiting. Each section only appears when it has data.
+ * the week before, keyword winners and losers, ChatGPT's answers to our prompts, site health,
+ * referring domains, new missing pages and the suggested fixes waiting. Each section only appears
+ * when it has data.
  */
 class GetSeoWeeklyReport
 {
@@ -46,6 +48,7 @@ class GetSeoWeeklyReport
             $this->traffic($website->id),
             $this->search($website->id),
             $this->rankings($shop),
+            $this->aiVisibility($shop),
             $this->audit($website->id),
             $this->backlinks($website->domain),
             $this->missingPages($website->id),
@@ -154,6 +157,26 @@ class GetSeoWeeklyReport
                 __(':top of :checked checked keywords are in the top 10', ['top' => (clone $checked)->where('position', '<=', 10)->count(), 'checked' => (clone $checked)->count()]),
                 ...$winners->map(fn ($keyword) => __('Up').' '.$move($keyword))->all(),
                 ...$losers->map(fn ($keyword) => __('Down').' '.$move($keyword))->all(),
+            ],
+        ];
+    }
+
+    private function aiVisibility(Shop $shop): ?array
+    {
+        $answers = SeoAiAnswer::query()
+            ->whereIn('prompt_id', $shop->seoAiPrompts()->select('id'))
+            ->where('date', '>=', today()->subDays(self::DAYS))
+            ->get(['is_mentioned', 'is_cited']);
+
+        if ($answers->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'title' => __('AI visibility'),
+            'lines' => [
+                __('ChatGPT named us in :named of :total answers to our prompts', ['named' => $answers->where('is_mentioned', true)->count(), 'total' => $answers->count()]),
+                __('It cited our website in :cited of them', ['cited' => $answers->where('is_cited', true)->count()]),
             ],
         ];
     }

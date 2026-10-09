@@ -84,9 +84,12 @@ use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\ExternalLink\RecheckExternalLinkStatuses;
+use App\Actions\Web\Seo\AskSeoAiPrompts;
 use App\Actions\Web\Seo\CollectSerpTasks;
 use App\Actions\Web\Seo\FetchBacklinks;
 use App\Actions\Web\Seo\FetchCompetitorResearch;
+use App\Actions\Web\Seo\FetchCompetitorTraffic;
+use App\Actions\Web\Seo\FetchSeoAiMentions;
 use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
 use App\Actions\Web\Seo\SendSeoWeeklyReports;
@@ -1445,6 +1448,39 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'CollectSerpTasks',
                     ),
                 name: 'CollectSerpTasks',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(AskSeoAiPrompts::makeJob())
+                    ->weeklyOn(3, '01:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'AskSeoAiPrompts',
+                    ),
+                name: 'AskSeoAiPrompts',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchSeoAiMentions::makeJob())
+                    ->monthlyOn(1, '03:30')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchSeoAiMentions',
+                    ),
+                name: 'FetchSeoAiMentions',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchCompetitorTraffic::makeJob())
+                    ->monthlyOn(2, '02:30')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchCompetitorTraffic',
+                    ),
+                name: 'FetchCompetitorTraffic',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

@@ -17,13 +17,19 @@ class DataForSeoException extends Exception
 {
     public const int BUDGET_REACHED = 1;
 
+    public const int OUT_OF_BALANCE = 40200;
+
     public function __construct(string $message, public readonly ?int $statusCode = null)
     {
         parent::__construct($message, $statusCode ?? 0);
     }
 
+    /**
+     * Our monthly budget is spent or the DataForSEO account has no balance left: every further
+     * billable call would fail the same way, so a run stops here.
+     */
     public function isBudgetReached(): bool
     {
-        return $this->statusCode === self::BUDGET_REACHED;
+        return in_array($this->statusCode, [self::BUDGET_REACHED, self::OUT_OF_BALANCE], true);
     }
 }

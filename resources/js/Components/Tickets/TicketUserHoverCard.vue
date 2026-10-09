@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -26,7 +26,9 @@ const props = withDefaults(defineProps<{
     profileUrl?: string | null
     size?: "xs" | "sm" | "md" | "lg"
     canMention?: boolean
-}>(), { avatar: null, roles: () => [], username: null, reporterKey: null, profileUrl: null, size: "sm", canMention: true })
+    avatarOnly?: boolean
+    menuRole?: { key: string; label: string } | null
+}>(), { avatar: null, roles: () => [], username: null, reporterKey: null, profileUrl: null, size: "sm", canMention: true, avatarOnly: false, menuRole: null })
 
 const emit = defineEmits<{
     (e: "mention", username: string): void
@@ -45,17 +47,55 @@ const roleClasses: Record<string, string> = {
 const isOpen = ref(false)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
+const menuWidth = 224
+const trigger = ref<HTMLElement | null>(null)
+const floatingMenuPosition = ref({ top: 0, left: 0 })
+
+const placeFloatingMenu = () => {
+    if (!props.avatarOnly || !trigger.value) {
+        return
+    }
+    const triggerBox = trigger.value.getBoundingClientRect()
+    floatingMenuPosition.value = {
+        top: triggerBox.bottom + 4,
+        left: Math.max(8, Math.min(triggerBox.left, window.innerWidth - menuWidth - 8)),
+    }
+}
+
 const open = () => {
     if (closeTimer) {
         clearTimeout(closeTimer)
         closeTimer = null
     }
+    if (!isOpen.value) {
+        placeFloatingMenu()
+    }
     isOpen.value = true
 }
 
+const close = () => (isOpen.value = false)
+
 const scheduleClose = () => {
-    closeTimer = setTimeout(() => (isOpen.value = false), 120)
+    closeTimer = setTimeout(close, 120)
 }
+
+watch(isOpen, (isNowOpen) => {
+    if (!props.avatarOnly) {
+        return
+    }
+    if (isNowOpen) {
+        window.addEventListener("scroll", close, true)
+    } else {
+        window.removeEventListener("scroll", close, true)
+    }
+})
+
+onBeforeUnmount(() => {
+    if (closeTimer) {
+        clearTimeout(closeTimer)
+    }
+    window.removeEventListener("scroll", close, true)
+})
 
 const isRetina = computed(() => (route().current() ?? "").startsWith("retina."))
 
@@ -72,25 +112,37 @@ const onMention = () => {
 </script>
 
 <template>
-    <span class="relative inline-flex items-center gap-1.5" @mouseenter="open" @mouseleave="scheduleClose">
+    <span ref="trigger" class="relative inline-flex items-center gap-1.5" @mouseenter="open" @mouseleave="scheduleClose">
         <TicketUserAvatar :name="name" :avatar="avatar" :size="size" />
-        <span class="font-semibold text-gray-800">{{ name || ctrans("Unknown") }}</span>
+        <span v-if="!avatarOnly" class="font-semibold text-gray-800">{{ name || ctrans("Unknown") }}</span>
         <span
-            v-for="role in roles"
+            v-for="role in avatarOnly ? [] : roles"
             :key="role.key"
             class="rounded px-1.5 py-0.5 text-[10px] font-medium"
             :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
             >{{ role.label }}</span
         >
 
+        <Teleport to="body" :disabled="!avatarOnly">
         <transition
             enter-active-class="transition duration-100 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100"
             leave-active-class="transition duration-75 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
             <span v-if="isOpen && (reportedWorkItemsUrl || profileUrl || (canMention && username))"
-                class="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-gray-200 bg-white py-1 text-left shadow-lg">
+                class="w-56 rounded-md border border-gray-200 bg-white py-1 text-left shadow-lg"
+                :class="avatarOnly ? 'fixed z-[60] block' : 'absolute left-0 top-full z-30 mt-1'"
+                :style="avatarOnly ? { top: `${floatingMenuPosition.top}px`, left: `${floatingMenuPosition.left}px` } : undefined"
+                @mouseenter="open"
+                @mouseleave="scheduleClose"
+                @click.stop>
                 <span class="block px-3 py-1.5 border-b border-gray-100">
                     <span class="block truncate text-sm font-semibold text-gray-800">{{ name || ctrans("Unknown") }}</span>
                     <span v-if="username" class="block truncate text-xs text-gray-500">@{{ username }}</span>
+                    <span
+                        v-if="menuRole"
+                        class="mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
+                        :class="roleClasses[menuRole.key] ?? 'bg-gray-100 text-gray-600'"
+                        >{{ menuRole.label }}</span
+                    >
                 </span>
 
                 <Link v-if="reportedWorkItemsUrl" :href="reportedWorkItemsUrl"
@@ -114,5 +166,6 @@ const onMention = () => {
                 </button>
             </span>
         </transition>
+        </Teleport>
     </span>
 </template>

@@ -554,7 +554,7 @@ class GetShopNavigation
                 }
             }
 
-            if ($shop->website && app()->isLocal()) {
+            if ($shop->website) {
                 $navigation["seo"] = [
                     "root"    => "grp.org.shops.show.seo.",
                     "icon"    => ["fal", "fa-search"],
@@ -602,6 +602,16 @@ class GetShopNavigation
                                 "root"    => "grp.org.shops.show.seo.competitors.",
                                 "route"   => [
                                     "name"       => "grp.org.shops.show.seo.competitors.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("AI visibility"),
+                                "tooltip" => __("AI visibility"),
+                                "icon"    => ["fal", "fa-comments"],
+                                "root"    => "grp.org.shops.show.seo.ai_visibility.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.ai_visibility.show",
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],

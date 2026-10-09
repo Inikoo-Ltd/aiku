@@ -37,6 +37,8 @@ type WebsiteRow = {
     new_referring: number | null
     lost_referring: number | null
     rank: number | null
+    ai_answers: number
+    ai_mentioned: number
 }
 
 type PortfolioData = {
@@ -195,6 +197,13 @@ const numericPt = { columnHeaderContent: { class: "justify-end" }, bodyCell: { c
                 <Column field="rank" sortable :pt="numericPt">
                     <template #header><span v-tooltip="ctrans('DataForSEO domain rank, 0 to 100')">{{ ctrans("Rank") }}</span></template>
                     <template #body="{ data: row }">{{ row.rank ?? "-" }}</template>
+                </Column>
+                <Column field="ai_mentioned" sortable :pt="numericPt">
+                    <template #header><span v-tooltip="ctrans('Answers of the last :days days to the shop\'s AI visibility prompts that name it, of all its answers', { days: data.days })">{{ ctrans("Named by ChatGPT") }}</span></template>
+                    <template #body="{ data: row }">
+                        <template v-if="row.ai_answers">{{ ctrans(":named of :total", { named: locale.number(row.ai_mentioned), total: locale.number(row.ai_answers) }) }}</template>
+                        <span v-else class="text-gray-400" v-tooltip="ctrans('No AI visibility prompt answered for this shop')">-</span>
+                    </template>
                 </Column>
             </DataTable>
         </section>

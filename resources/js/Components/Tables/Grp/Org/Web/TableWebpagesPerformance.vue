@@ -40,6 +40,7 @@ type WebpagePerformanceRow = {
     search_queries: number
     backlinks: number
     referring_domains: number
+    ai_prompts: number
     previous: {
         visitors: number | null
         page_views: number | null
@@ -261,6 +262,10 @@ const formatDuration = (totalSeconds: number) => {
 
         <template #cell(referring_domains)="{ item: webpage }: { item: WebpagePerformanceRow }">
             <span class="tabular-nums" :class="webpage.referring_domains ? '' : 'text-gray-400'" v-tooltip="webpage.backlinks ? ctrans(':count links in our list', { count: locale.number(webpage.backlinks) }) : undefined">{{ locale.number(webpage.referring_domains) }}</span>
+        </template>
+
+        <template #cell(ai_prompts)="{ item: webpage }: { item: WebpagePerformanceRow }">
+            <span class="tabular-nums" :class="webpage.ai_prompts ? '' : 'text-gray-400'">{{ locale.number(webpage.ai_prompts) }}</span>
         </template>
     </Table>
 

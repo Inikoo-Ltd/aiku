@@ -59,6 +59,37 @@ class GetPartnerProductionLanes
             ->all();
     }
 
+    /**
+     * Where each line stands for the buyer: its lane on the production board, or what happened
+     * to it when the hub did not have to make it.
+     *
+     * @param  iterable<object{id: int, state: string, pre_picked_at: string|null}>  $lines
+     * @return array<int, string>  stage keyed by line id
+     */
+    public function stagesOf(OrgPartner $orgPartner, iterable $lines): array
+    {
+        $lines = collect($lines);
+        $lanes = $this->ofLines(
+            $orgPartner,
+            $lines->where('state', ShoppingListItemStateEnum::OPEN->value)->pluck('id')->all()
+        );
+
+        return $lines->mapWithKeys(fn ($line) => [$line->id => $this->stageOf($line, $lanes[$line->id] ?? null)])->all();
+    }
+
+    private function stageOf(object $line, ?string $lane): string
+    {
+        if ($line->state === ShoppingListItemStateEnum::ORDERED->value) {
+            return 'handed_over';
+        }
+
+        if ($lane) {
+            return in_array($lane, ['done', 'received']) ? 'made' : $lane;
+        }
+
+        return $line->pre_picked_at ? 'picked_from_stock' : 'waiting';
+    }
+
     private function lanesQuery(OrgPartner $orgPartner): Builder
     {
         $taskStatesSql = 'from job_order_item_tasks
