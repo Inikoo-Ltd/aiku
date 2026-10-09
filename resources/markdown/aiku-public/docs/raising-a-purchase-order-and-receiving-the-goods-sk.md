@@ -2,7 +2,7 @@
 title: Vystavenie objednávky a prevzatie tovaru
 summary: Nákup od bežného dodávateľa - vystavte objednávku, nechajte si ju potvrdiť, potom premeňte dodávku na tovar, ktorý môžete predávať.
 date: 2026-10-09
-source_date: 2026-10-08
+source_date: 2026-10-09
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 ---
