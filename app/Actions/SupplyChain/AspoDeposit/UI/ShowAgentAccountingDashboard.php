@@ -148,8 +148,8 @@ class ShowAgentAccountingDashboard extends OrgAction
                     'title' => __('Accounting'),
                 ],
                 'routes'      => [
-                    'deposits'         => ['name' => 'grp.org.agent.accounting.deposits.index', 'parameters' => [$this->organisation->slug]],
-                    'deposit_requests' => ['name' => 'grp.org.agent.accounting.deposit_requests.index', 'parameters' => [$this->organisation->slug]],
+                    'deposits'         => ['name' => 'grp.org.agent.accounting.deposits.index', 'parameters' => ['organisation' => $this->organisation->slug]],
+                    'deposit_requests' => ['name' => 'grp.org.agent.accounting.deposit_requests.index', 'parameters' => ['organisation' => $this->organisation->slug]],
                 ],
                 'data'        => $data,
             ]
