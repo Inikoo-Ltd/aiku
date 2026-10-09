@@ -46,6 +46,12 @@ const props = defineProps<{
     browseStats: { products: number, in_stock: number, departments: number, collections: number }
 }>()
 
+const browseUrl = () =>
+    route("grp.org.procurement.org_partners.show.browse.index", {
+        organisation: route().params["organisation"],
+        orgPartner: route().params["orgPartner"],
+    })
+
 const searchTerm = ref(props.filters.q ?? "")
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -55,7 +61,7 @@ watch(searchTerm, (value) => {
     }
 
     searchTimeout = setTimeout(() => {
-        router.get(route(route().current() as string, route().params), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true, replace: true })
+        router.get(browseUrl(), { q: value || undefined }, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true, replace: true })
     }, 350)
 })
 
@@ -77,7 +83,7 @@ function drillInto(category: { slug: string, type?: string }) {
 }
 
 function goTo(params: Record<string, string | number>) {
-    router.get(route(route().current() as string, route().params), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true })
+    router.get(browseUrl(), params, { only: ["level", "categories", "collections", "products", "filters", "filterNames", "miniCart"], preserveState: true })
 }
 
 const browseTab = ref<"categories" | "collections">("categories")
