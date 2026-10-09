@@ -165,7 +165,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					:src="'/flags/' + partner.country_code.toLowerCase() + '.png'"
 					:alt="partner.country_name ?? ''"
 					:title="partner.country_name ?? ''"
-					class="h-4 rounded-sm ring-1 ring-gray-200" />
+					class="h-[11px] shrink-0" />
 				<div class="min-w-0 flex-1">
 					<Link
 						:href="partnerUrl(partner)"
