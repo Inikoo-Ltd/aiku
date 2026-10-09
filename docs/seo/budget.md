@@ -26,7 +26,7 @@ and, since 1 July 2026, no monthly commitment on any API, Backlinks included.
 | 2.2 Rank tracking, SERP features, AI Overviews, competitor positions | SERP API, Google Organic | $0.0006 per page of 10 results (standard queue), $0.002 live |
 | 3.1 Backlinks, referring domains, new and lost links, backlink gap | Backlinks | $0.024 per request + $0.000036 per row |
 | 3.2 Competitor ranked keywords, organic competitors, keyword gap | Labs | As above |
-| 3.3 AI visibility | AI Optimization: LLM Scraper (ChatGPT as its users see it, per country), LLM Mentions | Scraper: about $0.004 per prompt. Mentions: about $0.10 per request. Both from DataForSEO's examples; its pages disagree on the per-row price of Mentions |
+| 3.3 AI visibility | AI Optimization: LLM Scraper (ChatGPT as its users see it, per country), LLM Mentions | Scraper: $0.004 per prompt live (used), $0.0012 through the standard queue (too slow: over 50 minutes for one prompt). Mentions: $0.10 to $0.102 per request, covering our domain and up to nine competitors. Logged by our first requests on 9 October 2026 |
 | 3.5 Competitor search traffic, with history back to October 2020 | Labs: bulk traffic estimation | Labs price per task, up to 1,000 domains in one task |
 
 - Keyword volumes come from Google Ads data without our developer token, so 2.1 does not wait for
@@ -50,11 +50,11 @@ For the 29 live websites.
 | Keyword research and monthly volume refresh | $5 | $20 | Team searches and saved keywords refreshed monthly |
 | Backlinks | $30 | $100 | Summaries weekly for our sites and about 100 competitor domains; our own link lists monthly / weekly |
 | Competitor research and gap tools | $10 | $35 | Ranked keywords per competitor monthly, gap lookups as needed |
-| AI visibility, own prompts | $4 | $15 | 10 brands × 20 prompts / 29 shops × 30 prompts, ChatGPT through the LLM Scraper, weekly |
-| AI visibility, LLM Mentions | $6 | $16 | Monthly for our domains and their competitors, Google AI Overview per country and ChatGPT (United States only) |
+| AI visibility, own prompts | $4 | $15 | 10 brands × 20 prompts / 29 shops × 30 prompts, ChatGPT through the LLM Scraper's live endpoint, weekly |
+| AI visibility, LLM Mentions | $4 | $4 | Monthly, one request per shop and platform: Google AI Overviews where LLM Mentions has the market, ChatGPT (United States) for shops in English |
 | Competitor search traffic | $1 | $1 | Monthly, all domains in one or two requests |
 | Content help | $1 | $4 | Up to 30 pages per website a week through the AI gateway |
-| **Total per month** | **~$70** | **~$280** | |
+| **Total per month** | **~$68** | **~$270** | |
 
 Plus about $50 once, to backfill volumes and classify intent for keywords that did not come from
 Labs.
@@ -71,9 +71,9 @@ and 5,000 keywords checked that way through DataForSEO cost about $900 a month o
 | Keyword research | | ~$5 |
 | Backlinks | Weekly summaries, our own link lists monthly | ~$50 |
 | Competitor and gap tools | | ~$25 |
-| AI visibility | Per brand (10 brands): own prompts through the LLM Scraper, LLM Mentions monthly | ~$15 |
+| AI visibility | 20 prompts for each of the 29 shops weekly through the LLM Scraper, LLM Mentions monthly | ~$14 |
 | Competitor search traffic and content help | | ~$5 |
-| **Expected spend** | | **~$160** |
+| **Expected spend** | | **~$159** |
 | **Cap** | One budget for all SEO APIs, `SEO_API_MONTHLY_BUDGET` | **$250** |
 
 Even at the cap that saves about $650 a month, about $7,800 a year, against the $899.95 Semrush
@@ -87,9 +87,9 @@ want, and no price per user.
 - **Rank tracking depth and frequency.** DataForSEO bills each page of 10 results, so the top 100
   costs ten times the top 10, and daily costs about seven times weekly. Keep daily checks to a short
   list of keywords that earn money.
-- **AI visibility.** Most of it is the models' own cost for tokens and web search, paid whether the
-  prompts go through DataForSEO or our OpenRouter gateway. The per answer figure above is an
-  estimate.
+- **AI visibility.** $0.004 per prompt and week through the live endpoint; the standard queue is a
+  third of that but answered too slowly. LLM Mentions costs the same whatever the number of
+  competitors, up to nine per shop.
 - **Domains typed into the comparison and gap tools.** Each new domain is a fetch; the 30 day cache
   and the budget cap in the plan keep this bounded.
 

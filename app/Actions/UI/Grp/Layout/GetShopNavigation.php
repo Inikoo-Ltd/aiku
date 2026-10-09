@@ -605,6 +605,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("AI visibility"),
+                                "tooltip" => __("AI visibility"),
+                                "icon"    => ["fal", "fa-comments"],
+                                "root"    => "grp.org.shops.show.seo.ai_visibility.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.ai_visibility.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

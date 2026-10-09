@@ -387,46 +387,64 @@ Built on 9 October 2026 on DataForSEO Labs, in the shop's own market (its countr
 
 ### 3.3 AI visibility
 
-Decided on 9 October 2026: DataForSEO only (AI Optimization API), no prompts sent through the AI
-gateway and no second model to read the answers. The answers come with the brands they name and
-the sources they cite, so finding our brand is matching names and domains, not another model call.
+Built on 9 October 2026 on DataForSEO only (AI Optimization API): no prompts through the AI gateway
+and no second model reading the answers. SEO > AI visibility, after Competitors.
 
-**Sources.**
+**Sources, with the prices the first requests logged.**
 
-- LLM Scraper (ChatGPT): what a ChatGPT user sees for a prompt, in a chosen country (192 countries,
-  the United Kingdom included), with `force_web_search`: the answer, the sources it cites, the
-  search results behind it and the brands it names (`brand_entities`). About $0.004 per prompt in
-  DataForSEO's example; a standard queue (task post, tasks ready, task get) exists, as for the SERP
-  checks of 2.2. This is the side for our own prompts.
-- LLM Mentions: DataForSEO's database of AI answers, searched by domain or keyword: how often a
-  domain or brand is mentioned, its sources, the top mentioned domains and brands, and their history.
-  Its `chat_gpt` data is United States and English only; the `google` platform (AI Overview) can be
-  read per country. About $0.10 per request in DataForSEO's example. This is the side that needs no
-  prompts: share of voice against the competitors.
-- AI Overviews of tracked keywords already come from the SERP checks of 2.2.
-- Prices conflict between DataForSEO's pages; confirm them with a first small request and the cost
-  it logs before switching anything on.
+- LLM Scraper (ChatGPT): what a ChatGPT user sees for a prompt in a chosen country (192 countries),
+  with web search on: the answer in markdown, the sources it cites and the searches behind it.
+  $0.004 per prompt live, answered in about 30 seconds. The standard queue costs $0.0012 but our
+  first queued prompt was still not answered after 50 minutes, so on 9 October 2026 the team chose
+  live.
+- LLM Mentions: DataForSEO's database of AI answers to real searches, searched by domain: how often
+  each domain is mentioned and the AI search volume behind those answers. $0.10 per request, and one
+  request covers our domain and up to nine competitors. Its `chat_gpt` data is United States and
+  English only; the `google` platform (AI Overviews) has 94 markets.
+- AI Overviews of tracked keywords still come from the SERP checks of 2.2.
+
+**What the answers taught us.** The scraper's `brand_entities` carry descriptions ("UK wholesale
+gifts and incense supplier"), not names, and no URLs. So:
+
+- An answer names a brand when it links to the brand's domain or writes one of its names, with or
+  without spaces, hyphens and dots between the words. Image captions do not count. Our names are
+  set per shop on the Prompts tab (default: the shop and website names); a competitor's are its
+  domain and its name on the Competitors page.
+- The place of a brand is its entry in the list the answer is built on: the heading level, numbered
+  items, bold bullets or bold lines it uses most (at least twice). ChatGPT changes its answer
+  between runs: asked twice the same day where to buy wholesale incense sticks in the UK, it put
+  Ancient Wisdom second (citing thewholesaler.co.uk, not us) and then first (citing
+  ancientwisdom.biz).
 
 **Build.**
 
-- `seo_ai_prompts`: shop_id, prompt, country, language, is_active. Prompts are the questions a
-  customer would ask, written by the team per shop; ten to twenty per brand is enough.
-- Weekly, each active prompt goes to the LLM Scraper through the standard queue.
-- `seo_ai_answers`: prompt_id, platform, date, answer (markdown), brand_mentioned, brand_position (the
-  order in which our brand appears among `brand_entities`), competitor_mentions (json), model.
-- `seo_ai_citations`: answer_id, url, domain, position, competitor_id (nullable), website_id and
-  webpage_id when the URL is ours, matched like Search Console pages.
-- Monthly, LLM Mentions for our domains and the competitors in `seo_competitors` (`google` platform
-  per country, `chat_gpt` for the United States), stored per date.
-- Models change answers between runs. Show mention rate over several runs, not one answer.
+- `seo_ai_prompts`: shop_id, prompt (up to 500 characters), country, language, is_active,
+  queued_at and last_run_at. Written by the team per shop; ten to twenty per brand is enough.
+- `AskSeoAiPrompts` (Wednesdays 01:00 UTC) queues one `AskSeoAiPrompt` job for every active prompt
+  not answered in the last 7 days, so the live calls run side by side on the workers; each job asks
+  the scraper's live endpoint and stores the answer.
+- `seo_ai_answers`: prompt_id, platform, date, model, answer (markdown), is_mentioned,
+  brand_position, is_cited, brands (the answer's list, in order), competitors (json: named, cited
+  and place per competitor), fan_out_queries.
+- `seo_ai_citations`: answer_id, position, url, domain, title, competitor_id, and website_id and
+  webpage_id when the URL is one of our live websites, matched by path like Search Console pages.
+- `FetchSeoAiMentions` (1st of the month, 03:30 UTC): `google` in the shop's market when LLM Mentions
+  has it, and `chat_gpt` (United States) for shops in English, stored per date in `seo_ai_mentions`.
+  About $0.15 per shop a month.
+- Locally, Run now asks up to five of the prompts that are due and fetches LLM Mentions if the
+  month has none.
 
-**Screens.** An AI visibility page:
+**Screens.** SEO > AI visibility:
 
-- Mention rate and citation rate, ours next to each competitor (share of voice), with the trend over
-  the weekly runs, and the LLM Mentions figures beside them with their source.
-- Prompts: per prompt, whether ChatGPT mentions us, cites us and with which page, and which
-  competitors it names instead.
-- Cited pages: our webpages by the number of prompts that cite them, also shown in Top pages (3.6).
+- Share of voice: the share of answers of the last 28 days that name us and cite our website, next
+  to each competitor, with the average place in the list; the weekly trend of the last 12 weeks;
+  the LLM Mentions figures per platform with their change since the fetch before.
+- Prompts: add, switch off and delete prompts; edit our brand names; per prompt the last answer
+  (named, place, cited and with which pages, competitors named), the share of the last 28 days, and
+  the full answer with its list and sources.
+- Cited pages: our webpages by the number of prompts citing them, and the websites ChatGPT cites
+  most, competitors and directories included: places worth being listed on.
+- Top pages has an AI prompts column (3.6), the weekly SEO report an AI visibility section.
 
 ### 3.4 Content help
 
@@ -504,7 +522,8 @@ Built on 9 October 2026. The Webpages tab of the SEO dashboard is now Top pages
 - New columns: Queries (different Google searches the page appeared for) and Referring domains
   (from `seo_backlinks` of 3.1, our own websites left out; that list holds one link per linking
   domain plus the new, lost and broken ones, so it counts domains better than links).
-- Waits for 3.3: the AI prompts that cite each page.
+- AI prompts: the prompts whose ChatGPT answer cited the page in the last 28 days, whatever the
+  interval (3.3).
 
 ### Phase 3 is done when
 
@@ -567,8 +586,8 @@ Strategy (Research)", 8 October 2026). None is built; each needs the team's go-a
   one row per live website: site health of the latest audit and its change, visitors and Google
   clicks of the last 28 days against the 28 before (Search Console ending on its own last day),
   average position, tracked keywords in the top 10, referring domains with the week's new and lost,
-  and DataForSEO rank; totals above, each website opening its shop's SEO dashboard. From stored data
-  only. AI mentions join it with 3.3.
+  and DataForSEO rank, and the answers of the last 28 days that name the shop in ChatGPT (3.3);
+  totals above, each website opening its shop's SEO dashboard. From stored data only.
 - **Content briefs.** 3.4 only writes meta titles and descriptions. A brief for a keyword (the
   headings, length, questions and terms of the pages ranking in the top 10, read by our crawler from
   the SERP results of 2.2, written up through the AI gateway) is the part of Semrush's content tools
@@ -603,7 +622,7 @@ Run as the pilot the marketing research proposes, with its owners:
 | SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency (set in SEO > Keywords) | Phase 2 |
 | Competitor domains per shop (set in SEO > Competitors) | Phase 2 (positions) and Phase 3 (backlinks) |
-| Prompts for AI visibility, per brand (DataForSEO LLM Scraper and LLM Mentions decided) | Phase 3 |
+| Prompts for AI visibility and our brand names, per shop (set in SEO > AI visibility > Prompts) | Phase 3 |
 | Which non-Google platforms to collect search signals from, if any | Phase 3 |
 | Which two or three websites to pilot on, and how long to run side by side before cancelling | Pilot |
 | Whether to build the parts in [Not planned yet](#not-planned-yet) | Pilot |

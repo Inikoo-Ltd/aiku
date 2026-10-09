@@ -25,9 +25,9 @@ to replace all of them before the subscription goes.
 | Keyword intent | Phase 2 | DataForSEO Labs |
 | Backlink Analytics (authority, referring domains, new, lost and broken backlinks), Backlink Gap | Phase 3 | DataForSEO Backlinks, joined to our 404 log for broken links |
 | Domain Overview, Compare Domains, Organic Research (competitors), Keyword Gap | Phase 3 | DataForSEO Labs |
-| Top Pages (our own sites) | Phase 3, traffic part any time | Aiku's tracking and Search Console now; referring domains and AI citations per page with Phase 3 |
+| Top Pages (our own sites) | Phase 3, traffic part any time | Aiku's tracking and Search Console, referring domains from the backlink list, and the AI prompts citing each page |
 | Traffic Analytics (competitor domains) | Phase 3 | DataForSEO search traffic estimates with their history; traffic from other channels is not rebuilt |
-| AI visibility (ChatGPT, Gemini, Claude, Perplexity, AI Overviews) | Phase 3 | DataForSEO LLM Scraper (our prompts in ChatGPT as its users see it, per country) and LLM Mentions (share of voice), and AI Overviews from the rank checks |
+| AI visibility (ChatGPT, Gemini, Claude, Perplexity, AI Overviews) | Phase 3 | ChatGPT and Google AI Overviews only: DataForSEO LLM Scraper (our prompts in ChatGPT as its users see it, per country), LLM Mentions (share of voice), and AI Overviews from the rank checks. Gemini, Claude and Perplexity are not read |
 
 Two things Semrush shows are not rebuilt: the traffic of a competitor's domain from channels other
 than search (Semrush gets it from clickstream panels, and only Similarweb sells the same) and search

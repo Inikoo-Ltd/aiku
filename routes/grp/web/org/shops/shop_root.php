@@ -16,6 +16,7 @@ use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
 use App\Actions\Web\Crawl\UI\ShowSiteAudit;
 use App\Actions\Web\Seo\ExportSeoTable;
 use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
+use App\Actions\Web\Seo\UI\ShowSeoAiVisibility;
 use App\Actions\Web\Seo\UI\ShowSeoBacklinks;
 use App\Actions\Web\Seo\UI\ShowSeoCompetitors;
 use App\Actions\Web\Seo\UI\ShowSeoKeywords;
@@ -125,6 +126,7 @@ Route::prefix('{shop}')->name('show.')
         Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
         Route::get('backlinks', ShowSeoBacklinks::class)->name('backlinks.show');
         Route::get('competitors', ShowSeoCompetitors::class)->name('competitors.show');
+        Route::get('ai-visibility', ShowSeoAiVisibility::class)->name('ai_visibility.show');
         Route::get('export/{table}', ExportSeoTable::class)->name('export');
             });
 
