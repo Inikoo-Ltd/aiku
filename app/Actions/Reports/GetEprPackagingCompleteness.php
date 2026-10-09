@@ -11,20 +11,32 @@ namespace App\Actions\Reports;
 use App\Enums\Goods\Packaging\EprActivityEnum;
 use App\Enums\Goods\Packaging\PackagingFamilySourceEnum;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Which SKOs moved in a period without packaging weights an EPR return can use, ranked by the units they carried,
- * so the people keeping packaging data fix what weighs most on the return first.
+ * Which SKOs moved in a period without packaging weights an EPR return can use, ranked by the SKOs moved, so the people
+ * keeping packaging data fix what weighs most on the return first; and the checks on the weights they do have.
  */
 class GetEprPackagingCompleteness
 {
     use AsAction;
 
     public const int ROWS = 300;
+
+    public const int TOP_SKOS = 500;
+
+    public const int CHECK_ROWS = 50;
+
+    public const float WEIGHT_TOLERANCE = 0.05;
+
+    /**
+     * Trade unit weights are whole grams, so a few grams either way on light packaging is rounding, not an error.
+     */
+    public const float WEIGHT_TOLERANCE_G = 2.0;
 
     public const array STATUSES = ['no_trade_unit', 'no_packaging', 'no_components', 'legacy', 'complete'];
 
@@ -54,12 +66,76 @@ class GetEprPackagingCompleteness
                 'skos_by_status'    => collect(self::STATUSES)->mapWithKeys(fn (string $status) => [$status => $skos->where('status', $status)->count()]),
             ],
             'activities' => $this->activities($organisation, $from, $to),
+            'checks'     => $this->checks($skos),
             'rows'       => $toFix->take(self::ROWS)->map(fn (array $sko) => [
                 ...$sko,
                 'share' => $units > 0 ? round($sko['units'] / $units * 100, 2) : 0,
             ])->all(),
             'rows_total' => $toFix->count(),
         ];
+    }
+
+    /**
+     * The checks of section 2.5 of the EPR brief on the SKOs that moved, each with its SKOs ranked by SKOs moved:
+     * old UK sheet weights among the most moved, packaging that does not weigh what the trade unit's gross less net
+     * weight says, plastic without a polymer, and packaging marked as the product itself that is more than glass.
+     *
+     * @return list<array{key: string, count: int, rows: list<array<string, mixed>>}>
+     */
+    private function checks(Collection $skos): array
+    {
+        $ranked     = $skos->sortByDesc('units')->values();
+        $tradeUnits = $ranked->pluck('trade_unit_id')->filter()->unique()->values()->all();
+
+        $packaging = collect($tradeUnits === [] ? [] : DB::select(
+            <<<'SQL'
+            SELECT tu.id, tu.gross_weight, tu.net_weight, pf.is_product_itself,
+                SUM(pc.weight_g * fhc.quantity_per_unit) AS packaging_g,
+                SUM(pc.weight_g * fhc.quantity_per_unit) FILTER (WHERE pc.material_category = 'plastic' AND pc.polymer IS NULL) AS plastic_without_polymer_g,
+                STRING_AGG(DISTINCT pc.material_category, ', ') FILTER (WHERE pc.material_category <> 'glass') AS other_than_glass
+            FROM trade_units tu
+            JOIN packaging_families pf ON pf.id = tu.packaging_family_id
+            JOIN packaging_family_has_components fhc ON fhc.packaging_family_id = pf.id
+            JOIN packaging_components pc ON pc.id = fhc.packaging_component_id
+            WHERE tu.id = ANY(?::int[])
+            GROUP BY tu.id, tu.gross_weight, tu.net_weight, pf.is_product_itself
+            SQL,
+            ['{'.implode(',', $tradeUnits).'}']
+        ))->keyBy('id');
+
+        $checks = [
+            'legacy_top'                => [],
+            'weight_mismatch'           => [],
+            'plastic_without_polymer'   => [],
+            'product_itself_not_glass'  => [],
+        ];
+        foreach ($ranked as $rank => $sko) {
+            $row = $sko['trade_unit_id'] ? $packaging->get($sko['trade_unit_id']) : null;
+            $base = Arr::only($sko, ['code', 'name', 'trade_unit_slug', 'units']);
+
+            if ($sko['status'] === 'legacy' && $rank < self::TOP_SKOS) {
+                $checks['legacy_top'][] = [...$base, 'detail' => __('Number :rank by SKOs moved', ['rank' => $rank + 1])];
+            }
+            if (!$row) {
+                continue;
+            }
+            $declared = (float)$row->gross_weight - (float)$row->net_weight;
+            if ($row->net_weight > 0 && $declared > 0 && abs((float)$row->packaging_g - $declared) > max($declared * self::WEIGHT_TOLERANCE, self::WEIGHT_TOLERANCE_G)) {
+                $checks['weight_mismatch'][] = [...$base, 'detail' => __('Packaging :packaging g, gross less net :declared g', ['packaging' => round((float)$row->packaging_g, 1), 'declared' => round($declared, 1)])];
+            }
+            if ($row->plastic_without_polymer_g > 0) {
+                $checks['plastic_without_polymer'][] = [...$base, 'detail' => __(':grams g of plastic', ['grams' => round((float)$row->plastic_without_polymer_g, 1)])];
+            }
+            if ($row->is_product_itself && $row->other_than_glass) {
+                $checks['product_itself_not_glass'][] = [...$base, 'detail' => $row->other_than_glass];
+            }
+        }
+
+        return collect($checks)->map(fn (array $rows, string $key) => [
+            'key'   => $key,
+            'count' => count($rows),
+            'rows'  => array_slice($rows, 0, self::CHECK_ROWS),
+        ])->values()->all();
     }
 
     /**
@@ -81,9 +157,9 @@ class GetEprPackagingCompleteness
             <<<'SQL'
             SELECT l.org_stock_id, os.code, os.name, l.trade_unit_id, tu.slug AS trade_unit_slug, tu.packaging_family_id, pf.code AS packaging_family_code, pf.source,
                 (SELECT COUNT(*) FROM packaging_family_has_components c WHERE c.packaging_family_id = tu.packaging_family_id) AS components,
-                SUM(l.quantity) AS units,
-                SUM(l.quantity) FILTER (WHERE l.activity IN ('imported', 'bought_domestic', 'purchase_unknown_origin', 'packed_filled')) AS units_in,
-                SUM(l.quantity) FILTER (WHERE l.activity IN ('sold_domestic', 'exported', 'sale_unknown_country')) AS units_out
+                SUM(l.sko_quantity) AS units,
+                SUM(l.sko_quantity) FILTER (WHERE l.activity IN ('imported', 'bought_domestic', 'purchase_unknown_origin', 'packed_filled')) AS units_in,
+                SUM(l.sko_quantity) FILTER (WHERE l.activity IN ('sold_domestic', 'exported', 'sale_unknown_country')) AS units_out
             FROM epr_flow_lines l
             LEFT JOIN org_stocks os ON os.id = l.org_stock_id
             LEFT JOIN trade_units tu ON tu.id = l.trade_unit_id
@@ -96,6 +172,7 @@ class GetEprPackagingCompleteness
 
         return collect($rows)->map(fn (object $row) => [
             'org_stock_id'          => $row->org_stock_id,
+            'trade_unit_id'         => $row->trade_unit_id,
             'code'                  => $row->code,
             'name'                  => $row->name,
             'trade_unit_slug'       => $row->trade_unit_slug,
@@ -120,8 +197,8 @@ class GetEprPackagingCompleteness
     {
         $rows = DB::select(
             <<<'SQL'
-            SELECT l.activity, SUM(l.quantity) AS units,
-                SUM(l.quantity) FILTER (WHERE EXISTS (SELECT 1 FROM packaging_family_has_components c WHERE c.packaging_family_id = tu.packaging_family_id)) AS covered
+            SELECT l.activity, SUM(l.sko_quantity) AS units,
+                SUM(l.sko_quantity) FILTER (WHERE EXISTS (SELECT 1 FROM packaging_family_has_components c WHERE c.packaging_family_id = tu.packaging_family_id)) AS covered
             FROM epr_flow_lines l
             LEFT JOIN trade_units tu ON tu.id = l.trade_unit_id
             WHERE l.organisation_id = ? AND l.date BETWEEN ? AND ?

@@ -19,8 +19,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Rebuilds an organisation's packaging EPR flow lines for a date range from the documents that moved the goods:
  * received stock deliveries (imported, bought domestically, or packed and filled when they come from production)
- * and dispatched delivery notes (sold domestically or exported), each line split into the trade units of its SKO
- * with the packaging family they carry. Returns read these lines, never the transactional tables.
+ * dispatched delivery notes (sold domestically or exported) and the consumption of SKOs marked as shipment packaging
+ * (cartons, mailers, tape used to send parcels), each line split into the trade units of its SKO with the packaging
+ * family they carry. Returns read these lines, never the transactional tables.
  */
 class BuildEprFlowLines
 {
@@ -29,7 +30,7 @@ class BuildEprFlowLines
     public string $commandSignature = 'epr:build-flow-lines {organisations?* : organisation slugs, every shop organisation when empty} {--from= : first day, default the start of last month} {--to= : last day, default today}';
 
     /**
-     * @return array{purchases: int, sales: int}
+     * @return array{purchases: int, sales: int, shipment_packaging: int}
      */
     public function handle(Organisation $organisation, Carbon $from, Carbon $to): array
     {
@@ -39,8 +40,9 @@ class BuildEprFlowLines
             DB::delete('DELETE FROM epr_flow_lines WHERE organisation_id = :organisation_id AND date BETWEEN :from AND :to', $bindings);
 
             return [
-                'purchases' => DB::affectingStatement($this->purchasesSql(), $bindings),
-                'sales'     => DB::affectingStatement($this->salesSql(), $bindings),
+                'purchases'          => DB::affectingStatement($this->purchasesSql(), $bindings),
+                'sales'              => DB::affectingStatement($this->salesSql(), $bindings),
+                'shipment_packaging' => DB::affectingStatement($this->shipmentPackagingSql(), $bindings),
             ];
         });
     }
@@ -122,6 +124,27 @@ class BuildEprFlowLines
             SQL;
     }
 
+    private function shipmentPackagingSql(): string
+    {
+        return <<<'SQL'
+            INSERT INTO epr_flow_lines (group_id, organisation_id, date, activity, source_type, source_id, org_stock_id, trade_unit_id, packaging_family_id, sko_quantity, quantity, created_at)
+            SELECT m.group_id, m.organisation_id, m.date::date, 'shipment_packaging', 'OrgStockMovement', m.id, m.org_stock_id, trade_unit.trade_unit_id, trade_unit.packaging_family_id,
+                -m.quantity, -m.quantity * COALESCE(trade_unit.quantity, 1), NOW()
+            FROM org_stocks os
+            JOIN org_stock_movements m ON m.org_stock_id = os.id
+            LEFT JOIN LATERAL (
+                SELECT mhtu.trade_unit_id, mhtu.quantity, tu.packaging_family_id
+                FROM model_has_trade_units mhtu
+                JOIN trade_units tu ON tu.id = mhtu.trade_unit_id
+                WHERE mhtu.model_type = 'OrgStock' AND mhtu.model_id = os.id
+            ) trade_unit ON TRUE
+            WHERE os.organisation_id = :organisation_id
+              AND os.is_shipment_packaging
+              AND m.type IN ('consumption', 'return-consumption')
+              AND m.date >= :from::date AND m.date < :to::date + 1
+            SQL;
+    }
+
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
@@ -135,7 +158,7 @@ class BuildEprFlowLines
 
         foreach ($organisations as $organisation) {
             $built = $this->handle($organisation, $from, $to);
-            $command->info("$organisation->slug {$from->toDateString()}..{$to->toDateString()}: {$built['purchases']} purchase lines, {$built['sales']} sale lines");
+            $command->info("$organisation->slug {$from->toDateString()}..{$to->toDateString()}: {$built['purchases']} purchase lines, {$built['sales']} sale lines, {$built['shipment_packaging']} shipment packaging lines");
         }
 
         return 0;

@@ -44,6 +44,7 @@ const props = defineProps<{
 			share: number
 		}[]
 		rows_total: number
+		checks: { key: string; count: number; rows: { code: string | null; name: string | null; trade_unit_slug: string | null; units: number; detail: string }[] }[]
 	}
 }>()
 
@@ -57,6 +58,13 @@ const statuses: Record<Status, { label: string; dot: string; badge: string }> = 
 	complete: { label: ctrans("Complete"), dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
 }
 const statusOrder = Object.keys(statuses) as Status[]
+
+const checkLabels: Record<string, { title: string; help: string }> = {
+	legacy_top: { title: ctrans("Old UK sheet weights on the most moved SKOs"), help: ctrans("Among the 500 SKOs moved most. Weigh these first: they carry most of the tonnage.") },
+	weight_mismatch: { title: ctrans("Packaging that does not match the trade unit's weight"), help: ctrans("The packaging components weigh more than 5% (and 2 g) away from the trade unit's gross weight less its net weight.") },
+	plastic_without_polymer: { title: ctrans("Plastic without a polymer"), help: ctrans("EU schemes charge plastics by resin: without it the plastic falls on the general line.") },
+	product_itself_not_glass: { title: ctrans("Packaging marked as the product itself that is more than glass"), help: ctrans("Usually only the jar is the product; the box or lid around it is still packaging and drops out of the returns.") },
+}
 
 const summary = computed(() => props.data?.summary)
 const missingUnits = computed(() => (summary.value ? summary.value.units_by_status.no_trade_unit + summary.value.units_by_status.no_packaging + summary.value.units_by_status.no_components : 0))
@@ -96,7 +104,7 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 				<div class="rounded-lg ring-1 ring-gray-200 bg-white px-4 py-3">
 					<div class="flex items-center gap-1.5 text-xs text-gray-500">
 						<FontAwesomeIcon :icon="['fal', 'balance-scale']" fixed-width aria-hidden="true" />
-						{{ ctrans("Units with packaging weights") }}
+						{{ ctrans("SKOs moved with packaging weights") }}
 					</div>
 					<div class="mt-1 flex items-baseline gap-2">
 						<span class="text-2xl font-semibold text-gray-900 tabular-nums">{{ percent(summary.coverage) }}</span>
@@ -109,7 +117,7 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 				<div class="rounded-lg ring-1 ring-gray-200 bg-white px-4 py-3">
 					<div class="flex items-center gap-1.5 text-xs text-gray-500">
 						<FontAwesomeIcon :icon="['fal', 'box-open']" fixed-width aria-hidden="true" />
-						{{ ctrans("Units without weights") }}
+						{{ ctrans("SKOs moved without weights") }}
 					</div>
 					<div class="mt-1 font-medium text-gray-900 tabular-nums">{{ locale.number(Math.round(missingUnits)) }}</div>
 					<div class="text-xs text-gray-500 tabular-nums">{{ ctrans("of :units moved", { units: locale.number(Math.round(summary.units)) }) }}</div>
@@ -128,7 +136,7 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 						{{ ctrans("On old UK sheet weights") }}
 					</div>
 					<div class="mt-1 font-medium text-gray-900 tabular-nums">{{ locale.number(summary.skos_by_status.legacy) }}</div>
-					<div class="text-xs text-gray-500 tabular-nums">{{ ctrans(":share of units, to be weighed", { share: percent(Math.round(statusShare('legacy') * 10) / 10) }) }}</div>
+					<div class="text-xs text-gray-500 tabular-nums">{{ ctrans(":share of SKOs moved, to be weighed", { share: percent(Math.round(statusShare('legacy') * 10) / 10) }) }}</div>
 				</div>
 			</div>
 
@@ -139,7 +147,7 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 						<li v-for="activity in data.activities" :key="activity.activity" class="grid grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs">
 							<div>
 								<div class="text-gray-700">{{ activity.label }}</div>
-								<div class="text-gray-500 tabular-nums">{{ ctrans(":units units", { units: locale.number(Math.round(activity.units)) }) }}</div>
+								<div class="text-gray-500 tabular-nums">{{ ctrans(":units SKOs", { units: locale.number(Math.round(activity.units)) }) }}</div>
 							</div>
 							<div class="h-2 rounded-full bg-gray-100 overflow-hidden" role="img" :aria-label="percent(activity.coverage)">
 								<div class="h-full rounded-full bg-emerald-500" :style="{ width: `${activity.coverage ?? 0}%` }" />
@@ -150,8 +158,8 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 				</div>
 
 				<div class="rounded-lg ring-1 ring-gray-200 bg-white px-4 py-3">
-					<h3 class="font-semibold text-gray-900">{{ ctrans("Where the units stand") }}</h3>
-					<div class="mt-3 flex h-3 rounded-full overflow-hidden bg-gray-100" role="img" :aria-label="ctrans('Units by packaging status')">
+					<h3 class="font-semibold text-gray-900">{{ ctrans("Where the SKOs moved stand") }}</h3>
+					<div class="mt-3 flex h-3 rounded-full overflow-hidden bg-gray-100" role="img" :aria-label="ctrans('SKOs moved by packaging status')">
 						<div v-for="status in statusOrder" :key="status" :class="statuses[status].dot" :style="{ width: `${statusShare(status)}%` }" />
 					</div>
 					<ul class="mt-3 space-y-1.5 text-xs">
@@ -167,9 +175,40 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 				</div>
 			</div>
 
+			<div class="rounded-lg ring-1 ring-gray-200 bg-white divide-y divide-gray-100">
+				<h3 class="px-4 py-3 font-semibold text-gray-900">{{ ctrans("Checks on the weights") }}</h3>
+				<details v-for="check in data.checks" :key="check.key" class="group">
+					<summary class="flex cursor-pointer items-start gap-3 px-4 py-2.5" :class="{ 'cursor-default': !check.count }">
+						<span class="mt-0.5 inline-flex min-w-[2.5rem] justify-center rounded px-1.5 py-0.5 text-xs tabular-nums ring-1 ring-inset" :class="check.count ? 'bg-amber-50 text-amber-700 ring-amber-200' : 'bg-emerald-50 text-emerald-700 ring-emerald-200'">
+							{{ locale.number(check.count) }}
+						</span>
+						<span>
+							<span class="block text-gray-900">{{ checkLabels[check.key]?.title ?? check.key }}</span>
+							<span class="block text-xs text-gray-500">{{ checkLabels[check.key]?.help }}</span>
+						</span>
+					</summary>
+					<div v-if="check.rows.length" class="overflow-x-auto pb-2">
+						<table class="min-w-full text-xs">
+							<tbody class="divide-y divide-gray-100">
+								<tr v-for="row in check.rows" :key="`${check.key}-${row.trade_unit_slug}-${row.code}`">
+									<td class="pl-16 pr-2 py-1.5">
+										<Link v-if="row.trade_unit_slug" :href="route('grp.trade_units.units.show', { tradeUnit: row.trade_unit_slug, tab: 'compliance' })" class="font-medium hover:underline">{{ row.code ?? "—" }}</Link>
+										<span v-else class="font-medium">{{ row.code ?? "—" }}</span>
+										<span class="ml-2 text-gray-500">{{ row.name }}</span>
+									</td>
+									<td class="px-2 py-1.5 text-gray-600">{{ row.detail }}</td>
+									<td class="px-4 py-1.5 text-right tabular-nums text-gray-500 whitespace-nowrap">{{ ctrans(":skos SKOs", { skos: locale.number(Math.round(row.units)) }) }}</td>
+								</tr>
+							</tbody>
+						</table>
+						<p v-if="check.count > check.rows.length" class="pl-16 pt-1 text-xs text-gray-500">{{ ctrans("Showing :shown of :total, most moved first", { shown: check.rows.length, total: locale.number(check.count) }) }}</p>
+					</div>
+				</details>
+			</div>
+
 			<div class="rounded-lg ring-1 ring-gray-200 bg-white">
 				<div class="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3 border-b border-gray-200">
-					<h3 class="font-semibold text-gray-900">{{ ctrans("SKOs to fix, most units first") }}</h3>
+					<h3 class="font-semibold text-gray-900">{{ ctrans("SKOs to fix, most moved first") }}</h3>
 					<span class="text-xs text-gray-500">{{ ctrans("Showing :shown of :total", { shown: locale.number(data.rows.length), total: locale.number(data.rows_total) }) }}</span>
 				</div>
 				<div v-if="!data.rows.length" class="px-4 py-8 text-center text-emerald-700">{{ ctrans("Every SKO that moved has packaging weights.") }}</div>
@@ -179,9 +218,9 @@ const date = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(und
 							<tr class="text-left">
 								<th class="px-4 py-2 font-medium">{{ ctrans("SKO") }}</th>
 								<th class="px-2 py-2 font-medium">{{ ctrans("Status") }}</th>
-								<th class="px-2 py-2 font-medium text-right"><FontAwesomeIcon :icon="['fal', 'inbox-in']" v-tooltip="ctrans('Units in')" :aria-label="ctrans('Units in')" fixed-width /></th>
-								<th class="px-2 py-2 font-medium text-right"><FontAwesomeIcon :icon="['fal', 'inbox-out']" v-tooltip="ctrans('Units out')" :aria-label="ctrans('Units out')" fixed-width /></th>
-								<th class="px-2 py-2 font-medium text-right">{{ ctrans("Share of units") }}</th>
+								<th class="px-2 py-2 font-medium text-right"><FontAwesomeIcon :icon="['fal', 'inbox-in']" v-tooltip="ctrans('SKOs in')" :aria-label="ctrans('SKOs in')" fixed-width /></th>
+								<th class="px-2 py-2 font-medium text-right"><FontAwesomeIcon :icon="['fal', 'inbox-out']" v-tooltip="ctrans('SKOs out')" :aria-label="ctrans('SKOs out')" fixed-width /></th>
+								<th class="px-2 py-2 font-medium text-right">{{ ctrans("Share of SKOs moved") }}</th>
 								<th class="px-4 py-2 font-medium text-right">{{ ctrans("Cumulative") }}</th>
 							</tr>
 						</thead>

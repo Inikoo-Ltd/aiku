@@ -54,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $sku_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
+ * @property bool $is_shipment_packaging
  * @property OrgStockStateEnum $state
  * @property OrgStockQuantityStatusEnum|null $quantity_status
  * @property numeric|null $quantity_in_locations stock quantity in units
@@ -148,6 +149,7 @@ class OrgStock extends Model implements Auditable, HasMedia
         'last_fetched_at'                  => 'datetime',
         'quantity_in_locations'            => 'decimal:3',
         'quantity_available'               => 'decimal:3',
+        'is_shipment_packaging'            => 'boolean',
     ];
 
     protected $attributes = [
