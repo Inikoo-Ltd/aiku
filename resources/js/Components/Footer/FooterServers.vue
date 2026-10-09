@@ -94,7 +94,7 @@ const deploy = computed(() => {
         <span v-if="deploy" v-tooltip="deploy.head_message" class="flex items-center gap-x-1.5 text-amber-300">
             <FontAwesomeIcon icon="fal fa-rocket-launch" fixed-width class="animate-pulse" aria-hidden="true" />
             <span>{{ ctrans('New version coming') }}</span>
-            <span v-if="deploy.deploy_total">{{ deploy.deploy_done }}/{{ deploy.deploy_total }}</span>
+            <span v-if="deploy.deploy_total" v-tooltip="`${deploy.deploy_done}/${deploy.deploy_total}`" class="inline-block h-3 w-3 rounded-full border border-current" :style="{ background: `conic-gradient(currentColor ${Math.min(100, deploy.deploy_done / deploy.deploy_total * 100)}%, transparent 0)` }" />
             <span v-if="deploy.head_message" class="hidden xl:inline max-w-56 truncate text-slate-400">{{ deploy.head_message }}</span>
         </span>
     </Link>
