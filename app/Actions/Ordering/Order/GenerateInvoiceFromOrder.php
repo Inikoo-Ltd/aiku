@@ -43,12 +43,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class GenerateInvoiceFromOrder extends OrgAction
 {
     use WithActionUpdate;
     use WithLineTaxCategories;
     use HasOrderHydrators;
+    use WithOrderPaymentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -381,6 +383,7 @@ class GenerateInvoiceFromOrder extends OrgAction
      */
     public function action(Order $order): Invoice
     {
+        $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
 
         return $this->handle($order);

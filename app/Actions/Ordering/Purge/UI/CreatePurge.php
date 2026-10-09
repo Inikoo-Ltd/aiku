@@ -17,9 +17,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class CreatePurge extends OrgAction
 {
+    use WithOrderEditAuthorisation;
+
     public function handle(Shop $shop, ActionRequest $request): Response
     {
         return Inertia::render(

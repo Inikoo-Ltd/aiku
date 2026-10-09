@@ -29,6 +29,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateOrderShippingEngineAsManual extends OrgAction
 {
@@ -38,6 +39,7 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
     use HasOrderHydrators;
     use WithNoStrictRules;
     use WithOrderExchanges;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 

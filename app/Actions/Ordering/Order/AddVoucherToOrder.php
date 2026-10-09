@@ -13,12 +13,15 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferHasCustomer;
 use App\Models\Ordering\Order;
-use Illuminate\Http\Request;
+use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class AddVoucherToOrder extends OrgAction
 {
+    use WithOrderEditAuthorisation;
+
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -117,8 +120,10 @@ class AddVoucherToOrder extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(Order $order, Request $request): void
+    public function asController(Order $order, ActionRequest $request): void
     {
-        $this->handle($order, $request->validate($this->rules()));
+        $this->initialisationFromShop($order->shop, $request);
+
+        $this->handle($order, $this->validatedData);
     }
 }

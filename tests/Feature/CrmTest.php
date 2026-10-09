@@ -2134,6 +2134,7 @@ test('a crm viewer reads customers, polls and prospects but changes nothing, and
         $page = get(route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $shop->slug, $customer->slug, 'tab' => 'showcase']))
             ->assertOk()->viewData('page')['props'];
         expect($page['permissions'])->each->toBeFalse()
+            ->and($page['can_add_order'])->toBeFalse()
             ->and(collect($page['pageHead']['actions'])->pluck('key'))->not->toContain('edit_customer')
             ->and(collect($page['notes']['note_list'])->pluck('editable')->unique()->all())->toBe([false])
             ->and($page['showcase']['store_note_route'])->toBeNull()

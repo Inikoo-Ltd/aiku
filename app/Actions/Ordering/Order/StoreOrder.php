@@ -39,6 +39,7 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class StoreOrder extends OrgAction
 {
@@ -49,6 +50,7 @@ class StoreOrder extends OrgAction
     use HasOrderHydrators;
     use WithOrderExchanges;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     public int $hydratorsDelay = 0;
 

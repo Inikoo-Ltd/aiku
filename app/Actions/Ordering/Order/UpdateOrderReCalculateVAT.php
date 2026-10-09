@@ -20,6 +20,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateOrderReCalculateVAT extends OrgAction
 {
@@ -28,6 +29,7 @@ class UpdateOrderReCalculateVAT extends OrgAction
     use WithModelAddressActions;
     use HasOrderHydrators;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 

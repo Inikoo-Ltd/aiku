@@ -14,9 +14,12 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class SetWaitingCrmItemAsNotPick extends OrgAction
 {
+    use WithOrderEditAuthorisation;
+
     public function asController(Organisation $organisation, Shop $shop, DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
         $this->initialisationFromShop($shop, $request);

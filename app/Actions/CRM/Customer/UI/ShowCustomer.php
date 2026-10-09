@@ -146,7 +146,9 @@ class ShowCustomer extends OrgAction
                     'next'     => $this->getNext($customer, $request),
                 ],
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
-                'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
+                'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B
+                    && $request->user()->authTo("orders.{$this->shop->id}.edit")
+                    && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
                 'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer) && StartCustomerEmailChat::make()->canBeStartedBy($request->user(), $customer),
                 'permissions'        => $permissions,
                 'can_make_custom_product' => $canMakeCustomProduct,

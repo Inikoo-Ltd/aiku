@@ -607,7 +607,7 @@ class IndexOrders extends OrgAction
             $afterTitle = [
                 'label' => __('Orders')
             ];
-            $actions    = [
+            $actions    = !$this->canEdit ? [] : [
                 [
                     'type'        => 'button',
                     'style'       => 'create',
@@ -655,7 +655,7 @@ class IndexOrders extends OrgAction
                 ),
                 'title'          => __('orders'),
                 'sales_channels' => GetSalesChannelOptions::make()->getOptions($shop),
-                'can_add_order'  => $shop?->type == ShopTypeEnum::B2B && !($this->parent instanceof Customer && StoreOrder::isPartnerBuyingFromHub($this->parent, $shop)),
+                'can_add_order'  => $this->canEdit && $shop?->type == ShopTypeEnum::B2B && !($this->parent instanceof Customer && StoreOrder::isPartnerBuyingFromHub($this->parent, $shop)),
                 'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,

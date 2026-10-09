@@ -192,7 +192,7 @@ class ShowOrder extends OrgAction
         );
     }
 
-    public function getOrderNotes(Order $order): array
+    public function getOrderNotes(Order $order, bool $editable): array
     {
         $noteList = [];
 
@@ -229,7 +229,7 @@ class ShowOrder extends OrgAction
                     "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $order->shipping_notes ?? '',
                     "information" => __("Note from crm. First 34 char. Will be printed on the shipping label."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "field"       => "shipping_notes",
                     ...NotesEnum::SHIPPING_LABEL->boilerPlate()
                 ],
@@ -245,7 +245,7 @@ class ShowOrder extends OrgAction
                     "label"       => NotesEnum::PUBLIC->label(),
                     "note"        => $order->public_notes ?? '',
                     "information" => __("This note will be visible to public, both staff and the customer can see."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "warning"     => __('Customer can see this note'),
                     "field"       => "public_notes",
                     ...NotesEnum::PUBLIC->boilerPlate()
@@ -254,7 +254,7 @@ class ShowOrder extends OrgAction
                     "label"       => NotesEnum::INTERNAL->label(),
                     "note"        => $order->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members in the order. It is not shown in the delivery note."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "field"       => "internal_notes",
                     ...NotesEnum::INTERNAL->boilerPlate()
                 ],
@@ -262,7 +262,7 @@ class ShowOrder extends OrgAction
                     "label"       => NotesEnum::WAREHOUSE->label(),
                     "note"        => $order->private_warehouse_note ?? '',
                     "information" => __("This note is only visible to staff members and is shown in the delivery note."),
-                    "editable"    => true,
+                    "editable"    => $editable,
                     "field"       => "private_warehouse_note",
                     ...NotesEnum::WAREHOUSE->boilerPlate()
                 ]
@@ -320,7 +320,7 @@ class ShowOrder extends OrgAction
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
             && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
-        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora && !$preOrderLocked) {
+        if ($canEdit && $order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [
                 [
                     'type'  => 'button',
@@ -529,9 +529,14 @@ class ShowOrder extends OrgAction
                     'delivery_note'              => $deliveryNoteRoute
                 ],
 
-                'notes'                       => $this->getOrderNotes($order),
+                'notes'                       => $this->getOrderNotes($order, $canEdit),
                 'timelines'                   => $finalTimeline,
-                'readonly'                    => false,
+                'readonly'                    => !$canEdit,
+                'can_edit'                    => $canEdit,
+                'can_pay'                     => !$lockedInAurora && $request->user()->authTo([
+                    "orders.$order->shop_id.edit",
+                    "accounting.$order->organisation_id.edit",
+                ]),
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
                 'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
@@ -767,7 +772,8 @@ class ShowOrder extends OrgAction
                     parent: $order,
                     tableRows: $nonProductItems,
                     prefix: OrderTabsEnum::TRANSACTIONS->value,
-                    withMargins: $withMargins
+                    withMargins: $withMargins,
+                    canEdit: $canEdit
                 )
             )
             ->table(

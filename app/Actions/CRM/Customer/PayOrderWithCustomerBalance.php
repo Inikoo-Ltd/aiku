@@ -27,10 +27,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Sentry;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class PayOrderWithCustomerBalance extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrderPaymentAuthorisation;
 
     /**
      * @throws \Throwable

@@ -17,10 +17,12 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateTransactionDiscretionaryDiscount extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrderEditAuthorisation;
 
 
     public function handle(Transaction $transaction, array $modelData): Transaction

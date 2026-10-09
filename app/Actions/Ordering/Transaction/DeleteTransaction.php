@@ -24,10 +24,12 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class DeleteTransaction extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrderEditAuthorisation;
 
 
     /**

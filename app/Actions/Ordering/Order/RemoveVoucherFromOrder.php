@@ -10,10 +10,13 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
-use Illuminate\Http\Request;
+use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class RemoveVoucherFromOrder extends OrgAction
 {
+    use WithOrderEditAuthorisation;
+
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -35,8 +38,10 @@ class RemoveVoucherFromOrder extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(Order $order, Request $request): void
+    public function asController(Order $order, ActionRequest $request): void
     {
+        $this->initialisationFromShop($order->shop, $request);
+
         $this->handle($order);
     }
 }

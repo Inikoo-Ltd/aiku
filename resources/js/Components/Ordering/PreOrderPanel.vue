@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLock, faLockOpen } from "@far"
 
 const props = defineProps<{
+    canEdit: boolean
     pre_order: {
         state: string
         state_label: string
@@ -88,7 +89,7 @@ const submit = (operation: string, data: Record<string, unknown> = {}, confirmTe
             <span v-if="pre_order.is_late" class="text-xs font-semibold text-red-700">{{ ctrans("Late: cancelling it now refunds everything, deposit included") }}</span>
             <span v-if="pre_order.parent_order_reference" class="text-xs">{{ ctrans("Split from :reference", { reference: pre_order.parent_order_reference }) }}</span>
 
-            <button v-if="pre_order.lock?.is_locked"
+            <button v-if="canEdit && pre_order.lock?.is_locked"
                 type="button"
                 class="ml-auto flex items-center gap-x-1.5 rounded border px-2 py-0.5 text-xs font-semibold disabled:opacity-50"
                 :class="pre_order.lock.is_locked_for_me ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100' : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'"
@@ -122,7 +123,7 @@ const submit = (operation: string, data: Record<string, unknown> = {}, confirmTe
             <div v-if="pre_order.cancelled_at">{{ ctrans("Cancelled") }}: <b>{{ formatDate(pre_order.cancelled_at) }}</b> {{ pre_order.cancellation_reason }}</div>
         </div>
 
-        <div v-if="pre_order.is_open" class="flex flex-wrap gap-2">
+        <div v-if="canEdit && pre_order.is_open" class="flex flex-wrap gap-2">
             <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. From then on the made-to-order deposit is no longer refundable')" size="xs" type="secondary" :label="ctrans('Mark as ordered from supplier')" :loading="isSubmitting" @click="submit('supplier_ordered', {}, ctrans('Mark this pre-order as ordered from the supplier? The made-to-order deposit is then no longer refundable. This cannot be undone.'))" />
             <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Mark goods as arrived')" :loading="isSubmitting" @click="submit('goods_arrived', {}, ctrans('Mark the goods as arrived? The customer is emailed a request to pay the balance. This cannot be undone.'))" />
             <Button v-if="pre_order.has_pallet_delivery" v-tooltip="ctrans('Enter the final pallet delivery cost. It replaces the shipping on the order and, if the goods have arrived, the balance is requested from the customer')" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />

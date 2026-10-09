@@ -33,11 +33,13 @@ use App\Models\Ordering\Transaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class DispatchOrder extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
+    use WithOrderEditAuthorisation;
 
     /**
      * @throws \Throwable
@@ -132,6 +134,7 @@ class DispatchOrder extends OrgAction
      */
     public function action(Order $order, ?DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): Order
     {
+        $this->asAction = true;
         return $this->handle($order, $deliveryNote, $dispatchedAt, $repair);
     }
 

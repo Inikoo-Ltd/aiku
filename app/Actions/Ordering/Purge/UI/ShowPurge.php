@@ -61,7 +61,7 @@ class ShowPurge extends OrgAction
                             'icon'  => ['fal', 'fa-trash-alt'],
                             'title' => __('Purge')
                         ],
-                    'actions' => [
+                    'actions' => !$this->canEdit ? [] : [
                         [
                             'type'  => 'button',
                             'style' => 'edit',

@@ -24,11 +24,13 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateTransaction extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     public function handle(Transaction $transaction, array $modelData, $calculateShipping = true, bool $calculateDiscounts = true): Transaction
     {
@@ -166,6 +168,7 @@ class UpdateTransaction extends OrgAction
 
     public function action(Transaction $transaction, array $modelData, bool $strict = true): Transaction
     {
+        $this->asAction = true;
         $this->strict = $strict;
         $this->initialisationFromShop($transaction->shop, $modelData);
 

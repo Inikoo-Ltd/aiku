@@ -6152,3 +6152,63 @@ test('production managers mark orders as production reviewed, one by one or in b
 
     $this->organisation->update(['is_manufacturing_hub' => $wasManufacturingHub]);
 });
+
+test('an orders viewer reads an order but cannot change it, and accounts can still take payment', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order       = StoreOrder::make()->action($this->customer, $modelData);
+    $transaction = StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $shop        = $this->shop;
+    $parameters  = [$this->organisation->slug, $shop->slug, $order->slug];
+    $paymentAccountId = $shop->paymentAccountShops()->firstOrFail()->payment_account_id;
+
+    $originalRoles       = $this->user->roles->pluck('name')->all();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+    $actingWithOnly      = function (array $permissions) {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncRoles([]);
+        $this->user->syncPermissions($permissions);
+        \Illuminate\Support\Facades\Cache::tags('auth-user:'.$this->user->id)->flush();
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($this->user->refresh());
+    };
+
+    try {
+        $actingWithOnly(["orders.$shop->id.view"]);
+
+        $props = get(route('grp.org.shops.show.ordering.orders.show', $parameters))->assertOk()->viewData('page')['props'];
+        expect($props['can_edit'])->toBeFalse()
+            ->and($props['can_pay'])->toBeFalse()
+            ->and($props['readonly'])->toBeTrue()
+            ->and(collect($props['pageHead']['wrapped_actions'])->pluck('route.name'))->not->toContain('grp.org.shops.show.ordering.orders.edit')
+            ->and(collect($props['notes']['note_list'])->pluck('editable')->unique()->all())->toBe([false]);
+
+        $this->patch(route('grp.models.order.update', ['order' => $order->id]), ['public_notes' => 'viewer note'])->assertForbidden();
+        $this->patch(route('grp.models.transaction.update', ['transaction' => $transaction->id]), ['quantity_ordered' => 3])->assertForbidden();
+        $this->delete(route('grp.models.transaction.delete', ['transaction' => $transaction->id]))->assertForbidden();
+        $this->post(route('grp.models.order.add_voucher', ['order' => $order->id]), ['voucher' => 'viewer'])->assertForbidden();
+        $this->patch(route('grp.models.order.discount.update', ['order' => $order->id]), [])->assertForbidden();
+        $this->patch(route('grp.models.order.set_shipping_engine_manual', ['order' => $order->id]), [])->assertForbidden();
+        $this->patch(route('grp.models.order.recalculate-vat', ['order' => $order->id]), [])->assertForbidden();
+        $this->post(route('grp.models.order.payment.store', ['order' => $order->id, 'paymentAccount' => $paymentAccountId]), ['amount' => 1])->assertForbidden();
+        $this->post(route('grp.models.order.write_off_shortfall', ['order' => $order->id]))->assertForbidden();
+
+        $actingWithOnly(["orders.$shop->id.view", "accounting.{$this->organisation->id}.edit"]);
+        $props = get(route('grp.org.shops.show.ordering.orders.show', $parameters))->assertOk()->viewData('page')['props'];
+        expect($props['can_pay'])->toBeTrue()
+            ->and($props['can_edit'])->toBeFalse();
+        $this->patch(route('grp.models.order.update', ['order' => $order->id]), ['public_notes' => 'accounts note'])->assertForbidden();
+
+        $actingWithOnly(["orders.$shop->id.view", "orders.$shop->id.edit"]);
+        $props = get(route('grp.org.shops.show.ordering.orders.show', $parameters))->assertOk()->viewData('page')['props'];
+        expect($props['can_edit'])->toBeTrue()
+            ->and($props['can_pay'])->toBeTrue();
+        $this->patch(route('grp.models.order.update', ['order' => $order->id]), ['public_notes' => 'orders note'])->assertSessionHasNoErrors();
+        expect($order->refresh()->public_notes)->toBe('orders note');
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+    }
+});

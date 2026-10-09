@@ -23,6 +23,7 @@ use App\Models\Ordering\Order;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateOrderDeliveryAddress extends OrgAction
 {
@@ -30,6 +31,7 @@ class UpdateOrderDeliveryAddress extends OrgAction
     use WithFixedAddressActions;
     use WithModelAddressActions;
     use HasOrderHydrators;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 
