@@ -33,6 +33,8 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
     use AsAction;
     use SanitizeInputs;
 
+    private ?string $shopifyPriceRefusal = null;
+
     public function handle(Portfolio $portfolio, array $modelData, $isDraft = false): void
     {
         $pricingType  = Arr::pull($modelData, 'pricing_type');
@@ -90,11 +92,13 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 
     public function updateShopifyChannel(Portfolio $portfolio): void
     {
-        UpdateShopifyProductVariant::run($portfolio);
+        [$priced, $priceMessage] = UpdateShopifyProductVariant::run($portfolio);
 
         if ($portfolio->wasChanged(['customer_product_name', 'customer_description'])) {
             UpdateShopifyProduct::run($portfolio);
         }
+
+        $this->shopifyPriceRefusal = !$priced && $portfolio->platform_product_id ? $priceMessage : null;
     }
 
     public function rules(): array
@@ -129,6 +133,12 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
         $this->enableSanitize();
         $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData);
+
+        if ($this->shopifyPriceRefusal !== null) {
+            throw ValidationException::withMessages([
+                'price' => __('Saved, but Shopify did not accept the price: :reason', ['reason' => $this->shopifyPriceRefusal])
+            ]);
+        }
     }
 
     public function asDraft(Portfolio $portfolio, ActionRequest $request): void

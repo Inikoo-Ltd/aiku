@@ -49,6 +49,8 @@ use App\Actions\Dropshipping\Shopify\Product\StoreShopifyProductVariant;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductDimensions;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
+use App\Actions\Dropshipping\Shopify\Product\SetShopifyPortfolioPriceManagement;
+use App\Actions\Retina\Shopify\SetRetinaShopifyPortfoliosPriceManagement;
 use App\Actions\Dropshipping\Shopify\SetShopifyChannelLinksExistingVariants;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
@@ -573,6 +575,22 @@ function shopifyVariantLinkingChannel($test, string $name): ShopifyUser
     return $shopifyUser->refresh();
 }
 
+/**
+ * @param  list<array{0: string, 1: string, 2: int}>  $otherLocations  location id, name, available
+ */
+function shopifyVariantStockLocations(string $inventoryPolicy = 'DENY', array $otherLocations = []): array
+{
+    $levels = [['node' => ['location' => ['id' => 'gid://shopify/Location/1001', 'name' => 'aiku'], 'quantities' => [['quantity' => 3]]]]];
+    foreach ($otherLocations as [$locationId, $locationName, $available]) {
+        $levels[] = ['node' => ['location' => ['id' => $locationId, 'name' => $locationName], 'quantities' => [['quantity' => $available]]]];
+    }
+
+    return ShopifyFake::graphql(['productVariant' => [
+        'inventoryPolicy' => $inventoryPolicy,
+        'inventoryItem'   => ['inventoryLevels' => ['edges' => $levels]],
+    ]]);
+}
+
 function shopifyProductWithSiblingVariant(string $productGid, string $variantGid, string $sku): array
 {
     $product = shopifyProductNode($productGid, $variantGid, $sku, '19.00');
@@ -845,6 +863,7 @@ test('matching a portfolio to an existing shopify product keeps the price the me
     $portfolio->refresh();
 
     ShopifyFake::fake([
+        'getVariantStockLocations'     => shopifyVariantStockLocations(),
         'getProductVariantsToAdopt'     => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8200', 'sku' => 'match-me']]]]]]),
         'ProductVariantsList'           => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8200', 'title' => 'Default', 'price' => '9.00', 'updatedAt' => 'x', 'inventoryQuantity' => 1, 'product' => ['id' => 'gid://shopify/Product/7200', 'title' => 'Already Listed']]]]]]),
         'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8201', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -872,6 +891,7 @@ test('matching to a product sold as several variants links the variant that carr
     $portfolio->update(['sku' => 'crbask-05a', 'customer_price' => 12]);
 
     ShopifyFake::fake([
+        'getVariantStockLocations'     => shopifyVariantStockLocations(),
         'getProductVariantsToAdopt'     => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
             ['node' => ['id' => 'gid://shopify/ProductVariant/8401', 'sku' => 'crbask-05b']],
             ['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'sku' => 'CRBASK-05A']],
@@ -918,6 +938,7 @@ test('matching to a single-variant listing links the merchant variant whatever i
     $portfolio->update(['sku' => 'our-sku', 'customer_price' => 12]);
 
     ShopifyFake::fake([
+        'getVariantStockLocations'     => shopifyVariantStockLocations(),
         'getProductVariantsToAdopt'     => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
             ['node' => ['id' => 'gid://shopify/ProductVariant/8601', 'sku' => 'MERCHANT-1']],
         ]]]]),
@@ -960,6 +981,7 @@ test('a linked variant whose stock could not be activated is not shown as connec
     $portfolio->update(['sku' => 'crbask-05a', 'platform_status' => true]);
 
     ShopifyFake::fake([
+        'getVariantStockLocations'     => shopifyVariantStockLocations(),
         'getProductVariantsToAdopt'     => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
             ['node' => ['id' => 'gid://shopify/ProductVariant/8401', 'sku' => 'first-sibling']],
             ['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'sku' => 'crbask-05a']],
@@ -1006,6 +1028,114 @@ test('a channel that was not switched on keeps creating its own variant even on 
         ->and(ShopifyFake::calls('ProductVariantsCreate'))->toHaveCount(1)
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8403')
         ->and($portfolio->isShopifyVariantAdopted())->toBeFalse();
+});
+
+test('matching refuses a merchant variant also stocked at another location, so its orders can not be routed away from us', function (string $inventoryPolicy, int $available, string $refusal) {
+    Queue::fake();
+    $shopifyUser = shopifyVariantLinkingChannel($this, 'product-adopt-other-location-'.Str::random(6));
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'our-sku']);
+
+    ShopifyFake::fake([
+        'getProductVariantsToAdopt' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
+            ['node' => ['id' => 'gid://shopify/ProductVariant/8701', 'sku' => 'MERCHANT-7']],
+        ]]]]),
+        'getVariantStockLocations'  => shopifyVariantStockLocations($inventoryPolicy, [['gid://shopify/Location/77', 'Back room', $available]]),
+        'GET shop.json'             => ['shop' => ['id' => 1]],
+        'getProductsByVariant'      => ShopifyFake::graphql(['products' => ['edges' => []]]),
+    ]);
+
+    MatchPortfolioToCurrentShopifyProduct::run($portfolio->refresh(), ['shopify_product_id' => 'gid://shopify/Product/7700']);
+    $portfolio->refresh();
+
+    expect(ShopifyFake::calls('ProductVariantAdopt'))->toBeEmpty()
+        ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBeEmpty()
+        ->and($portfolio->platform_product_variant_id)->toBeNull()
+        ->and($portfolio->isShopifyVariantAdopted())->toBeFalse()
+        ->and($portfolio->errors_response['message'])->toContain('Back room')
+        ->and($portfolio->errors_response['message'])->toContain($refusal);
+})->with([
+    'stock at the merchant location'                         => ['DENY', 4, '4 in stock'],
+    'sells when out of stock and stocked at another location' => ['CONTINUE', 0, 'keeps selling when out of stock'],
+]);
+
+test('matching with the price managed by us sends our price to the merchant variant only, and switching back stops the sends', function () {
+    Queue::fake();
+    $shopifyUser = shopifyVariantLinkingChannel($this, 'product-adopt-price-managed');
+    $channel     = $shopifyUser->customerSalesChannel;
+    $portfolio   = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update(['sku' => 'our-sku', 'customer_price' => 12]);
+
+    ShopifyFake::fake([
+        'getProductVariantsToAdopt'     => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
+            ['node' => ['id' => 'gid://shopify/ProductVariant/8801', 'sku' => 'our-sku']],
+        ]]]]),
+        'getVariantStockLocations'      => shopifyVariantStockLocations('DENY', [['gid://shopify/Location/77', 'Back room', 0]]),
+        'ProductVariantAdopt'           => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8801']], 'userErrors' => []]]),
+        'GetVariantInventoryItem'       => ShopifyFake::graphql(['productVariant' => ['inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8801']]]),
+        'InventoryActivate'             => ShopifyFake::graphql(['inventoryActivate' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/8'], 'userErrors' => []]]),
+        'ProductVariantsBulkUpdate'     => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8801', 'price' => '12.00', 'compareAtPrice' => '20.00']], 'userErrors' => []]]),
+        'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7800', 'gid://shopify/ProductVariant/8801', 'our-sku', '12.00')]),
+        'inventoryDeactivate'           => ShopifyFake::graphql(['inventoryDeactivate' => ['userErrors' => []]]),
+        'GET shop.json'                 => ['shop' => ['id' => 1]],
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7800', 'title' => 'Merchant Listing', 'status' => 'ACTIVE']]),
+        'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
+            ['node' => ['id' => 'gid://shopify/ProductVariant/8801', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/8']]]],
+        ]]]]),
+    ]);
+
+    MatchPortfolioToCurrentShopifyProduct::run($portfolio->refresh(), ['shopify_product_id' => 'gid://shopify/Product/7800', 'manage_price' => true]);
+    $portfolio->refresh();
+
+    expect($portfolio->isShopifyVariantAdopted())->toBeTrue()
+        ->and($portfolio->isShopifyPriceManagedByUs())->toBeTrue()
+        ->and(ShopifyFake::calls('ProductVariantsList'))->toBeEmpty()
+        ->and(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('ProductVariantsBulkUpdate')[0]['variables']['variants'][0])->toBe(['id' => 'gid://shopify/ProductVariant/8801', 'price' => '12']);
+
+    [$switchedOff] = SetShopifyPortfolioPriceManagement::run($portfolio, false);
+    [$priced]      = UpdateShopifyProductVariant::run($portfolio->refresh());
+
+    expect($switchedOff)->toBeTrue()
+        ->and($priced)->toBeTrue()
+        ->and($portfolio->isShopifyPriceManagedByUs())->toBeFalse()
+        ->and(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toHaveCount(1);
+
+    [$switchedOn] = SetShopifyPortfolioPriceManagement::run($portfolio, true);
+
+    expect($switchedOn)->toBeTrue()
+        ->and(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toHaveCount(2);
+
+    UnlinkRetinaPortfolio::run($portfolio->refresh());
+
+    expect($portfolio->refresh()->isShopifyPriceManagedByUs())->toBeFalse()
+        ->and(data_get($portfolio->settings, 'shopify_price_managed_by_us'))->toBeFalse();
+});
+
+test('the price switch of a channel only changes its own products linked to a variant the merchant already had', function () {
+    Queue::fake();
+    $shopifyUser   = shopifyVariantLinkingChannel($this, 'product-price-switch-scope');
+    $channel       = $shopifyUser->customerSalesChannel;
+    $adopted       = StorePortfolio::make()->action($channel, $this->product, []);
+    $adopted->update(['settings' => ['shopify_variant_adopted' => true]]);
+    $secondProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+    $uploadedByUs  = StorePortfolio::make()->action($channel, $secondProduct, []);
+    $otherChannel  = shopifyVariantLinkingChannel($this, 'product-price-switch-other')->customerSalesChannel;
+    $otherAdopted  = StorePortfolio::make()->action($otherChannel, $this->product, []);
+    $otherAdopted->update(['settings' => ['shopify_variant_adopted' => true]]);
+
+    ShopifyFake::fake([]);
+
+    $result = SetRetinaShopifyPortfoliosPriceManagement::make()->handle($channel, [
+        'portfolios'    => [$adopted->id, $uploadedByUs->id, $otherAdopted->id],
+        'managed_by_us' => false,
+    ]);
+
+    expect($result)->toBe(['changed' => 1, 'queued' => 0, 'failed' => []])
+        ->and(data_get($adopted->refresh()->settings, 'shopify_price_managed_by_us'))->toBeFalse()
+        ->and(data_get($uploadedByUs->refresh()->settings, 'shopify_price_managed_by_us'))->toBeNull()
+        ->and(data_get($otherAdopted->refresh()->settings, 'shopify_price_managed_by_us'))->toBeNull()
+        ->and(ShopifyFake::$requests)->toBeEmpty();
 });
 
 test('nothing of ours is ever written to the listing of a variant the merchant already had', function () {
@@ -1057,6 +1187,23 @@ test('editing only the price of a shopify portfolio does not overwrite the title
 
     expect(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toHaveCount(1)
         ->and(ShopifyFake::calls('productUpdate'))->toBeEmpty();
+});
+
+test('a price shopify refuses is only reported to the customer saving it, never thrown at callers such as a bundle update', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-price-refused');
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'crbask-05a', 'customer_price' => 10, 'platform_product_id' => 'gid://shopify/Product/7400']);
+
+    ShopifyFake::fake([
+        'ProductVariantsList'       => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'title' => 'Default', 'price' => '9.00', 'updatedAt' => 'x', 'inventoryQuantity' => 1, 'product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]]]]]),
+        'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [], 'userErrors' => [['field' => ['price'], 'message' => 'Price is too high']]]]),
+    ]);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio->refresh(), ['customer_price' => '15']);
+
+    expect((float) $portfolio->refresh()->customer_price)->toBe(15.0)
+        ->and($portfolio->errors_response['message'] ?? json_encode($portfolio->errors_response))->toContain('Price is too high');
 });
 
 test('an order line never falls back by product id onto a portfolio linked to a sibling variant, and unlinking it switches its variant off', function () {
@@ -1134,6 +1281,7 @@ test('matching refuses to link, and creates nothing, when the variants of the pr
     $portfolio->update(['sku' => 'twin-sku']);
 
     ShopifyFake::fake([
+        'getVariantStockLocations'     => shopifyVariantStockLocations(),
         'getProductVariantsToAdopt' => Http::sequence()
             ->push(ShopifyFake::graphql(['product' => ['variants' => ['pageInfo' => ['hasNextPage' => true, 'endCursor' => 'v1'], 'edges' => [
                 ['node' => ['id' => 'gid://shopify/ProductVariant/8501', 'sku' => $variantSkus[0]]],
@@ -1197,12 +1345,12 @@ test('bulk matching links portfolios by sku to the active listings and skips amb
             ->push(ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [$variantEdge('dup', 'gid://shopify/Product/7302', 'ACTIVE'), $variantEdge('dup', 'gid://shopify/Product/7303', 'ACTIVE')]]])),
     ]);
 
-    $result = MatchBulkPortfoliosToPlatform::run($channel);
+    $result = MatchBulkPortfoliosToPlatform::run($channel, ['manage_price' => true]);
 
     expect(ShopifyFake::calls('listProductVariants'))->toHaveCount(2)
         ->and(ShopifyFake::calls('listProductVariants')[1]['variables']['cursor'])->toBe('c1')
         ->and($result)->toBe(['matched' => 1, 'ignored' => 0]);
-    MatchPortfolioToCurrentShopifyProduct::assertPushed(fn ($action, $parameters) => $parameters[0]->id === $portfolio->id && $parameters[1] === ['shopify_product_id' => 'gid://shopify/Product/7300']);
+    MatchPortfolioToCurrentShopifyProduct::assertPushed(fn ($action, $parameters) => $parameters[0]->id === $portfolio->id && $parameters[1] === ['shopify_product_id' => 'gid://shopify/Product/7300', 'manage_price' => true]);
 });
 
 test('the stock push heals a stale variant id by sku, applies threshold and cap, records failures per line and activates unstocked items', function () {

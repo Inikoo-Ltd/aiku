@@ -26,8 +26,10 @@ use Throwable;
  * barcode. On a product with several variants the one carrying our sku is taken; a product with a
  * single variant is taken whatever its sku, and a sku that is not ours is kept in platform_sku.
  *
- * The merchant's price, sku and barcode are never written. Only on channels with the
- * link_existing_variants switch; the others still go through StoreShopifyProductVariant.
+ * The merchant's sku and barcode are never written, nor the price unless the merchant asked us to
+ * manage it. A variant also stocked at another location is refused: Shopify could route its orders
+ * there and they would never reach us. Only on channels with the link_existing_variants switch;
+ * the others still go through StoreShopifyProductVariant.
  */
 class AdoptShopifyProductVariant
 {
@@ -41,7 +43,7 @@ class AdoptShopifyProductVariant
     /**
      * @return array{0: bool, 1: string}|null null when the channel does not adopt variants
      */
-    public function handle(Portfolio $portfolio, string $shopifyProductId): ?array
+    public function handle(Portfolio $portfolio, string $shopifyProductId, ?bool $priceManagedByUs = null): ?array
     {
         $shopifyUser = $portfolio->customerSalesChannel?->user;
 
@@ -91,6 +93,12 @@ class AdoptShopifyProductVariant
                 return $this->fail($portfolio, 'This Shopify variant is already linked to '.$holder->item_code.' in this channel');
             }
 
+            $otherLocationRefusal = $this->otherLocationRefusal($shopifyUser, $portfolio, $variant['id']);
+
+            if ($otherLocationRefusal) {
+                return $this->fail($portfolio, $otherLocationRefusal);
+            }
+
             $this->trackVariantStock($shopifyUser, $portfolio, $shopifyProductId, $variant['id']);
         } catch (Throwable $e) {
             return $this->fail($portfolio, $e->getMessage());
@@ -112,9 +120,82 @@ class AdoptShopifyProductVariant
 
         $portfolio->markShopifyVariantAdopted(true);
 
+        if ($priceManagedByUs !== null) {
+            $portfolio->markShopifyPriceManagedByUs($priceManagedByUs);
+        }
+
         [$stocked, $stockedMessage] = StoreShopifyLocationToProductVariant::run($portfolio->refresh());
 
+        if ($stocked && $portfolio->isShopifyPriceManagedByUs()) {
+            [$priced, $pricedMessage] = UpdateShopifyProductVariant::run($portfolio->refresh());
+
+            if (!$priced) {
+                return [false, $pricedMessage];
+            }
+        }
+
         return [$stocked, $stocked ? $variant['id'] : $stockedMessage];
+    }
+
+    /**
+     * Any stock at a location other than ours lets Shopify route the order there; with the
+     * variant selling when out of stock, an empty location can take it too.
+     */
+    private function otherLocationRefusal(ShopifyUser $shopifyUser, Portfolio $portfolio, string $variantId): ?string
+    {
+        $query = <<<'QUERY'
+        query getVariantStockLocations($id: ID!) {
+          productVariant(id: $id) {
+            inventoryPolicy
+            inventoryItem {
+              inventoryLevels(first: 50) {
+                edges {
+                  node {
+                    location {
+                      id
+                      name
+                    }
+                    quantities(names: ["available"]) {
+                      quantity
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        QUERY;
+
+        $body = $this->request($shopifyUser, $query, ['id' => $variantId]);
+
+        $item              = $portfolio->item;
+        $sellsWhenOutOfStock = Arr::get($body, 'data.productVariant.inventoryPolicy') === 'CONTINUE'
+            || ($item instanceof Product && $item->orgStocks->contains('is_on_demand', true));
+
+        foreach (Arr::get($body, 'data.productVariant.inventoryItem.inventoryLevels.edges', []) as $levelEdge) {
+            if (self::sameLocation(Arr::get($levelEdge, 'node.location.id'), $shopifyUser->shopify_location_id)) {
+                continue;
+            }
+
+            $locationName = (string) Arr::get($levelEdge, 'node.location.name');
+            $available    = (int) Arr::get($levelEdge, 'node.quantities.0.quantity', 0);
+
+            if ($available > 0) {
+                return 'This Shopify variant has '.$available.' in stock at your location "'.$locationName.'". Shopify could send its orders there and we would never receive them. Set its stock at that location to 0 in Shopify, then match again';
+            }
+
+            if ($sellsWhenOutOfStock) {
+                return 'This Shopify variant keeps selling when out of stock and is also stocked at your location "'.$locationName.'". Shopify could send its orders there and we would never receive them. Remove that location from the variant in Shopify, then match again';
+            }
+        }
+
+        return null;
+    }
+
+    private static function sameLocation(?string $locationId, ?string $ourLocationId): bool
+    {
+        return $locationId !== null && $ourLocationId !== null
+            && Str::afterLast($locationId, '/') === Str::afterLast($ourLocationId, '/');
     }
 
     public static function isEnabledFor(?CustomerSalesChannel $customerSalesChannel): bool
