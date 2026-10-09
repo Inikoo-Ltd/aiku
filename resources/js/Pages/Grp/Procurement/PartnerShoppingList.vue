@@ -615,12 +615,17 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 					<div class="flex flex-col items-end">
 						<div class="flex items-end gap-1">
 							<div class="flex flex-col items-end">
-								<PurchaseOrderSuggestButton
-									class="mb-1"
-									:item="withSavedQuantity(item)"
-									isPartner
-									:typedSkosById="typedSkos"
-									@suggest="(skos) => saveQuantity(item, skos)" />
+								<div class="flex items-center">
+									<PurchaseOrderSuggestButton
+										class="mb-1"
+										:item="withSavedQuantity(item)"
+										isPartner
+										:typedSkosById="typedSkos"
+										@suggest="(skos) => saveQuantity(item, skos)" />
+										
+									<span class="ml-1 w-4">
+									</span>
+								</div>
 								<div class="flex items-center">
 									<ReuseLineActions :item="item" />
 									<NumberWithButtonSave
@@ -647,26 +652,28 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 								:tooltip="hasUnsavedQuantity(item) || savingId === item.id ? ctrans('Saving the quantity, try again in a moment') : ctrans('Send only this line to the partner now')"
 								@click="submitItem(item)" />
 						</div>
-						<span
-							v-if="Number(item.order_quantum) > 1"
-							v-tooltip="
-								ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
-									quantum: item.order_quantum,
-								})
-							"
-							class="mt-0.5 cursor-help text-xs"
-							:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
-							{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
-						</span>
-						<Button
-							v-if="Number(item.order_quantum) > 1"
-							class="mt-1"
-							icon="fal fa-cut"
-							:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
-							type="tertiary"
-							size="xs"
-							@click="openBreakBatch(item)" />
-						<div class="border-t border-gray-300 border-dashed mt-1">
+						<div class="xborder-t border-gray-300 border-dashed mt-2 flex items-center">
+							<span
+								v-if="Number(item.order_quantum) > 1"
+								v-tooltip="
+									ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
+										quantum: item.order_quantum,
+									})
+								"
+								class="mt-0.5 cursor-help text-xs"
+								:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
+								{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
+							</span>
+
+							<div v-if="Number(item.order_quantum) > 1" class="border-x border-gray-300 px-3 mx-2"> <Button
+								class=""
+								icon="fal fa-cut"
+								:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
+								type="tertiary"
+								size="xs"
+								@click="openBreakBatch(item)" />
+							</div>
+
 							<SegmentedToggle
 								class="priority-toggle mt-1"
 								:modelValue="item.priority"
