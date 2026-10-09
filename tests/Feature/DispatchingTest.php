@@ -6014,4 +6014,26 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
     expect($lines())->toHaveCount(2)
         ->and($lines()->firstWhere('source_type', 'DeliveryNoteItem')->activity)->toBe(\App\Enums\Goods\Packaging\EprActivityEnum::EXPORTED)
         ->and($lines()->firstWhere('source_type', 'StockDeliveryItem')->activity)->toBe(\App\Enums\Goods\Packaging\EprActivityEnum::BOUGHT_DOMESTIC);
+
+    $report = fn () => $this->get(route('grp.org.reports.packaging', [$this->organisation->slug, 'tab' => 'completeness', 'from' => '2001-03-01', 'to' => '2001-03-31']));
+
+    $report()->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Reports/PackagingReport')
+        ->where('period', ['from' => '2001-03-01', 'to' => '2001-03-31'])
+        ->where('completeness.has_data', true)
+        ->where('completeness.summary.coverage', 100)
+        ->where('completeness.rows', []));
+
+    $tradeUnit->update(['packaging_family_id' => null]);
+    $build();
+
+    $report()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('completeness.summary.coverage', 0)
+        ->where('completeness.summary.skos_by_status.no_packaging', 1)
+        ->where('completeness.rows.0.code', $orgStock->code)
+        ->where('completeness.rows.0.status', 'no_packaging')
+        ->where('completeness.rows.0.trade_unit_slug', $tradeUnit->slug)
+        ->where('completeness.rows.0.units_in', 30)
+        ->where('completeness.rows.0.units_out', 24)
+        ->where('completeness.rows.0.share', 100));
 });

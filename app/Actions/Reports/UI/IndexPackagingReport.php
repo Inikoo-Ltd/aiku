@@ -9,8 +9,11 @@
 namespace App\Actions\Reports\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Reports\GetEprPackagingCompleteness;
 use App\Actions\UI\Reports\IndexReports;
+use App\Enums\UI\Reports\PackagingReportTabsEnum;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,24 +25,50 @@ class IndexPackagingReport extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(PackagingReportTabsEnum::values());
 
         return $organisation;
     }
 
+    /**
+     * The period asked for, or the last complete half-year: UK packaging data is collected by half-year.
+     *
+     * @return array{Carbon, Carbon}
+     */
+    public function period(ActionRequest $request): array
+    {
+        if ($request->filled(['from', 'to'])) {
+            return [Carbon::parse($request->input('from'))->startOfDay(), Carbon::parse($request->input('to'))->startOfDay()];
+        }
+
+        $from = now()->month > 6 ? now()->startOfYear() : now()->subYear()->month(7)->startOfMonth();
+
+        return [$from, $from->copy()->addMonths(6)->subDay()];
+    }
+
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
+        [$from, $to] = $this->period($request);
+
         return Inertia::render(
             'Org/Reports/PackagingReport',
             [
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => PackagingReportTabsEnum::navigation(),
+                ],
+                'period' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
+                PackagingReportTabsEnum::COMPLETENESS->value => $this->tab == PackagingReportTabsEnum::COMPLETENESS->value
+                    ? fn () => GetEprPackagingCompleteness::run($organisation, $from, $to)
+                    : Inertia::optional(fn () => GetEprPackagingCompleteness::run($organisation, $from, $to)),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title' => __('Packaging Reports'),
+                'title' => __('Packaging EPR'),
                 'pageHead' => [
                     'icon' => [
                         'icon' => ['fal', 'fa-boxes'],
-                        'title' => __('Packaging Reports')
+                        'title' => __('Packaging EPR')
                     ],
-                    'title' => __('Packaging Reports'),
+                    'title' => __('Packaging EPR'),
                 ],
                 'downloadRoute' => [
                     'name' => 'grp.org.reports.packaging.download',
@@ -58,7 +87,7 @@ class IndexPackagingReport extends OrgAction
                     'type' => 'simple',
                     'simple' => [
                         'icon' => 'fal fa-boxes',
-                        'label' => __('Packaging Reports'),
+                        'label' => __('Packaging EPR'),
                         'route' => [
                             'name' => 'grp.org.reports.packaging',
                             'parameters' => $routeParameters
