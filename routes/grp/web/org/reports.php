@@ -23,6 +23,7 @@ use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
 use App\Actions\Reports\DownloadPackagingReport;
 use App\Actions\Reports\ExportUkManufacturingSurvey;
+use App\Actions\Reports\ExportUkPackagingReturn;
 use App\Actions\Reports\UI\IndexPackagingReport;
 use App\Actions\Reports\UI\IndexUkManufacturingSurveyReport;
 use App\Actions\UI\Reports\IndexReports;
@@ -50,6 +51,7 @@ Route::get('/montana-invoices/export', ExportMontanaInvoices::class)->name('mont
 
 Route::get('/packaging', IndexPackagingReport::class)->name('packaging');
 Route::get('/packaging/download', DownloadPackagingReport::class)->name('packaging.download');
+Route::get('/packaging/uk-return', ExportUkPackagingReturn::class)->name('packaging.uk-return');
 
 Route::get('/uk-manufacturing-survey', IndexUkManufacturingSurveyReport::class)->name('uk-manufacturing-survey');
 Route::get('/uk-manufacturing-survey/export', ExportUkManufacturingSurvey::class)->name('uk-manufacturing-survey.export');

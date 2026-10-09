@@ -6007,6 +6007,27 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->and((float)$sale->sko_quantity)->toBe(4.0)
         ->and((float)$sale->quantity)->toBe(24.0);
 
+    $ukReturn = fn (bool $countOwnBrandImports = false) => \App\Actions\Reports\GetUkPackagingReturn::run($this->organisation, \Illuminate\Support\Carbon::parse('2001-03-01'), \Illuminate\Support\Carbon::parse('2001-03-31'), $countOwnBrandImports);
+
+    expect($ukReturn()['lines'])->toBe([['activity' => 'IM', 'type' => 'HH', 'class' => 'P1', 'material' => 'GL', 'ram' => 'G', 'kg' => 3.6]])
+        ->and($ukReturn()['submission_period'])->toBeNull()
+        ->and(\App\Actions\Reports\GetUkPackagingReturn::make()->submissionPeriod(\Illuminate\Support\Carbon::parse('2026-07-01'), \Illuminate\Support\Carbon::parse('2026-12-31')))->toBe('2026-P4');
+
+    $family->update(['brand_ownership' => \App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum::OWN_BRAND]);
+    $ownBrand = $ukReturn();
+
+    expect($ownBrand['lines'])->toBe([['activity' => 'SO', 'type' => 'HH', 'class' => 'P1', 'material' => 'GL', 'ram' => 'G', 'kg' => 2.88]])
+        ->and(collect($ownBrand['form'])->firstWhere('activity', 'SO')['cells']['GL']['kg'])->toEqual(3)
+        ->and(collect($ukReturn(true)['lines'])->pluck('activity')->all())->toBe(['IM', 'SO'])
+        ->and(\App\Actions\Reports\ExportUkPackagingReturn::make()->handle($this->organisation, $ownBrand))->toBe([[null, null, 'L', null, 'SO', 'HH', 'P1', 'GL', null, null, null, 3, null, null, 'G']]);
+
+    expect($this->get(route('grp.org.reports.packaging.uk-return', [$this->organisation->slug, 'from' => '2001-03-01', 'to' => '2001-03-31']))->assertOk()->streamedContent())
+        ->toBe(implode(',', \App\Actions\Reports\ExportUkPackagingReturn::COLUMNS)."\n,,L,,SO,HH,P1,GL,,,,3,,,G\n");
+
+    $family->update(['is_product_itself' => true]);
+    expect($ukReturn()['has_data'])->toBeFalse();
+    $family->update(['is_product_itself' => false, 'brand_ownership' => \App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum::UNKNOWN]);
+
     $deliveryNote->update(['delivery_country_id' => $foreignCountryId]);
     $supplier->address->update(['country_id' => $homeCountryId]);
     $build();

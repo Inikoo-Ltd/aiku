@@ -11,6 +11,7 @@ namespace App\Models\Goods;
 use App\Enums\Goods\Packaging\EprSchemeEnum;
 use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
 use App\Enums\Goods\Packaging\PackagingPolymerEnum;
+use App\Enums\Goods\Packaging\PackagingRamRatingEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -23,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property PackagingPolymerEnum|null $polymer
  * @property string $scheme_material
  * @property string|null $scheme_subcategory
+ * @property string|null $scheme_code
+ * @property PackagingRamRatingEnum|null $default_ram_rating
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @mixin \Eloquent
@@ -32,7 +35,8 @@ class EprMaterialMapping extends Model
     protected $casts = [
         'scheme'            => EprSchemeEnum::class,
         'material_category' => PackagingMaterialCategoryEnum::class,
-        'polymer'           => PackagingPolymerEnum::class,
+        'polymer'            => PackagingPolymerEnum::class,
+        'default_ram_rating' => PackagingRamRatingEnum::class,
     ];
 
     protected $guarded = [];

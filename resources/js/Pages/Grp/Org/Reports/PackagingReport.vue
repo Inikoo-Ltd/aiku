@@ -15,6 +15,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import EprPackagingCompleteness from "@/Components/Reports/EprPackagingCompleteness.vue"
+import UkPackagingReturn from "@/Components/Reports/UkPackagingReturn.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -28,6 +29,9 @@ const props = defineProps<{
 	period: { from: string; to: string }
 	downloadRoute: { name: string; parameters: Record<string, string> }
 	completeness?: any
+	uk_return?: any
+	ownBrandImports: boolean
+	ukReturnRoute: { name: string; parameters: Record<string, string> }
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -38,14 +42,16 @@ const fromIsoDate = (iso: string): Date => {
 }
 const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
-const visit = (period: { from: string; to: string }) => {
+const tabsWithData = ["completeness", "uk_return"]
+
+const visit = (period: { from: string; to: string }, ownBrandImports = props.ownBrandImports) => {
 	router.get(
 		route(route().current() as string, props.downloadRoute.parameters),
-		{ ...period, tab: currentTab.value },
+		{ ...period, tab: currentTab.value, ...(ownBrandImports ? { own_brand_imports: 1 } : {}) },
 		{
 			preserveState: true,
 			preserveScroll: true,
-			only: currentTab.value === "completeness" ? ["period", "tabs", "completeness"] : ["period", "tabs"],
+			only: ["period", "tabs", "ownBrandImports", ...(tabsWithData.includes(currentTab.value) ? [currentTab.value] : [])],
 		}
 	)
 }
@@ -93,6 +99,10 @@ const rangeTo = dateModel("to")
 const datePickerPt = { pcInputText: { root: { class: "!w-32 !py-1 !text-xs" } } }
 const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
 
+const ukReturnUrl = computed(() =>
+	route(props.ukReturnRoute.name, { ...props.ukReturnRoute.parameters, from: props.period.from, to: props.period.to, ...(props.ownBrandImports ? { own_brand_imports: 1 } : {}) })
+)
+
 const downloadUrl = computed(() => route(props.downloadRoute.name, { ...props.downloadRoute.parameters, start_date: props.period.from, end_date: props.period.to }))
 </script>
 
@@ -111,6 +121,13 @@ const downloadUrl = computed(() => route(props.downloadRoute.name, { ...props.do
 	</div>
 
 	<EprPackagingCompleteness v-if="currentTab === 'completeness'" :data="completeness" />
+
+	<UkPackagingReturn
+		v-else-if="currentTab === 'uk_return'"
+		:data="uk_return"
+		:ownBrandImports="ownBrandImports"
+		:downloadUrl="ukReturnUrl"
+		@update:ownBrandImports="(value) => visit(period, value)" />
 
 	<div v-else class="px-4 py-5 max-w-2xl text-sm text-gray-700 space-y-3">
 		<p>{{ ctrans("The four spreadsheets the UK packaging workbook reads, for the period above: one row per SKO with its quantity.") }}</p>
