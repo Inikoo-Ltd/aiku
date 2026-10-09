@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Leave\UI;
 
+use App\Actions\HumanResources\Leave\UpdateLeaveCover;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -142,6 +143,8 @@ class IndexLeavesAdmin extends OrgAction
                     ->filter(fn (Employee $employee) => $employee->users->contains(fn (User $user) => $user->hasGroupAccess()))
                     ->pluck('id')
                     ->values(),
+                // ponytail: the picker only knows leave from the last year; older dates are still checked on save
+                'employee_leave_periods' => UpdateLeaveCover::approvedLeavePeriods($employees->pluck('id'), today()->subYear()),
             ]
         )->table($this->tableStructure());
     }

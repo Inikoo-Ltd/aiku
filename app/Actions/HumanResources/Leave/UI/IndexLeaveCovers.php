@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Leave\UI;
 
+use App\Actions\HumanResources\Leave\UpdateLeaveCover;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
@@ -63,6 +64,13 @@ class IndexLeaveCovers extends OrgAction
     {
         $title = __('Absence cover');
 
+        $employeeOptions = $this->canEdit
+            ? Employee::where('organisation_id', $this->organisation->id)
+                ->where('state', EmployeeStateEnum::WORKING)
+                ->orderBy('contact_name')
+                ->pluck('contact_name', 'id')
+            : collect();
+
         return Inertia::render(
             'Org/HumanResources/LeaveCovers',
             [
@@ -78,12 +86,8 @@ class IndexLeaveCovers extends OrgAction
                 ],
                 'data'             => LeaveCoversResource::collection($leaves),
                 'can_edit'         => $this->canEdit,
-                'employee_options' => $this->canEdit
-                    ? Employee::where('organisation_id', $this->organisation->id)
-                        ->where('state', EmployeeStateEnum::WORKING)
-                        ->orderBy('contact_name')
-                        ->pluck('contact_name', 'id')
-                    : [],
+                'employee_options' => $employeeOptions,
+                'employee_leave_periods' => UpdateLeaveCover::approvedLeavePeriods($employeeOptions->keys(), today()),
             ]
         )->table($this->tableStructure());
     }

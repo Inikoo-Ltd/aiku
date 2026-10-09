@@ -12,8 +12,10 @@ import { useLocaleStore } from "@/Stores/locale"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { ctrans } from "@/Composables/useTrans"
+import { coveredByExplanation, isOnLeaveDuring } from "@/Composables/useLeaveCovers"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserFriends, faUserTimes, faEdit, faPlus } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUserFriends, faUserTimes, faEdit, faPlus, faInfoCircle } from "@fal"
 
 library.add(faUserFriends, faUserTimes, faEdit, faPlus)
 
@@ -36,6 +38,7 @@ const props = defineProps<{
 	data: object
 	can_edit: boolean
 	employee_options: Record<string, string>
+	employee_leave_periods: Record<string, [string, string][]>
 }>()
 
 const locale = useLocaleStore()
@@ -43,8 +46,13 @@ const selectedLeave = ref<LeaveCover | null>(null)
 
 const coverOptions = computed(() =>
 	Object.entries(props.employee_options ?? {})
-		.map(([value, label]) => ({ value: Number(value), label }))
+		.map(([value, label]) => ({
+			value: Number(value),
+			label,
+			disabled: isOnLeaveDuring(props.employee_leave_periods?.[value], selectedLeave.value?.start_date ?? "", selectedLeave.value?.end_date ?? ""),
+		}))
 		.filter((option) => option.value !== selectedLeave.value?.employee_id)
+		.sort((a, b) => Number(a.disabled) - Number(b.disabled))
 )
 
 const coverForm = useForm({
@@ -121,15 +129,26 @@ const saveCover = (leave: LeaveCover, coverEmployeeId: string | number) => {
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700">{{ ctrans("Covered by") }}</label>
+				<label class="flex items-center gap-1 text-sm font-medium text-gray-700">
+					{{ ctrans("Covered by") }}
+					<FontAwesomeIcon v-tooltip="coveredByExplanation()" :icon="faInfoCircle" class="text-gray-400 hover:text-gray-600" fixed-width :aria-label="coveredByExplanation()" />
+				</label>
 				<Select
 					v-model="coverForm.cover_employee_id"
 					:options="coverOptions"
 					optionLabel="label"
 					optionValue="value"
+					optionDisabled="disabled"
 					filter
 					:placeholder="ctrans('Select employee')"
-					class="mt-1 w-full" />
+					class="mt-1 w-full">
+					<template #option="{ option }">
+						<div class="flex w-full items-center justify-between gap-2">
+							<span>{{ option.label }}</span>
+							<Tag v-if="option.disabled" size="xxs" :label="ctrans('On leave')" />
+						</div>
+					</template>
+				</Select>
 				<p v-if="coverForm.errors.cover_employee_id" class="mt-1 text-sm text-red-600">{{ coverForm.errors.cover_employee_id }}</p>
 			</div>
 
