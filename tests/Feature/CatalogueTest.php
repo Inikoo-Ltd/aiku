@@ -1491,8 +1491,10 @@ test('iris collection lists the product that owns a member product webpage', fun
 
 test('shop products json carries the outer size from the stock, not the product units', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
-    createProduct($shop);
-    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+    $product = UpdateProduct::make()->action(
+        StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10])),
+        ['state' => ProductStateEnum::ACTIVE]
+    );
 
     $orgStock = $this->orgStock1;
     $orgStock->update(['packed_in' => 6]);
@@ -1522,8 +1524,10 @@ test('shop products json carries the outer size from the stock, not the product 
 
 test('an on-demand stock never caps a product, and the shop products json reports what is on the shelf', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
-    createProduct($shop);
-    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+    $product = UpdateProduct::make()->action(
+        StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10])),
+        ['state' => ProductStateEnum::ACTIVE]
+    );
 
     $onDemandStock      = $this->orgStock1;
     $stockedStock       = $this->orgStock2;
