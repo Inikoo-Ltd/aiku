@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailshot;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\Comms\BeeFreeSDK\BeefreeExportJsonToHtml;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
@@ -21,6 +22,8 @@ use Illuminate\Http\JsonResponse;
 
 class StoreMailshotAsNewTemplate extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     public function handle(EmailTemplate|Mailshot $parent, array $modelData): EmailTemplate
     {
 
@@ -71,7 +74,7 @@ class StoreMailshotAsNewTemplate extends OrgAction
 
     public function inMailshot(Shop $shop, Mailshot $mailshot, ActionRequest $request): EmailTemplate
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }

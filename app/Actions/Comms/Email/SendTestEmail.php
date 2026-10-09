@@ -13,6 +13,7 @@ use App\Actions\Comms\Mailshot\InjectUtmToEmailLinks;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailTemplate;
@@ -25,6 +26,26 @@ use Lorisleiva\Actions\ActionRequest;
 class SendTestEmail extends OrgAction
 {
     use WithSendBulkEmails;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            return $request->user()->authTo([
+                "fulfilment-shop.{$this->shop->fulfilment->id}.edit",
+                "supervisor-fulfilment-shop.{$this->shop->fulfilment->id}",
+            ]);
+        }
+
+        return $request->user()->authTo([
+            "crm.{$this->shop->id}.edit",
+            "marketing.{$this->shop->id}.edit",
+            "supervisor-marketing.{$this->shop->id}"
+        ]);
+    }
 
     /**
      * @throws \Throwable
@@ -98,7 +119,7 @@ class SendTestEmail extends OrgAction
      */
     public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): DispatchedEmail
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }

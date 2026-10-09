@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateMailshotRecipientFilter extends OrgAction
 {
     use WithActionUpdate;
+    use WithMarketingEditAuthorisation;
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
@@ -163,7 +165,7 @@ class UpdateMailshotRecipientFilter extends OrgAction
 
     public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }

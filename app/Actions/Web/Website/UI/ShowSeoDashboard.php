@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Web\SearchConsole\GetWebsiteSearchConsoleStats;
@@ -39,6 +40,7 @@ class ShowSeoDashboard extends OrgAction
 {
     use WithDashboardIntervalOption;
     use WithPerformanceDateResolution;
+    use WithWebAuthorisation;
 
     public function handle(Shop $shop): Shop
     {

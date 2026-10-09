@@ -8,6 +8,7 @@
 namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoogleAdsEditAuthorisation;
 use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -38,6 +39,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class PublishGoogleAdsCampaign extends OrgAction
 {
+    use WithGoogleAdsEditAuthorisation;
     use WithGoogleAdsImageAssets;
     use WithGoogleAdsWriteErrors;
 

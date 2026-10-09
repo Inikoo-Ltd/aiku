@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\MailshotSendChannel\MailshotSendChannelStateEnum;
@@ -20,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StopMailshot extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
         if ($mailshot->state != MailshotStateEnum::SENDING) {
@@ -58,7 +61,7 @@ class StopMailshot extends OrgAction
 
     public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }

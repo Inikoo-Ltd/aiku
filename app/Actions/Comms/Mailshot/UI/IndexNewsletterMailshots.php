@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Actions\Traits\Authorisations\WithOverviewAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -24,7 +25,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexNewsletterMailshots extends OrgAction
 {
-    use WithOverviewAuthorisation;
+    use WithOverviewAuthorisation, WithMarketingAuthorisation {
+        WithOverviewAuthorisation::authorize insteadof WithMarketingAuthorisation;
+        WithOverviewAuthorisation::authorize as overviewAuthorize;
+        WithMarketingAuthorisation::authorize as marketingAuthorize;
+    }
     use HasUIMailshots;
     use WithIndexMailshots;
 
@@ -41,10 +46,19 @@ class IndexNewsletterMailshots extends OrgAction
         return OutboxCodeEnum::NEWSLETTER;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if (isset($this->shop)) {
+            return $this->marketingAuthorize($request);
+        }
+
+        return $this->overviewAuthorize($request);
+    }
+
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
         $actions = [];
-        if ($this->parent instanceof Shop) {
+        if ($this->parent instanceof Shop && $this->canEdit) {
             $outbox  = $this->parent->outboxes()->where('outboxes.code', OutboxCodeEnum::NEWSLETTER)->first();
             $actions = [
                 [
@@ -67,6 +81,7 @@ class IndexNewsletterMailshots extends OrgAction
         return Inertia::render(
             'Comms/Mailshots',
             [
+                'can_edit'    => isset($this->shop) && $this->canEdit,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),

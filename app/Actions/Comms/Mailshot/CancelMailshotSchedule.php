@@ -9,15 +9,18 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
+use Lorisleiva\Actions\ActionRequest;
 
 class CancelMailshotSchedule extends OrgAction
 {
     use WithActionUpdate;
+    use WithMarketingEditAuthorisation;
 
     public function handle(Mailshot $mailshot): Mailshot
     {
@@ -33,8 +36,10 @@ class CancelMailshotSchedule extends OrgAction
         return $mailshot->refresh();
     }
 
-    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot): Mailshot
+    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
+        $this->initialisationFromShop($mailshot->shop, $request);
+
         return $this->handle($mailshot);
     }
 }

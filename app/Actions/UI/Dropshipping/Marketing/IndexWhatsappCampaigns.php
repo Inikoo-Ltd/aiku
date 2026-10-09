@@ -129,6 +129,7 @@ class IndexWhatsappCampaigns extends OrgAction
                         ],
                     ] : [],
                 ],
+                'can_edit' => $this->canEdit,
                 'data' => WhatsappCampaignsResource::collection($campaigns),
             ]
         )->table($this->tableStructure());

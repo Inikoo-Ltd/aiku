@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailshot;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Models\Comms\Mailshot;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,6 +19,8 @@ use App\Models\Comms\Outbox;
 
 class SendMailShot extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     public function handle(Mailshot $mailshot): Mailshot
     {
         $modelData = [];
@@ -58,7 +61,7 @@ class SendMailShot extends OrgAction
 
     public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot);
     }

@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Comms\Mailshot;
 use Illuminate\Support\Arr;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateMailshotUtmSettings extends OrgAction
 {
     use WithActionUpdate;
+    use WithMarketingEditAuthorisation;
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {

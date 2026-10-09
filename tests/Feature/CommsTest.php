@@ -2157,6 +2157,9 @@ test('store mailshot template uses default template data', function (Shop $shop)
         ->where('slug', 'mailshot')
         ->first();
 
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, array_merge($originalRoles, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::MARKETING_CLERK->value, $shop)]));
+
     $storeAction = StoreMailshotTemplate::make();
     $storeAction->initialisationFromShop($shop, ['name' => 'My new template']);
     $emailTemplate = $storeAction->handle(['name' => 'My new template']);
@@ -2164,6 +2167,8 @@ test('store mailshot template uses default template data', function (Shop $shop)
     expect($emailTemplate->name)->toBe('My new template')
         ->and($emailTemplate->layout)->toBe($defaultTemplate->layout)
         ->and($emailTemplate->shop_id)->toBe($shop->id);
+
+    actingAsUserWithRoles($this->user, $originalRoles);
 
     return $emailTemplate;
 })->depends('outbox seeded when shop created');
@@ -2181,6 +2186,9 @@ test('update mailshot template', function (EmailTemplate $emailTemplate) {
 
 test('store mailshot as new template from existing template', function (EmailTemplate $emailTemplate) {
     $shop = $emailTemplate->shop;
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, array_merge($originalRoles, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::MARKETING_CLERK->value, $shop)]));
+
     $action = StoreMailshotAsNewTemplate::make();
     $action->initialisationFromShop($shop, [
         'name'   => 'Cloned template',
@@ -2193,6 +2201,8 @@ test('store mailshot as new template from existing template', function (EmailTem
 
     expect($newTemplate->name)->toBe('Cloned template')
         ->and($newTemplate->id)->not->toBe($emailTemplate->id);
+
+    actingAsUserWithRoles($this->user, $originalRoles);
 
     return $newTemplate;
 })->depends('update mailshot template');
@@ -2211,6 +2221,9 @@ test('store mailshot as new template from mailshot', function (Mailshot $mailsho
         'active_at'  => now(),
     ]);
 
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, array_merge($originalRoles, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::MARKETING_CLERK->value, $shop)]));
+
     $action = StoreMailshotAsNewTemplate::make();
     $action->initialisationFromShop($shop, [
         'name'   => 'From mailshot',
@@ -2224,7 +2237,55 @@ test('store mailshot as new template from mailshot', function (Mailshot $mailsho
     expect($newTemplate->name)->toBe('From mailshot')
         ->and($newTemplate->shop_id)->toBe($shop->id)
         ->and($newTemplate->language_id)->toBe($shop->language_id);
+
+    actingAsUserWithRoles($this->user, $originalRoles);
 })->depends('create mailshot with recipe for filters');
+
+test('a marketing viewer can open mailshots and the workshop but cannot change or send them', function (Mailshot $mailshot) {
+    $shop          = $mailshot->shop;
+    $parameters    = [$shop->organisation->slug, $shop->slug];
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $shop)]);
+
+    $index = $this->get(route('grp.org.shops.show.marketing.mailshots.index', $parameters))->assertOk()->viewData('page')['props'];
+    expect($index['can_edit'])->toBeFalse()
+        ->and($index['pageHead']['actions'])->toBeEmpty();
+
+    $workshop = $this->get(route('grp.org.shops.show.marketing.mailshots.workshop', [...$parameters, $mailshot->slug]))->assertOk()->viewData('page')['props'];
+    expect($workshop['can_edit'])->toBeFalse()
+        ->and($workshop['pageHead']['actions'])->toBeEmpty();
+
+    $dashboard = $this->get(route('grp.org.shops.show.marketing.dashboard', $parameters))->assertOk()->viewData('page')['props'];
+    expect($dashboard['pageHead']['actions'])->toBeEmpty();
+
+    $this->get(route('grp.org.shops.show.marketing.mailshot_settings', $parameters))->assertForbidden();
+    $this->post(route('grp.models.shop.mailshot.publish', ['shop' => $shop->id, 'mailshot' => $mailshot->id]), [])->assertForbidden();
+    $this->post(route('grp.models.shop.outboxes.mailshot.send', ['shop' => $shop->id, 'outbox' => $mailshot->outbox_id, 'mailshot' => $mailshot->id]))->assertForbidden();
+    $this->delete(route('grp.models.shop.mailshot.delete', ['shop' => $shop->id, 'mailshot' => $mailshot->id]))->assertForbidden();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+})->depends('create mailshot with recipe for filters');
+
+test('shop ppc edits google ads and seo but only views the rest of marketing', function () {
+    $shop          = $this->shop;
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    $permissions   = new class () {
+        use \App\Actions\Traits\Authorisations\WithShopPpcPermissions;
+    };
+
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::SHOP_PPC->value, $shop)]);
+    expect($permissions->isShopPpc($this->user, $shop))->toBeTrue()
+        ->and($permissions->canEditGoogleAds($this->user, $shop))->toBeTrue()
+        ->and($permissions->canEditSeo($this->user, $shop))->toBeTrue()
+        ->and($this->user->authTo("marketing.{$shop->id}.edit"))->toBeFalse();
+    $this->get(route('grp.org.shops.show.marketing.mailshot_settings', [$shop->organisation->slug, $shop->slug]))->assertForbidden();
+
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $shop)]);
+    expect($permissions->isShopPpc($this->user, $shop))->toBeFalse()
+        ->and($permissions->canEditGoogleAds($this->user, $shop))->toBeFalse();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+});
 
 test('delete mailshot template', function (EmailTemplate $emailTemplate) {
     $result = DeleteMailshotTemplate::make()->handle($emailTemplate);

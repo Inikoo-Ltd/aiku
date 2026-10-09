@@ -8,19 +8,19 @@
 
 namespace App\Actions\Web\Seo;
 
+use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithSeoEditAuthorisation
 {
+    use WithShopPpcPermissions;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
         }
 
-        return $request->user()->authTo([
-            "web.{$this->shop->id}.edit",
-            "group-webmaster.edit",
-        ]);
+        return $this->canEditSeo($request->user(), $this->shop);
     }
 }

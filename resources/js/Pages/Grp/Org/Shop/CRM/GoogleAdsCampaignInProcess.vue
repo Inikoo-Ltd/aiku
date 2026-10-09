@@ -46,6 +46,7 @@ const props = defineProps<{
     image_route: { name: string; parameters: Record<string, unknown> }
     update_route: { name: string; parameters: Record<string, unknown> }
     index_route: { name: string; parameters: Record<string, unknown> }
+    can_edit?: boolean
 }>()
 
 const data = props.campaign.data ?? {}
@@ -429,7 +430,7 @@ const toggleImage = (role: string, id: number) => {
                 {{ ctrans("Nothing on this page reaches Google. Save as often as you like and come back to it.") }}
             </p>
 
-            <Button class="mt-4" :label="ctrans('Save the campaign')" :loading="form.processing" :disabled="hasProblems" size="s" @click="save" />
+            <Button v-if="can_edit" class="mt-4" :label="ctrans('Save the campaign')" :loading="form.processing" :disabled="hasProblems" size="s" @click="save" />
 
             <p v-if="hasProblems" class="mt-3 text-xs text-[#d03b3b]">{{ ctrans("Fix what is marked in red to save.") }}</p>
             <p v-else-if="form.recentlySuccessful" class="mt-3 text-xs text-[#006300]">{{ ctrans("Saved.") }}</p>

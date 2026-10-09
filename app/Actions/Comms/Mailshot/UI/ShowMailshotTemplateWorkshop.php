@@ -12,6 +12,7 @@ use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -24,6 +25,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
 {
     use WithActionButtons;
     use WithOutboxBuilder;
+    use WithMarketingAuthorisation;
 
     public function handle(EmailTemplate $emailTemplate): EmailTemplate
     {
@@ -73,7 +75,7 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                                 ]
                             ]
                         ],
-                        [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
@@ -86,10 +88,11 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                                     $emailTemplate->slug
                                 ]
                             ]
-                        ]
+                        ] : null
                     ]
 
                 ],
+                'can_edit'            => $this->canEdit,
                 'builder'             => $emailTemplate->builder,
                 'snapshot'            => [
                     'layout' => $emailTemplate->layout,

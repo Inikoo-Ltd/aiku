@@ -10,6 +10,8 @@ namespace App\Actions\CRM\TrafficSourceCampaign\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
+use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Http\Resources\CRM\GoogleAdsCampaignsResource;
 use App\InertiaTable\InertiaTable;
@@ -32,6 +34,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexGoogleAdsCampaigns extends OrgAction
 {
     use WithGoogleAdsInterval;
+    use WithMarketingAuthorisation;
+    use WithShopPpcPermissions;
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
@@ -431,6 +435,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($shop, $request);
+        $this->canEdit = $this->canEditGoogleAds($request->user(), $shop);
 
         return $this->handle($shop);
     }
@@ -453,7 +458,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     /* Makes the campaign and opens it, with nothing asked first. Offered only once the
                        account can actually be reached, because a campaign that can never be published
                        is a row nobody wanted. */
-                    'actions' => GoogleAdsClient::unreachableReason($this->shop) ? [] : [
+                    'actions' => !$this->canEdit || GoogleAdsClient::unreachableReason($this->shop) ? [] : [
                         [
                             'type'  => 'button',
                             'style' => 'create',

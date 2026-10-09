@@ -75,6 +75,7 @@ const props = defineProps<{
     workshopRoute?: routeType
     timeZoneOptions?: any[]
     defaultShopTimezone?: string
+    can_edit?: boolean
 }>();
 
 const savedSubject = ref<string | null>(null)
@@ -104,15 +105,15 @@ const hour = ref(props.secondwaveDelayHours ?? 48)
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
-    return props.status && props.status.toLowerCase() === 'ready' && !props.isSecondWave;
+    return props.can_edit && props.status && props.status.toLowerCase() === 'ready' && !props.isSecondWave;
 });
 
 const shouldShowDeleteButton = computed(() => {
-    return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase()) && !props.isSecondWave;
+    return props.can_edit && props.status && ['ready', 'in_process'].includes(props.status.toLowerCase()) && !props.isSecondWave;
 });
 
 const shouldShowCancelScheduleButton = computed(() => {
-    return props.status && props.status.toLowerCase() === 'scheduled' && !props.isSecondWave;
+    return props.can_edit && props.status && props.status.toLowerCase() === 'scheduled' && !props.isSecondWave;
 });
 
 // Schedule datetime picker state
@@ -626,7 +627,7 @@ const secondWaveCancelText = computed(() => {
 })
 
 const showWaveSettings = computed(() =>
-    ['in_process', 'ready'].includes(props.status ?? '') && !props.isSecondWave
+    props.can_edit && ['in_process', 'ready'].includes(props.status ?? '') && !props.isSecondWave
 )
 
 // for the input subject secondwave validation
@@ -660,7 +661,7 @@ watch(
 
     <PageHeading :data="pageHeadData">
         <template #afterTitle2>
-            <MailshotSubjectEdit v-if="mailshot_copy && updateMailshotRoute && suggestCopyRoute"
+            <MailshotSubjectEdit v-if="can_edit && mailshot_copy && updateMailshotRoute && suggestCopyRoute"
                 :mailshot="mailshot_copy" :updateMailshotRoute="updateMailshotRoute" :suggestCopyRoute="suggestCopyRoute"
                 @saved="subject => savedSubject = subject" />
             <MailshotJourney :steps="journey" class="ml-4" />

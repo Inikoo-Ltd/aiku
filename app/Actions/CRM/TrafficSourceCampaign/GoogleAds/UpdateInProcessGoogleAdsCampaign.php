@@ -8,6 +8,7 @@
 namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoogleAdsEditAuthorisation;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
@@ -31,6 +32,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class UpdateInProcessGoogleAdsCampaign extends OrgAction
 {
+    use WithGoogleAdsEditAuthorisation;
+
     private const array MATCH_TYPES = ['BROAD', 'PHRASE', 'EXACT'];
 
     /**

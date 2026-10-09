@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\BeeFreeSDK\BeefreeConvertEmailJsonToPageJson;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ConvertMailshotToBlog extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     public function handle(Mailshot $mailshot, ?int $authorId = null): Webpage
     {
         $pageJson = BeefreeConvertEmailJsonToPageJson::make()->handle($mailshot->organisation, $mailshot);
@@ -57,7 +60,7 @@ class ConvertMailshotToBlog extends OrgAction
 
     public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Webpage
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $request->user()->id);
     }

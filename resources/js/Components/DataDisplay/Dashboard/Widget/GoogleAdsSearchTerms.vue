@@ -55,6 +55,7 @@ const props = defineProps<{
     adGroups: { id: string; name: string | null }[]
     keywordRoute: { name: string; parameters: Record<string, unknown> }
     negativeKeywordsRoute: { name: string; parameters: Record<string, unknown> }
+    canEdit?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -304,7 +305,7 @@ const exclude = (row: { term: string }) =>
                             </td>
                             <td class="whitespace-nowrap py-2 pl-2 text-right">
                                 <span v-if="busyTerm === row.term" class="text-gray-500">{{ trans("Saving") }}</span>
-                                <template v-else>
+                                <template v-else-if="canEdit">
                                     <button
                                         v-if="row.status !== 'ADDED'"
                                         type="button"

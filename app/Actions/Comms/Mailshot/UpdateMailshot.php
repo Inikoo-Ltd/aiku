@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -24,6 +25,7 @@ class UpdateMailshot extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithMarketingEditAuthorisation;
 
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot

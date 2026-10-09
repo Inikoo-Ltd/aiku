@@ -20,6 +20,7 @@ defineProps<{
     data: object
     title: string
     pageHead: PageHeadingTypes
+    can_edit?: boolean
 }>();
 
 </script>
@@ -27,6 +28,6 @@ defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <TableMailshots :data="data" />
+    <TableMailshots :data="data" :canEdit="can_edit" />
 </template>
 

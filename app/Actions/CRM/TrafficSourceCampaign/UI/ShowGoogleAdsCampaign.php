@@ -28,12 +28,14 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
+use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ShowGoogleAdsCampaign extends OrgAction
 {
     use WithMarketingAuthorisation;
+    use WithShopPpcPermissions;
     use WithGoogleAdsInterval;
     use WithGoogleAdsCampaignJourney;
 
@@ -45,6 +47,7 @@ class ShowGoogleAdsCampaign extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, TrafficSourceCampaign $trafficSourceCampaign, ActionRequest $request): TrafficSourceCampaign
     {
         $this->initialisationFromShop($shop, $request);
+        $this->canEdit = $this->canEditGoogleAds($request->user(), $shop);
 
         if (
             $trafficSourceCampaign->trafficSource->shop_id !== $shop->id
@@ -71,6 +74,7 @@ class ShowGoogleAdsCampaign extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/GoogleAdsCampaign',
             [
+                'can_edit'    => $this->canEdit,
                 'breadcrumbs' => $this->getBreadcrumbs($trafficSourceCampaign, $request->route()->originalParameters()),
                 'title'       => $trafficSourceCampaign->name,
                 'pageHead'    => [
@@ -80,7 +84,7 @@ class ShowGoogleAdsCampaign extends OrgAction
                         'title' => __('Google Ads campaign'),
                     ],
                     'model'   => GoogleAdsCampaignStateEnum::labels()[$trafficSourceCampaign->state->value],
-                    'actions' => $this->stateActions($trafficSourceCampaign),
+                    'actions' => $this->canEdit ? $this->stateActions($trafficSourceCampaign) : [],
                 ],
 
                 /* Deferred: the page is about the campaign's own figures and those are already stored,
@@ -186,6 +190,7 @@ class ShowGoogleAdsCampaign extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/GoogleAdsCampaignInProcess',
             [
+                'can_edit'    => $this->canEdit,
                 'breadcrumbs' => $this->getBreadcrumbs($campaign, $parameters),
                 'title'       => $campaign->name,
                 'pageHead'    => [

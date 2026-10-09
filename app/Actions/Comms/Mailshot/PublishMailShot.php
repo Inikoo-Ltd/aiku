@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailshot;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreEmailSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class PublishMailShot extends OrgAction
 {
     use WithActionUpdate;
+    use WithMarketingEditAuthorisation;
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
@@ -110,7 +112,7 @@ class PublishMailShot extends OrgAction
 
     public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisation($mailshot->organisation, $request);
+        $this->initialisationFromShop($mailshot->shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }

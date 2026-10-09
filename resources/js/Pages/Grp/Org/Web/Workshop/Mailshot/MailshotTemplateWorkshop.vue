@@ -39,6 +39,7 @@ const props = defineProps<{
     organisationSlug: string
     shopSlug: string
     indexRoute: routeType
+    can_edit?: boolean
 }>()
 
 const isLoading = ref(false)
@@ -51,6 +52,10 @@ const templateName = ref('')
 const temporaryData = ref()
 
 const openSendTest = (data: any) => {
+    if (!props.can_edit) {
+        return
+    }
+
     visibleEmailTestModal.value = true
     temporaryData.value = {
         compiled_layout: data?.htmlFile
@@ -88,6 +93,10 @@ const sendTestToServer = () => {
 };
 
 const onSaveTemplate = (data: any) => {
+    if (!props.can_edit) {
+        return
+    }
+
     visibleSAveEmailTemplateModal.value = true
     temporaryData.value = {
         layout: data?.jsonFile
@@ -127,6 +136,15 @@ const saveTemplate = async (data: any) => {
 }
 
 const onSave = async (data: any) => {
+    if (!props.can_edit) {
+        notify({
+            title: ctrans("View only"),
+            text: ctrans("You can view this template but not change it."),
+            type: "info",
+        })
+        return
+    }
+
     try {
         const response = await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
             layout: JSON.parse(data?.jsonFile),
@@ -204,7 +222,7 @@ const handleDelete = async () => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <div>
+            <div v-if="can_edit">
                 <span class="inline-flex items-center text-xs text-yellow-600">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-0.5 flex-shrink-0" fixed-width />
                     {{ ctrans('Click the "SAVE" button in BeeFree Workspace before this template can be used') }}
@@ -213,7 +231,7 @@ const handleDelete = async () => {
 
         </template>
         <template #other>
-            <ModalConfirmation :title="ctrans('Are you sure you want to delete this template?')"
+            <ModalConfirmation v-if="can_edit" :title="ctrans('Are you sure you want to delete this template?')"
                 :description="ctrans('This action cannot be undone. This will permanently delete this template')"
                 isFullLoading>
                 <template #default="{ isOpenModal, changeModel }">

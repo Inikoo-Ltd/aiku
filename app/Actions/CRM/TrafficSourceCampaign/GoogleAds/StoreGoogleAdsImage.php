@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoogleAdsEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
@@ -28,6 +29,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class StoreGoogleAdsImage extends OrgAction
 {
+    use WithGoogleAdsEditAuthorisation;
+
     /**
      * Google refuses an image asset over 5MB, so anything larger is turned away here where it can be
      * said plainly rather than at the end of building a campaign.

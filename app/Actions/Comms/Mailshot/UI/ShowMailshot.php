@@ -94,7 +94,7 @@ class ShowMailshot extends OrgAction
             ? $mailshot->sent_at->copy()->addHours($mailshotSecondWave->send_delay_hours)->toIso8601String()
             : null;
 
-        $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
+        $canLoadTemplates = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
 
         $webpage = $mailshot->webpages()->first();
         /* NOTE:
@@ -324,6 +324,7 @@ class ShowMailshot extends OrgAction
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
                 'canCancelSecondWave' => $canCancelSecondWave,
+                'can_edit' => $this->canEdit,
                 'secondWaveSendsAt' => $secondWaveSendsAt,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,
                 'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,

@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Dropshipping\Marketing;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -18,12 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateMailshotSettings extends OrgAction
 {
     use WithActionUpdate;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        // return $request->user()->authTo("marketing.{$this->shop->id}.edit");
-        return true;
-    }
+    use WithMarketingEditAuthorisation;
 
     public function handle(Shop $shop, array $modelData): Shop
     {
