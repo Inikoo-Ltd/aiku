@@ -625,6 +625,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Competitors"),
+                                "tooltip" => __("Competitors"),
+                                "icon"    => ["fal", "fa-users"],
+                                "root"    => "grp.org.shops.show.seo.competitors.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.competitors.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

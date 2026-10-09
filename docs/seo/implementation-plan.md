@@ -262,7 +262,7 @@ that contain the same words (last 90 days). Every result has a Track action.
   check frequency (weekly, daily), optional target webpage, active. Unique per shop, keyword,
   country, language and device.
 - `seo_competitors`: shop, domain (stored without scheme, `www.` and path), optional name.
-- SEO > Keywords, tabs Tracked keywords and Competitors: add, change device and frequency inline,
+- SEO > Keywords, tab Tracked keywords (competitors: SEO > Competitors): add, change device and frequency inline,
   pause, remove. Editing needs the same web edit permission as the other SEO actions
   (`WithSeoEditAuthorisation`).
 - Nothing is fetched for them yet; that is 2.2.
@@ -351,37 +351,34 @@ row returned).
 
 ### 3.2 Competitor research
 
-**Build.**
+Built on 9 October 2026 on DataForSEO Labs, in the shop's own market (its country and language).
 
-- From the same provider family: ranked keywords per competitor domain and organic competitors per
-  shop domain, monthly.
-- `seo_domain_keywords`: domain, keyword, location, position, url, estimated_traffic, intent,
-  fetched_at. Intent uses the same values and source as 2.1.
-- Label every traffic figure for a domain we do not own as the provider's estimate.
+- `FetchDomainKeywords`: one Labs `ranked_keywords` request per domain (about $0.13) gives the
+  keywords it ranks for in the top 100, up to 1,000 with the highest volume, and its organic summary.
+  A domain fetched in the last four weeks is not fetched again, which is also the cache for domains
+  typed into the tools.
+  - `seo_domain_overviews`: domain, market, date, organic keywords, estimated traffic (DataForSEO's
+    estimate from positions and volumes), keywords in the top 3 and top 10. Kept per date.
+  - `seo_domain_keywords`: domain, market, keyword, position, URL, volume, estimated traffic,
+    difficulty, intent. Replaced on every fetch.
+- `FetchCompetitorResearch` (Mondays 02:00 UTC, `seo:fetch_domain_keywords {website?}`) keeps our
+  websites and their shops' competitors at most four weeks old.
+- `GetOrganicCompetitors`: Labs `competitors_domain` for our domain, cached 30 days, without our own
+  websites and the competitors already set.
+- Competitor domains are managed on SEO > Competitors (moved there from SEO > Keywords), and are
+  used by Rankings, Backlinks and the tools below.
 
-**Domain comparison tool.** Our domain and up to four others side by side: authority, referring
-domains, backlinks, organic keywords, estimated organic traffic, the share of their keywords per
-intent, and the monthly visits from 3.5 where we have them. Each figure carries its source. Domains
-come from `seo_competitors` or are typed in, with the same 30 day cache and budget cap as the
-backlink gap tool.
+**Screens.** SEO > Competitors:
 
-**Keyword gap tool.** The same domain picker, compared on the top 100 positions of each domain:
-
-| Group | Meaning |
-| --- | --- |
-| Shared | Every domain ranks for it |
-| Missing | Every other domain ranks for it and we do not |
-| Weak | We rank, but lower than every other domain |
-| Strong | We rank higher than every other domain |
-| Untapped | At least one other domain ranks and we do not |
-| Unique | Only we rank |
-
-Columns: keyword, intent, volume, difficulty, and the position of each domain. Sorted by volume,
-filterable by intent and position range. "Track" adds the keyword to rank tracking (2.2).
-
-**Screens.** A Competitors tab with the domain comparison and keyword gap tools, and the organic
-competitors the provider suggests for our domain, each with a button to add it to
-`seo_competitors`.
+- Competitors: the shop's competitor domains, and the domains suggested by Google results (shared
+  keywords, average position, organic keywords, estimated traffic) with an Add button.
+- Domain comparison: our domain and up to four others, competitors by default, side by side: rank,
+  referring domains and backlinks (3.1), organic keywords, estimated traffic, top 3 and top 10, and
+  the share of keywords per intent, each group with its source. A typed-in domain without a backlink
+  summary in the last five weeks gets one.
+- Keyword gap: the same picker; Missing, Untapped, Weak, Strong, Shared and Unique with their
+  counts (the groups overlap as in Semrush), filtered by intent and by the best position of any
+  domain, with volume, difficulty, each domain's position and Track.
 
 ### 3.3 AI visibility
 
@@ -538,7 +535,7 @@ them, so the monthly budget is watched and changed in Aiku instead of in each pr
 | Who adds the service account to the properties that are still missing | Phase 1 |
 | SERP provider and monthly budget (proposal in [budget.md](budget.md)) | Phase 2 |
 | Tracked keyword list, locations and devices per shop, and check frequency (set in SEO > Keywords) | Phase 2 |
-| Competitor domains per shop (set in SEO > Keywords) | Phase 2 (positions) and Phase 3 (backlinks) |
+| Competitor domains per shop (set in SEO > Competitors) | Phase 2 (positions) and Phase 3 (backlinks) |
 | Models and prompts for AI visibility, and whether to buy AI mention data from the SEO provider | Phase 3 |
 | Competitor domain traffic: Apify actor or the Similarweb API | Phase 3 |
 | Which non-Google platforms to collect search signals from | Phase 3 |

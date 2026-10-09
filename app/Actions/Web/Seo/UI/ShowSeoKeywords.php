@@ -23,7 +23,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\SeoCompetitor;
 use App\Services\DataForSeo\DataForSeoClient;
 use Closure;
 use Illuminate\Support\Arr;
@@ -125,24 +124,6 @@ class ShowSeoKeywords extends OrgAction
             ->all();
     }
 
-    private function competitors(Shop $shop): array
-    {
-        return $shop->seoCompetitors()
-            ->orderBy('domain')
-            ->get()
-            ->map(fn (SeoCompetitor $competitor) => [
-                'id'           => $competitor->id,
-                'domain'       => $competitor->domain,
-                'label'        => $competitor->label,
-                'delete_route' => [
-                    'name'       => 'grp.models.seo_competitor.delete',
-                    'parameters' => [$competitor->id],
-                    'method'     => 'delete',
-                ],
-            ])
-            ->all();
-    }
-
     private function rankings(Shop $shop): array
     {
         return [
@@ -194,11 +175,6 @@ class ShowSeoKeywords extends OrgAction
                         'parameters' => [$shop->id],
                         'method'     => 'post',
                     ],
-                    'add_competitor' => [
-                        'name'       => 'grp.models.shop.seo.competitor.store',
-                        'parameters' => [$shop->id],
-                        'method'     => 'post',
-                    ],
                 ],
                 'options'     => [
                     'countries'   => Country::orderBy('name')->get(['code', 'name'])->map(fn (Country $country) => ['value' => $country->code, 'label' => $country->name])->all(),
@@ -221,11 +197,6 @@ class ShowSeoKeywords extends OrgAction
                 SeoKeywordsTabsEnum::RANKINGS->value => $this->tabProp(
                     SeoKeywordsTabsEnum::RANKINGS,
                     fn () => $this->rankings($shop)
-                ),
-
-                SeoKeywordsTabsEnum::COMPETITORS->value => $this->tabProp(
-                    SeoKeywordsTabsEnum::COMPETITORS,
-                    fn () => $this->competitors($shop)
                 ),
             ]
         )->table(IndexSeoTrackedKeywords::make()->tableStructure(prefix: SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value))

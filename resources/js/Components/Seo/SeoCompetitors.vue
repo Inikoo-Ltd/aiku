@@ -4,13 +4,14 @@
   -->
 
 <script setup lang="ts">
+import { ref } from "vue"
 import { router, useForm } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputText from "primevue/inputtext"
 import { ctrans } from "@/Composables/useTrans"
+import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
-import type { SeoKeywordRoutes } from "@/Components/Seo/types"
 
 type Competitor = {
     id: number
@@ -19,21 +20,49 @@ type Competitor = {
     delete_route: routeType & { method: string }
 }
 
+type Suggestion = {
+    domain: string
+    shared_keywords: number
+    average_position: number | null
+    organic_keywords: number
+    estimated_traffic: number
+}
+
+type DomainsData = {
+    competitors: Competitor[]
+    suggestions: Suggestion[]
+    suggestions_error: string | null
+}
+
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
-    data?: Competitor[]
+    data?: DomainsData | null
+    tab: string
     canEdit: boolean
-    routes: SeoKeywordRoutes
+    addRoute: routeType
 }>()
+
+const locale = useLocaleStore()
 
 const form = useForm({ domain: "", label: "" })
 
 const addCompetitor = () => {
-    form.post(route(props.routes.add_competitor.name, props.routes.add_competitor.parameters), {
+    form.post(route(props.addRoute.name, props.addRoute.parameters), {
         preserveScroll: true,
-        only: ["competitors"],
+        only: [props.tab],
         onSuccess: () => form.reset(),
+    })
+}
+
+const addingDomain = ref<string | null>(null)
+
+const addSuggestion = (domain: string) => {
+    router.post(route(props.addRoute.name, props.addRoute.parameters), { domain }, {
+        preserveScroll: true,
+        only: [props.tab],
+        onStart: () => addingDomain.value = domain,
+        onFinish: () => addingDomain.value = null,
     })
 }
 
@@ -44,7 +73,7 @@ const remove = (competitor: Competitor) => {
 
     router.delete(route(competitor.delete_route.name, competitor.delete_route.parameters), {
         preserveScroll: true,
-        only: ["competitors"],
+        only: [props.tab],
     })
 }
 </script>
@@ -70,12 +99,17 @@ const remove = (competitor: Competitor) => {
         </form>
 
         <section class="rounded-xl bg-white ring-1 ring-gray-200" :aria-label="ctrans('Competitors')">
-            <p v-if="!data?.length" class="px-5 py-4 text-sm text-gray-600">
+            <div class="border-b border-gray-100 px-5 py-3">
+                <h2 class="text-sm font-medium text-gray-900">{{ ctrans("Our competitors") }}</h2>
+                <p class="text-xs text-gray-500">{{ ctrans("Their Google positions are read in Rankings, their links in Backlinks, and they are the default domains of the comparison and keyword gap.") }}</p>
+            </div>
+
+            <p v-if="!data?.competitors.length" class="px-5 py-4 text-sm text-gray-600">
                 {{ ctrans("No competitors yet. Add the domains you see next to yours in Google results.") }}
             </p>
 
             <ul v-else class="divide-y divide-gray-100">
-                <li v-for="competitor in data" :key="competitor.id" class="flex items-center gap-4 px-5 py-2.5 text-sm">
+                <li v-for="competitor in data.competitors" :key="competitor.id" class="flex items-center gap-4 px-5 py-2.5 text-sm">
                     <a :href="`https://${competitor.domain}`" target="_blank" rel="noopener noreferrer" class="text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
                         {{ competitor.domain }}
                     </a>
@@ -83,6 +117,44 @@ const remove = (competitor: Competitor) => {
                     <Button v-if="canEdit" class="ml-auto" type="tertiary" size="xs" :label="ctrans('Remove')" @click="remove(competitor)" />
                 </li>
             </ul>
+        </section>
+
+        <section v-if="data" class="rounded-xl bg-white ring-1 ring-gray-200" :aria-label="ctrans('Suggested competitors')">
+            <div class="border-b border-gray-100 px-5 py-3">
+                <h2 class="text-sm font-medium text-gray-900">{{ ctrans("Suggested by Google results") }}</h2>
+                <p class="text-xs text-gray-500">{{ ctrans("Domains ranking for the most of our keywords, from DataForSEO, refreshed monthly. Marketplaces and video sites show up here too; add only the ones we compete with.") }}</p>
+            </div>
+
+            <p v-if="data.suggestions_error" role="alert" class="px-5 py-4 text-sm text-red-700">{{ data.suggestions_error }}</p>
+
+            <p v-else-if="!data.suggestions.length" class="px-5 py-4 text-sm text-gray-600">{{ ctrans("No suggestion yet.") }}</p>
+
+            <table v-else class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-100 text-left text-xs text-gray-500">
+                        <th scope="col" class="px-5 py-2 font-medium">{{ ctrans("Domain") }}</th>
+                        <th scope="col" class="px-3 py-2 text-right font-medium" v-tooltip="ctrans('Keywords both domains rank for')">{{ ctrans("Shared keywords") }}</th>
+                        <th scope="col" class="px-3 py-2 text-right font-medium">{{ ctrans("Average position") }}</th>
+                        <th scope="col" class="px-3 py-2 text-right font-medium">{{ ctrans("Organic keywords") }}</th>
+                        <th scope="col" class="px-3 py-2 text-right font-medium" v-tooltip="ctrans('Monthly visits from Google estimated by DataForSEO')">{{ ctrans("Estimated traffic") }}</th>
+                        <th scope="col" class="px-5 py-2" />
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="suggestion in data.suggestions" :key="suggestion.domain">
+                        <td class="px-5 py-2">
+                            <a :href="`https://${suggestion.domain}`" target="_blank" rel="noopener noreferrer" class="text-gray-900 underline-offset-2 hover:underline focus-visible:underline">{{ suggestion.domain }}</a>
+                        </td>
+                        <td class="px-3 py-2 text-right tabular-nums">{{ locale.number(suggestion.shared_keywords) }}</td>
+                        <td class="px-3 py-2 text-right tabular-nums">{{ suggestion.average_position === null ? "-" : locale.number(suggestion.average_position) }}</td>
+                        <td class="px-3 py-2 text-right tabular-nums">{{ locale.number(suggestion.organic_keywords) }}</td>
+                        <td class="px-3 py-2 text-right tabular-nums">{{ locale.number(suggestion.estimated_traffic) }}</td>
+                        <td class="px-5 py-2 text-right">
+                            <Button v-if="canEdit" type="tertiary" size="xs" :label="ctrans('Add')" :loading="addingDomain === suggestion.domain" @click="addSuggestion(suggestion.domain)" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
     </div>
 </template>

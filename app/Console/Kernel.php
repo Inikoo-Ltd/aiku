@@ -86,6 +86,7 @@ use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\ExternalLink\RecheckExternalLinkStatuses;
 use App\Actions\Web\Seo\CollectSerpTasks;
 use App\Actions\Web\Seo\FetchBacklinks;
+use App\Actions\Web\Seo\FetchCompetitorResearch;
 use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Seo\RefreshTrackedKeywordVolumes;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
@@ -1374,6 +1375,17 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'FetchBacklinks',
                     ),
                 name: 'FetchBacklinks',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchCompetitorResearch::makeJob())
+                    ->weeklyOn(1, '02:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'FetchCompetitorResearch',
+                    ),
+                name: 'FetchCompetitorResearch',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
