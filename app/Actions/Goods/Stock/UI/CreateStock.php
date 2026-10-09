@@ -82,6 +82,20 @@ class CreateStock extends OrgAction
                                     'label'    => __('Name'),
                                     'required' => true
                                 ],
+                                'units' => [
+                                    'type'     => 'input_number',
+                                    'label'    => __('Units per SKO'),
+                                    'required' => true,
+                                    'value'    => 1,
+                                    'bind'     => [
+                                        'min' => 1
+                                    ]
+                                ],
+                                'trade_unit.description' => [
+                                    'type'     => 'input',
+                                    'label'    => __('Trade unit description'),
+                                    'required' => true
+                                ],
                             ]
                         ]
                     ],

@@ -11,6 +11,7 @@ import { Product } from "@/types/product"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, onMounted, ref, computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
+import Tag from "@/Components/Tag.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
@@ -315,6 +316,7 @@ const compTableFilterForSale = computed(() => {
 			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
 				{{ product["code"] }}
 			</Link>
+			<Tag v-if="product.is_exclusive" :label="ctrans('Exclusive to you')" v-tooltip="ctrans('Only you can see and order this product')" :theme="5" noHoverColor class="ml-1" />
 			<div class="text-base font-semibold">
 				{{ product["name"] }}
 			</div>

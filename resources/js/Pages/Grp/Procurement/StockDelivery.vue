@@ -75,10 +75,10 @@ const props = defineProps<{
 	timelines: {
 		[key: string]: TSTimeline
 	}
-	purchase_order: {
+	purchase_orders: {
 		reference: string
 		route: routeType
-	} | null
+	}[]
 	box_stats: {
 		first_block: {
 			orderer: {
@@ -620,15 +620,18 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</PageHeading>
 
 	<!-- Stock Delivery Timeline -->
-	<div v-if="timelines" class="flex items-center gap-x-4 py-2 border-b border-gray-300" :class="purchase_order ? 'pl-4' : ''">
-		<Link
-			v-if="purchase_order"
-			:href="route(purchase_order.route.name, purchase_order.route.parameters)"
-			class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
-		>
-			<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
-			{{ purchase_order.reference }}
-		</Link>
+	<div v-if="timelines" class="flex items-center gap-x-4 py-2 border-b border-gray-300" :class="purchase_orders.length ? 'pl-4' : ''">
+		<div v-if="purchase_orders.length" class="flex flex-col gap-y-1">
+			<Link
+				v-for="purchaseOrder in purchase_orders"
+				:key="purchaseOrder.reference"
+				:href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)"
+				class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
+			>
+				<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
+				{{ purchaseOrder.reference }}
+			</Link>
+		</div>
 		<Timeline
 			class="flex-1 min-w-0"
 			:options="timelines"

@@ -70,6 +70,11 @@ class ShowOrdersBacklog extends OrgAction
                     'navigation' => $tabsBox
                 ],
                 'backlog_filters' => $this->tab == OrdersBacklogTabsEnum::RETURNED->value ? null : $this->getBacklogFilters($parent, $request),
+                'production_review_bulk_route' => !$parent instanceof Group && IndexOrders::make()->usesProductionReview($parent) ? [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.organisation.orders.production_review',
+                    'parameters' => ['organisation' => $parent instanceof Shop ? $parent->organisation_id : $parent->id],
+                ] : null,
 
                 OrdersBacklogTabsEnum::IN_BASKET->value => $this->tab == OrdersBacklogTabsEnum::IN_BASKET->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
@@ -139,22 +144,28 @@ class ShowOrdersBacklog extends OrgAction
     }
 
     /**
-     * @return array{prefix: string, current: array{scope: ?string, channel: ?string}, counts: array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}}}
+     * @return array{prefix: string, current: array{scope: ?string, channel: ?string, production_review?: ?string}, counts: array<string, array<string, int>>}
      */
     protected function getBacklogFilters(Group|Organisation|Shop $parent, ActionRequest $request): array
     {
-        $currentScope   = $request->input($this->tab.'_elements.scope');
-        $currentScope   = in_array($currentScope, ['domestic', 'export']) ? $currentScope : null;
-        $currentChannel = $request->input($this->tab.'_elements.channel');
-        $currentChannel = in_array($currentChannel, ['direct', 'partner']) ? $currentChannel : null;
+        $allowed = [
+            'scope'   => ['domestic', 'export'],
+            'channel' => ['direct', 'partner'],
+        ];
+        if (IndexOrders::make()->usesProductionReview($parent)) {
+            $allowed['production_review'] = ['reviewed', 'unreviewed'];
+        }
+
+        $current = [];
+        foreach ($allowed as $key => $values) {
+            $value         = $request->input($this->tab.'_elements.'.$key);
+            $current[$key] = in_array($value, $values) ? $value : null;
+        }
 
         return [
             'prefix'  => $this->tab,
-            'current' => [
-                'scope'   => $currentScope,
-                'channel' => $currentChannel,
-            ],
-            'counts'  => IndexOrders::make()->backlogFilterCounts($parent, $this->tab, $currentScope, $currentChannel),
+            'current' => $current,
+            'counts'  => IndexOrders::make()->backlogFilterCounts($parent, $this->tab, $current),
         ];
     }
 

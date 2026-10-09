@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Actions\Catalogue\Variant\LocaliseVariantData;
 use App\Actions\IrisAction;
 use App\Http\Resources\Web\ProductOfVariantResource;
 use App\Models\Catalogue\Variant;
@@ -33,7 +34,7 @@ class GetVariantAndProducts extends IrisAction
         data_set($data, 'products', $visibleProducts);
 
         return [
-            'variant_data'  => $data,
+            'variant_data'  => LocaliseVariantData::run($data, $variant->option_translations),
             'products'      => ProductOfVariantResource::collection(
                 $products
             )->resolve(),

@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
+use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -20,11 +21,11 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
 {
     use AsAction;
 
-    public function handle(array $modelData, $isDraft = false): void
+    public function handle(Customer $customer, array $modelData, $isDraft = false): void
     {
         $items = Arr::pull($modelData, 'items');
 
-        $portfolios = Portfolio::whereIn('id', $items)->with('item')->get();
+        $portfolios = Portfolio::where('customer_id', $customer->id)->whereIn('id', $items)->with('item')->get();
 
         foreach ($portfolios as $portfolio) {
             try {
@@ -48,13 +49,13 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
     {
 
         $this->initialisation($request);
-        $this->handle($this->validatedData);
+        $this->handle($this->customer, $this->validatedData);
     }
 
     public function asDraft(Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisation($request);
-        $this->handle($this->validatedData, true);
+        $this->handle($this->customer, $this->validatedData, true);
     }
 
 }

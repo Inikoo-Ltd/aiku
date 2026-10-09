@@ -1916,6 +1916,59 @@ test('UI Show Master Variant has pricing tab listing all variant products', func
     );
 });
 
+test('master variant products tab is an ordering list that saves its order', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'VORD-DEP-'.uniqid(),
+        'name' => 'Variant Order Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'VORD-FAM-'.uniqid(),
+        'name' => 'Variant Order Family',
+    ]);
+    [$leader, $minion] = collect(['LEAD', 'MIN'])->map(fn (string $suffix) => StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VORD-'.$suffix.'-'.uniqid(),
+        'name'    => 'Variant '.$suffix,
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]))->all();
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id'         => $masterShop->group_id,
+        'master_shop_id'   => $masterShop->id,
+        'master_family_id' => $masterFamily->id,
+        'code'             => $leader->code,
+        'leader_id'        => $leader->id,
+        'data'             => ['products' => []],
+    ]);
+    $masterVariant->stats()->create();
+    $leader->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_variant_leader' => true]);
+    $minion->updateQuietly(['master_variant_id' => $masterVariant->id, 'is_main' => false, 'is_minion_variant' => true]);
+
+    $productsTab = fn () => get(route('grp.masters.master_shops.show.master_families.master_variants.show', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        $masterVariant->slug,
+        'tab' => 'products',
+    ]))->assertOk()->viewData('page')['props'];
+
+    $props = $productsTab();
+    expect(collect($props['products'])->pluck('code')->all())->toBe([$leader->code, $minion->code])
+        ->and($props['products'][0])->toHaveKeys(['url', 'status_icon', 'is_variant_leader'])
+        ->and($props['reorderRoute']['name'])->toBe('grp.models.master_variant.reorder_products');
+
+    \Pest\Laravel\patch(route('grp.models.master_variant.reorder_products', ['masterVariant' => $masterVariant->id]), ['products' => [
+        ['id' => $minion->id, 'index' => 0],
+        ['id' => $leader->id, 'index' => 1],
+    ]])->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(collect($productsTab()['products'])->pluck('code')->all())->toBe([$minion->code, $leader->code]);
+});
+
 test('bulk update master assets prices applies per-unit rrp and skips independents', function () {
     $masterShop = createFreshMasterShop();
 
@@ -3139,6 +3192,44 @@ test('master product creation seeds minor prices from the official exchange, not
         ->and($data)->toHaveKey('family_unit_price_median')
         ->and(data_get($data, 'family_unit_price_median'))->toBeNull()
         ->and(data_get($data, 'base_currency_code'))->toBe('GBP');
+});
+
+test('master product creation pre-fills pound and euro prices from the supplier upload recommendation', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => Currency::where('code', 'GBP')->firstOrFail()->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'RCDEP-'.uniqid(), 'name' => 'Rec Dept']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'RCFAM-'.uniqid(), 'name' => 'Rec Family']);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $supplier  = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action(parent: group(), modelData: \App\Models\SupplyChain\Supplier::factory()->definition());
+    \App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct::make()->action($supplier, [
+        'code'           => 'REC-'.uniqid(),
+        'name'           => 'Recommended bag',
+        'cost'           => 1,
+        'units_per_pack'   => 2,
+        'units_per_carton' => 40,
+        'trade_units'      => [$tradeUnit->id],
+        'data'           => ['seed' => ['recommended_price' => 8.5, 'recommended_rrp' => 20, 'recommended_price_eur' => 10.2, 'recommended_rrp_eur' => 24, 'recommended_skos_per_outer' => 3]],
+    ], strict: false);
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 2]]]
+    );
+
+    expect(data_get($data, 'master_prices.GBP.value'))->toEqual(17.0)
+        ->and(data_get($data, 'master_rrps.GBP.value'))->toEqual(40.0)
+        ->and(data_get($data, 'supplier_recommendation.recommended_units_per_outer'))->toBe(6);
 });
 
 test('master product creation data refuses a trade unit quantity of zero instead of dividing by it', function () {

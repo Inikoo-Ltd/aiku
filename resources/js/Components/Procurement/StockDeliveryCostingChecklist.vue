@@ -52,6 +52,7 @@ const props = defineProps<{
         org_exchange: number | string | null
         updateRoute: routeType
         checklist: CostRow[]
+        shipping_basis: { basis: string, missing_count: number, missing_codes: string[] }
         agent_invoice_missing: boolean
         storeCostRoute: routeType
         deposits: {
@@ -142,6 +143,18 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
         router.post(route(props.costing.storeCostRoute.name, props.costing.storeCostRoute.parameters), { type: row.type, ...data }, options)
     }
 }
+
+const shippingBasisText = computed(() => {
+    const basis = props.costing.shipping_basis
+
+    if (basis.basis === "by_weight") {
+        return ctrans("Shipping split by weight")
+    }
+
+    const codes = basis.missing_codes.join(", ") + (basis.missing_count > basis.missing_codes.length ? ", …" : "")
+
+    return ctrans("Shipping split by value: :count products have no weight (:codes)", { count: String(basis.missing_count), codes })
+})
 
 const deliveryPerOrg = computed(() => Number(props.costing.org_exchange) > 0 ? Number((1 / Number(props.costing.org_exchange)).toFixed(6)) : null)
 
@@ -240,9 +253,8 @@ const removeExtra = (row: CostRow) => {
             </label>
 
             <div class="grid gap-1 text-sm">
+                <template v-for="row in costing.checklist" :key="rowKey(row)">
                 <div
-                    v-for="row in costing.checklist"
-                    :key="rowKey(row)"
                     class="flex items-center gap-3"
                     :class="row.is_na ? 'text-gray-400' : ''"
                 >
@@ -310,6 +322,10 @@ const removeExtra = (row: CostRow) => {
                         <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
                     </button>
                 </div>
+                <div v-if="row.type === 'shipping' && !row.is_na" class="-mt-0.5 pl-1 text-xs text-gray-500">
+                    {{ shippingBasisText }}
+                </div>
+                </template>
             </div>
 
             <button

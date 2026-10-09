@@ -109,7 +109,7 @@ class GetOrganisationStockCoverBuckets
             ->where('link.status', true)
             ->whereNull('sup.deleted_at')
             ->orderByRaw("(osp.state = '".OrgSupplierProductStateEnum::ACTIVE->value."') desc")
-            ->orderByRaw('link.local_priority nulls last')
+            ->orderByRaw('link.local_priority desc nulls last')
             ->orderBy('link.id')
             ->select([
                 'sup.measured_lead_time_days',

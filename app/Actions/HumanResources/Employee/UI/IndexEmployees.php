@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\EmployeesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Employee;
@@ -137,6 +138,19 @@ class IndexEmployees extends OrgAction
                 $join->on('employees.id', '=', 'job_positions.employee_id');
             });
             $queryBuilder->addSelect('job_positions');
+
+            $today = now()->toDateString();
+            $covers = DB::table('leaves')
+                ->select('leaves.employee_id', DB::raw("string_agg(DISTINCT cover_employees.contact_name, ', ') as covered_by"))
+                ->join('employees as cover_employees', 'leaves.cover_employee_id', 'cover_employees.id')
+                ->where('leaves.organisation_id', $parent->id)
+                ->where('leaves.status', LeaveStatusEnum::APPROVED->value)
+                ->whereNull('leaves.deleted_at')
+                ->whereDate('leaves.start_date', '<=', $today)
+                ->whereDate('leaves.end_date', '>=', $today)
+                ->groupBy('leaves.employee_id');
+            $queryBuilder->leftJoinSub($covers, 'covers', 'employees.id', '=', 'covers.employee_id');
+            $queryBuilder->addSelect('covers.covered_by');
         }
 
         return $queryBuilder
@@ -210,6 +224,7 @@ class IndexEmployees extends OrgAction
             }
             if (class_basename($parent) == 'Organisation') {
                 $table->column(key: 'positions', label: __('Responsibilities'), canBeHidden: false);
+                $table->column(key: 'covered_by', label: __('Covered by'), canBeHidden: true);
             }
             $table->defaultSort('slug');
         };

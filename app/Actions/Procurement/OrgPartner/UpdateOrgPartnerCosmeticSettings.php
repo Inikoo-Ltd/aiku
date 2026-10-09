@@ -35,6 +35,8 @@ class UpdateOrgPartnerCosmeticSettings extends OrgAction
         return [
             'split_cosmetics'                => ['sometimes', 'boolean'],
             'cosmetic_goods_out_location_id' => ['sometimes', 'nullable', 'integer'],
+            'next_shipment_on'               => ['sometimes', 'nullable', 'date'],
+            'shipment_every_days'            => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
         ];
     }
 

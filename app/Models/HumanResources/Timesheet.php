@@ -12,6 +12,7 @@ use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -66,6 +67,14 @@ class Timesheet extends Model
     public function timeTrackers(): HasMany
     {
         return $this->hasMany(TimeTracker::class);
+    }
+
+    public function clockedAtOnTimesheetDate(string $clockedAt): Carbon
+    {
+        $timezone = $this->organisation->timezone->name ?? 'UTC';
+        $time     = Carbon::parse($clockedAt)->setTimezone($timezone);
+
+        return Carbon::create($this->date->year, $this->date->month, $this->date->day, $time->hour, $time->minute, $time->second, $timezone)->utc();
     }
 
 }

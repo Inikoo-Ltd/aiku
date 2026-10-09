@@ -8,12 +8,18 @@
 
 namespace App\Actions\Production\ManufactureBreak;
 
+use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
+use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
+use App\Models\HumanResources\Clocking;
+use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Workplace;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -22,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StartManufactureBreak extends OrgAction
 {
-    public const ALLOWED_MINUTES = [5, 15, 30];
+    public const ALLOWED_MINUTES = [5, 20, 30];
 
     public function handle(User $user, Production $production, array $modelData): ManufactureBreak
     {
@@ -34,16 +40,43 @@ class StartManufactureBreak extends OrgAction
                 ]);
             }
 
+            $employee  = GetUserCurrentEmployee::run($user, $production->organisation_id);
+            $startedAt = now();
+
             return ManufactureBreak::create([
-                'group_id'        => $production->group_id,
-                'organisation_id' => $production->organisation_id,
-                'production_id'   => $production->id,
-                'user_id'         => $user->id,
-                'employee_id'     => GetUserCurrentEmployee::run($user, $production->organisation_id)?->id,
-                'planned_minutes' => $modelData['planned_minutes'],
-                'started_at'      => now(),
+                'group_id'              => $production->group_id,
+                'organisation_id'       => $production->organisation_id,
+                'production_id'         => $production->id,
+                'user_id'               => $user->id,
+                'employee_id'           => $employee?->id,
+                'planned_minutes'       => $modelData['planned_minutes'],
+                'started_at'            => $startedAt,
+                'clock_out_clocking_id' => $employee ? $this->clockOut($user, $employee, $startedAt)?->id : null,
             ]);
         });
+    }
+
+    /**
+     * Only an artisan who is clocked in is clocked out: clocking somebody who is not would clock them in instead.
+     */
+    private function clockOut(User $user, Employee $employee, Carbon $clockedAt): ?Clocking
+    {
+        $today     = $clockedAt->copy()->setTimezone($employee->organisation->timezone?->name ?? 'UTC')->toDateString();
+        $workplace = Workplace::find(
+            $employee->timeTrackers()
+                ->where('status', TimeTrackerStatusEnum::OPEN)
+                ->whereHas('timesheet', fn ($query) => $query->whereDate('date', $today))
+                ->latest('id')
+                ->value('workplace_id')
+        );
+        if (!$workplace) {
+            return null;
+        }
+
+        $clocking = StoreClocking::make()->action($user, $workplace, $employee, ['clocked_at' => $clockedAt]);
+        $clocking->update(['notes' => __('Break on the manufacture floor')]);
+
+        return $clocking;
     }
 
     public function rules(): array

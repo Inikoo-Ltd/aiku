@@ -81,9 +81,9 @@ class GetAgentStockCoverBuckets
             ->join('org_stocks', 'org_stocks.id', 'link.org_stock_id')
             ->whereColumn('link.org_supplier_product_id', 'osp.id')
             ->where('link.status', true)
-            ->orderBy('link.local_priority')
+            ->orderByDesc('link.local_priority')
             ->orderByRaw("(org_stocks.state = '".OrgStockStateEnum::ACTIVE->value."') desc, org_stocks.quantity_available desc nulls last")
-            ->select(['org_stocks.id', 'org_stocks.stock_id', 'org_stocks.state', 'org_stocks.quantity_available', 'org_stocks.health_rank'])
+            ->select(['org_stocks.id', 'org_stocks.stock_id', 'org_stocks.state', 'org_stocks.quantity_available', 'org_stocks.health_rank', 'org_stocks.is_excluded_from_auto_ordering'])
             ->limit(1);
     }
 
@@ -126,7 +126,9 @@ class GetAgentStockCoverBuckets
                 count(*) filter (where coalesce(s.on_the_way_po_count, 0) > 0) as on_the_way,
                 count(*) filter (where coalesce(s.on_the_way_po_count, 0) > 0 or ".$this->onShoppingListExpression().") as handled,
                 count(distinct sp.supplier_id) as suppliers,
-                coalesce(sum(s.stock_value), 0) as stock_value")
+                coalesce(sum(s.stock_value), 0) as stock_value,
+                coalesce(sum(s.projected_lost_revenue), 0) as lost,
+                coalesce(sum(s.projected_lost_revenue) filter (where not (coalesce(s.on_the_way_po_count, 0) > 0 or ".$this->onShoppingListExpression().")), 0) as lost_untouched")
             ->groupByRaw("$expression, os.health_rank")
             ->get()
             ->groupBy('bucket');
@@ -145,6 +147,8 @@ class GetAgentStockCoverBuckets
                 'untouched'   => (int) max(0, $bucketRows->sum('total') - $bucketRows->sum('handled')),
                 'suppliers'   => (int) $bucketRows->max('suppliers'),
                 'stock_value' => (float) $bucketRows->sum('stock_value'),
+                'lost'        => (float) $bucketRows->sum('lost'),
+                'lost_untouched' => (float) $bucketRows->sum('lost_untouched'),
                 'ranks'       => in_array($bucket, ['never', 'gone'], true) ? [] : collect(HealthRankEnum::cases())->map(fn ($rank) => [
                     'rank'    => $rank->value,
                     'count'   => (int) ($byRank->get($rank->value)->total ?? 0),

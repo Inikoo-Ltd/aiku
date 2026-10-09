@@ -17,6 +17,7 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreOrgSupplierProduct extends OrgAction
@@ -42,7 +43,16 @@ class StoreOrgSupplierProduct extends OrgAction
 
 
         /** @var OrgSupplierProduct $orgSupplierProduct */
-        $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->create($modelData);
+        $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->firstOrCreate(['org_supplier_id' => $orgSupplier->id], $modelData);
+
+        if (!$orgSupplierProduct->wasRecentlyCreated) {
+            if (!$orgSupplierProduct->source_id && Arr::get($modelData, 'source_id')) {
+                $orgSupplierProduct->update(['source_id' => $modelData['source_id']]);
+            }
+
+            return $orgSupplierProduct;
+        }
+
         $orgSupplierProduct->stats()->create();
 
         if (!$this->skipHydrators) {

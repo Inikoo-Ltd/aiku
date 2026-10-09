@@ -523,3 +523,25 @@ test('unprocessed pastpay status marks api point as failure', function () {
     expect($resultApiPoint->state)->toBe(OrderPaymentApiPointStateEnum::FAILURE)
         ->and($order->refresh()->payments()->count())->toBe(0);
 });
+
+test('invoices with no VAT use the shop zero tax footer when one is set', function () {
+    $storeInvoice = function (float $taxAmount): Invoice {
+        $invoiceData = Invoice::factory()->definition();
+        data_set($invoiceData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($invoiceData, 'tax_amount', $taxAmount);
+        unset($invoiceData['reference']);
+
+        return StoreInvoice::make()->action($this->customer, $invoiceData);
+    };
+
+    $this->customer->shop->update(['invoice_footer' => 'Standard footer', 'zero_tax_invoice_footer' => null]);
+
+    expect($storeInvoice(0)->footer)->toBe('Standard footer');
+
+    $this->customer->shop->update(['zero_tax_invoice_footer' => 'Reverse charge']);
+
+    expect($storeInvoice(0)->footer)->toBe('Reverse charge')
+        ->and($storeInvoice(21)->footer)->toBe('Standard footer');
+
+    $this->customer->shop->update(['zero_tax_invoice_footer' => null]);
+});

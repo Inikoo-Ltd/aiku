@@ -19,6 +19,7 @@ use JsonSerializable;
  * @property string $session
  * @property string|null $reason
  * @property LeaveStatusEnum $status
+ * @property int|null $cover_employee_id
  */
 class LeaveResource extends JsonResource
 {
@@ -66,6 +67,7 @@ class LeaveResource extends JsonResource
             'approved_by'       => $this->approved_by,
             'approved_at'       => $this->approved_at?->toISOString(),
             'rejection_reason'  => $this->rejection_reason,
+            'cover_employee_id' => $this->cover_employee_id,
             'created_at'        => $this->created_at?->toISOString(),
             'attachments'       => $attachments,
         ];

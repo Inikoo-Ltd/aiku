@@ -141,6 +141,7 @@ class ShowJobOrder extends OrgAction
                     'public_notes' => $jobOrder->public_notes,
                     'employee_id'  => $jobOrder->employee_id,
                     'artisan'      => $jobOrder->employee?->contact_name,
+                    'overproductions' => $jobOrder->data['overproductions'] ?? [],
                 ],
                 'artisan_options' => $this->canEdit ? Employee::where('organisation_id', $this->organisation->id)
                     ->where('state', EmployeeStateEnum::WORKING)

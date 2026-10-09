@@ -36,6 +36,7 @@ use App\Models\Tasks\StaffTask;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
@@ -469,4 +470,17 @@ test('the layout tells the page editor which language each shop writes in, for t
     $shops = App\Actions\SysAdmin\User\UI\GetUserOrganisationLayout::make()->getShops($this->adminGuest->getUser(), $this->shop->organisation);
 
     expect(collect($shops)->firstWhere('id', $this->shop->id)['language'])->toBe('pl');
+});
+
+test('a text the stronger model confirms stays as it is, like a size code, is translated once and then served from the cache', function () {
+    $english = Language::where('code', 'en')->first();
+    $slovak  = Language::where('code', 'sk')->first();
+    $size    = 'M/L-'.Str::random(6);
+
+    $translate = Translate::partialMock();
+    $translate->shouldReceive('translateWith')->twice()->andReturn($size);
+    $translate->shouldReceive('isBelowQuality')->once()->andReturn(true);
+
+    expect(Translate::run($size, $english, $slovak, 'catalogue', brief: 'brief'))->toBe($size)
+        ->and(Translate::run($size, $english, $slovak, 'catalogue', brief: 'brief'))->toBe($size);
 });

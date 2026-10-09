@@ -148,6 +148,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('quantity_ordered', '>', 0)
+                ->where('model_type', '!=', 'Charge')
                 ->update([
                     'net_amount'              => DB::raw('gross_amount'),
                     'offers_data'             => [],
@@ -315,7 +316,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
         foreach (
             DB::table('offers')
-                ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
+                ->select(['id', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
                 ->where('shop_id', $order->shop_id)
                 ->where('type', OfferTypeEnum::GIFT->value)
                 ->whereNull('deleted_at')
@@ -323,15 +324,26 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);
 
+            if ($giftOfferData->trigger_type == 'ProductCategory') {
+                if (!in_array($giftOfferData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                    continue;
+                }
+                $metadata = [
+                    'current' => Arr::get($order->categories_data, "family.$giftOfferData->trigger_id.quantity", 0),
+                    'target'  => Arr::get($triggerData, 'item_quantity', 0),
+                ];
+            } else {
+                $metadata = [
+                    'current' => $order->gross_amount,
+                    'target'  => Arr::get($triggerData, 'min_order_amount', 0),
+                ];
+            }
+
             $this->offerMeters[$giftOfferData->allowance_signature] = [
                 'offer_id' => $giftOfferData->id,
                 'label'    => $giftOfferData->name,
                 'is_gift'  => true,
-                'metadata' => [
-                    'current' => $order->gross_amount,
-                    'target'  => Arr::get($triggerData, 'min_order_amount', 0),
-
-                ]
+                'metadata' => $metadata,
             ];
         }
     }

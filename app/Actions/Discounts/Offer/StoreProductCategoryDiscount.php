@@ -8,9 +8,11 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
@@ -31,6 +33,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategoryDiscount extends OrgAction
 {
+    public const string ACCEPT_RESPONSIBILITY_PHRASE = 'I accept responsibility';
+
     /**
      * @throws \Throwable
      *
@@ -86,7 +90,13 @@ class StoreProductCategoryDiscount extends OrgAction
      */
     public function handle(array $modelData): ?Offer
     {
-        $productCategory = ProductCategory::find(Arr::pull($modelData, 'product_category_id'));
+        $productCategory      = ProductCategory::find(Arr::pull($modelData, 'product_category_id'));
+        $acceptResponsibility = Arr::pull($modelData, 'accept_responsibility');
+
+        if ($freeQuantity = (int)Arr::pull($modelData, 'free_quantity')) {
+            return $this->handleClearanceGift($productCategory, $modelData, $freeQuantity, $acceptResponsibility);
+        }
+
         $categoryIds     = Arr::pull($modelData, 'category_ids', []);
         $categoryCodes   = $categoryIds ? ProductCategory::whereIn('id', $categoryIds)->pluck('code')->all() : [$productCategory->code];
 
@@ -196,6 +206,89 @@ class StoreProductCategoryDiscount extends OrgAction
         return $offer;
     }
 
+    /**
+     * Buy X from the family, get Y of its discontinued stock free: a chosen product, or the cheapest left.
+     * The offer finishes at submit once there is nothing left to give (HELP-3794).
+     *
+     * @throws \Throwable
+     */
+    private function handleClearanceGift(ProductCategory $family, array $modelData, int $freeQuantity, ?string $acceptResponsibility = null): ?Offer
+    {
+        if ($family->type != ProductCategoryTypeEnum::FAMILY || Arr::get($modelData, 'type') != 'quantity' || count(Arr::get($modelData, 'category_ids', [])) > 1) {
+            throw ValidationException::withMessages([
+                'free_quantity' => __('Free stock offers need one family and a minimum quantity'),
+            ]);
+        }
+
+        $freeProduct = null;
+        if ($freeProductId = Arr::pull($modelData, 'free_product_id')) {
+            $freeProduct = GetDiscontinuingProductsInFamily::run($family)->firstWhere('id', $freeProductId);
+            if (!$freeProduct) {
+                throw ValidationException::withMessages([
+                    'free_product_id' => __('The free product must be a discontinued product of this family with stock'),
+                ]);
+            }
+        } elseif (GetDiscontinuingProductsInFamily::run($family)->isEmpty()) {
+            throw ValidationException::withMessages([
+                'free_quantity' => __('This family has no discontinued products with stock'),
+            ]);
+        }
+
+        $offerCampaign = OfferCampaign::where('shop_id', $family->shop_id)->where('type', OfferCampaignTypeEnum::GIFT)->first();
+        if (!$offerCampaign) {
+            return null;
+        }
+
+        $itemQuantity = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
+        if ($itemQuantity <= $freeQuantity && Str::lower(trim((string)$acceptResponsibility)) !== Str::lower(self::ACCEPT_RESPONSIBILITY_PHRASE)) {
+            throw ValidationException::withMessages([
+                'accept_responsibility' => __('Customers would get :free free for buying only :quantity. To save it anyway, type: :phrase', [
+                    'free'     => $freeQuantity,
+                    'quantity' => $itemQuantity,
+                    'phrase'   => self::ACCEPT_RESPONSIBILITY_PHRASE,
+                ]),
+            ]);
+        }
+
+        foreach (['type', 'trigger_data_item_amount', 'percentage_off', 'target_product_category_id', 'category_ids'] as $unusedField) {
+            data_forget($modelData, $unusedField);
+        }
+
+        data_set($modelData, 'name', 'Buy '.$itemQuantity.' get '.$freeQuantity.' free '.$family->code, false);
+        data_set($modelData, 'type', OfferTypeEnum::GIFT->value);
+        $code = Str::lower($offerCampaign->code.'-clearance-'.$family->code);
+        if (Offer::where('shop_id', $family->shop_id)->where('code', $code)->whereIn('state', [OfferStateEnum::IN_PROCESS, OfferStateEnum::ACTIVE, OfferStateEnum::SUSPENDED])->exists()) {
+            throw ValidationException::withMessages([
+                'code' => __('This family already has a free stock offer'),
+            ]);
+        }
+        data_set($modelData, 'code', $code, false);
+        data_set($modelData, 'trigger_type', 'ProductCategory');
+        data_set($modelData, 'trigger_id', $family->id);
+        data_set($modelData, 'trigger_data', ['item_quantity' => $itemQuantity]);
+        data_set(
+            $modelData,
+            'allowances',
+            [
+                [
+                    'class'       => OfferAllowanceClass::GIFT->value,
+                    'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                    'type'        => OfferAllowanceType::GIFT->value,
+                    'data'        => [
+                        'product_id'                => $freeProduct?->id,
+                        'quantity'                  => $freeQuantity,
+                        'discontinuing_in_family_id' => $family->id,
+                    ]
+                ]
+            ]
+        );
+
+        $offer = StoreOffer::run($offerCampaign, $modelData);
+        ActivateOffer::run($offer, 30);
+
+        return $offer;
+    }
+
     private function getProductCategoryOfferType(ProductCategory $productCategory, string $type): OfferTypeEnum
     {
         if ($type == 'quantity') {
@@ -236,7 +329,10 @@ class StoreProductCategoryDiscount extends OrgAction
                 )
             ],
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
-            'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
+            'percentage_off'             => ['nullable', 'required_without:free_quantity', 'numeric', 'gt:0', 'lt:100'],
+            'free_quantity'              => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'accept_responsibility'      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'free_product_id'            => ['sometimes', 'nullable', 'integer', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
             'product_category_id'        => ['required_without:product_category_ids', 'integer', 'exists:product_categories,id'],
             'product_category_ids'       => ['required_without:product_category_id', 'array', 'min:1'],
             'product_category_ids.*'     => ['integer', 'exists:product_categories,id'],

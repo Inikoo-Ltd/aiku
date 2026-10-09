@@ -1,5 +1,6 @@
 import type { TicketBadges } from '@/types/TicketBadges'
 import type { TaskBadges } from '@/types/TaskBadges'
+import type { LeaveCover } from '@/types/LeaveCover'
 import { useColorTheme } from '@/Composables/useStockList'
 
 import { OrganisationsData, Group, OrganisationState, StackedComponent, Shop } from '@/types/LayoutRules'
@@ -63,6 +64,10 @@ export const layoutStructure = {
         },
         message: {
             show: false
+        },
+        leaveCovers: {
+            show: false,
+            coveredLeaveIds: ""
         }
     },
     root_active: null as string | null,
@@ -89,6 +94,7 @@ export const layoutStructure = {
 
     ticket_badges: null as TicketBadges | null,
     task_badges: null as TaskBadges | null,
+    leave_covers: [] as LeaveCover[],
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,

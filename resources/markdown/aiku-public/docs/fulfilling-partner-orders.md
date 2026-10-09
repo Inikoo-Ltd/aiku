@@ -73,6 +73,10 @@ Partner lines are shipped from here; own-customer lines are not, they travel wit
 - **Pick into order** gathers your ticks into a pending shipment per buying organisation. It stays open in the *Picked orders* box until you send it.
 - **Send to warehouse** hands the shipment to your warehouse as a normal order: picked, packed, dispatched and invoiced like everything else. The buying organisation's incoming stock delivery is created for them and follows your warehouse's progress. Nobody updates the buyer's side by hand.
 
+You don't have to remember to send. Give each partner its **Next shipment** day and how often it ships (**Ship every (days)**) on the partner's settings, and early in the morning the day before, whatever sits in their bay becomes an order and goes to your warehouse on its own. The next shipment then moves on by that many days; change the date when a container is booked for another day. A line that can't be ordered yet (a pack size that differs between the two companies, say) stays on the list and the rest still goes.
+
+When the shelf turns out to hold less than was promised to a partner (a count finds it short), what can't be walked to their bay stops being promised and appears in **To produce** by itself. Nothing to press.
+
 Ticking an own-customer line does nothing useful. It is skipped when you press Pick into order, because that product already belongs to a customer order.
 
 ## Things worth knowing
@@ -93,6 +97,7 @@ Ticking an own-customer line does nothing useful. It is skipped when you press P
 <li><b>Hide a block:</b> in a grouped view click its capsule above the list. Click again to show it.</li>
 <li><b>Only partners or only customers:</b> <i>All</i> tab → <b>Source</b> filter.</li>
 <li><b>Ship to a partner:</b> tick lines → <b>Pick into order</b> → <b>Send to warehouse</b> in the <i>Picked orders</i> box.</li>
+<li><b>Ship on a schedule:</b> <b>Procurement</b> → <b>Partners</b> → the partner → <b>Edit</b> → <b>Shipments</b>.</li>
 <li><b>Decide who makes what:</b> see <a href="/docs/who-makes-what">Who makes what</a>.</li>
 </ul>
 </aside>

@@ -22,10 +22,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Forecasts each open shop's invoiced sales, partners included, for every day left in the year,
  * in the organisation's and the group's currency, into shop_stats.sales_forecast as
- * date => [expected, variance]. The rest of this month comes from a daily forecast and the months
- * after from a weekly one, spread evenly over its days: backtested on 2025, the daily forecast
- * halved the month-end error of last year's pattern and the weekly one cut the year-end error by
- * a third, where a daily forecast that far ahead fell short of the November and December peak.
+ * date => [expected, variance]. Each day's expected is the average of a weekly TimesFM forecast,
+ * spread evenly over its days, and the same day last year scaled by how the last four weeks did
+ * against the same four weeks last year. Backtested from Sep 2024 to Sep 2026, TimesFM alone ran
+ * 7% to 9% short of the month total, worst in October and November when it missed the autumn
+ * ramp, and last year's pattern alone swung with one-off months; the average cut the month error
+ * from 9% to under 5% and the error of the months ahead by about a quarter. The variance is
+ * TimesFM's.
  */
 class ForecastShopSales
 {
@@ -42,36 +45,28 @@ class ForecastShopSales
      */
     public function handle(?Carbon $today = null): int
     {
-        $today        = ($today ?? now('UTC'))->copy()->startOfDay();
-        $daysOfMonth  = $today->daysInMonth - $today->day + 1;
-        $daysAfter    = (int) $today->copy()->endOfMonth()->startOfDay()->diffInDays($today->copy()->endOfYear()->startOfDay());
-        $weeksAfter   = (int) ceil(($daysOfMonth + $daysAfter) / 7);
-        $history      = $this->histories($today);
+        $today      = ($today ?? now('UTC'))->copy()->startOfDay();
+        $daysLeft   = (int) $today->diffInDays($today->copy()->endOfYear()->startOfDay()) + 1;
+        $history    = $this->histories($today);
 
-        $daily = ForecastWithTimesFm::run($history, $daysOfMonth);
-        if ($daily === null) {
-            return 0;
-        }
-        $weekly = $daysAfter > 0 ? ForecastWithTimesFm::run(array_map(fn (array $days) => $this->weeks($days), $history), $weeksAfter) : null;
-        if ($daysAfter > 0 && $weekly === null) {
+        $weekly = ForecastWithTimesFm::run(array_map(fn (array $days) => $this->weeks($days), $history), (int) ceil($daysLeft / 7));
+        if ($weekly === null) {
             return 0;
         }
 
         $byShop = [];
-        foreach ($daily['deciles'] as $key => $dailyDeciles) {
+        foreach ($weekly['deciles'] as $key => $weeklyDeciles) {
             [$shopId, $currency] = explode(':', $key);
+            $lastYear = $this->lastYearOnTrend($history[$key], $daysLeft);
 
             $days = [];
-            foreach ($this->expectedWithVariance($dailyDeciles) as $offset => $day) {
-                $days[$today->copy()->addDays($offset)->toDateString()] = $day;
-            }
-            if ($weekly !== null) {
-                foreach ($this->expectedWithVariance($weekly['deciles'][$key]) as $week => [$expected, $variance]) {
-                    for ($offset = $week * 7; $offset < $week * 7 + 7; $offset++) {
-                        if ($offset >= $daysOfMonth && $offset < $daysOfMonth + $daysAfter) {
-                            $days[$today->copy()->addDays($offset)->toDateString()] = [round($expected / 7, 2), round($variance / 7, 2)];
-                        }
+            foreach ($this->expectedWithVariance($weeklyDeciles) as $week => [$expected, $variance]) {
+                for ($offset = $week * 7; $offset < min($week * 7 + 7, $daysLeft); $offset++) {
+                    $dayExpected = $expected / 7;
+                    if ($lastYear !== null) {
+                        $dayExpected = ($dayExpected + $lastYear[$offset]) / 2;
                     }
+                    $days[$today->copy()->addDays($offset)->toDateString()] = [round($dayExpected, 2), round($variance / 7, 2)];
                 }
             }
             $byShop[$shopId][$currency] = $days;
@@ -80,7 +75,7 @@ class ForecastShopSales
         foreach ($byShop as $shopId => $currencies) {
             ShopStats::where('shop_id', $shopId)->update([
                 'sales_forecast'             => json_encode([
-                    'version' => $daily['version'],
+                    'version' => $weekly['version'],
                     'from'    => $today->toDateString(),
                     'org'     => $currencies['org'] ?? null,
                     'grp'     => $currencies['grp'] ?? null,
@@ -104,6 +99,30 @@ class ForecastShopSales
             ForecastWithTimesFm::expectedValues($deciles),
             $deciles
         );
+    }
+
+    /**
+     * Each day ahead as it sold on the same weekday last year, scaled by the last four weeks against
+     * the same four weeks last year. Null without a full year and four weeks behind or with nothing
+     * sold in those four weeks last year.
+     *
+     * @param  list<float>  $days  sales per day up to yesterday, oldest first
+     *
+     * @return list<float>|null
+     */
+    private function lastYearOnTrend(array $days, int $daysAhead): ?array
+    {
+        $today = count($days);
+        if ($today < 364 + 28) {
+            return null;
+        }
+        $lastYearWeeks = array_sum(array_slice($days, $today - 364 - 28, 28));
+        if ($lastYearWeeks <= 0) {
+            return null;
+        }
+        $trend = array_sum(array_slice($days, $today - 28)) / $lastYearWeeks;
+
+        return array_map(fn (int $offset) => $days[$today - 364 + $offset % 364] * $trend, range(0, $daysAhead - 1));
     }
 
     /**

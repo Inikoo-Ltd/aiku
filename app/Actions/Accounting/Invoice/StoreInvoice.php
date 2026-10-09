@@ -61,7 +61,14 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
 
         if (!Arr::has($modelData, 'footer')) {
-            data_set($modelData, 'footer', $this->shop->invoice_footer);
+            $isZeroTax = (float) Arr::get($modelData, 'tax_amount', 0) == 0.0;
+            data_set(
+                $modelData,
+                'footer',
+                $isZeroTax && filled($this->shop->zero_tax_invoice_footer)
+                    ? $this->shop->zero_tax_invoice_footer
+                    : $this->shop->invoice_footer
+            );
         }
 
         if (!Arr::has($modelData, 'reference')) {

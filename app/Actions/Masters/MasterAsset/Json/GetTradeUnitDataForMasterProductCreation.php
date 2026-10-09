@@ -110,6 +110,19 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
             'independent' => false
         ]);
 
+        $supplierRecommendation = count($tradeUnits) === 1 ? $this->supplierRecommendation($tradeUnits[0]['model']) : null;
+        if ($supplierRecommendation) {
+            $units = (float)$tradeUnits[0]['quantity'];
+            foreach (['GBP' => '', 'EUR' => '_eur'] as $currencyCode => $suffix) {
+                if ($masterPrices->has($currencyCode) && isset($supplierRecommendation['recommended_price'.$suffix])) {
+                    $masterPrices->put($currencyCode, ['value' => round($supplierRecommendation['recommended_price'.$suffix] * $units, 2), 'independent' => false]);
+                }
+                if ($masterRrps->has($currencyCode) && isset($supplierRecommendation['recommended_rrp'.$suffix])) {
+                    $masterRrps->put($currencyCode, ['value' => round($supplierRecommendation['recommended_rrp'.$suffix] * $units, 2), 'independent' => false]);
+                }
+            }
+        }
+
 
         $finalData = [];
         /** @var Shop $shop */
@@ -145,6 +158,7 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         data_set($finalData, 'total_units', $totalUnit);
         data_set($finalData, 'master_prices', $masterPrices);
         data_set($finalData, 'master_rrps', $masterRrps);
+        data_set($finalData, 'supplier_recommendation', $supplierRecommendation);
         data_set($finalData, 'rrp_price_ratio', $rrpPriceRatio);
         data_set($finalData, 'org_data', $organisationData);
         data_set($finalData, 'avg_org_cost', $avgCost);
@@ -236,4 +250,25 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
     }
 
 
+
+    /**
+     * The recommended unit prices and outer size a supplier product upload left on this trade unit's
+     * supplier product, with the outer in units (SKOs per outer × units per SKO). Null when there is none.
+     *
+     * @return array<string, float|int>|null
+     */
+    public function supplierRecommendation(TradeUnit $tradeUnit): ?array
+    {
+        $supplierProduct = $tradeUnit->supplierProducts()->whereNotNull('supplier_products.data->seed->recommended_price')->latest('supplier_products.id')->first();
+        $seed            = $supplierProduct?->data['seed'] ?? null;
+        if (!$seed) {
+            return null;
+        }
+
+        if (isset($seed['recommended_skos_per_outer']) && $supplierProduct->units_per_pack) {
+            $seed['recommended_units_per_outer'] = $seed['recommended_skos_per_outer'] * $supplierProduct->units_per_pack;
+        }
+
+        return $seed;
+    }
 }

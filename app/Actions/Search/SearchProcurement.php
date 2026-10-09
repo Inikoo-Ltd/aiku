@@ -11,7 +11,6 @@ namespace App\Actions\Search;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
@@ -25,6 +24,7 @@ class SearchProcurement
     public function handle(string $query, array $options): array
     {
         $organisationId = Arr::get($options, 'organisation_id');
+        $agentId        = Arr::get($options, 'agent_id');
 
         $purchaseOrdersQuery = PurchaseOrder::search($query);
         if ($organisationId) {
@@ -47,13 +47,10 @@ class SearchProcurement
         }
 
         $supplierProductsQuery = SupplierProduct::search($query);
-        if ($organisationId) {
+        if ($agentId) {
+            $supplierProductsQuery->where('agent_id', $agentId);
+        } elseif ($organisationId) {
             $supplierProductsQuery->where('organisation_ids', $organisationId);
-        }
-
-        $agentSupplierPurchaseOrdersQuery = AgentSupplierPurchaseOrder::search($query);
-        if ($organisationId) {
-            $agentSupplierPurchaseOrdersQuery->where('organisation_ids', $organisationId);
         }
 
         $mapReferenceState = static fn (array $document) => [
@@ -77,7 +74,6 @@ class SearchProcurement
                 'agents'                           => array_map($mapCodeNameState, $this->rawDocuments($agentsQuery)),
                 'suppliers'                        => array_map($mapCodeNameState, $this->rawDocuments($suppliersQuery)),
                 'supplier_products'                => array_map($mapCodeNameState, $this->rawDocuments($supplierProductsQuery)),
-                'agent_supplier_purchase_orders'   => array_map($mapReferenceState, $this->rawDocuments($agentSupplierPurchaseOrdersQuery)),
             ],
         ];
     }

@@ -238,7 +238,7 @@ defineExpose({
         <template #nooptions>
             <div v-if="isComponentLoading !== 'fetchProduct'"
                 class="py-2 px-3 text-gray-600 bg-white text-left rtl:text-right">
-                {{ noOptionsText || 'No options' }}
+                <slot name="nooptions">{{ noOptionsText || 'No options' }}</slot>
             </div>
             <div></div>
         </template>

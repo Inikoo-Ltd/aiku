@@ -48,11 +48,12 @@ class IndexOrgAgentSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $purchaseOrderCounts = DB::table('agent_supplier_purchase_orders')
-            ->join('purchase_orders', 'purchase_orders.id', '=', 'agent_supplier_purchase_orders.purchase_order_id')
-            ->whereNull('agent_supplier_purchase_orders.deleted_at')
-            ->selectRaw('purchase_orders.organisation_id, agent_supplier_purchase_orders.supplier_id, count(*) as number_agent_supplier_purchase_orders')
-            ->groupBy('purchase_orders.organisation_id', 'agent_supplier_purchase_orders.supplier_id');
+        $purchaseOrderCounts = DB::table('purchase_orders')
+            ->whereNull('purchase_orders.deleted_at')
+            ->whereNotNull('purchase_orders.agent_id')
+            ->whereNotNull('purchase_orders.supplier_id')
+            ->selectRaw('purchase_orders.organisation_id, purchase_orders.supplier_id, count(*) as number_purchase_orders')
+            ->groupBy('purchase_orders.organisation_id', 'purchase_orders.supplier_id');
 
         $supplierDeliveryCounts = DB::table('stock_deliveries')
             ->whereNull('stock_deliveries.deleted_at')
@@ -65,9 +66,9 @@ class IndexOrgAgentSuppliers extends OrgAction
             ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', '=', 'org_suppliers.id')
             ->join('org_agents', 'org_agents.id', '=', 'org_suppliers.org_agent_id')
             ->join('agents', 'agents.id', '=', 'org_agents.agent_id')
-            ->leftJoinSub($purchaseOrderCounts, 'agent_supplier_purchase_order_counts', function (JoinClause $join) {
-                $join->on('agent_supplier_purchase_order_counts.organisation_id', '=', 'org_suppliers.organisation_id')
-                    ->on('agent_supplier_purchase_order_counts.supplier_id', '=', 'org_suppliers.supplier_id');
+            ->leftJoinSub($purchaseOrderCounts, 'purchase_order_counts', function (JoinClause $join) {
+                $join->on('purchase_order_counts.organisation_id', '=', 'org_suppliers.organisation_id')
+                    ->on('purchase_order_counts.supplier_id', '=', 'org_suppliers.supplier_id');
             })
             ->leftJoinSub($supplierDeliveryCounts, 'supplier_delivery_counts', function (JoinClause $join) {
                 $join->on('supplier_delivery_counts.organisation_id', '=', 'org_suppliers.organisation_id')
@@ -92,7 +93,7 @@ class IndexOrgAgentSuppliers extends OrgAction
                 'agents.code as agent_code',
                 'agents.name as agent_name',
                 'org_supplier_stats.number_org_supplier_products',
-                DB::raw('coalesce(agent_supplier_purchase_order_counts.number_agent_supplier_purchase_orders, 0) as number_agent_supplier_purchase_orders'),
+                DB::raw('coalesce(purchase_order_counts.number_purchase_orders, 0) as number_purchase_orders'),
                 DB::raw('coalesce(supplier_delivery_counts.number_supplier_deliveries, 0) as number_supplier_deliveries'),
             ])
             ->allowedSorts([
@@ -101,7 +102,7 @@ class IndexOrgAgentSuppliers extends OrgAction
                 'agent_code',
                 'location',
                 'number_org_supplier_products',
-                'number_agent_supplier_purchase_orders',
+                'number_purchase_orders',
                 'number_supplier_deliveries',
             ])
             ->allowedFilters([$globalSearch])
@@ -137,7 +138,7 @@ class IndexOrgAgentSuppliers extends OrgAction
             $table
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_org_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'number_agent_supplier_purchase_orders', label: __('Agent Supplier Purchase Orders'), shortLabel: __('Purchase Orders'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), shortLabel: __('Purchase Orders'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_supplier_deliveries', label: __('Supplier Deliveries'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
         };

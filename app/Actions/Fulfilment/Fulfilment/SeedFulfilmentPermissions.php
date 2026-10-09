@@ -16,6 +16,7 @@ use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
 use Exception;
 use Illuminate\Console\Command;
+use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -115,6 +116,10 @@ class SeedFulfilmentPermissions
             $command->info("Seeding permissions for fulfilment: {$fulfilment->shop->name}");
             setPermissionsTeamId($fulfilment->group_id);
             $this->handle($fulfilment);
+        }
+
+        foreach (Fulfilment::all()->pluck('organisation')->unique('id') as $organisation) {
+            SeedJobPositions::run($organisation);
         }
 
         return 0;

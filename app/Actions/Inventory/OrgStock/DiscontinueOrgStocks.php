@@ -12,7 +12,6 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
-use App\Enums\SysAdmin\Authorisation\OrganisationPermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -56,7 +55,7 @@ class DiscontinueOrgStocks extends OrgAction
      */
     public function handle(Collection $orgStocks, array $modelData): array
     {
-        $this->assertCanChangeStatus($orgStocks, $modelData);
+        $this->assertCanChangeStatus();
 
         $targetState = OrgStockStateEnum::from($modelData['state']);
         $overrides   = Arr::get($modelData, 'organisation_states', []);
@@ -116,46 +115,27 @@ class DiscontinueOrgStocks extends OrgAction
      * The scheduled sweep runs with no user because it only executes a request that was already
      * authorised when it was made; every other door carries a user and goes through here.
      */
-    private function assertCanChangeStatus(Collection $orgStocks, array $modelData): void
+    private function assertCanChangeStatus(): void
     {
         if (!$this->user) {
             return;
         }
 
-        $scope = Arr::get($modelData, 'scope', 'group');
-
-        if ($scope === 'group') {
-            if (!self::canChangeGroupStatus($this->user)) {
-                throw ValidationException::withMessages([
-                    'scope' => __('Changing every organisation needs the Supply Chain Manager permission'),
-                ]);
-            }
-        } else {
-            foreach ($orgStocks->load('organisation')->pluck('organisation')->unique('id') as $organisation) {
-                if (!self::canChangeStatus($this->user, $organisation)) {
-                    throw ValidationException::withMessages([
-                        'scope' => __('You can change SKOs in :organisation only', ['organisation' => $organisation->code]),
-                    ]);
-                }
-            }
-        }
-
-        if (Arr::get($modelData, 'organisation_states', []) && !self::canChangeGroupStatus($this->user)) {
+        if (!self::canChangeGroupStatus($this->user)) {
             throw ValidationException::withMessages([
-                'organisation_states' => __('Changing every organisation needs the Supply Chain Manager permission'),
+                'scope' => __('Discontinuing SKOs needs the Supply Chain Manager permission'),
             ]);
         }
     }
 
     public static function canChangeGroupStatus(User $user): bool
     {
-        return $user->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
+        return $user->authTo(GroupPermissionsEnum::SUPPLY_CHAIN->value);
     }
 
     public static function canChangeStatus(User $user, Organisation $organisation): bool
     {
-        return self::canChangeGroupStatus($user)
-            || $user->authTo(OrganisationPermissionsEnum::getPermissionName(OrganisationPermissionsEnum::PROCUREMENT->value, $organisation));
+        return self::canChangeGroupStatus($user);
     }
 
     /**

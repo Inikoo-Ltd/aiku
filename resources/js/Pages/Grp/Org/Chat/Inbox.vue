@@ -15,11 +15,12 @@ import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePan
 import SettingChat from "@/Components/Chat/SettingChat.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import NewEmailChatDialog from "@/Components/Chat/NewEmailChatDialog.vue"
+import MarketingFolder, { type MarketingMailshot } from "@/Components/Chat/MarketingFolder.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye, faBullhorn } from "@fal"
 import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
@@ -225,6 +226,13 @@ const carrierView = ref(false)
 const carriersCount = ref(0)
 const colleagueView = ref(false)
 const colleaguesCount = ref(0)
+// What the shops picked above sent their customers lately, so whoever answers has read the
+// offer the customer is asking about. Read state is per browser: nobody else's business.
+const marketingView = ref(false)
+const marketingMailshots = ref<MarketingMailshot[]>([])
+const isLoadingMarketing = ref(false)
+const marketingReadIds = useLocalStorage<number[]>("chat.marketing.read", [])
+const marketingUnreadCount = computed(() => marketingMailshots.value.filter((m) => !marketingReadIds.value.includes(m.id)).length)
 // Told while we were closed that we would answer when we open: every one still unanswered in
 // the shops picked, whoever holds it, so the morning starts with them and the number on the
 // capsule is the list.
@@ -241,7 +249,7 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value)
+const crossShopView = computed(() => (marketingView.value || trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value)
     && selectedShopIds.value.length !== 1)
 
 // Folders read the shops picked above: somebody covering many shops clears their own backlog,
@@ -1018,7 +1026,7 @@ type FolderGroup = "queues" | "bins"
 const pinnedFolderGroups = ref<Record<FolderGroup, boolean>>({ queues: false, bins: false })
 
 const folderGroupLead = computed<Record<FolderGroup, string>>(() => ({
-    queues: carrierView.value ? "carriers" : colleagueView.value ? "colleagues" : "unclaimed",
+    queues: carrierView.value ? "carriers" : colleagueView.value ? "colleagues" : marketingView.value ? "marketing" : "unclaimed",
     bins: rubbishView.value ? "ignored" : trashView.value ? "trash" : "spam",
 }))
 
@@ -1380,6 +1388,58 @@ const selectColleagues = () => {
     clearAgentFilter()
     reloadContacts()
 }
+
+const loadMarketing = async () => {
+    isLoadingMarketing.value = true
+    try {
+        const response = await axios.get(route("grp.org.chat.marketing.index", [props.organisation.slug]), {
+            params: { shop_ids: selectedShopIds.value },
+        })
+        marketingMailshots.value = response.data ?? []
+    } finally {
+        isLoadingMarketing.value = false
+    }
+}
+
+watch(selectedShopIds, loadMarketing, { immediate: true, deep: true })
+
+const markMarketingRead = (id: number) => {
+    if (!marketingReadIds.value.includes(id)) {
+        marketingReadIds.value = [...marketingReadIds.value, id]
+    }
+}
+
+const selectMarketing = () => {
+    if (marketingView.value) {
+        marketingView.value = false
+        backToMainInbox()
+
+        return
+    }
+    captureInboxSnapshot()
+    carrierView.value = false
+    colleagueView.value = false
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    marketingView.value = true
+}
+
+// Every other folder, a shop or an agent picked leaves the marketing folder.
+watch(() => spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value
+    || colleagueView.value || unclaimedView.value || agentView.value || selectedCells.value.length > 0 || !!selectedSession.value,
+(somethingElse) => {
+    if (somethingElse) {
+        marketingView.value = false
+    }
+})
 
 const selectHighlight = () => {
     if (highlightView.value) {
@@ -2520,6 +2580,25 @@ onUnmounted(() => {
                 </button>
                 </div>
                 </div>
+                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'marketing') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                <div class="overflow-hidden">
+                <button type="button" @click="selectMarketing"
+                    v-tooltip="ctrans('Newsletters and campaigns the shops sent their customers, to know what customers ask about')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        marketingView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="marketingView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faBullhorn" class="text-sm shrink-0" :class="marketingView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Marketing") }}</span>
+                    <span v-if="!railCollapsed && marketingUnreadCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ marketingUnreadCount }}
+                    </span>
+                </button>
+                </div>
+                </div>
                 <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('queues')"
                     :aria-label="pinnedFolderGroups.queues ? ctrans('Show less') : ctrans('Show more')"
                     class="relative w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
@@ -2616,7 +2695,11 @@ onUnmounted(() => {
              Narrow screens have room for one column, not three, so the list and the thread take
              turns: the list until a conversation is picked, the thread after, with its own back
              button to return. From 1440px up both stand side by side. -->
-        <div class="border-r border-gray-200 flex-col min-[1440px]:w-80 min-[1440px]:shrink-0 min-[1440px]:flex-none"
+        <MarketingFolder v-if="marketingView" :organisation-slug="organisation.slug"
+            :mailshots="marketingMailshots" :read-ids="marketingReadIds" :loading="isLoadingMarketing"
+            :show-shop="selectedShopIds.length !== 1" @read="markMarketingRead" />
+
+        <div v-if="!marketingView" class="border-r border-gray-200 flex-col min-[1440px]:w-80 min-[1440px]:shrink-0 min-[1440px]:flex-none"
             :class="selectedSession ? 'hidden min-[1440px]:flex' : 'flex flex-1 min-w-0'">
             <!-- Selected inbox + My/Team segmented toggle -->
             <div class="px-3 py-1.5 border-b flex items-center justify-between gap-2">
@@ -2946,7 +3029,7 @@ onUnmounted(() => {
         </div>
 
         <!-- CENTER: thread + composer -->
-        <div class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden min-[1440px]:block'">
+        <div v-if="!marketingView" class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden min-[1440px]:block'">
             <div v-if="!selectedSession"
                 class="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
                 <div class="text-4xl">💬</div>

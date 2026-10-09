@@ -8,6 +8,7 @@
 namespace App\Models\Web;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +28,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $page_url
  * @property string $page_path
  * @property \Illuminate\Support\Carbon $event_date
+ * @property int|null $order_id
+ * @property string|null $net_amount
+ * @property int|null $landing_webpage_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group|null $group
@@ -35,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Web\Webpage|null $webpage
  * @property-read \App\Models\Web\Website|null $website
  * @property-read \App\Models\Web\WebsiteVisitor $websiteVisitor
+ * @property-read Order|null $order
+ * @property-read \App\Models\Web\Webpage|null $landingWebpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteConversionEvent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteConversionEvent newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteConversionEvent query()
@@ -77,5 +83,15 @@ class WebsiteConversionEvent extends Model
     public function webpage(): BelongsTo
     {
         return $this->belongsTo(Webpage::class);
+    }
+
+    public function landingWebpage(): BelongsTo
+    {
+        return $this->belongsTo(Webpage::class, 'landing_webpage_id');
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 }

@@ -57,6 +57,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Client\Factory;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -831,6 +832,148 @@ test('uploading a sku that already has an offer on eBay replaces that offer inst
     sentEbayRequest('POST', '/sell/inventory/v1/offer/offer-existing/publish');
 });
 
+test('re-uploading a live listing that does not follow our price keeps the seller price and category on eBay', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['customer_price' => 20, 'settings' => ['pricing' => ['type' => 'not_follow', 'value' => null], 'pricing_opt_out' => true]]);
+
+    $existing = ['offerId' => 'offer-live', 'sku' => $portfolio->sku, 'status' => 'PUBLISHED', 'categoryId' => '77777', 'format' => 'FIXED_PRICE'];
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(offersForSku: [$existing], offerById: $existing),
+    ]);
+
+    StoreEbayProduct::run($ebayUser, $portfolio->refresh());
+
+    $replaced = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-live')->data();
+
+    expect($replaced['pricingSummary']['price']['value'])->toBe('9.99')
+        ->and($replaced['categoryId'])->toBe('77777');
+});
+
+test('uploading a sku whose offer on eBay points at an old postage policy moves the offer onto the channel policies', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    $existing = [
+        'offerId'             => 'offer-existing',
+        'sku'                 => $portfolio->sku,
+        'status'              => 'UNPUBLISHED',
+        'merchantLocationKey' => 'old-location',
+        'listingPolicies'     => ['fulfillmentPolicyId' => 'fp-deleted', 'paymentPolicyId' => 'pp-1', 'returnPolicyId' => 'rp-1'],
+    ];
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(offersForSku: [$existing], offerById: $existing),
+    ]);
+
+    StoreEbayProduct::run($ebayUser, $portfolio);
+
+    $replaced = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-existing')->data();
+
+    expect($replaced['listingPolicies'])->toBe(['fulfillmentPolicyId' => 'fp-1', 'paymentPolicyId' => 'pp-1', 'returnPolicyId' => 'rp-1'])
+        ->and($replaced['merchantLocationKey'])->toBe('aw-warehouse-gb');
+});
+
+function fulfilmentPolicyRefusal(): array
+{
+    return ['errors' => [[
+        'errorId'  => 25007,
+        'domain'   => 'API_INVENTORY',
+        'category' => 'REQUEST',
+        'message'  => 'The eBay listing associated with the inventory item, or the unpublished offer, has invalid data in the associated fulfilment policy. Please add at least one valid postage service option to your listing.',
+    ]]];
+}
+
+function publishRefusedOnceForPolicy(int &$publishCalls): Closure
+{
+    return function () use (&$publishCalls) {
+        $publishCalls++;
+
+        return $publishCalls === 1
+            ? Http::response(fulfilmentPolicyRefusal(), 400)
+            : Http::response(['listingId' => '555000111']);
+    };
+}
+
+test('a publish refused for a postage policy the seller deleted swaps in a usable policy and publishes', function () {
+    $ebayUser     = ebayChannel($this, ['fulfillment_policy_id' => 'fp-deleted']);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForPolicy($publishCalls)] + ebayCatalogueRoutes() + Arr::only(ebayAccountRoutes(), ['/sell/account/v1/fulfillment_policy']) + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-1')
+        ->and(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-new')->data()['listingPolicies']['fulfillmentPolicyId'])->toBe('fp-1')
+        ->and($publishCalls)->toBe(2)
+        ->and($portfolio->platform_product_variant_id)->toBe('555000111')
+        ->and($portfolio->upload_warning)->toBeNull();
+});
+
+test('a publish refused for a postage policy when the seller has none usable left recreates it from the channel postage settings', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => 'fp-deleted']);
+    $ebayUser->update(['settings' => array_merge($ebayUser->settings, ['shipping' => ['price' => '2.50', 'max_dispatch_time' => 3]])]);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForPolicy($publishCalls)] + ebayCatalogueRoutes() + [
+        '/sell/account/v1/fulfillment_policy' => fn (Request $request) => $request->method() === 'GET'
+            ? Http::response(['fulfillmentPolicies' => [], 'total' => 0])
+            : Http::response(['fulfillmentPolicyId' => 'fp-recreated'], 201),
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    StoreEbayProduct::run($ebayUser, $portfolio);
+
+    $created = sentEbayRequest('POST', '/sell/account/v1/fulfillment_policy')->data();
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-recreated')
+        ->and($created['shippingOptions'][0]['shippingServices'][0]['shippingCost']['value'])->toBe('2.50')
+        ->and($created['handlingTime']['value'])->toBe(3)
+        ->and($publishCalls)->toBe(2);
+});
+
+test('a publish refused for a postage policy eBay still lists as usable is left for the seller to fix', function () {
+    $ebayUser     = ebayChannel($this);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForPolicy($publishCalls)] + ebayCatalogueRoutes() + Arr::only(ebayAccountRoutes(), ['/sell/account/v1/fulfillment_policy']) + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_ends_with(parse_url($request->url(), PHP_URL_PATH), '/fulfillment_policy'));
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-1')
+        ->and($publishCalls)->toBe(1)
+        ->and($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->upload_warning)->toContain('valid postage service');
+});
+
+test('uploading with a token eBay no longer accepts shows the authorisation error and never publishes', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/identity/v1/oauth2/token' => fn () => Http::response(['error' => 'invalid_grant', 'error_description' => 'the provided authorization refresh token is invalid'], 400),
+        '/sell/inventory/v1/offer'  => fn () => Http::response(['errors' => [['errorId' => 1001, 'domain' => 'OAuth', 'category' => 'REQUEST', 'message' => 'Invalid access token']]], 401),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/publish'));
+
+    expect($portfolio->upload_warning)->toBe('Invalid access token')
+        ->and($portfolio->platform_product_id)->toBeNull()
+        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
+});
+
 test('bulk upload queues one upload job per selected active portfolio and counts progress', function () {
     Queue::fake();
 
@@ -846,6 +989,18 @@ test('bulk upload queues one upload job per selected active portfolio and counts
         return $arguments[1]->id === $portfolio->id && $arguments[2]['total'] === 1;
     });
 });
+
+function ebayInventoryItemRoute(string $title = 'Listed On Ebay'): Closure
+{
+    return fn (Request $request) => $request->method() === 'PUT'
+        ? Http::response(null, 204)
+        : Http::response([
+            'sku'          => 'sku-on-ebay',
+            'condition'    => 'NEW',
+            'availability' => ['shipToLocationAvailability' => ['quantity' => 3]],
+            'product'      => ['title' => $title, 'description' => 'Old description on eBay', 'imageUrls' => ['https://img.example/1.jpg']],
+        ]);
+}
 
 test('updating an offer overlays only the description and price on top of what eBay already holds', function () {
     $ebayUser  = ebayChannel($this);
@@ -865,6 +1020,7 @@ test('updating an offer overlays only the description and price on top of what e
         ->and($body['merchantLocationKey'])->toBe('aw-warehouse-gb')
         ->and($body)->not->toHaveKey('listing')
         ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::OK);
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/inventory_item/'));
 });
 
 test('updating an offer leaves the eBay price alone when the channel or the portfolio opted out of price updates', function () {
@@ -882,6 +1038,61 @@ test('updating an offer leaves the eBay price alone when the channel or the port
     fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
     UpdateEbayOffer::run($portfolio->refresh());
     expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['pricingSummary']['price']['value'])->toBe('9.99');
+});
+
+test('a title edited in aiku replaces the eBay title on the inventory item and keeps the rest of the item', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['customer_product_name' => 'My own title for this candle']);
+
+    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes(), '/inventory_item/' => ebayInventoryItemRoute()]);
+
+    expect(UpdateEbayOffer::run($portfolio->refresh(), withTitle: true))->toBeNull();
+
+    $item = sentEbayRequest('PUT', '/sell/inventory/v1/inventory_item/sku-on-ebay')->data();
+
+    expect($item['product']['title'])->toBe('My own title for this candle')
+        ->and($item['product']['imageUrls'])->toBe(['https://img.example/1.jpg'])
+        ->and($item['condition'])->toBe('NEW')
+        ->and($item['availability']['shipToLocationAvailability']['quantity'])->toBe(3)
+        ->and($item)->not->toHaveKey('sku');
+});
+
+test('an eBay refusal of the title is reported back instead of logged as synchronised', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['customer_product_name' => 'Rejected title']);
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+        '/inventory_item/'         => fn (Request $request) => $request->method() === 'PUT'
+            ? Http::response(['errors' => [['errorId' => 25001, 'message' => 'Title is not allowed']]], 400)
+            : ebayInventoryItemRoute()($request),
+    ]);
+
+    expect(UpdateEbayOffer::run($portfolio->refresh(), withTitle: true))->toBe('Title is not allowed')
+        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL)
+        ->and(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1'))->not->toBeNull();
+});
+
+test('a title that cannot reach eBay is never logged as synchronised', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['customer_product_name' => 'Unreachable title']);
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+        '/inventory_item/'         => fn () => throw new ConnectionException('cURL error 28: timed out'),
+    ]);
+    expect(UpdateEbayOffer::run($portfolio->refresh(), withTitle: true))->toContain('timed out')
+        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+        '/inventory_item/'         => fn () => Http::response(['sku' => 'sku-on-ebay', 'groupIds' => ['grp-1'], 'product' => ['title' => 'Group child']]),
+    ]);
+    expect(UpdateEbayOffer::run($portfolio->refresh(), withTitle: true))->toContain('Multi-variation');
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT' && str_contains($request->url(), '/inventory_item/'));
 });
 
 test('updating an offer is skipped for drafts and for closed channels', function () {

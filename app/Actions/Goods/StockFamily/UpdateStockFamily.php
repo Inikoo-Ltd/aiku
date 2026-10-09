@@ -88,6 +88,7 @@ class UpdateStockFamily extends OrgAction
             'state'            => ['sometimes', 'required', Rule::enum(StockFamilyStateEnum::class)],
             'understock_days'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
             'overstock_days'   => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
+            'is_batch_tracked' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

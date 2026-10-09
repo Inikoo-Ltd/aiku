@@ -33,7 +33,7 @@ class GetChatCustomerProfile
 {
     use AsAction;
 
-    public function handle(ChatSession $chatSession): array
+    public function handle(ChatSession $chatSession, ?string $claimOrderReference = null): array
     {
         $webUser = $chatSession->webUser()
             ->with(['customer.tags', 'customer.stats', 'customer.shop.currency', 'customer.organisation'])
@@ -52,7 +52,7 @@ class GetChatCustomerProfile
             'profile_url' => $this->customerProfileUrl($customer),
             ...$this->contactAndLastOrders($customer),
             ...$this->previousContact($customer, $chatSession),
-            'claim'       => GetChatClaimCase::run($chatSession, $customer),
+            'claim'       => GetChatClaimCase::run($chatSession, $customer, $claimOrderReference),
 
             'tags'  => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
@@ -227,6 +227,6 @@ class GetChatCustomerProfile
 
     public function asController(ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-        return response()->json($this->handle($chatSession));
+        return response()->json($this->handle($chatSession, $request->query('claim_order')));
     }
 }

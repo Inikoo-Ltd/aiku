@@ -50,13 +50,15 @@ class BroadcastPurchaseOrderLastEdited implements ShouldBroadcast
 
     public static function lastEdit(PurchaseOrder $purchaseOrder): ?array
     {
+        $transactionIds = $purchaseOrder->purchaseOrderTransactions()->pluck('id')->all();
+
         $audit = Audit::query()
             ->where('user_type', 'User')
             ->whereNotNull('user_id')
-            ->where(function ($query) use ($purchaseOrder) {
+            ->where(function ($query) use ($purchaseOrder, $transactionIds) {
                 $query->where(fn ($query) => $query->where('auditable_type', 'PurchaseOrder')->where('auditable_id', $purchaseOrder->id))
                     ->orWhere(fn ($query) => $query->where('auditable_type', 'PurchaseOrderTransaction')
-                        ->whereIn('auditable_id', $purchaseOrder->purchaseOrderTransactions()->select('id')));
+                        ->whereRaw('auditable_id = any(?::int[])', ['{'.implode(',', $transactionIds).'}']));
             })
             ->orderByDesc('id')
             ->first();

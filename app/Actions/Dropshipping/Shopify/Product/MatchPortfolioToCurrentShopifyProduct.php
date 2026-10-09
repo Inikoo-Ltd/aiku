@@ -25,7 +25,7 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
     {
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
 
-        if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
+        if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId, Arr::has($modelData, 'manage_price') ? (bool) Arr::get($modelData, 'manage_price') : null) === null) {
             $refusal = LinkShopifyPortfolio::refusal($portfolio->customerSalesChannel, $shopifyProductId, null, $portfolio);
 
             if ($refusal === null) {
@@ -60,6 +60,7 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
     {
         return [
             'shopify_product_id' => ['required', 'string'],
+            'manage_price'       => ['sometimes', 'boolean'],
         ];
     }
 

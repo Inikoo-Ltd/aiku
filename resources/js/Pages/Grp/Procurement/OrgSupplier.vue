@@ -26,6 +26,7 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import SupplierShowcase from '@/Components/Showcases/Grp/SupplierShowcase.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
+import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -57,6 +58,7 @@ const props = defineProps<{
     }
     showcase?: object
     inbox?: object
+    declarations?: object
     history?: object
     errors?: object
     attachments?: object
@@ -72,6 +74,7 @@ const component = computed(() => {
     const components = {
         showcase: SupplierShowcase,
         inbox: TableSupplierMessages,
+        declarations: SupplierDeclarations,
         attachments: TableAttachments,
         history: TableHistories
     }

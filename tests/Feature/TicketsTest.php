@@ -736,7 +736,7 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($stats['done'])->toBe($before['done'] + 1)
         ->and($stats['open'])->toBe($before['open'] + 1)
         ->and(count($stats['daily']))->toBe(8)
-        ->and(collect($stats['daily'])->last()['open'])->toBe($stats['open'])
+        ->and(collect($stats['daily'])->last()['open'])->toBe(collect($before['daily'])->last()['open'] + 1)
         ->and($stats['bucket'])->toBe('day')
         ->and(ShowTicketsReports::make()->handle($this->group, '1y')['bucket'])->toBe('week')
         ->and($today['created'])->toBeGreaterThanOrEqual(2)
@@ -869,14 +869,21 @@ test('assistant asks a QA user to check a ticket through MCP, with the comment a
     $qa->assignRole('qa');
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pay button missing', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
     UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa->assignRole('qa');
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username])->assertHasErrors();
+    expect($ticket->refresh()->qa_status)->toBeNull();
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
 
     $notQa = User::factory()->create(['group_id' => $this->group->id]);
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $notQa->username])->assertHasErrors();
 
-    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username.', '.$otherQa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
     $ticket->refresh();
     expect($ticket->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
-        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_user_id)->toBeNull()
+        ->and($ticket->qa_user_ids)->toEqualCanonicalizing([$qa->id, $otherQa->id])
         ->and($ticket->comments()->where('body', 'like', '%Pay an order in warehouse')->count())->toBe(1);
 
     UpdateTicket::make()->action($ticket, ['qa_status' => null]);
@@ -1401,7 +1408,7 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $reporter->id])->assertSessionHasErrors('qa_user_id');
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id, 'qa_note' => 'Try it with a voucher', 'images' => [UploadedFile::fake()->image('voucher.png')]])->assertRedirect();
     $requestComment = $ticket->comments()->latest('id')->first();
-    expect($ticket->refresh()->qa_user_id)->toBe($qa->id)
+    expect($ticket->refresh()->qa_user_ids)->toBe([$qa->id])
         ->and($requestComment->body)->toBe('QA check requested: Try it with a voucher')
         ->and($requestComment->getMedia('ticket_images'))->toHaveCount(1);
     actingAs($qa);
@@ -2985,19 +2992,31 @@ test('the QA queue can be narrowed to checks for anyone or for me', function () 
     $forAnyone = StoreTicket::make()->action($this->group, ['subject' => 'Check for anyone']);
     $forMe     = StoreTicket::make()->action($this->group, ['subject' => 'Check for me']);
     $forOther  = StoreTicket::make()->action($this->group, ['subject' => 'Check for someone else']);
-    UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
-    UpdateTicket::make()->action($forMe, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
-    UpdateTicket::make()->action($forOther, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $otherQa->id]);
+    $forBoth   = StoreTicket::make()->action($this->group, ['subject' => 'Check for both of us']);
+    $inProgress = ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value];
+    UpdateTicket::make()->action($forAnyone, $inProgress);
+    UpdateTicket::make()->action($forMe, [...$inProgress, 'qa_user_id' => $qa->id]);
+    UpdateTicket::make()->action($forOther, [...$inProgress, 'qa_user_id' => $otherQa->id]);
+    UpdateTicket::make()->action($forBoth, [...$inProgress, 'qa_user_ids' => [$qa->id, $otherQa->id]]);
 
     actingAs($qa);
     $references = fn (string $checker) => collect(get(route('grp.json.ticket.qa_queue', ['checker' => $checker]))->assertOk()->json())->pluck('reference')->all();
 
-    expect($references('all'))->toContain($forAnyone->reference, $forMe->reference, $forOther->reference)
-        ->and($references('anyone'))->toContain($forAnyone->reference)->not->toContain($forMe->reference, $forOther->reference)
-        ->and($references('me'))->toContain($forMe->reference)->not->toContain($forAnyone->reference, $forOther->reference);
+    expect($references('all'))->toContain($forAnyone->reference, $forMe->reference, $forOther->reference, $forBoth->reference)
+        ->and($references('anyone'))->toContain($forAnyone->reference)->not->toContain($forMe->reference, $forOther->reference, $forBoth->reference)
+        ->and($references('me'))->toContain($forMe->reference, $forBoth->reference)->not->toContain($forAnyone->reference, $forOther->reference);
 
     $mine = collect(get(route('grp.json.ticket.qa_queue', ['checker' => 'me']))->json())->firstWhere('reference', $forMe->reference);
-    expect($mine['qa_user_id'])->toBe($qa->id);
+    expect($mine['qa_user_ids'])->toBe([$qa->id]);
+    $both = collect(get(route('grp.json.ticket.qa_queue', ['checker' => 'me']))->json())->firstWhere('reference', $forBoth->reference);
+    expect($both['qa_user'])->toContain(', ');
+
+    expect($forBoth->refresh()->canBeClaimedForQaBy($qa))->toBeTrue()
+        ->and($forBoth->canBeClaimedForQaBy($otherQa))->toBeTrue()
+        ->and($forOther->refresh()->canBeClaimedForQaBy($qa))->toBeFalse();
+    patch(route('grp.models.ticket.update', $forBoth->id), ['qa_status' => 'checking'])->assertSessionHasNoErrors();
+    expect($forBoth->refresh()->qa_user_id)->toBe($qa->id)
+        ->and($forBoth->isQaHeldByAnotherThan($otherQa))->toBeTrue();
 
     get(route('grp.json.ticket.qa_queue', ['checker' => 'nobody']))->assertSessionHasErrors('checker');
 
@@ -3017,8 +3036,8 @@ test('the ticket list offers ownership by role and QA filters', function () {
     $forQa     = StoreTicket::make()->action($this->group, ['subject' => 'List QA for me']);
     $failed    = StoreTicket::make()->action($this->group, ['subject' => 'List QA failed']);
     $noQa      = StoreTicket::make()->action($this->group, ['subject' => 'List without QA', 'reporter_type' => 'User', 'reporter_id' => $qa->id]);
-    UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
-    UpdateTicket::make()->action($forQa, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
+    UpdateTicket::make()->action($forAnyone, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value]);
+    UpdateTicket::make()->action($forQa, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
     $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
     Ticket::whereIn('id', [$forAnyone->id, $forQa->id, $failed->id])->update(['status' => TicketStatusEnum::RESOLVED]);
 
@@ -4078,4 +4097,150 @@ test('a deployment closes a pending deploy ticket whose fix commit was rewritten
     CloseTicketsAfterDeployment::run('5f525f2033');
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+});
+
+test('ticket page suggests similar tickets the viewer can see', function () {
+    setPermissionsTeamId($this->group->id);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+
+    $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $similar = StoreTicket::make()->action($this->group, ['subject' => 'Shopify order processing delayed', 'description' => 'Shopify sales channel orders stay in processing']);
+    $other   = StoreTicket::make()->action($this->group, ['subject' => 'Printer out of toner']);
+    $hidden  = StoreTicket::make()->action($this->group, ['subject' => 'Shopify processing confidential', 'is_confidential' => true]);
+
+    $response = get(route('grp.json.ticket.similar', $ticket->id))->assertOk();
+    $found    = collect($response->json())->pluck('reference');
+
+    expect($found->all())->toContain($similar->reference)
+        ->and($found->all())->not->toContain($ticket->reference)
+        ->and($found->all())->not->toContain($other->reference)
+        ->and($response->json('0'))->toHaveKeys(['id', 'reference', 'subject', 'status_label', 'status_icon', 'type_icon']);
+
+    actingAs($outsider);
+    expect(collect(get(route('grp.json.ticket.similar', $ticket->id))->assertOk()->json())->pluck('reference')->all())
+        ->not->toContain($hidden->reference);
+    get(route('grp.json.ticket.similar', $hidden->id))->assertForbidden();
+});
+
+test('jev decides which shortlisted tickets are really similar', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $wordy    = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders processing stuck again', 'description' => 'Shopify sales channel orders processing']);
+    $sameIdea = StoreTicket::make()->action($this->group, ['subject' => 'Shopify sync delayed', 'description' => 'Orders do not come through from the store']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::response(['answers' => [
+            'ticket_'.$wordy->id    => ['noul' => 0.2],
+            'ticket_'.$sameIdea->id => ['noul' => 0.9],
+        ]]),
+    ]);
+
+    $found = collect(get(route('grp.json.ticket.similar', $ticket->id))->assertOk()->json())->pluck('reference')->all();
+
+    expect($found)->toBe([$sameIdea->reference]);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    get(route('grp.json.ticket.similar', $ticket->id))->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    get(route('grp.json.ticket.similar', ['ticket' => $ticket->id, 'refresh' => 1]))->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(2);
+});
+
+test('a ticket being written is shown related tickets judged by jev', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+
+    $related = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $other   = StoreTicket::make()->action($this->group, ['subject' => 'Shopify invoice logo missing', 'description' => 'Logo missing on the Shopify invoice']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::response(['answers' => [
+            'ticket_'.$related->id => ['noul' => 0.8],
+            'ticket_'.$other->id   => ['noul' => 0.1],
+        ]]),
+    ]);
+
+    $draft = ['subject' => 'Shopify orders not leaving processing', 'description' => 'Since this morning Shopify orders stay in processing'];
+
+    expect(collect(\Pest\Laravel\post(route('grp.json.ticket.similar_draft'), $draft)->assertOk()->json())->pluck('reference')->all())->toBe([$related->reference]);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    \Pest\Laravel\post(route('grp.json.ticket.similar_draft'), $draft)->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    \Pest\Laravel\post(route('grp.json.ticket.similar_draft'), [...$draft, 'refresh' => true])->assertOk();
+    \Illuminate\Support\Facades\Http::assertSentCount(2);
+
+    expect(\Pest\Laravel\post(route('grp.json.ticket.similar_draft'), ['subject' => 'hi'])->assertOk()->json())->toBe([]);
+});
+
+test('tickets are linked jira style and read from both sides', function () {
+    $blocker = StoreTicket::make()->action($this->group, ['subject' => 'Stock sync fails']);
+    $blocked = StoreTicket::make()->action($this->group, ['subject' => 'Shop shows wrong stock']);
+    $customer = StoreTicket::make()->action($this->group, ['subject' => 'Customer cannot see stock', 'type' => 'customer']);
+
+    post(route('grp.models.ticket.link.store', $blocked->id), ['linked_ticket_id' => $blocker->id, 'type' => 'blocked_by'])->assertRedirect()->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.link.store', $blocked->id), ['linked_ticket_id' => $customer->id, 'type' => 'relates'])->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.link.store', $blocker->id), ['linked_ticket_id' => $blocked->id, 'type' => 'relates'])->assertSessionHasErrors('linked_ticket_id');
+    post(route('grp.models.ticket.link.store', $blocked->id), ['linked_ticket_id' => $blocked->id, 'type' => 'relates'])->assertSessionHasErrors('linked_ticket_id');
+
+    $link = \App\Models\Helpers\TicketLink::where('ticket_id', $blocker->id)->firstOrFail();
+    expect($link->linked_ticket_id)->toBe($blocked->id)
+        ->and($link->type)->toBe(\App\Enums\Helpers\Ticket\TicketLinkTypeEnum::BLOCKS);
+
+    $linksOf = fn ($ticket) => collect(\App\Actions\Helpers\Ticket\UI\ShowTicket::make()->linksFor($ticket->fresh(), $this->user))->map(fn ($row) => $row['label'].' '.$row['reference'])->all();
+    expect($linksOf($blocker))->toBe(['Blocks '.$blocked->reference])
+        ->and($linksOf($blocked))->toContain('Is blocked by '.$blocker->reference, 'Relates to '.$customer->reference);
+
+    $props = get(route('grp.tickets.show', $blocked->reference))->inertiaProps();
+    expect($props['can_link'])->toBeTrue()
+        ->and($props['links'])->toHaveCount(2)
+        ->and(collect($props['timeline'])->pluck('text')->all())->toContain('Linked: Is blocked by '.$blocker->reference);
+
+    $plain = User::factory()->create(['group_id' => $this->group->id]);
+    actingAs($plain);
+    delete(route('grp.models.ticket.link.delete', $link->id))->assertForbidden();
+
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    actingAs($qa);
+    delete(route('grp.models.ticket.link.delete', $link->id))->assertRedirect();
+    expect(\App\Models\Helpers\TicketLink::find($link->id))->toBeNull()
+        ->and(collect(\App\Actions\Helpers\Ticket\UI\ShowTicket::make()->linksFor($blocker->fresh(), $this->user))->all())->toBe([]);
+});
+
+test('a linked ticket is created as INI by default, HELP allowed, never a customer ticket', function () {
+    $source = StoreTicket::make()->action($this->group, ['subject' => 'Packing list totals wrong']);
+
+    get(route('grp.tickets.create', ['link_ticket' => $source->id]))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('linkFrom.reference', $source->reference)
+        ->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['engineer', 'help']));
+
+    post(route('grp.models.ticket.store'), ['subject' => 'Fix packing totals', 'link_ticket_id' => $source->id, 'link_type' => 'blocks'])->assertRedirect();
+    $created = \App\Models\Helpers\Ticket::where('subject', 'Fix packing totals')->firstOrFail();
+    expect($created->type)->toBe(TicketTypeEnum::ENGINEER)
+        ->and(\App\Models\Helpers\TicketLink::where('ticket_id', $source->id)->where('linked_ticket_id', $created->id)->value('type'))->toBe(\App\Enums\Helpers\Ticket\TicketLinkTypeEnum::BLOCKS);
+
+    post(route('grp.models.ticket.store'), ['subject' => 'Ask the customer', 'type' => 'customer', 'link_ticket_id' => $source->id])->assertSessionHasErrors('type');
+    post(route('grp.models.ticket.store'), ['subject' => 'Help side', 'type' => 'help', 'link_ticket_id' => $source->id])->assertSessionHasNoErrors();
+
+    $plain = User::factory()->create(['group_id' => $this->group->id]);
+    actingAs($plain);
+    get(route('grp.tickets.create', ['link_ticket' => $source->id]))->assertForbidden();
+});
+
+test('the ticket page only reads cached similar tickets until asked', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing']);
+    StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders processing delayed']);
+    \Illuminate\Support\Facades\Http::fake(['openrouter.ai/*' => \Illuminate\Support\Facades\Http::response(['answers' => []])]);
+
+    expect(\Pest\Laravel\getJson(route('grp.json.ticket.similar', ['ticket' => $ticket->id, 'cached_only' => 1]))->assertOk()->json('cached'))->toBeFalse();
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    \Pest\Laravel\getJson(route('grp.json.ticket.similar', $ticket->id))->assertOk();
+    expect(\Pest\Laravel\getJson(route('grp.json.ticket.similar', ['ticket' => $ticket->id, 'cached_only' => 1]))->assertOk()->json())->toBe([]);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
 });

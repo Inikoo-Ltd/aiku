@@ -157,13 +157,15 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
 
 const idxSlideLoading = ref<number | null>(null)
 
-const openCardInSideEditor = (index: number, childBlockArrayBlock?: string) => {
+const openCardsInSideEditor = () => {
   sendMessageToParent('activeBlock', props.indexBlock)
   sendMessageToParent('activeChildBlock', 'carousel_data-cards')
+}
+
+const openCardInSideEditor = (index: number, childBlockArrayBlock: string) => {
+  openCardsInSideEditor()
   sendMessageToParent('activeChildBlockArray', index)
-  if (childBlockArrayBlock) {
-    sendMessageToParent('activeChildBlockArrayBlock', childBlockArrayBlock)
-  }
+  sendMessageToParent('activeChildBlockArrayBlock', childBlockArrayBlock)
 }
 
 </script>
@@ -208,7 +210,7 @@ const openCardInSideEditor = (index: number, childBlockArrayBlock?: string) => {
               <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
                 class="p-4 flex flex-col flex-1 justify-between">
                 <div class="text-center leading-relaxed">
-                  <EditorV2 v-model="data.text" @focus="() => openCardInSideEditor(index)"
+                  <EditorV2 v-model="data.text" @focus="openCardsInSideEditor"
                     @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                       name: webpageData.images_upload_route.name,
                       parameters: {

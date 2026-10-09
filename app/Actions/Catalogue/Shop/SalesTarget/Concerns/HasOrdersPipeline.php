@@ -10,7 +10,9 @@ namespace App\Actions\Catalogue\Shop\SalesTarget\Concerns;
 
 use App\Actions\Accounting\Invoice\CategoriseInvoice;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
@@ -84,6 +86,51 @@ trait HasOrdersPipeline
             'submitted_amount'    => round(array_sum(array_column($pipelines, 'submitted_amount')), 2),
             'in_warehouse_amount' => round(array_sum(array_column($pipelines, 'in_warehouse_amount')), 2),
         ];
+    }
+
+    /**
+     * Invoices (refunds left out) issued between the two days, partners included as in the sales figures.
+     *
+     * @return array<int, int> shop id => invoices
+     */
+    private function invoiceCountsByShop(array $shopIds, Carbon $from, Carbon $to): array
+    {
+        return DB::table('shop_time_series_records')
+            ->join('shop_time_series', 'shop_time_series.id', '=', 'shop_time_series_records.shop_time_series_id')
+            ->whereIn('shop_time_series.shop_id', $shopIds)
+            ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->whereBetween('shop_time_series_records.period', [$from->toDateString(), $to->toDateString()])
+            ->groupBy('shop_time_series.shop_id')
+            ->selectRaw('shop_time_series.shop_id, sum(coalesce(shop_time_series_records.invoices, 0) + coalesce(shop_time_series_records.invoices_internal, 0)) as invoices')
+            ->pluck('invoices', 'shop_id')
+            ->map(fn ($invoices) => (int) $invoices)
+            ->all();
+    }
+
+    /**
+     * @return array<int, int> invoice category id (0 for none) => invoices
+     */
+    private function invoiceCountsByCategory(Shop $shop, Carbon $from, Carbon $to): array
+    {
+        return DB::table('invoices')
+            ->where('shop_id', $shop->id)
+            ->where('type', InvoiceTypeEnum::INVOICE->value)
+            ->where('in_process', false)
+            ->whereNull('deleted_at')
+            ->whereBetween('date', [$from->toDateString(), $to->copy()->endOfDay()->toDateTimeString()])
+            ->groupBy('invoice_category_id')
+            ->selectRaw('coalesce(invoice_category_id, 0) as category_key, count(*) as invoices')
+            ->pluck('invoices', 'category_key')
+            ->map(fn ($invoices) => (int) $invoices)
+            ->all();
+    }
+
+    /**
+     * @param array<int, int> $invoiceCountsByShop
+     */
+    private function sumInvoiceCounts(array $invoiceCountsByShop, ?array $shopIds = null): int
+    {
+        return (int) array_sum($shopIds === null ? $invoiceCountsByShop : array_intersect_key($invoiceCountsByShop, array_flip($shopIds)));
     }
 
     /**

@@ -29,6 +29,14 @@ use JsonSerializable;
  * @property \Spatie\Permission\Contracts\Permission[] $permissions
  * @property mixed $number_current_api_tokens
  * @property mixed $number_expired_api_tokens
+ * @property bool $can_use_mcp
+ * @property bool $can_use_mcp_sql
+ * @property bool $can_use_mcp_discontinue
+ * @property bool $can_use_mcp_web
+ * @property bool $can_use_mcp_procurement
+ * @property bool $can_use_mcp_production
+ * @property mixed $has_mcp_queries
+ * @property mixed $last_active
  */
 class UsersResource extends JsonResource
 {
@@ -65,6 +73,7 @@ class UsersResource extends JsonResource
             'can_use_mcp_discontinue'   => (bool) $this->can_use_mcp_discontinue,
             'can_use_mcp_web'           => (bool) $this->can_use_mcp_web,
             'can_use_mcp_procurement'   => (bool) $this->can_use_mcp_procurement,
+            'can_use_mcp_production'    => (bool) $this->can_use_mcp_production,
             'has_mcp_queries'           => (bool) $this->has_mcp_queries,
             'last_active'               => $this->last_active,
         ];

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -96,8 +95,6 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
         $this->purchaseOrderHydrate($purchaseOrder);
-
-        StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
         if (SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)) {
             return $purchaseOrder;

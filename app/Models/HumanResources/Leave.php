@@ -34,8 +34,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $session
  * @property string $type
  * @property int|null $leave_type_id
+ * @property int|null $cover_employee_id
+ * @property bool $cover_has_permissions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\LeaveApprovalRecord> $approvalRecords
  * @property-read User|null $approver
+ * @property-read \App\Models\HumanResources\Employee|null $coverEmployee
  * @property-read \App\Models\HumanResources\Employee|null $employee
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\HumanResources\LeaveType|null $leaveType
@@ -62,6 +65,7 @@ class Leave extends Model implements HasMedia
         'status'       => LeaveStatusEnum::class,
         'data'         => 'array',
         'is_half_day'  => 'boolean',
+        'cover_has_permissions' => 'boolean',
     ];
 
     protected $guarded = [];
@@ -69,6 +73,11 @@ class Leave extends Model implements HasMedia
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function coverEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'cover_employee_id');
     }
 
     public function approver(): BelongsTo

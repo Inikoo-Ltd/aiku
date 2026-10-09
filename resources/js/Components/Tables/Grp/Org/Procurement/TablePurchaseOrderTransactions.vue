@@ -20,14 +20,14 @@ import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSu
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox, faPeopleArrows } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
 import { useConfirm } from 'primevue/useconfirm'
 import Toggle from '@/Components/Pure/Toggle.vue'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faMinusCircle, faPeopleArrows)
 
 const confirm = useConfirm()
 
@@ -35,22 +35,8 @@ const props = defineProps<{
     data: object
     tab?: string
     state?: string
-    isOrgAgent?: boolean
-    orgAgentSlug?: string
     isPartner?: boolean
 }>()
-
-function supplierRoute(item: any): string {
-    if (!props.isOrgAgent || !props.orgAgentSlug || !item.supplier_slug) {
-        return ''
-    }
-
-    return route('grp.org.procurement.org_agents.show.suppliers.show', [
-        route().params.organisation,
-        props.orgAgentSlug,
-        item.supplier_slug,
-    ])
-}
 
 const currentLevel = defineModel<OrderingLevel>('level', { default: 'cartons' })
 
@@ -227,11 +213,14 @@ async function onSaveQuantity(item: any, form: any): Promise<boolean> {
 
 const deletingId = ref<number | null>(null)
 
-const BRAVE_MODE_STORAGE_KEY = 'purchase-order-brave-mode'
+const BRAVE_MODE_STORAGE_KEY = 'purchase-order-brave-mode-expires-at'
+const BRAVE_MODE_LIFETIME_MS = 8 * 60 * 60 * 1000
 
 function readBraveMode(): boolean {
     try {
-        return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === '1'
+        const expiresAt = Number(localStorage.getItem(BRAVE_MODE_STORAGE_KEY))
+
+        return expiresAt > Date.now()
     } catch {
         return false
     }
@@ -241,18 +230,30 @@ const isBraveMode = ref(readBraveMode())
 
 watch(isBraveMode, (value) => {
     try {
-        localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? '1' : '0')
+        if (value) {
+            localStorage.setItem(BRAVE_MODE_STORAGE_KEY, String(Date.now() + BRAVE_MODE_LIFETIME_MS))
+        } else {
+            localStorage.removeItem(BRAVE_MODE_STORAGE_KEY)
+        }
     } catch {
         return
     }
 })
+
+function isBraveModeActive(): boolean {
+    if (isBraveMode.value && !readBraveMode()) {
+        isBraveMode.value = false
+    }
+
+    return isBraveMode.value
+}
 
 function confirmDeleteItem(event: MouseEvent, item: any) {
     if (!item.deleteRoute) {
         return
     }
 
-    if (isBraveMode.value) {
+    if (isBraveModeActive()) {
         onDeleteItem(item)
         return
     }
@@ -293,7 +294,7 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         return
     }
 
-    if (isBraveMode.value) {
+    if (isBraveModeActive()) {
         onCancelItem(item)
         return
     }
@@ -354,21 +355,6 @@ function supplierProductRoute(item: { slug?: string }) {
 }
 
 
-const firstRowOfSupplier = computed(() => {
-    const ids = new Set<number>()
-    let previousSupplier: string | null = null
-
-    for (const item of (props.data as any)?.data ?? []) {
-        if (item.supplier_name !== previousSupplier) {
-            ids.add(item.id)
-            previousSupplier = item.supplier_name
-        }
-    }
-
-    return ids
-})
-
-
 function orgStockRoute(item: { org_stock_id?: number }) {
     if (!item.org_stock_id) {
         return ''
@@ -390,7 +376,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                             type="button"
                             class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
                             :class="item.key === currentLevel
-                                ? 'border-indigo-500 text-indigo-600 font-medium'
+                                ? 'border-[--app-accent] text-[--app-accent] font-medium'
                                 : 'border-transparent text-gray-500 hover:text-gray-700'"
                             @click="currentLevel = item.key"
                         >
@@ -455,22 +441,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     >
                         <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
                     </Link>
-                </div>
-
-                <div
-                    v-if="isOrgAgent && item.supplier_name && firstRowOfSupplier.has(item.id)"
-                    class="flex items-center gap-1 mt-1 px-2 py-0.5 rounded bg-gray-100 text-sm font-semibold text-gray-700"
-                >
-                    <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
-                    <Link
-                        v-if="supplierRoute(item)"
-                        v-tooltip="ctrans('Supplier')"
-                        :href="supplierRoute(item)"
-                        class="primaryLink"
-                    >
-                        {{ item.supplier_name }}
-                    </Link>
-                    <span v-else>{{ item.supplier_name }}</span>
                 </div>
             </div>
         </template>

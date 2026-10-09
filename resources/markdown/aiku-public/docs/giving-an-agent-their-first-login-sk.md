@@ -2,7 +2,7 @@
 title: Prvé prihlásenie agenta
 summary: Pre nákupnú spoločnosť — ako vytvoriť jediný účet, ktorý potrebuje obstarávací agent na začiatok práce v aiku, po ktorom sa už o svojich ľudí stará sám.
 date: 2026-09-30
-source_date: 2026-09-30
+source_date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -17,7 +17,7 @@ Agenti sú v aiku organizácie, rovnako ako obchod, a ich ľudia sa prihlasujú 
 
 Každý obstarávací agent je organizácia typu *agent*. Keď sa niekto z tejto organizácie prihlási, vidí len svoju vlastnú organizáciu a len svoju prácu:
 
-- menu **Procurement**: **Purchase Orders**, ktoré mu posielajú vaše organizácie, **Supplier Purchase Orders**, ktoré zadáva každému dodávateľovi, a zálohy, ktoré na ne platí, **Stock Deliveries**, ktoré vám posiela, jeho vlastní **Suppliers** a jeho dodávateľská **Inbox**;
+- menu **Procurement**: **Purchase Orders**, ktoré mu posielajú vaše organizácie, po jednej pre každého z jeho dodávateľov, so zálohami, ktoré na ne platí, **Stock Deliveries**, ktoré vám posiela, jeho vlastní **Suppliers** a jeho dodávateľská **Inbox**;
 - menu **HR**, pre jeho vlastných ľudí;
 - **Tickets**, na žiadosť o pomoc u vášho helpdesku.
 

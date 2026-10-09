@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
+import Popover from "primevue/popover"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faClock, faDolly, faTruckContainer, faUsers, faInventory, faUndoAlt, faChartLine, faSyncAlt, faChevronDown, faShippingFast, faQuestionCircle } from "@fal"
@@ -253,10 +254,10 @@ const comparison = (todayValue: number, before: number): string | null => {
 const ageBuckets = computed(() => {
 	const buckets = data.value?.age_buckets ?? {}
 	return [
-		{ key: "under_4h", label: ctrans("Under 4h"), value: buckets.under_4h ?? 0 },
-		{ key: "h4_24", label: ctrans("4–24h"), value: buckets.h4_24 ?? 0 },
-		{ key: "d1_2", label: ctrans("1–2 days"), value: buckets.d1_2 ?? 0 },
-		{ key: "over_2d", label: ctrans("Over 2 days"), value: buckets.over_2d ?? 0 },
+		{ key: "under_4h", label: ctrans("Under 4h"), value: buckets.under_4h?.count ?? 0, tile: buckets.under_4h as Tile | undefined },
+		{ key: "h4_24", label: ctrans("4–24h"), value: buckets.h4_24?.count ?? 0, tile: buckets.h4_24 as Tile | undefined },
+		{ key: "d1_2", label: ctrans("1–2 days"), value: buckets.d1_2?.count ?? 0, tile: buckets.d1_2 as Tile | undefined },
+		{ key: "over_2d", label: ctrans("Over 2 days"), value: buckets.over_2d?.count ?? 0, tile: buckets.over_2d as Tile | undefined },
 	]
 })
 const ageBucketMax = computed(() => Math.max(1, ...ageBuckets.value.map((bucket) => bucket.value)))
@@ -271,7 +272,40 @@ const stateLabel = (state: string): string =>
 		booking_in: ctrans("Booking in"),
 	})[state] ?? state
 
-const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ? tile.breakdown[0].route : null)
+const chooser = ref<InstanceType<typeof Popover> | null>(null)
+const chooserKey = ref<string | null>(null)
+const chooserRows = ref<Breakdown>([])
+
+const listTargets = (tile?: Tile): Breakdown => (tile?.breakdown ?? []).filter((row) => row.route && (row.value || tile!.breakdown!.length === 1))
+const hasList = (tile?: Tile): boolean => listTargets(tile).length > 0
+
+const openList = (key: string, tile: Tile | undefined, event: Event): void => {
+	const rows = listTargets(tile)
+	if (rows.length === 1) {
+		router.visit(route(rows[0].route!.name, rows[0].route!.parameters))
+		return
+	}
+	if (!rows.length) {
+		return
+	}
+	const target = event.currentTarget as HTMLElement
+	const wasOpen = chooserKey.value
+	chooser.value?.hide()
+	chooserKey.value = null
+	if (wasOpen === key) {
+		return
+	}
+	chooserRows.value = rows
+	chooserKey.value = key
+	nextTick(() => chooser.value?.show({ currentTarget: target } as unknown as Event, target))
+}
+
+const listProps = (key: string, tile?: Tile) =>
+	hasList(tile)
+		? { role: "button", tabindex: 0, onClick: (event: Event) => openList(key, tile, event), onKeydown: (event: KeyboardEvent) => event.key === "Enter" && openList(key, tile, event) }
+		: {}
+
+const linkClass = (tile?: Tile): string => (hasList(tile) ? "cursor-pointer hover:underline focus:outline-none focus-visible:underline" : "")
 </script>
 
 <template>
@@ -306,23 +340,24 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 			<section>
 				<h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Needs attention now") }}</h3>
 				<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
-					<div v-for="tile in attentionTiles" :key="tile.key" class="flex flex-col rounded-lg p-3 ring-1" :class="toneClass[tileTone(tile.key, attention[tile.key])]">
+					<div
+							v-for="tile in attentionTiles"
+							:key="tile.key"
+							v-bind="listProps('attention.' + tile.key, attention[tile.key])"
+							class="flex flex-col rounded-lg p-3 ring-1"
+							:class="[toneClass[tileTone(tile.key, attention[tile.key])], hasList(attention[tile.key]) ? 'cursor-pointer transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]' : '']"
+						>
 						<div class="flex items-start justify-between gap-x-1 text-xs font-medium leading-tight">
 							<span>{{ tile.label }}</span>
 							<FontAwesomeIcon icon="fal fa-question-circle" class="mt-0.5 shrink-0 cursor-help opacity-50" fixed-width aria-hidden="true" v-tooltip="tile.help" />
 						</div>
-						<component
-							:is="singleRoute(attention[tile.key]) ? Link : 'span'"
-							:href="singleRoute(attention[tile.key]) ? route(singleRoute(attention[tile.key])!.name, singleRoute(attention[tile.key])!.parameters) : undefined"
-							class="mt-1 text-2xl font-semibold tabular-nums"
-							:class="singleRoute(attention[tile.key]) ? 'hover:underline' : ''"
-						>
+						<span class="mt-1 text-2xl font-semibold tabular-nums">
 							{{ attention[tile.key].count === null ? "—" : locale.number(attention[tile.key].count as number) }}
-						</component>
+						</span>
 						<span v-if="tile.sub" class="text-xs opacity-80">{{ tile.sub }}</span>
 						<div v-if="!isSingleWarehouse && attention[tile.key].breakdown" class="mt-auto flex flex-wrap gap-x-2 pt-1 text-[11px]">
 							<template v-for="row in attention[tile.key].breakdown" :key="row.warehouse">
-								<Link v-if="row.value && row.route" :href="route(row.route.name, row.route.parameters)" class="opacity-80 hover:underline">{{ row.warehouse }} {{ row.value }}</Link>
+								<Link v-if="row.value && row.route" :href="route(row.route.name, row.route.parameters)" class="opacity-80 hover:underline" @click.stop @keydown.enter.stop>{{ row.warehouse }} {{ row.value }}</Link>
 							</template>
 						</div>
 					</div>
@@ -337,19 +372,20 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 						<span class="text-xs font-normal text-gray-400">{{ ctrans("Delivery notes · oldest in stage") }}</span>
 					</h3>
 					<div class="mt-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-						<div v-for="stage in stages" :key="stage.key" class="rounded-md bg-gray-50 p-2">
+						<div
+								v-for="stage in stages"
+								:key="stage.key"
+								v-bind="listProps('pipeline.' + stage.key, pipeline[stage.key])"
+								class="rounded-md bg-gray-50 p-2"
+								:class="hasList(pipeline[stage.key]) ? 'cursor-pointer transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]' : ''"
+							>
 							<div class="flex items-center gap-x-1 text-xs font-medium text-gray-500">
 								{{ stage.label }}
 								<FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300" fixed-width aria-hidden="true" v-tooltip="stage.help" />
 							</div>
-							<component
-								:is="singleRoute(pipeline[stage.key]) ? Link : 'span'"
-								:href="singleRoute(pipeline[stage.key]) ? route(singleRoute(pipeline[stage.key])!.name, singleRoute(pipeline[stage.key])!.parameters) : undefined"
-								class="block text-xl font-semibold tabular-nums"
-								:class="[stage.key === 'blocked' && pipeline[stage.key].count ? 'text-red-600' : 'text-gray-800', singleRoute(pipeline[stage.key]) ? 'hover:underline' : '']"
-							>
+							<span class="block text-xl font-semibold tabular-nums" :class="stage.key === 'blocked' && pipeline[stage.key].count ? 'text-red-600' : 'text-gray-800'">
 								{{ locale.number(pipeline[stage.key].count ?? 0) }}
-							</component>
+							</span>
 							<div class="text-[11px] text-gray-500">
 								<span v-if="stage.key !== 'dispatched' && pipeline[stage.key].oldest">{{ ctrans("Oldest :age", { age: age(pipeline[stage.key].oldest) }) }}</span>
 								<span v-if="data.can_see_value && pipeline[stage.key].amount" class="block">{{ money(pipeline[stage.key].amount) }}</span>
@@ -357,7 +393,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 							</div>
 							<div v-if="!isSingleWarehouse" class="mt-1 flex flex-wrap gap-x-1.5 text-[10px] text-gray-400">
 								<template v-for="row in pipeline[stage.key].breakdown" :key="row.warehouse">
-									<Link v-if="row.value && row.route" :href="route(row.route.name, row.route.parameters)" class="hover:text-gray-700 hover:underline">{{ row.warehouse }} {{ row.value }}</Link>
+									<Link v-if="row.value && row.route" :href="route(row.route.name, row.route.parameters)" class="hover:text-gray-700 hover:underline" @click.stop @keydown.enter.stop>{{ row.warehouse }} {{ row.value }}</Link>
 								</template>
 							</div>
 						</div>
@@ -403,7 +439,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 						<tbody class="tabular-nums">
 							<tr>
 								<td class="text-gray-500">{{ ctrans("Today") }}</td>
-								<td class="text-right font-semibold">{{ pipeline.dispatched.count }}</td>
+								<td class="text-right font-semibold"><span v-bind="listProps('dispatched', pipeline.dispatched)" :class="linkClass(pipeline.dispatched)">{{ pipeline.dispatched.count }}</span></td>
 								<td class="text-right font-semibold">{{ pipeline.dispatched.parcels }}</td>
 								<td class="text-right font-semibold">{{ pipeline.dispatched.lines }}</td>
 							</tr>
@@ -438,15 +474,15 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 					<dl class="mt-3 grid grid-cols-4 gap-3">
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Median") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums">{{ seconds(data.time_to_dispatch.median_seconds) }}</dd>
+							<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('time_to_dispatch.Median', data.time_to_dispatch.records)" :class="linkClass(data.time_to_dispatch.records)">{{ seconds(data.time_to_dispatch.median_seconds) }}</span></dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500" v-tooltip="data.time_to_dispatch.is_combined ? ctrans('Slowest warehouse') : null">{{ ctrans("90th percentile") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums">{{ seconds(data.time_to_dispatch.p90_seconds) }}</dd>
+							<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('time_to_dispatch.90th percentile', data.time_to_dispatch.records)" :class="linkClass(data.time_to_dispatch.records)">{{ seconds(data.time_to_dispatch.p90_seconds) }}</span></dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Same day") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums">{{ data.time_to_dispatch.same_day_percent === null ? "—" : data.time_to_dispatch.same_day_percent + "%" }}</dd>
+							<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('time_to_dispatch.Same day', data.time_to_dispatch.records)" :class="linkClass(data.time_to_dispatch.records)">{{ data.time_to_dispatch.same_day_percent === null ? "—" : data.time_to_dispatch.same_day_percent + "%" }}</span></dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Within SLA") }}</dt>
@@ -455,7 +491,13 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 					</dl>
 					<div class="mt-4 text-xs font-medium text-gray-500">{{ ctrans("Open delivery notes by age") }}</div>
 					<div class="mt-1 space-y-1">
-						<div v-for="bucket in ageBuckets" :key="bucket.key" class="flex items-center gap-x-2 text-xs">
+						<div
+								v-for="bucket in ageBuckets"
+								:key="bucket.key"
+								v-bind="listProps('age.' + bucket.key, bucket.tile)"
+								class="flex items-center gap-x-2 rounded text-xs"
+								:class="hasList(bucket.tile) ? 'cursor-pointer hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]' : ''"
+							>
 							<span class="w-20 text-gray-500">{{ bucket.label }}</span>
 							<div class="h-2 flex-1 rounded-full bg-gray-100">
 								<div class="h-2 rounded-full" :class="bucket.key === 'over_2d' ? 'bg-gray-500' : 'bg-gray-400'" :style="{ width: percentOf(bucket.value, ageBucketMax) + '%' }" />
@@ -480,7 +522,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 							</div>
 							<div v-if="data.people[team.key].idle" class="text-xs text-amber-700">{{ ctrans(":count idle over :minutes min", { count: data.people[team.key].idle, minutes: thresholds.idle_minutes }) }}</div>
 							<dl class="mt-2 space-y-0.5 text-xs text-gray-600">
-								<div class="flex justify-between"><dt>{{ ctrans("Today") }}</dt><dd class="tabular-nums">{{ locale.number(data.people[team.key].today) }} {{ team.unit }}</dd></div>
+								<div class="flex justify-between"><dt>{{ ctrans("Today") }}</dt><dd class="tabular-nums"><span v-bind="listProps('people.' + team.key, data.people[team.key].records)" :class="linkClass(data.people[team.key].records)">{{ locale.number(data.people[team.key].today) }} {{ team.unit }}</span></dd></div>
 								<div class="flex justify-between">
 									<dt v-tooltip="ctrans('Per person per active hour today: from each person\'s first to last scan')">{{ ctrans("Per person per hour") }}</dt>
 									<dd class="tabular-nums">{{ data.people[team.key].per_person_hour ?? "—" }}</dd>
@@ -488,7 +530,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 								<div class="flex justify-between"><dt>{{ ctrans("Last hour") }}</dt><dd class="tabular-nums">{{ data.people[team.key].last_hour }} · {{ ctrans(":count people", { count: data.people[team.key].last_hour_people }) }}</dd></div>
 								<div v-if="team.key === 'pickers'" class="flex justify-between">
 									<dt v-tooltip="ctrans('Lines marked as not picked today')">{{ ctrans("Short picks") }}</dt>
-									<dd class="tabular-nums">{{ data.people.pickers.short }}</dd>
+									<dd class="tabular-nums"><span v-bind="listProps('people.short', data.people.pickers.short_records)" :class="linkClass(data.people.pickers.short_records)">{{ data.people.pickers.short }}</span></dd>
 								</div>
 							</dl>
 						</div>
@@ -505,19 +547,21 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 				<dl class="mt-3 grid grid-cols-2 sm:grid-cols-6 gap-3">
 					<div>
 						<dt class="text-xs text-gray-500">{{ ctrans("On the way") }}</dt>
-						<dd class="text-xl font-semibold tabular-nums">{{ data.goods_in.counts.on_the_way }}</dd>
+						<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('goods_in.on_the_way', data.goods_in.counts.on_the_way)" :class="linkClass(data.goods_in.counts.on_the_way)">{{ data.goods_in.counts.on_the_way.count }}</span></dd>
 					</div>
 					<div>
 						<dt class="text-xs text-gray-500">{{ ctrans("Overdue") }}</dt>
-						<dd class="text-xl font-semibold tabular-nums" :class="data.goods_in.overdue ? 'text-amber-700' : ''">{{ data.goods_in.overdue }}</dd>
+						<dd class="text-xl font-semibold tabular-nums" :class="data.goods_in.overdue.count ? 'text-amber-700' : ''">
+								<span v-bind="listProps('goods_in.overdue', data.goods_in.overdue)" :class="linkClass(data.goods_in.overdue)">{{ data.goods_in.overdue.count }}</span>
+							</dd>
 					</div>
 					<div>
 						<dt class="text-xs text-gray-500">{{ ctrans("To book in") }}</dt>
-						<dd class="text-xl font-semibold tabular-nums">{{ data.goods_in.counts.to_book_in }}</dd>
+						<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('goods_in.to_book_in', data.goods_in.counts.to_book_in)" :class="linkClass(data.goods_in.counts.to_book_in)">{{ data.goods_in.counts.to_book_in.count }}</span></dd>
 					</div>
 					<div>
 						<dt class="text-xs text-gray-500">{{ ctrans("Booking in") }}</dt>
-						<dd class="text-xl font-semibold tabular-nums">{{ data.goods_in.counts.booking_in }}</dd>
+						<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('goods_in.booking_in', data.goods_in.counts.booking_in)" :class="linkClass(data.goods_in.counts.booking_in)">{{ data.goods_in.counts.booking_in.count }}</span></dd>
 					</div>
 					<div>
 						<dt class="text-xs text-gray-500" v-tooltip="ctrans('From arrival to booked in, deliveries booked in over the last 90 days. Median, then 90th percentile.')">{{ ctrans("Dock to stock") }}</dt>
@@ -528,7 +572,9 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 					</div>
 					<div>
 						<dt class="text-xs text-gray-500">{{ ctrans("Without ETA / PO") }}</dt>
-						<dd class="text-xl font-semibold tabular-nums">{{ data.goods_in.counts.without_eta }} / {{ data.goods_in.counts.without_po }}</dd>
+						<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('goods_in.without_eta', data.goods_in.counts.without_eta)" :class="linkClass(data.goods_in.counts.without_eta)">{{ data.goods_in.counts.without_eta.count }}</span> /
+								<span v-bind="listProps('goods_in.without_po', data.goods_in.counts.without_po)" :class="linkClass(data.goods_in.counts.without_po)">{{ data.goods_in.counts.without_po.count }}</span>
+							</dd>
 					</div>
 				</dl>
 				<div class="mt-3 overflow-x-auto">
@@ -550,7 +596,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 									<template v-else>{{ delivery.eta ? new Date(delivery.eta).toLocaleDateString() : "—" }}</template>
 								</td>
 								<td class="py-1.5 pr-3">
-									<Link :href="route(delivery.route.name, delivery.route.parameters)" class="text-gray-800 hover:text-blue-600 hover:underline">{{ delivery.supplier }}</Link>
+									<Link :href="route(delivery.route.name, delivery.route.parameters)" class="text-gray-800 hover:text-[--app-accent] hover:underline">{{ delivery.supplier }}</Link>
 									<span class="ml-1 text-xs text-gray-400">{{ delivery.reference }}</span>
 								</td>
 								<td v-if="!isSingleWarehouse" class="py-1.5 pr-3 text-gray-500">{{ delivery.warehouse }}</td>
@@ -585,27 +631,23 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Empty locations") }}</dt>
 							<dd class="text-xl font-semibold tabular-nums">
-								<component
-									:is="singleRoute(data.stock.empty_locations) ? Link : 'span'"
-									:href="singleRoute(data.stock.empty_locations) ? route(singleRoute(data.stock.empty_locations)!.name, singleRoute(data.stock.empty_locations)!.parameters) : undefined"
-									:class="singleRoute(data.stock.empty_locations) ? 'hover:underline' : ''"
-								>
-									{{ locale.number(data.stock.empty_locations.count) }}
-								</component>
+								<span v-bind="listProps('stock.empty_locations', data.stock.empty_locations)" :class="linkClass(data.stock.empty_locations)">{{ locale.number(data.stock.empty_locations.count) }}</span>
 								<span class="text-xs font-normal text-gray-400">/ {{ locale.number(data.stock.locations) }}</span>
 							</dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500" v-tooltip="ctrans('Locations with stock not counted in the last 90 days')">{{ ctrans("Not counted 90 days") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums">{{ locale.number(data.stock.not_audited_90d) }}</dd>
+							<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('stock.not_audited_90d', data.stock.not_audited_90d)" :class="linkClass(data.stock.not_audited_90d)">{{ locale.number(data.stock.not_audited_90d.count) }}</span></dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Negative stock") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums" :class="data.stock.negative ? 'text-red-600' : ''">{{ data.stock.negative }}</dd>
+							<dd class="text-xl font-semibold tabular-nums" :class="data.stock.negative.count ? 'text-red-600' : ''">
+								<span v-bind="listProps('stock.negative', data.stock.negative)" :class="linkClass(data.stock.negative)">{{ data.stock.negative.count }}</span>
+							</dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Replenishments due") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums">{{ locale.number(data.stock.replenishment) }}</dd>
+							<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('stock.replenishment', data.stock.replenishment)" :class="linkClass(data.stock.replenishment)">{{ locale.number(data.stock.replenishment.count) }}</span></dd>
 						</div>
 					</dl>
 					<div class="mt-4 text-xs font-medium text-gray-500">{{ ctrans("Out of stock with open orders") }}</div>
@@ -622,7 +664,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 							<tbody class="divide-y divide-gray-100">
 								<tr v-for="orgStock in data.stock.out_of_stock" :key="orgStock.warehouse + orgStock.code">
 									<td class="py-1.5 pr-3">
-										<Link :href="route(orgStock.route.name, orgStock.route.parameters)" class="font-medium text-gray-800 hover:text-blue-600 hover:underline">{{ orgStock.code }}</Link>
+										<Link :href="route(orgStock.route.name, orgStock.route.parameters)" class="font-medium text-gray-800 hover:text-[--app-accent] hover:underline">{{ orgStock.code }}</Link>
 										<span class="ml-1 text-xs text-gray-400">{{ orgStock.name }}</span>
 									</td>
 									<td class="py-1.5 pr-3 text-right tabular-nums">{{ orgStock.delivery_notes }}</td>
@@ -650,31 +692,31 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("To process") }}</dt>
 							<dd class="text-xl font-semibold tabular-nums">
-								<component
-									:is="singleRoute(data.returns.to_process) ? Link : 'span'"
-									:href="singleRoute(data.returns.to_process) ? route(singleRoute(data.returns.to_process)!.name, singleRoute(data.returns.to_process)!.parameters) : undefined"
-									:class="singleRoute(data.returns.to_process) ? 'hover:underline' : ''"
-								>
-									{{ data.returns.to_process.count }}
-								</component>
+								<span v-bind="listProps('returns.to_process', data.returns.to_process)" :class="linkClass(data.returns.to_process)">{{ data.returns.to_process.count }}</span>
 							</dd>
 							<dd v-if="data.returns.to_process.oldest" class="text-xs text-gray-500">{{ ctrans("Oldest :age", { age: age(data.returns.to_process.oldest) }) }}</dd>
 						</div>
 						<div>
 							<dt class="text-xs text-gray-500">{{ ctrans("Customer returns received") }}</dt>
-							<dd class="text-xl font-semibold tabular-nums">{{ data.returns.received.count }}</dd>
+							<dd class="text-xl font-semibold tabular-nums"><span v-bind="listProps('returns.received', data.returns.received)" :class="linkClass(data.returns.received)">{{ data.returns.received.count }}</span></dd>
 							<dd class="text-xs text-gray-500">{{ ctrans(":count expected", { count: data.returns.expected }) }}</dd>
 						</div>
 					</dl>
 					<div class="mt-3 text-xs font-medium text-gray-500">{{ ctrans("Processed this month (units)") }}</div>
-					<div class="mt-1 flex gap-x-4 text-sm tabular-nums">
+					<div v-bind="listProps('returns.processed', data.returns.processed)" class="mt-1 flex gap-x-4 text-sm tabular-nums" :class="linkClass(data.returns.processed)">
 						<span>{{ ctrans("Restocked") }} {{ data.returns.outcomes.restocked }}</span>
 						<span>{{ ctrans("Damaged") }} {{ data.returns.outcomes.damaged }}</span>
 						<span>{{ ctrans("Not returned") }} {{ data.returns.outcomes.not_returned }}</span>
 					</div>
 					<div v-if="data.returns.reasons.length" class="mt-3 text-xs font-medium text-gray-500">{{ ctrans("Top return reasons this month") }}</div>
 					<ul class="mt-1 space-y-0.5 text-sm">
-						<li v-for="reason in data.returns.reasons" :key="reason.reason" class="flex justify-between gap-x-2">
+						<li
+							v-for="reason in data.returns.reasons"
+							:key="reason.reason"
+							v-bind="listProps('returns.reason.' + reason.reason, reason)"
+							class="flex justify-between gap-x-2 rounded"
+							:class="hasList(reason) ? 'cursor-pointer hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]' : ''"
+						>
 							<span class="truncate text-gray-700">{{ reason.reason }}</span>
 							<span class="tabular-nums text-gray-500">{{ reason.count }}</span>
 						</li>
@@ -707,7 +749,7 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 						<tbody class="divide-y divide-gray-100 tabular-nums">
 							<tr v-for="row in [...data.sales.rows, ...(data.sales.total ? [data.sales.total] : [])]" :key="row.name" :class="row === data.sales.total ? 'font-semibold' : ''">
 								<td class="py-1.5 pr-3">
-									<Link v-if="row.route" :href="route(row.route.name, row.route.parameters)" class="text-gray-800 hover:text-blue-600 hover:underline">{{ row.name }}</Link>
+									<Link v-if="row.route" :href="route(row.route.name, row.route.parameters)" class="text-gray-800 hover:text-[--app-accent] hover:underline">{{ row.name }}</Link>
 									<span v-else>{{ row.name }} <span class="text-xs font-normal text-gray-400">({{ row.currency_code }})</span></span>
 								</td>
 								<td class="py-1.5 pr-3 text-right" :class="row.is_busy ? 'text-red-600' : ''" v-tooltip="row.is_busy ? ctrans('Over 25% above the average of the last four same weekdays (:average)', { average: row.weekday_average }) : null">
@@ -729,5 +771,21 @@ const singleRoute = (tile?: Tile): RouteLink => (tile?.breakdown?.length === 1 ?
 				</div>
 			</section>
 		</template>
+
+		<Popover ref="chooser" @hide="chooserKey = null">
+			<div class="min-w-40 text-sm">
+				<div class="mb-1 text-xs font-medium text-gray-500">{{ ctrans("Open the list for") }}</div>
+				<Link
+					v-for="row in chooserRows"
+					:key="row.warehouse"
+					:href="route(row.route!.name, row.route!.parameters)"
+					class="flex justify-between gap-x-4 rounded px-2 py-1 text-gray-800 hover:bg-[--app-accent-soft]"
+					@click="chooser?.hide()"
+				>
+					<span>{{ row.warehouse }}</span>
+					<span class="tabular-nums text-gray-500">{{ locale.number(row.value) }}</span>
+				</Link>
+			</div>
+		</Popover>
 	</div>
 </template>

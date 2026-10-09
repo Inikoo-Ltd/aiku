@@ -1367,5 +1367,9 @@
     "The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.": "お客様はお礼だけを送りました：👍 が送られ、誰も書き込まなければチャットは閉じます。入力すると開いたままになります。",
     "Always available": "常時購入可能",
     "Made on demand": "受注生産",
-    ":quantity on the shelf, made on demand": "棚に:quantity、受注生産"
+    ":quantity on the shelf, made on demand": "棚に:quantity、受注生産",
+    "Choose :axis": "選択: :axis",
+    "Choose :axis & quantities": "選択: :axis と数量",
+    "Choose how many items you would like in each :axis.": "各オプション（:axis）の数量を選んでください。",
+    "Option names on the website": "ウェブサイト上のオプション名"
 }

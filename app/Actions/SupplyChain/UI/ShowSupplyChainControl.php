@@ -10,7 +10,8 @@ namespace App\Actions\SupplyChain\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +24,8 @@ class ShowSupplyChainControl extends OrgAction
     use WithInertia;
 
     private const LIMIT = 50;
+
+    private const DELIVERED_OR_CLOSED_STATES = ['received', 'checked', 'placed', 'cancelled', 'not_received'];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -41,52 +44,55 @@ class ShowSupplyChainControl extends OrgAction
     public function handle(): array
     {
         return [
-            'stalled_aspos'      => $this->stalledAspos(),
-            'deposits_at_risk'   => $this->depositsAtRisk(),
-            'pos_without_action' => $this->posWithoutAgentAction(),
-            'agent_scorecard'    => $this->agentScorecard(),
+            'stalled_purchase_orders' => $this->stalledPurchaseOrders(),
+            'deposits_at_risk'        => $this->depositsAtRisk(),
+            'agent_scorecard'         => $this->agentScorecard(),
         ];
     }
 
-    private function baseAspoQuery()
+    private function baseQuery()
     {
-        return AgentSupplierPurchaseOrder::query()
-            ->leftJoin('suppliers', 'suppliers.id', 'agent_supplier_purchase_orders.supplier_id')
-            ->leftJoin('agents', 'agents.id', 'suppliers.agent_id')
-            ->leftJoin('currencies', 'currencies.id', 'agent_supplier_purchase_orders.currency_id')
-            ->where('agent_supplier_purchase_orders.group_id', $this->group->id)
-            ->whereNotIn('agent_supplier_purchase_orders.delivery_state', ['received', 'checked', 'placed', 'cancelled'])
-            ->where('agent_supplier_purchase_orders.state', '!=', 'cancelled')
-            ->whereRaw("(agent_supplier_purchase_orders.data -> 'housekeeping') IS NULL");
+        return PurchaseOrder::query()
+            ->join('agents', 'agents.id', 'purchase_orders.agent_id')
+            ->join('organisations', 'organisations.id', 'purchase_orders.organisation_id')
+            ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
+            ->leftJoin('currencies', 'currencies.id', 'purchase_orders.currency_id')
+            ->where('purchase_orders.group_id', $this->group->id)
+            ->where('purchase_orders.parent_type', 'OrgSupplier')
+            ->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereNotIn('purchase_orders.delivery_state', self::DELIVERED_OR_CLOSED_STATES)
+            ->whereRaw("(purchase_orders.data -> 'housekeeping') IS NULL");
     }
 
-    private function stalledAspos(): array
+    private function stalledPurchaseOrders(): array
     {
-        $query = $this->baseAspoQuery()
+        $query = $this->baseQuery()
             ->where(function ($q) {
-                $q->where('agent_supplier_purchase_orders.estimated_received_at', '<', now())
+                $q->where('purchase_orders.estimated_received_at', '<', now())
                     ->orWhere(function ($q2) {
-                        $q2->whereNull('agent_supplier_purchase_orders.estimated_received_at')
-                            ->where('agent_supplier_purchase_orders.date', '<', now()->subDays(60));
+                        $q2->whereNull('purchase_orders.estimated_received_at')
+                            ->whereRaw('COALESCE(purchase_orders.date, purchase_orders.submitted_at) < ?', [now()->subDays(60)]);
                     });
             });
 
-        $ageExpr = 'EXTRACT(DAY FROM (now() - COALESCE(agent_supplier_purchase_orders.estimated_received_at, agent_supplier_purchase_orders.date)))';
+        $ageExpr = 'EXTRACT(DAY FROM (now() - COALESCE(purchase_orders.estimated_received_at, purchase_orders.date, purchase_orders.submitted_at)))';
 
         $rows = (clone $query)
             ->select([
-                'agent_supplier_purchase_orders.slug',
-                'agent_supplier_purchase_orders.reference',
+                'purchase_orders.slug',
+                'purchase_orders.reference',
+                'organisations.slug as organisation_slug',
+                'organisations.code as organisation_code',
                 'agents.code as agent_code',
                 'agents.slug as agent_slug',
                 'suppliers.code as supplier_code',
-                'agent_supplier_purchase_orders.date',
-                'agent_supplier_purchase_orders.estimated_received_at',
-                'agent_supplier_purchase_orders.cost_total',
+                'purchase_orders.date',
+                'purchase_orders.estimated_received_at',
+                'purchase_orders.cost_total',
                 'currencies.code as currency_code',
                 DB::raw("$ageExpr as days_stalled"),
             ])
-            ->orderByRaw("COALESCE(agent_supplier_purchase_orders.estimated_received_at, agent_supplier_purchase_orders.date) asc")
+            ->orderByRaw('COALESCE(purchase_orders.estimated_received_at, purchase_orders.date, purchase_orders.submitted_at) asc')
             ->limit(self::LIMIT)
             ->get();
 
@@ -115,26 +121,28 @@ class ShowSupplyChainControl extends OrgAction
 
     private function depositsAtRisk(): array
     {
-        $query = $this->baseAspoQuery()->whereNotNull('agent_supplier_purchase_orders.deposit_paid_at');
+        $query = $this->baseQuery()->whereNotNull('purchase_orders.deposit_paid_at');
 
         $rows = (clone $query)
             ->select([
-                'agent_supplier_purchase_orders.slug',
-                'agent_supplier_purchase_orders.reference',
+                'purchase_orders.slug',
+                'purchase_orders.reference',
+                'organisations.slug as organisation_slug',
+                'organisations.code as organisation_code',
                 'agents.code as agent_code',
                 'agents.slug as agent_slug',
                 'suppliers.code as supplier_code',
-                'agent_supplier_purchase_orders.deposit_amount',
-                'agent_supplier_purchase_orders.deposit_paid_at',
+                'purchase_orders.deposit_amount',
+                'purchase_orders.deposit_paid_at',
                 'currencies.code as currency_code',
-                DB::raw('EXTRACT(DAY FROM (now() - agent_supplier_purchase_orders.deposit_paid_at)) as days_since'),
+                DB::raw('EXTRACT(DAY FROM (now() - purchase_orders.deposit_paid_at)) as days_since'),
             ])
-            ->orderBy('agent_supplier_purchase_orders.deposit_paid_at')
+            ->orderBy('purchase_orders.deposit_paid_at')
             ->limit(self::LIMIT)
             ->get();
 
         $exposure = (clone $query)
-            ->select(['currencies.code as currency_code', DB::raw('sum(agent_supplier_purchase_orders.deposit_amount) as total')])
+            ->select(['currencies.code as currency_code', DB::raw('sum(purchase_orders.deposit_amount) as total')])
             ->groupBy('currencies.code')
             ->get();
 
@@ -145,85 +153,39 @@ class ShowSupplyChainControl extends OrgAction
         ];
     }
 
-    private function posWithoutAgentAction(): array
-    {
-        $query = DB::table('purchase_orders')
-            ->join('org_agents', function ($join) {
-                $join->on('org_agents.id', '=', 'purchase_orders.parent_id')
-                    ->where('purchase_orders.parent_type', '=', 'OrgAgent');
-            })
-            ->join('agents', 'agents.id', '=', 'org_agents.agent_id')
-            ->join('organisations', 'organisations.id', '=', 'purchase_orders.organisation_id')
-            ->where('purchase_orders.group_id', $this->group->id)
-            ->whereIn('purchase_orders.state', ['submitted', 'confirmed'])
-            ->where('purchase_orders.submitted_at', '<', now()->subDays(14))
-            ->whereNotExists(function ($sub) {
-                $sub->selectRaw('1')
-                    ->from('purchase_order_transactions')
-                    ->whereColumn('purchase_order_transactions.purchase_order_id', 'purchase_orders.id')
-                    ->whereNotNull('purchase_order_transactions.agent_supplier_purchase_order_id');
-            });
-
-        $rows = (clone $query)
-            ->select([
-                'purchase_orders.slug',
-                'purchase_orders.reference',
-                'organisations.slug as organisation_slug',
-                'organisations.name as organisation_name',
-                'agents.code as agent_code',
-                'agents.slug as agent_slug',
-                'purchase_orders.submitted_at',
-                DB::raw('EXTRACT(DAY FROM (now() - purchase_orders.submitted_at)) as days_waiting'),
-            ])
-            ->orderBy('purchase_orders.submitted_at')
-            ->limit(self::LIMIT)
-            ->get();
-
-        return [
-            'rows'  => $rows,
-            'total' => (clone $query)->count(),
-        ];
-    }
-
     private function agentScorecard(): array
     {
-        $ageExpr = 'EXTRACT(DAY FROM (now() - COALESCE(agent_supplier_purchase_orders.estimated_received_at, agent_supplier_purchase_orders.date)))';
+        $delivered = "('received','checked','placed')";
+        $open      = "purchase_orders.state in ('submitted','confirmed') and purchase_orders.delivery_state not in ('received','checked','placed','cancelled','not_received') and (purchase_orders.data -> 'housekeeping') is null";
+        $ageExpr   = 'EXTRACT(DAY FROM (now() - COALESCE(purchase_orders.estimated_received_at, purchase_orders.date, purchase_orders.submitted_at)))';
 
         $rows = DB::table('agents')
-            ->leftJoin('suppliers', 'suppliers.agent_id', '=', 'agents.id')
-            ->leftJoin('agent_supplier_purchase_orders', function ($join) {
-                $join->on('agent_supplier_purchase_orders.supplier_id', '=', 'suppliers.id')
-                    ->whereNull('agent_supplier_purchase_orders.deleted_at');
+            ->join('purchase_orders', function ($join) {
+                $join->on('purchase_orders.agent_id', '=', 'agents.id')
+                    ->where('purchase_orders.parent_type', '=', 'OrgSupplier')
+                    ->whereNull('purchase_orders.deleted_at')
+                    ->whereIn('purchase_orders.state', ['submitted', 'confirmed', 'settled']);
             })
-            ->leftJoin('currencies', 'currencies.id', '=', 'agent_supplier_purchase_orders.currency_id')
             ->where('agents.group_id', $this->group->id)
             ->groupBy('agents.id', 'agents.code', 'agents.slug')
             ->select([
                 'agents.id',
                 'agents.code',
                 'agents.slug',
-                DB::raw("count(*) filter (where agent_supplier_purchase_orders.id is not null and agent_supplier_purchase_orders.delivery_state not in ('received','checked','placed','cancelled') and agent_supplier_purchase_orders.state != 'cancelled' and (agent_supplier_purchase_orders.data -> 'housekeeping') is null) as open_aspos"),
-                DB::raw("max($ageExpr) filter (where agent_supplier_purchase_orders.delivery_state not in ('received','checked','placed','cancelled') and agent_supplier_purchase_orders.state != 'cancelled' and (agent_supplier_purchase_orders.data -> 'housekeeping') is null) as oldest_stalled_days"),
-                DB::raw("count(*) filter (where agent_supplier_purchase_orders.state != 'cancelled') as total_aspos"),
-                DB::raw("count(*) filter (where agent_supplier_purchase_orders.delivery_state in ('received','checked','placed') and agent_supplier_purchase_orders.state != 'cancelled') as delivered_aspos"),
+                DB::raw("count(*) filter (where $open) as open_purchase_orders"),
+                DB::raw("max($ageExpr) filter (where $open) as oldest_stalled_days"),
+                DB::raw('count(*) as total_purchase_orders'),
+                DB::raw("count(*) filter (where purchase_orders.delivery_state in $delivered) as delivered_purchase_orders"),
             ])
-            ->having(DB::raw('count(agent_supplier_purchase_orders.id)'), '>', 0)
-            ->orderByDesc('open_aspos')
+            ->orderByDesc('open_purchase_orders')
             ->limit(self::LIMIT)
             ->get();
 
-        $agentIds = $rows->pluck('id');
-
-        $deposits = DB::table('agent_supplier_purchase_orders')
-            ->join('suppliers', 'suppliers.id', '=', 'agent_supplier_purchase_orders.supplier_id')
-            ->join('currencies', 'currencies.id', '=', 'agent_supplier_purchase_orders.currency_id')
-            ->whereIn('suppliers.agent_id', $agentIds)
-            ->whereNotIn('agent_supplier_purchase_orders.delivery_state', ['received', 'checked', 'placed', 'cancelled'])
-            ->where('agent_supplier_purchase_orders.state', '!=', 'cancelled')
-            ->whereRaw("(agent_supplier_purchase_orders.data -> 'housekeeping') IS NULL")
-            ->whereNotNull('agent_supplier_purchase_orders.deposit_amount')
-            ->select(['suppliers.agent_id', 'currencies.code as currency_code', DB::raw('sum(agent_supplier_purchase_orders.deposit_amount) as total')])
-            ->groupBy('suppliers.agent_id', 'currencies.code')
+        $deposits = $this->baseQuery()
+            ->whereIn('purchase_orders.agent_id', $rows->pluck('id'))
+            ->whereNotNull('purchase_orders.deposit_amount')
+            ->select(['purchase_orders.agent_id', 'currencies.code as currency_code', DB::raw('sum(purchase_orders.deposit_amount) as total')])
+            ->groupBy('purchase_orders.agent_id', 'currencies.code')
             ->get()
             ->groupBy('agent_id');
 
@@ -236,7 +198,7 @@ class ShowSupplyChainControl extends OrgAction
                     'currency' => $agentDeposits->first()->currency_code,
                     'has_more' => $agentDeposits->count() > 1,
                 ];
-            $row->delivered_ratio = $row->total_aspos > 0 ? round($row->delivered_aspos / $row->total_aspos, 2) : null;
+            $row->delivered_ratio = $row->total_purchase_orders > 0 ? round($row->delivered_purchase_orders / $row->total_purchase_orders, 2) : null;
 
             return $row;
         });
@@ -260,10 +222,9 @@ class ShowSupplyChainControl extends OrgAction
                     ],
                     'title' => __('Command & control'),
                 ],
-                'stalled_aspos'      => $data['stalled_aspos'],
-                'deposits_at_risk'   => $data['deposits_at_risk'],
-                'pos_without_action' => $data['pos_without_action'],
-                'agent_scorecard'    => $data['agent_scorecard'],
+                'stalled_purchase_orders' => $data['stalled_purchase_orders'],
+                'deposits_at_risk'        => $data['deposits_at_risk'],
+                'agent_scorecard'         => $data['agent_scorecard'],
             ]
         );
     }

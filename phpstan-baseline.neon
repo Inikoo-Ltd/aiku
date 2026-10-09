@@ -3013,18 +3013,6 @@ parameters:
 			path: app/Actions/Reviews/TranslateReview.php
 
 		-
-			message: '#^Access to an undefined property App\\Actions\\SupplyChain\\AgentSupplierPurchaseOrder\\StoreAgentSupplierPurchaseOrder\:\:\$organisation\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/SupplyChain/AgentSupplierPurchaseOrder/StoreAgentSupplierPurchaseOrder.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\SupplyChain\\AgentSupplierPurchaseOrder\\UpdateAgentSupplierPurchaseOrder\:\:\$organisation\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/SupplyChain/AgentSupplierPurchaseOrder/UpdateAgentSupplierPurchaseOrder.php
-
-		-
 			message: '#^Variable \$supplier might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1

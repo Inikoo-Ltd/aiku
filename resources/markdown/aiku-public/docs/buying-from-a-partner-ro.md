@@ -71,6 +71,8 @@ Adăugările sunt refuzate în trei cazuri, intenționat: lista a atins **budget
 
 Odată ce partenerul [trimite o expediere către depozitul lui](/docs/fulfilling-partner-orders-ro), pe pagina partenerului tău, sub **Stock deliveries** (livrări de stoc), apare o **livrare de stoc** care intră. Las-o în pace cât timp spune confirmed sau dispatched — ea reflectă depozitul vânzătorului și se actualizează singură. Când cutiile ajung fizic: **receive** (recepționează), verifică și plasează în locații exact ca la orice livrare de furnizor. Orice lipsă sau daună se rezolvă după recepționare, contra facturii legate — vezi [prezentarea generală](/docs/ordering-from-a-partner-organisation-ro) pentru cum funcționează banii.
 
+Când partenerul expediază, fiecare linie sosește cu loturile pe care partenerul le-a ales deja completate: același cod de lot și aceeași dată de valabilitate, convertite în SKO-urile tale. La verificare doar le confirmi, sau le corectezi dacă marfa arată altceva, iar punerea stocului la loc așază acele loturi pe rafturile tale.
+
 <aside class="wayfinder"><strong>Unde apeși în aiku</strong>
 <ul>
 <li><b>Vezi ce trebuie cumpărat:</b> organizația ta → <b>Procurement → Partners</b> → deschide partenerul → <b>Shopping</b> (dashboard-ul) → lucrează plăcile de risc.</li>

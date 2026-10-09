@@ -65,6 +65,8 @@ const isLoadingPublish = ref(false);
 const isBeefreeReady = ref(false);
 const _beefree = ref(null);
 const isPublishingBeefree = ref(false);
+const _editorBlogWorkshop = ref<InstanceType<typeof EditorBlogWorkshop> | null>(null);
+const isSavingBlog = ref(false);
 
 // Beefree auto save
 const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
@@ -201,11 +203,18 @@ const onPublish = async (action: routeType, popover) => {
   }
 };
 
-const beforePublish = (route, popover) => {
+const beforePublish = async (route, popover) => {
   if (props.webpage_sub_type === 'mailshot') {
     isPublishingBeefree.value = true;
     _beefree.value?.beeInstance?.save();
     popover.close();
+    return;
+  }
+
+  isLoadingPublish.value = true;
+  const isSaved = await _editorBlogWorkshop.value?.saveNow() ?? true;
+  if (!isSaved) {
+    isLoadingPublish.value = false;
     return;
   }
 
@@ -223,11 +232,11 @@ const openWebsite = () => window.open(props.url, '_blank');
       <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
         @onPublish="(popover) => beforePublish(action.route, popover)" />
     </template>
-    <template #afterTitle v-if="isSavingBlock">
+    <template #afterTitle v-if="isSavingBlock || isSavingBlog">
       <LoadingIcon v-tooltip="ctrans('Saving..')" />
     </template>
     <template #other>
-      <button class="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:underline"
+      <button class="flex items-center gap-1 px-3 py-1 text-sm text-[--app-accent] hover:underline"
         v-tooltip="ctrans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="lg" fixed-width />
         <span>{{ ctrans('Open Site') }}</span>
@@ -254,7 +263,7 @@ const openWebsite = () => window.open(props.url, '_blank');
     @ready="isBeefreeReady = $event"
   />
 
-  <EditorBlogWorkshop v-else v-bind="props"/>
+  <EditorBlogWorkshop v-else ref="_editorBlogWorkshop" v-bind="props" v-model:isSaving="isSavingBlog" />
 
  
 </template>

@@ -9,7 +9,7 @@
 import { computed, ref, watch } from "vue"
 import axios from "axios"
 import { usePage } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TicketMiniList from "@/Components/Tickets/TicketMiniList.vue"
 
 const props = defineProps<{
@@ -20,9 +20,9 @@ const props = defineProps<{
 type Checker = "all" | "anyone" | "me"
 
 const checkers: { key: Checker; label: string }[] = [
-    { key: "all", label: trans("All") },
-    { key: "anyone", label: trans("Anyone") },
-    { key: "me", label: trans("Me") },
+    { key: "all", label: ctrans("All") },
+    { key: "anyone", label: ctrans("Anyone") },
+    { key: "me", label: ctrans("Me") },
 ]
 
 const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
@@ -52,14 +52,15 @@ watch(() => props.tickets, loadQueue)
 const shownTickets = computed(() => filteredTickets.value ?? props.tickets)
 
 const checkerLabel = (ticket: any) => {
-    if (!ticket.qa_user_id) return trans("Anyone")
-    if (ticket.qa_user_id === myUserId.value) return trans("Me")
+    const askedIds: number[] = ticket.qa_user_id ? [ticket.qa_user_id] : ticket.qa_user_ids ?? []
+    if (!askedIds.length) return ctrans("Anyone")
+    if (askedIds.length === 1 && askedIds[0] === myUserId.value) return ctrans("Me")
     return ticket.qa_user
 }
 </script>
 
 <template>
-    <TicketMiniList :title="title" :tickets="shownTickets" :empty="trans('Nothing to check')" date-key="qa_requested_at" :class="isLoading && 'opacity-60 transition-opacity duration-200'">
+    <TicketMiniList :title="title" :tickets="shownTickets" :empty="ctrans('Nothing to check')" date-key="qa_requested_at" :class="isLoading && 'opacity-60 transition-opacity duration-200'">
         <template #filters>
             <span class="inline-flex rounded-full bg-gray-100 p-0.5 text-xs">
                 <button
@@ -75,7 +76,7 @@ const checkerLabel = (ticket: any) => {
             </span>
         </template>
         <template #person="{ ticket }">
-            <span v-tooltip="trans('QA checker')" class="text-xs whitespace-nowrap" :class="ticket.qa_user_id ? 'text-gray-600' : 'italic text-gray-400'">{{ checkerLabel(ticket) }}</span>
+            <span v-tooltip="ctrans('QA checker')" class="text-xs whitespace-nowrap" :class="ticket.qa_user_id || ticket.qa_user_ids?.length ? 'text-gray-600' : 'italic text-gray-400'">{{ checkerLabel(ticket) }}</span>
         </template>
     </TicketMiniList>
 </template>

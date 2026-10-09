@@ -24,9 +24,9 @@ function platformRoute(platform: any) {
                 "grp.org.shops.show.crm.platforms.show",
                 [route().params['organisation'], route().params['shop'], platform.slug]
             )
-        case "grp.platforms.index":
+        case "grp.dashboard.platforms.index":
             return route(
-                "grp.platforms.show",
+                "grp.dashboard.platforms.show",
                 [platform.slug]
             )
         default:

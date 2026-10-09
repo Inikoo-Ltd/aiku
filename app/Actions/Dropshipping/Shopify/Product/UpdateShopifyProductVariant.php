@@ -28,7 +28,9 @@ class UpdateShopifyProductVariant extends RetinaAction
 
     public function handle(Portfolio $portfolio): array
     {
-        if ($portfolio->isShopifyVariantAdopted()) {
+        $isAdopted = $portfolio->isShopifyVariantAdopted();
+
+        if ($isAdopted && !$portfolio->isShopifyPriceManagedByUs()) {
             return [true, 'The merchant owns the price of this variant, nothing is sent'];
         }
 
@@ -69,8 +71,9 @@ class UpdateShopifyProductVariant extends RetinaAction
         }
 
         try {
-            $currentVariant = FindSpecificShopifyProductVariant::run($customerSalesChannel, $productID);
-            $variantId      = Arr::get($currentVariant, 'id');
+            $variantId = $isAdopted
+                ? $portfolio->platform_product_variant_id
+                : Arr::get(FindSpecificShopifyProductVariant::run($customerSalesChannel, $productID), 'id');
 
             if (!$variantId) {
                 $errorMessage = 'No variant ID found for product: '.$productID;
@@ -107,11 +110,9 @@ class UpdateShopifyProductVariant extends RetinaAction
             $variables = [
                 'productId' => $productID,
                 'variants'  => [
-                    [
-                        'id'             => $variantId,
-                        'price'          => $price,
-                        'compareAtPrice' => $comparePrice,
-                    ],
+                    $isAdopted
+                        ? ['id' => $variantId, 'price' => $price]
+                        : ['id' => $variantId, 'price' => $price, 'compareAtPrice' => $comparePrice],
                 ],
             ];
 

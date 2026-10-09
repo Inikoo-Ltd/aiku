@@ -43,13 +43,17 @@ class ApplyStockDeliveryDeposit extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $this->aspoDeposit = AspoDeposit::find($this->get('aspo_deposit_id'));
+        $aspoDeposit = AspoDeposit::applicableToStockDelivery($this->stockDelivery)
+            ->whereKey($this->get('aspo_deposit_id'))
+            ->first();
 
-        if (!$this->aspoDeposit || $this->aspoDeposit->agent_id !== $this->stockDelivery->agent_id) {
-            $validator->errors()->add('aspo_deposit_id', __('This deposit does not belong to the agent of this delivery'));
+        if (!$aspoDeposit) {
+            $validator->errors()->add('aspo_deposit_id', __('This deposit does not belong to the purchase orders and currency of this delivery'));
 
             return;
         }
+
+        $this->aspoDeposit = $aspoDeposit;
 
         if ($this->aspoDeposit->state->value !== 'paid_to_supplier') {
             $validator->errors()->add('aspo_deposit_id', __('This deposit has not been paid to the supplier yet'));

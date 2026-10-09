@@ -9,6 +9,7 @@
 use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
+use App\Actions\Production\PartnerShippingList\DismissToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
@@ -18,6 +19,8 @@ use App\Actions\Production\Restock\QueueArtefactsToProduce;
 use App\Actions\Production\Restock\UI\ShowToRestock;
 use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
+use App\Actions\Production\Intervention\PrepareInterventionOrder;
+use App\Actions\Production\Intervention\UI\IndexInterventions;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
 use App\Actions\Production\ArtefactDepartment\UI\CreateArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UI\EditArtefactDepartment;
@@ -103,6 +106,7 @@ Route::prefix('{production}')
                         Route::post('manual-job-order', StoreManualJobOrder::class)->name('manual_job_order.store');
                         Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
                         Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
+                        Route::post('items/cant-be-done', DismissToProduceItems::class)->name('items.cant_be_done');
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
                     });
@@ -120,6 +124,12 @@ Route::prefix('{production}')
                         Route::get('', IndexPrePickList::class)->name('index');
                         Route::post('', PrePickPartnerShoppingListItems::class)->name('pick');
                         Route::post('all', [PrePickPartnerShoppingListItems::class, 'everything'])->name('all');
+                    });
+
+                Route::name('.intervention.')->prefix('intervention')
+                    ->group(function () {
+                        Route::get('', IndexInterventions::class)->name('index');
+                        Route::post('{orgPartner:id}/order', PrepareInterventionOrder::class)->name('order')->withoutScopedBindings();
                     });
 
                 Route::name('.crafts.')->prefix('crafts')

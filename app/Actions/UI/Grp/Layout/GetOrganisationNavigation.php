@@ -184,6 +184,15 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
+                            'label' => __('Supplier Products'),
+                            'icon'  => ['fal', 'fa-box-usd'],
+                            'root'  => 'grp.org.procurement.org_supplier_products.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_supplier_products.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Partners'),
                             'icon'  => ['fal', 'fa-users-class'],
                             'root'  => 'grp.org.procurement.org_partners.',
@@ -351,6 +360,15 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
+                        'label' => __('To review & publish'),
+                        'icon'  => ['fal', 'fa-clipboard-check'],
+                        'root'  => 'grp.org.tasks.review',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.review',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],
                         'root'  => 'grp.org.tasks.board',
@@ -374,6 +392,15 @@ class GetOrganisationNavigation
                         'root'  => 'grp.org.tasks.reports',
                         'route' => [
                             'name'       => 'grp.org.tasks.reports',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Covering'),
+                        'icon'  => ['fal', 'fa-user-friends'],
+                        'root'  => 'grp.org.tasks.covering',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.covering',
                             'parameters' => [$organisation->slug],
                         ],
                     ],

@@ -29,6 +29,7 @@ class GetSupplierProductShowcase
                 ])),
                 'stats'   => $this->getProcurementStatsBoxes($supplierProduct->stats),
                 'supplierProductInfo' => $this->supplierProductInfo($supplierProduct),
+                'internal_images'     => $this->getSupplierProductInternalImages($supplierProduct, (bool) request()->user()?->authTo(['supply-chain.edit', 'goods.edit'])),
             ]
         );
     }

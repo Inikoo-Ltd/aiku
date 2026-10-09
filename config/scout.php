@@ -75,7 +75,6 @@ use App\Actions\Procurement\PurchaseOrder\Search\GetPurchaseOrderSearchSchema;
 use App\Actions\GoodsIn\StockDelivery\Search\GetStockDeliverySearchSchema;
 use App\Actions\SupplyChain\Agent\Search\GetAgentSearchSchema;
 use App\Actions\SupplyChain\SupplierProduct\Search\GetSupplierProductSearchSchema;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\Search\GetAgentSupplierPurchaseOrderSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
 use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
 use App\Models\Accounting\Invoice;
@@ -101,7 +100,6 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\SupplierProduct;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
 
@@ -254,7 +252,6 @@ return [
             StockDelivery::class    => GetStockDeliverySearchSchema::run(),
             Agent::class            => GetAgentSearchSchema::run(),
             SupplierProduct::class  => GetSupplierProductSearchSchema::run(),
-            AgentSupplierPurchaseOrder::class => GetAgentSupplierPurchaseOrderSearchSchema::run(),
             Location::class        => GetLocationSearchSchema::run(),
             Customer::class        => GetCustomerSearchSchema::run(),
             Order::class           => GetOrderSearchSchema::run(),

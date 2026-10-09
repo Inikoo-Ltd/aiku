@@ -377,6 +377,14 @@ class IndexLocations extends OrgAction
                     ]
                 ],
                 'export'           => $export,
+                'bulk_delete_route' => $scope instanceof Warehouse && $request->user()->authTo([
+                    'supervisor-locations.'.$scope->id,
+                    'org-supervisor.'.$scope->organisation_id
+                ]) ? [
+                    'name'       => 'grp.models.warehouse.locations.bulk_delete',
+                    'parameters' => ['warehouse' => $scope->id],
+                    'method'     => 'delete'
+                ] : null,
                 'data'             => LocationsResource::collection($locations),
 
             ]

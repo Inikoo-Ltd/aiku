@@ -86,6 +86,7 @@ class GetShopYearSalesTarget
             'day_of_month'      => $today->dayOfYear,
             'days_in_month'     => $today->daysInYear,
             'sales_so_far'      => round($salesSoFar, 2),
+            'invoices'          => $this->sumInvoiceCounts($this->invoiceCountsByShop($shopIds, $yearStart, $today)),
             'last_year_so_far'  => round($lastYearSoFar, 2),
             'last_year_total'   => round($lastYearTotal, 2),
             'expected'          => round($restOfYear !== null ? $salesSoFar + array_sum(array_column($restOfYear, 0)) : $this->expected($salesSoFar, $lastYearSoFar, $lastYearTotal, $today), 2),

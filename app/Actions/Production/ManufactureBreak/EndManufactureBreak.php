@@ -8,12 +8,15 @@
 
 namespace App\Actions\Production\ManufactureBreak;
 
+use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\OrgAction;
 use App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionBreakMinutes;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Models\HumanResources\Clocking;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,8 +37,9 @@ class EndManufactureBreak extends OrgAction
 
             $endedAt = now()->min($break->plannedEndAt());
             $break->update([
-                'ended_at' => $endedAt,
-                'minutes'  => (int) round($break->started_at->diffInSeconds($endedAt) / 60),
+                'ended_at'             => $endedAt,
+                'minutes'              => (int) round($break->started_at->diffInSeconds($endedAt) / 60),
+                'clock_in_clocking_id' => $this->clockIn($break, $endedAt)?->id,
             ]);
 
             $openSession = ManufactureTaskSession::where('user_id', $break->user_id)
@@ -47,6 +51,22 @@ class EndManufactureBreak extends OrgAction
 
             return $break;
         });
+    }
+
+    /**
+     * Clocks back in only while the break's own clock-out is still the latest clocking: anyone who clocked in or out themselves since is left as they are.
+     */
+    private function clockIn(ManufactureBreak $break, Carbon $clockedAt): ?Clocking
+    {
+        $clockOut = $break->clock_out_clocking_id ? Clocking::find($break->clock_out_clocking_id) : null;
+        if (!$clockOut || !$break->employee || $break->employee->clockings()->latest('clocked_at')->latest('id')->value('id') != $clockOut->id) {
+            return null;
+        }
+
+        $clocking = StoreClocking::make()->action($break->user, $clockOut->workplace, $break->employee, ['clocked_at' => $clockedAt]);
+        $clocking->update(['notes' => __('Back from a break on the manufacture floor')]);
+
+        return $clocking;
     }
 
     public function authorize(ActionRequest $request): bool

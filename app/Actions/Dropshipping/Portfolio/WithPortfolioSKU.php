@@ -22,7 +22,8 @@ trait WithPortfolioSKU
      * A product made of one stock is known by its own code: the slug of the stock is shared by every
      * product built on that stock and survives a recode, so it can be the code of another product.
      * A product made of several stocks keeps the composite of their slugs, and so does a bundle,
-     * whose sku is already on the listings and is the inventory key on eBay.
+     * whose sku is already on the listings and is the inventory key on eBay. A bundle holding several
+     * of one stock adds the quantity to its slug, or a two pack would carry the sku of the single.
      */
     public function getSKU(Product|StoredItem $item): ?string
     {
@@ -37,10 +38,18 @@ trait WithPortfolioSKU
         $skuArray = [];
 
         foreach ($item->orgStocks as $orgStock) {
-            $skuArray[] = $orgStock->stock ? $orgStock->stock->slug : $orgStock->slug;
+            $slug       = $orgStock->stock ? $orgStock->stock->slug : $orgStock->slug;
+            $skuArray[] = $item->is_bundle ? $this->bundleSkuPart($slug, $orgStock->pivot->quantity) : $slug;
         }
 
         return empty($skuArray) ? null : implode('-', $skuArray);
+    }
+
+    private function bundleSkuPart(string $slug, mixed $quantity): string
+    {
+        $quantity = (float) $quantity;
+
+        return $quantity > 1 ? $slug.'-x'.$quantity : $slug;
     }
 
     public function findItemBySKU(string $sku, ?Shop $shop = null, ?string $itemType = null): Product|StoredItem|null
@@ -156,11 +165,16 @@ trait WithPortfolioSKU
         return DB::table('product_has_org_stocks')
             ->join('org_stocks', 'org_stocks.id', '=', 'product_has_org_stocks.org_stock_id')
             ->leftJoin('stocks', 'stocks.id', '=', 'org_stocks.stock_id')
+            ->join('products', 'products.id', '=', 'product_has_org_stocks.product_id')
             ->whereIn('product_has_org_stocks.product_id', $productIds)
-            ->selectRaw('product_has_org_stocks.product_id, coalesce(stocks.slug, org_stocks.slug) as slug')
+            ->selectRaw('product_has_org_stocks.product_id, coalesce(stocks.slug, org_stocks.slug) as slug, product_has_org_stocks.quantity, products.is_bundle')
             ->get()
             ->groupBy('product_id')
-            ->map(fn ($rows) => $rows->pluck('slug')->filter()->values()->all());
+            ->map(fn ($rows) => $rows
+                ->filter(fn ($row) => filled($row->slug))
+                ->map(fn ($row) => $row->is_bundle ? $this->bundleSkuPart($row->slug, $row->quantity) : $row->slug)
+                ->values()
+                ->all());
     }
 
     private function skuIsMadeOfSlugs(string $sku, array $slugs): bool

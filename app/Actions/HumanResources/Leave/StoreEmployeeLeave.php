@@ -10,7 +10,9 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\Organisation;
 use App\Services\HumanResources\LeaveTypeResolver;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -19,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreEmployeeLeave extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
+
+    private Employee $employee;
 
     public function handle(Employee $employee, array $modelData): Leave
     {
@@ -46,6 +50,10 @@ class StoreEmployeeLeave extends OrgAction
 
         ApproveLeave::make()->applyBalanceDeduction($leave);
 
+        if (!empty($modelData['cover_employee_id'])) {
+            UpdateLeaveCover::make()->handle($leave, Arr::only($modelData, ['cover_employee_id']));
+        }
+
         return $leave;
     }
 
@@ -62,14 +70,24 @@ class StoreEmployeeLeave extends OrgAction
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string', 'max:1000'],
+            ...UpdateLeaveCover::coverRules($this->organisation, $this->employee->id),
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->get('cover_employee_id')
+            && !$validator->errors()->hasAny(['start_date', 'end_date'])
+            && UpdateLeaveCover::isOnLeaveDuring((int) $this->get('cover_employee_id'), $this->get('start_date'), $this->get('end_date'))) {
+            $validator->errors()->add('cover_employee_id', __('This colleague is on leave during this period.'));
+        }
     }
 
     public function asController(Organisation $organisation, Employee $employee, ActionRequest $request): Leave
     {
-        $this->initialisation($organisation, $request);
-
         abort_unless($employee->organisation_id === $organisation->id, 404);
+        $this->employee = $employee;
+        $this->initialisation($organisation, $request);
 
         return $this->handle($employee, $this->validatedData);
     }

@@ -10,17 +10,16 @@
 namespace App\Actions\Catalogue\Variant;
 
 use App\Actions\OrgAction;
-use App\Actions\Catalogue\Product\UI\IndexProductsInVariant;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\VariantTabsEnum;
-use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ProductVariantResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Variant;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -144,10 +143,47 @@ class ShowVariant extends OrgAction
                 VariantTabsEnum::SHOWCASE->value =>
                     $this->tab === VariantTabsEnum::SHOWCASE->value ? $variantData : Inertia::optional(fn () => $variantData),
                 VariantTabsEnum::PRODUCTS->value =>
-                    $this->tab === VariantTabsEnum::PRODUCTS->value ? ProductsResource::collection(IndexProductsInVariant::run($variant)) : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInVariant::run($variant))),
+                    $this->tab === VariantTabsEnum::PRODUCTS->value ? $this->orderedProducts($variant) : Inertia::optional(fn () => $this->orderedProducts($variant)),
+                'reorderRoute'                => $this->canEdit ? [
+                    'name'       => 'grp.models.variant.reorder_products',
+                    'parameters' => ['variant' => $variant->id],
+                ] : null,
+                'followsMasterOrder'          => $variant->follow_master_variant_order,
             ]
-        )
-        ->table(IndexProductsInVariant::make()->tableStructure(variant:$variant, prefix: VariantTabsEnum::PRODUCTS->value));
+        );
+    }
+
+    /**
+     * @return array<int, array{id: int, code: string, name: string|null, image_thumbnail: mixed}>
+     */
+    private function orderedProducts(Variant $variant): array
+    {
+        $family = $variant->family;
+
+        return Product::where('variant_id', $variant->id)
+            ->orderByRaw('index_under_variant asc nulls last')
+            ->orderByDesc('is_variant_leader')
+            ->orderBy('code')
+            ->get(['id', 'slug', 'code', 'name', 'web_images', 'is_for_sale', 'unit', 'is_variant_leader'])
+            ->map(fn (Product $product) => [
+                'id'                => $product->id,
+                'code'              => $product->code,
+                'name'              => $product->name,
+                'unit'              => $product->unit,
+                'option_label'      => VariantOptionLabel::run($variant->data, $product->id),
+                'is_variant_leader' => (bool) $product->is_variant_leader,
+                'image_thumbnail'   => Arr::get($product->web_images, 'main.thumbnail'),
+                'status_icon'       => $product->is_for_sale
+                    ? ['tooltip' => __('For sale'), 'icon' => 'fas fa-check-circle', 'class' => 'text-green-400']
+                    : ['tooltip' => __('Not for sale'), 'icon' => 'fas fa-times-circle', 'class' => 'text-red-400'],
+                'url'               => route('grp.org.shops.show.catalogue.families.show.products.show', [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'family'       => $family->slug,
+                    'product'      => $product->slug,
+                ]),
+            ])
+            ->all();
     }
 
     /**

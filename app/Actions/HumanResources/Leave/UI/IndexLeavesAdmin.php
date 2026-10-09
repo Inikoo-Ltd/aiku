@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Leave\UI;
 
+use App\Actions\HumanResources\Leave\UpdateLeaveCover;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesSectionAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -11,9 +12,11 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprover;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use App\Services\QueryBuilder;
 use Closure;
@@ -91,6 +94,16 @@ class IndexLeavesAdmin extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $leaves, ActionRequest $request): Response
     {
+        $employees = Employee::where('organisation_id', $this->organisation->id)
+            ->where('state', EmployeeStateEnum::WORKING)
+            ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
+            ->with([
+                'jobPositions:job_positions.id,job_positions.name,job_positions.department',
+                'users' => fn ($query) => $query->wherePivot('status', true)->where('users.status', true),
+            ])
+            ->orderBy('contact_name')
+            ->get(['id', 'contact_name']);
+
         return Inertia::render(
             'Org/HumanResources/LeaveAdmin',
             [
@@ -121,11 +134,17 @@ class IndexLeavesAdmin extends OrgAction
                     ->exists(),
                 'holidays' => $this->getHolidayDates(),
                 'can_record' => $request->user()->authTo(["human-resources.{$this->organisation->id}.edit", "org-supervisor.{$this->organisation->id}.human-resources"]),
-                'employee_options' => Employee::where('organisation_id', $this->organisation->id)
-                    ->where('state', EmployeeStateEnum::WORKING)
-                    ->when($this->isRestrictedToSection(), fn ($query) => $query->whereIn('id', $this->sectionEmployeeIds))
-                    ->orderBy('contact_name')
-                    ->pluck('contact_name', 'id'),
+                'employee_options' => $employees->pluck('contact_name', 'id'),
+                'employee_job_positions' => $employees->mapWithKeys(fn (Employee $employee) => [
+                    $employee->id => $employee->jobPositions->map(fn (JobPosition $jobPosition) => $jobPosition->only(['id', 'name', 'department'])),
+                ]),
+                // ponytail: a few permission queries per employee, fine at tens of employees; precompute per user if an organisation grows to hundreds
+                'employee_ids_with_group_access' => $employees
+                    ->filter(fn (Employee $employee) => $employee->users->contains(fn (User $user) => $user->hasGroupAccess()))
+                    ->pluck('id')
+                    ->values(),
+                // ponytail: the picker only knows leave from the last year; older dates are still checked on save
+                'employee_leave_periods' => UpdateLeaveCover::approvedLeavePeriods($employees->pluck('id'), today()->subYear()),
             ]
         )->table($this->tableStructure());
     }

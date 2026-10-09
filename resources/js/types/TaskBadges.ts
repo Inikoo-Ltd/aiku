@@ -36,5 +36,9 @@ export interface TaskBadges {
         tasks: CreatedTask[]
         sections?: { eta_change: CreatedTask[]; help_request: CreatedTask[]; recent: CreatedTask[] }
     }
+    review?: {
+        open: number
+        tasks: { id: number; reference: string; subject: string; pending: number; total: number; route: string }[]
+    }
     recent: TaskRecentUpdate[]
 }

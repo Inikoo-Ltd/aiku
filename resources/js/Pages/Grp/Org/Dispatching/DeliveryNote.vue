@@ -1157,7 +1157,7 @@ const stopSocketListener = () => {
 	</div>
 
 	<!-- Section: Box Stats -->
-	<MarginSummary v-if="margin_summary" :summary="margin_summary" class="mx-4 mb-2" />
+	<MarginSummary v-if="margin_summary && !(box_stats && pickingView)" :summary="margin_summary" class="mx-4 my-2" />
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
 		:showChangePickerPacker="showChangePickerPacker"
@@ -1171,7 +1171,11 @@ const stopSocketListener = () => {
 		:warehouse
 		:quick_pickers
 		:isEditable="is_editable"
-	/>
+	>
+		<template #margin>
+			<MarginSummary v-if="margin_summary" :summary="margin_summary" inline />
+		</template>
+	</BoxStatsDeliveryNote>
 
 	<!-- Section: Pick this delivery note with a scanner instead of the table buttons -->
 	<div v-if="scan_to_pick" class="px-2 pt-2 flex justify-end">

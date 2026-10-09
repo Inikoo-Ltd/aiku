@@ -10,9 +10,10 @@ namespace App\Actions\SupplyChain\AspoDeposit;
 
 use App\Actions\OrgAction;
 use App\Enums\SupplyChain\AspoDeposit\AspoDepositStateEnum;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AspoDeposit;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreAspoDeposit extends OrgAction
@@ -23,14 +24,11 @@ class StoreAspoDeposit extends OrgAction
             return true;
         }
 
-        if (str_starts_with($request->route()->getName(), 'grp.org.')) {
-            return $request->user()->authTo([
-                "procurement.{$this->organisation->id}.edit",
-                "accounting.{$this->organisation->id}.edit",
-            ]);
-        }
-
-        return $request->user()->authTo('supply-chain.edit');
+        return $request->user()->authTo([
+            'supply-chain.edit',
+            "procurement.{$this->organisation->id}.edit",
+            "accounting.{$this->organisation->id}.edit",
+        ]);
     }
 
     public function rules(): array
@@ -43,36 +41,39 @@ class StoreAspoDeposit extends OrgAction
         ];
     }
 
-    public function handle(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, array $modelData): AspoDeposit
+    public function handle(PurchaseOrder $purchaseOrder, array $modelData): AspoDeposit
     {
-        return $agentSupplierPurchaseOrder->deposits()->create(
+        if (!$purchaseOrder->agent_id) {
+            throw ValidationException::withMessages(['amount' => __('Only orders placed through an agent take supplier deposits')]);
+        }
+
+        return $purchaseOrder->deposits()->create(
             array_merge($modelData, [
-                'group_id'    => $agentSupplierPurchaseOrder->group_id,
-                'agent_id'    => $agentSupplierPurchaseOrder->supplier?->agent_id,
-                'currency_id' => $modelData['currency_id'] ?? $agentSupplierPurchaseOrder->currency_id,
+                'group_id'    => $purchaseOrder->group_id,
+                'agent_id'    => $purchaseOrder->agent_id,
+                'currency_id' => $modelData['currency_id'] ?? $purchaseOrder->currency_id,
                 'state'       => AspoDepositStateEnum::PENDING,
             ])
         );
     }
 
-    public function asController(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): AspoDeposit
+    public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): AspoDeposit
     {
-        $this->initialisationFromGroup($agentSupplierPurchaseOrder->group, $request);
+        $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
-    public function action(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, array $modelData): AspoDeposit
+    public function action(PurchaseOrder $purchaseOrder, array $modelData): AspoDeposit
     {
         $this->asAction = true;
-        $this->initialisationFromGroup($agentSupplierPurchaseOrder->group, $modelData);
+        $this->initialisation($purchaseOrder->organisation, $modelData);
 
-        return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
     public function htmlResponse(): RedirectResponse
     {
         return redirect()->back();
     }
-
 }

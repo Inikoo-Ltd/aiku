@@ -41,6 +41,8 @@ Si la orden de trabajo se hizo para stock, para un cliente propio, o para más d
 
 Eso registra los productos en la ubicación, les da un código de lote hecho con la referencia de la orden de trabajo y el código del producto, descuenta las materias primas que la receta dice que se usaron, y marca la orden de trabajo como recibida. La fila desaparece, y en el tablero de la fábrica la línea sale de la columna <b>Done</b>.
 
+El lote también recibe su fecha de consumo preferente: la que se escribió para la tanda en el tablero de la fábrica, o si no, el día en que se guarda más la vida útil del artefacto. Un artefacto sin vida útil se queda sin fecha de consumo preferente, así que rellena la vida útil de cada artefacto. Si más tarde se guarda más de la misma línea de la orden de trabajo, se suma al mismo lote. El stock sabe ahora qué lote hay en cada ubicación, y eso es lo que leen los informes de inventario para las fechas de consumo preferente.
+
 La cantidad registrada es lo que los artesanos realmente hicieron, no lo que se pidió. Una orden de trabajo que pedía 25 y consiguió 19 registra 19.
 
 ## Qué pasa después

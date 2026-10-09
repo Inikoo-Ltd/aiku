@@ -133,6 +133,10 @@ class SyncOrgStockTradeUnits
         $orgStock = ModelHydrateSingleTradeUnits::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
 
+        if (blank($orgStock->unit_barcode)) {
+            FillOrgStockWithTradeUnitsBarcodes::run($orgStock);
+        }
+
         return $orgStock;
     }
 

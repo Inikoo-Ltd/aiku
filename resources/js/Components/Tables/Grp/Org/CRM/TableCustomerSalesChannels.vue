@@ -25,7 +25,7 @@ defineProps<{
 
 const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
-const isPlatformShow = computed(() => route().current() === "grp.platforms.show")
+const isPlatformShow = computed(() => route().current() === "grp.dashboard.platforms.show")
 
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
     const current = route().current()

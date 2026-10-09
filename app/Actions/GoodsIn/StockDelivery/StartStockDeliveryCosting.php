@@ -56,6 +56,9 @@ class StartStockDeliveryCosting extends OrgAction
         if ($stockDelivery->parent_type === 'OrgPartner') {
             EvaluateStockDeliveryCosting::run($stockDelivery);
         } else {
+            if ($stockDelivery->costs()->exists()) {
+                EvaluateStockDeliveryCosting::redistribute($stockDelivery);
+            }
             StockDeliveriesHydrateCosts::run($stockDelivery);
         }
 

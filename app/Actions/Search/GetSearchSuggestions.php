@@ -8,6 +8,7 @@
 
 namespace App\Actions\Search;
 
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -38,8 +39,12 @@ class GetSearchSuggestions
         });
     }
 
-    public function asController(): array
+    public function asController(ActionRequest $request): array
     {
+        if ($request->user()->worksOnlyForAgents()) {
+            return ['suggestions' => []];
+        }
+
         return ['suggestions' => $this->handle()];
     }
 }

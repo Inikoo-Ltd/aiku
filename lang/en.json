@@ -147,7 +147,7 @@
     ":change% vs same days last year": ":change% vs same days last year",
     ":code already exists for this supplier, use its Id instead of \"new\".": ":code already exists for this supplier, use its Id instead of \"new\".",
     ":code and :count more": ":code and :count more",
-    ":code cannot be ordered: its SKO is discontinued, or it is not linked to any SKO": ":code cannot be ordered: its SKO is discontinued, or it is not linked to any SKO",
+    ":code has no SKO yet. Open New supplier product for its supplier, enter :code as the supplier code and save: that creates its SKO.": ":code has no SKO yet. Open New supplier product for its supplier, enter :code as the supplier code and save: that creates its SKO.",
     ":code has no price history, save the supplier product again": ":code has no price history, save the supplier product again",
     ":code has nothing left to pick": ":code has nothing left to pick",
     ":code has nothing left to pick in this session": ":code has nothing left to pick in this session",

@@ -136,7 +136,7 @@ class GetPartnerOrderCapacity
             })
             ->where('dni.quantity_dispatched', '>', 0)
             ->where('dni.created_at', '>=', now()->subDays(90))
-            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id', GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)) / 3, 0) as total')
+            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id).', 0)) / 3, 0) as total')
             ->value('total'), 2);
     }
 

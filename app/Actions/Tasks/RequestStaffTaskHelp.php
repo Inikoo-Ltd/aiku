@@ -33,7 +33,7 @@ class RequestStaffTaskHelp
 
         $departments = $task->department ? [$task->department] : StaffTask::departmentsOf($asker);
         $recipients  = collect([$task->requester])
-            ->merge(collect($departments)->flatMap(fn (string $department) => StaffTask::departmentSupervisors($task->requester ?? $asker, $department)))
+            ->merge(collect($departments)->flatMap(fn (string $department) => StaffTask::departmentSupervisors($task->requester ?? $asker, $department, $task->data['organisation_id'] ?? null)))
             ->filter()
             ->reject(fn (User $user) => $user->id === $asker->id)
             ->unique('id')

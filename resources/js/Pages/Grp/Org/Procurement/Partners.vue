@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Deferred, Head, Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -76,6 +76,7 @@ const props = defineProps<{
 	currency_code: string
 	can_create_purchase_orders?: boolean
 	partners: PartnerCard[]
+	rescuable?: Record<number, Rescuable>
 }>()
 
 const locale = useLocaleStore()
@@ -165,7 +166,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					:src="'/flags/' + partner.country_code.toLowerCase() + '.png'"
 					:alt="partner.country_name ?? ''"
 					:title="partner.country_name ?? ''"
-					class="h-4 rounded-sm ring-1 ring-gray-200" />
+					class="h-4 w-auto shrink-0" />
 				<div class="min-w-0 flex-1">
 					<Link
 						:href="partnerUrl(partner)"
@@ -196,9 +197,13 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 			</div>
 
 			<div class="flex-1 space-y-3 px-4 py-3">
+				<Deferred data="rescuable">
+					<template #fallback>
+						<div class="h-40 animate-pulse rounded-md bg-gray-100" />
+					</template>
 				<PartnerRescuableSummary
-					v-if="partner.stats.rescuable"
-					:rescuable="partner.stats.rescuable"
+					v-if="rescuable?.[partner.id]"
+					:rescuable="rescuable[partner.id]"
 					:isHub="partner.is_hub"
 					:orgPartnerId="partner.id"
 					:partnerName="partner.name"
@@ -212,6 +217,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 							? partnerUrl(partner, 'grp.org.procurement.org_partners.show.shopping.dashboard')
 							: null
 					" />
+				</Deferred>
 				<section class="overflow-hidden rounded-md ring-1 ring-gray-200">
 					<div
 						class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
@@ -244,7 +250,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										item.type === 'stock_delivery'
 											? ctrans('Stock delivery')
 											: item.type === 'shopping_list'
-												? ctrans('Ongoing PO')
+												? ctrans('Basket')
 												: ctrans('Purchase order')
 									" />
 								<div class="min-w-0 flex-1">
@@ -297,6 +303,20 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 					class="whitespace-nowrap"
 					@click="createPurchaseOrder(partner)" />
 				<Link
+					v-else-if="can_create_purchase_orders && purchaseOrderInProcess(partner)"
+					:href="purchaseOrderInProcess(partner)!.url">
+					<Button
+						:label="
+							ctrans('Add items to :reference', {
+								reference: purchaseOrderInProcess(partner)!.reference,
+							})
+						"
+						icon="fal fa-plus"
+						type="secondary"
+						size="s"
+						class="whitespace-nowrap" />
+				</Link>
+				<Link
 					v-if="partner.is_hub"
 					:href="
 						partnerUrl(
@@ -305,7 +325,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 						)
 					"
 					class="ml-auto whitespace-nowrap text-gray-500 hover:text-gray-900 hover:underline">
-					{{ ctrans("Ongoing PO") }}
+					{{ ctrans("Basket") }}
 				</Link>
 				<Link
 					v-else-if="olderPurchaseOrders(partner)"

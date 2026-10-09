@@ -10,6 +10,7 @@
 
 use App\Models\Inventory\OrgStock;
 use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns;
 use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Accounting\Invoice\StoreRefund;
@@ -67,6 +68,7 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -656,9 +658,16 @@ test('small order charge configured through the UI applies to an order', functio
     $order->goods_amount = 1000;
     CalculateOrderHangingCharges::run($order);
 
-    expect((float) $chargeTransactions()->first()->net_amount)->toBe(0.0)
+    $order->refresh();
+    expect($order->charges_engine)->toBe(OrderChargesEngineEnum::MANUAL)
+        ->and((float) $chargeTransactions()->first()->net_amount)->toBe(0.0)
         ->and((int) $chargeTransactions()->first()->gross_amount)->toBe(255);
 
+    CalculateOrderTotalAmounts::make()->handle($order, forceRecalculate: true);
+
+    expect((float) $chargeTransactions()->first()->net_amount)->toBe(0.0);
+
+    $order->update(['charges_engine' => OrderChargesEngineEnum::AUTO]);
     $order->goods_amount = 3000;
     CalculateOrderHangingCharges::run($order);
 
@@ -2346,6 +2355,38 @@ test('submit order skips upcoming transactions for out of stock products', funct
 
     expect($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
         ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
+});
+
+test('submit order applies follow-ons of the customer own exclusive product while it has stock', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $original = $this->product->only(['status', 'is_for_sale', 'exclusive_for_customer_id', 'available_quantity', 'state']);
+    $this->product->updateQuietly([
+        'status'                    => ProductStatusEnum::NOT_FOR_SALE,
+        'is_for_sale'               => false,
+        'exclusive_for_customer_id' => $this->customer->id,
+        'state'                     => ProductStateEnum::ACTIVE,
+        'available_quantity'        => 0,
+    ]);
+
+    $followOn = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $emptyStockOrder = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->processUpComingTransactions($emptyStockOrder);
+    expect($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    $this->product->updateQuietly(['available_quantity' => 3]);
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    SubmitOrder::make()->processUpComingTransactions($order);
+
+    expect($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(1);
+
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $this->product->updateQuietly($original);
 });
 
 test('submit order skips upcoming transaction when product has no current historic asset', function () {
@@ -5381,16 +5422,34 @@ test('a claim refunded to balance is paid out of the card payment and leaves not
         'state'  => PaymentStateEnum::COMPLETED->value,
     ]);
 
-    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed);
+    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed, 50);
 
-    $credit = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
-    expect($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+    $invoicedLine = $invoice->invoiceTransactions()->where('transaction_id', $item->transaction_id)->firstOrFail();
+    $credit       = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
+    expect(abs((float) $refund->net_amount))->toEqual(round((float) $invoicedLine->net_amount * min(1, 1 / (float) $item->quantity_required) / 2, 2))
+        ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and((float) $refund->total_amount)->toBeLessThan(0.0)
         ->and((float) $order->customer->refresh()->balance)->toBe(abs((float) $refund->total_amount))
         ->and($credit->type)->toBe(CreditTransactionTypeEnum::PAY_RETURN)
         ->and($credit->payment->original_payment_id)->toBe($payment->id)
         ->and($credit->payment->paymentAccount->type)->toBe(PaymentAccountTypeEnum::ACCOUNT)
         ->and(StoreOrderPaymentLink::amountDue($order->refresh()))->toBe(0.0);
+
+    $followOn = StoreClaimFollowOns::make()->handle($order->refresh(), $claimed, 'damaged_in_transit')->sole();
+    expect($followOn->type)->toBe(UpcomingTransactionTypeEnum::FOLLOW_ON)
+        ->and($followOn->product_id)->toBe($this->product->id)
+        ->and((float) $followOn->quantity)->toEqual(1.0)
+        ->and($followOn->public_notes)->toContain($order->reference);
+
+    $nextOrder = StoreOrder::make()->action($order->customer->refresh(), Order::factory()->definition());
+    StoreTransaction::make()->action($nextOrder, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+    SubmitOrder::make()->action($nextOrder->refresh());
+
+    $freeLine = $nextOrder->transactions()->where('is_follow_on', true)->sole();
+    expect((float) $freeLine->quantity_bonus)->toEqual(1.0)
+        ->and((float) $freeLine->quantity_ordered)->toEqual(0.0)
+        ->and($followOn->refresh()->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($followOn->order_id)->toBe($nextOrder->id);
 
     if ($attachedOrgStock) {
         $this->product->orgStocks()->detach($attachedOrgStock->id);
@@ -6057,4 +6116,46 @@ test('group orders hydrator counts orders in a single scan', function () {
         ->and($stats->number_orders_state_creating)->toBe((clone $liveOrders)->where('state', OrderStateEnum::CREATING)->count())
         ->and($stats->number_orders_status_creating)->toBe((clone $liveOrders)->where('status', OrderStatusEnum::CREATING)->count())
         ->and($stats->number_orders_handing_type_shipping)->toBe((clone $liveOrders)->where('handing_type', OrderHandingTypeEnum::SHIPPING)->count());
+});
+
+test('production managers mark orders as production reviewed, one by one or in bulk, and filter the backlog by it', function () {
+    $wasManufacturingHub = $this->organisation->is_manufacturing_hub;
+    $this->organisation->update(['is_manufacturing_hub' => false]);
+    expect(UpdateOrderProductionReview::isUsedBy($this->organisation))->toBeFalse();
+    $this->organisation->update(['is_manufacturing_hub' => true]);
+
+    $this->organisation->productions()->first()
+        ?? \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'PRV', 'name' => 'PRV']);
+    $this->organisation->unsetRelation('productions');
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $first    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $second   = StoreOrder::make()->action($customer, Order::factory()->definition());
+
+    actingAs($this->user);
+    $this->patch(route('grp.models.order.production_review', ['order' => $first->id]), ['reviewed' => true])->assertRedirect();
+    $first->refresh();
+    expect($first->production_reviewed_at)->not->toBeNull()
+        ->and($first->production_reviewed_by)->toBe($this->user->id);
+
+    $counts   = \App\Actions\Ordering\Order\UI\IndexOrders::make()->backlogFilterCounts($this->shop->fresh(), 'in_basket')['production_review'];
+    $creating = Order::where('shop_id', $this->shop->id)->where('state', OrderStateEnum::CREATING);
+    expect($counts)->toBe([
+        'reviewed'   => (clone $creating)->whereNotNull('production_reviewed_at')->count(),
+        'unreviewed' => (clone $creating)->whereNull('production_reviewed_at')->count(),
+    ])->and($counts['reviewed'])->toBeGreaterThan(0);
+
+    $this->patch(route('grp.models.organisation.orders.production_review', ['organisation' => $this->organisation->id]), [
+        'reviewed'  => true,
+        'order_ids' => [$first->id, $second->id],
+    ])->assertRedirect();
+    expect($second->refresh()->production_reviewed_at)->not->toBeNull();
+
+    $this->patch(route('grp.models.order.production_review', ['order' => $first->id]), ['reviewed' => false])->assertRedirect();
+    $first->refresh();
+    expect($first->production_reviewed_at)->toBeNull()
+        ->and($first->production_reviewed_by)->toBeNull();
+
+    $this->organisation->update(['is_manufacturing_hub' => $wasManufacturingHub]);
 });

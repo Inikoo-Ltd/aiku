@@ -14,7 +14,9 @@ use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Enums\UI\CRM\WebUserTabsEnum;
+use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
 use App\Http\Resources\CRM\WebUserFailedLoginsResource;
 use App\Http\Resources\CRM\WebUserLoginsResource;
 use App\Http\Resources\CRM\WebUserResource;
@@ -25,6 +27,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\WebsiteVisitor;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -122,6 +125,7 @@ class ShowWebUser extends OrgAction
                     'navigation' => WebUserTabsEnum::navigation(),
                 ],
                 'data'     => new WebUserResource($webUser),
+                'visits'   => $this->visits($webUser),
 
                 WebUserTabsEnum::LOGINS->value => $this->tab == WebUserTabsEnum::LOGINS->value ?
                     fn () => WebUserLoginsResource::collection(IndexWebUserLogins::run($webUser, WebUserTabsEnum::LOGINS->value))
@@ -141,6 +145,41 @@ class ShowWebUser extends OrgAction
         ->table(IndexHistory::make()->tableStructure(WebUserTabsEnum::HISTORY->value, model: $webUser));
     }
 
+
+    private function visits(WebUser $webUser): array
+    {
+        $visitors = WebsiteVisitor::where('web_user_id', $webUser->id);
+
+        $totals = (clone $visitors)
+            ->selectRaw('count(*) as number_visits, coalesce(sum(page_views), 0) as number_page_views')
+            ->toBase()
+            ->first();
+
+        $lastVisit = (clone $visitors)->orderByDesc('first_seen_at')->first();
+
+        return [
+            'retention_days'    => PruneWebsiteVisitors::RETENTION_DAYS,
+            'number_visits'     => (int) $totals->number_visits,
+            'number_page_views' => (int) $totals->number_page_views,
+            'last_visit'        => $lastVisit ? [
+                'first_seen_at'  => $lastVisit->first_seen_at,
+                'page_views'     => $lastVisit->page_views,
+                'device'         => ucfirst($lastVisit->device_type),
+                'landing_page'   => $lastVisit->landing_page ? parse_url($lastVisit->landing_page, PHP_URL_PATH) : null,
+                'source'         => WebsiteVisitorChannelEnum::typeLabel($lastVisit->traffic_source_type),
+                'page_views_url' => $this->parent instanceof Customer ? route('grp.org.shops.show.seo.page_views.visitor', [
+                    $this->organisation->slug,
+                    $this->shop->slug,
+                    $lastVisit->id,
+                ]) : null,
+            ] : null,
+            'visits_url'        => $this->parent instanceof Customer && $this->shop->website ? route('grp.org.shops.show.seo.visitors.index', [
+                $this->organisation->slug,
+                $this->shop->slug,
+                'filter' => ['global' => $webUser->username],
+            ]) : null,
+        ];
+    }
 
     public function jsonResponse(WebUser $webUser): WebUserResource
     {

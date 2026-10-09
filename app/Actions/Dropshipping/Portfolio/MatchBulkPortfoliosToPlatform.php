@@ -60,7 +60,7 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
         $ignored = 0;
 
         $this->getPortfoliosToMatch($customerSalesChannel, $modelData)
-            ->chunkById(500, function ($portfolios) use ($customerSalesChannel, $listedSkus, &$matched, &$ignored) {
+            ->chunkById(500, function ($portfolios) use ($customerSalesChannel, $modelData, $listedSkus, &$matched, &$ignored) {
                 foreach ($portfolios as $portfolio) {
                     $platformProductId = $this->findPlatformProductId($portfolio, $listedSkus);
 
@@ -70,7 +70,7 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
                         continue;
                     }
 
-                    $this->dispatchMatch($customerSalesChannel, $portfolio, $platformProductId);
+                    $this->dispatchMatch($customerSalesChannel, $portfolio, $platformProductId, (bool) Arr::get($modelData, 'manage_price', false));
 
                     $matched++;
                 }
@@ -103,14 +103,15 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
         };
     }
 
-    private function dispatchMatch(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, string $platformProductId): void
+    private function dispatchMatch(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio, string $platformProductId, bool $managePrice): void
     {
         match ($customerSalesChannel->platform?->type) {
             PlatformTypeEnum::EBAY => MatchPortfolioToCurrentEbayProduct::dispatch($portfolio, [
                 'platform_product_id' => $platformProductId
             ]),
             PlatformTypeEnum::SHOPIFY => MatchPortfolioToCurrentShopifyProduct::dispatch($portfolio, [
-                'shopify_product_id' => $platformProductId
+                'shopify_product_id' => $platformProductId,
+                'manage_price'       => $managePrice
             ]),
             PlatformTypeEnum::WOOCOMMERCE => MatchPortfolioToCurrentWooProduct::dispatch($portfolio, [
                 'platform_product_id' => $platformProductId
@@ -167,6 +168,7 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
         return [
             'portfolios'   => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
+            'manage_price' => ['sometimes', 'boolean'],
         ];
     }
 

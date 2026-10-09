@@ -13,16 +13,27 @@ use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
+use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
+use App\Actions\Production\Artefact\SetArtefactsRecipe;
+use App\Actions\Production\Artefact\SetArtefactState;
+use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
+use App\Actions\Production\RawMaterial\UpdateRawMaterial;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\SyncMasterProductCategoryRelatedMasterAssets;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\Artefact;
+use App\Models\Production\ManufactureTask;
+use App\Models\Production\RawMaterial;
 use App\Models\SysAdmin\McpChange;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,16 +60,20 @@ class RevertMcpChange
             throw ValidationException::withMessages(['message' => __('This was changed again after the AI change, so it cannot be reverted automatically. Look at it and fix it by hand.')]);
         }
 
-        match ($mcpChange->type) {
-            McpChangeTypeEnum::RELATED_PRODUCTS => $this->revertRelatedProducts($target, $mcpChange->before),
-            McpChangeTypeEnum::ORG_STOCK_STATE  => $this->revertOrgStockStates($mcpChange->before),
-            McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->revertPartnerShoppingList($mcpChange->before, $mcpChange->after),
-        };
+        DB::transaction(function () use ($mcpChange, $target, $user) {
+            match ($mcpChange->type) {
+                McpChangeTypeEnum::RELATED_PRODUCTS => $this->revertRelatedProducts($target, $mcpChange->before),
+                McpChangeTypeEnum::ORG_STOCK_STATE  => $this->revertOrgStockStates($mcpChange->before),
+                McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->revertPartnerShoppingList($mcpChange->before, $mcpChange->after),
+                McpChangeTypeEnum::PRODUCTION_RECORD => $this->revertProductionRecord($target, $mcpChange->before),
+                McpChangeTypeEnum::PRODUCTION_RECIPE => $this->revertProductionRecipes($mcpChange->before),
+            };
 
-        $mcpChange->update([
-            'reverted_at'    => now(),
-            'reverted_by_id' => $user->id,
-        ]);
+            $mcpChange->update([
+                'reverted_at'    => now(),
+                'reverted_by_id' => $user->id,
+            ]);
+        });
 
         return $mcpChange;
     }
@@ -85,6 +100,52 @@ class RevertMcpChange
             } else {
                 DeletePartnerShoppingListItem::make()->action($item);
             }
+        }
+    }
+
+    /**
+     * A record the assistant created has job orders, recipes and stock hanging off it soon after,
+     * so it is never removed automatically.
+     */
+    private function revertProductionRecord(array $target, array $before): void
+    {
+        if (!$before) {
+            throw ValidationException::withMessages(['message' => __('This change created :code, which cannot be undone automatically. Set it as discontinued or inactive instead.', ['code' => $target['code']])]);
+        }
+
+        $fields = Arr::except($before, ['id']);
+
+        if ($target['kind'] === 'artefact') {
+            $artefact = Artefact::findOrFail($before['id']);
+            if ($artefact->state->value !== $fields['state']) {
+                SetArtefactState::make()->action($artefact, ArtefactStateEnum::from($fields['state']));
+            }
+            UpdateArtefact::make()->action($artefact, Arr::except($fields, ['state']));
+
+            return;
+        }
+
+        match ($target['kind']) {
+            'raw_material'     => UpdateRawMaterial::make()->action(RawMaterial::findOrFail($before['id']), $fields),
+            'manufacture_task' => UpdateManufactureTask::make()->action(ManufactureTask::findOrFail($before['id']), $fields),
+        };
+    }
+
+    private function revertProductionRecipes(array $before): void
+    {
+        foreach ($before['artefacts'] as $artefactId => $steps) {
+            $artefact = Artefact::findOrFail($artefactId);
+
+            if (!$steps) {
+                $artefact->manufactureTasks->each(fn (ManufactureTask $manufactureTask) => DetachManufactureTaskFromArtefact::make()->action($artefact, $manufactureTask));
+
+                continue;
+            }
+
+            SetArtefactsRecipe::make()->action($artefact->production, [
+                'artefacts' => [$artefact->id],
+                'steps'     => $steps,
+            ]);
         }
     }
 

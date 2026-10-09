@@ -310,6 +310,16 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.family_order_follow_master', Arr::pull($modelData, 'family_order_follow_master'));
         }
 
+        // Stock on Iris
+
+        if (Arr::has($modelData, 'allow_stocks_to_be_shown_on_iris')) {
+            data_set($modelData, 'settings.catalog.allow_stocks_to_be_shown_on_iris', Arr::pull($modelData, 'allow_stocks_to_be_shown_on_iris'));
+        }
+
+        if (Arr::has($modelData, 'allow_incoming_stocks_to_be_shown_on_iris')) {
+            data_set($modelData, 'settings.catalog.allow_incoming_stocks_to_be_shown_on_iris', Arr::pull($modelData, 'allow_incoming_stocks_to_be_shown_on_iris'));
+        }
+
         if (Arr::exists($modelData, 'portal_link')) {
             if (Arr::get($modelData, 'portal_link') === null) {
                 data_set($modelData, 'portal_link', '');
@@ -338,6 +348,8 @@ class UpdateShop extends OrgAction
                     'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
                     'wix_access_token' => 'settings.wix.access_token',
                     'wix_order_from_days' => 'settings.wix.order_from_days',
+                    'shopify_order_from_days' => 'settings.shopify.order_from_days',
+                    'shopify_location_id' => 'settings.shopify.location_id',
                     'gads_customer_id' => 'settings.google_ads.customer_id',
                     'gads_login_customer_id' => 'settings.google_ads.login_customer_id',
                     'gads_user_list_id' => 'settings.google_ads.user_list_id',
@@ -389,6 +401,8 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'wix_order_from_days');
+        data_forget($modelData, 'shopify_order_from_days');
+        data_forget($modelData, 'shopify_location_id');
         data_forget($modelData, 'gads_customer_id');
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
@@ -986,6 +1000,8 @@ class UpdateShop extends OrgAction
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'wix_access_token'                                        => ['sometimes', 'string'],
             'wix_order_from_days'                                     => ['sometimes', 'string'],
+            'shopify_order_from_days'                                 => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
+            'shopify_location_id'                                     => ['sometimes', 'nullable', 'string', 'starts_with:gid://shopify/Location/'],
             'gads_customer_id'                                        => ['sometimes', 'nullable', 'string'],
             'gads_login_customer_id'                                  => ['sometimes', 'nullable', 'string'],
             'gads_user_list_id'                                       => ['sometimes', 'nullable', 'string'],
@@ -1058,8 +1074,11 @@ class UpdateShop extends OrgAction
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'family_order_follow_master'                              => ['sometimes', 'boolean'],
+            'allow_stocks_to_be_shown_on_iris'                        => ['sometimes', 'boolean'],
+            'allow_incoming_stocks_to_be_shown_on_iris'               => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
+            'zero_tax_invoice_footer'                                 => ['sometimes', 'nullable', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
             'reviews'                                                 => ['sometimes', 'boolean'],
             'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],

@@ -101,9 +101,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             };
         }
 
-        $scope = WebBlockTemplateEnum::DEPARTMENT_DESCRIPTION;
-        $liveWebBlockSnapshot = $webpage->website->{"live{$scope->value}Snapshot"};
-        $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($scope->templateCodes())); // Get published WebBlock layout code
+        $usedWebBlockTemplateCodes = array_first($this->fetchUsedTemplateCodes($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION));
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILY_DESCRIPTION->templateCodes(), WebBlockTemplateEnum::FAMILY_DESCRIPTION);
@@ -136,7 +134,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
         }
 
-        if ($usedWebBlockTemplateCodes == 'family-2' && $masterShop->slug == 'aroma') {
+        if ($usedWebBlockTemplateCodes == 'family-2' && $masterShop?->slug == 'aroma') {
             $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'category-comparison');
             if (count($countFamilyWebBlock) == 0) {
                 $this->createWebBlock($webpage, 'category-comparison');

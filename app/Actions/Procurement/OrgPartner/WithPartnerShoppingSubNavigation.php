@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner;
 
+use App\Actions\Procurement\OrgPartner\UI\IndexPartnerBlockedOrgStocks;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -17,8 +18,10 @@ trait WithPartnerShoppingSubNavigation
 {
     protected function getPartnerShoppingNavigation(OrgPartner $parent): array
     {
-        $linesByState = PartnerShoppingListItem::where('org_partner_id', $parent->id)
-            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+        $linesByState = PartnerShoppingListItem::whereNotSplitPiece(
+            PartnerShoppingListItem::where('org_partner_id', $parent->id)->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList()),
+            [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value]
+        )
             ->selectRaw('state, count(*) as total')
             ->groupBy('state')
             ->pluck('total', 'state');
@@ -50,28 +53,40 @@ trait WithPartnerShoppingSubNavigation
                 ],
             ] : []),
             [
-                "label"    => __("Ongoing PO"),
+                "label"    => __("Basket"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.shopping_list.index",
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-list"],
-                    "tooltip" => __("Ongoing PO"),
+                    "tooltip" => __("Basket"),
                 ],
                 "number"   => (int) ($linesByState[ShoppingListItemStateEnum::DRAFT->value] ?? 0),
             ],
             [
-                "label"    => __("Sent"),
+                "label"    => __("Orders"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.shopping_list.sent",
                     "parameters" => [$parent->organisation->slug, $parent->id],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-paper-plane"],
-                    "tooltip" => __('Sent to :partner', ['partner' => $parent->partner->name]),
+                    "tooltip" => __('Already at :partner factory', ['partner' => $parent->partner->name]),
                 ],
                 "number"   => (int) ($linesByState[ShoppingListItemStateEnum::OPEN->value] ?? 0),
+            ],
+            [
+                "label"    => __("Blocked"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_partners.show.shopping_list.blocked",
+                    "parameters" => [$parent->organisation->slug, $parent->id],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-ban"],
+                    "tooltip" => __("Products never suggested automatically"),
+                ],
+                "number"   => IndexPartnerBlockedOrgStocks::blockedQuery($parent)->count(),
             ],
         ];
     }

@@ -55,6 +55,7 @@ class StaffTasksResource extends JsonResource
             'created_at'         => $this->created_at,
             'closed_at'          => $this->closed_at,
             'conversation_ulid'  => $this->conversation?->ulid,
+            'lines'              => $this->isReview() ? collect($this->data['subtasks'] ?? [])->where('status', '!=', 'done')->count().' / '.count($this->data['subtasks'] ?? []) : null,
         ];
     }
 }

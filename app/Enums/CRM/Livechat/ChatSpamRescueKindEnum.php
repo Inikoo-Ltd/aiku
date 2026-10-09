@@ -33,18 +33,22 @@ enum ChatSpamRescueKindEnum: string
      * prospects kept, junk let in down from 15 to 1 against the first, six-kind wording. Platforms
      * offering visibility in return for dropshipping partners were taken for prospects until
      * service_pitch named them: on 278 strangers' emails that was the only verdict that changed.
+     * Bare chasers ("still waiting for your reply"), advisers opening with a "check" on how we run
+     * our packs or branches, and damage complaints with no order number and a document of photos came in as customer
+     * requests until named here: on 344 emails, 52 of them judged by staff in production, junk let
+     * in fell from 4-5 to 1 and genuine kept rose from 66-67 to 68 of 70, over two runs.
      *
      * @return array<string, string>
      */
     public static function definitions(): array
     {
         return [
-            'customer_request' => 'Somebody who already buys from us or has an account with us, asking about their order, delivery, invoice, payment, account, a product they bought, or setting up their dropshipping store with us, with the details written in the email itself',
+            'customer_request' => 'Somebody who already buys from us or has an account with us, asking about their order, delivery, invoice, payment, account, a product they bought, or setting up their dropshipping store with us, with the details written in the email itself: which order, product, account or problem it is about. A message that only chases an earlier email without saying what it was about is not one',
             'prospect'         => 'A shop, business or seller that wants to buy from us, stock our products or dropship our catalogue in its own store, and says what it sells and which kinds of our products it wants: gifts, incense, candles, soaps, bath products, crystals, jewellery, lamps, home fragrance, homeware, pots, pet accessories and similar',
-            'vague_buyer'      => 'A buying or partnership request that could be sent unchanged to any company: asks for a catalogue, product list, price list, supply capacity or quotation without naming any product, from a sourcing company, procurement manager, consultant or would-be sales representative, or a follow-up to an earlier message of that kind',
+            'vague_buyer'      => 'A buying or partnership request that could be sent unchanged to any company: asks for a catalogue, product list, price list, supply capacity or quotation without naming any product, from a sourcing company, procurement manager, consultant or would-be sales representative, a follow-up to an earlier message of that kind, or a message that only says they are still waiting for a reply without saying what about',
             'not_our_products' => 'Somebody who wants to buy goods we do not sell, such as machinery, raw materials, metals, gemstones in bulk, building materials or industrial supplies',
             'supplier_pitch'   => 'A factory, manufacturer, exporter or supplier offering to sell their products or materials to us, including white label and private label manufacturing offers',
-            'service_pitch'    => 'Someone offering us a service, including freelancers who ask vague questions about our store or dropshipping to start a conversation or offer to bring orders for a commission, and marketplaces, platforms or directories inviting us to join, list our products or become their partner or vendor in return for visibility or promotion: marketing, SEO, ads, web or Shopify experts, apps, logistics, freight, packaging, printing, data',
+            'service_pitch'    => 'Someone offering us a service, including freelancers who ask vague questions about our store or dropshipping to start a conversation or offer to bring orders for a commission, advisers who open with a question or "check" about how we run our business, such as our pack sizes, ranges, branches, stock, ad accounts or website, and follow-ups to any of these, and marketplaces, platforms or directories inviting us to join, list our products or become their partner or vendor in return for visibility or promotion: marketing, SEO, ads, web or Shopify experts, apps, logistics, freight, packaging, printing, data',
             'scam'             => 'Phishing or fraud: the order, invoice, damage report, purchase requirements or payment are only behind a link or attachment instead of written in the email, fake payment copies, fake copyright or policy violations, fake verification badges, investment or funding offers, crypto payment, prizes, bug bounty requests',
             'automated'        => 'An auto-reply, out of office, newsletter or notification sent by a machine',
         ];
@@ -63,7 +67,7 @@ enum ChatSpamRescueKindEnum: string
         return [
             'payment_copy'     => 'A payment, remittance, SWIFT or bank transfer copy or proof of payment to download or open',
             'fake_invoice'     => 'An invoice, statement or overdue bill from a company we never dealt with, or one that must be opened from a link or attachment',
-            'link_to_details'  => 'An order, complaint, damage report, quotation request, purchase requirements, invitation, event, shared document, voicemail, e-signature request or other document that can only be seen by opening a link or file',
+            'link_to_details'  => 'An order, complaint, damage report, quotation request, purchase requirements, invitation, event, shared document, voicemail, e-signature request or other document that can only be seen by opening a link or file, or a damage or defect complaint that gives no order number and puts its photos or report in a document',
             'account_warning'  => 'A warning about a mailbox, password, account, domain, payment method or security that asks to click, log in or confirm',
             'policy_violation' => 'A copyright, trademark, policy or legal violation notice, or a verification badge offer',
             'money_offer'      => 'Investment, funding, loans, crypto, inheritance, prizes, or a commission or fee to be paid first',

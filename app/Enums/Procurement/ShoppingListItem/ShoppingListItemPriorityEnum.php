@@ -28,4 +28,17 @@ enum ShoppingListItemPriorityEnum: string
             'urgent' => __('Urgent'),
         ];
     }
+
+    /**
+     * @return array<string, array{icon: string, class: string, tooltip: string}>
+     */
+    public static function icons(): array
+    {
+        return [
+            'low'    => ['icon' => 'fal fa-chevron-double-down', 'class' => 'text-gray-400', 'tooltip' => __('Low')],
+            'normal' => ['icon' => 'fal fa-equals', 'class' => 'text-emerald-600', 'tooltip' => __('Normal')],
+            'high'   => ['icon' => 'fal fa-chevron-double-up', 'class' => 'text-amber-600', 'tooltip' => __('High')],
+            'urgent' => ['icon' => 'fal fa-exclamation-triangle', 'class' => 'text-red-600', 'tooltip' => __('Urgent')],
+        ];
+    }
 }

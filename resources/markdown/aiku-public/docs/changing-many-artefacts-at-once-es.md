@@ -2,7 +2,7 @@
 title: Cambiar muchos artefactos a la vez
 summary: Marca los artefactos y usa el selector a la derecha de la barra que aparece para fijar un tamaño de lote o una vida útil, darles a todos los mismos pasos de fabricación, moverlos a otra familia o departamento, discontinuarlos, o recuperarlos.
 date: 2026-09-29
-source_date: 2026-09-29
+source_date: 2026-10-08
 tags: production, crafts
 category: production
 ---
@@ -90,6 +90,16 @@ Las listas de artefactos se abren mostrando solo **In process** (en proceso) y *
 
 Las familias toman su estado de los artefactos que contienen. Una familia está activa mientras algún artefacto en ella esté activo o en proceso, y solo pasa a discontinuada cuando todos lo están. Eso significa que discontinuar el último artefacto de una familia también la retira silenciosamente de la lista de familias, y los mismos chips de **State** la traen de vuelta.
 
+## Pedírselo a tu asistente de IA
+
+Si tu cuenta está habilitada, el asistente de IA que conectas a aiku puede configurar la producción por ti. Dile lo que necesitas con tus palabras, por ejemplo *"pon a ACLB-01 hasta ACLB-13 estos pasos: verter, etiquetar, empaquetar"*. Primero te muestra lo que va a cambiar y solo lo guarda cuando confirmas.
+
+- Puede crear y editar artefactos, materias primas (también su coste unitario) y tareas de fabricación.
+- Un artefacto nuevo siempre se crea con su SKO. Si el SKO aún no existe, el asistente crea el stock, su unidad comercial y el SKO junto con el artefacto.
+- Las recetas funcionan como en esta página: los artefactos que nombras reciben exactamente los pasos que indicas, y los pasos que no aparecen se eliminan con sus materias primas. Cada paso lleva su orden, cuánto cuenta un artefacto en ese paso, el objetivo por hora y las materias primas que usa por artefacto. El asistente también te dice el coste de materiales de cada artefacto.
+- Cada cambio queda registrado con tu petición y se puede deshacer: pide al asistente que lo revierta, o un administrador puede hacerlo desde el registro de cambios de IA. Deshacer no borra un registro que creó el asistente; márcalo como discontinuado.
+- La habilitación es un interruptor en tu cuenta de usuario que activa un administrador. Sirve para administradores del grupo y de la organización, quien puede editar la fábrica, y los administradores de tienda y dependientes de la organización de la fábrica.
+
 ## Cosas que conviene saber
 
 - **Los artefactos que ya están en el estado elegido se saltan.** Discontinuar una selección que ya está mitad discontinuada solo informa de los que realmente cambiaron.
@@ -108,6 +118,7 @@ Las familias toman su estado de los artefactos que contienen. Una familia está 
 <li><b>Los mismos pasos para muchos:</b> elige <b>Manufacture task</b> → <b>Make a unified manufacture task</b>.</li>
 <li><b>Crear una tarea de fabricación:</b> <b>Factory</b> → <b>Operations</b> → <b>Tasks</b>.</li>
 <li><b>Ver los discontinuados:</b> los chips de <b>State</b> encima de la tabla → marca <b>Discontinued</b>.</li>
+<li><b>Permitir que alguien configure la producción con su asistente de IA (administradores):</b> <b>Sysadmin → Users</b> → abre el usuario → <b>Edit</b> → <b>Access</b> → activa <b>Can connect AI assistant</b> y luego <b>Can set up artefacts, raw materials and recipes through their AI assistant</b>.</li>
 <li><b>Un solo artefacto:</b> ábrelo y usa el lápiz, los mismos campos están ahí. Sus pasos están en su pestaña <b>Manufacture tasks</b>.</li>
 </ul>
 </aside>

@@ -33,6 +33,8 @@ import RadioButton from "primevue/radiobutton"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
+import Select from "primevue/select"
+import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -103,6 +105,13 @@ const props = defineProps < {
 		}
 		route: routeType
 	}[]
+    open_agent_deliveries: {
+        id: number
+        reference: string
+        date: string | null
+        number_purchase_orders: number
+    }[]
+    deposits?: object | null
     delivery_items: {
         id: number
         code: string | null
@@ -124,6 +133,7 @@ const props = defineProps < {
                 slug: string
 				type: string
 				name: string
+				via_agent?: { name: string, slug: string }
             }
             delivery: {
     			type: string | null
@@ -134,6 +144,13 @@ const props = defineProps < {
     			is_own_warehouse?: boolean
     		}
     		seller_order?: { reference: string; url: string | null } | null
+    		clean_handover?: {
+    			proposed_ready_at: string | null
+    			approved_ready_at: string | null
+    			compliance_complete_at: string | null
+    			chs_excluded: boolean
+    			chs_exclusion_reason: string | null
+    		} | null
         }
         second_block: {
             state: string
@@ -166,6 +183,7 @@ const props = defineProps < {
             tax: number | string | null
             total: number | string
             org_items: number | string
+            estimated_expenses?: number
         }
 	}
 	items?: {}
@@ -305,6 +323,13 @@ const summaryGroups = computed(() => {
 			{ label: ctrans("Tax"), price_total: Number(tax) || 0 },
 		],
 		[{ label: ctrans("Total"), price_total: Number(total) || 0, information: inOrgCurrency ? `${orgMoney(Number(total) * rate)} · ${moneyTable.value.rateLabel}` : undefined }],
+		...(Number(props.box_stats.third_block.estimated_expenses) > 0
+			? [[{
+				label: ctrans("Estimated total incl. supplier expenses"),
+				price_total: (Number(total) || 0) + Number(props.box_stats.third_block.estimated_expenses),
+				information: ctrans("estimate, for budgeting"),
+			}]]
+			: []),
 	]
 })
 
@@ -358,6 +383,15 @@ const deliveryScopeModalOpen = ref(false)
 const deliveryItemsModalOpen = ref(false)
 const estimatedDeliveryDateAction = ref<any>(null)
 const newStockDeliveryAction = ref<any>(null)
+const newDeliveryOption = "new"
+const targetStockDelivery = ref<number | string>(newDeliveryOption)
+const stockDeliveryOptions = computed(() => [
+	{ id: newDeliveryOption, label: ctrans("New delivery") },
+	...props.open_agent_deliveries.map(delivery => ({
+		id: delivery.id,
+		label: `${delivery.reference} (${ctrans(":count purchase orders", { count: delivery.number_purchase_orders })})`,
+	})),
+])
 let partnerOrderPoll: ReturnType<typeof setInterval> | null = null
 const stopPartnerOrderPoll = () => {
 	if (partnerOrderPoll) {
@@ -601,6 +635,7 @@ const openDeliveryScopeModal = (action: any) => {
 	newStockDeliveryAction.value = action
 	selectedDeliveryItemIds.value = []
 	deliveryItemsSearch.value = ""
+	targetStockDelivery.value = newDeliveryOption
 	deliveryScopeModalOpen.value = true
 }
 
@@ -618,6 +653,7 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 
 	router.post(route(action.route.name, action.route.parameters), {
 		purchase_order_transaction_ids: purchaseOrderTransactionIds,
+		...(targetStockDelivery.value === newDeliveryOption ? {} : { stock_delivery_id: targetStockDelivery.value }),
 	}, {
 		onStart: () => { newStockDeliveryLoading.value = true },
 		onSuccess: () => {
@@ -664,8 +700,6 @@ const hasMiddleBox = computed(() =>
 	|| !!props.box_stats.second_block.is_placed_items_active
 )
 
-const isOrgAgent = computed(() => props.box_stats.first_block.orderer.type === "Agent")
-
 const ordererRoute = computed<string>(() => {
 	const orderer = props.box_stats.first_block.orderer
     const slug = orderer.slug
@@ -676,13 +710,17 @@ const ordererRoute = computed<string>(() => {
 	const organisation = route().params["organisation"]
 
 	switch (type) {
-		case "Agent":
-			return route("grp.org.procurement.org_agents.show", [organisation, slug])
 		case "Supplier":
 			return route("grp.org.procurement.org_suppliers.show", [organisation, slug])
 		default:
 			return ""
 	}
+})
+
+const agentRoute = computed<string>(() => {
+	const viaAgent = props.box_stats.first_block.orderer.via_agent
+
+	return viaAgent ? route("grp.org.procurement.org_agents.show", [route().params["organisation"], viaAgent.slug]) : ""
 })
 
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -876,6 +914,32 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					</Link>
 					<span v-else class="text-gray-700">{{ box_stats.first_block.orderer.name }}</span>
 				</div>
+				<div v-if="box_stats.first_block.orderer.via_agent" class="flex items-center gap-3 text-sm">
+					<FontAwesomeIcon v-tooltip="ctrans('Agent')" icon="fal fa-people-arrows" class="text-gray-400" aria-hidden="true" fixed-width />
+					<span class="text-gray-500">{{ ctrans("via agent") }}</span>
+					<Link v-if="agentRoute" :href="agentRoute" class="primaryLink">
+						{{ box_stats.first_block.orderer.via_agent.name }}
+					</Link>
+					<span v-else class="text-gray-700">{{ box_stats.first_block.orderer.via_agent.name }}</span>
+				</div>
+				<div v-if="box_stats.first_block.clean_handover" class="flex flex-col gap-1 text-sm text-gray-500">
+					<div class="flex items-center gap-3">
+						<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" aria-hidden="true" fixed-width />
+						<span>{{ ctrans("Proposed ready") }}: {{ box_stats.first_block.clean_handover.proposed_ready_at ? useFormatTime(box_stats.first_block.clean_handover.proposed_ready_at) : "-" }}</span>
+					</div>
+					<div class="flex items-center gap-3">
+						<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" aria-hidden="true" fixed-width />
+						<span>{{ ctrans("Approved ready") }}: {{ box_stats.first_block.clean_handover.approved_ready_at ? useFormatTime(box_stats.first_block.clean_handover.approved_ready_at) : "-" }}</span>
+					</div>
+					<div class="flex items-center gap-3">
+						<FontAwesomeIcon icon="fal fa-clipboard-list" class="text-gray-400" aria-hidden="true" fixed-width />
+						<span>{{ ctrans("Compliance complete") }}: {{ box_stats.first_block.clean_handover.compliance_complete_at ? useFormatTime(box_stats.first_block.clean_handover.compliance_complete_at) : "-" }}</span>
+					</div>
+					<div v-if="box_stats.first_block.clean_handover.chs_excluded" class="flex items-center gap-3 text-amber-600">
+						<FontAwesomeIcon icon="fal fa-exclamation-triangle" aria-hidden="true" fixed-width />
+						<span>{{ ctrans("Excluded from clean handover score") }}<template v-if="box_stats.first_block.clean_handover.chs_exclusion_reason">: {{ box_stats.first_block.clean_handover.chs_exclusion_reason }}</template></span>
+					</div>
+				</div>
 				<div v-if="box_stats.first_block.seller_order" class="flex items-center gap-3 text-sm">
 					<FontAwesomeIcon v-tooltip="ctrans('Their order')" icon="fal fa-shopping-cart" class="text-gray-400" aria-hidden="true" fixed-width />
 					<Link v-if="box_stats.first_block.seller_order.url" :href="box_stats.first_block.seller_order.url" class="primaryLink">
@@ -1014,6 +1078,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</BoxStatPallet>
 	</div>
 
+	<AspoDepositsChecklist v-if="deposits" :deposits="deposits" />
+
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
@@ -1023,8 +1089,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"
-			:isOrgAgent="isOrgAgent"
-			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
 			:storeRoute="currentTab === 'notes' ? note_store_route : undefined"
 			:detachRoute="attachmentRoutes.detachRoute"
@@ -1110,12 +1174,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<label for="purchase-order-cancel-confirmation" class="text-sm font-medium text-gray-700">
 				{{ ctrans("Have you already informed them? Type yes to cancel this order.") }}
 			</label>
-			<input
+			<InputText
 				id="purchase-order-cancel-confirmation"
 				v-model="cancelConfirmationText"
-				type="text"
 				autocomplete="off"
-				class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-red-500"
+				fluid
 				@keyup.enter="isCancelConfirmed && cancelPurchaseOrder()"
 			/>
 		</div>
@@ -1214,15 +1277,26 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:draggable="false"
 	>
 		<div class="flex flex-col gap-4">
+			<div v-if="open_agent_deliveries.length" class="flex flex-col gap-2">
+				<label for="purchase-order-target-delivery" class="font-medium text-gray-700">{{ ctrans("Add to") }}</label>
+				<Select
+					v-model="targetStockDelivery"
+					inputId="purchase-order-target-delivery"
+					:options="stockDeliveryOptions"
+					optionLabel="label"
+					optionValue="id"
+					fluid
+				/>
+			</div>
 			<p class="text-gray-600">{{ ctrans("Which purchase order items should be included in this delivery?") }}</p>
 
 			<button
 				type="button"
-				class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 text-left hover:border-indigo-400 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+				class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 text-left hover:border-[--app-accent] hover:bg-[--app-accent-soft] disabled:cursor-not-allowed disabled:opacity-50"
 				:disabled="delivery_items.length === 0 || newStockDeliveryLoading"
 				@click="createStockDelivery(delivery_items.map(item => item.id))"
 			>
-				<FontAwesomeIcon icon="fal fa-box" class="mt-0.5 text-indigo-500" fixed-width aria-hidden="true" />
+				<FontAwesomeIcon icon="fal fa-box" class="mt-0.5 text-[--app-accent]" fixed-width aria-hidden="true" />
 				<span class="flex flex-col gap-1">
 					<span class="font-medium text-gray-800">{{ ctrans("All items") }}</span>
 					<span class="text-sm text-gray-500">{{ ctrans("Include every item in this purchase order") }}</span>
@@ -1231,11 +1305,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 			<button
 				type="button"
-				class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 text-left hover:border-indigo-400 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+				class="flex items-start gap-3 rounded-lg border border-gray-200 p-4 text-left hover:border-[--app-accent] hover:bg-[--app-accent-soft] disabled:cursor-not-allowed disabled:opacity-50"
 				:disabled="delivery_items.length === 0 || newStockDeliveryLoading"
 				@click="openDeliveryItemsModal"
 			>
-				<FontAwesomeIcon icon="fal fa-clipboard-list" class="mt-0.5 text-indigo-500" fixed-width aria-hidden="true" />
+				<FontAwesomeIcon icon="fal fa-clipboard-list" class="mt-0.5 text-[--app-accent]" fixed-width aria-hidden="true" />
 				<span class="flex flex-col gap-1">
 					<span class="font-medium text-gray-800">{{ ctrans("Only selected items") }}</span>
 					<span class="text-sm text-gray-500">{{ ctrans("Choose the items to include in this delivery") }}</span>

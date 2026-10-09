@@ -23,29 +23,42 @@ class UpdateEbayOffer implements ShouldBeUnique
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio): void
+    public function getJobUniqueId(Portfolio $portfolio, bool $withTitle = false): string
+    {
+        return $portfolio->id.($withTitle ? '-title' : '');
+    }
+
+    /**
+     * The title is only sent when the customer saved the product: a price run must not overwrite a title changed on eBay.
+     *
+     * @return string|null the reason eBay refused the update, null when it took it or nothing was sent
+     */
+    public function handle(Portfolio $portfolio, bool $withTitle = false): ?string
     {
         if ($portfolio->platform_product_id == null || !$portfolio->customerSalesChannel || !$portfolio->platform_status) {
-            return;
+            return null;
         }
 
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
-            return;
+            return null;
         }
 
         $ebayUser = $customerSalesChannel->user;
         if (!$ebayUser instanceof EbayUser) {
-            return;
+            return null;
         }
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
         $offerData = [
-            'title' => $portfolio->customer_product_name,
             'description' => $portfolio->customer_description,
         ];
+
+        if ($withTitle) {
+            $offerData['title'] = $portfolio->customer_product_name;
+        }
 
         if (
             !Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
@@ -55,10 +68,21 @@ class UpdateEbayOffer implements ShouldBeUnique
         }
 
         try {
-            $ebayUser->updateOffer(
+            $response = $ebayUser->updateOffer(
                 $portfolio->platform_product_id,
                 $offerData
             );
+
+            $error = EbayUser::ebayResponseError($response);
+
+            if ($error) {
+                UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'E1: '.json_encode($response)
+                ]);
+
+                return $error;
+            }
 
             UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK
@@ -68,6 +92,10 @@ class UpdateEbayOffer implements ShouldBeUnique
                 'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => 'E2: ' . $e->getMessage()
             ]);
+
+            return $e->getMessage();
         }
+
+        return null;
     }
 }

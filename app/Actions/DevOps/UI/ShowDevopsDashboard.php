@@ -29,7 +29,6 @@ class ShowDevopsDashboard extends OrgAction
         'boro'  => ['Production', 'Primary'],
         'litio' => ['Production', 'Secondary'],
         'helio' => ['Ops support', 'CI & replica'],
-        'neon'  => ['Ops support', 'Staging'],
     ];
 
     public function authorize(ActionRequest $request): bool

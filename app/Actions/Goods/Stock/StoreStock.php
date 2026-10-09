@@ -78,6 +78,13 @@ class StoreStock extends OrgAction
         return $stock;
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (!$this->asAction && array_key_exists('trade_unit.description', $request->all())) {
+            $this->set('trade_unit', ['description' => $request->all()['trade_unit.description']]);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [

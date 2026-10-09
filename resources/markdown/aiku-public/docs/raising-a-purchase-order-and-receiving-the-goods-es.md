@@ -2,7 +2,7 @@
 title: Cursar una orden de compra y recibir la mercancía
 summary: Compra a un proveedor ordinario - cursa la orden de compra, consigue que se confirme, y luego convierte la entrega en stock que puedas vender.
 date: 2026-09-01
-source_date: 2026-09-01
+source_date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 ---
@@ -15,7 +15,7 @@ Cuando compras a un proveedor ordinario - no a una organización socia, que tien
 
 Cada proveedor al que tu organización compra directamente vive en **Procurement → Suppliers**. La página de cada proveedor te da un botón **Purchase Order** para iniciar una orden nueva, más un menú lateral con **Products**, **Purchase Orders** y **Stock Deliveries** hasta la fecha.
 
-Algunos proveedores solo son accesibles a través de un **agente** - una persona o empresa que compra en tu nombre en lugar de enviarte directamente. Los agentes tienen su propia lista en **Procurement → Agents**, y funcionan de la misma manera: las órdenes de compra y entregas contra un agente se registran en la página del agente en lugar de en la del proveedor.
+Algunos proveedores solo son accesibles a través de un **agente** - una persona o empresa que compra en tu nombre en lugar de enviarte directamente. Los agentes tienen su propia lista en **Procurement → Agents**. Un pedido a través de un agente sigue siendo una orden de compra por proveedor, enviada al agente, y los pedidos que haces juntos forman un único **pedido de agente** (agent order). Ver [Hacer un pedido a través de un agente](/docs/placing-an-order-through-an-agent-es).
 
 ## Cursar una orden de compra
 
@@ -55,6 +55,8 @@ La entrega pasa después por sus propios estados:
 - **Booked in** - pulsa **Place** para colocar el stock recibido. Este es el estado final de trabajo de la entrega.
 
 Comprobar un artículo significa confirmar cuánto de cada línea llegó realmente - no todos los pedidos llegan completos, y las cantidades de menos o de más aparecen en la pestaña **Under/Over delivered items**, así que nada se pierde en la diferencia entre lo que pediste y lo que llegó.
+
+Debajo de la cantidad comprobada, **Batch** (lote) guarda el código de lote y la fecha de consumo preferente impresos en los productos. Una línea puede tener varios lotes: pulsa **Add batch** y reparte la cantidad entre ellos. Al ubicar el stock, los lotes van a la estantería en el orden en que los escribiste, así el almacén sabe qué lote está en cada sitio y los informes de inventario pueden mostrar las fechas de consumo preferente. Las familias marcadas como **Batch tracked** (en la página de edición de la familia de stock) muestran un aviso hasta que cada SKO comprobado tenga lote, y señalan un lote sin fecha de consumo preferente. Nada bloquea la recepción, así que una entrega sin códigos impresos puede ir a la estantería igualmente. Un lote que ya está en una estantería no se puede bajar de lo que se ubicó; deshaz antes esa ubicación.
 
 ## Poniéndolo todo junto
 

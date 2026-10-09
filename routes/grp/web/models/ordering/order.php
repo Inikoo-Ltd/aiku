@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\Picking\SplitPicking;
@@ -22,6 +23,7 @@ use App\Actions\GoodsIn\Return\StoreReturn;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
+use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -61,6 +63,7 @@ use App\Actions\Ordering\Transaction\UpdateTransactionUnits;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
 use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
@@ -74,6 +77,10 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->middleware(
     Route::patch('remove-discount', RemoveTransactionDiscount::class)->name('remove_discount');
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
+
+Route::patch('order/{order:id}/production-review', UpdateOrderProductionReview::class)->name('order.production_review');
+Route::post('order/{order:id}/email-chat', [StartCustomerEmailChat::class, 'inOrder'])->name('order.email_chat.store');
+Route::patch('organisation/{organisation:id}/orders/production-review', [UpdateOrderProductionReview::class, 'inOrganisation'])->name('organisation.orders.production_review');
 
 Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledInAurora::class, EnsurePreOrderIsUnlocked::class])->group(function () {
     Route::post('discretionary-charge-transaction', StoreDiscretionaryChargeTransaction::class)->name('discretionary_charge_transaction');
@@ -95,6 +102,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledI
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();
     Route::post('claim-refund-to-balance', RefundClaimToBalance::class)->name('claim_refund_to_balance');
+    Route::post('claim-follow-on', StoreClaimFollowOns::class)->name('claim_follow_on');
     Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');

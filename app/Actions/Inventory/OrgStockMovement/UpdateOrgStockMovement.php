@@ -59,14 +59,36 @@ class UpdateOrgStockMovement extends OrgAction
             data_set($modelData, 'flow', $flow);
         }
 
-        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $locationOrgStock, $oldQuantity) {
-            if ($locationOrgStock) {
-                LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('id');
-            }
+        $batches = Arr::pull($modelData, 'batches');
+
+        $currentLocationOrgStockQuantity = DB::transaction(function () use ($orgStockMovement, $modelData, $batches, $locationOrgStock, &$oldQuantity) {
+            $lockedQuantity = $locationOrgStock
+                ? (float)LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('quantity')
+                : 0.0;
+
+            $oldQuantity = OrgStockMovement::whereKey($orgStockMovement->id)->value('quantity');
+            $orgStockMovement->quantity = $oldQuantity;
+
+            $previousBatches = AllocateOrgStockMovementBatches::make()->movedBatches($orgStockMovement);
 
             $orgStockMovement->update($modelData);
 
-            if ($oldQuantity == $orgStockMovement->quantity || !$locationOrgStock) {
+            if (!$locationOrgStock) {
+                return null;
+            }
+
+            $quantityChanged = $oldQuantity != $orgStockMovement->quantity;
+
+            if ($batches !== null || ($quantityChanged && ($this->strict || $previousBatches !== []))) {
+                $keepsDirection = ((float)$oldQuantity < 0) === ((float)$orgStockMovement->quantity < 0);
+                AllocateOrgStockMovementBatches::run(
+                    $orgStockMovement,
+                    $lockedQuantity - (float)$oldQuantity,
+                    $batches ?? ($keepsDirection ? $previousBatches : [])
+                );
+            }
+
+            if (!$quantityChanged) {
                 return null;
             }
 
@@ -100,7 +122,10 @@ class UpdateOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity' => ['sometimes', 'numeric'],
+            'quantity'                => ['sometimes', 'numeric'],
+            'batches'                 => ['sometimes', 'array'],
+            'batches.*.batch_code_id' => ['required', 'integer', 'exists:batch_codes,id'],
+            'batches.*.quantity'      => ['required', 'numeric', 'gt:0'],
         ];
 
         if (!$this->strict) {

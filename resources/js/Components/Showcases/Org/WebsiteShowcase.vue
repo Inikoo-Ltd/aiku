@@ -111,7 +111,7 @@ const props = defineProps<{
     route_login?: routeType
     route_register?: routeType
     route_forgot_pass?: routeType
-    pagespeed_history?: Record<"crux" | "visitors", {
+    real_user_speed_history?: Record<"crux" | "visitors", {
         scope: "page" | "website" | null
         url: string | null
         history: Record<string, any[]>
@@ -255,7 +255,7 @@ const links = computed(() => {
                     <div class="font-semibold w-fit text-lg mb-2">
                         {{ ctrans('Page Speed') }}
                     </div>
-                    <RealUserSpeed :report="props.pagespeed_history" />
+                    <RealUserSpeed :report="props.real_user_speed_history" />
                 </div>
 
                 <!-- Section: PIC Webmaster and SEO -->

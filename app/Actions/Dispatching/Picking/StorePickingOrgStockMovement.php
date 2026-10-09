@@ -47,9 +47,12 @@ class StorePickingOrgStockMovement
                     'quantity' => -$picking->quantity,
                     'type'     => OrgStockMovementTypeEnum::PICKED,
                     'user_id'  => $userId,
+                    'batches'  => $picking->batch_code_id ? [['batch_code_id' => $picking->batch_code_id, 'quantity' => (float)$picking->quantity]] : [],
                 ],
                 $picking
             );
+
+            SplitPickingByBatch::run($picking);
         });
     }
 }

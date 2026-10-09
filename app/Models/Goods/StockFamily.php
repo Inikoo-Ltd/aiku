@@ -82,6 +82,7 @@ class StockFamily extends Model implements HasMedia, Auditable
     protected $casts = [
         'data'            => 'array',
         'state'           => StockFamilyStateEnum::class,
+        'is_batch_tracked' => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];

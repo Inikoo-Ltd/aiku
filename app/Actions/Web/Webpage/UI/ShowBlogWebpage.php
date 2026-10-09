@@ -28,7 +28,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Actions\Web\Webpage\GetWebpageGoogleCloud;
+use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
 
@@ -85,14 +85,15 @@ class ShowBlogWebpage extends OrgAction
                 'webpage_sub_type' => $webpage->sub_type,
                 'webpage_canonical_url' => $webpage->canonical_url,
                 'lock' => GetWebpageLock::run($webpage, $request->user()),
+                'real_user_speed' => ShowWebpage::make()->realUserSpeedProp($webpage, $this->tab),
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
 
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
-                    fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                    : Inertia::optional(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+                    fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
+                    : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
                 WebpageTabsEnum::SNAPSHOTS->value => $this->tab == WebpageTabsEnum::SNAPSHOTS->value ?
                     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))

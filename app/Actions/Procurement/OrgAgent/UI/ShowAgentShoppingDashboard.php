@@ -35,25 +35,24 @@ class ShowAgentShoppingDashboard extends OrgAction
      *
      * @return array<int, array<string, mixed>>
      */
-    private function openSupplierPurchaseOrders(OrgAgent $orgAgent): array
+    public function openAgentPurchaseOrders(OrgAgent $orgAgent): array
     {
-        return DB::table('agent_supplier_purchase_orders as aspo')
-            ->join('purchase_orders as po', 'po.id', 'aspo.purchase_order_id')
-            ->leftJoin('suppliers as sup', 'sup.id', 'aspo.supplier_id')
-            ->where('po.parent_type', 'OrgAgent')
-            ->where('po.parent_id', $orgAgent->id)
+        return DB::table('purchase_orders as po')
+            ->leftJoin('suppliers as sup', 'sup.id', 'po.supplier_id')
+            ->where('po.organisation_id', $orgAgent->organisation_id)
+            ->where('po.agent_id', $orgAgent->agent_id)
+            ->where('po.parent_type', 'OrgSupplier')
             ->whereNull('po.deleted_at')
-            ->whereNull('aspo.deleted_at')
-            ->whereIn('aspo.state', GetAgentSupplierPerformance::OPEN_STATES)
-            ->whereNotIn('aspo.delivery_state', GetAgentSupplierPerformance::CLOSED_DELIVERY_STATES)
-            ->whereRaw("(aspo.data -> 'housekeeping') is null")
-            ->selectRaw("aspo.id, aspo.slug, aspo.reference, aspo.state, aspo.delivery_state, aspo.estimated_received_at,
+            ->whereIn('po.state', GetAgentSupplierPerformance::OPEN_STATES)
+            ->whereNotIn('po.delivery_state', GetAgentSupplierPerformance::CLOSED_DELIVERY_STATES)
+            ->whereRaw("(po.data -> 'housekeeping') is null")
+            ->selectRaw("po.id, po.slug, po.reference, po.state, po.delivery_state, po.estimated_received_at,
                 sup.code as supplier_code, sup.id as supplier_id,
-                coalesce(aspo.submitted_at, aspo.date, aspo.created_at) as reference_date,
-                extract(day from now() - coalesce(aspo.submitted_at, aspo.date, aspo.created_at))::int as days_old,
-                extract(day from now() - coalesce(aspo.estimated_received_at, aspo.submitted_at))::int as days_late,
-                aspo.estimated_received_at is null as no_eta")
-            ->orderByRaw('coalesce(aspo.estimated_received_at, aspo.submitted_at)')
+                coalesce(po.submitted_at, po.date, po.created_at) as reference_date,
+                extract(day from now() - coalesce(po.submitted_at, po.date, po.created_at))::int as days_old,
+                extract(day from now() - coalesce(po.estimated_received_at, po.submitted_at))::int as days_late,
+                po.estimated_received_at is null as no_eta")
+            ->orderByRaw('coalesce(po.estimated_received_at, po.submitted_at)')
             ->limit(40)
             ->get()
             ->map(fn ($order) => [
@@ -74,7 +73,7 @@ class ShowAgentShoppingDashboard extends OrgAction
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function openStockDeliveries(OrgAgent $orgAgent): array
+    public function openStockDeliveries(OrgAgent $orgAgent): array
     {
         return DB::table('stock_deliveries as sd')
             ->leftJoin('suppliers as sup', 'sup.id', 'sd.supplier_id')
@@ -127,9 +126,6 @@ class ShowAgentShoppingDashboard extends OrgAction
         return [
             'cover'                        => GetAgentStockCoverBuckets::run($orgAgent),
             'order_capacity'               => GetAgentOrderCapacity::run($orgAgent),
-            'suppliers'                    => GetAgentSupplierPerformance::run($orgAgent),
-            'open_supplier_purchase_orders' => $this->openSupplierPurchaseOrders($orgAgent),
-            'open_stock_deliveries'        => $this->openStockDeliveries($orgAgent),
             'open_items_count'             => (int) $openItems->total,
             'oldest_item_at'               => $openItems->oldest_at,
             'priority_breakdown'           => collect(ShoppingListItemPriorityEnum::cases())->map(fn ($priority) => [
@@ -180,21 +176,6 @@ class ShowAgentShoppingDashboard extends OrgAction
                 'coverTotal'   => $data['cover']['total'],
                 'leadTime'     => $data['cover']['lead_time'],
                 'orderCapacity' => $data['order_capacity'],
-                'suppliers'     => $data['suppliers'],
-                'openSupplierPurchaseOrders' => $data['open_supplier_purchase_orders'],
-                'openStockDeliveries'        => $data['open_stock_deliveries'],
-                'shoppingListRoute' => [
-                    'name'       => 'grp.org.procurement.shopping_list.index',
-                    'parameters' => [$this->organisation->slug],
-                ],
-                'stockDeliveriesRoute' => [
-                    'name'       => 'grp.org.procurement.org_agents.show.stock-deliveries.index',
-                    'parameters' => [$this->organisation->slug, $this->orgAgent->slug],
-                ],
-                'supplierPurchaseOrdersRoute' => [
-                    'name'       => 'grp.org.procurement.org_agents.show.agent_supplier_purchase_orders.index',
-                    'parameters' => [$this->organisation->slug, $this->orgAgent->slug],
-                ],
             ]
         );
     }

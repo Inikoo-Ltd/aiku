@@ -57,6 +57,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
             })
             ->where('org_stocks.organisation_id', $orgPartner->partner_id)
             ->where('org_stocks.state', OrgStockStateEnum::ACTIVE)
+            ->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('org_stocks.id', $orgPartner))
             ->select([
                 'org_stocks.id',
                 'org_stocks.code',
@@ -71,7 +72,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'partner_shopping_list_items.quantity as quantity_ordered',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko')
+            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id).' as price_per_sko')
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])

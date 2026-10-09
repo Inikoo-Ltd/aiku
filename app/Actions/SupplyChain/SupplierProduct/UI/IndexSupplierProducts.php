@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
+use App\Actions\Helpers\Upload\UI\IndexUploadReports;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
@@ -18,6 +19,7 @@ use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\UI\SupplyChain\SupplierProductsTabsEnum;
 use App\Exports\SupplyChain\SupplierProductTemplateExport;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -200,7 +202,7 @@ class IndexSupplierProducts extends OrgAction
     public function inSupplier(Supplier $supplier, ActionRequest $request): LengthAwarePaginator
     {
         $this->scope = $supplier;
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request)->withTab(SupplierProductsTabsEnum::values());
 
         return $this->handle($supplier);
     }
@@ -279,7 +281,7 @@ class IndexSupplierProducts extends OrgAction
                 'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => array_map(
                     fn ($heading) => strtolower(str_replace(' ', '_', trim($heading))),
-                    SupplierProductTemplateExport::HEADINGS
+                    SupplierProductTemplateExport::headings()
                 ),
                 'template'        => [
                     'label' => __('Download template (.xlsx)'),
@@ -298,6 +300,17 @@ class IndexSupplierProducts extends OrgAction
                         ],
                     ],
                 ],
+            ];
+
+            $supplier = $this->scope;
+            $tabs     = [
+                'tabs'                                => [
+                    'current'    => $this->tab ?: SupplierProductsTabsEnum::PRODUCTS->value,
+                    'navigation' => SupplierProductsTabsEnum::navigation(),
+                ],
+                SupplierProductsTabsEnum::UPLOADS->value => $this->tab == SupplierProductsTabsEnum::UPLOADS->value
+                    ? fn () => $this->supplierProductUploads($supplier)
+                    : Inertia::optional(fn () => $this->supplierProductUploads($supplier)),
             ];
         }
 
@@ -321,8 +334,18 @@ class IndexSupplierProducts extends OrgAction
                 ],
                 'upload_spreadsheet' => $spreadsheetRoutes ?? null,
                 'data'               => SupplierProductsResource::collection($supplier_products),
+                ...($tabs ?? []),
             ],
         )->table($this->tableStructure($this->scope));
+    }
+
+    private function supplierProductUploads(Supplier $supplier): AnonymousResourceCollection
+    {
+        return IndexUploadReports::run(
+            parent: $supplier,
+            model: class_basename(SupplierProduct::class),
+            prefix: SupplierProductsTabsEnum::UPLOADS->value
+        );
     }
 
     public function getBreadcrumbs(Group|Agent|Supplier $scope, string $routeName, array $routeParameters): array

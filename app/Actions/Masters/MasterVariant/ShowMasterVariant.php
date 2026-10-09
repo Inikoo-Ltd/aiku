@@ -10,9 +10,9 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Variant\IndexVariantInMasterVariant;
+use App\Actions\Catalogue\Variant\VariantOptionLabel;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
-use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterVariant;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsPricing;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
@@ -26,10 +26,10 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterVariant;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Masters\MasterProductsResource;
 
 class ShowMasterVariant extends OrgAction
 {
@@ -166,9 +166,13 @@ class ShowMasterVariant extends OrgAction
                         'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant,
                     ]),
+                'reorderRoute'                         => $this->canEdit ? [
+                    'name'       => 'grp.models.master_variant.reorder_products',
+                    'parameters' => ['masterVariant' => $masterVariant->id],
+                ] : null,
                 MasterVariantTabsEnum::PRODUCTS->value =>
-                    $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))
-                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))),
+                    $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? $this->orderedProducts($masterVariant)
+                    : Inertia::optional(fn () => $this->orderedProducts($masterVariant)),
                 MasterVariantTabsEnum::VARIANTS->value =>
                     $this->tab === MasterVariantTabsEnum::VARIANTS->value ? VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))
                     : Inertia::optional(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
@@ -178,10 +182,44 @@ class ShowMasterVariant extends OrgAction
             ]
         )
         ->table(IndexVariantInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::VARIANTS->value))
-        ->table(IndexMasterProductsInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::PRODUCTS->value))
         ->table(IndexMasterProductsPricing::make()->tableStructure($masterVariant, prefix: MasterVariantTabsEnum::PRICING->value));
     }
 
+
+    /**
+     * @return array<int, array{id: int, code: string, name: string|null, image_thumbnail: mixed}>
+     */
+    private function orderedProducts(MasterVariant $masterVariant): array
+    {
+        $masterShop   = $masterVariant->masterFamily->masterShop;
+        $masterFamily = $masterVariant->masterFamily;
+
+        return MasterAsset::where('master_variant_id', $masterVariant->id)
+            ->leftJoin('master_asset_stats', 'master_asset_stats.master_asset_id', 'master_assets.id')
+            ->orderByRaw('master_assets.index_under_master_variant asc nulls last')
+            ->orderByDesc('master_assets.is_variant_leader')
+            ->orderBy('master_assets.code')
+            ->get(['master_assets.id', 'master_assets.slug', 'master_assets.code', 'master_assets.name', 'master_assets.web_images', 'master_assets.status', 'master_assets.unit', 'master_assets.is_variant_leader', 'master_asset_stats.number_current_assets as used_in'])
+            ->map(fn (MasterAsset $masterAsset) => [
+                'id'                => $masterAsset->id,
+                'code'              => $masterAsset->code,
+                'name'              => $masterAsset->name,
+                'unit'              => $masterAsset->unit,
+                'option_label'      => VariantOptionLabel::run($masterVariant->data, $masterAsset->id),
+                'used_in'           => (int) $masterAsset->used_in,
+                'is_variant_leader' => (bool) $masterAsset->is_variant_leader,
+                'image_thumbnail'   => Arr::get($masterAsset->web_images, 'main.thumbnail'),
+                'status_icon'       => $masterAsset->status
+                    ? ['tooltip' => __('Active'), 'icon' => 'fas fa-check-circle', 'class' => 'text-green-400']
+                    : ['tooltip' => __('Closed'), 'icon' => 'fas fa-times-circle', 'class' => 'text-red-400'],
+                'url'               => route('grp.masters.master_shops.show.master_families.master_products.show', [
+                    'masterShop'    => $masterShop->slug,
+                    'masterFamily'  => $masterFamily->slug,
+                    'masterProduct' => $masterAsset->slug,
+                ]),
+            ])
+            ->all();
+    }
 
     /**
      * @throws \Throwable

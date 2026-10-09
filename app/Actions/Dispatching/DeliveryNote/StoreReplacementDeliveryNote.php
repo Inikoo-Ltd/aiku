@@ -12,6 +12,8 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
+use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -72,6 +74,7 @@ class StoreReplacementDeliveryNote extends OrgAction
 
 
         $items = Arr::pull($modelData, 'delivery_note_items');
+        CheckClaimCompensation::ensure($order, RefundClaimToBalance::sharesByTransaction($order, collect($items)->filter(fn (array $item) => $item['quantity'] > 0)->values()->all(), false), checkAge: !$this->asAction);
 
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress, $items) {
             /** @var DeliveryNote $replacement */
@@ -97,8 +100,10 @@ class StoreReplacementDeliveryNote extends OrgAction
             }
 
 
+            $orderDeliveryNoteIds = $order->deliveryNotes()->pluck('delivery_notes.id');
+
             foreach ($items as $itemData) {
-                $deliveryNoteItems = DeliveryNoteItem::where('id', $itemData['id'])->first();
+                $deliveryNoteItems = DeliveryNoteItem::where('id', $itemData['id'])->whereIn('delivery_note_id', $orderDeliveryNoteIds)->first();
                 if ($deliveryNoteItems && $itemData['quantity'] > 0) {
                     $deliveryNoteItemData = [
                         'org_stock_id'      => $deliveryNoteItems->org_stock_id,

@@ -85,7 +85,6 @@ const SECTIONS: Record<string, SectionConfig> = {
     stock_deliveries: { label: 'Stock Deliveries', icon: 'fal fa-truck-loading', redirectRoute: 'grp.majordomo.redirect_stock_delivery' },
     agents: { label: 'Agents', icon: 'fal fa-people-arrows', redirectRoute: 'grp.majordomo.redirect_agent' },
     supplier_products: { label: 'Supplier Products', icon: 'fal fa-boxes', redirectRoute: 'grp.majordomo.redirect_supplier_product' },
-    agent_supplier_purchase_orders: { label: 'Agent Supplier Purchase Orders', icon: 'fal fa-file-invoice', redirectRoute: 'grp.majordomo.redirect_agent_supplier_purchase_order' },
     artefact_departments: { label: 'Artefact Departments', icon: 'fal fa-folder-tree' },
     artefact_families: { label: 'Artefact Families', icon: 'fal fa-boxes-alt' },
     artefacts: { label: 'Artefacts', icon: 'fal fa-flask-potion' },

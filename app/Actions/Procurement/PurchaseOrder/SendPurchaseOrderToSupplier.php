@@ -24,6 +24,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendPurchaseOrderToSupplier
@@ -37,8 +38,32 @@ class SendPurchaseOrderToSupplier
      */
     public function handle(PurchaseOrder $purchaseOrder, string $channel = 'email'): DispatchedEmail|SupplierMessage|null
     {
+        return $this->send(collect([$purchaseOrder]), $purchaseOrder->reference, $channel);
+    }
+
+    /**
+     * The supplier orders of one agent order go to the agent together: one message, one PDF with
+     * a section per supplier order.
+     *
+     * @param  Collection<int, PurchaseOrder>  $purchaseOrders
+     */
+    public function sendAgentOrder(Collection $purchaseOrders, string $agentOrderReference, string $channel = 'email'): DispatchedEmail|SupplierMessage|null
+    {
+        return $this->send($purchaseOrders, $agentOrderReference, $channel);
+    }
+
+    /**
+     * @param  Collection<int, PurchaseOrder>  $purchaseOrders
+     */
+    private function send(Collection $purchaseOrders, string $reference, string $channel): DispatchedEmail|SupplierMessage|null
+    {
+        $purchaseOrder = $purchaseOrders->first();
+        $document      = $purchaseOrders->count() === 1
+            ? ['content' => PdfPurchaseOrder::make()->handle($purchaseOrder), 'filename' => PdfPurchaseOrder::make()->filename($purchaseOrder)]
+            : ['content' => PdfPurchaseOrder::make()->handleMany($purchaseOrders), 'filename' => PdfPurchaseOrder::make()->filenameFor($reference)];
+
         if ($channel === 'whatsapp') {
-            return $this->sendByWhatsapp($purchaseOrder);
+            return $this->sendByWhatsapp($purchaseOrder, $reference, $document);
         }
 
         $recipient = self::recipientEmail($purchaseOrder);
@@ -49,7 +74,7 @@ class SendPurchaseOrderToSupplier
         }
 
         /** @var OrgSupplier|OrgAgent|OrgPartner $counterpart */
-        $counterpart  = $purchaseOrder->parent;
+        $counterpart  = self::counterpart($purchaseOrder);
         $organisation = $purchaseOrder->organisation;
         $mailbox      = Arr::get($organisation->settings, 'procurement.gmail.email');
 
@@ -59,23 +84,27 @@ class SendPurchaseOrderToSupplier
             'email_address_id' => StoreEmailAddress::run($organisation->group, $recipient)->id,
         ]);
 
-        ModelHasDispatchedEmail::create([
-            'model_type'          => 'PurchaseOrder',
-            'model_id'            => $purchaseOrder->id,
-            'dispatched_email_id' => $dispatchedEmail->id,
-            'outbox_id'           => $outbox->id,
-        ]);
+        foreach ($purchaseOrders as $order) {
+            ModelHasDispatchedEmail::create([
+                'model_type'          => 'PurchaseOrder',
+                'model_id'            => $order->id,
+                'dispatched_email_id' => $dispatchedEmail->id,
+                'outbox_id'           => $outbox->id,
+            ]);
+        }
 
         $subject = __('Purchase order :reference from :organisation', [
-            'reference'    => $purchaseOrder->reference,
+            'reference'    => $reference,
             'organisation' => $organisation->name,
         ]);
 
         $html = view('emails.procurement.purchase-order', [
-            'purchaseOrder'    => $purchaseOrder,
+            'reference'        => $reference,
+            'date'             => $purchaseOrder->submitted_at ?? now(),
             'supplierName'     => self::counterpartName($counterpart, contact: true),
             'organisationName' => $organisation->name,
-            'numberItems'      => $purchaseOrder->purchaseOrderTransactions()->count(),
+            'numberItems'      => $purchaseOrders->sum(fn (PurchaseOrder $order) => $order->purchaseOrderTransactions->count()),
+            'supplierOrders'   => $purchaseOrders->count() > 1 ? $purchaseOrders->map(fn (PurchaseOrder $order) => ['reference' => $order->reference, 'supplier' => $order->parent_name])->all() : [],
         ])->render();
 
         $sender = app()->isProduction()
@@ -88,10 +117,7 @@ class SendPurchaseOrderToSupplier
             dispatchedEmail: $dispatchedEmail,
             sender: $sender,
             senderName: $organisation->name,
-            attachments: [[
-                'content'  => PdfPurchaseOrder::make()->handle($purchaseOrder),
-                'filename' => PdfPurchaseOrder::make()->filename($purchaseOrder),
-            ]],
+            attachments: [$document],
             replyTo: $mailbox,
         );
 
@@ -107,7 +133,7 @@ class SendPurchaseOrderToSupplier
             'from_name'           => $organisation->name,
             'to'                  => [['name' => self::counterpartName($counterpart), 'address' => $recipient]],
             'subject'             => $subject,
-            'snippet'             => __('Purchase order :reference sent with the PDF attached.', ['reference' => $purchaseOrder->reference]),
+            'snippet'             => __('Purchase order :reference sent with the PDF attached.', ['reference' => $reference]),
             'body_html'           => $html,
             'body_text'           => trim(preg_replace('/\s+\n/', "\n", strip_tags($html))),
             'sent_at'             => now(),
@@ -119,8 +145,10 @@ class SendPurchaseOrderToSupplier
     /**
      * The template carries the order reference and the PDF as its document; the supplier answers
      * in the chat, which lands in the procurement inbox like any other WhatsApp.
+     *
+     * @param  array{content: string, filename: string}  $document
      */
-    private function sendByWhatsapp(PurchaseOrder $purchaseOrder): ?SupplierMessage
+    private function sendByWhatsapp(PurchaseOrder $purchaseOrder, string $reference, array $document): ?SupplierMessage
     {
         $phone = self::recipientPhone($purchaseOrder);
 
@@ -133,14 +161,11 @@ class SendPurchaseOrderToSupplier
             user: null,
             phone: $phone,
             text: __('Purchase order :reference from :organisation. Please confirm the order, prices and the expected dispatch date.', [
-                'reference'    => $purchaseOrder->reference,
+                'reference'    => $reference,
                 'organisation' => $purchaseOrder->organisation->name,
             ]),
-            counterpart: $purchaseOrder->parent,
-            document: [
-                'content'  => PdfPurchaseOrder::make()->handle($purchaseOrder),
-                'filename' => PdfPurchaseOrder::make()->filename($purchaseOrder),
-            ],
+            counterpart: self::counterpart($purchaseOrder),
+            document: $document,
             purchaseOrder: $purchaseOrder,
         );
     }
@@ -162,7 +187,7 @@ class SendPurchaseOrderToSupplier
      */
     public static function recipientPhone(PurchaseOrder $purchaseOrder): ?string
     {
-        $parent = $purchaseOrder->parent;
+        $parent = self::counterpart($purchaseOrder);
 
         $phone = trim((string) match (true) {
             $parent instanceof OrgSupplier => $parent->supplier?->phone,
@@ -178,7 +203,7 @@ class SendPurchaseOrderToSupplier
 
     public static function recipientEmail(PurchaseOrder $purchaseOrder): ?string
     {
-        $parent = $purchaseOrder->parent;
+        $parent = self::counterpart($purchaseOrder);
 
         $email = trim((string) match (true) {
             $parent instanceof OrgSupplier => $parent->supplier?->email,
@@ -188,6 +213,14 @@ class SendPurchaseOrderToSupplier
         });
 
         return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+    }
+
+    /**
+     * An order to a supplier behind an agent goes to the agent, who places it with the supplier.
+     */
+    public static function counterpart(PurchaseOrder $purchaseOrder): OrgSupplier|OrgAgent|OrgPartner|null
+    {
+        return $purchaseOrder->isAgentOrder() ? $purchaseOrder->orgAgentOfOrder() : $purchaseOrder->parent;
     }
 
     private static function counterpartName(OrgSupplier|OrgAgent|OrgPartner $counterpart, bool $contact = false): string

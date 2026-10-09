@@ -14,7 +14,7 @@ class GetMetaChatCustomerProfile
 {
     use AsAction;
 
-    public function handle(MetaChatSession $metaChatSession): array
+    public function handle(MetaChatSession $metaChatSession, ?string $claimOrderReference = null): array
     {
         $customer = $metaChatSession->customer_id
             ? Customer::with(['tags', 'stats', 'shop.currency', 'organisation'])
@@ -34,7 +34,7 @@ class GetMetaChatCustomerProfile
             'profile_url' => $this->customerProfileUrl($customer),
             ...GetChatCustomerProfile::make()->contactAndLastOrders($customer),
             ...GetChatCustomerProfile::make()->previousContact($customer, $metaChatSession),
-            'claim'       => \App\Actions\Chat\ChatSession\GetChatClaimCase::run($metaChatSession, $customer),
+            'claim'       => \App\Actions\Chat\ChatSession\GetChatClaimCase::run($metaChatSession, $customer, $claimOrderReference),
 
             'tags' => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
@@ -75,6 +75,6 @@ class GetMetaChatCustomerProfile
 
     public function asController(MetaChatSession $metaChatSession, ActionRequest $request): JsonResponse
     {
-        return response()->json($this->handle($metaChatSession));
+        return response()->json($this->handle($metaChatSession, $request->query('claim_order')));
     }
 }

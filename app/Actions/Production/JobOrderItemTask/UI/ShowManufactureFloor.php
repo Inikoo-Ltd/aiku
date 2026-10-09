@@ -188,6 +188,7 @@ class ShowManufactureFloor extends OrgAction
                     'id'              => $openBreak->id,
                     'planned_minutes' => $openBreak->planned_minutes,
                     'started_at'      => $openBreak->started_at,
+                    'is_clocked_out'  => (bool) $openBreak->clock_out_clocking_id,
                     'end_route'       => [
                         'name'       => 'grp.models.manufacture-break.end',
                         'parameters' => ['manufactureBreak' => $openBreak->id],

@@ -236,7 +236,7 @@ const openBarcodeModal = (barcode: { level: string, number: string, warning?: st
     nextTick(() => barcodeInputElement.value?.focus())
 }
 
-const applyBarcodeChange = (value: string | null) => {
+const applyBarcodeChange = (value: string | null, fromPool = false) => {
     const route_ = barcodeRouteForLevel(editingLevel.value)
     if (!route_ || isSavingBarcode.value) return
 
@@ -244,7 +244,7 @@ const applyBarcodeChange = (value: string | null) => {
 
     router.patch(
         route(route_.name, route_.parameters),
-        { [field]: value },
+        fromPool ? { from_pool: true } : { [field]: value },
         {
             preserveScroll: true,
             onStart: () => isSavingBarcode.value = true,
@@ -256,7 +256,7 @@ const applyBarcodeChange = (value: string | null) => {
             onError: (errors) => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: errors[field] || ctrans("Could not save the barcode"),
+                    text: errors[field] || errors.barcode || ctrans("Could not save the barcode"),
                     type: "error",
                 })
             },
@@ -278,6 +278,18 @@ const rejectProps = {
     label: ctrans("Cancel"),
     severity: "secondary",
     outlined: true,
+}
+
+const assignUnitBarcodeFromPool = () => {
+    confirm.require({
+        message: ctrans("Use this only for our own products. If the item already has a barcode printed on it, type or scan that one instead. The new EAN goes to the website and every sales channel."),
+        header: ctrans("Take the next free barcode from the pool"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: ctrans("Yes, assign it"),
+        rejectLabel: ctrans("Cancel"),
+        rejectProps,
+        accept: () => applyBarcodeChange(null, true),
+    })
 }
 
 const saveBarcode = (value: string | null) => {
@@ -469,7 +481,7 @@ const saveBarcode = (value: string | null) => {
                             {{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}
                         </div>
 
-                        <button v-if="barcode.number && barcode.level !== 'carton' && data.label_route && data.label_options"
+                        <button v-if="barcode.number && data.label_route && data.label_options"
                             type="button"
                             v-tooltip="ctrans('Print PDF label')"
                             class="min-w-0 max-w-full justify-self-start transition hover:opacity-60"
@@ -636,7 +648,7 @@ const saveBarcode = (value: string | null) => {
         <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
             <div class="flex flex-col gap-4 p-2">
                 <div class="flex justify-between items-center">
-                    <div class="text-lg font-semibold">{{ editingLevel === "unit" ? ctrans("Unit EAN13 barcode") : ctrans("SKO (outer packing) barcode") }}</div>
+                    <div class="text-lg font-semibold">{{ { unit: ctrans("Unit EAN13 barcode"), carton: ctrans("Carton barcode") }[editingLevel] ?? ctrans("SKO (outer packing) barcode") }}</div>
                     <div class="text-3xl">
                         <FontAwesomeIcon icon='fal fa-barcode' class='' fixed-width aria-hidden='true' />
                     </div>
@@ -655,6 +667,14 @@ const saveBarcode = (value: string | null) => {
                     class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-[--app-accent] focus:ring-[--app-accent]"
                     @keydown.enter.prevent="saveBarcode(barcodeInput.trim() || null)"
                 />
+                <Button
+                    v-if="editingLevel === 'unit' && !editingHasNumber"
+                    type="secondary"
+                    icon="fal fa-barcode"
+                    :label="ctrans('Take the next free barcode from the pool')"
+                    :loading="isSavingBarcode"
+                    full
+                    @click="assignUnitBarcodeFromPool" />
                 <div class="flex justify-between gap-2">
                     <Button
                         v-if="editingHasNumber"

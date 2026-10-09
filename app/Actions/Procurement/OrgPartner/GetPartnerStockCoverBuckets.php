@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\OrgPartner;
 
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Enums\Catalogue\HealthRankEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -32,6 +31,8 @@ class GetPartnerStockCoverBuckets
     public const int MINIMUM_COVER_DAYS = 30;
 
     public const int MAXIMUM_COVER_DAYS = 180;
+
+    public const int MAXIMUM_CARTON_COVER_DAYS = 365;
 
     public const BUCKETS = [
         'out'    => ['label' => 'Out of stock', 'tone' => 'red-deep'],
@@ -57,7 +58,7 @@ class GetPartnerStockCoverBuckets
     private function bucketExpression(int $leadDays): string
     {
         $lead       = "coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays)";
-        $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
+        $understock = "coalesce((select (sf.data->'stock_cover'->>'understock_days')::int from stock_families sf where sf.id = stocks.stock_family_id), 2 * $lead)";
 
         return "case
             when os.id is null then 'never'
@@ -95,10 +96,10 @@ class GetPartnerStockCoverBuckets
             })
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
             ->leftJoin('stocks', 'stocks.id', 'p.stock_id')
-            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('p.organisation_id', $orgPartner->partner_id)
             ->where('p.state', OrgStockStateEnum::ACTIVE->value)
-            ->whereRaw('coalesce(os.is_on_demand, false) = false');
+            ->whereRaw('coalesce(os.is_on_demand, false) = false')
+            ->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('p.id', $orgPartner));
     }
 
     private function onShoppingListExpression(OrgPartner $orgPartner): string
@@ -176,9 +177,13 @@ class GetPartnerStockCoverBuckets
         $cost    = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice($orgPartner)}";
         $inOrder = $this->inRescueOrder();
 
-        $counts = $query
-            ->selectRaw("$expression as bucket, count(*) as total, count(*) filter (where os.health_rank in ('A', 'B')) as bestsellers, coalesce(sum(s.projected_lost_revenue), 0) as lost, coalesce(sum($cost), 0) as cost, coalesce(sum($cost) filter (where $inOrder), 0) as order_cost, count(*) filter (where $inOrder) as order_lines, min($cost) filter (where $cost > 0) as cheapest, min($cost) filter (where $inOrder and $cost > 0) as order_cheapest")
-            ->groupByRaw($expression)
+        $perSko = $query
+            ->selectRaw("$expression as bucket, os.health_rank, s.projected_lost_revenue as lost, $cost as cost, $inOrder as in_order")
+            ->offset(0);
+
+        $counts = DB::query()->fromSub($perSko, 'sko')
+            ->selectRaw("bucket, count(*) as total, count(*) filter (where health_rank in ('A', 'B')) as bestsellers, coalesce(sum(lost), 0) as lost, coalesce(sum(cost), 0) as cost, coalesce(sum(cost) filter (where in_order), 0) as order_cost, count(*) filter (where in_order) as order_lines, min(cost) filter (where cost > 0) as cheapest, min(cost) filter (where in_order and cost > 0) as order_cheapest")
+            ->groupBy('bucket')
             ->get()
             ->keyBy('bucket');
 
@@ -206,7 +211,7 @@ class GetPartnerStockCoverBuckets
                 'order_cheapest' => round((float) ($counts->get($bucket)->order_cheapest ?? 0) * $exchange, 2),
                 'left_out'    => (object) ($leftOut[$bucket] ?? []),
             ])->all(),
-            'top'     => $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all(),
+            'top'     => $topLimit ? $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all() : [],
         ];
     }
 
@@ -250,7 +255,6 @@ class GetPartnerStockCoverBuckets
             })
             ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
             ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
-            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('os.organisation_id', $orgPartner->organisation_id)
             ->where('os.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
@@ -366,13 +370,7 @@ class GetPartnerStockCoverBuckets
         $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
         $landed  = GetPartnerLandedCost::appliesTo($orgPartner) ? GetPartnerLandedCost::perSkoSql('p.id').', ' : '';
 
-        return "coalesce($landed(select pr.price / nullif(phos.quantity, 0)
-            from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id in (".implode(',', $shopIds).")
-            where phos.org_stock_id = p.id
-                and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
-            order by ".PartnerSkoPrice::shopPositionSql($shopIds, 'pr.shop_id').", phos.quantity, pr.price
-            limit 1), 0)";
+        return "coalesce($landed".PartnerSkoPrice::pricePerSkoSql('p.id', $shopIds, (string) $orgPartner->id).', 0)';
     }
 
     /**
@@ -395,7 +393,27 @@ class GetPartnerStockCoverBuckets
             return "(ceil($quantity / $quantum) * $quantum)";
         }
 
-        return $quantity;
+        $carton      = $this->partnerCartonSkos();
+        $inCartons   = "(ceil($quantity / $carton) * $carton)";
+        $cartonLimit = "least(coalesce($spare, $inCartons), greatest($quantity, ceil(s.predicted_daily_usage * ".self::MAXIMUM_CARTON_COVER_DAYS.')))';
+
+        return "(case when $carton > 1 and $inCartons <= $cartonLimit then $inCartons else $quantity end)";
+    }
+
+    /**
+     * The carton the partner buys this SKO in from its primary supplier, in our SKOs, so its pickers
+     * hand over whole cartons. Cartons are often wrong, so rescueQuantity only rounds up to them while
+     * the partner can spare it and it stays within a year of our sales.
+     */
+    private function partnerCartonSkos(): string
+    {
+        return "coalesce((select ceil(sp.units_per_carton / nullif(greatest(os.packed_in, 1), 0))
+            from org_stock_has_org_supplier_products link
+            join org_supplier_products osp on osp.id = link.org_supplier_product_id
+            join supplier_products sp on sp.id = osp.supplier_product_id
+            where link.org_stock_id = p.id and link.status
+            order by link.local_priority desc
+            limit 1), 1)";
     }
 
     /**
@@ -434,7 +452,7 @@ class GetPartnerStockCoverBuckets
 
     private function criticalDays(int $leadDays): string
     {
-        return "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays))";
+        return "coalesce((select (sf.data->'stock_cover'->>'understock_days')::int from stock_families sf where sf.id = stocks.stock_family_id), 2 * coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays))";
     }
 
     /**
@@ -484,6 +502,7 @@ class GetPartnerStockCoverBuckets
             ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
             ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
+            ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
             ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
             ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
             ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');

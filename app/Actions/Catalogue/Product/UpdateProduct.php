@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Shop\External\Shopify\UpdateShopifyProductInventoryQuantity;
 use App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Catalogue\Asset\UpdateAsset;
@@ -378,6 +379,9 @@ class UpdateProduct extends OrgAction
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::WIX) {
                 UpdateWixProductInventoryQuantity::dispatch($product)->delay(60);
             }
+            if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::SHOPIFY) {
+                UpdateShopifyProductInventoryQuantity::dispatch($product)->delay(60);
+            }
         }
 
         if (Arr::has($changed, 'master_product_id')) {
@@ -457,7 +461,6 @@ class UpdateProduct extends OrgAction
              * master held at zero, but the product itself could never be edited back down to it.
              */
             'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
@@ -579,7 +582,6 @@ class UpdateProduct extends OrgAction
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
             $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
             $rules['price']                     = ['sometimes', 'nullable', 'numeric'];
-            $rules['unit_price']                = ['sometimes', 'nullable', 'numeric'];
 
 
             $rules = $this->noStrictUpdateRules($rules);

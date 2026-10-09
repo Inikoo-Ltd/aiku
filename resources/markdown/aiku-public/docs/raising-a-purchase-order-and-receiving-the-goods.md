@@ -1,7 +1,7 @@
 ---
 title: Raising a purchase order and receiving the goods
 summary: Buy from an ordinary supplier - raise the purchase order, get it confirmed, then turn the delivery into stock you can sell.
-date: 2026-09-01
+date: 2026-10-08
 tags: procurement, purchase orders, stock deliveries, suppliers
 category: procurement
 help_routes: grp.org.procurement.org_suppliers, grp.org.procurement.purchase_orders, grp.org.procurement.stock_deliveries
@@ -15,7 +15,7 @@ When you buy from an ordinary supplier - not a partner organisation, which has i
 
 Every supplier your organisation buys from directly lives in **Procurement → Suppliers**. Each supplier's page gives you a **Purchase Order** button to start a new order, plus a side menu with **Products**, **Purchase Orders** and **Stock Deliveries** so far.
 
-Some suppliers are only reachable through an **agent** - a person or company who buys on your behalf rather than shipping to you directly. Agents have their own list under **Procurement → Agents**, and work the same way: purchase orders and deliveries against an agent are recorded on the agent's page instead of the supplier's.
+Some suppliers are only reachable through an **agent** - a person or company who buys on your behalf rather than shipping to you directly. Agents have their own list under **Procurement → Agents**. An order through an agent is still one purchase order per supplier, sent to the agent, and the orders you place together form one **agent order**. See [placing an order through an agent](/docs/placing-an-order-through-an-agent).
 
 ## Raising a purchase order
 
@@ -55,6 +55,8 @@ The delivery then moves through its own states:
 - **Booked in** - press **Place** to put the received stock away. This is the delivery's final working state.
 
 Checking an item means confirming how much of each line actually arrived - not every order arrives complete, and short or extra quantities show up on the **Under/Over delivered items** tab so nothing gets lost in the gap between what you ordered and what showed up.
+
+Under the checked quantity, **Batch** records the batch code and best-before date printed on the goods. One line can hold several batches: press **Add batch** and split the quantity between them. When you place the stock, the batches go onto the shelf in the order you entered them, so the warehouse knows which batch sits where and the inventory reports can show best-before dates. Families marked **Batch tracked** (on the stock family's edit page) show a warning until every checked SKO has a batch, and flag a batch with no best-before. Nothing blocks the booking in, so a delivery without printed codes can still go on the shelf. A batch that is already on a shelf cannot be cut below what was put away; undo that put-away first.
 
 ## Putting it together
 

@@ -31,6 +31,7 @@ import {
     faWarehouseAlt,
     faChartNetwork,
     faFolderTree,
+    faFolderDownload,
     faFolder,
     faCube,
     faUserPlus,
@@ -63,7 +64,7 @@ import {
     faSign,
     faClipboardListCheck,
     faClipboardList,
-    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faAppleCrate, faChevronRight, faChevronLeft, faExchange } from "@fal"
+    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faAppleCrate, faChevronRight, faChevronLeft, faExchange, faHandsHelping } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import MenuTopRight from "@/Layouts/Grp/MenuTopRight.vue"
 const TopBarDropdownScope = defineAsyncComponent(() => import("@/Layouts/Grp/TopBarDropdownScope.vue"))
@@ -73,7 +74,7 @@ import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
+library.add(faHandsHelping, faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolderDownload, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
     faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faChevronRight

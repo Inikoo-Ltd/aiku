@@ -50,18 +50,17 @@ class ProspectImport implements ToCollection, WithEvents
 
     public function collection(Collection $collection): void
     {
-        $columns   = $this->columnsByField($collection->first() ?? collect());
+        $columns      = $this->columnsByField($collection->first() ?? collect());
         $hasKeyColumn = array_key_exists('id_prospect_key', $columns);
-        $rowNumber = 2;
 
-        foreach ($collection->skip(1) as $row) {
-            $values = $this->valuesByField($row, $columns);
+        $filledRows = $collection->skip(1)
+            ->map(fn (Collection $row) => $this->valuesByField($row, $columns))
+            ->filter(fn (array $values) => array_filter($values, fn ($value) => $value !== null) !== []);
 
-            if (array_filter($values, fn ($value) => $value !== null) !== []) {
-                $this->storeModel($values, $this->createUploadRecord(collect($values), $rowNumber), $hasKeyColumn);
-            }
+        $this->upload->update(['number_rows' => $filledRows->count()]);
 
-            $rowNumber++;
+        foreach ($filledRows as $index => $values) {
+            $this->storeModel($values, $this->createUploadRecord(collect($values), $index + 1), $hasKeyColumn);
         }
     }
 

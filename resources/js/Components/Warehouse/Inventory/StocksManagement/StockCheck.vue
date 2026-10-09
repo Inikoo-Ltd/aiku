@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
+import { acceptAnyDecimalSeparator } from "@/Composables/useAnyDecimalSeparator"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faSave } from "@fal"
@@ -65,15 +66,15 @@ const markAsChecked = (locationOrgStock: StockLocation) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully audited stock location (:xlocation)", { xlocation: locationOrgStock?.code }),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully audited stock location (:xlocation)", { xlocation: locationOrgStock?.code }),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to audit the stock location"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to audit the stock location"),
                     type: "error"
                 })
             },
@@ -100,16 +101,16 @@ const bulkSubmitAudit = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully audited the stock locations"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully audited the stock locations"),
                     type: "success"
                 })
                 emits('close')
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to audit the stock locations"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to audit the stock locations"),
                     type: "error"
                 })
             },
@@ -320,13 +321,13 @@ const currentPage = ref(1);
                         {{ location.code }}
                     </div>
 
-                    <div v-if="location.audited_at" v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
+                    <div v-if="location.audited_at" v-tooltip="ctrans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
                         {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                         <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                     </div>
 
                     <div v-else class="col-span-2 md:col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
-                        {{ trans("Never audited") }}
+                        {{ ctrans("Never audited") }}
                     </div>
 
                     <div class="col-span-4 md:col-span-3 text-right flex items-center justify-end gap-x-1">
@@ -414,9 +415,11 @@ const currentPage = ref(1);
                                     location.quantity = event.value
                                     hydrateModifiedLocationsQuantity(location);
                                 }"
+                                @keypress.capture="acceptAnyDecimalSeparator"
                                 :disabled="isLocationBusy(location.id)"
                                 :min="0"
                                 :step="1"
+                                :maxFractionDigits="3"
                                 size="small"
                                 fluid
                                 inputClass="!py-0"
@@ -495,11 +498,11 @@ const currentPage = ref(1);
             class="flex flex-col items-center justify-center text-center py-10 border border-dashed border-gray-300 rounded-lg"
         >
             <div class="text-gray-600 font-medium">
-                {{ trans("No locations available") }}
+                {{ ctrans("No locations available") }}
             </div>
 
             <div class="text-sm text-gray-400 mt-1">
-                {{ trans("You haven't added any locations yet") }}
+                {{ ctrans("You haven't added any locations yet") }}
             </div>
         </div>
         </div>

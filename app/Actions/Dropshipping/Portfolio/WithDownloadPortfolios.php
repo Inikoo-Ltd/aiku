@@ -13,6 +13,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Exports\Marketing\DataFeedsMapping;
 use App\Helpers\NaturalLanguage;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +56,8 @@ trait WithDownloadPortfolios
                 'department.name as department_name',
                 'sub_department.code as subdepartment_code',
                 'sub_department.name as subdepartment_name',
-                'portfolios.reference'
+                'portfolios.reference',
+                DB::raw(Product::sellableThroughSalesChannelsSql().' as is_for_sale')
             )
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->leftJoin('product_categories as department', 'products.department_id', '=', 'department.id')
@@ -72,12 +74,12 @@ trait WithDownloadPortfolios
 
         if (in_array('exclude_not_for_sale', $productAvailability)) {
             $portfolios = $portfolios
-                ->where('products.is_for_sale', true);
+                ->whereRaw(Product::sellableThroughSalesChannelsSql());
         }
 
         if (in_array('only_not_for_sale', $productAvailability)) {
             $portfolios = $portfolios
-                ->where('products.is_for_sale', false);
+                ->whereRaw('not '.Product::sellableThroughSalesChannelsSql());
         }
 
         if (in_array('exclude_out_of_stocks', $productAvailability)) {

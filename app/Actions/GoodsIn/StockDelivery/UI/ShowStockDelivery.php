@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
 use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
 use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryInvoiceCosting;
 use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
@@ -48,6 +49,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -138,7 +140,7 @@ class ShowStockDelivery extends OrgAction
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
-                'purchase_order'   => $this->getPurchaseOrderLink($stockDelivery),
+                'purchase_orders'  => $this->getPurchaseOrderLinks($stockDelivery),
                 'box_stats'        => $this->getBoxStats($stockDelivery, $request),
                 'tabs'             => [
                     'current'    => $this->tab,
@@ -214,33 +216,35 @@ class ShowStockDelivery extends OrgAction
         return new StockDeliveryResource($this->stockDelivery);
     }
 
-    public function getPurchaseOrderLink(StockDelivery $stockDelivery): ?array
+    /**
+     * @return array<int, array{reference: string, route: array<string, mixed>}>
+     */
+    public function getPurchaseOrderLinks(StockDelivery $stockDelivery): array
     {
-        $purchaseOrder = $stockDelivery->purchaseOrders()->first();
+        $organisationSlug = (request()->route('organisation') ?? $stockDelivery->organisation)->slug;
 
-        if (!$purchaseOrder) {
-            return null;
-        }
-
-        return [
-            'reference' => $purchaseOrder->reference,
-            'route'     => [
-                'name'       => 'grp.org.procurement.purchase_orders.show',
-                'parameters' => [
-                    'organisation'  => (request()->route('organisation') ?? $stockDelivery->organisation)->slug,
-                    'purchaseOrder' => $purchaseOrder->slug,
+        return $stockDelivery->purchaseOrders()
+            ->orderBy('purchase_orders.id')
+            ->get(['purchase_orders.id', 'purchase_orders.reference', 'purchase_orders.slug'])
+            ->map(fn (PurchaseOrder $purchaseOrder) => [
+                'reference' => $purchaseOrder->reference,
+                'route'     => [
+                    'name'       => 'grp.org.procurement.purchase_orders.show',
+                    'parameters' => [
+                        'organisation'  => $organisationSlug,
+                        'purchaseOrder' => $purchaseOrder->slug,
+                    ],
                 ],
-            ],
-        ];
+            ])->all();
     }
 
-    public function getPurchaseOrderTimeline(PurchaseOrder $purchaseOrder): array
+    public function getPurchaseOrderTimeline(EloquentCollection $purchaseOrders): array
     {
         $labels = PurchaseOrderStateEnum::labels();
 
         $states = [
-            PurchaseOrderStateEnum::IN_PROCESS->value => $purchaseOrder->created_at,
-            PurchaseOrderStateEnum::SUBMITTED->value  => $purchaseOrder->submitted_at,
+            PurchaseOrderStateEnum::IN_PROCESS->value => $purchaseOrders->pluck('created_at')->filter()->min(),
+            PurchaseOrderStateEnum::SUBMITTED->value  => $purchaseOrders->pluck('submitted_at')->filter()->min(),
         ];
 
         $timeline = [];
@@ -586,9 +590,9 @@ class ShowStockDelivery extends OrgAction
 
     public function getTimeline(StockDelivery $stockDelivery, bool $withPurchaseOrderStates = true): array
     {
-        $purchaseOrder = $withPurchaseOrderStates ? $stockDelivery->purchaseOrders()->first() : null;
+        $purchaseOrders = $withPurchaseOrderStates ? $stockDelivery->purchaseOrders()->get() : new EloquentCollection();
 
-        $timeline = $purchaseOrder ? $this->getPurchaseOrderTimeline($purchaseOrder) : [];
+        $timeline = $purchaseOrders->isNotEmpty() ? $this->getPurchaseOrderTimeline($purchaseOrders) : [];
 
         $labels = $this->getStateLabels($stockDelivery);
 
@@ -624,7 +628,7 @@ class ShowStockDelivery extends OrgAction
                 default                            => null
             };
 
-            $label = $case == StockDeliveryStateEnum::IN_PROCESS && $purchaseOrder
+            $label = $case == StockDeliveryStateEnum::IN_PROCESS && $purchaseOrders->isNotEmpty()
                 ? __('Created')
                 : $labels[$case->value];
 
@@ -733,6 +737,7 @@ class ShowStockDelivery extends OrgAction
             ],
             'currencies'                 => Currency::orderBy('code')->get(['id', 'code'])->toArray(),
             'checklist'                  => $checklist,
+            'shipping_basis'             => DistributeStockDeliveryExtraCost::shippingBasis($stockDelivery),
             'agent_invoice_missing'      => !$agentInvoice?->received_at,
             'storeCostRoute'             => [
                 'name'       => 'grp.models.stock-delivery.cost.store',
@@ -814,7 +819,7 @@ class ShowStockDelivery extends OrgAction
     private function getDepositSettlement(StockDelivery $stockDelivery, $applications, float $agentInvoiceAmount, float $depositsTotal): array
     {
         $availableDeposits = $stockDelivery->agent_id
-            ? \App\Models\SupplyChain\AspoDeposit::where('agent_id', $stockDelivery->agent_id)
+            ? \App\Models\SupplyChain\AspoDeposit::applicableToStockDelivery($stockDelivery)
                 ->where('state', 'paid_to_supplier')
                 ->get()
                 ->filter(fn ($deposit) => $deposit->unapplied_amount > 0)
