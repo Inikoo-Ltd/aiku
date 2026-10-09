@@ -110,6 +110,7 @@ class GetGroupNavigation
                     ['label' => __('Board'), 'icon' => ['fal', 'fa-columns'], 'root' => 'grp.tasks.board', 'route' => ['name' => 'grp.tasks.board']],
                     ['label' => __('ETA map'), 'icon' => ['fal', 'fa-calendar-alt'], 'root' => 'grp.tasks.eta_map', 'route' => ['name' => 'grp.tasks.eta_map']],
                     ['label' => __('Reports'), 'icon' => ['fal', 'fa-chart-line'], 'root' => 'grp.tasks.reports', 'route' => ['name' => 'grp.tasks.reports']],
+                    ['label' => __('Covering'), 'icon' => ['fal', 'fa-user-friends'], 'root' => 'grp.tasks.covering', 'route' => ['name' => 'grp.tasks.covering']],
                 ],
             ],
         ];

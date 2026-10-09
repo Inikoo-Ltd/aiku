@@ -16,7 +16,13 @@ class DeleteLeave extends OrgAction
 
     public function handle(Leave $leave): bool
     {
-        return (bool) $leave->delete();
+        $deleted = (bool) $leave->delete();
+
+        if ($leave->coverEmployee) {
+            SyncLeaveCoverRoles::run($leave->coverEmployee);
+        }
+
+        return $deleted;
     }
 
     public function action(Leave $leave): bool

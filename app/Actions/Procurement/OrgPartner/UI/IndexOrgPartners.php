@@ -147,7 +147,7 @@ class IndexOrgPartners extends OrgAction
         $routeParameters = [$orgPartner->organisation->slug, $orgPartner->id];
 
         return collect([
-            ShoppingListItemStateEnum::DRAFT->value => [__('Ongoing PO'), __('Draft')],
+            ShoppingListItemStateEnum::DRAFT->value => [__('Basket'), __('Draft')],
             ShoppingListItemStateEnum::OPEN->value  => [__('Producing in :partner', ['partner' => $orgPartner->partner->name]), __('Submitted')],
         ])
             ->filter(fn ($labels, $state) => $byState->has($state))

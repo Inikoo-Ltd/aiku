@@ -128,6 +128,8 @@ Route::prefix('employees')->as('employees.')->group(function () {
 });
 
 
+Route::get('/covers', \App\Actions\HumanResources\Leave\UI\IndexLeaveCovers::class)->name('covers.index');
+
 Route::get('/positions', IndexJobPositions::class)->name('job_positions.index');
 Route::get('/positions/{jobPosition}', ShowJobPosition::class)->name('job_positions.show');
 
@@ -219,6 +221,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');
+    Route::patch('{leave}/cover', \App\Actions\HumanResources\Leave\UpdateLeaveCover::class)->name('cover.update');
     Route::post('{leave}', UpdateLeave::class)->name('update');
     Route::delete('{leave}', DeleteLeave::class)->name('delete');
 });

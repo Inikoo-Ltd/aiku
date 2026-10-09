@@ -9,6 +9,7 @@ use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprover;
 use App\Services\HumanResources\LeaveTypeResolver;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateLeave extends OrgAction
 {
+    private Leave $leave;
+
     private function isAdminRoute(): bool
     {
         return request()->routeIs('grp.org.hr.leaves.admin.update');
@@ -34,6 +37,7 @@ class UpdateLeave extends OrgAction
                 'reason'        => ['nullable', 'string', 'max:1000'],
                 'attachments'   => ['nullable', 'array', 'max:5'],
                 'attachments.*' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(5 * 1024)],
+                ...UpdateLeaveCover::coverRules($this->organisation, $this->leave->employee_id),
             ];
         }
 
@@ -41,6 +45,16 @@ class UpdateLeave extends OrgAction
             'attachments'   => ['nullable', 'array', 'max:3'],
             'attachments.*' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(5 * 1024)],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->isAdminRoute()
+            && $this->get('cover_employee_id')
+            && !$validator->errors()->hasAny(['start_date', 'end_date'])
+            && UpdateLeaveCover::isOnLeaveDuring((int) $this->get('cover_employee_id'), $this->get('start_date') ?? $this->leave->start_date, $this->get('end_date') ?? $this->leave->end_date)) {
+            $validator->errors()->add('cover_employee_id', __('This colleague is on leave during this period.'));
+        }
     }
 
     public function handle(Leave $leave, array $modelData): Leave
@@ -95,6 +109,14 @@ class UpdateLeave extends OrgAction
 
         if (!empty($updates)) {
             $leave->update($updates);
+        }
+
+        if ((isset($updates['start_date']) || isset($updates['end_date'])) && $leave->coverEmployee) {
+            SyncLeaveCoverRoles::run($leave->coverEmployee);
+        }
+
+        if (array_key_exists('cover_employee_id', $modelData) && (int) $modelData['cover_employee_id'] !== (int) $leave->cover_employee_id) {
+            UpdateLeaveCover::make()->handle($leave, ['cover_employee_id' => $modelData['cover_employee_id']]);
         }
 
         $this->syncAttachments($leave, $modelData);
@@ -170,6 +192,7 @@ class UpdateLeave extends OrgAction
             $leave = Leave::query()->findOrFail((int) $leave);
         }
 
+        $this->leave = $leave;
         $this->initialisation($leave->organisation, $request);
 
         if ($leave->status !== LeaveStatusEnum::PENDING) {

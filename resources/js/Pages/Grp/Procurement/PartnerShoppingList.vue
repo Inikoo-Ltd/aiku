@@ -524,7 +524,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 		<span class="text-sm text-gray-600">
 			{{
 				isSentView
-					? ctrans("What the partner is working on. Change the order on the Ongoing PO.")
+					? ctrans("What the partner is working on. Change the order in the Basket.")
 					: ctrans("Not sent yet: the partner sees these lines after you press Submit.")
 			}}
 			<span class="ml-2 font-semibold tabular-nums text-gray-900">{{
