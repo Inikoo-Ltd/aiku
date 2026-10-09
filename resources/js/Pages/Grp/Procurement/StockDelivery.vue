@@ -12,6 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 
 import ConfirmDialog from "primevue/confirmdialog"
 import Dialog from "primevue/dialog"
+import DatePicker from "primevue/datepicker"
 import { useConfirm } from "primevue/useconfirm"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -493,6 +494,40 @@ const confirmCancelStockDelivery = (action: any) => {
 	})
 }
 
+const estimatedDeliveryDateAction = ref<any>(null)
+const estimatedReceivingDate = ref<Date | null>(null)
+const estimatedDeliveryDateLoading = ref(false)
+
+const openEstimatedDeliveryDateModal = (action: any) => {
+	estimatedReceivingDate.value = action.estimated_receiving_date
+		? new Date(`${String(action.estimated_receiving_date).slice(0, 10)}T00:00:00`)
+		: null
+	estimatedDeliveryDateAction.value = action
+}
+
+const saveEstimatedDeliveryDate = () => {
+	const action = estimatedDeliveryDateAction.value
+	const date = estimatedReceivingDate.value
+
+	router.patch(route(action.route.name, action.route.parameters), {
+		estimated_receiving_date: date
+			? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+			: null,
+	}, {
+		preserveScroll: true,
+		onStart: () => { estimatedDeliveryDateLoading.value = true },
+		onSuccess: () => { estimatedDeliveryDateAction.value = null },
+		onFinish: () => { estimatedDeliveryDateLoading.value = false },
+		onError: () => {
+			notify({
+				title: ctrans("Something went wrong"),
+				text: ctrans("Failed to update estimated delivery date"),
+				type: "error",
+			})
+		},
+	})
+}
+
 const startCostingLoading = ref(false)
 
 const confirmStartStockDeliveryCosting = (action: any) => {
@@ -684,6 +719,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="updateCostingLoading"
 				@click="() => confirmFinishStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-edit-estimated-delivery-date="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="estimatedDeliveryDateLoading"
+				@click="() => openEstimatedDeliveryDateModal(action)"
 			/>
 		</template>
 
@@ -963,6 +1009,34 @@ const confirmDeleteStockDelivery = (action: any) => {
 			</div>
 		</BoxStatPallet>
 	</div>
+
+	<Dialog
+		:visible="!!estimatedDeliveryDateAction"
+		modal
+		:header="ctrans('Estimated delivery date')"
+		:style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+		@update:visible="(visible: boolean) => { if (!visible) estimatedDeliveryDateAction = null }"
+	>
+		<div class="flex flex-col gap-2">
+			<label for="stock-delivery-estimated-delivery-date" class="font-medium text-gray-700">
+				{{ ctrans("Estimated delivery date") }}
+			</label>
+			<DatePicker
+				v-model="estimatedReceivingDate"
+				inputId="stock-delivery-estimated-delivery-date"
+				dateFormat="yy-mm-dd"
+				showIcon
+				showButtonBar
+				fluid
+			/>
+		</div>
+
+		<template #footer>
+			<Button :label="ctrans('Cancel')" type="secondary" @click="estimatedDeliveryDateAction = null" />
+			<Button :label="ctrans('Save')" type="save" :loading="estimatedDeliveryDateLoading" @click="saveEstimatedDeliveryDate" />
+		</template>
+	</Dialog>
 
 	<Dialog v-model:visible="isCostingOpen" modal dismissableMask :header="ctrans('Costing')" :style="{ width: '64rem' }" :breakpoints="{ '1024px': '95vw' }">
 		<StockDeliveryCostingChecklist

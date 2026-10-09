@@ -1709,6 +1709,32 @@ test('update supplier delivery', function (StockDelivery $stockDelivery) {
 })->depends('create supplier delivery');
 
 
+test('a stock delivery has a delivery date button that changes only its own date', function (StockDelivery $stockDelivery) {
+    expect(collect(ShowStockDelivery::make()->getActions($stockDelivery->refresh()))->pluck('key'))->toContain('edit_estimated_delivery_date');
+
+    $stockDelivery = UpdateStockDelivery::make()->action($stockDelivery, ['estimated_receiving_date' => '2027-04-20']);
+
+    expect($stockDelivery->refresh()->data['estimated_receiving_date'])->toBe('2027-04-20');
+
+    $agentPurchaseOrder = PurchaseOrder::whereNotNull('agent_id')->where('parent_type', 'OrgSupplier')
+        ->whereDoesntHave('stockDeliveries')
+        ->latest('id')
+        ->firstOrFail();
+    $originalState = $agentPurchaseOrder->state;
+    $agentPurchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED]);
+
+    expect(collect(ShowPurchaseOrder::make()->getActions($agentPurchaseOrder, false))->pluck('key'))->toContain('edit_estimated_delivery_date')
+        ->and(ShowPurchaseOrder::make()->getTimeline($agentPurchaseOrder))->toHaveKey('estimated_delivery');
+
+    $stockDelivery->purchaseOrders()->attach($agentPurchaseOrder);
+
+    expect(collect(ShowPurchaseOrder::make()->getActions($agentPurchaseOrder, false))->pluck('key'))->not->toContain('edit_estimated_delivery_date')
+        ->and(ShowPurchaseOrder::make()->getTimeline($agentPurchaseOrder))->not->toHaveKey('estimated_delivery');
+
+    $stockDelivery->purchaseOrders()->detach($agentPurchaseOrder);
+    $agentPurchaseOrder->update(['state' => $originalState]);
+})->depends('update supplier delivery');
+
 test('create supplier delivery items', function (StockDelivery $stockDelivery) {
     $supplier            = StoreSupplier::make()->action(
         parent: $this->group,

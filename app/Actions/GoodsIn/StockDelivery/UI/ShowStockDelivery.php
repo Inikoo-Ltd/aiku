@@ -364,6 +364,21 @@ class ShowStockDelivery extends OrgAction
             ],
         ];
 
+        $deliveryDateButton = [
+            'label'                    => __('Delivery date'),
+            'tooltip'                  => __('Change the estimated delivery date'),
+            'type'                     => 'button',
+            'style'                    => 'tertiary',
+            'icon'                     => 'fal fa-calendar-alt',
+            'key'                      => 'edit_estimated_delivery_date',
+            'estimated_receiving_date' => Arr::get($stockDelivery->data, 'estimated_receiving_date'),
+            'route'                    => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.stock-delivery.update',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
+            ],
+        ];
+
         $actions = match ($stockDelivery->state) {
             StockDeliveryStateEnum::IN_PROCESS,
             StockDeliveryStateEnum::CONFIRMED,
@@ -413,6 +428,7 @@ class ShowStockDelivery extends OrgAction
                         ],
                     ],
                 ],
+                $deliveryDateButton,
             ],
             StockDeliveryStateEnum::DISPATCHED => [
                 [
@@ -445,6 +461,7 @@ class ShowStockDelivery extends OrgAction
                         ],
                     ],
                 ],
+                $deliveryDateButton,
             ],
             StockDeliveryStateEnum::RECEIVED => [
                 [
