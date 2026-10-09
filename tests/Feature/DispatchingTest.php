@@ -6048,12 +6048,37 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
 
     $report = fn () => $this->get(route('grp.org.reports.packaging', [$this->organisation->slug, 'tab' => 'completeness', 'from' => '2001-03-01', 'to' => '2001-03-31']));
 
+    $tradeUnit->update(['gross_weight' => 300, 'net_weight' => 100]);
+
     $report()->assertInertia(fn (AssertableInertia $page) => $page
         ->component('Org/Reports/PackagingReport')
         ->where('period', ['from' => '2001-03-01', 'to' => '2001-03-31'])
         ->where('completeness.has_data', true)
         ->where('completeness.summary.coverage', 100)
-        ->where('completeness.rows', []));
+        ->where('completeness.rows', [])
+        ->where('completeness.checks.0.key', 'legacy_top')
+        ->where('completeness.checks.0.count', 0)
+        ->where('completeness.checks.1.key', 'weight_mismatch')
+        ->where('completeness.checks.1.count', 1)
+        ->where('completeness.checks.1.rows.0.code', $orgStock->code)
+        ->where('completeness.checks.1.rows.0.detail', 'Packaging 120 g, gross less net 200 g')
+        ->where('completeness.checks.2.count', 0)
+        ->where('completeness.checks.3.count', 0));
+
+    $lid = \App\Models\Goods\PackagingComponent::create([
+        'group_id' => $this->group->id, 'name' => 'Lid '.Str::random(6), 'packaging_level' => 'primary', 'material_category' => 'plastic', 'weight_g' => 5, 'signature' => sha1(Str::random()),
+    ]);
+    $family->components()->attach($lid->id, ['quantity' => 1, 'quantity_per_unit' => 1]);
+    $family->update(['is_product_itself' => true]);
+
+    $report()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('completeness.checks.2.key', 'plastic_without_polymer')
+        ->where('completeness.checks.2.rows.0.detail', '5 g of plastic')
+        ->where('completeness.checks.3.key', 'product_itself_not_glass')
+        ->where('completeness.checks.3.rows.0.detail', 'plastic'));
+
+    $family->components()->detach($lid->id);
+    $family->update(['is_product_itself' => false]);
 
     $tradeUnit->update(['packaging_family_id' => null]);
 
@@ -6063,8 +6088,8 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->where('completeness.rows.0.code', $orgStock->code)
         ->where('completeness.rows.0.status', 'no_packaging')
         ->where('completeness.rows.0.trade_unit_slug', $tradeUnit->slug)
-        ->where('completeness.rows.0.units_in', 30)
-        ->where('completeness.rows.0.units_out', 24)
+        ->where('completeness.rows.0.units_in', 5)
+        ->where('completeness.rows.0.units_out', 4)
         ->where('completeness.rows.0.share', 100));
 });
 
