@@ -152,7 +152,7 @@ class UpdateTicket extends OrgAction
                 'has_qa_verdict' => $ticket->qa_status?->isVerdict() ? $ticket->qa_status->value : null,
             ])->attachTicketImages($images);
             NotifyTicketUsers::make()->mentioned($ticket, $asker, $qaNote);
-            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);
+            PostTicketSlackThreadReply::dispatch($ticket, $ticket->reference.' · '.$verdict);
         }
 
         if ($question !== '' && $asker instanceof User && $ticket->status === TicketStatusEnum::WAITING) {
@@ -191,11 +191,11 @@ class UpdateTicket extends OrgAction
         }
 
         if ($ticket->wasChanged('status')) {
-            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
+            PostTicketSlackThreadReply::dispatch($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
         }
 
         if ($ticket->wasChanged(['status', 'assignee_id'])) {
-            SyncTicketSlackAlert::run($ticket);
+            SyncTicketSlackAlert::dispatch($ticket);
         }
 
         if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id) {

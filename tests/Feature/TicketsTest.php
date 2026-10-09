@@ -22,7 +22,9 @@ use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
 use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
 use App\Actions\Helpers\Ticket\StoreTicket;
+use App\Actions\Helpers\Ticket\PostTicketSlackThreadReply;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Helpers\Ticket\SyncTicketSlackAlert;
 use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
@@ -991,6 +993,17 @@ test('new tickets post one alert in the Slack tickets channel and edit it as sta
     Config::set('services.slack.notifications.tickets_channel', null);
     StoreTicket::make()->action($this->group, ['subject' => 'Silent']);
     Http::assertSentCount(3);
+});
+
+test('a status change or comment queues its Slack posts instead of waiting on Slack', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Queue my Slack']);
+
+    Queue::fake();
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    StoreTicketComment::make()->action($ticket->fresh(), $this->user, ['body' => 'On it']);
+
+    PostTicketSlackThreadReply::assertPushed(2);
+    SyncTicketSlackAlert::assertPushed(1);
 });
 
 
