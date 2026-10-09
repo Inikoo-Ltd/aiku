@@ -865,12 +865,27 @@ test('UI agent organisation dashboard shows clean handover score', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Dashboard/OrganisationDashboard')
             ->has('cleanHandover.quarters')
-            ->has('cleanHandover.hygiene'));
+            ->has('cleanHandover.hygiene')
+            ->where('isAgentOrganisation', true)
+            ->missing('agentPurchaseOrders')
+            ->loadDeferredProps('default', fn (AssertableInertia $reload) => $reload
+                ->has('agentPurchaseOrders.currency')
+                ->has('agentPurchaseOrders.summary.unconfirmed')
+                ->has('agentPurchaseOrders.summary.overdue')
+                ->has('agentPurchaseOrders.summary.confirmed_without_container')
+                ->has('agentPurchaseOrders.summary.routes.unconfirmed.name')
+                ->has('agentPurchaseOrders.attention')
+                ->has('agentPurchaseOrders.suppliers')
+                ->has('agentPurchaseOrders.agent_orders')
+                ->has('agentPurchaseOrders.organisations')
+                ->has('agentPurchaseOrders.containers', 4)));
 
     $this->get(route('grp.org.dashboard.show', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Dashboard/OrganisationDashboard')
-            ->where('cleanHandover', null));
+            ->where('cleanHandover', null)
+            ->where('isAgentOrganisation', false)
+            ->where('agentPurchaseOrders', null));
 });
 
 test('add item to purchase order', function (PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct) {
@@ -2938,8 +2953,41 @@ test('UI Index purchase orders', function () {
         $page
             ->component('Procurement/PurchaseOrders')
             ->has('title')
-            ->has('breadcrumbs', 3);
+            ->has('breadcrumbs', 3)
+            ->has('queryBuilderProps.default.elementGroups.attention.elements.unconfirmed_over_7_days')
+            ->has('queryBuilderProps.default.elementGroups.attention.elements.unconfirmed_over_30_days')
+            ->has('queryBuilderProps.default.elementGroups.attention.elements.past_expected_date');
     });
+
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this);
+    $overdue       = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Overdue attention PO']), strict: false);
+    $overdue->forceFill([
+        'agent_id'              => $this->agent->id,
+        'date'                  => now()->addYear(),
+        'state'                 => PurchaseOrderStateEnum::SUBMITTED,
+        'submitted_at'          => now()->subDays(10),
+        'estimated_received_at' => now()->subDay(),
+    ])->saveQuietly();
+    $draft = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Client draft PO']), strict: false);
+    $draft->forceFill(['agent_id' => $this->agent->id, 'date' => now()->addYear()])->saveQuietly();
+
+    $references = fn ($rows) => collect($rows)->pluck('reference');
+
+    $this->get(route('grp.org.procurement.purchase_orders.index', [
+        $this->organisation->slug,
+        'elements' => ['attention' => 'unconfirmed_over_7_days,unconfirmed_over_30_days,past_expected_date'],
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Procurement/PurchaseOrders')
+        ->where('data.data', fn ($rows) => $references($rows)->contains('Overdue attention PO')
+            && !$references($rows)->contains('Client draft PO')
+            && collect($rows)->every(fn ($row) => in_array($row['state'], ['submitted', 'confirmed'], true))));
+
+    $this->get(route('grp.org.procurement.purchase_orders.index', [$this->agent->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrders')
+            ->where('data.data', fn ($rows) => $references($rows)->contains('Overdue attention PO')
+                && !$references($rows)->contains('Client draft PO')));
 });
 
 test('UI index purchase orders for supplier shows supplier-specific columns and row details', function () {
