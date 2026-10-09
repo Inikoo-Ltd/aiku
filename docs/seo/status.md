@@ -42,9 +42,9 @@ Nothing here has been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 3.3 AI visibility | Choose the models (with web search on) and write the prompts per shop; check the SEO provider's AI mention data first |
-| 3.5 Competitor traffic | Apify actor (cheap, against Similarweb's terms) or the Similarweb API (licensed, priced through sales) |
-| 3.5 Non-Google demand | Choose the platforms; Bing Webmaster Tools keyword data is free |
+| 3.3 AI visibility | DataForSEO LLM Scraper (ChatGPT, per country) and LLM Mentions decided; the team writes ten to twenty prompts per brand |
+| 3.5 Competitor traffic | DataForSEO bulk traffic estimation (search traffic, with history) decided; traffic from other channels is not built |
+| 3.5 Non-Google demand | Only if the team sells or advertises elsewhere: Bing Webmaster Tools (free), DataForSEO Bing and Amazon keyword data |
 | 3.6 AI citations per page | Waits for 3.3 |
 
 ### Last: API usage
@@ -85,4 +85,4 @@ daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 
 | `SEO_API_MONTHLY_BUDGET` | One monthly budget in USD for all paid SEO APIs together; no billable call is made once the month's spend reaches it. Becomes a setting on the API usage page | No, defaults to 250 |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
 | `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
-| `OPENROUTER_API_KEY` | Content help (3.4), and AI visibility (3.3) later | Yes, for content help |
+| `OPENROUTER_API_KEY` | Content help (3.4) | Yes, for content help |
