@@ -45,7 +45,7 @@ class StagePartnerStock extends OrgAction
             throw ValidationException::withMessages(['quantity' => __('Not that much stock in :location', ['location' => $source->location->code])]);
         }
 
-        $bay = $orgPartner->bayFor((bool) $source->orgStock->stock->is_cosmetic);
+        $bay = $orgPartner->bayFor((bool) $source->orgStock->stock->is_cosmetic, $source->orgStock->isOnGbPallet());
 
         $target = LocationOrgStock::where('location_id', $bay->id)
             ->where('org_stock_id', $source->org_stock_id)

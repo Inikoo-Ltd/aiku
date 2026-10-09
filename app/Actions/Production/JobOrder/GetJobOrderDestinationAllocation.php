@@ -35,7 +35,7 @@ class GetJobOrderDestinationAllocation
      */
     public function handle(JobOrder $jobOrder, array $madeByItem = []): array
     {
-        $items = $jobOrder->jobOrderItems()->with(['artefact.orgStock', 'tasks'])->get();
+        $items = $jobOrder->jobOrderItems()->with(['artefact.orgStock.stock', 'artefact.orgStock.orgStockFamily', 'tasks'])->get();
 
         $lines = PartnerShoppingListItem::with('stock')->where('job_order_id', $jobOrder->id)
             ->get()
@@ -80,7 +80,7 @@ class GetJobOrderDestinationAllocation
                 $allocations[] = [
                     'item'        => $item,
                     'line'        => $line,
-                    'location_id' => $line->partner_organisation_id ? $bays->get($line->organisation_id)?->bayIdFor((bool) $line->stock?->is_cosmetic) : null,
+                    'location_id' => $line->partner_organisation_id ? $bays->get($line->organisation_id)?->bayIdFor((bool) $line->stock?->is_cosmetic, (bool) $item->artefact->orgStock?->isOnGbPallet()) : null,
                     'quantity'    => $wanted,
                 ];
             }

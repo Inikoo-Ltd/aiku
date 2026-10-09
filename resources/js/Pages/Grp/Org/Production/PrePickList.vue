@@ -25,6 +25,7 @@ type PrePickItem = {
 	stock_code: string
 	stock_name: string
 	is_cosmetic: boolean
+	is_gb: boolean
 	buyer_code: string
 	to_location: string | null
 	priority: string
@@ -172,7 +173,7 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 		<template #otherBefore>
 			<button
 				type="button"
-				class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+				class="rounded bg-[--app-accent] px-3 py-1.5 text-sm font-medium text-[--app-accent-text] hover:bg-[--app-accent-strong]"
 				:title="trans('Reserve every line listed here, up to what is in stock')"
 				@click="prePickAll">
 				{{ trans("Pre-pick all") }}
@@ -182,11 +183,11 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 
 	<div
 		v-if="Object.keys(selected).length"
-		class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
+		class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-[--app-accent] px-4 py-2 text-[--app-accent-text]">
 		<span>{{ Object.keys(selected).length }} {{ trans("lines selected") }}</span>
 		<button
 			type="button"
-			class="rounded bg-white px-3 py-1 text-indigo-600"
+			class="rounded bg-white px-3 py-1 text-[--app-accent]"
 			@click="
 				prePick(
 					Object.entries(selected).map(([id, quantity]) => ({ id: Number(id), quantity }))
@@ -221,7 +222,7 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						activeFilters[key].includes(option.value)
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: option.value === 'urgent'
 								? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
 								: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
@@ -270,7 +271,7 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 		<template #cell(action)="{ item }: { item: PrePickItem }">
 			<button
 				type="button"
-				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+				class="rounded bg-[--app-accent] px-2 py-0.5 text-xs text-[--app-accent-text] hover:bg-[--app-accent-strong] disabled:cursor-not-allowed disabled:bg-gray-300"
 				:disabled="Number(item.can_pick) <= 0"
 				:title="
 					Number(item.can_pick) > 0
@@ -296,6 +297,12 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 					v-if="item.is_cosmetic"
 					class="rounded-full bg-pink-100 px-1.5 text-xs font-normal text-pink-700"
 					>{{ trans("Cosmetic") }}</span
+				>
+				<span
+					v-if="item.is_gb"
+					v-tooltip="trans('GB-origin, travels on the separate GB pallet')"
+					class="rounded-full bg-slate-200 px-1.5 text-xs font-normal text-slate-700"
+					>GB</span
 				>
 			</div>
 			<div class="text-xs text-gray-500">{{ item.stock_name }}</div>

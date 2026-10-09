@@ -145,7 +145,7 @@ class PartnerShoppingListItem extends Model
         return "coalesce((select sum(greatest(0, promised.quantity - coalesce((
                 select sum(staged.quantity) from location_org_stocks staged
                 where staged.org_stock_id = (select seller_stock.id from org_stocks seller_stock where seller_stock.organisation_id = promised.partner_organisation_id and seller_stock.stock_id = promised.stock_id limit 1)
-                    and staged.location_id = (select ".OrgPartner::bayIdSql('to_partner', 'bay_stock.is_cosmetic')." from org_partners to_partner join stocks bay_stock on bay_stock.id = promised.stock_id
+                    and staged.location_id = (select ".OrgPartner::bayIdSql('to_partner', 'promised.stock_id')." from org_partners to_partner
                         where to_partner.organisation_id = promised.partner_organisation_id and to_partner.partner_id = promised.organisation_id limit 1)
             ), 0)))
             from (select picked.organisation_id, picked.partner_organisation_id, picked.stock_id, sum(picked.quantity) as quantity from partner_shopping_list_items picked

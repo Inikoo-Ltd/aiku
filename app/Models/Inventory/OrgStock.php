@@ -224,6 +224,21 @@ class OrgStock extends Model implements Auditable, HasMedia
         return $this->belongsTo(OrgStockFamily::class);
     }
 
+    /**
+     * GB-origin SKOs travel on their own pallet to partners that split them off, unless the
+     * organisation switched their family off.
+     */
+    public function isOnGbPallet(): bool
+    {
+        return $this->stock->is_gb_origin && ($this->orgStockFamily?->gb_separate_pallet ?? true);
+    }
+
+    public static function gbPalletSql(string $orgStockAlias): string
+    {
+        return "(coalesce((select gb_stock.is_gb_origin from stocks gb_stock where gb_stock.id = {$orgStockAlias}.stock_id), false)
+            and coalesce((select gb_family.gb_separate_pallet from org_stock_families gb_family where gb_family.id = {$orgStockAlias}.org_stock_family_id), true))";
+    }
+
     public function locationOrgStocks(): HasMany
     {
         return $this->hasMany(LocationOrgStock::class);

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStockFamily\UI;
 
+use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamilyGbPallet;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
@@ -37,6 +38,9 @@ class IndexOrgStockFamilies extends OrgAction
     use WithInventoryAuthorisation;
 
     private string $bucket;
+
+    private const GB_ORG_STOCKS = "(select count(*) from org_stocks gb_org_stock join stocks gb_stock on gb_stock.id = gb_org_stock.stock_id
+        where gb_org_stock.org_stock_family_id = org_stock_families.id and gb_org_stock.state in ('active', 'discontinuing') and gb_stock.is_gb_origin)";
 
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
@@ -79,8 +83,42 @@ class IndexOrgStockFamilies extends OrgAction
         return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
+    /**
+     * The families of a manufacturing hub holding GB-origin SKOs, each with the switch that keeps
+     * them on, or off, the separate GB pallet for partners that split GB-origin goods off.
+     */
+    public function gbPallet(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamiliesTabsEnum::values());
+        abort_unless($organisation->is_manufacturing_hub, 404);
+        $this->bucket = 'gb_pallet';
+
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
+    }
+
     protected function getElementGroups(Organisation $organisation): array
     {
+        if ($this->bucket === 'gb_pallet') {
+            $counts = OrgStockFamily::where('organisation_id', $organisation->id)
+                ->whereRaw(self::GB_ORG_STOCKS.' > 0')
+                ->selectRaw("case when gb_separate_pallet then 'on' else 'off' end as element, count(*) as total")
+                ->groupBy('element')
+                ->pluck('total', 'element');
+
+            return [
+                'gb_pallet' => [
+                    'label'    => __('Separate GB pallet'),
+                    'elements' => [
+                        'on'  => [__('On'), $counts->get('on', 0)],
+                        'off' => [__('Off'), $counts->get('off', 0)],
+                    ],
+                    'engine'   => function ($query, $elements) {
+                        $query->whereIn('org_stock_families.gb_separate_pallet', array_map(fn ($element) => $element === 'on', $elements));
+                    }
+                ]
+            ];
+        }
+
         return
             [
                 'state' => [
@@ -123,6 +161,16 @@ class IndexOrgStockFamilies extends OrgAction
             $queryBuilder->where('org_stock_families.state', OrgStockFamilyStateEnum::DISCONTINUED);
         } elseif ($this->bucket == 'in_process') {
             $queryBuilder->where('org_stock_families.state', OrgStockFamilyStateEnum::IN_PROCESS);
+        } elseif ($this->bucket == 'gb_pallet') {
+            $queryBuilder->whereRaw(self::GB_ORG_STOCKS.' > 0');
+            foreach ($this->getElementGroups($organisation) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
 
         $selects = [
@@ -141,7 +189,12 @@ class IndexOrgStockFamilies extends OrgAction
             'org_stock_family_stats.on_the_way_po_count',
             'org_stock_family_stats.number_org_stocks_quantity_status_out_of_stock as number_out_of_stock_org_stocks',
             'org_stock_families.health_rank',
+            'org_stock_families.gb_separate_pallet',
         ];
+
+        if ($this->bucket == 'gb_pallet') {
+            $selects[] = DB::raw(self::GB_ORG_STOCKS.' as number_gb_org_stocks');
+        }
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
@@ -172,6 +225,9 @@ class IndexOrgStockFamilies extends OrgAction
         }
 
         $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'potential_sales', 'on_the_way_po_value', 'health_rank'];
+        if ($this->bucket == 'gb_pallet') {
+            $allowedSorts[] = AllowedSort::callback('number_gb_org_stocks', fn ($query, bool $descending) => $query->orderByRaw(self::GB_ORG_STOCKS.($descending ? ' desc' : ' asc')));
+        }
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_org_currency_external';
@@ -323,6 +379,12 @@ class IndexOrgStockFamilies extends OrgAction
                     ->column(key: 'gross_profit', label: __('Gross Profit'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
                     ->defaultSort('-sales_org_currency_external');
+            } elseif ($this->bucket === 'gb_pallet') {
+                $table
+                    ->column(key: 'number_gb_org_stocks', label: __('GB-origin SKOs'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'gb_separate_pallet', label: __('Separate GB pallet'), tooltip: __('On: GB-origin SKOs of this family go on the separate GB pallet to partners that split GB-origin goods off'), canBeHidden: false)
+                    ->defaultSort('code');
             } else {
                 $table
                     ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true)
@@ -394,6 +456,20 @@ class IndexOrgStockFamilies extends OrgAction
                 ],
                 'number' => $this->organisation->inventoryStats->number_org_stock_families_state_discontinued ?? 0
             ],
+            ...($this->organisation->is_manufacturing_hub ? [[
+                'label'  => __('GB pallet'),
+                'icon'   => 'fal fa-pallet',
+                'root'   => 'grp.org.warehouses.show.inventory.org_stock_families.gb_pallet.',
+                'align'  => 'right',
+                'route'  => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.gb_pallet.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug
+                    ]
+                ],
+                'number' => OrgStockFamily::where('organisation_id', $this->organisation->id)->whereRaw(self::GB_ORG_STOCKS.' > 0')->count(),
+            ]] : []),
             [
                 'label'  => __('All'),
                 'icon'   => 'fal fa-bars',
@@ -422,6 +498,7 @@ class IndexOrgStockFamilies extends OrgAction
             'in_process' => __('In process SKO Families'),
             'discontinuing' => __('Discontinuing SKO Families'),
             'discontinued' => __('Discontinued SKO Families'),
+            'gb_pallet' => __('SKO Families with GB-origin SKOs'),
             default => __('SKO Families')
         };
 
@@ -448,6 +525,7 @@ class IndexOrgStockFamilies extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStockFamiliesTabsEnum::navigation(),
                 ],
+                'gb_pallet_can_edit' => $this->bucket === 'gb_pallet' && UpdateOrgStockFamilyGbPallet::canEdit($request->user(), $this->organisation),
 
                 OrgStockFamiliesTabsEnum::INDEX->value => $this->tab == OrgStockFamiliesTabsEnum::INDEX->value
                     ? fn () => OrgStockFamiliesResource::collection($orgStockFamilies)

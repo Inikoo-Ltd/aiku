@@ -838,6 +838,26 @@ test('setting or clearing a trade unit CPNP number follows on its stocks cosmeti
     expect($stock->refresh()->is_cosmetic)->toBeFalse();
 });
 
+test('a stock is GB-origin while one of its trade units is made in GB', function () {
+    [$stock] = createStocks($this->group);
+    $tradeUnit = $stock->tradeUnits()->first();
+    $gb        = \App\Models\Helpers\Country::where('code', 'GB')->firstOrFail();
+    $other     = \App\Models\Helpers\Country::where('code', '!=', 'GB')->firstOrFail();
+    $stock->update(['is_gb_origin' => false]);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['origin_country_id' => $gb->id]);
+    expect($stock->refresh()->is_gb_origin)->toBeTrue();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['origin_country_id' => $other->id]);
+    expect($stock->refresh()->is_gb_origin)->toBeFalse();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['origin_country_id' => $gb->id]);
+    expect($stock->refresh()->is_gb_origin)->toBeTrue();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['origin_country_id' => null]);
+    expect($stock->refresh()->is_gb_origin)->toBeFalse();
+});
+
 test("UI Create Stock in Stock Family Group", function () {
     $stockFamily = StockFamily::first();
     $response    = get(

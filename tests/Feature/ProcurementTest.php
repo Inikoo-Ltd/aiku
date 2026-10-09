@@ -6365,6 +6365,156 @@ describe('partner shopping list', function () {
         }
     });
 
+    test('a partner can split GB-origin goods onto their own pallet, family by family', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $warehouse = $seller->warehouses()->first();
+        $mainBay   = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $gbBay     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $mainBay->update(['is_goods_out' => true]);
+        $gbBay->update(['is_goods_out' => true]);
+
+        $stockFamily = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action($seller->group, \App\Models\Goods\StockFamily::factory()->definition());
+        $family      = \App\Models\Inventory\OrgStockFamily::where('organisation_id', $seller->id)->where('stock_family_id', $stockFamily->id)->first()
+            ?? \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($seller, $stockFamily, []);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalSettings = $sellerPartner->only(['goods_out_location_id', 'split_cosmetics', 'cosmetic_goods_out_location_id', 'split_gb_origin', 'gb_goods_out_location_id']);
+
+        $listedLine = function (bool $isGbOrigin) use ($seller, $family) {
+            $stock = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+            $stock->update(['is_cosmetic' => false, 'is_gb_origin' => $isGbOrigin]);
+            createOrgStocks($seller, [$stock])[0]->update(['org_stock_family_id' => $family->id]);
+            \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->sellerShop, array_merge(
+                \App\Models\Catalogue\Product::factory()->definition(),
+                [
+                    'state'       => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+                    'trade_units' => [['id' => $stock->tradeUnits()->firstOrFail()->id, 'quantity' => 1]],
+                ]
+            ));
+
+            return submittedPartnerShoppingListItem($this->orgPartner, createOrgStocks($this->orgPartner->organisation, [$stock])[0], ['quantity' => 2]);
+        };
+
+        try {
+            $sellerPartner->update(['goods_out_location_id' => $mainBay->id, 'split_cosmetics' => false, 'cosmetic_goods_out_location_id' => null, 'split_gb_origin' => false, 'gb_goods_out_location_id' => $gbBay->id]);
+            $family->update(['gb_separate_pallet' => true]);
+
+            $gbLine = $listedLine(true);
+            expect($sellerPartner->refresh()->bayIdFor(false, true))->toBe($mainBay->id)
+                ->and($sellerPartner->isGbPallet($gbLine->stock_id))->toBeTrue();
+
+            $result = CherryPickPartnerShoppingListItems::make()->action($seller->refresh(), [['id' => $gbLine->id], ['id' => $listedLine(false)->id]]);
+            expect($result['orders'])->toHaveCount(1);
+
+            $sellerPartner->update(['split_gb_origin' => true]);
+            expect($sellerPartner->refresh()->bayIdFor(false, true))->toBe($gbBay->id)
+                ->and($sellerPartner->bayIdFor(false, false))->toBe($mainBay->id)
+                ->and($sellerPartner->bayFor(false, true)->id)->toBe($gbBay->id)
+                ->and($sellerPartner->splitFor(true, true))->toBe('gb')
+                ->and($sellerPartner->bayIds())->toBe([$mainBay->id, $gbBay->id]);
+
+            $gbLine     = $listedLine(true);
+            $sqlBay     = \Illuminate\Support\Facades\DB::selectOne('select '.\App\Models\Procurement\OrgPartner::bayIdSql('org_partners', (string) $gbLine->stock_id).' as bay from org_partners where id = ?', [$sellerPartner->id])->bay;
+            expect((int) $sqlBay)->toBe($gbBay->id);
+
+            $result = CherryPickPartnerShoppingListItems::make()->action($seller->refresh(), [['id' => $gbLine->id], ['id' => $listedLine(false)->id], ['id' => $listedLine(true)->id]]);
+            $orders = collect($result['orders']);
+            expect($result['picked'])->toBe(3)
+                ->and($orders)->toHaveCount(2)
+                ->and($orders->map(fn ($order) => (bool) data_get($order->refresh()->data, 'partner_gb'))->sort()->values()->all())->toBe([false, true])
+                ->and($orders->firstWhere(fn ($order) => data_get($order->data, 'partner_gb'))->transactions()->count())->toBe(2);
+
+            $family->update(['gb_separate_pallet' => false]);
+            $offLine = $listedLine(true);
+            expect($sellerPartner->isGbPallet($offLine->stock_id))->toBeFalse();
+            $result = CherryPickPartnerShoppingListItems::make()->action($seller->refresh(), [['id' => $offLine->id]]);
+            expect((bool) data_get($result['orders'][0]->refresh()->data, 'partner_gb'))->toBeFalse()
+                ->and($result['orders'][0]->id)->not->toBe($orders->firstWhere(fn ($order) => data_get($order->data, 'partner_gb'))->id);
+        } finally {
+            $family->update(['gb_separate_pallet' => true]);
+            $sellerPartner->update($originalSettings);
+        }
+    });
+
+    test('the GB bay of a partner must be a free goods out bay, apart from its cosmetic bay', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $bay         = \App\Actions\Inventory\Location\StoreLocation::make()->action($seller->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        $mainBay     = \App\Actions\Inventory\Location\StoreLocation::make()->action($seller->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        $cosmeticBay = \App\Actions\Inventory\Location\StoreLocation::make()->action($seller->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        $mainBay->update(['is_goods_out' => true]);
+        $cosmeticBay->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalSettings = $sellerPartner->only(['goods_out_location_id', 'split_cosmetics', 'cosmetic_goods_out_location_id', 'split_gb_origin', 'gb_goods_out_location_id']);
+        $update           = fn (array $data) => \App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings::make()->action($sellerPartner->refresh(), $data);
+
+        try {
+            $sellerPartner->update(['goods_out_location_id' => $mainBay->id, 'cosmetic_goods_out_location_id' => $cosmeticBay->id, 'gb_goods_out_location_id' => null]);
+            expect(fn () => $update(['gb_goods_out_location_id' => $bay->id]))->toThrow(ValidationException::class, 'goods out gathering location')
+                ->and(fn () => $update(['gb_goods_out_location_id' => $mainBay->id]))->toThrow(ValidationException::class, 'The GB bay must be different from the partner goods out bay')
+                ->and(fn () => $update(['gb_goods_out_location_id' => $cosmeticBay->id]))->toThrow(ValidationException::class, 'The GB bay must be different from the cosmetic bay');
+
+            $bay->update(['is_goods_out' => true]);
+            $update(['split_gb_origin' => true, 'gb_goods_out_location_id' => $bay->id]);
+            expect($sellerPartner->refresh()->split_gb_origin)->toBeTrue()
+                ->and($sellerPartner->gb_goods_out_location_id)->toBe($bay->id)
+                ->and(\App\Models\Procurement\OrgPartner::withBay($bay->id)->value('id'))->toBe($sellerPartner->id)
+                ->and(fn () => \App\Actions\Procurement\OrgPartner\SetPartnerGoodsOutLocation::run($sellerPartner->refresh(), $bay))->toThrow(ValidationException::class);
+        } finally {
+            $sellerPartner->update($originalSettings);
+        }
+    });
+
+    test('a hub lists its families with GB-origin SKOs and switches their GB pallet', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $warehouse   = $seller->warehouses()->first();
+        $stockFamily = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action($seller->group, \App\Models\Goods\StockFamily::factory()->definition());
+        $family      = \App\Models\Inventory\OrgStockFamily::where('organisation_id', $seller->id)->where('stock_family_id', $stockFamily->id)->first()
+            ?? \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($seller, $stockFamily, []);
+        $stock = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+        $stock->update(['is_gb_origin' => true]);
+        createOrgStocks($seller, [$stock])[0]->update(['org_stock_family_id' => $family->id, 'state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
+
+        $listUrl = route('grp.org.warehouses.show.inventory.org_stock_families.gb_pallet.index', [$seller->slug, $warehouse->slug]);
+        $props   = $this->get($listUrl.'?index_filter[global]='.$family->code)->assertOk()->viewData('page')['props'];
+        $row     = collect($props['index']['data'])->firstWhere('slug', $family->slug);
+        expect($row['gb_separate_pallet'])->toBeTrue()
+            ->and($row['number_gb_org_stocks'])->toBe(1)
+            ->and($props['gb_pallet_can_edit'])->toBeTrue();
+
+        $this->patch(route('grp.org.warehouses.show.inventory.org_stock_families.gb_pallet.update', [$seller->slug, $warehouse->slug, $family->slug]), ['gb_separate_pallet' => false])
+            ->assertRedirect();
+        expect($family->refresh()->gb_separate_pallet)->toBeFalse();
+
+        $offSlugs = collect($this->get($listUrl.'?index_elements[gb_pallet]=off')->viewData('page')['props']['index']['data'])->pluck('slug');
+        $onSlugs  = collect($this->get($listUrl.'?index_elements[gb_pallet]=on')->viewData('page')['props']['index']['data'])->pluck('slug');
+        expect($offSlugs)->toContain($family->slug)
+            ->and($onSlugs)->not->toContain($family->slug);
+
+        $this->get(route('grp.org.warehouses.show.inventory.org_stock_families.show', [$seller->slug, $warehouse->slug, $family->slug]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('gb_pallet.value', false)
+                ->where('gb_pallet.gb_org_stocks', 1));
+
+        $family->update(['gb_separate_pallet' => true]);
+    });
+
     test('send partner order to warehouse creates DN and mirror stock delivery in buyer org', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {

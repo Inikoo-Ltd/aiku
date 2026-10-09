@@ -10,6 +10,7 @@ namespace App\Actions\Goods\Stock;
 
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
+use App\Actions\Goods\Stock\Hydrators\StockHydrateGbOrigin;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
 use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
@@ -40,6 +41,7 @@ class SyncStockTradeUnits
         }
 
         StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
+        StockHydrateGbOrigin::run($stock);
 
         foreach ($stock->orgStocks as $orgStock) {
             SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData, $stockStrategy, $userId);

@@ -47,6 +47,7 @@ use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
+use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamilyGbPallet;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Dispatching\BatchCode\UI\CreateBatchCode;
@@ -214,6 +215,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
     Route::get('/in-process', [IndexOrgStockFamilies::class, 'inProcess'])->name('in-process.index');
     Route::get('/discontinuing', [IndexOrgStockFamilies::class, 'discontinuing'])->name('discontinuing.index');
     Route::get('/discontinued', [IndexOrgStockFamilies::class, 'discontinued'])->name('discontinued.index');
+    Route::get('/gb-pallet', [IndexOrgStockFamilies::class, 'gbPallet'])->name('gb_pallet.index');
     Route::get('/export', ExportStockFamilies::class)->name('export');
     Route::get('/create', CreateStockFamily::class)->name('create');
 
@@ -221,6 +223,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
         Route::get('', ShowOrgStockFamily::class)->name('show');
         Route::get('/edit', EditStockFamily::class)->name('edit');
         Route::get('/invoices', IndexInvoicesInOrgStockFamily::class)->name('invoices');
+        Route::patch('/gb-pallet', UpdateOrgStockFamilyGbPallet::class)->name('gb_pallet.update');
 
         Route::name('show.')->group(function () {
             Route::prefix('stocks')->as('org_stocks.')->group(function () {

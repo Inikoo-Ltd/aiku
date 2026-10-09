@@ -64,7 +64,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         $skipped      = [];
         $picked       = 0;
         $touchedOrgPartners = [];
-        $splitByBuyer       = [];
+        $sellerSideByBuyer  = [];
 
         foreach ($lines as $line) {
             /** @var PartnerShoppingListItem|null $item */
@@ -91,13 +91,14 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $splitCosmetics = $splitByBuyer[$item->organisation_id] ??= (bool) OrgPartner::where('organisation_id', $seller->id)
+            $sellerSide = $sellerSideByBuyer[$item->organisation_id] ??= OrgPartner::where('organisation_id', $seller->id)
                 ->where('partner_id', $item->organisation_id)
-                ->value('split_cosmetics');
-            $isCosmetic     = $splitCosmetics && $item->stock->is_cosmetic;
-            $orderKey       = $customer->id.($splitCosmetics ? ':'.(int) $isCosmetic : '');
+                ->first();
+            $splits     = $sellerSide && ($sellerSide->split_cosmetics || $sellerSide->split_gb_origin);
+            $split      = $splits ? $sellerSide->splitFor((bool) $item->stock->is_cosmetic, $sellerSide->isGbPallet($item->stock_id)) : null;
+            $orderKey   = $customer->id.($splits ? ':'.$split : '');
 
-            $order = $orders[$orderKey] ?? $this->resolveOrder($customer, $splitCosmetics, $isCosmetic);
+            $order = $orders[$orderKey] ?? $this->resolveOrder($customer, $splits, $split);
 
             $orders[$orderKey] = $order;
 
@@ -235,14 +236,20 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         return $customer;
     }
 
-    private function resolveOrder(Customer $customer, bool $splitCosmetics, bool $isCosmetic): Order
+    /**
+     * A partner splitting off cosmetics or GB-origin goods gets one order per pallet, told apart by
+     * data.partner_cosmetic and data.partner_gb, so each pallet has its own delivery note and invoice.
+     */
+    private function resolveOrder(Customer $customer, bool $splits, ?string $split): Order
     {
         $channel = $this->intercompanySalesChannel($customer->group_id);
 
         $order = $customer->orders()
             ->where('state', OrderStateEnum::CREATING)
             ->where('sales_channel_id', $channel->id)
-            ->when($splitCosmetics, fn ($query) => $query->whereRaw("coalesce((data->>'partner_cosmetic')::boolean, false) = ?", [$isCosmetic]))
+            ->when($splits, fn ($query) => $query
+                ->whereRaw("coalesce((data->>'partner_cosmetic')::boolean, false) = ?", [$split === 'cosmetic'])
+                ->whereRaw("coalesce((data->>'partner_gb')::boolean, false) = ?", [$split === 'gb']))
             ->first();
 
         if ($order) {
@@ -253,8 +260,8 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             'sales_channel_id' => $channel->id,
         ]);
 
-        if ($splitCosmetics) {
-            $order->update(['data' => array_replace($order->data ?? [], ['partner_cosmetic' => $isCosmetic])]);
+        if ($splits) {
+            $order->update(['data' => array_replace($order->data ?? [], ['partner_cosmetic' => $split === 'cosmetic', 'partner_gb' => $split === 'gb'])]);
         }
 
         return $order;

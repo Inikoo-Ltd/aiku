@@ -33,6 +33,13 @@ class IndexPrePickList extends OrgAction
 
     private ?array $elementGroups = null;
 
+    private static function gbPallet(): string
+    {
+        return "case when (select ".OrgPartner::splitSql('split_partner', 'stocks.id')." from org_partners split_partner
+            where split_partner.organisation_id = partner_shopping_list_items.partner_organisation_id
+                and split_partner.partner_id = partner_shopping_list_items.organisation_id) = 'gb' then 'GB' else 'non-GB' end";
+    }
+
 
     public function authorize(ActionRequest $request): bool
     {
@@ -95,9 +102,10 @@ class IndexPrePickList extends OrgAction
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'stocks.is_cosmetic',
+                DB::raw("(".self::gbPallet().") = 'GB' as is_gb"),
                 'organisations.code as buyer_code',
                 DB::raw("(select locations.code from org_partners to_partner
-                    join locations on locations.id = ".OrgPartner::bayIdSql('to_partner', 'stocks.is_cosmetic')."
+                    join locations on locations.id = ".OrgPartner::bayIdSql('to_partner', 'stocks.id')."
                     where to_partner.organisation_id = partner_shopping_list_items.partner_organisation_id
                         and to_partner.partner_id = partner_shopping_list_items.organisation_id) as to_location"),
                 DB::raw(self::CATEGORY.' as category'),
@@ -190,6 +198,7 @@ class IndexPrePickList extends OrgAction
         return $this->elementGroups = [
             'category'  => $group(__('Category'), self::CATEGORY, $counts(self::CATEGORY)),
             'cosmetic'  => $group(__('Cosmetic'), self::COSMETIC, $counts(self::COSMETIC)),
+            'gb'        => $group(__('GB pallet'), self::gbPallet(), $counts(self::gbPallet())),
             'requester' => $group(__('Requester'), 'organisations.code', $counts('organisations.code')),
             'priority'  => $group(__('Urgency'), 'partner_shopping_list_items.priority', $counts('partner_shopping_list_items.priority')),
         ];
