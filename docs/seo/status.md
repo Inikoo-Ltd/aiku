@@ -21,9 +21,10 @@ Nothing here has been deployed yet.
 | 3.1 Backlinks | Weekly rank, referring domains and backlinks for our websites and competitors; our links one by one every four weeks with new, lost and broken; backlink gap against up to four domains; backlinks per 404 path | SEO > Backlinks; SEO dashboard: Missing pages tab |
 | 3.2 Competitor research | Competitor domains and the ones Google results suggest; domain comparison (links, organic keywords, estimated traffic, intent) and keyword gap against up to four domains, in the shop's market | SEO > Competitors |
 | 3.3 AI visibility | The team's prompts sent to ChatGPT weekly per country through DataForSEO: whether the answer names us and the competitors, our place in its list, the sources it cites (our pages matched to webpages); monthly LLM Mentions of our domain and the competitors in Google AI Overviews and ChatGPT | SEO > AI visibility; AI prompts column in Top pages; SEO portfolio; weekly SEO report |
+| 3.5 Competitor traffic | Monthly Google search traffic (organic and paid) of our websites and their competitors, with its history back to October 2020, from DataForSEO Labs | SEO > Competitors: Competitors tab and Domain comparison |
 | 3.4 Content help | AI-written page titles and meta descriptions for the pages the audit flags and the pages with many impressions and few clicks, weekly or on request; never published until someone uses them | Webpage: SEO and sharing panel; SEO > Site audit > Suggested fixes |
 | 3.6 Top pages | Every webpage with visitors, page views and Search Console clicks, impressions and position against the previous period, filters Growing, Dropping, New and Lost, the number of queries, referring domains and AI prompts citing it per page | SEO dashboard: Overview, Top pages |
-| API usage | Spend of all SEO APIs against one monthly budget (set on the page, default 250 USD), per feature and provider, per day and per month, with the latest failed requests | Website (group) > API usage, linked from every SEO dashboard |
+| API usage | Spend of all SEO APIs against one monthly budget (set on the page, default 250 USD), per feature and provider, per day and per month, with the latest failed requests and the money left on the DataForSEO account | Website (group) > API usage, linked from every SEO dashboard |
 | Position history and alerts | A position chart per tracked keyword with competitors and the Search Console average; watched keywords that leave the top 10, drop out or fall 5 places send a notification and an email | SEO > Keywords: Rankings tab |
 | Exports and weekly report | Excel download of every SEO table with its filters; a weekly SEO report by email per shop or for every website, for whoever turns it on | Excel button on each table; Weekly report button on the SEO dashboard and the SEO portfolio |
 | Portfolio view | Every live website side by side: site health, visitors and Google clicks of the last 28 days against the 28 before, position, tracked keywords in the top 10, referring domains and rank | Website (group) > SEO portfolio, linked from every SEO dashboard |
@@ -48,7 +49,6 @@ Nothing here has been deployed yet.
 
 | Part | What has to happen first |
 | --- | --- |
-| 3.5 Competitor traffic | DataForSEO bulk traffic estimation (search traffic, with history) decided; traffic from other channels is not built |
 | 3.5 Non-Google demand | Only if the team sells or advertises elsewhere: Bing Webmaster Tools (free), DataForSEO Bing and Amazon keyword data |
 
 ### Not planned yet
@@ -82,7 +82,8 @@ Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sun
 external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
 daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes, backlinks Mondays at
 01:00 UTC, competitor keywords Mondays at 02:00 UTC, weekly SEO reports Mondays at 07:00 UTC, content
-suggestions Tuesdays at 04:00 UTC, AI prompts asked Wednesdays at 01:00 UTC, LLM Mentions on the 1st of the month at 03:30 UTC.
+suggestions Tuesdays at 04:00 UTC, AI prompts asked Wednesdays at 01:00 UTC, LLM Mentions on the 1st of the month at 03:30 UTC, competitor
+search traffic on the 2nd at 02:30 UTC.
 
 ## Configuration
 

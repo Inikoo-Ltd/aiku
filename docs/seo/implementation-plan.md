@@ -493,8 +493,23 @@ volumes, the same kind of figure as 3.2. Labs also offers clickstream-based traf
   Similarweb has that: its API is licensed and priced through sales, far above the SEO budget, and
   the Apify actors that read it break Similarweb's terms. Not built unless the team uses Semrush
   Traffic Analytics today and needs it.
-- Build: the monthly search traffic of our domains and the competitors in `seo_competitors`, with
-  its history, added to the domain comparison and the Competitors tab of 3.2.
+- Built on 9 October 2026 with `historical_bulk_traffic_estimation`: the first request (two UK
+  domains) cost $0.1224, the same for the whole history since October 2020 as for the last 12
+  months, so every fetch reads it all. `bulk_traffic_estimation` is not needed: the history ends
+  with the latest month.
+- `FetchDomainTraffic` stores per domain, market and month the organic, paid, featured snippet and
+  local pack visits and the organic and paid keyword counts in `seo_domain_traffic`, from the first
+  month the domain is seen. A domain fetched in the last 25 days is not fetched again; one with no
+  traffic at all gets an empty row so it is not asked for again until then.
+- `FetchCompetitorTraffic` (2nd of the month, 02:30 UTC): one request per market (country and
+  language) for the live websites in it and all their competitors.
+- Domain comparison: a Search traffic section (organic visits of the latest month, change against
+  the same month a year before, paid visits, when fetched) and a chart of organic visits per month
+  over the last three years. Compare fetches a typed-in domain's history with the rest; a failed
+  traffic fetch leaves the rest of the comparison.
+- Competitors tab: the latest organic visits of our domain and each competitor.
+- In the first fetch, ancientwisdom.biz had about 2,600 organic visits in September 2026 against
+  8,200 a year before, and somethingdifferentwholesale.com about 5,700 against 31.
 
 **Search demand outside Google.** Only when the team sells or advertises on another platform:
 

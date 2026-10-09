@@ -11,12 +11,14 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputText from "primevue/inputtext"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 
 type Competitor = {
     id: number
     domain: string
     label: string | null
+    search_traffic: number | null
     delete_route: routeType & { method: string }
 }
 
@@ -30,6 +32,8 @@ type Suggestion = {
 
 type DomainsData = {
     competitors: Competitor[]
+    ours: { domain: string, search_traffic: number | null } | null
+    traffic_month: string | null
     suggestions: Suggestion[]
     suggestions_error: string | null
 }
@@ -102,6 +106,7 @@ const remove = (competitor: Competitor) => {
             <div class="border-b border-gray-100 px-5 py-3">
                 <h2 class="text-sm font-medium text-gray-900">{{ ctrans("Our competitors") }}</h2>
                 <p class="text-xs text-gray-500">{{ ctrans("Their Google positions are read in Rankings, their links in Backlinks, and they are the default domains of the comparison and keyword gap.") }}</p>
+                <p v-if="data?.traffic_month" class="text-xs text-gray-500">{{ ctrans("Search traffic: estimated organic visits from Google in :month, from DataForSEO Labs, monthly.", { month: useFormatTime(data.traffic_month, { formatTime: "MMMM yyyy" }) }) }}</p>
             </div>
 
             <p v-if="!data?.competitors.length" class="px-5 py-4 text-sm text-gray-600">
@@ -109,12 +114,19 @@ const remove = (competitor: Competitor) => {
             </p>
 
             <ul v-else class="divide-y divide-gray-100">
+                <li v-if="data.ours && data.traffic_month" class="flex items-center gap-4 bg-[--app-accent-soft] px-5 py-2.5 text-sm">
+                    <span class="font-medium text-gray-900">{{ data.ours.domain }}</span>
+                    <span class="text-gray-500">{{ ctrans("us") }}</span>
+                    <span class="ml-auto tabular-nums text-gray-700" v-tooltip="ctrans('Search traffic')">{{ data.ours.search_traffic === null ? "-" : ctrans(":visits visits", { visits: locale.number(Math.round(data.ours.search_traffic)) }) }}</span>
+                    <span v-if="canEdit" class="w-[4.5rem]" aria-hidden="true" />
+                </li>
                 <li v-for="competitor in data.competitors" :key="competitor.id" class="flex items-center gap-4 px-5 py-2.5 text-sm">
                     <a :href="`https://${competitor.domain}`" target="_blank" rel="noopener noreferrer" class="text-gray-900 underline-offset-2 hover:underline focus-visible:underline">
                         {{ competitor.domain }}
                     </a>
                     <span v-if="competitor.label" class="text-gray-500">{{ competitor.label }}</span>
-                    <Button v-if="canEdit" class="ml-auto" type="tertiary" size="xs" :label="ctrans('Remove')" @click="remove(competitor)" />
+                    <span v-if="data.traffic_month" class="ml-auto tabular-nums text-gray-700" v-tooltip="ctrans('Search traffic')">{{ competitor.search_traffic === null ? "-" : ctrans(":visits visits", { visits: locale.number(Math.round(competitor.search_traffic)) }) }}</span>
+                    <Button v-if="canEdit" :class="data.traffic_month ? 'w-[4.5rem] justify-center' : 'ml-auto'" type="tertiary" size="xs" :label="ctrans('Remove')" @click="remove(competitor)" />
                 </li>
             </ul>
         </section>

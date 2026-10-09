@@ -31,6 +31,7 @@ type Usage = {
     features: FeatureRow[]
     daily: { day: string, cost: number }[]
     history: { month: string, cost: number }[]
+    provider_balance: number | null
     latest_errors: { id: number, created_at: string, provider: string, feature: string, endpoint: string, website: string | null, error: string | null }[]
 }
 
@@ -161,6 +162,10 @@ const chartOptions = {
                     <div>
                         <dt class="text-xs text-gray-500">{{ ctrans("Failed") }}</dt>
                         <dd class="mt-0.5 text-xl font-medium tabular-nums" :class="usage.errors ? 'text-red-700' : 'text-gray-900'">{{ locale.number(usage.errors) }}</dd>
+                    </div>
+                    <div v-if="usage.provider_balance !== null">
+                        <dt class="text-xs text-gray-500" v-tooltip="ctrans('Money left on the DataForSEO account, read from DataForSEO every 10 minutes. When it runs out every paid call fails, whatever the budget says')">{{ ctrans("DataForSEO balance") }}</dt>
+                        <dd class="mt-0.5 text-xl font-medium tabular-nums" :class="usage.provider_balance <= 0 ? 'text-red-700' : 'text-gray-900'">{{ usd(usage.provider_balance) }}</dd>
                     </div>
                 </dl>
 
