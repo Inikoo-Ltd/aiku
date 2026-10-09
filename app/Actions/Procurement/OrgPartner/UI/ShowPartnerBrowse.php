@@ -400,27 +400,11 @@ class ShowPartnerBrowse extends OrgAction
             ->orderBy('position')
             ->get();
 
-        $lanes = GetPartnerProductionLanes::make()->ofLines(
-            $this->orgPartner,
-            $history->where('state', ShoppingListItemStateEnum::OPEN->value)->pluck('id')->all()
-        );
+        $stages = GetPartnerProductionLanes::make()->stagesOf($this->orgPartner, $history);
 
         return $history
-            ->each(fn ($line) => $line->stage = $this->historyStage($line, $lanes[$line->id] ?? null))
+            ->each(fn ($line) => $line->stage = $stages[$line->id])
             ->groupBy('stock_id');
-    }
-
-    private function historyStage(object $line, ?string $lane): string
-    {
-        if ($line->state === ShoppingListItemStateEnum::ORDERED->value) {
-            return 'handed_over';
-        }
-
-        if ($lane) {
-            return in_array($lane, ['done', 'received']) ? 'made' : $lane;
-        }
-
-        return $line->pre_picked_at ? 'picked_from_stock' : 'waiting';
     }
 
     /**

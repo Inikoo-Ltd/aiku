@@ -4,6 +4,7 @@ import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { usePartnerProductionStages, type PartnerProductionStage } from "@/Composables/usePartnerProductionStages"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -17,6 +18,7 @@ interface MiniCartLine {
     org_stock_name: string | null
     family_name: string | null
     created_at?: string
+    stage?: PartnerProductionStage
 }
 
 interface MiniCartRoute {
@@ -44,6 +46,7 @@ const props = defineProps<{
 }>()
 
 const locale = useLocaleStore()
+const stages = usePartnerProductionStages(props.miniCart.partner_name)
 
 const groupedItems = computed(() => {
     const groups = new Map<string, MiniCartLine[]>()
@@ -136,8 +139,14 @@ const groupedItems = computed(() => {
                         <td class="py-0.5 pr-2 align-baseline text-gray-400">{{ item.org_stock_code }}</td>
                         <td class="py-0.5 align-baseline">
                             <div class="truncate">{{ item.org_stock_name }}</div>
-                            <div v-if="item.created_at" class="text-[10px] text-gray-400">
-                                {{ useFormatTime(item.created_at, { formatTime: "d MMM" }) }}
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
+                                <span v-if="item.created_at">{{ useFormatTime(item.created_at, { formatTime: "d MMM" }) }}</span>
+                                <span
+                                    v-if="item.stage"
+                                    v-tooltip="stages[item.stage].tooltip"
+                                    class="cursor-help whitespace-nowrap rounded px-1 font-sans"
+                                    :class="stages[item.stage].class"
+                                >{{ stages[item.stage].label }}</span>
                             </div>
                         </td>
                         <td class="py-0.5 pl-2 text-right align-baseline">{{ locale.number(item.quantity) }}</td>

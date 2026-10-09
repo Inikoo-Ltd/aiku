@@ -12,6 +12,7 @@ import Image from "@common/Components/Image.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { usePartnerProductionStages, type PartnerProductionStage } from "@/Composables/usePartnerProductionStages"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHistory } from "@fal"
@@ -21,8 +22,7 @@ import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type OrderHistoryStage = "backlog" | "preparing" | "assigned" | "producing" | "made" | "picked_from_stock" | "waiting" | "handed_over"
-type OrderHistoryLine = { id: number, state: "open" | "ordered", stage: OrderHistoryStage, quantity: number, date: string }
+type OrderHistoryLine = { id: number, state: "open" | "ordered", stage: PartnerProductionStage, quantity: number, date: string }
 type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, order_history: OrderHistoryLine[], order_history_count: number, order_quantum: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
@@ -93,34 +93,7 @@ const commitTimers: Record<number, ReturnType<typeof setTimeout>> = {}
 
 const HISTORY_PREVIEW = 2
 
-const productionStage = (label: string, tone: string) => ({
-    label,
-    tooltip: ctrans("Production at :partner: :stage", { partner: props.miniCart.partner_name, stage: label }),
-    class: tone,
-})
-
-const historyStages: Record<OrderHistoryStage, { label: string, tooltip: string, class: string }> = {
-    backlog: productionStage(ctrans("Backlog"), "bg-gray-100 text-gray-600"),
-    preparing: productionStage(ctrans("Preparing"), "bg-amber-100 text-amber-800"),
-    assigned: productionStage(ctrans("Assigned"), "bg-amber-100 text-amber-800"),
-    producing: productionStage(ctrans("Producing"), "bg-amber-100 text-amber-800"),
-    made: productionStage(ctrans("Made"), "bg-emerald-50 text-emerald-700"),
-    picked_from_stock: {
-        label: ctrans("Picked from stock"),
-        tooltip: ctrans(":partner had it in stock, no need to make it", { partner: props.miniCart.partner_name }),
-        class: "bg-emerald-50 text-emerald-700",
-    },
-    waiting: {
-        label: ctrans("Waiting"),
-        tooltip: ctrans("Submitted to :partner, they have not picked or planned it yet", { partner: props.miniCart.partner_name }),
-        class: "bg-gray-100 text-gray-600",
-    },
-    handed_over: {
-        label: ctrans("Done"),
-        tooltip: ctrans(":partner already handed it over", { partner: props.miniCart.partner_name }),
-        class: "bg-emerald-100 text-emerald-800",
-    },
-}
+const historyStages = usePartnerProductionStages(props.miniCart.partner_name)
 const expandedHistory = ref<Record<number, boolean>>({})
 
 const visibleHistory = (product: ProductCard) =>
