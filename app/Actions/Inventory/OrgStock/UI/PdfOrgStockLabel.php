@@ -214,6 +214,13 @@ class PdfOrgStockLabel
     private const EAN13_HEIGHT_MM = 25.48;
 
     /**
+     * A hand-held scanner stops reading an EAN-13 whose narrowest bar is under 0.264 mm, the GS1
+     * floor of 80 % magnification. Aurora's half-size barcode on the long, low stocks sat at
+     * 0.165 mm, so it is printed at its full 100 % here and the picture gives way to make room for it.
+     */
+    private const WIDE_BARCODE_SIZE = 1.0;
+
+    /**
      * @throws \Mpdf\MpdfException
      */
     public function handle(OrgStock $orgStock, string $level, array $options): Response
@@ -497,7 +504,7 @@ class PdfOrgStockLabel
 
     /**
      * A long, low unit label such as 125 x 37 is laid out as Aurora printed it: the wording runs
-     * down the left with the rule under the name only, a small barcode stands in the middle, and
+     * down the left with the rule under the name only, a barcode sized to scan stands in the middle, and
      * the picture takes the full height of the label on the right.
      *
      * @return array<string, float|int|string>
@@ -505,12 +512,12 @@ class PdfOrgStockLabel
     private function getWideUnitScale(float $width, float $height, float $factor, bool $withImage, bool $withBarcode): array
     {
         $innerHeight = $height - self::TOP_PADDING - self::CELL_PADDING;
-        $imageMm     = $withImage ? $innerHeight * 0.9 : 0.0;
+        $imageMm     = $withImage ? min($innerHeight * 0.9, $width * 0.2) : 0.0;
         $imageWidth  = $withImage ? round(($imageMm + 2.0) / $width * 100, 2) : 0.0;
 
-        $barcodeWidth = $withBarcode ? round(22.5 / $width * 100, 2) : 0.0;
-        $barcodeSize  = round(22.5 * 0.82 / self::EAN13_WIDTH_MM, 2);
-        $barcodeMm    = $height * 0.42;
+        $barcodeSize  = self::WIDE_BARCODE_SIZE;
+        $barcodeWidth = $withBarcode ? round((self::EAN13_WIDTH_MM * $barcodeSize + 1.5) / $width * 100, 2) : 0.0;
+        $barcodeMm    = $height * 0.5;
 
         return [
             'layout'         => 'wide',
