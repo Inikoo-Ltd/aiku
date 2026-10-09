@@ -876,6 +876,15 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    [
+                        "label" => __("Covering"),
+                        "icon"  => ["fal", "fa-user-friends"],
+                        "root"  => "grp.org.shops.show.tasks.covering",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.covering",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
                 ],
             ],
         ];
