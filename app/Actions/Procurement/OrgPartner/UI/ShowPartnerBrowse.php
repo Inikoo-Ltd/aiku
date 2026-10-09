@@ -311,23 +311,37 @@ class ShowPartnerBrowse extends OrgAction
                 ->get()
                 ->keyBy('stock_id');
 
-            $sentQuantities = DB::table('partner_shopping_list_items')
+            $openOrders = DB::table('partner_shopping_list_items')
                 ->where('org_partner_id', $this->orgPartner->id)
-                ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+                ->where('state', ShoppingListItemStateEnum::OPEN->value)
                 ->whereNull('deleted_at')
                 ->whereIn('stock_id', $buyerOrgStocks->keys())
                 ->groupBy('stock_id')
-                ->selectRaw('stock_id, sum(quantity) as total')
-                ->pluck('total', 'stock_id');
+                ->selectRaw('stock_id, sum(quantity) as quantity, min(created_at) as since')
+                ->get()
+                ->keyBy('stock_id');
+
+            $lastOrdered = DB::table('partner_shopping_list_items')
+                ->where('org_partner_id', $this->orgPartner->id)
+                ->where('state', ShoppingListItemStateEnum::ORDERED->value)
+                ->whereNull('deleted_at')
+                ->whereIn('stock_id', $buyerOrgStocks->keys())
+                ->orderBy('stock_id')
+                ->orderByDesc('created_at')
+                ->selectRaw('distinct on (stock_id) stock_id, quantity, created_at')
+                ->get()
+                ->keyBy('stock_id');
 
             $exchange = $this->orgPartner->exchangeToOrgCurrency();
             $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $sentQuantities, $exchange, $quanta) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $openOrders, $lastOrdered, $exchange, $quanta) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
                 $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
+                $openOrder      = $sellerOrgStock ? $openOrders->get($sellerOrgStock->stock_id) : null;
+                $lastOrder      = $sellerOrgStock ? $lastOrdered->get($sellerOrgStock->stock_id) : null;
 
                 return [
                     'id'                => $product->id,
@@ -353,7 +367,10 @@ class ShowPartnerBrowse extends OrgAction
                         : null,
                     'shopping_list_item_id' => $openItem?->id,
                     'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
-                    'sent_quantity'         => (float) ($sentQuantities[$sellerOrgStock?->stock_id] ?? 0),
+                    'in_orders_quantity'    => $openOrder ? (float) $openOrder->quantity : 0,
+                    'in_orders_since'       => $openOrder?->since,
+                    'last_ordered_quantity' => $lastOrder ? (float) $lastOrder->quantity : null,
+                    'last_ordered_at'       => $lastOrder?->created_at,
                     'order_quantum'         => $quantum,
                 ];
             });

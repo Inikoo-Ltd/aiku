@@ -11,17 +11,22 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Image from "@common/Components/Image.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPaperPlane, faHistory } from "@fal"
+library.add(faPaperPlane, faHistory)
 import { ctrans } from "@/Composables/useTrans"
 import { snapToBatch } from "@/Composables/snapToBatch"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type CategoryCard = { id: number, slug: string, code: string, name: string, image: object | null, number_current_products?: number, type?: string }
-type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, sent_quantity: number, order_quantum: number }
+type ProductCard = { id: number, slug: string, code: string, name: string, image: object | null, price: number | null, available_quantity: number, units: number, org_stock_slug: string | null, org_stock_id: number | null, our_stock: number | null, our_quarterly_usage: number | null, our_days_of_cover: number | null, recommended_quantity: number | null, shopping_list_item_id: number | null, ordered_quantity: number, in_orders_quantity: number, in_orders_since: string | null, last_ordered_quantity: number | null, last_ordered_at: string | null, order_quantum: number }
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 
-type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null, family_name: string | null }
-type MiniCart = { partner_name: string, count: number, total: number, currency: string, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } }
+type MiniCartItem = { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null, family_name: string | null, created_at?: string }
+type MiniCart = { partner_name: string, title?: string, list_label?: string, count: number, total: number, currency: string, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] }, ordered?: { count: number, total: number, items: MiniCartItem[], listRoute: { name: string, parameters: (string | number)[] } } }
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -146,33 +151,33 @@ function commitQuantity(product: ProductCard) {
                 v-model="searchTerm"
                 type="text"
                 :placeholder="ctrans('Search products')"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
             />
         </div>
 
         <nav v-if="level !== 'search' && level !== 'cover'" class="flex flex-wrap items-center gap-2 text-sm">
-            <button class="rounded-full px-3 py-1" :class="level === 'root' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({})">
+            <button class="rounded-full px-3 py-1" :class="level === 'root' ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({})">
                 {{ ctrans("All") }} · {{ useLocaleStore().number(browseStats.products) }}
             </button>
             <template v-if="filters.department">
                 <span class="text-gray-300">/</span>
-                <button class="rounded-full px-3 py-1" :class="!filters.sub_department && !filters.family ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({ department: filters.department })">
+                <button class="rounded-full px-3 py-1" :class="!filters.sub_department && !filters.family ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-100'" @click="goTo({ department: filters.department })">
                     {{ filterNames.department ?? filters.department }}
                 </button>
             </template>
             <template v-if="filters.sub_department">
                 <span class="text-gray-300">/</span>
-                <button class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700" @click="goTo({ sub_department: filters.sub_department })">
+                <button class="rounded-full px-3 py-1 bg-[--app-accent-soft] text-[--app-accent-strong]" @click="goTo({ sub_department: filters.sub_department })">
                     {{ filterNames.sub_department ?? filters.sub_department }}
                 </button>
             </template>
             <template v-if="filters.family && level === 'family'">
                 <span class="text-gray-300">/</span>
-                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filterNames.family ?? filters.family }}</span>
+                <span class="rounded-full px-3 py-1 bg-[--app-accent-soft] text-[--app-accent-strong]">{{ filterNames.family ?? filters.family }}</span>
             </template>
             <template v-if="filters.collection && level === 'collection'">
                 <span class="text-gray-300">/</span>
-                <span class="rounded-full px-3 py-1 bg-indigo-100 text-indigo-700">{{ filterNames.collection ?? filters.collection }}</span>
+                <span class="rounded-full px-3 py-1 bg-[--app-accent-soft] text-[--app-accent-strong]">{{ filterNames.collection ?? filters.collection }}</span>
             </template>
         </nav>
 
@@ -180,14 +185,14 @@ function commitQuantity(product: ProductCard) {
             <nav class="-mb-px flex gap-6 text-sm">
                 <button
                     class="border-b-2 px-1 pb-2 font-medium"
-                    :class="browseTab === 'categories' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    :class="browseTab === 'categories' ? 'border-[--app-accent] text-[--app-accent]' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="browseTab = 'categories'"
                 >
                     {{ level === "root" ? ctrans("Departments") : ctrans("Categories") }}
                 </button>
                 <button
                     class="border-b-2 px-1 pb-2 font-medium"
-                    :class="browseTab === 'collections' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    :class="browseTab === 'collections' ? 'border-[--app-accent] text-[--app-accent]' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="browseTab = 'collections'"
                 >
                     {{ ctrans("Collections") }}
@@ -283,6 +288,34 @@ function commitQuantity(product: ProductCard) {
                             </template>
                         </div>
 
+                        <div
+                            v-if="product.in_orders_quantity > 0"
+                            v-tooltip="ctrans('Submitted to :partner and not delivered yet', { partner: miniCart.partner_name })"
+                            class="mt-1 flex cursor-help items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800"
+                        >
+                            <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
+                            <span>
+                                {{ ctrans("Already ordered") }}:
+                                <b class="font-semibold tabular-nums">{{ useLocaleStore().number(product.in_orders_quantity) }}</b>
+                                <span v-if="product.in_orders_since" class="text-amber-600">
+                                    · {{ ctrans("since :date", { date: useFormatTime(product.in_orders_since, { formatTime: "d MMM" }) }) }}
+                                </span>
+                            </span>
+                        </div>
+                        <div
+                            v-else-if="product.last_ordered_at"
+                            class="mt-1 flex items-center gap-1.5 text-xs text-gray-500"
+                        >
+                            <FontAwesomeIcon icon="fal fa-history" fixed-width aria-hidden="true" />
+                            <span>
+                                {{ ctrans("Last ordered") }}:
+                                <span class="tabular-nums text-gray-700">{{ useFormatTime(product.last_ordered_at, { formatTime: "d MMM yyyy" }) }}</span>
+                                <template v-if="product.last_ordered_quantity">
+                                    · <b class="font-medium tabular-nums text-gray-700">{{ useLocaleStore().number(product.last_ordered_quantity) }}</b>
+                                </template>
+                            </span>
+                        </div>
+
                         <div v-if="product.org_stock_slug" class="mt-auto flex items-center gap-2 pt-2">
                             <NumberWithButtonSave
                                 :modelValue="quantityFor(product)"
@@ -293,11 +326,6 @@ function commitQuantity(product: ProductCard) {
                                 noSaveButton
                                 @update:modelValue="(value: number) => setQuantity(product, value)"
                             />
-<span
-                                v-if="product.sent_quantity > 0"
-                                v-tooltip="ctrans('Already sent to the partner')"
-                                class="cursor-help whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500"
-                            >{{ ctrans(':count sent', { count: useLocaleStore().number(product.sent_quantity) }) }}</span>
                             <span
                                 v-if="product.order_quantum > 1"
                                 v-tooltip="ctrans('Made in batches: ordered in multiples of :quantum SKOs', { quantum: product.order_quantum })"
@@ -306,7 +334,7 @@ function commitQuantity(product: ProductCard) {
                             <button
                                 type="button"
                                 class="cursor-pointer rounded-md border border-dashed px-2 py-1 text-xs font-medium tabular-nums"
-                                :class="product.recommended_quantity ? 'border-indigo-300 text-indigo-600 hover:bg-indigo-50' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
+                                :class="product.recommended_quantity ? 'border-[--app-accent-muted] text-[--app-accent] hover:bg-[--app-accent-soft]' : 'border-gray-200 text-gray-400 hover:bg-gray-50'"
                                 :title="ctrans('Suggested order, click to fill')"
                                 @click="setQuantity(product, product.recommended_quantity ?? 0)"
                             >
