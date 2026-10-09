@@ -16,6 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import EprPackagingCompleteness from "@/Components/Reports/EprPackagingCompleteness.vue"
 import UkPackagingReturn from "@/Components/Reports/UkPackagingReturn.vue"
+import EprShipmentPackaging from "@/Components/Reports/EprShipmentPackaging.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -30,6 +31,9 @@ const props = defineProps<{
 	downloadRoute: { name: string; parameters: Record<string, string> }
 	completeness?: any
 	uk_return?: any
+	shipment?: any
+	organisationId: number
+	materials: Record<string, string>
 	ownBrandImports: boolean
 	ukReturnRoute: { name: string; parameters: Record<string, string> }
 }>()
@@ -42,7 +46,7 @@ const fromIsoDate = (iso: string): Date => {
 }
 const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
-const tabsWithData = ["completeness", "uk_return"]
+const tabsWithData = ["completeness", "uk_return", "shipment"]
 
 const visit = (period: { from: string; to: string }, ownBrandImports = props.ownBrandImports) => {
 	router.get(
@@ -127,7 +131,12 @@ const downloadUrl = computed(() => route(props.downloadRoute.name, { ...props.do
 		:data="uk_return"
 		:ownBrandImports="ownBrandImports"
 		:downloadUrl="ukReturnUrl"
+		:organisationId="organisationId"
+		:materials="materials"
+		:period="period"
 		@update:ownBrandImports="(value) => visit(period, value)" />
+
+	<EprShipmentPackaging v-else-if="currentTab === 'shipment'" :data="shipment" :organisationId="organisationId" :materials="materials" />
 
 	<div v-else class="px-4 py-5 max-w-2xl text-sm text-gray-700 space-y-3">
 		<p>{{ ctrans("The four spreadsheets the UK packaging workbook reads, for the period above: one row per SKO with its quantity.") }}</p>

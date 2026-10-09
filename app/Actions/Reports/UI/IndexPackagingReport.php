@@ -10,8 +10,10 @@ namespace App\Actions\Reports\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Reports\GetEprPackagingCompleteness;
+use App\Actions\Reports\GetEprShipmentPackaging;
 use App\Actions\Reports\GetUkPackagingReturn;
 use App\Actions\UI\Reports\IndexReports;
+use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
 use App\Enums\UI\Reports\PackagingReportTabsEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
@@ -23,6 +25,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class IndexPackagingReport extends OrgAction
 {
     use AsAction;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('org-reports.'.$this->organisation->id);
+    }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
@@ -77,6 +84,11 @@ class IndexPackagingReport extends OrgAction
                 PackagingReportTabsEnum::COMPLETENESS->value => $this->tab == PackagingReportTabsEnum::COMPLETENESS->value
                     ? fn () => GetEprPackagingCompleteness::run($organisation, $from, $to)
                     : Inertia::optional(fn () => GetEprPackagingCompleteness::run($organisation, $from, $to)),
+                PackagingReportTabsEnum::SHIPMENT->value => $this->tab == PackagingReportTabsEnum::SHIPMENT->value
+                    ? fn () => GetEprShipmentPackaging::run($organisation, $from, $to)
+                    : Inertia::optional(fn () => GetEprShipmentPackaging::run($organisation, $from, $to)),
+                'organisationId' => $organisation->id,
+                'materials'      => PackagingMaterialCategoryEnum::labels(),
                 PackagingReportTabsEnum::UK_RETURN->value => $this->tab == PackagingReportTabsEnum::UK_RETURN->value
                     ? fn () => GetUkPackagingReturn::run($organisation, $from, $to, $request->boolean('own_brand_imports'))
                     : Inertia::optional(fn () => GetUkPackagingReturn::run($organisation, $from, $to, $request->boolean('own_brand_imports'))),

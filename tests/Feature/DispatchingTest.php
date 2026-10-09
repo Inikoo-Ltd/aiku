@@ -6113,3 +6113,55 @@ test('the UK packaging workbook loads as legacy packaging per trade unit, own br
     expect($bowl->refresh()->packaging_family_id)->toBe($bowlFamily->id)
         ->and($bowlFamily->components()->count())->toBe(2);
 });
+
+test('shipment packaging is reported as used and lines added by hand join the UK return', function () {
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, Stock::factory()->definition()));
+    $orgStock->update(['code' => 'Box'.Str::random(6)]);
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    $this->post(route('grp.models.shipment_packaging.store', $this->organisation->id), ['code' => strtoupper($orgStock->code), 'material_category' => 'paper_cardboard', 'weight_g' => 400])
+        ->assertRedirect()->assertSessionHasNoErrors();
+    $this->post(route('grp.models.shipment_packaging.store', $this->organisation->id), ['code' => 'NO-SUCH-'.Str::random(6), 'material_category' => 'paper_cardboard', 'weight_g' => 400])
+        ->assertSessionHasErrors('code');
+
+    $component = $tradeUnit->refresh()->packagingFamily->components()->sole();
+    expect($orgStock->refresh()->is_shipment_packaging)->toBeTrue()
+        ->and($component->packaging_level)->toBe(\App\Enums\Goods\Packaging\PackagingLevelEnum::SERVICE)
+        ->and((float)$component->weight_g)->toBe(400.0);
+
+    foreach ([['consumption', 'out', -50], ['return-consumption', 'in', 5]] as [$type, $flow, $quantity]) {
+        DB::table('org_stock_movements')->insert([
+            'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'warehouse_id' => $this->warehouse->id, 'org_stock_id' => $orgStock->id,
+            'date' => '2001-04-10 10:00:00', 'class' => 'movement', 'type' => $type, 'flow' => $flow, 'quantity' => $quantity, 'org_amount' => 0, 'grp_amount' => 0, 'data' => '{}',
+        ]);
+    }
+
+    $from   = \Illuminate\Support\Carbon::parse('2001-04-01');
+    $to     = \Illuminate\Support\Carbon::parse('2001-04-30');
+    $built  = \App\Actions\Goods\Packaging\BuildEprFlowLines::run($this->organisation, $from, $to);
+    $return = fn () => \App\Actions\Reports\GetUkPackagingReturn::run($this->organisation, $from, $to);
+
+    expect($built['shipment_packaging'])->toBe(2)
+        ->and($return()['lines'])->toBe([['activity' => 'PF', 'type' => 'HH', 'class' => 'P3', 'material' => 'PC', 'ram' => 'G', 'kg' => 18.0]])
+        ->and(\App\Actions\Reports\GetEprShipmentPackaging::run($this->organisation, $from, $to))->toMatchArray([['id' => $orgStock->id, 'code' => $orgStock->code, 'name' => $orgStock->name, 'material_category' => 'paper_cardboard', 'weight_g' => 400.0, 'used' => 45.0, 'kg' => 18.0]]);
+
+    $this->post(route('grp.models.epr_manual_line.store', $this->organisation->id), [
+        'date_from' => '2001-04-01', 'date_to' => '2001-04-30', 'activity' => 'IM', 'packaging_type' => 'NH', 'packaging_class' => 'P2',
+        'material_category' => 'paper_cardboard', 'kg' => 100, 'notes' => '2 x 40HC',
+    ])->assertRedirect()->assertSessionHasNoErrors();
+    $this->post(route('grp.models.epr_manual_line.store', $this->organisation->id), ['date_from' => '2001-04-30', 'date_to' => '2001-04-01', 'activity' => 'XX', 'packaging_type' => 'HH', 'packaging_class' => 'P1', 'material_category' => 'glass', 'kg' => -1])
+        ->assertSessionHasErrors(['date_to', 'activity', 'kg']);
+
+    $withManual = $return();
+    expect(collect($withManual['lines'])->firstWhere('activity', 'IM'))->toMatchArray(['type' => 'NH', 'class' => 'P2', 'material' => 'PC', 'ram' => null, 'kg' => 100.0])
+        ->and($withManual['manual_lines'])->toHaveCount(1)
+        ->and($withManual['manual_lines'][0]['notes'])->toBe('2 x 40HC');
+
+    $this->delete(route('grp.models.epr_manual_line.delete', [$this->organisation->id, $withManual['manual_lines'][0]['id']]))->assertRedirect();
+    $this->delete(route('grp.models.shipment_packaging.delete', [$this->organisation->id, $orgStock->id]))->assertRedirect();
+
+    expect($return()['manual_lines'])->toBe([])
+        ->and($orgStock->refresh()->is_shipment_packaging)->toBeFalse()
+        ->and($return()['lines'])->toBe([]);
+});
