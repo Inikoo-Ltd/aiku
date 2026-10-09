@@ -2627,7 +2627,11 @@ test('UI show procurement dashboard', function () {
             )
             ->where('dashboardCards', fn ($cards) => collect($cards)->pluck('label')->intersect(['Agents', 'Suppliers', 'Supplier Products'])->isEmpty()
                 && collect($cards)->pluck('label')->contains('Open purchase orders'))
-            ->missing('search_demand');
+            ->missing('search_demand')
+            ->missing('counterparties')
+            ->loadDeferredProps(fn (AssertableInertia $page) => $page
+                ->has('counterparties.currency')
+                ->where('counterparties.cards', fn ($cards) => collect($cards)->contains(fn ($card) => $card['type'] === 'agent' && $card['name'] === $this->orgAgent->agent->name)));
     });
 });
 
@@ -2708,6 +2712,23 @@ test('UI Index org agents', function () {
             ->missing('cover')
             ->loadDeferredProps(fn (AssertableInertia $page) => $page->has('cover'));
     });
+});
+
+test('agent card sections stay open or closed per user', function () {
+    $user = auth()->user();
+    $user->update(['settings' => array_merge($user->settings ?? [], ['tickets_list_mine' => 'assigned'])]);
+    $closed = $this->orgAgent->id.'cover';
+
+    $this->patch(route('grp.models.profile.update'), [
+        'agent_card_sections' => [$closed => false, $this->orgAgent->id.'stock_delivery' => true, 'nonsense' => true],
+    ])->assertSessionHasNoErrors();
+
+    expect($user->fresh()->settings)
+        ->toMatchArray(['tickets_list_mine' => 'assigned'])
+        ->and($user->fresh()->settings['agent_card_sections'])->toBe([$closed => false, $this->orgAgent->id.'stock_delivery' => true]);
+
+    $this->get(route('grp.org.procurement.org_agents.index', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('card_sections.'.$closed, false));
 });
 
 test('UI show org agents', function () {

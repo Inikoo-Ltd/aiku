@@ -258,6 +258,7 @@ class IndexOrgAgents extends OrgAction
                     ],
                 ],
                 'currency_code'     => $this->organisation->currency->code,
+                'card_sections'     => (object) ($request->user()->settings['agent_card_sections'] ?? []),
                 'agents'            => $orgAgents->map(fn (OrgAgent $orgAgent) => $this->agentCard($orgAgent))->all(),
                 'cover'             => Inertia::defer(fn () => $this->coverByAgent($orgAgents)),
             ],

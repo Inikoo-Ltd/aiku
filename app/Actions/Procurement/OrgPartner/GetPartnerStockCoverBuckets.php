@@ -58,7 +58,7 @@ class GetPartnerStockCoverBuckets
     private function bucketExpression(int $leadDays): string
     {
         $lead       = "coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays)";
-        $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
+        $understock = "coalesce((select (sf.data->'stock_cover'->>'understock_days')::int from stock_families sf where sf.id = stocks.stock_family_id), 2 * $lead)";
 
         return "case
             when os.id is null then 'never'
@@ -96,7 +96,6 @@ class GetPartnerStockCoverBuckets
             })
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
             ->leftJoin('stocks', 'stocks.id', 'p.stock_id')
-            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('p.organisation_id', $orgPartner->partner_id)
             ->where('p.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
@@ -208,7 +207,7 @@ class GetPartnerStockCoverBuckets
                 'order_cheapest' => round((float) ($counts->get($bucket)->order_cheapest ?? 0) * $exchange, 2),
                 'left_out'    => (object) ($leftOut[$bucket] ?? []),
             ])->all(),
-            'top'     => $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all(),
+            'top'     => $topLimit ? $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all() : [],
         ];
     }
 
@@ -252,7 +251,6 @@ class GetPartnerStockCoverBuckets
             })
             ->leftJoin('org_stock_stats as ps', 'ps.org_stock_id', 'p.id')
             ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
-            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('os.organisation_id', $orgPartner->organisation_id)
             ->where('os.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
@@ -450,7 +448,7 @@ class GetPartnerStockCoverBuckets
 
     private function criticalDays(int $leadDays): string
     {
-        return "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays))";
+        return "coalesce((select (sf.data->'stock_cover'->>'understock_days')::int from stock_families sf where sf.id = stocks.stock_family_id), 2 * coalesce(p.measured_lead_time_days, p.estimated_lead_time_days, $leadDays))";
     }
 
     /**

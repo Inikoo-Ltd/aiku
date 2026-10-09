@@ -90,6 +90,14 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
         }
 
+        if (Arr::exists($modelData, 'agent_card_sections')) {
+            $modelData['settings']['agent_card_sections'] = collect(Arr::pull($modelData, 'agent_card_sections'))
+                ->filter(fn ($isOpen, $key) => preg_match('/^\d+(cover|orders|next_container|stock_delivery)$/', (string) $key))
+                ->map(fn ($isOpen) => (bool) $isOpen)
+                ->take(500)
+                ->all();
+        }
+
         foreach (['ticket_comments_newest_first', 'ticket_history_newest_first'] as $ticketOrderSetting) {
             if (Arr::exists($modelData, $ticketOrderSetting)) {
                 $modelData['settings'][$ticketOrderSetting] = (bool) Arr::pull($modelData, $ticketOrderSetting);
@@ -254,6 +262,8 @@ class UpdateProfile extends OrgAction
             'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
             'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
+            'agent_card_sections'                 => ['sometimes', 'array', 'max:500'],
+            'agent_card_sections.*'               => ['boolean'],
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
             'rail_hidden_badges'                  => ['sometimes', 'nullable', 'array'],

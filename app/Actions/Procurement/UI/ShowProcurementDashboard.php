@@ -238,6 +238,12 @@ class ShowProcurementDashboard extends OrgAction
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP
                     ? Cache::flexible("procurement-dashboard:stock-levels:{$this->organisation->id}:".($source ?? 'all'), self::STOCK_LEVELS_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels($source))
                     : [],
+                'counterparties' => $this->organisation->type === OrganisationTypeEnum::SHOP
+                    ? Inertia::defer(fn () => [
+                        'currency' => $this->organisation->currency->code,
+                        'cards'    => GetProcurementCounterpartyCards::run($this->organisation),
+                    ])
+                    : null,
                 'stockOuts' => $this->organisation->type === OrganisationTypeEnum::SHOP ? GetStockOutsHistory::run($this->organisation, GetStockOutsHistory::make()->period($request->input('period')), $source) : null,
 
             ]
