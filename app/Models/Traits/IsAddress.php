@@ -35,8 +35,25 @@ trait IsAddress
             ->withAddressLine1($this->address_line_1 ?? '');
     }
 
+    private function getLinesWithoutCountry(): string
+    {
+        return collect([
+            $this->address_line_1,
+            $this->address_line_2,
+            $this->dependent_locality,
+            $this->locality,
+            $this->administrative_area,
+            $this->postal_code,
+            $this->sorting_code,
+        ])->filter(fn ($line) => filled($line))->implode("\n");
+    }
+
     public function getFormattedAddressAttribute(): string
     {
+        if (blank($this->country_code)) {
+            return $this->getLinesWithoutCountry();
+        }
+
         $addressFormatRepository = new AddressFormatRepository();
         $countryRepository       = new CountryRepository();
         $subdivisionRepository   = new SubdivisionRepository();
@@ -47,6 +64,10 @@ trait IsAddress
 
     public function getHtml(): string
     {
+        if (blank($this->country_code)) {
+            return nl2br(e($this->getLinesWithoutCountry()));
+        }
+
         $addressFormatRepository = new AddressFormatRepository();
         $countryRepository       = new CountryRepository();
         $subdivisionRepository   = new SubdivisionRepository();

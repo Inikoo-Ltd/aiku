@@ -3138,6 +3138,14 @@ test('new purchase orders use the default warehouse address and show empty physi
             ->etc());
 });
 
+test('an address without a country formats its lines instead of failing', function () {
+    $address = new Address(['address_line_1' => '1 Example Road', 'locality' => 'Trnava', 'postal_code' => '917 01']);
+
+    expect($address->formatted_address)->toBe("1 Example Road\nTrnava\n917 01")
+        ->and($address->getHtml())->toBe("1 Example Road<br />\nTrnava<br />\n917 01")
+        ->and((new Address())->formatted_address)->toBe('');
+});
+
 test('purchase order submit availability follows its submittable items', function () {
     $purchaseOrder = StorePurchaseOrder::make()->action(
         $this->orgSupplier,
@@ -5798,7 +5806,6 @@ describe('partner shopping list', function () {
             StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
         }
         $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->delete();
-        $this->orgPartner->organisation->warehouses()->with('address')->get()->each(fn ($warehouse) => $warehouse->address?->update(['country_code' => $warehouse->address->country_code ?? 'GB']));
 
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $this->buyerOrgStock->update(['packed_in' => $sellerOrgStock->packed_in]);
