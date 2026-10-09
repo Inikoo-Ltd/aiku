@@ -25,6 +25,7 @@ use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListIt
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -108,7 +109,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             if ($skosPerProductUnit <= 0) {
                 $skosPerProductUnit = 1;
             }
-            $productUnits = round($quantityPicked / $skosPerProductUnit, 3);
+            $productUnits = round($quantityPicked / $skosPerProductUnit, 6);
             $amount       = round($productUnits * (float) $product->price, 2);
 
             $transaction = StoreTransaction::make()->action(
@@ -142,8 +143,8 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                         'transaction_id',
                         'added_by_user_id',
                         'pre_picked_at',
-                        'job_order_id',
                     ]),
+                    'job_order_id'   => in_array($item->jobOrder?->state, [JobOrderStateEnum::IN_PROCESS, JobOrderStateEnum::SUBMITTED, JobOrderStateEnum::CONFIRMED], true) ? $item->job_order_id : null,
                     'parent_id'      => $item->id,
                     'quantity' => $remainder,
                     'state'          => ShoppingListItemStateEnum::OPEN,

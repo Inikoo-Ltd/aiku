@@ -71,6 +71,8 @@ Los añadidos se rechazan en tres casos, a propósito: la lista ha alcanzado el 
 
 En cuanto el socio [envía un cargamento a su almacén](/docs/fulfilling-partner-orders-es), aparece una **stock delivery** entrante bajo **Stock deliveries** de tu socio. Déjala tranquila mientras diga confirmed o dispatched — refleja el almacén del vendedor y se actualiza sola. Cuando las cajas llegan físicamente: **receive**, comprueba y coloca en ubicaciones exactamente como harías con cualquier entrega de proveedor. Cualquier falta o daño se gestiona después de recibir, contra la factura vinculada — consulta [la visión general](/docs/ordering-from-a-partner-organisation-es) para cómo funciona el dinero.
 
+Cuando el socio despacha, cada línea llega con los lotes que el socio recogió ya rellenados: el mismo código de lote y la misma fecha de consumo preferente, convertidos a tus SKO. Al comprobar solo los confirmas, o los corriges si la mercancía dice otra cosa, y al ubicar el stock esos lotes van a tus estanterías.
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Ver qué hay que comprar:</b> tu organización → <b>Procurement → Partners</b> → abre el socio → <b>Shopping</b> (el panel) → trabaja las casillas de riesgo.</li>

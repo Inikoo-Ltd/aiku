@@ -91,6 +91,6 @@ class SplitPicking extends OrgAction
             abort(422, __('Invalid split quantity'));
         }
 
-        $this->handle($picking, $splitQuantity);
+        SplitPickingByBatch::run($this->handle($picking, $splitQuantity));
     }
 }

@@ -108,6 +108,10 @@ class ShowSeoDashboard extends OrgAction
                     SeoDashboardTabsEnum::WEBPAGES,
                     $shop->website,
                     fn (Website $website) => WebpagePerformanceResource::collection(IndexWebpagesPerformance::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::WEBPAGES->value))
+                        ->additional([
+                            'periods'         => IndexWebpagesPerformance::periods($website, $fromDate, $toDate),
+                            'min_for_percent' => IndexWebpagesPerformance::MIN_FOR_PERCENT,
+                        ])
                 ),
 
                 SeoDashboardTabsEnum::CONVERSIONS->value => $this->tabProp(

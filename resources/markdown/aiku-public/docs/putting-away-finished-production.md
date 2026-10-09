@@ -40,6 +40,8 @@ If the job order was made for stock, for an own customer, or for more than one p
 
 That books the goods into the location, gives them a batch code made from the job order reference and the product code, deducts the raw materials the recipe says were used, and marks the job order as received. The row disappears, and on the factory board the line leaves the **Done** column.
 
+The batch also gets its best-before date: the one typed for the run on the factory board, otherwise the day it is put away plus the artefact's shelf life. An artefact with no shelf life gets no best-before date, so fill in the shelf life on each artefact. Putting away more of the same job order line later adds to the same batch. The stock now knows which batch sits in which location, which is what the inventory reports read for best-before dates.
+
 The quantity booked in is what the artisans actually made, not what was asked for. A job order that asked for 25 and got 19 books in 19.
 
 ## What happens next

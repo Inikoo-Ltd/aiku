@@ -2,7 +2,7 @@
 title: Registrar el progreso de un pedido como agente
 summary: Para agentes — las cuatro fechas que registras en cada pedido a un proveedor (depósito pagado, muestra aprobada, producción terminada, fecha de listo propuesta), cuándo registrarlas, qué registra en su lugar la empresa compradora, y por qué una fecha que falta aparece como un retraso.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -50,10 +50,10 @@ Estos son los datos con los que se calcula tu <a href="/docs/your-clean-handover
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-Inicia sesión → <b>Supplier Purchase Orders</b> → abre el pedido → <b>Edit</b>. <b>Deposit paid</b> y <b>Deposit amount</b> están en la primera sección. <b>Sample approved</b> y <b>Production done</b> están en la sección <b>Production</b>. <b>Proposed ready date (agent)</b> está en la sección <b>Clean handover</b>.
+Inicia sesión → <b>Purchase Orders</b> → abre el pedido → <b>Edit</b>. Cada orden de compra es para uno de tus proveedores. <b>Deposit paid</b> y <b>Deposit amount</b> están en la sección <b>Payments</b>. <b>Sample approved</b> y <b>Production done</b> están en la sección <b>Production</b>. <b>Proposed ready date</b> está en la sección <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">
 <b>Permisos que necesitas</b><br>
-Un acceso para tu organización de agente. Los campos de fecha de listo aprobada, control de calidad, entrega limpia y cumplimiento normativo se te muestran, pero están bloqueados.
+Un acceso para tu organización de agente. Tu formulario solo contiene los campos que tú registras: muestra aprobada, producción terminada, fecha de listo propuesta, importe del depósito y depósito pagado. Los campos de fecha de listo aprobada, control de calidad, entrega limpia y cumplimiento normativo no aparecen en él, porque los registra la empresa compradora.
 </aside>

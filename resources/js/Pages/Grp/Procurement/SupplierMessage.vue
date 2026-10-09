@@ -47,7 +47,7 @@ interface ThreadMessage {
     delivery: { state: string; reads: number; clicks: number } | null
     channel: "email" | "whatsapp" | "wechat"
     author: string | null
-    purchase_order: { reference: string; route: routeType } | null
+    purchase_orders: { reference: string; route: routeType }[]
 }
 
 const props = defineProps<{
@@ -150,9 +150,11 @@ const assignSupplier = () => {
                 </div>
                 <div class="text-right">
                     <div class="whitespace-nowrap text-xs text-gray-500">{{ useFormatTime(message.sent_at, { formatTime: "hm" }) }}</div>
-                    <Link v-if="message.purchase_order" :href="route(message.purchase_order.route.name, message.purchase_order.route.parameters)" class="primaryLink text-xs">
-                        {{ message.purchase_order.reference }}
-                    </Link>
+                    <div v-for="purchaseOrder in message.purchase_orders" :key="purchaseOrder.reference">
+                        <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="primaryLink text-xs">
+                            {{ purchaseOrder.reference }}
+                        </Link>
+                    </div>
                     <div v-if="message.delivery" class="text-xs text-gray-500">
                         <span class="rounded bg-gray-100 px-1.5 py-0.5 capitalize">{{ message.delivery.state.replace(/_/g, " ") }}</span>
                         <span v-if="message.delivery.reads"> · {{ ctrans("Opened") }} {{ message.delivery.reads }}×</span>

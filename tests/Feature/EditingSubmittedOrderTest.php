@@ -16,6 +16,7 @@ use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\StoreFollowUpOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UI\GetEcomOrderActions;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -327,4 +328,17 @@ test('a follow-up order is refused while items can still be added to the order',
     [$order] = submittedOrderWithTransaction($this->customer, $this->product);
 
     expect(fn () => StoreFollowUpOrder::make()->action($order))->toThrow(HttpException::class);
+});
+
+test('the order page offers adding a product while the order is in the warehouse', function () {
+    [$order] = submittedOrderWithTransaction($this->customer, $this->product);
+    $hasAddToWarehouseOrder = fn () => collect(GetEcomOrderActions::run($order->refresh(), true))->contains('key', 'add-product-to-warehouse-order');
+
+    expect($hasAddToWarehouseOrder())->toBeFalse();
+
+    SendOrderToWarehouse::make()->action($order, []);
+    expect($hasAddToWarehouseOrder())->toBeTrue();
+
+    $order->updateQuietly(['state' => OrderStateEnum::PICKED]);
+    expect($hasAddToWarehouseOrder())->toBeFalse();
 });

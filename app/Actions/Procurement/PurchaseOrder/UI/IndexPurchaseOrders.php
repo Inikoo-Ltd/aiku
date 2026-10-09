@@ -120,7 +120,8 @@ class IndexPurchaseOrders extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('purchase_orders.reference', $value)
-                    ->orWhereAnyWordStartWith('purchase_orders.parent_name', $value);
+                    ->orWhereAnyWordStartWith('purchase_orders.parent_name', $value)
+                    ->orWhereAnyWordStartWith('purchase_orders.agent_order_reference', $value);
             });
         });
 
@@ -133,7 +134,7 @@ class IndexPurchaseOrders extends OrgAction
         $query = QueryBuilder::for(PurchaseOrder::class);
 
         if (class_basename($parent) == 'OrgAgent') {
-            $query->where('purchase_orders.parent_type', 'OrgAgent')->where('purchase_orders.parent_id', $parent->id);
+            $query->where('purchase_orders.agent_id', $parent->agent_id)->where('purchase_orders.organisation_id', $parent->organisation_id);
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $query->where('purchase_orders.parent_type', 'OrgSupplier')->where('purchase_orders.parent_id', $parent->id);
         } elseif (class_basename($parent) == 'OrgPartner') {
@@ -191,6 +192,7 @@ class IndexPurchaseOrders extends OrgAction
                 ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
                 ->addSelect([
                     'organisations.name as organisation_name',
+                    'organisations.slug as organisation_slug',
                     'currencies.code as org_currency_code',
                 ]);
         } else {
@@ -200,16 +202,16 @@ class IndexPurchaseOrders extends OrgAction
         return $query
             ->defaultSort('-purchase_orders.date')
             ->with([
+                'agent:id,slug,name',
                 'parent' => function ($morphTo) {
                     $morphTo->morphWith([
-                        OrgSupplier::class => ['supplier'],
-                        OrgAgent::class => ['agent'],
+                        OrgSupplier::class => ['supplier', 'orgAgent:id,slug'],
                     ]);
                 },
             ])
             ->allowedSorts($parent instanceof OrgSupplierProduct
                 ? ['reference', 'parent_name', 'date', 'quantity_ordered', 'org_net_amount']
-                : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
+                : ['reference', 'agent_order_reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -244,8 +246,12 @@ class IndexPurchaseOrders extends OrgAction
                 ->column(key: 'state', label: __('State'), canBeHidden: false)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($parent instanceof Group || $parent instanceof Organisation) {
-                $table->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true);
+            if (!($parent instanceof OrgSupplierProduct)) {
+                $table->column(key: 'agent_order_reference', label: __('Agent order'), sortable: true);
+            }
+
+            if ($parent instanceof Group || $parent instanceof Organisation || $parent instanceof OrgAgent) {
+                $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($parent instanceof Group || $parent instanceof Supplier || $this->getParentOrganisationAgent($parent)) {
@@ -345,20 +351,6 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $actions       = [
-                [
-                    'label' => __('Purchase Order'),
-                    'type'  => 'button',
-                    'style' => 'create',
-                    'route' => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.org-agent.purchase-order.store',
-                        'parameters' => [
-                            'orgAgent' => $this->parent->id,
-                        ],
-                    ],
-                ],
-            ];
         } elseif ($this->parent instanceof OrgPartner) {
             $title         = $this->parent->partner->name;
             $icon          = [
@@ -434,8 +426,6 @@ class IndexPurchaseOrders extends OrgAction
         foreach ($purchaseOrders as $purchaseOrder) {
             if ($purchaseOrder->parent_type === 'OrgSupplier' && $purchaseOrder->relationLoaded('parent')) {
                 $purchaseOrder->parent->load('supplier');
-            } elseif ($purchaseOrder->parent_type === 'OrgAgent' && $purchaseOrder->relationLoaded('parent')) {
-                $purchaseOrder->parent->load('agent');
             }
         }
 

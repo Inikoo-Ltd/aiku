@@ -149,7 +149,7 @@ class ShowCustomer extends OrgAction
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B
                     && $request->user()->authTo("orders.{$this->shop->id}.edit")
                     && !StoreOrder::isPartnerBuyingFromHub($customer, $this->shop),
-                'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer) && StartCustomerEmailChat::make()->canBeStartedBy($request->user(), $customer),
+                'can_email_customer' => StartCustomerEmailChat::canBeStartedBy($request->user(), $customer),
                 'permissions'        => $permissions,
                 'can_make_custom_product' => $canMakeCustomProduct,
                 'custom_product_artefacts' => Inertia::optional(fn () => $canMakeCustomProduct ? StoreCustomerProductFromArtefact::artefactOptions($customer) : []),

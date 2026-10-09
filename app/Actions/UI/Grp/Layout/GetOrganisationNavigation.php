@@ -360,6 +360,15 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
+                        'label' => __('To review & publish'),
+                        'icon'  => ['fal', 'fa-clipboard-check'],
+                        'root'  => 'grp.org.tasks.review',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.review',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],
                         'root'  => 'grp.org.tasks.board',
@@ -383,6 +392,15 @@ class GetOrganisationNavigation
                         'root'  => 'grp.org.tasks.reports',
                         'route' => [
                             'name'       => 'grp.org.tasks.reports',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Covering'),
+                        'icon'  => ['fal', 'fa-user-friends'],
+                        'root'  => 'grp.org.tasks.covering',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.covering',
                             'parameters' => [$organisation->slug],
                         ],
                     ],

@@ -4,6 +4,8 @@ namespace App\Actions\Procurement;
 
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Procurement\OrgSupplierProduct;
+use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\User;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +40,21 @@ trait WithAgentOrganisation
 
         $this->canEdit   = false;
         $this->canDelete = false;
+    }
+
+    /**
+     * An agent organisation records its own side of an order placed through it (production, the
+     * ready date it proposes, the deposit it paid) on the order of the organisation that placed it.
+     */
+    protected function agentEditsOwnOrder(PurchaseOrder $purchaseOrder, User $user): bool
+    {
+        $agent = $this->getOrganisationAgent($this->organisation);
+
+        return $agent
+            && $purchaseOrder->organisation_id !== $this->organisation->id
+            && $purchaseOrder->isAgentOrder()
+            && $purchaseOrder->agent_id === $agent->id
+            && $user->authTo("procurement.{$this->organisation->id}.edit");
     }
 
     private function getProcurementRecordAgentId(Model $record): ?int

@@ -17,10 +17,6 @@ test("maps procurement routes to their matching result sections", () => {
 		["grp.org.procurement.org_agents.show.purchase-orders.index", "purchase_orders"],
 		["grp.org.procurement.stock_deliveries.index", "stock_deliveries"],
 		["grp.org.procurement.org_agents.show.stock-deliveries.index", "stock_deliveries"],
-		[
-			"grp.org.procurement.agent_supplier_purchase_orders.index",
-			"agent_supplier_purchase_orders",
-		],
 		["grp.org.procurement.dashboard", null],
 	])
 

@@ -24,6 +24,10 @@ const props = defineProps<{
         title: string
         description: string
         canonical_url: string
+        hreflang?: {
+            locale: string
+            alternates: { hreflang: string, href: string }[]
+        }
         type: string  // 'catalogue'
         sub_type: string  // 'department' | 'sub_department' | 'family' | 'product'
         model_type: string  // 'ProductCategory' | 'Product'
@@ -135,13 +139,14 @@ onBeforeUnmount(() => {
         <meta name="description" :content="webpage_data.description || ''" />
         <meta name="robots" :content="robotsContent" />
         <link rel="canonical" :href="webpage_data.canonical_url || currentUrl" />
+        <link v-for="alternate in webpage_data.hreflang?.alternates ?? []" :key="alternate.hreflang" rel="alternate" :hreflang="alternate.hreflang" :href="alternate.href" />
         <meta property="og:type" content="website" />
         <meta property="og:title" :content="webpage_data.title || ''" />
         <meta property="og:description" :content="webpage_data.description || ''" />
         <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
         <meta v-if="shareImage" property="og:image" :content="shareImage" />
         <meta v-if="shareImage" property="og:image:alt" :content="shareImageAlt" />
-        <meta property="og:locale" content="en_US" />
+        <meta property="og:locale" :content="webpage_data.hreflang?.locale || 'en_GB'" />
         <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="webpage_data.title || ''" />

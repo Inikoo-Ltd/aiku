@@ -24,6 +24,8 @@ Each row of the sheet describes one product the supplier sells us, and Import tu
 | **Recommended prices** for the future master product | Unit recommended price and RRP in £ and € and Recommended SKOs per selling outer |
 | **Draft purchase orders** | Order Cartons UK / SK / ES / Aroma |
 
+Every organisation that buys from the supplier also gets the SKO straight away, linked to its copy of the supplier product.
+
 If the Part reference already exists, nothing new is made: the supplier is added to that trade unit as another source, and only its empty fields are filled.
 
 ## The template
@@ -41,13 +43,42 @@ A few rules that save most mistakes:
 - **Unit barcode**: a real EAN, or `auto` to take the next free barcode from the pool at Import. Empty means no barcode and needs a decision.
 - **Units per SKO, SKOs per carton and Minimum order** are whole numbers.
 
+## Compliance data (v7 template)
+
+The template has three tabs. **Product data** keeps every column above in place. After them come optional columns for GPSR, the product's regulatory category and EUDR. The two other tabs hold what one row per product cannot. All of it is optional: a file without these columns or tabs uploads exactly as before.
+
+| Where | What it becomes |
+| --- | --- |
+| **Product data**: Manufacturer, EU responsible person, Warnings and safety information, Instructions for use, Languages of warnings and instructions | The trade unit's GPSR fields, which the products selling it show and translate |
+| **Product data**: Brand, Batch traceability, Regulatory category, Toy status, Batteries / magnets, SVHC above 0.1%, SVHC substance, CLP signal word, Material composition (% by weight) | The trade unit's **Compliance** tab |
+| **Product data**: EUDR status, commodity, species (scientific name), country of production, region of production, plot geolocation, certification, legality evidence | The EUDR block on the trade unit's **Compliance** tab |
+| **Packaging components**: one row per component, per packaging level, per part | The trade unit's packaging family (PPWR, EPR returns) |
+| **Supplier declarations**: company, signed by, position, date and one answer per statement | A signed declaration on the supplier's **Declarations** tab |
+
+**Packaging components** columns: Part reference, Packaging level (Primary, Secondary, Tertiary, Pallet or Service), Component, Material, Material code (PAP 20, PE-LD 4 …), Weight (g), Quantity at this level, Recycled content %, Recycled content evidence, Recyclability, Separable, Marks on the packaging, National marks, Artwork owner, Notes. Quantity is how many of the component there are at its level: 2 labels on one bottle is 2. Aiku works out how much of it one sales unit carries. A Secondary component is shared by the units in the SKO, and a Tertiary carton by every unit in it. Pallet aids are not counted per unit.
+
+Packaging is entered once. Parts packed exactly the same way share one packaging family, and a component already known, such as the same bottle or carton, is shared rather than copied.
+
+As with the other columns, compliance data only fills what is empty. A trade unit that already has GPSR text, a compliance answer or a packaging family keeps it.
+
+The preview warns, without stopping the import, when:
+
+- EUDR status says Yes but the commodity, country of production, plot geolocation or legality evidence is missing. EUDR applies to AW from 30 Dec 2026, and AW files the due diligence statement, so it needs these.
+- Material composition does not add up to 100%.
+- An SVHC above 0.1% is declared without naming the substance.
+- A packaging row has no weight, or a level aiku does not know (the row is then left out).
+
+The preview also lists packaging rows with no Part reference, or one that is not on Product data, and any declaration statement not answered Yes, unanswered ones included.
+
+**Supplier declarations** reads Company, Signed by, Position and Date (each as a label with its value next to it), then a **Statement | Answer** heading with one statement per row. Dates are read day first: 01/10/2026 is 1 October. The declaration is kept when at least one row is imported, once per upload: uploading the file again keeps it again, dated by that upload.
+
 ## Uploading
 
 Open the supplier, go to **Products**, press **Attach file** and choose the file. A few seconds later the preview opens.
 
 ## Adding one product without a sheet
 
-For a single product, press **New Supplier Product** on the supplier's **Products** page. The form has the same fields as the template, with the same headings, grouped into Product, Packing and ordering, Cost and prices, and Weights and sizes. The same rules apply: one unit per product, money in the column's currency, weights in kg, sizes as 20x10x5, `auto` for a pool barcode.
+For a single product, press **New Supplier Product** on the supplier's **Products** page. The form has the same fields as the template, with the same headings, grouped into Product, Packing and ordering, Cost and prices, and Weights and sizes. The same rules apply: one unit per product, money in the column's currency (a symbol is fine, "€10.20" in a € field, but a £ amount in a € field is refused), weights in kg, sizes as 20x10x5, `auto` for a pool barcode.
 
 Saving takes two steps:
 
@@ -65,7 +96,7 @@ If the AI checks cannot run, the window asks for **I accept responsibility** ins
 
 When an SKO holds more than one unit, **SKO name** appears under Packing, pre-filled as "Pack of N …". Change it if the wording is wrong.
 
-Submit creates the families, trade unit, barcode, SKO and supplier product in one go, exactly as Import does for a row, and opens the new supplier product. Every organisation that buys from the supplier gets the supplier product straight away, and its SKO the first time it orders the product.
+Submit creates the families, trade unit, barcode, SKO and supplier product in one go, exactly as Import does for a row, and opens the new supplier product. Every organisation that buys from the supplier gets the supplier product and its SKO straight away, linked to each other, so the product can be ordered at once. Who ticked each decision, and when, is kept on the supplier product.
 
 The form does not order cartons. Add the product to a purchase order afterwards, or use the sheet when you also want draft purchase orders.
 
@@ -101,11 +132,23 @@ While you read the preview, two AI checks run in the background and the page upd
 
 Import waits for them. If the AI cannot run, each row asks for **I accept responsibility** instead, so an upload is never stuck.
 
+### Sourcing prices (suppliers in China)
+
+When the supplier's address is in China, the AI then looks up each new product on the sourcing websites and shows, under the row, the price range it found for one unit, with links to the items it compared:
+
+- **Within the sourcing price range**: the cost is fair.
+- **More than 30% above**: we may be overpaying; ask the supplier for a better price.
+- **Well below**: check the quality and the specification before ordering.
+
+Wholesale prices depend on the quantity ordered, so treat the range as a guide. Only the first 20 new rows are looked up, and a product name already looked up in the last 30 days reuses that answer. This check is advice only: Import does not wait for it. It shares the AI review's spending limits, and stops when they are reached.
+
+The sourcing websites are the competitors set to sell to **Factory** on a master shop's Competitors page. Without any, this check does not run.
+
 ## Draft purchase orders
 
 The **Order Cartons UK / SK / ES / Aroma** columns order cartons for each organisation. The preview shows, per organisation, how many cartons and lines will be ordered and on which order:
 
-- if the organisation already has an **open draft** for this supplier (or for its agent, when it buys through an agent), the lines are added to it and the sheet sets the quantity;
+- if the organisation already has an **open draft** for this supplier (sent through the agent when the supplier has one), the lines are added to it and the sheet sets the quantity;
 - otherwise a new draft is made. Tick **New draft instead** to always get a new one.
 
 Lines already on the draft that are not in the sheet are left alone. The orders stay drafts until someone submits them.

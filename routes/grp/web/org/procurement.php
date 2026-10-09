@@ -23,6 +23,7 @@ use App\Actions\Procurement\OrgAgent\RemoveMisplacedAgentShoppingListItems;
 use App\Actions\Procurement\OrgAgent\StoreAgentShoppingListItems;
 use App\Actions\Procurement\OrgAgent\SuggestAgentShoppingList;
 use App\Actions\Procurement\OrgAgent\UI\IndexAgentCoverBucketItems;
+use App\Actions\Procurement\OrgAgent\UI\ShowAgentOrderPipeline;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentShoppingDashboard;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\IndexOrgPartners;
@@ -60,8 +61,6 @@ use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItems;
 use App\Actions\Procurement\ShoppingListItem\SuggestSupplierShoppingList;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Actions\Procurement\OrgSupplierProducts\UI\IndexOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplierProducts\UI\ShowOrgSupplierProduct;
@@ -78,6 +77,8 @@ use App\Actions\Procurement\PurchaseOrder\UI\CreatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
+use App\Actions\Procurement\AgentOrder\UI\IndexAgentOrders;
+use App\Actions\Procurement\AgentOrder\UI\ShowAgentOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -137,13 +138,16 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
         Route::get('suppliers', [IndexOrgAgentSuppliers::class, 'inOrgAgent'])->name('.suppliers.index');
         Route::get('purchase-orders', [IndexPurchaseOrders::class, 'inOrgAgent'])->name('.purchase-orders.index');
         Route::get('purchase-order/{purchaseOrder}', [ShowPurchaseOrder::class, 'inOrgAgent'])->name('.purchase-orders.show');
+        Route::get('order-pipeline', ShowAgentOrderPipeline::class)->name('.order_pipeline');
+        Route::get('agent-orders', IndexAgentOrders::class)->name('.agent_orders.index');
+        Route::get('agent-orders/{agentOrderReference}/pdf', [PdfPurchaseOrder::class, 'inAgentOrder'])->name('.agent_orders.pdf')->where('agentOrderReference', '.*');
+        Route::get('agent-orders/{agentOrderReference}', ShowAgentOrder::class)->name('.agent_orders.show')->where('agentOrderReference', '.*');
         Route::get('org-stocks', [IndexOrgStocks::class, 'inOrgAgent'])->name('.org-stocks.index');
         Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inOrgAgent'])->name('.stock-deliveries.index');
         Route::get('suppliers/{orgSupplier}', [ShowOrgSupplier::class, 'inOrgAgent'])->name('.suppliers.show');
         Route::get('suppliers/{orgSupplier}/edit', [EditOrgSupplier::class, 'inOrgAgent'])->name('.suppliers.edit');
         Route::get('supplier-products', [IndexOrgSupplierProducts::class, 'inOrgAgent'])->name('.supplier_products.index');
         Route::get('supplier-products/{orgSupplierProduct}', [ShowOrgSupplierProduct::class, 'inOrgAgent'])->name('.supplier_products.show');
-        Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inOrgAgent'])->name('.agent_supplier_purchase_orders.index');
         Route::prefix('shopping')->as('.shopping.')->group(function () {
             Route::get('', ShowAgentShoppingDashboard::class)->name('dashboard');
             Route::get('items', IndexAgentCoverBucketItems::class)->name('items.index');
@@ -256,9 +260,7 @@ Route::prefix('shopping-list')->as('shopping_list.')->group(function () {
 });
 
 Route::prefix('agent-supplier-purchase-orders')->as('agent_supplier_purchase_orders.')->group(function () {
-    Route::get('', [IndexAgentSupplierPurchaseOrders::class, 'inOrganisation'])->name('index');
     Route::get('{agentSupplierPurchaseOrder}', [ShowAgentSupplierPurchaseOrder::class, 'inOrganisation'])->name('show');
-    Route::get('{agentSupplierPurchaseOrder}/edit', [EditAgentSupplierPurchaseOrder::class, 'inOrganisation'])->name('edit');
 });
 
 Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {

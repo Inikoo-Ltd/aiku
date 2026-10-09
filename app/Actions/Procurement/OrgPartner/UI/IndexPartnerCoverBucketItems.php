@@ -46,6 +46,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $paginator = OrgStock::query()
             ->where('organisation_id', $orgPartner->partner_id)
             ->whereIn('stock_id', $stockIds)
+            ->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('org_stocks.id', $orgPartner))
             ->select(['id', 'slug', 'code', 'name', 'stock_id', 'quantity_available'])
             ->when(
                 $stockIds,
@@ -67,7 +68,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $products = DB::table('product_has_org_stocks')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
             ->whereIn('product_has_org_stocks.org_stock_id', $sellerOrgStockIds)
-            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($this->orgPartner->partner)))
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($this->orgPartner->partner), $this->orgPartner->id))
             ->select([
                 'product_has_org_stocks.org_stock_id',
                 'products.web_images',

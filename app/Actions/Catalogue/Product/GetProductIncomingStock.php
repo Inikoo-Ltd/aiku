@@ -54,11 +54,15 @@ class GetProductIncomingStock
 
     private const string PURCHASE_ORDER_TYPED_DATE = "coalesce(purchase_orders.estimated_received_at::date, nullif(purchase_orders.data->>'estimated_receiving_date', '')::date)";
 
+    // Used to check whether we only get Quantity and ETA or not
+    private bool $isObscured = false; 
+
     /**
      * @return array<int, array{type: string, supplier_name: string|null, supplier_code: string|null, supplier_type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
      */
-    public function handle(Product $product): array
+    public function handle(Product $product, bool $isObscured = false): array
     {
+        $this->isObscured = $isObscured;
         return $this->forOrgStocks($product->orgStocks->pluck('id')->all());
     }
 
@@ -202,7 +206,13 @@ class GetProductIncomingStock
             ])
             ->get()
             ->filter(fn ($row) => $row->quantity > 0)
-            ->map(fn ($row) => [
+            ->map(fn ($row) => $this->isObscured ? [
+                'quantity'          => (float) $row->quantity,
+                'eta'               => $row->typed_eta || $row->parent_type !== 'OrgPartner'
+                    ? $this->eta($row->typed_eta)
+                    : $this->partnerDeliveryEta($row),
+                'is_estimate'       => !$row->typed_eta && $row->parent_type === 'OrgPartner',
+            ] : [
                 'type'              => 'stock_delivery',
                 'supplier_name'     => $row->parent_name,
                 'supplier_code'     => $row->parent_code,
@@ -273,6 +283,7 @@ class GetProductIncomingStock
                 'purchase_orders.parent_name',
                 'purchase_orders.parent_code',
                 'purchase_orders.parent_type',
+                'purchase_orders.agent_id',
                 'purchase_orders.delivery_state',
                 DB::raw(self::PURCHASE_ORDER_TYPED_DATE.' as typed_eta'),
                 'org_stocks.id as org_stock_id',
@@ -283,11 +294,17 @@ class GetProductIncomingStock
             ])
             ->get()
             ->filter(fn ($row) => $row->quantity > 0)
-            ->map(fn ($row) => [
+            ->map(fn ($row) => $this->isObscured ? [
+                'quantity'          => (float) $row->quantity,
+                'eta'               => $row->typed_eta || $row->parent_type !== 'OrgPartner'
+                    ? $this->eta($row->typed_eta)
+                    : $this->partnerDeliveryEta($row),
+                'is_estimate'       => !$row->typed_eta && $row->parent_type === 'OrgPartner',
+            ] : [
                 'type'              => 'purchase_order',
                 'supplier_name'     => $row->parent_name,
                 'supplier_code'     => $row->parent_code,
-                'supplier_type'     => $row->parent_type,
+                'supplier_type'     => $row->agent_id !== null ? 'OrgAgent' : $row->parent_type,
                 'reference'         => $row->reference,
                 'slug'              => $row->slug,
                 'org_stock_id'      => $row->org_stock_id,
@@ -398,7 +415,11 @@ class GetProductIncomingStock
             $orgPartner = $orgPartners->get($item->org_partner_id);
             $durations  = GetPartnerSupplyDurations::run($orgPartner);
             $toBuyer    = $durations['dispatch'] + $durations['transit'];
-            $line       = fn (string $reference, string $label, float $quantity, string $eta) => [
+            $line       = fn (string $reference, string $label, float $quantity, string $eta) => $this->isObscured ? [
+                'quantity'          => round($quantity, 3),
+                'eta'               => $eta,
+                'is_estimate'       => true,
+            ] : [
                 'type'              => 'partner_request',
                 'supplier_name'     => $item->partner_name,
                 'supplier_code'     => $item->partner_code,

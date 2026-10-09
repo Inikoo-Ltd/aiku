@@ -41,6 +41,8 @@ Ak bol pracovný príkaz vyrobený na sklad, pre vlastného zákazníka, alebo p
 
 Tým sa tovar naskladní do danej lokácie, dostane dávkový kód zložený z referencie pracovného príkazu a kódu výrobku, odpočítajú sa suroviny, ktoré recept udáva ako spotrebované, a pracovný príkaz sa označí ako prijatý. Riadok zmizne a na tabuli výroby opustí stĺpec <b>Done</b>.
 
+Dávka dostane aj dátum minimálnej trvanlivosti: ten, ktorý bol pre dávku zadaný na tabuli výroby, inak deň naskladnenia plus trvanlivosť artefaktu. Artefakt bez zadanej trvanlivosti zostane bez dátumu minimálnej trvanlivosti, preto vyplňte trvanlivosť pri každom artefakte. Keď sa neskôr naskladní ďalšia časť toho istého riadku pracovného príkazu, pridá sa k tej istej dávke. Sklad teraz vie, ktorá dávka je na ktorej lokácii, a z toho čítajú inventárne prehľady dátumy minimálnej trvanlivosti.
+
 Naskladnené množstvo je to, čo remeselníci naozaj vyrobili, nie to, čo sa žiadalo. Pracovný príkaz, ktorý žiadal 25 a dostal 19, naskladní 19.
 
 ## Čo sa deje ďalej

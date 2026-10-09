@@ -26,7 +26,8 @@ class PdfOrgStockLabel
 
     /**
      * The label stocks Aurora offered, kept to the millimetre so a roll bought for the old system
-     * still prints straight out of this one.
+     * still prints straight out of this one. 105 x 37 is the exception: it is cut by hand from plain
+     * A5 by those who found the 125 x 37 label too wide.
      */
     public const SIZES = [
         '63x29.6'   => ['width' => 63.0, 'height' => 29.6],
@@ -34,6 +35,7 @@ class PdfOrgStockLabel
         '70x29.7'   => ['width' => 70.0, 'height' => 29.7],
         '70x30'     => ['width' => 70.0, 'height' => 30.0],
         '125x37'    => ['width' => 125.0, 'height' => 37.0],
+        '105x37'    => ['width' => 105.0, 'height' => 37.0],
         '130x60'    => ['width' => 130.0, 'height' => 60.0],
         '140x90'    => ['width' => 140.0, 'height' => 90.0],
         '97x69'     => ['width' => 97.0, 'height' => 69.0],
@@ -45,7 +47,7 @@ class PdfOrgStockLabel
      * the four stocks that suit a box, and those are the only ones offered here.
      */
     public const LEVEL_SIZES = [
-        'unit' => ['63x29.6', '63.5x29.6', '70x29.7', '70x30', '125x37', '130x60', '140x90'],
+        'unit' => ['63x29.6', '63.5x29.6', '70x29.7', '70x30', '125x37', '105x37', '130x60', '140x90'],
         'sko'    => ['63x29.6', '63.5x29.6', '70x29.7', '130x60'],
         'carton' => ['97x69', '105x74.25'],
     ];
@@ -129,6 +131,19 @@ class PdfOrgStockLabel
             'row_gap'     => 3.0,
             'orientation' => 'P',
         ],
+        '105x37'    => [
+            'code'        => 'A5-105x37',
+            'paper'       => 'A5',
+            'columns'     => 1,
+            'rows'        => 5,
+            'cell_width'  => 105.0,
+            'cell_height' => 37.0,
+            'margin_top'  => 6.5,
+            'margin_left' => 21.5,
+            'column_gap'  => 0.0,
+            'row_gap'     => 3.0,
+            'orientation' => 'P',
+        ],
         '130x60'    => [
             'code'        => 'EU30137',
             'columns'     => 2,
@@ -188,6 +203,8 @@ class PdfOrgStockLabel
      */
     private const TOP_PADDING = 0.8;
 
+    private const WIDE_RATIO = 2.75;
+
     private const CODE128_MODULE_MM = 0.3804;
 
     private const CODE128_HEIGHT_MM = 10.05;
@@ -195,6 +212,13 @@ class PdfOrgStockLabel
     private const EAN13_WIDTH_MM = 36.94;
 
     private const EAN13_HEIGHT_MM = 25.48;
+
+    /**
+     * A hand-held scanner stops reading an EAN-13 whose narrowest bar is under 0.264 mm, the GS1
+     * floor of 80 % magnification. Aurora's half-size barcode on the long, low stocks sat at
+     * 0.165 mm, so it is printed at its full 100 % here and the picture gives way to make room for it.
+     */
+    private const WIDE_BARCODE_SIZE = 1.0;
 
     /**
      * @throws \Mpdf\MpdfException
@@ -273,7 +297,7 @@ class PdfOrgStockLabel
             'cutGuides'   => filter_var($options['cut_guides'] ?? false, FILTER_VALIDATE_BOOLEAN),
         ], [], [
             'title'         => $filename,
-            'format'        => 'A4',
+            'format'        => $sheet['paper'] ?? 'A4',
             'orientation'   => $sheet['orientation'],
             'margin_left'   => 0,
             'margin_right'  => 0,
@@ -439,6 +463,10 @@ class PdfOrgStockLabel
             ];
         }
 
+        if ($width / $height >= self::WIDE_RATIO) {
+            return $this->getWideUnitScale($width, $height, $factor, $withImage, $withBarcode);
+        }
+
         [$textWidth, $barcodeWidth, $imageWidth] = match (true) {
             $withImage && $withBarcode => [40.0, 32.0, 28.0],
             $withBarcode               => [55.0, 45.0, 0.0],
@@ -447,7 +475,16 @@ class PdfOrgStockLabel
         };
 
         $barcodeMm = $width * $barcodeWidth / 100;
-        $imageMm   = $width * $imageWidth / 100;
+        $imageMm   = min($width * $imageWidth / 100 * 0.92, $height * 0.55);
+
+        /* On a long, low stock such as 125 x 37 the picture is held back by the height, not by its
+           column, and the unused column opened a wide gap between the barcode and the picture. The
+           column is trimmed to the picture and what is left goes to the wording. */
+        if ($withImage) {
+            $fittedImageWidth = round($imageMm / 0.92 / $width * 100, 2);
+            $textWidth        = round($textWidth + $imageWidth - $fittedImageWidth, 2);
+            $imageWidth       = $fittedImageWidth;
+        }
 
         return [
             'code'           => round(5.0 * $factor, 2),
@@ -459,9 +496,43 @@ class PdfOrgStockLabel
             'image_width'    => $imageWidth,
             'barcode'        => round(min(max($barcodeMm * 0.85 / 39, 0.30), 1.15), 2),
             'barcode_height' => round(min(max($height * 0.018, 0.70), 1.70), 2),
-            'image'          => round(min($imageMm * 0.92, $height * 0.55) * 3.78).'px',
+            'image'          => round($imageMm * 3.78).'px',
             'gap'            => round(0.5 * $factor, 2),
             'line_gap'       => round(0.30 * ($factor - 1) + 0.15, 2),
+        ];
+    }
+
+    /**
+     * A long, low unit label such as 125 x 37 is laid out as Aurora printed it: the wording runs
+     * down the left with the rule under the name only, a barcode sized to scan stands in the middle, and
+     * the picture takes the full height of the label on the right.
+     *
+     * @return array<string, float|int|string>
+     */
+    private function getWideUnitScale(float $width, float $height, float $factor, bool $withImage, bool $withBarcode): array
+    {
+        $innerHeight = $height - self::TOP_PADDING - self::CELL_PADDING;
+        $imageMm     = $withImage ? min($innerHeight * 0.9, $width * 0.2) : 0.0;
+        $imageWidth  = $withImage ? round(($imageMm + 2.0) / $width * 100, 2) : 0.0;
+
+        $barcodeSize  = self::WIDE_BARCODE_SIZE;
+        $barcodeWidth = $withBarcode ? round((self::EAN13_WIDTH_MM * $barcodeSize + 1.5) / $width * 100, 2) : 0.0;
+        $barcodeMm    = $height * 0.5;
+
+        return [
+            'layout'         => 'wide',
+            'code'           => round(7.6 * $factor, 2),
+            'name'           => round(6.4 * $factor, 2),
+            'body'           => round(4.2 * $factor, 2),
+            'signature'      => round(4.0 * $factor, 2),
+            'text_width'     => round(100 - $barcodeWidth - $imageWidth, 2),
+            'barcode_width'  => $barcodeWidth,
+            'image_width'    => $imageWidth,
+            'barcode'        => $barcodeSize,
+            'barcode_height' => $withBarcode ? round($barcodeMm / (self::EAN13_HEIGHT_MM * $barcodeSize), 2) : 0.0,
+            'image'          => round($imageMm * 3.78).'px',
+            'gap'            => round(0.6 * $factor, 2),
+            'line_gap'       => round(0.25 * $factor, 2),
         ];
     }
 

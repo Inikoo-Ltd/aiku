@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
@@ -77,13 +77,24 @@ class ShowShoppingListBoard extends OrgAction
             ])
             ->get();
 
-        $openAspos = DB::table('agent_supplier_purchase_orders')
-            ->whereIn('supplier_id', $rows->pluck('supplier_id')->unique())
-            ->where('state', AgentSupplierPurchaseOrderStateEnum::IN_PROCESS->value)
-            ->whereNull('deleted_at')
-            ->select(['supplier_id', 'id', 'reference', 'slug'])
+        $openAgentPurchaseOrders = DB::table('purchase_orders')
+            ->join('organisations', 'organisations.id', '=', 'purchase_orders.organisation_id')
+            ->whereIn('purchase_orders.supplier_id', $rows->pluck('supplier_id')->unique())
+            ->whereNotNull('purchase_orders.agent_id')
+            ->where('purchase_orders.parent_type', 'OrgSupplier')
+            ->where('purchase_orders.state', PurchaseOrderStateEnum::IN_PROCESS->value)
+            ->whereNull('purchase_orders.deleted_at')
+            ->orderBy('organisations.code')
+            ->select([
+                'purchase_orders.supplier_id',
+                'purchase_orders.id',
+                'purchase_orders.reference',
+                'purchase_orders.slug',
+                'organisations.slug as organisation_slug',
+                'organisations.code as organisation_code',
+            ])
             ->get()
-            ->keyBy('supplier_id');
+            ->groupBy('supplier_id');
 
         $agents = [];
 
@@ -130,19 +141,19 @@ class ShowShoppingListBoard extends OrgAction
 
                 usort($products, fn ($a, $b) => ($b['moq_progress'] ?? -1) <=> ($a['moq_progress'] ?? -1));
 
-                $openAspo = $openAspos->get($supplierRow->supplier_id);
-
                 $suppliers[] = [
                     'supplier_id'    => $supplierRow->supplier_id,
                     'code'           => $supplierRow->supplier_code,
                     'slug'           => $supplierRow->supplier_slug,
                     'estimated_value' => round($supplierValue, 2),
                     'products'       => $products,
-                    'open_agent_supplier_purchase_order' => $openAspo ? [
-                        'id'        => $openAspo->id,
-                        'reference' => $openAspo->reference,
-                        'slug'      => $openAspo->slug,
-                    ] : null,
+                    'open_agent_purchase_orders' => $openAgentPurchaseOrders->get($supplierRow->supplier_id, collect())->map(fn ($purchaseOrder) => [
+                        'id'                => $purchaseOrder->id,
+                        'reference'         => $purchaseOrder->reference,
+                        'slug'              => $purchaseOrder->slug,
+                        'organisation_slug' => $purchaseOrder->organisation_slug,
+                        'organisation_code' => $purchaseOrder->organisation_code,
+                    ])->values()->all(),
                 ];
             }
 

@@ -36,7 +36,7 @@ class ShowStaffTasksEtaMap extends OrgAction
     {
         $today = Carbon::today();
 
-        $tasks = StaffTask::query()->within($parent)->visibleTo($viewer)->open()
+        $tasks = StaffTask::query()->within($parent)->visibleTo($viewer)->inSection(null)->open()
             ->with(['assignee.image', 'requester', 'collaborators'])
             ->orderByRaw('due_at asc nulls last, id asc')
             ->get();

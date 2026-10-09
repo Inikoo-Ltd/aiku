@@ -36,6 +36,10 @@ Al pulsar **Start picking** en un albarán, este pasa a **Handling** y se regist
 
 Mientras se pickea un albarán, una línea puede resultar necesitar una decisión que el picker no puede tomar en el puesto — por ejemplo un reemplazo o una liberación desde el almacén. Cuando eso ocurre, todo el albarán pasa a **Waiting** en lugar de dejar que el picking continúe alrededor del problema. En cuanto ya no queda nada realmente pendiente, aparece un botón **Auto Finish Waiting**, y al pulsarlo se revisa el albarán y, si de verdad todas las líneas están resueltas, lo lleva a **Picked**.
 
+## Lotes
+
+En los productos cuyo stock tiene lotes, cada pick muestra el lote del que se tomó. No hace falta elegirlo: el sistema toma el lote con la fecha de consumo preferente más próxima en esa ubicación, después del stock que no tiene lote registrado. Cuando un pick necesita más de lo que tiene ese lote, el pick se divide en una línea por lote, por ejemplo 4 de un lote y 2 del siguiente, para que el albarán, la factura y el almacén que recibe vean cada lote que salió de la estantería. Si cogiste de otro lote, abre el lote del pick y cámbialo. Borrar un pick devuelve su lote a la estantería, y la mercancía devuelta vuelve como los lotes que se recogieron. El PDF del albarán muestra el lote, la fecha de consumo preferente y la cantidad debajo de cada artículo.
+
 ## Sets que se venden solo completos
 
 Algunos productos están formados por varias piezas que no sirven por separado, como una lámpara de sal con su bombilla y su cable. En la página **Composition** (composición) del producto maestro, estos productos tienen activado **Sold only as a complete set** (se vende solo como set completo). Un producto de tienda que no sigue las piezas de su maestro tiene el mismo interruptor en su propia página **Composition**, y el maestro lo muestra entre las tiendas que difieren.

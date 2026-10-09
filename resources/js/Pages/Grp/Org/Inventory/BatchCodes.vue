@@ -10,6 +10,7 @@ import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableBatchCodes from "@/Components/Tables/Grp/Org/Inventory/TableBatchCodes.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import CountBatches from "@/Components/Warehouse/Inventory/CountBatches.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -34,6 +35,7 @@ defineProps<{
     data: object
     allow_edit?: boolean
     upload_batch_codes: UploadSection
+    batch_count?: { locations: any[] } | null
 }>()
 
 const isModalUploadOpen = ref(false)
@@ -42,6 +44,9 @@ const isModalUploadOpen = ref(false)
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <CountBatches v-if="batch_count" :batchCount="batch_count" />
+        </template>
         <template #button-group-upload="{ action }">
             <Button
                 @click="() => (isModalUploadOpen = true)"

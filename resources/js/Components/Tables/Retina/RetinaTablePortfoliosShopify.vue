@@ -53,6 +53,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {Message, Popover} from "primevue"
+import ToggleSwitch from "primevue/toggleswitch"
 
 library.add(
             faUnlink, faHandshake, faHandshakeSlash, 
@@ -339,6 +340,48 @@ const onSubmitVariant = () => {
             },
         }
     )
+}
+
+const priceManagementPortfolio = ref<any>(null)
+const priceManagementLoading = ref<number[]>([])
+const askPriceManagement = (product: any, managedByUs: boolean) => {
+    if (managedByUs) {
+        priceManagementPortfolio.value = product
+
+        return
+    }
+
+    setPriceManagement(product, false)
+}
+const setPriceManagement = async (product: any, managedByUs: boolean) => {
+    priceManagementPortfolio.value = null
+    priceManagementLoading.value.push(product.id)
+
+    try {
+        await axios.post(
+            route('retina.models.dropshipping.shopify.price_management', { customerSalesChannel: props.customerSalesChannel.id }),
+            { portfolios: [product.id], managed_by_us: managedByUs }
+        )
+        product.shopify_price_managed_by_us = managedByUs
+        notify({
+            title: ctrans("Saved"),
+            text: managedByUs
+                ? ctrans("We now manage the price of :product in your Shopify", { product: product.code })
+                : ctrans("The price of :product is now managed in your Shopify", { product: product.code }),
+            type: "success"
+        })
+    } catch (error: any) {
+        if (error?.response?.status === 422) {
+            product.shopify_price_managed_by_us = managedByUs
+        }
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The price setting could not be changed"),
+            type: "error"
+        })
+    } finally {
+        priceManagementLoading.value = priceManagementLoading.value.filter(id => id !== product.id)
+    }
 }
 
 const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
@@ -784,6 +827,21 @@ onMounted(() => {
                     {{ ctrans("RRP:") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
                 </div>
             </div>
+            <div v-if="product.is_shopify_variant_adopted" class="mt-1 flex items-center gap-x-2 text-sm text-gray-600">
+                <ToggleSwitch
+                    :modelValue="!!product.shopify_price_managed_by_us"
+                    :inputId="`price-managed-${product.id}`"
+                    :disabled="priceManagementLoading.includes(product.id)"
+                    @update:modelValue="(managedByUs: boolean) => askPriceManagement(product, managedByUs)" />
+                <label
+                    :for="`price-managed-${product.id}`"
+                    v-tooltip="product.shopify_price_managed_by_us
+                        ? ctrans('Prices you set here are sent to this product in your Shopify')
+                        : ctrans('This product was already in your Shopify: we never change its price there')">
+                    {{ product.shopify_price_managed_by_us ? ctrans("Price managed by us") : ctrans("Price managed in your Shopify") }}
+                </label>
+                <LoadingIcon v-if="priceManagementLoading.includes(product.id)" />
+            </div>
         </template>
 
         <!-- Column: Status (repair) -->
@@ -1122,6 +1180,21 @@ onMounted(() => {
                             :loading="isLoadingSubmit"/>
                     </div>
                 </div>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="!!priceManagementPortfolio" @onClose="priceManagementPortfolio = null" width="w-full max-w-lg">
+        <div class="p-2">
+            <h3 class="text-lg font-semibold text-gray-900">
+                {{ ctrans("Let us manage the price of :product?", { product: priceManagementPortfolio?.code }) }}
+            </h3>
+            <p class="mt-3 text-sm text-gray-600">
+                {{ ctrans("We will send the price you set here to this product in your Shopify now, replacing the price it has there. After that, every price change you make here is sent to your Shopify. You can switch back at any time: the last price stays in your Shopify.") }}
+            </p>
+            <div class="mt-6 flex justify-end gap-x-3">
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="priceManagementPortfolio = null" />
+                <Button type="primary" :label="ctrans('Yes, manage the price')" @click="setPriceManagement(priceManagementPortfolio, true)" />
             </div>
         </div>
     </Modal>

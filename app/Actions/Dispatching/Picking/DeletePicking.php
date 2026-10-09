@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -44,6 +45,7 @@ class DeletePicking extends OrgAction
                         'quantity' => abs($picking->quantity),
                         'type'     => OrgStockMovementTypeEnum::CANCEL_PICKED,
                         'user_id'  => $user?->id,
+                        'batches'  => AllocateOrgStockMovementBatches::make()->movedBatches($orgStockMovement),
                     ],
                     $picking
                 );

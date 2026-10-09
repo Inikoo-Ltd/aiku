@@ -69,13 +69,8 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['preferred_leaflet_printer_id'] = Arr::pull($modelData, 'preferred_leaflet_printer');
         }
 
-        if ($twoFa = Arr::pull($modelData, 'enable_2fa')) {
-            if (data_get($twoFa, 'has_2fa')) {
-                data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
-            } else {
-                // Remove from DB if it is false
-                data_set($modelData, 'google2fa_secret', null);
-            }
+        if (($twoFa = Arr::pull($modelData, 'enable_2fa')) && !data_get($twoFa, 'has_2fa')) {
+            data_set($modelData, 'google2fa_secret', null);
         }
 
         $avatarBeforeUpdate = $user->image_id;
@@ -93,6 +88,14 @@ class UpdateProfile extends OrgAction
 
         if (Arr::exists($modelData, 'tickets_list_mine')) {
             $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
+        }
+
+        if (Arr::exists($modelData, 'agent_card_sections')) {
+            $modelData['settings']['agent_card_sections'] = collect(Arr::pull($modelData, 'agent_card_sections'))
+                ->filter(fn ($isOpen, $key) => preg_match('/^\d+(cover|orders|next_container|stock_delivery)$/', (string) $key))
+                ->map(fn ($isOpen) => (bool) $isOpen)
+                ->take(500)
+                ->all();
         }
 
         foreach (['ticket_comments_newest_first', 'ticket_history_newest_first'] as $ticketOrderSetting) {
@@ -259,6 +262,8 @@ class UpdateProfile extends OrgAction
             'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
             'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
+            'agent_card_sections'                 => ['sometimes', 'array', 'max:500'],
+            'agent_card_sections.*'               => ['boolean'],
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
             'rail_hidden_badges'                  => ['sometimes', 'nullable', 'array'],

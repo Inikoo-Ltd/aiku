@@ -41,6 +41,8 @@ Ja darba uzdevums izgatavots krājumam, savam klientam vai vairāk nekā vienam 
 
 Tas pieņem preces šajā vietā, piešķir tām partijas kodu no darba uzdevuma numura un produkta koda, atskaita recepte paredzētās izejvielas un atzīmē darba uzdevumu kā saņemtu. Rinda pazūd, un ražotnes lapā rinda pazūd no slejas **Done**.
 
+Partija saņem arī derīguma termiņu: to, kas ražotnes lapā ierakstīts šai partijai, citādi novietošanas dienu plus artefakta glabāšanas laiku. Artefakts bez glabāšanas laika paliek bez derīguma termiņa, tāpēc ieraksti glabāšanas laiku katram artefaktam. Ja vēlāk novieto vēl no tās pašas darba uzdevuma rindas, tas pieskaitās tai pašai partijai. Krājums tagad zina, kura partija atrodas kurā vietā, un no tā inventāra atskaites nolasa derīguma termiņus.
+
 Pieņemtais daudzums ir tas, ko amatnieki faktiski izgatavoja, nevis tas, kas tika prasīts. Darba uzdevums, kas prasīja 25 un saņēma 19, pieņem 19.
 
 ## Kas notiek tālāk

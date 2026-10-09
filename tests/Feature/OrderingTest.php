@@ -658,9 +658,16 @@ test('small order charge configured through the UI applies to an order', functio
     $order->goods_amount = 1000;
     CalculateOrderHangingCharges::run($order);
 
-    expect((float) $chargeTransactions()->first()->net_amount)->toBe(0.0)
+    $order->refresh();
+    expect($order->charges_engine)->toBe(OrderChargesEngineEnum::MANUAL)
+        ->and((float) $chargeTransactions()->first()->net_amount)->toBe(0.0)
         ->and((int) $chargeTransactions()->first()->gross_amount)->toBe(255);
 
+    CalculateOrderTotalAmounts::make()->handle($order, forceRecalculate: true);
+
+    expect((float) $chargeTransactions()->first()->net_amount)->toBe(0.0);
+
+    $order->update(['charges_engine' => OrderChargesEngineEnum::AUTO]);
     $order->goods_amount = 3000;
     CalculateOrderHangingCharges::run($order);
 

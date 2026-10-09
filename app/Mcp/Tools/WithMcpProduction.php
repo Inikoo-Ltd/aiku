@@ -52,6 +52,25 @@ trait WithMcpProduction
         return Response::error("This user cannot set up production {$production->code}: that needs group admin, organisation admin, R&D edit on it, or shop admin or shopkeeper in one of its organisation's shops. Nothing was changed.");
     }
 
+    /**
+     * Changes that are easy to get wrong by mistake are refused until the user has seen the
+     * warning: the assistant must call again naming each warning in accept, so a typo or an
+     * oversized selection never lands without a human reading what it does.
+     *
+     * @param array<string, string> $warnings warning code => what will happen
+     */
+    protected function unacceptedWarnings(Request $request, array $warnings): ?Response
+    {
+        $pending = array_diff_key($warnings, array_flip((array) $request->get('accept', [])));
+        if (!$pending) {
+            return null;
+        }
+
+        return Response::error('Nothing was changed. Show the user these warnings in plain words: '
+            .collect($pending)->map(fn (string $message, string $code) => "[{$code}] {$message}")->implode(' ')
+            .' Only if the user, having read them, says to go ahead, call again with the same arguments plus accept: ['.collect(array_keys($warnings))->map(fn ($code) => "\"{$code}\"")->implode(', ').'].');
+    }
+
     protected function validationError(ValidationException $exception): Response
     {
         return Response::error(implode(' ', $exception->validator->errors()->all()).' Nothing was changed.');

@@ -224,7 +224,9 @@ class SendOutOfHoursReply implements ShouldBeUnique
      * generated, not from a list or a machine address, not one of our own staff, not noise.
      * A stranger is answered only once the noise check has called them genuine: it runs at the
      * same moment as this, and answering before its verdict replied to spam and newsletters.
-     * The noise check sends the reply itself when its verdict lands.
+     * The noise check sends the reply itself when its verdict lands. A stranger Aiku took out of
+     * Gmail spam is left for a person to answer: about one in six turns out to be junk, and an
+     * automatic answer tells the sender the address is read.
      */
     public static function isPersonsEmail(ChatSession $chatSession, ChatMessage $trigger): bool
     {
@@ -240,6 +242,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             || ProcessInboundEmail::isAutomatedMail($from, (string) data_get($chatSession->metadata, 'email_subject'))
             || ClassifyChatSessionNoise::isStaffEmail($from)
             || ChatNoiseVerdictEnum::tryFrom((string) $chatSession->noise_verdict)?->isNoise()
+            || ($trigger->is_rescued_from_spam && !$chatSession->web_user_id)
             || (!$chatSession->web_user_id && ChatNoiseVerdictEnum::tryFrom((string) $chatSession->noise_verdict) !== ChatNoiseVerdictEnum::GENUINE)) {
             return false;
         }

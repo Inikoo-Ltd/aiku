@@ -2431,6 +2431,45 @@ test('picking session add remove and undo finish packing', function () {
     expect($pickingSession->fresh())->toBeInstanceOf(PickingSession::class);
 });
 
+test('a queued delivery note can be put in a picking session', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::QUEUED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ], true);
+
+    expect($pickingSession->deliveryNotes()->pluck('delivery_notes.id')->all())->toBe([$deliveryNote->id]);
+});
+
+test('a second picking session for the same delivery notes is refused and leaves the items on the first one', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $lockedQueries = [];
+    DB::listen(function ($query) use (&$lockedQueries) {
+        if (str_contains($query->sql, 'from "delivery_notes"') && str_contains($query->sql, 'for update')) {
+            $lockedQueries[] = $query->sql;
+        }
+    });
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+
+    expect($lockedQueries)->not->toBeEmpty();
+
+    expect(fn () => StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($deliveryNote->deliveryNoteItems()->pluck('picking_session_id')->unique()->values()->all())->toBe([$pickingSession->id])
+        ->and($deliveryNote->pickingSessions()->count())->toBe(1);
+});
+
 test('delete shipment action', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'DS'.Str::random(4), 'name' => 'Ds', 'trade_as' => 'ds']);
@@ -4947,6 +4986,29 @@ test('delivery note tariff codes use the organisation override for the national 
         ->and((bool) $row->is_incomplete)->toBeFalse();
 });
 
+test('delivery note tariff codes describe a code by its export name, falling back to the official heading (HELP-3823)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $tradeUnit                         = $deliveryNoteItem->orgStock->tradeUnits->first();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, [
+        'tariff_code'       => '3307 41 0000',
+        'origin_country_id' => $this->organisation->country_id,
+    ]);
+
+    $heading = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'level' => 6, 'description' => 'Agarbatti and other odoriferous preparations which operate by burning']);
+    $named   = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '3307410000'], ['section' => 'VI', 'level' => 10, 'description' => 'Agarbatti']);
+    $named->update(['name' => 'Incense sticks for home fragrance']);
+    $heading->update(['name' => null]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
+        ->toBe('Incense sticks for home fragrance');
+
+    $named->update(['name' => null]);
+    expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
+        ->toBe($heading->description);
+});
+
 test('a two-part product splits its transaction amount between the parts by cost instead of counting it twice (HELP-3131)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->deliveryNoteItems()->whereKeyNot($deliveryNoteItem->id)->delete();
@@ -5838,4 +5900,46 @@ test('delivery note items list only aggregates packings of its own delivery note
         ->and((float) $otherRow->packings_quantity)->toBe(5.0)
         ->and($otherRow->packings_count)->toBe(2)
         ->and(collect($queries)->filter(fn ($sql) => str_contains($sql, 'from "packings" where "delivery_note_id" = ?')))->not->toBeEmpty();
+});
+
+test('a pick taken from two batches is cut into one line per batch and a deleted pick gives its batch back', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+    $warehouse        = $locationOrgStock->location->warehouse;
+
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+
+    $move = fn (float $quantity, ?int $batchCodeId = null) => \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action(
+        $picking->orgStock,
+        $locationOrgStock->location,
+        ['type' => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::ADJUSTMENT, 'quantity' => $quantity, 'batches' => $batchCodeId ? [['batch_code_id' => $batchCodeId, 'quantity' => $quantity]] : []]
+    );
+    $batch = fn (string $code, string $bestBefore) => \App\Actions\Dispatching\BatchCode\StoreBatchCode::make()->action($warehouse, [
+        'code' => $code.'-'.uniqid(), 'expiry_date' => $bestBefore, 'org_stock_id' => $picking->org_stock_id,
+    ]);
+    $onShelf = fn () => DB::table('org_stock_movement_batches')->where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)
+        ->groupBy('batch_code_id')->selectRaw('batch_code_id, sum(quantity)::float as quantity')->pluck('quantity', 'batch_code_id')->all();
+
+    $move(-(float) $locationOrgStock->refresh()->quantity);
+    $early = $batch('EARLY', '2027-01-01');
+    $late  = $batch('LATE', '2027-06-01');
+    $move(4, $early->id);
+    $move(10, $late->id);
+
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($picking->id, $this->user->id);
+
+    $lines = $item->pickings()->where('type', PickingTypeEnum::PICK)->orderBy('id')->get();
+    expect($lines->map(fn ($line) => [$line->batch_code_id, (float) $line->quantity])->all())->toBe([[$early->id, 4.0], [$late->id, 2.0]])
+        ->and($onShelf())->toEqual([$early->id => 0.0, $late->id => 8.0])
+        ->and((float) $locationOrgStock->refresh()->quantity)->toBe(8.0)
+        ->and($item->refresh()->pickedBatches())->toBe([['batch_code_id' => $early->id, 'quantity' => 4.0], ['batch_code_id' => $late->id, 'quantity' => 2.0]]);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($lines[1], ['batch_code_id' => $early->id]);
+    expect($onShelf())->toEqual([$early->id => -2.0, $late->id => 10.0]);
+
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($lines[0]->refresh(), $this->user);
+    expect($onShelf())->toEqual([$early->id => 2.0, $late->id => 10.0]);
 });

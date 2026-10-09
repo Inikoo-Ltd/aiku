@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\BroadcastStockMovement;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\Inventory\OrgStockMovementBatch;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Support\Facades\DB;
 
@@ -29,7 +30,13 @@ class DeleteOrgStockMovement extends OrgAction
             ->first();
 
         if ($locationOrgStock !== null) {
-            $runningQuantity = AddToLocationOrgStockQuantity::run($locationOrgStock, -(float)$orgStockMovement->quantity);
+            $runningQuantity = DB::transaction(function () use ($locationOrgStock, $orgStockMovement) {
+                LocationOrgStock::whereKey($locationOrgStock->id)->lockForUpdate()->value('id');
+                OrgStockMovementBatch::where('org_stock_movement_id', $orgStockMovement->id)->delete();
+                $quantity = OrgStockMovement::whereKey($orgStockMovement->id)->value('quantity');
+
+                return AddToLocationOrgStockQuantity::run($locationOrgStock, -(float)$quantity);
+            });
 
             $runningQuantityOrg = DB::table('location_org_stocks')
                 ->where('org_stock_id', $orgStockMovement->org_stock_id)->sum('quantity');

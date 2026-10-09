@@ -16,6 +16,7 @@ import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import LabelPickingLocation from '@/Components/Warehouse/DeliveryNotes/LabelPickingLocation.vue'
 import SelectPickingLocation from '@/Components/Warehouse/DeliveryNotes/SelectPickingLocation.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import StockDeliveryItemBatches from '@/Components/Procurement/StockDeliveryItemBatches.vue'
 import { routeType } from '@/types/route'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -651,8 +652,23 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                         </div>
                     </template>
                 </NumberWithButtonSave>
+                <StockDeliveryItemBatches
+                    v-if="item.batchesRoute || item.batches?.length || item.is_batch_tracked"
+                    :batches="item.batches ?? []"
+                    :checkedSkos="Number(item.sko_quantity_checked)"
+                    :isBatchTracked="item.is_batch_tracked"
+                    :route="item.batchesRoute"
+                    @saved="reloadStockDelivery" />
             </div>
-            <span v-else>{{ formatQuantity(Number(item.sko_quantity_checked)) }}</span>
+            <div v-else class="grid justify-items-end gap-y-1">
+                <span>{{ formatQuantity(Number(item.sko_quantity_checked)) }}</span>
+                <StockDeliveryItemBatches
+                    v-if="item.batches?.length"
+                    :batches="item.batches"
+                    :checkedSkos="Number(item.sko_quantity_checked)"
+                    :isBatchTracked="item.is_batch_tracked"
+                    :route="null" />
+            </div>
         </template>
 
         <template #cell(sowings)="{ item }">

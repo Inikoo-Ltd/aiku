@@ -28,14 +28,12 @@ class View2FAProfile
      */
     public function handle(User $user): array
     {
-        $google2fa = new Google2FA();
-
-        $secret = $user->google2fa_secret;
-
-        // If a secret doesn't exist on DB, generate a new one
-        if (!$secret) {
-            $secret = $google2fa->generateSecretKey(32);
+        if ($user->google2fa_secret) {
+            abort(403);
         }
+
+        $google2fa = new Google2FA();
+        $secret    = $google2fa->generateSecretKey(32);
 
         // Generate the QR
         $qrInline = $google2fa->getQRCodeInline(

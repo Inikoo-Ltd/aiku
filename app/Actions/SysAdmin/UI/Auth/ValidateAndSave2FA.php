@@ -9,7 +9,6 @@
 
 namespace App\Actions\SysAdmin\UI\Auth;
 
-use App\Actions\UI\Profile\UpdateProfile;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -32,6 +31,10 @@ class ValidateAndSave2FA extends OrgAction
      */
     public function handle(ActionRequest $request, array $modelData): RedirectResponse|Response
     {
+        if ($request->user()->google2fa_secret) {
+            abort(403);
+        }
+
         $authenticator = new Authenticator(request());
         $google2fa = new Google2FA();
         $secret = Arr::get($modelData, 'secret_key');
@@ -43,12 +46,7 @@ class ValidateAndSave2FA extends OrgAction
                 'one_time_password' => trans('Invalid OTP is given. Please check your Authenticator App'),
             ]);
         }
-        UpdateProfile::run($request->user(), [
-            'enable_2fa'    => [
-                'has_2fa'   => true,
-                'secretKey' => $secret
-            ]
-        ]);
+        $request->user()->update(['google2fa_secret' => $secret]);
 
         $authenticator->login();
 

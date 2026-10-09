@@ -1171,6 +1171,38 @@ test('product detail carries the public documents of the selected variant', func
         ->and($attachments[0]['scope'])->toBe('doc');
 });
 
+test('product detail carries the incoming stock only while the shop lets customers see it', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+    $request = \Lorisleiva\Actions\ActionRequest::createFrom(request());
+
+    $settings = $shop->settings;
+    data_set($settings, 'catalog.allow_stocks_to_be_shown_on_iris', true);
+    data_set($settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true);
+    $shop->update(['settings' => $settings]);
+
+    $detail = \App\Actions\Iris\Catalogue\GetProductDetail::make()->jsonResponse(Product::find($product->id), $request);
+
+    expect($detail['allow_stocks_to_be_shown_on_iris'])->toBeTrue()
+        ->and($detail['allow_incoming_stocks_to_be_shown_on_iris'])->toBeTrue()
+        ->and($detail['incoming_stock'])->toBe(\App\Actions\Catalogue\Product\GetProductIncomingStock::run(Product::find($product->id), true));
+
+    data_set($settings, 'catalog.allow_stocks_to_be_shown_on_iris', false);
+    data_set($settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', false);
+    $shop->update(['settings' => $settings]);
+
+    $detail = \App\Actions\Iris\Catalogue\GetProductDetail::make()->jsonResponse(Product::find($product->id), $request);
+
+    expect($detail['allow_stocks_to_be_shown_on_iris'])->toBeFalse()
+        ->and($detail['allow_incoming_stocks_to_be_shown_on_iris'])->toBeFalse()
+        ->and($detail['incoming_stock'])->toBe([]);
+
+    data_set($settings, 'catalog.allow_stocks_to_be_shown_on_iris', true);
+    data_set($settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true);
+    $shop->update(['settings' => $settings]);
+});
+
 test('bulk update product unit is scoped to shop', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
@@ -1459,8 +1491,10 @@ test('iris collection lists the product that owns a member product webpage', fun
 
 test('shop products json carries the outer size from the stock, not the product units', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
-    createProduct($shop);
-    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+    $product = UpdateProduct::make()->action(
+        StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10])),
+        ['state' => ProductStateEnum::ACTIVE]
+    );
 
     $orgStock = $this->orgStock1;
     $orgStock->update(['packed_in' => 6]);
@@ -1490,8 +1524,10 @@ test('shop products json carries the outer size from the stock, not the product 
 
 test('an on-demand stock never caps a product, and the shop products json reports what is on the shelf', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
-    createProduct($shop);
-    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+    $product = UpdateProduct::make()->action(
+        StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10])),
+        ['state' => ProductStateEnum::ACTIVE]
+    );
 
     $onDemandStock      = $this->orgStock1;
     $stockedStock       = $this->orgStock2;

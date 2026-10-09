@@ -12,6 +12,7 @@ use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
+use App\Models\GoodsIn\StockDeliveryItemBatch;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,15 @@ class StockDeliveryItemResource extends JsonResource
         if ($warehouseArea == '') {
             $warehouseArea = __('No Area');
         }
+
+        $itemBatches = $item->relationLoaded('batches') ? $item->batches : $item->batches()->with('batchCode')->get();
+        $placedBatches = $itemBatches->isEmpty() ? [] : $item->placedBatchQuantities();
+        $batches = $itemBatches->map(fn (StockDeliveryItemBatch $batch) => [
+            'code'        => $batch->batchCode->code,
+            'expiry_date' => $batch->batchCode->expiry_date?->toDateString(),
+            'quantity'    => (float) $batch->quantity,
+            'placed'      => round($placedBatches[$batch->batch_code_id] ?? 0, 4),
+        ])->all();
 
         $checked     = (float) $item->unit_quantity_checked;
         $placed      = (float) $item->unit_quantity_placed;
@@ -148,6 +158,13 @@ class StockDeliveryItemResource extends JsonResource
                 ],
             ] : null,
             'sowings'               => $sowings,
+            'batches'               => $batches,
+            'is_batch_tracked'      => (bool) ($item->is_batch_tracked ?? $item->orgStock?->stock?->stockFamily?->is_batch_tracked),
+            'batchesRoute'          => $isEditable && $checked > 0 ? [
+                'name'       => 'grp.models.stock-delivery-item.batches',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
             'placedRoute'           => $canPlace ? [
                 'name'       => 'grp.models.stock-delivery-item.place',
                 'parameters' => ['stockDeliveryItem' => $item->id],

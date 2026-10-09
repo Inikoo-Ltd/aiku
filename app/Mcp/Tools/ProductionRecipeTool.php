@@ -9,6 +9,7 @@
 namespace App\Mcp\Tools;
 
 use App\Actions\Production\Artefact\SetArtefactsRecipe;
+use App\Actions\SysAdmin\McpChange\GetMcpChangeSnapshot;
 use App\Enums\SysAdmin\Authorisation\ProductionPermissionsEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -31,7 +32,7 @@ use Laravel\Mcp\Server\Tool;
  * Writes through SetArtefactsRecipe, the "change many artefacts at once" action of the artefacts
  * page, so open job orders pick up the new steps exactly as they do from the UI.
  */
-#[Description('Shows or replaces the recipe of artefacts: the production steps (manufacture tasks) in order, how many units of each step one artefact counts as, the target per hour of the step, and the raw materials each step uses per artefact, with their cost. Pick the artefacts by code (artefacts), by whole families (families, by code or slug; discontinued artefacts are left out) or both, and leave some out with except; up to 200 per call. Without steps it shows the recipes and the materials cost of each artefact. With steps every listed artefact gets exactly those steps: steps it has that are not in the list are removed with their raw materials, so pass the whole recipe, not only additions. units_per_artefact is how much of the step one artefact counts as (e.g. 0.1667 when packing is counted in boxes of six tins). When similar artefacts share the steps but differ in an ingredient (e.g. each flavour has its own oil), give the shared raw materials in raw_materials and, for the artefacts that differ, their complete list for that step in artefact_raw_materials. Open job orders that are not received yet pick up the new steps. Create missing tasks or raw materials first with production-records-tool. Show the user the steps per artefact and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
+#[Description('Shows or replaces the recipe of artefacts: the production steps (manufacture tasks) in order, how many units of each step one artefact counts as, the target per hour of the step, and the raw materials each step uses per artefact, with their cost. Pick the artefacts by code (artefacts), by whole families (families, by code or slug; discontinued artefacts are left out) or both, and leave some out with except; up to 200 per call. Without steps it shows the recipes and the materials cost of each artefact. With steps every listed artefact gets exactly those steps: steps it has that are not in the list are removed with their raw materials, so pass the whole recipe, not only additions. units_per_artefact is how much of the step one artefact counts as (e.g. 0.1667 when packing is counted in boxes of six tins). When similar artefacts share the steps but differ in an ingredient (e.g. each flavour has its own oil), give the shared raw materials in raw_materials and, for the artefacts that differ, their complete list for that step in artefact_raw_materials. Open job orders that are not received yet pick up the new steps. Create missing tasks or raw materials first with production-records-tool. Risky changes (dropping raw materials, whole families, unusually large numbers) are refused with warnings until called again with accept naming them, which only the user may agree to. Show the user the steps per artefact and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
 class ProductionRecipeTool extends Tool
 {
     use WithMcpPermissions;
@@ -62,6 +63,8 @@ class ProductionRecipeTool extends Tool
             'steps.*.artefact_raw_materials.*.raw_materials.*.code'   => ['required', 'string'],
             'steps.*.artefact_raw_materials.*.raw_materials.*.quantity' => ['required', 'numeric', 'gt:0'],
             'request_text'                          => ['required_with:steps', 'string', 'max:4000'],
+            'accept'                                => ['sometimes', 'array'],
+            'accept.*'                              => ['string'],
         ]);
 
         $production = $this->resolveProduction($request);
@@ -111,6 +114,10 @@ class ProductionRecipeTool extends Tool
         try {
             $steps = $this->steps($production, collect($request->get('steps')), $artefacts);
 
+            if ($refusal = $this->unacceptedWarnings($request, $this->warnings($request, $artefacts, $steps))) {
+                return $refusal;
+            }
+
             $this->recordChange(
                 $request,
                 McpChangeTypeEnum::PRODUCTION_RECIPE,
@@ -131,6 +138,59 @@ class ProductionRecipeTool extends Tool
             'change_log_id' => $this->mcpChange?->id,
             ...$this->summary($production, $artefacts),
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function warnings(Request $request, Collection $artefacts, array $steps): array
+    {
+        $warnings = [];
+
+        if ($request->has('families')) {
+            $warnings['change_'.$artefacts->count().'_artefacts'] = 'This changes the recipe of '.$artefacts->count().' artefacts: '.$artefacts->pluck('code')->implode(', ').'.';
+        }
+
+        $unusual = collect($steps)->flatMap(fn (array $step) => array_filter([
+            $step['units_per_artefact'] > 20 ? "units per artefact {$step['units_per_artefact']}" : null,
+            $step['standard_rate'] > 2000 ? "target {$step['standard_rate']} an hour" : null,
+            ...collect($step['raw_materials'])->merge(collect($step['artefact_raw_materials'])->pluck('raw_materials')->flatten(1))
+                ->filter(fn (array $rawMaterial) => $rawMaterial['quantity_per_unit'] > 50)
+                ->map(fn (array $rawMaterial) => "raw material quantity {$rawMaterial['quantity_per_unit']} per artefact")
+                ->all(),
+        ]))->unique();
+        if ($unusual->isNotEmpty()) {
+            $warnings['unusual_numbers'] = 'Some numbers are unusually large, check they are not a typo: '.$unusual->implode(', ').'.';
+        }
+
+        $current = GetMcpChangeSnapshot::make()->handle(McpChangeTypeEnum::PRODUCTION_RECIPE, ['artefact_ids' => $artefacts->pluck('id')->all()])['artefacts'];
+        $dropped = $artefacts->mapWithKeys(function (Artefact $artefact) use ($current, $steps) {
+            $kept = collect($steps)->flatMap(function (array $step) use ($artefact) {
+                $override = collect($step['artefact_raw_materials'])->firstWhere('artefact_id', $artefact->id);
+
+                return collect($override ? $override['raw_materials'] : $step['raw_materials'])
+                    ->map(fn (array $rawMaterial) => $step['manufacture_task_id'].'-'.$rawMaterial['raw_material_id']);
+            });
+
+            $lost = collect($current[$artefact->id] ?? [])
+                ->flatMap(fn (array $step) => collect($step['raw_materials'])->map(fn (array $rawMaterial) => [
+                    'key'             => $step['manufacture_task_id'].'-'.$rawMaterial['raw_material_id'],
+                    'raw_material_id' => $rawMaterial['raw_material_id'],
+                ]))
+                ->reject(fn (array $line) => $kept->contains($line['key']))
+                ->pluck('raw_material_id');
+
+            return [$artefact->code => $lost];
+        })->filter(fn (Collection $lost) => $lost->isNotEmpty());
+
+        if ($dropped->isNotEmpty()) {
+            $codes = RawMaterial::whereIn('id', $dropped->flatten()->unique())->pluck('code', 'id');
+            $warnings['drop_raw_materials'] = 'These artefacts lose raw materials from their recipe, so receiving their job orders will no longer use that stock: '
+                .$dropped->map(fn (Collection $lost, string $code) => $code.' ('.$lost->map(fn ($id) => $codes[$id] ?? '#'.$id)->implode(', ').')')->implode('; ')
+                .'. To keep them, put them on the new steps in the same request.';
+        }
+
+        return $warnings;
     }
 
     /**
@@ -287,6 +347,7 @@ class ProductionRecipeTool extends Tool
                 ]))->description('Only for artefacts whose raw materials in this step differ from raw_materials'),
             ]))->description('The whole new recipe. Omit to only show the current recipes'),
             'request_text' => $schema->string()->description('The user\'s request, verbatim; required when writing'),
+            'accept'       => $schema->array()->items($schema->string())->description('Warning codes the user has read and agreed to, exactly as a previous refusal listed them. Never send one the user has not seen'),
         ];
     }
 }

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop\External\Shopify;
 
-use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -19,7 +18,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -36,6 +34,10 @@ class StoreShopifyUserExternalShop extends OrgAction
         $myShopifyDomain = config('shopify-app.my_shopify_domain');
         $name            = $name.'.'.$myShopifyDomain;
         data_set($modelData, 'name', Str::lower($name));
+
+        if ($shopifyUser = ShopifyUser::where('name', Str::lower($name))->first()) {
+            return $shopifyUser;
+        }
 
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
 
@@ -67,10 +69,10 @@ class StoreShopifyUserExternalShop extends OrgAction
         $myShopifyDomain = config('shopify-app.my_shopify_domain');
         $shopifyShopUrl  = 'https://'.$this->get('name').'.'.$myShopifyDomain;
 
-        if (ShopifyUser::where('name', $this->get('name').'.'.$myShopifyDomain)
-            ->whereNotNull('customer_id')
+        if (ShopifyUser::where('name', Str::lower($this->get('name').'.'.$myShopifyDomain))
+            ->whereNotNull('external_shop_id')
             ->exists()) {
-            $validator->errors()->add('name', __('Shopify shop :shop already exists, please use other name', ['shop' => $this->get('name')]));
+            $validator->errors()->add('name', __('Shopify shop :shop is already connected to another shop', ['shop' => $this->get('name')]));
         }
 
         $response = Http::get($shopifyShopUrl);
@@ -86,7 +88,6 @@ class StoreShopifyUserExternalShop extends OrgAction
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')
             ]
         ];
     }
@@ -107,8 +108,9 @@ class StoreShopifyUserExternalShop extends OrgAction
 
         $nameInput = trim($nameInput);
 
+        $permanentDomain = ConnectShopifyExternalShop::make()->resolveShopifyStoreDomain($nameInput);
 
-        $this->set('name', StoreShopifyUser::make()->permanentHandle($nameInput));
+        $this->set('name', $permanentDomain ? Str::before($permanentDomain, '.') : $nameInput);
     }
 
     /**

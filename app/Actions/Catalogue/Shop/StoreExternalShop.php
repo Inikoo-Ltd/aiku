@@ -9,6 +9,9 @@
 namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
+use App\Actions\Catalogue\Shop\External\Shopify\ConnectShopifyExternalShop;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyProducts;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyStore;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
 use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
@@ -62,9 +65,11 @@ class StoreExternalShop extends OrgAction
                 $modelData = $this->handleFaireShop($modelData);
             } elseif ($modelData['engine'] === ShopEngineEnum::SHOPIFY->value) {
                 $shopifyUser = $this->handleShopifyShop($organisation, $modelData);
-                data_set($modelData, 'settings.shopify.auth_url', route('pupil.authenticate', [
-                    'shop' => $shopifyUser->name
-                ]));
+                if (!ConnectShopifyExternalShop::make()->isShopifyStoreInstalled($shopifyUser)) {
+                    data_set($modelData, 'settings.shopify.auth_url', route('pupil.authenticate', [
+                        'shop' => $shopifyUser->name
+                    ]));
+                }
                 data_set($modelData, 'settings.shopify.shop_url', $shopifyUser->name);
             }
             data_set($modelData, 'open_at', now());
@@ -76,6 +81,13 @@ class StoreExternalShop extends OrgAction
                 $shopifyUser->update([
                     'external_shop_id' => $shop->id
                 ]);
+
+                if (ConnectShopifyExternalShop::make()->isShopifyStoreInstalled($shopifyUser)) {
+                    DB::afterCommit(function () use ($shopifyUser, $shop) {
+                        GetShopifyStore::dispatch($shopifyUser);
+                        GetShopifyProducts::dispatch($shop);
+                    });
+                }
             }
 
             if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {

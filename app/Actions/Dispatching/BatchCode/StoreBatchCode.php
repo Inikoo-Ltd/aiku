@@ -13,18 +13,23 @@ use App\Actions\OrgAction;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreBatchCode extends OrgAction
 {
-    public function handle(Warehouse $warehouse, array $modelData): BatchCode
+    public function handle(Warehouse|Organisation $parent, array $modelData): BatchCode
     {
-        data_set($modelData, 'group_id', $warehouse->group_id);
-        data_set($modelData, 'organisation_id', $warehouse->organisation_id);
+        data_set($modelData, 'group_id', $parent->group_id);
+        data_set($modelData, 'organisation_id', $parent instanceof Organisation ? $parent->id : $parent->organisation_id);
 
-        $batchCode = BatchCode::create($modelData);
+        $batchCode = BatchCode::firstOrCreate(
+            Arr::only($modelData, ['organisation_id', 'org_stock_id', 'code', 'expiry_date']) + ['expiry_date' => null],
+            $modelData
+        );
 
         OrgStockHydrateCurrentBatchCodes::run(OrgStock::find($batchCode->org_stock_id));
 
@@ -53,6 +58,14 @@ class StoreBatchCode extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $modelData);
 
         return $this->handle($warehouse, $this->validatedData);
+    }
+
+    public function inOrganisation(Organisation $organisation, array $modelData): BatchCode
+    {
+        $this->asAction = true;
+        $this->initialisation($organisation, $modelData);
+
+        return $this->handle($organisation, $this->validatedData);
     }
 
     public function htmlResponse(BatchCode $batchCode, ActionRequest $request): RedirectResponse

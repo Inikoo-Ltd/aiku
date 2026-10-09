@@ -10,6 +10,7 @@ import InformationSideProduct from "@/Components/CMS/Webpage/Product1/Informatio
 import Image from "@common/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { ctrans } from "@/Composables/useTrans"
+import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
 import { useExpectedBackInStockLabel } from "@/Composables/useOutOfStockLabel"
 import { Image as ImageTS } from "@/types/Image"
 import { getStyles } from "@/Composables/styles"
@@ -135,17 +136,19 @@ const openBundlePanel = (product:any) => {
 
                                 <div v-if="layout?.iris?.is_logged_in"
                                     class="flex items-center gap-2 text-sm text-gray-600">
-                                    <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                        :class="product.stock > 0 ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width />
-                                    <span>
-                                        {{
-                                            product?.stock >= 250
-                                                ? ctrans("Unlimited quantity")
-                                                : product.stock > 0
-                                                    ? ctrans("In stock") + ` (${product.stock} ` + ctrans("available") + `)`
-                                        : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock"))
-                                        }}
-                                    </span>
+                                    <StockInfoPopover :product="product">
+                                        <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+                                            :class="product.stock > 0 ? 'text-green-600' : (product.pre_order ? 'text-amber-500' : 'text-red-600')" fixed-width />
+                                        <span>
+                                            {{
+                                                product?.stock >= 250
+                                                    ? ctrans("Unlimited quantity")
+                                                    : product.stock > 0
+                                                        ? ctrans("In stock") + ` (${product.stock} ` + ctrans("available") + `)`
+                                            : (product.pre_order ? `${product.pre_order.available_label} · ${product.pre_order.dispatch_label}` : ctrans("Out of stock"))
+                                            }}
+                                        </span>
+                                    </StockInfoPopover>
                                 </div>
                                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mt-2" :preOrder="product.pre_order" :stock="product.stock" />
                                 <div v-else-if="layout?.iris?.is_logged_in && !product.stock && useExpectedBackInStockLabel(product)"

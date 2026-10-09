@@ -71,6 +71,8 @@ Pievienošana tiek atteikta trīs gadījumos, un tas ir ar nolūku: saraksts sas
 
 Tiklīdz partneris [nosūta piegādi savai noliktavai](/docs/fulfilling-partner-orders-lv), pie tava partnera sadaļā **Stock deliveries** (Piegādes) parādās ienākoša **stock delivery** (piegāde). Atstāj to mierā, kamēr tā rāda statusu confirmed vai dispatched — tā spoguļo pārdevēja noliktavu un atjauninās pati. Kad kastes fiziski pienāk: **receive** (saņem), pārbaudi un novieto vietās tieši tāpat kā jebkurai piegādātāja piegādei. Ar visu, kas pienāk nepilnā apjomā vai bojāts, rīkojas pēc saņemšanas, pret saistīto rēķinu — skaties [pārskatu](/docs/ordering-from-a-partner-organisation-lv), kā strādā nauda.
 
+Kad partneris nosūta preces, katra rinda pienāk ar jau aizpildītām partijām, ko partneris savāca: tas pats partijas kods un derīguma termiņš, pārrēķināts tavos SKO. Pārbaudot tu tās tikai apstiprini vai izlabo, ja uz precēm rakstīts citādi, un, novietojot krājumu, šīs partijas nonāk tavos plauktos.
+
 <aside class="wayfinder"><strong>Kur klikšķināt aiku sistēmā</strong>
 <ul>
 <li><b>Redzēt, kas jāpērk:</b> tava organizācija → <b>Procurement → Partners</b> → atver partneri → <b>Shopping</b> (panelis) → strādā ar riska kartītēm.</li>

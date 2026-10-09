@@ -10,6 +10,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Web\Webpage\GetWebpageHreflangAlternates;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -18,6 +19,7 @@ use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -107,8 +109,11 @@ class SaveWebsiteSitemap implements ShouldBeUnique
 
         $limit = 50000;
 
+        $groupWebsites = GetWebpageHreflangAlternates::make()->groupWebsites($website);
+        $storefrontAlternates = $this->storefrontAlternates($website, $groupWebsites);
+
         DB::connection('aiku_no_sticky')->table('products')
-            ->select(['webpages.id', 'webpages.url', 'webpages.sub_type', 'snapshots.published_at', 'webpages.canonical_url', 'webpages.model_type', 'webpages.model_id'])
+            ->select(['webpages.id', 'webpages.url', 'webpages.sub_type', 'snapshots.published_at', 'webpages.canonical_url', 'webpages.model_type', 'webpages.model_id', 'products.master_product_id as master_id'])
             ->leftJoin('webpages', 'products.webpage_id', '=', 'webpages.id')
             ->leftJoin('snapshots', 'webpages.live_snapshot_id', '=', 'snapshots.id')
             ->where('products.is_for_sale', true)
@@ -119,19 +124,20 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                 ProductStateEnum::DISCONTINUING->value
             ])
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $limit) {
+            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $limit, $groupWebsites) {
                 return $this->processWebpagesChunk(
                     $webpages,
                     $count,
                     $groups,
                     $groupsCount,
                     $limit,
-                    'products'
+                    'products',
+                    alternates: $this->chunkAlternates($webpages, 'products', 'master_product_id', $groupWebsites)
                 );
             }, 'webpages.id', 'id');
 
         DB::connection('aiku_no_sticky')->table('product_categories')
-            ->select(['webpages.id', 'webpages.url', 'webpages.sub_type', 'snapshots.published_at', 'webpages.canonical_url', 'webpages.model_type', 'webpages.model_id'])
+            ->select(['webpages.id', 'webpages.url', 'webpages.sub_type', 'snapshots.published_at', 'webpages.canonical_url', 'webpages.model_type', 'webpages.model_id', 'product_categories.master_product_category_id as master_id'])
             ->leftJoin('webpages', 'product_categories.webpage_id', '=', 'webpages.id')
             ->leftJoin('snapshots', 'webpages.live_snapshot_id', '=', 'snapshots.id')
             ->whereNull('product_categories.deleted_at')
@@ -141,7 +147,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                 ProductCategoryStateEnum::DISCONTINUING->value
             ])
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $map, $limit) {
+            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $map, $limit, $groupWebsites) {
                 return $this->processWebpagesChunk(
                     $webpages,
                     $count,
@@ -149,7 +155,8 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                     $groupsCount,
                     $limit,
                     null,
-                    $map
+                    $map,
+                    $this->chunkAlternates($webpages, 'product_categories', 'master_product_category_id', $groupWebsites)
                 );
             }, 'webpages.id', 'id');
 
@@ -161,7 +168,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
             ->whereNull('webpages.deleted_at')
             ->where('website_id', $website->id)
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $map, $limit) {
+            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $map, $limit, $storefrontAlternates) {
                 return $this->processWebpagesChunk(
                     $webpages,
                     $count,
@@ -169,7 +176,8 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                     $groupsCount,
                     $limit,
                     null,
-                    $map
+                    $map,
+                    $storefrontAlternates
                 );
             }, 'webpages.id', 'id');
 
@@ -211,7 +219,8 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         array &$groupsCount,
         int $limit,
         ?string $forcedGroupName = null,
-        array $map = []
+        array $map = [],
+        array $alternates = []
     ): bool {
         foreach ($webpages as $webpage) {
             if ($count >= $limit) {
@@ -234,7 +243,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                 $groupName = $map[$subtype];
             }
 
-            $this->addSitemapEntry($groups[$groupName], $webpage->canonical_url, $webpage->published_at);
+            $this->addSitemapEntry($groups[$groupName], $webpage->canonical_url, $webpage->published_at, $alternates[$webpage->id] ?? []);
 
             $groupsCount[$groupName]++;
             $count++;
@@ -243,18 +252,71 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         return true;
     }
 
-    private function addSitemapEntry(Sitemap $sitemap, string $url, mixed $publishedAt): void
+    /**
+     * @param  array<int, array{hreflang: string, href: string}>  $alternates
+     */
+    private function addSitemapEntry(Sitemap $sitemap, string $url, mixed $publishedAt, array $alternates = []): void
     {
-        if ($publishedAt) {
-            $sitemap->add(
-                Url::create($url)
-                    ->setLastModificationDate(Carbon::parse($publishedAt))
-            );
+        $entry = Url::create($url);
 
-            return;
+        if ($publishedAt) {
+            $entry->setLastModificationDate(Carbon::parse($publishedAt));
         }
 
-        $sitemap->add(Url::create($url));
+        foreach ($alternates as $alternate) {
+            $entry->addAlternate($alternate['href'], $alternate['hreflang']);
+        }
+
+        $sitemap->add($entry);
+    }
+
+    /**
+     * @return array<int, array<int, array{hreflang: string, href: string}>>
+     */
+    private function chunkAlternates(Collection $webpages, string $table, string $masterColumn, Collection $groupWebsites): array
+    {
+        if ($groupWebsites->isEmpty()) {
+            return [];
+        }
+
+        $hreflang     = GetWebpageHreflangAlternates::make();
+        $counterparts = $hreflang->counterpartsByMaster(
+            $table,
+            $masterColumn,
+            $webpages->pluck('master_id')->filter()->unique()->values()->all(),
+            $groupWebsites,
+            'aiku_no_sticky'
+        );
+
+        $alternates = [];
+
+        foreach ($webpages as $webpage) {
+            if ($webpage->master_id && $counterparts->has($webpage->master_id)) {
+                $alternates[$webpage->id] = $hreflang->alternatesFor($webpage->id, $counterparts->get($webpage->master_id), $groupWebsites);
+            }
+        }
+
+        return $alternates;
+    }
+
+    /**
+     * @return array<int, array<int, array{hreflang: string, href: string}>>
+     */
+    private function storefrontAlternates(Website $website, Collection $groupWebsites): array
+    {
+        if ($groupWebsites->isEmpty() || !$website->storefront_id) {
+            return [];
+        }
+
+        $hreflang = GetWebpageHreflangAlternates::make();
+
+        return [
+            $website->storefront_id => $hreflang->alternatesFor(
+                $website->storefront_id,
+                $hreflang->storefrontCounterparts($groupWebsites, 'aiku_no_sticky'),
+                $groupWebsites
+            ),
+        ];
     }
 
     public string $commandSignature = 'website_sitemap {website}';

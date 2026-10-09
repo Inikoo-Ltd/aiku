@@ -31,6 +31,17 @@ trait WithTradeUnitEditSections
                         'method'     => 'patch',
                     ],
                 ],
+                'weight_dimensions' => [
+                    'label'       => __('Weight/Dimensions'),
+                    'icon'        => 'fa-light fa-weight',
+                    'replaceNote' => __('Replace applies every field above that has a value. A field left empty keeps what each trade unit already has.'),
+                    'fields'      => $this->getTradeUnitWeightDimensionsFields(null),
+                    'updateRoute' => [
+                        'name'       => 'grp.models.trade_units.bulk_update_weight_dimensions',
+                        'parameters' => [],
+                        'method'     => 'patch',
+                    ],
+                ],
                 'label_info' => [
                     'label'       => __('Labeling & Compliance Marks'),
                     'icon'        => 'fa-light fa-stamp',
@@ -41,6 +52,35 @@ trait WithTradeUnitEditSections
                         'method'     => 'patch',
                     ],
                 ],
+            ],
+        ];
+    }
+
+    public function getTradeUnitWeightDimensionsFields(?TradeUnit $tradeUnit): array
+    {
+        return [
+            'gross_weight' => [
+                'type'  => 'input_number',
+                'label' => __('Weight').' ('.__('Shipping').')',
+                'value' => $tradeUnit?->gross_weight,
+                'bind'  => [
+                    'suffix'            => 'g',
+                    'maxFractionDigits' => 0
+                ]
+            ],
+            'marketing_weight' => [
+                'type'  => 'input_number',
+                'label' => __('Weight').' ('.__('Marketing').')',
+                'value' => $tradeUnit?->marketing_weight,
+                'bind'  => [
+                    'suffix'            => 'g',
+                    'maxFractionDigits' => 0
+                ]
+            ],
+            'marketing_dimensions' => [
+                'type'  => 'input-dimension',
+                'label' => __('Dimensions').' ('.__('Marketing').')',
+                'value' => $tradeUnit?->marketing_dimensions,
             ],
         ];
     }

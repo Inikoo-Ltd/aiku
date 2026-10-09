@@ -33,6 +33,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategoryDiscount extends OrgAction
 {
+    public const string ACCEPT_RESPONSIBILITY_PHRASE = 'I accept responsibility';
+
     /**
      * @throws \Throwable
      *
@@ -88,10 +90,11 @@ class StoreProductCategoryDiscount extends OrgAction
      */
     public function handle(array $modelData): ?Offer
     {
-        $productCategory = ProductCategory::find(Arr::pull($modelData, 'product_category_id'));
+        $productCategory      = ProductCategory::find(Arr::pull($modelData, 'product_category_id'));
+        $acceptResponsibility = Arr::pull($modelData, 'accept_responsibility');
 
         if ($freeQuantity = (int)Arr::pull($modelData, 'free_quantity')) {
-            return $this->handleClearanceGift($productCategory, $modelData, $freeQuantity);
+            return $this->handleClearanceGift($productCategory, $modelData, $freeQuantity, $acceptResponsibility);
         }
 
         $categoryIds     = Arr::pull($modelData, 'category_ids', []);
@@ -209,7 +212,7 @@ class StoreProductCategoryDiscount extends OrgAction
      *
      * @throws \Throwable
      */
-    private function handleClearanceGift(ProductCategory $family, array $modelData, int $freeQuantity): ?Offer
+    private function handleClearanceGift(ProductCategory $family, array $modelData, int $freeQuantity, ?string $acceptResponsibility = null): ?Offer
     {
         if ($family->type != ProductCategoryTypeEnum::FAMILY || Arr::get($modelData, 'type') != 'quantity' || count(Arr::get($modelData, 'category_ids', [])) > 1) {
             throw ValidationException::withMessages([
@@ -237,6 +240,16 @@ class StoreProductCategoryDiscount extends OrgAction
         }
 
         $itemQuantity = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
+        if ($itemQuantity <= $freeQuantity && Str::lower(trim((string)$acceptResponsibility)) !== Str::lower(self::ACCEPT_RESPONSIBILITY_PHRASE)) {
+            throw ValidationException::withMessages([
+                'accept_responsibility' => __('Customers would get :free free for buying only :quantity. To save it anyway, type: :phrase', [
+                    'free'     => $freeQuantity,
+                    'quantity' => $itemQuantity,
+                    'phrase'   => self::ACCEPT_RESPONSIBILITY_PHRASE,
+                ]),
+            ]);
+        }
+
         foreach (['type', 'trigger_data_item_amount', 'percentage_off', 'target_product_category_id', 'category_ids'] as $unusedField) {
             data_forget($modelData, $unusedField);
         }
@@ -318,6 +331,7 @@ class StoreProductCategoryDiscount extends OrgAction
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
             'percentage_off'             => ['nullable', 'required_without:free_quantity', 'numeric', 'gt:0', 'lt:100'],
             'free_quantity'              => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'accept_responsibility'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'free_product_id'            => ['sometimes', 'nullable', 'integer', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
             'product_category_id'        => ['required_without:product_category_ids', 'integer', 'exists:product_categories,id'],
             'product_category_ids'       => ['required_without:product_category_id', 'array', 'min:1'],

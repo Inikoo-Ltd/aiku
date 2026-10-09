@@ -111,8 +111,8 @@ class ShowTicketsDashboard extends OrgAction
         $query = Ticket::where('tickets.group_id', $group->id)
             ->where('qa_status', TicketQaStatusEnum::REQUESTED)
             ->visibleTo($user)
-            ->when($checker === 'anyone', fn (Builder $query) => $query->whereNull('qa_user_id'))
-            ->when($checker === 'me', fn (Builder $query) => $query->where('qa_user_id', $user->id))
+            ->when($checker === 'anyone', fn (Builder $query) => $query->qaOpenToAnyone())
+            ->when($checker === 'me', fn (Builder $query) => $query->qaCheckerIs($user))
             ->orderBy('qa_requested_at');
 
         return $this->tickets($query);

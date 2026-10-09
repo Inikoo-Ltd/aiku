@@ -35,7 +35,8 @@ class PrepareSupplierProductUpload
             return $upload;
         }
 
-        $rows = CheckSupplierProductSheet::run($supplier, $sheet);
+        $checker = CheckSupplierProductSheet::make();
+        $rows    = $checker->handle($supplier, $sheet);
 
         foreach ($rows as $row) {
             $upload->records()->create([
@@ -57,6 +58,12 @@ class PrepareSupplierProductUpload
                 'order_columns' => array_values($sheet['order_columns']),
                 'new_draft'     => [],
                 'ai'            => 'queued',
+                'declaration'   => $sheet['declaration'],
+                'packaging'     => [
+                    'rows'    => count($sheet['packaging']),
+                    'orphans' => $checker->orphanPackagingRows($sheet, $rows),
+                    'unread'  => $sheet['packaging_unread'],
+                ],
             ],
         ]);
 

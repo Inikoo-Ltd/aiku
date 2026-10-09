@@ -611,6 +611,36 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label"   => __("Keywords"),
+                                "tooltip" => __("Keywords"),
+                                "icon"    => ["fal", "fa-key"],
+                                "root"    => "grp.org.shops.show.seo.keywords.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.keywords.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Backlinks"),
+                                "tooltip" => __("Backlinks"),
+                                "icon"    => ["fal", "fa-external-link-alt"],
+                                "root"    => "grp.org.shops.show.seo.backlinks.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.backlinks.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Competitors"),
+                                "tooltip" => __("Competitors"),
+                                "icon"    => ["fal", "fa-users"],
+                                "root"    => "grp.org.shops.show.seo.competitors.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.competitors.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];
@@ -817,6 +847,15 @@ class GetShopNavigation
                         ],
                     ],
                     [
+                        "label" => __("To review & publish"),
+                        "icon"  => ["fal", "fa-clipboard-check"],
+                        "root"  => "grp.org.shops.show.tasks.review",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.review",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
                         "label" => __("Board"),
                         "icon"  => ["fal", "fa-columns"],
                         "root"  => "grp.org.shops.show.tasks.board",
@@ -840,6 +879,15 @@ class GetShopNavigation
                         "root"  => "grp.org.shops.show.tasks.reports",
                         "route" => [
                             "name"       => "grp.org.shops.show.tasks.reports",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Covering"),
+                        "icon"  => ["fal", "fa-user-friends"],
+                        "root"  => "grp.org.shops.show.tasks.covering",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.covering",
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],

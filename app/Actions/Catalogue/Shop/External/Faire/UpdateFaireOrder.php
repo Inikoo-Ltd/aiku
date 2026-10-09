@@ -38,6 +38,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -525,7 +526,7 @@ class UpdateFaireOrder extends OrgAction
 
 
             foreach ($product->orgStocks as $orgStock) {
-                $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                $quantity             = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
                 $deliveryNoteItemData = [
                     'org_stock_id'               => $orgStock->id,
                     'transaction_id'             => $transaction->id,
@@ -588,7 +589,7 @@ class UpdateFaireOrder extends OrgAction
                     ->exists();
 
                 if (!$exists) {
-                    $quantity = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                    $quantity = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
 
                     StoreDeliveryNoteItem::make()->action($deliveryNote, [
                         'org_stock_id'               => $orgStock->id,

@@ -33,6 +33,8 @@ class ReviewSupplierProductUpload
     public const float MAX_UPLOAD_COST        = 2.0;
     public const float MONTHLY_BUDGET         = 40.0;
 
+    protected float $lastCost = 0.0;
+
     public function handle(Upload $upload): Upload
     {
         $rows = $upload->records()->where('status', UploadRecordStatusEnum::PREVIEW)->orderBy('row_number')->get()
@@ -59,7 +61,7 @@ class ReviewSupplierProductUpload
             return ['status' => 'skipped'];
         }
 
-        if ($this->spentThisMonth() >= self::MONTHLY_BUDGET) {
+        if (static::spentThisMonth() >= self::MONTHLY_BUDGET) {
             return ['status' => 'off', 'note' => __('AI final review is off this month: the monthly budget is used up.')];
         }
 
@@ -77,12 +79,13 @@ class ReviewSupplierProductUpload
 
         $answer = $this->ask($prompt);
         if ($answer === null) {
-            return ['status' => 'failed', 'note' => __('AI final review could not run.')];
+            return ['status' => 'failed', 'note' => __('AI final review could not run.'), 'cost' => $this->lastCost];
         }
 
         return [
             'status'  => 'done',
             'partial' => $partial,
+            'cost'    => $this->lastCost,
             'summary' => is_array(Arr::get($answer, 'summary')) ? implode("\n", Arr::get($answer, 'summary')) : Arr::get($answer, 'summary'),
             'rows'    => collect(Arr::get($answer, 'rows', []))->filter(fn ($suggestion) => is_string($suggestion) && $suggestion !== '')->all(),
         ];
@@ -141,10 +144,13 @@ PROMPT;
         return (mb_strlen($prompt) / 3.5) * self::INPUT_PRICE_PER_TOKEN + self::MAX_OUTPUT_TOKENS * self::OUTPUT_PRICE_PER_TOKEN;
     }
 
-    protected function spentThisMonth(): float
+    /**
+     * The upload review and the sourcing price check share one monthly budget.
+     */
+    public static function spentThisMonth(): float
     {
         return (float)DB::table('ai_usages')
-            ->where('feature', class_basename(self::class))
+            ->whereIn('feature', [class_basename(self::class), class_basename(CheckSupplierProductUploadSourcingPrices::class)])
             ->where('created_at', '>=', now()->startOfMonth())
             ->sum('cost');
     }
@@ -180,6 +186,8 @@ PROMPT;
 
             return null;
         }
+
+        $this->lastCost = (float)$this->aiUsageCost($response->json('usage') ?? []);
 
         $content = $response->json('choices.0.message.content');
         if (!is_string($content)) {

@@ -2,7 +2,7 @@
 title: Zaznamenávanie postupu objednávky ako agent
 summary: Pre agentov — štyri dátumy, ktoré zaznamenávate na každej objednávke dodávateľovi (zaplatená záloha, schválená vzorka, dokončená výroba, navrhovaný dátum pripravenosti), kedy ich zaznamenať, čo namiesto toho zaznamenáva nakupujúca spoločnosť, a prečo sa chýbajúci dátum zobrazuje ako meškanie.
 date: 2026-09-25
-source_date: 2026-09-25
+source_date: 2026-10-08
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -50,10 +50,10 @@ Toto sú fakty, z ktorých sa počíta vaše <a href="/docs/your-clean-handover-
 
 <aside class="wayfinder">
 <b>Kde kliknúť v aiku</b><br>
-Prihláste sa → <b>Supplier Purchase Orders</b> → otvorte objednávku → <b>Edit</b>. <b>Deposit paid</b> a <b>Deposit amount</b> sú v prvej sekcii. <b>Sample approved</b> a <b>Production done</b> sú v sekcii <b>Production</b>. <b>Proposed ready date (agent)</b> je v sekcii <b>Clean handover</b>.
+Prihláste sa → <b>Purchase Orders</b> → otvorte objednávku → <b>Edit</b>. Každá objednávka je pre jedného z vašich dodávateľov. <b>Deposit paid</b> a <b>Deposit amount</b> sú v sekcii <b>Payments</b>. <b>Sample approved</b> a <b>Production done</b> sú v sekcii <b>Production</b>. <b>Proposed ready date</b> je v sekcii <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">
 <b>Aké práva potrebujete</b><br>
-Prihlásenie pre vašu agentskú organizáciu. Polia so schváleným dátumom pripravenosti, QC, clean handover a compliance sa vám zobrazujú, ale sú uzamknuté.
+Prihlásenie pre vašu agentskú organizáciu. Váš formulár obsahuje iba polia, ktoré zaznamenávate vy: schválená vzorka, hotová výroba, navrhovaný dátum pripravenosti, výška zálohy a zaplatená záloha. Polia so schváleným dátumom pripravenosti, QC, clean handover a compliance v ňom nie sú, pretože ich zaznamenáva nakupujúca spoločnosť.
 </aside>

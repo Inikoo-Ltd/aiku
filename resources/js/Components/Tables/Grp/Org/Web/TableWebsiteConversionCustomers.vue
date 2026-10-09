@@ -38,9 +38,6 @@ const locale = useLocaleStore()
             <Link :href="route(customer.route.name, customer.route.parameters)" class="primaryLink">
                 {{ customer.name || customer.contact_name || customer.email }}
             </Link>
-            <div v-if="customer.contact_name && customer.contact_name !== customer.name" class="text-xs text-gray-500">
-                {{ customer.contact_name }}
-            </div>
         </template>
 
         <template #cell(traffic_source_types)="{ item: customer }: { item: ConversionCustomerRow }">

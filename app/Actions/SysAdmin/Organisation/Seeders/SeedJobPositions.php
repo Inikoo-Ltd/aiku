@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\Organisation\Seeders;
 
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
+use App\Actions\SysAdmin\User\SyncRolesFromJobPositions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
@@ -17,6 +18,7 @@ use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\JobPositionCategory;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
+use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
@@ -28,7 +30,8 @@ class SeedJobPositions extends Seeder
 
     public function handle(Organisation $organisation): void
     {
-        $jobPositions = collect(config("blueprint.job_positions.positions"));
+        $jobPositions          = collect(config("blueprint.job_positions.positions"));
+        $changedJobPositionIds = [];
 
 
         foreach ($jobPositions as $jobPositionData) {
@@ -44,14 +47,16 @@ class SeedJobPositions extends Seeder
                 }
 
                 if ($process) {
-                    $this->processJobPosition($organisation, $jobPositionData);
+                    $changedJobPositionIds[] = $this->processJobPosition($organisation, $jobPositionData);
                 }
             }
         }
+
+        $this->syncHolders($organisation, array_values(array_filter($changedJobPositionIds)));
     }
 
 
-    private function processJobPosition(Organisation $organisation, array $jobPositionData): void
+    private function processJobPosition(Organisation $organisation, array $jobPositionData): ?int
     {
         /** @var JobPosition $jobPosition */
         $jobPosition = $organisation->jobPositions()->where('code', $jobPositionData['code'])->first();
@@ -136,7 +141,24 @@ class SeedJobPositions extends Seeder
             }
         }
 
-        $jobPosition->roles()->sync($roles);
+        $changes = $jobPosition->roles()->sync($roles);
+
+        return $changes['attached'] || $changes['detached'] ? $jobPosition->id : null;
+    }
+
+    /**
+     * @param array<int> $jobPositionIds
+     */
+    private function syncHolders(Organisation $organisation, array $jobPositionIds): void
+    {
+        if ($jobPositionIds === []) {
+            return;
+        }
+
+        setPermissionsTeamId($organisation->group_id);
+        User::whereHas('employees.jobPositions', fn ($query) => $query->whereIn('job_positions.id', $jobPositionIds))
+            ->orWhereHas('pseudoJobPositions', fn ($query) => $query->whereIn('job_positions.id', $jobPositionIds))
+            ->each(fn (User $user) => SyncRolesFromJobPositions::run($user));
     }
 
 

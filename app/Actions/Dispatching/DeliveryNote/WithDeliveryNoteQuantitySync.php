@@ -18,6 +18,7 @@ use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
@@ -54,7 +55,7 @@ trait WithDeliveryNoteQuantitySync
                 continue;
             }
 
-            $quantity            = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+            $quantity            = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
             $oldRequiredQuantity = (float)$deliveryNoteItem->quantity_required;
 
             if (abs($quantity - $oldRequiredQuantity) < 0.000001) {

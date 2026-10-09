@@ -25,6 +25,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
@@ -177,7 +178,7 @@ class SaveOrderModification extends OrgAction
         $beingPicked = in_array($deliveryNote->state, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED]);
 
         foreach ($product->orgStocks as $orgStock) {
-            $quantity         = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+            $quantity         = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
             $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
                 'org_stock_id'               => $orgStock->id,
                 'transaction_id'             => $transaction->id,

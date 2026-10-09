@@ -13,6 +13,9 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import PurchaseOrderSuggestButton from "@/Components/Procurement/PurchaseOrderSuggestButton.vue"
 import RenderWhenVisible from "@/Components/Utils/RenderWhenVisible.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import { createReusableTemplate } from "@vueuse/core"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -24,8 +27,8 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells } from "@fal"
-library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells)
+import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle } from "@fal"
+library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -135,7 +138,35 @@ watch(isModalOpen, (isOpen, wasOpen) => {
 const amountOf = (item: { quantity: number; price_per_sko: number | null }) =>
 	Number(item.quantity) * Number(item.price_per_sko ?? 0)
 
-const priorities = ["low", "normal", "high", "urgent"]
+const [DefineLineActions, ReuseLineActions] = createReusableTemplate<{ item: any }>()
+
+const priorityIcons: Record<string, string> = {
+	low: "fal fa-chevron-double-down",
+	normal: "fal fa-equals",
+	high: "fal fa-chevron-double-up",
+	urgent: "fal fa-exclamation-triangle",
+}
+
+const priorityTones = {
+	low: "gray",
+	normal: "emerald",
+	high: "amber",
+	urgent: "red",
+} as const
+
+const priorityOptions = (Object.keys(priorityTones) as Array<keyof typeof priorityTones>).map((priority) => ({
+	label: ctrans(capitalize(priority)),
+	value: priority,
+	icon: priorityIcons[priority],
+	tone: priorityTones[priority],
+}))
+
+const priorityTextClass = (priority: string) => ({
+	"text-red-600": priority === "urgent",
+	"text-amber-600": priority === "high",
+	"text-emerald-600": priority === "normal",
+	"text-gray-400": priority === "low",
+})
 
 function updateItem(item: { id: number }, data: Record<string, string | null>) {
 	router.patch(
@@ -251,7 +282,28 @@ interface QuantityItem {
 	price_per_sko: number | null
 }
 
+const pendingQuantitySaves: Record<number, ReturnType<typeof setTimeout>> = {}
+const quantityInputResets = ref<Record<number, number>>({})
+
+function queueQuantitySave(item: QuantityItem, quantity: number) {
+	clearTimeout(pendingQuantitySaves[item.id])
+	delete pendingQuantitySaves[item.id]
+
+	if (quantity === Number(withSavedQuantity(item).quantity)) {
+		delete typedSkos.value[item.id]
+		return
+	}
+
+	typedSkos.value[item.id] = quantity
+	pendingQuantitySaves[item.id] = setTimeout(() => {
+		delete pendingQuantitySaves[item.id]
+		saveQuantity(item, quantity)
+	}, 800)
+}
+
 async function saveQuantity(item: QuantityItem, quantity: number): Promise<boolean> {
+	clearTimeout(pendingQuantitySaves[item.id])
+	delete pendingQuantitySaves[item.id]
 	savingId.value = item.id
 	try {
 		const response = await axios.patch(
@@ -275,16 +327,12 @@ async function saveQuantity(item: QuantityItem, quantity: number): Promise<boole
 			text: error?.response?.data?.message || ctrans("Failed to update quantity"),
 			type: "error",
 		})
+		delete typedSkos.value[item.id]
+		quantityInputResets.value[item.id] = (quantityInputResets.value[item.id] ?? 0) + 1
 
 		return false
 	} finally {
 		savingId.value = null
-	}
-}
-
-async function onSaveQuantity(item: QuantityItem, form: { quantity: number; defaults: () => void }) {
-	if (await saveQuantity(item, Number(form.quantity))) {
-		form.defaults()
 	}
 }
 
@@ -389,6 +437,38 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 
 <template>
 	<Head :title="capitalize(title)" />
+	<DefineLineActions v-slot="{ item }">
+		<div class="flex shrink-0 items-center gap-1 border-r border-gray-300 mr-3 pr-3">
+			<Button
+				v-if="isEditable(item)"
+				icon="fal fa-trash-alt"
+				:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
+				type="negative"
+				size="xs"
+				@click="deleteItem(item)" />
+
+			<Button
+				v-if="item.can_be_poked"
+				icon="fal fa-bells"
+				:tooltip="
+					pokedIds[item.id] || item.is_recently_poked
+						? ctrans('Poked :at, you can poke again an hour later', { at: useFormatTime(item.poked_at ?? new Date(), { formatTime: 'dd MMM HH:mm' }) })
+						: ctrans('Poke the partner: tell their production you urgently need this')
+				"
+				type="tertiary"
+				size="xs"
+				:loading="pokingId === item.id"
+				:disabled="pokedIds[item.id] || item.is_recently_poked"
+				@click="pokePartner(item)" />
+			<Button
+				v-if="isEditable(item)"
+				icon="fal fa-ban"
+				:tooltip="ctrans('Remove and never suggest this product again')"
+				type="tertiary"
+				size="xs"
+				@click="confirmStopSuggesting($event, item)" />
+		</div>
+	</DefineLineActions>
 	<PageHeading :data="pageHead">
 		<template v-if="!isSentView" #otherBefore>
 			<Button
@@ -413,7 +493,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				icon="fal fa-upload"
 				:label="ctrans('Upload')"
 				@click="isUploadOpen = true" />
-			<Button type="create" :label="ctrans('Add stocks')" @click="isModalOpen = true" />
+			<Button :label="ctrans('Add stocks')" @click="isModalOpen = true" type="tertiary" icon="far fa-plus" />
 			<Button
 				type="primary"
 				icon="fal fa-paper-plane"
@@ -444,7 +524,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 		<span class="text-sm text-gray-600">
 			{{
 				isSentView
-					? ctrans("What the partner is working on. Change the order on the Ongoing PO.")
+					? ctrans("What the partner is working on. Change the order in the Basket.")
 					: ctrans("Not sent yet: the partner sees these lines after you press Submit.")
 			}}
 			<span class="ml-2 font-semibold tabular-nums text-gray-900">{{
@@ -464,7 +544,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				type="button"
 				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 				:class="selectedFilters(group.key).includes(option.value)
-					? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+					? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 					: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
 				@click="toggleFilter(group.key, option.value)">
 				<span>{{ option.label }}</span>
@@ -530,49 +610,94 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 			</div>
 		</template>
 		<template #cell(quantity)="{ item }">
-			<RenderWhenVisible v-if="isEditable(item)" minHeight="4.5rem">
-				<div class="flex flex-col items-end">
-					<PurchaseOrderSuggestButton
-						class="mb-1"
-						:item="withSavedQuantity(item)"
-						isPartner
-						:typedSkosById="typedSkos"
-						@suggest="(skos) => saveQuantity(item, skos)" />
-					<NumberWithButtonSave
-						:key="`${item.id}-${withSavedQuantity(item).quantity}`"
-						isWithRefreshModel
-						:modelValue="Number(withSavedQuantity(item).quantity)"
-						:min="0"
-						:isLoading="savingId === item.id"
-						@update:modelValue="(value) => (typedSkos[item.id] = Number(value))"
-						@onSave="(form) => onSaveQuantity(item, form)" />
-					<span
-						v-if="Number(item.order_quantum) > 1"
-						v-tooltip="
-							ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
-								quantum: item.order_quantum,
-							})
-						"
-						class="mt-0.5 cursor-help text-xs"
-						:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
-						{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
-					</span>
-					<Button
-						v-if="item.state === 'draft'"
-						class="mt-1"
-						type="secondary"
-						size="xs"
-						icon="fal fa-paper-plane"
-						:label="ctrans('Submit')"
-						:loading="submittingId === item.id"
-						:disabled="hasUnsavedQuantity(item)"
-						:tooltip="hasUnsavedQuantity(item) ? ctrans('Save the quantity first') : ctrans('Send only this line to the partner now')"
-						@click="submitItem(item)" />
+			<div class="flex items-center justify-end gap-2">
+				<RenderWhenVisible v-if="isEditable(item)" minHeight="6rem">
+					<div class="flex flex-col items-end">
+						<div class="flex items-end gap-1">
+							<div class="flex flex-col items-end">
+								<div class="flex items-center">
+									<PurchaseOrderSuggestButton
+										class="mb-1"
+										:item="withSavedQuantity(item)"
+										isPartner
+										:typedSkosById="typedSkos"
+										@suggest="(skos) => saveQuantity(item, skos)" />
+										
+									<span class="ml-1 w-4">
+									</span>
+								</div>
+								<div class="flex items-center">
+									<ReuseLineActions :item="item" />
+									<NumberWithButtonSave
+										:key="`${item.id}-${quantityInputResets[item.id] ?? 0}`"
+										isWithRefreshModel
+										noSaveButton
+										noUndoButton
+										:modelValue="Number(withSavedQuantity(item).quantity)"
+										:min="0"
+										@update:modelValue="(value) => queueQuantitySave(item, Number(value))" />
+									<span class="ml-1 w-4">
+										<LoadingIcon v-if="savingId === item.id" />
+									</span>
+								</div>
+							</div>
+							<Button
+								v-if="item.state === 'draft'"
+								type="secondary"
+								size="xs"
+								icon="fal fa-paper-plane"
+								:label="ctrans('Submit')"
+								:loading="submittingId === item.id"
+								:disabled="hasUnsavedQuantity(item) || savingId === item.id"
+								:tooltip="hasUnsavedQuantity(item) || savingId === item.id ? ctrans('Saving the quantity, try again in a moment') : ctrans('Send only this line to the partner now')"
+								@click="submitItem(item)" />
+						</div>
+						<div class="xborder-t border-gray-300 border-dashed mt-2 flex items-center">
+							<span
+								v-if="Number(item.order_quantum) > 1"
+								v-tooltip="
+									ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
+										quantum: item.order_quantum,
+									})
+								"
+								class="mt-0.5 cursor-help text-xs"
+								:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
+								{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
+							</span>
+
+							<div v-if="Number(item.order_quantum) > 1" class="border-x border-gray-300 px-3 mx-2"> <Button
+								class=""
+								icon="fal fa-cut"
+								:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
+								type="tertiary"
+								size="xs"
+								@click="openBreakBatch(item)" />
+							</div>
+
+							<SegmentedToggle
+								class="priority-toggle mt-1"
+								:modelValue="item.priority"
+								:options="priorityOptions"
+								:ariaLabel="ctrans('Priority')"
+								iconOnly
+								@update:modelValue="(priority) => updateItem(item, { priority })" />
+						</div>
+					</div>
+				</RenderWhenVisible>
+				<div v-else class="flex items-center">
+					<ReuseLineActions v-if="item.can_be_poked" :item="item" />
+					<div class="flex flex-col items-end">
+						<span class="font-medium tabular-nums">{{ useLocaleStore().number(Number(item.quantity)) }}</span>
+						<FontAwesomeIcon
+							v-tooltip="ctrans(capitalize(item.priority))"
+							:icon="priorityIcons[item.priority]"
+							class="text-xs"
+							:class="priorityTextClass(item.priority)"
+							:aria-label="ctrans(capitalize(item.priority))"
+							fixed-width />
+					</div>
 				</div>
-			</RenderWhenVisible>
-			<span v-else class="block text-right font-medium tabular-nums">{{
-				useLocaleStore().number(Number(item.quantity))
-			}}</span>
+			</div>
 		</template>
 		<template #cell(amount)="{ item }">
 			<span class="block text-right tabular-nums">
@@ -582,25 +707,6 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 						: "-"
 				}}
 			</span>
-		</template>
-		<template #cell(priority)="{ item }">
-			<select
-				v-if="isEditable(item)"
-				:value="item.priority"
-				class="rounded border-gray-300 py-0.5 pl-2 pr-7 text-xs"
-				:class="{
-					'text-red-600': item.priority === 'urgent',
-					'text-amber-600': item.priority === 'high',
-					'text-gray-400': item.priority === 'low',
-				}"
-				@change="
-					updateItem(item, { priority: ($event.target as HTMLSelectElement).value })
-				">
-				<option v-for="priority in priorities" :key="priority" :value="priority">
-					{{ ctrans(priority) }}
-				</option>
-			</select>
-			<span v-else>{{ ctrans(item.priority) }}</span>
 		</template>
 		<template #cell(progress)="{ item }">
 			<div class="flex flex-col gap-2">
@@ -632,47 +738,6 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 		<template #cell(created_at)="{ item }">
 			{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}
 			<span v-if="item.added_by_name" class="text-gray-400">· {{ item.added_by_name }}</span>
-		</template>
-		<template #cell(actions)="{ item }">
-			<div class="flex flex-wrap justify-end gap-1">
-				<Button
-					v-if="item.can_be_poked"
-					icon="fal fa-bells"
-					:tooltip="
-						pokedIds[item.id] || item.is_recently_poked
-							? ctrans('Poked :at, you can poke again an hour later', { at: useFormatTime(item.poked_at ?? new Date(), { formatTime: 'dd MMM HH:mm' }) })
-							: ctrans('Poke the partner: tell their production you urgently need this')
-					"
-					type="tertiary"
-					size="xs"
-					:loading="pokingId === item.id"
-					:disabled="pokedIds[item.id] || item.is_recently_poked"
-					@click="pokePartner(item)" />
-				<Button
-					v-if="
-						isEditable(item) && Number(item.order_quantum) > 1
-					"
-					icon="fal fa-cut"
-					:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
-					type="tertiary"
-					size="xs"
-					@click="openBreakBatch(item)" />
-				<Button
-					v-if="isEditable(item)"
-					icon="fal fa-ban"
-					:tooltip="ctrans('Remove and never suggest this product again')"
-					type="tertiary"
-					size="xs"
-					@click="confirmStopSuggesting($event, item)" />
-				<Button
-					v-if="isEditable(item)"
-					:label="ctrans('Remove')"
-					icon="fal fa-trash-alt"
-					:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
-					type="delete"
-					size="xs"
-					@click="deleteItem(item)" />
-			</div>
 		</template>
 	</Table>
 
@@ -728,3 +793,13 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 		</form>
 	</Modal>
 </template>
+
+<style scoped>
+.priority-toggle :deep(.p-togglebutton) {
+	font-size: 0.6875rem;
+	line-height: 1rem;
+}
+.priority-toggle :deep(.p-togglebutton-content) {
+	padding: 0.125rem 0.375rem;
+}
+</style>

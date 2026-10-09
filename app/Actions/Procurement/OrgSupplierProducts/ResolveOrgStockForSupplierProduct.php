@@ -30,7 +30,7 @@ class ResolveOrgStockForSupplierProduct
                 ->join('org_supplier_products', 'org_supplier_products.id', 'org_stock_has_org_supplier_products.org_supplier_product_id')
                 ->where('org_stocks.organisation_id', $organisation->id)
                 ->where('org_supplier_products.supplier_product_id', $supplierProduct->id),
-            ['org_stock_has_org_supplier_products.status desc', 'org_stock_has_org_supplier_products.local_priority']
+            ['org_stock_has_org_supplier_products.status desc', 'org_stock_has_org_supplier_products.local_priority desc']
         );
         if ($orgStock && !$this->isDiscontinued($orgStock)) {
             return $orgStock;

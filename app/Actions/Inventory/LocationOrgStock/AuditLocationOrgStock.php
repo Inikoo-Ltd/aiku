@@ -13,6 +13,10 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
+use App\Actions\Dispatching\BatchCode\StoreBatchCode;
+use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\BroadcastLowStockAudited;
@@ -49,6 +53,7 @@ class AuditLocationOrgStock extends OrgAction
                 $locationOrgStock = LocationOrgStock::lockForUpdate()->findOrFail($locationOrgStock->id);
                 $currentStock     = $locationOrgStock->quantity;
                 $newQuantity  = Arr::pull($modelData, 'quantity');
+                $countedBatches = Arr::pull($modelData, 'batches');
                 $reason       = Arr::pull($modelData, 'reason');
                 $note         = Arr::pull($modelData, 'note');
                 $stockDiff    = $newQuantity - $currentStock;
@@ -76,11 +81,22 @@ class AuditLocationOrgStock extends OrgAction
                     data_set($storedData, 'note', $note);
                 }
 
-                StoreOrgStockMovement::make()->action(
+                $orgStockMovement = StoreOrgStockMovement::make()->action(
                     $locationOrgStock->orgStock,
                     $locationOrgStock->location,
                     $storedData
                 );
+
+                if ($countedBatches !== null) {
+                    AllocateOrgStockMovementBatches::make()->count($orgStockMovement, array_map(fn (array $batch) => [
+                        'batch_code_id' => $batch['batch_code_id'] ?? StoreBatchCode::make()->inOrganisation($locationOrgStock->organisation, [
+                            'code'         => trim($batch['code']),
+                            'expiry_date'  => $batch['expiry_date'] ?? null,
+                            'org_stock_id' => $locationOrgStock->org_stock_id,
+                        ])->id,
+                        'quantity'      => $batch['quantity'],
+                    ], $countedBatches));
+                }
                 // Update audited_at
                 $locationOrgStock->updateQuietly([
                     'audited_at'        => now(),
@@ -110,8 +126,21 @@ class AuditLocationOrgStock extends OrgAction
             'quantity'              => ['required', 'numeric', 'gte:0'],
             'reason'                => ['required', new Enum(OrgStockMovementReasonEnum::class)],
             'note'                  => ['sometimes', 'nullable', 'string'],
-            'stock_movement_type'   => ['sometimes', new Enum(OrgStockMovementTypeEnum::class)]
+            'stock_movement_type'   => ['sometimes', new Enum(OrgStockMovementTypeEnum::class)],
+            'batches'                 => ['sometimes', 'array'],
+            'batches.*.batch_code_id' => ['required_without:batches.*.code', 'nullable', 'integer', Rule::exists('batch_codes', 'id')->where('org_stock_id', $this->locationOrgStock->org_stock_id)],
+            'batches.*.code'          => ['required_without:batches.*.batch_code_id', 'nullable', 'string', 'max:64'],
+            'batches.*.expiry_date'   => ['sometimes', 'nullable', 'date'],
+            'batches.*.quantity'      => ['required', 'numeric', 'gte:0'],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $counted = collect($this->get('batches', []))->sum(fn ($batch) => (float) ($batch['quantity'] ?? 0));
+        if ($counted - (float) $this->get('quantity') > 0.000001) {
+            $validator->errors()->add('batches', __('The batches add up to more than the quantity counted'));
+        }
     }
 
 

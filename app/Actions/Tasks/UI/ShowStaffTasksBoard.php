@@ -28,7 +28,7 @@ class ShowStaffTasksBoard extends OrgAction
 
     public function handle(Group|Organisation $parent, User $viewer, string $interval, array $filters = []): array
     {
-        $query = StaffTask::query()->within($parent)->visibleTo($viewer);
+        $query = StaffTask::query()->within($parent)->visibleTo($viewer)->inSection(null);
         $this->applyAssigneeFilter($query, $viewer, Arr::get($filters, 'assignee'));
         $this->applyDepartmentFilter($query, Arr::get($filters, 'department'));
 

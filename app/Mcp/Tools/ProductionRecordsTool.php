@@ -27,6 +27,8 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
+use App\Models\Production\JobOrder;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
@@ -44,7 +46,7 @@ use Laravel\Mcp\Server\Tool;
  * never created without its SKO: one created bare leaves an in-process twin beside the real one,
  * which is how awa ended up with ACLB-08 and ACLB-08_.
  */
-#[Description('Shows, creates or edits the records a production is set up from: artefacts (what is made), raw materials (what it is made from, with their unit cost) and manufacture tasks (the steps people record on the tablets, e.g. POUR, LABEL, PACK). Without code it lists the records of that kind (filter with search, and artefacts with family). With code and no fields it shows that record. With fields it edits the record; to create one pass create=true. A new artefact needs its SKO: pass sko with an existing SKO code, or new_sko to create the stock, its trade unit and the SKO in one go. Recipes (which steps an artefact has and the raw materials each step uses) are set with production-recipe-tool. A raw material linked to a SKO takes its unit cost from the preferred supplier, so a unit_cost set by hand on it is overwritten. Show the user what you will create or change and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
+#[Description('Shows, creates or edits the records a production is set up from: artefacts (what is made), raw materials (what it is made from, with their unit cost) and manufacture tasks (the steps people record on the tablets, e.g. POUR, LABEL, PACK). Without code it lists the records of that kind (filter with search, and artefacts with family). With code and no fields it shows that record. With fields it edits the record; to create one pass create=true. A new artefact needs its SKO: pass sko with an existing SKO code, or new_sko to create the stock, its trade unit and the SKO in one go. Recipes (which steps an artefact has and the raw materials each step uses) are set with production-recipe-tool. A raw material linked to a SKO takes its unit cost from the preferred supplier, so a unit_cost set by hand on it is overwritten. Risky edits (renaming a code, a unit cost moving by more than half, discontinuing an artefact still in open job orders) are refused with warnings until called again with accept naming them, which only the user may agree to; a SKO already used by another artefact is always refused. Show the user what you will create or change and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
 class ProductionRecordsTool extends Tool
 {
     use WithMcpPermissions;
@@ -72,6 +74,8 @@ class ProductionRecordsTool extends Tool
             'new_sko.name'         => ['sometimes', 'string', 'max:255'],
             'new_sko.description'  => ['sometimes', 'string', 'max:255'],
             'request_text'         => ['required_with:fields', 'string', 'max:4000'],
+            'accept'               => ['sometimes', 'array'],
+            'accept.*'             => ['string'],
         ]);
 
         $production = $this->resolveProduction($request);
@@ -134,6 +138,10 @@ class ProductionRecordsTool extends Tool
                 return Response::error('A new artefact needs its SKO: pass fields.sko with an existing SKO code, or new_sko {units, name?, description?} to create the stock, trade unit and SKO with the artefact code. Nothing was changed.');
             }
 
+            if ($refusal = $this->skoTaken($production, $record, $modelData) ?? $this->unacceptedWarnings($request, $this->warnings($kind, $record, $modelData))) {
+                return $refusal;
+            }
+
             $record = $this->recordChange(
                 $request,
                 McpChangeTypeEnum::PRODUCTION_RECORD,
@@ -153,6 +161,56 @@ class ProductionRecordsTool extends Tool
             'change_log_id' => $this->mcpChange?->id,
             ...$this->show($kind, $record->refresh()),
         ]);
+    }
+
+    /**
+     * One SKO, one artefact: a second artefact on the same SKO is how the half-made twins
+     * beside ACLB-08_ came about, and stock would no longer know which recipe makes it.
+     */
+    private function skoTaken(Production $production, Artefact|RawMaterial|ManufactureTask|null $record, array $modelData): ?Response
+    {
+        if (!($record instanceof Artefact || ($record === null && array_key_exists('org_stock_id', $modelData))) || !Arr::get($modelData, 'org_stock_id')) {
+            return null;
+        }
+
+        $other = Artefact::where('org_stock_id', $modelData['org_stock_id'])
+            ->when($record, fn ($query) => $query->where('id', '!=', $record->id))
+            ->first();
+
+        return $other ? Response::error("That SKO is already the SKO of artefact {$other->code} ({$other->state->value}). One SKO belongs to one artefact; edit {$other->code} instead, or unlink it there first. Nothing was changed.") : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function warnings(string $kind, Artefact|RawMaterial|ManufactureTask|null $record, array $modelData): array
+    {
+        if (!$record) {
+            return [];
+        }
+
+        $warnings = [];
+
+        if (isset($modelData['code']) && $modelData['code'] !== $record->code) {
+            $warnings['rename'] = "This renames {$record->code} to {$modelData['code']}. Labels, sheets and people still using the old code will no longer find it.";
+        }
+
+        if ($record instanceof RawMaterial && array_key_exists('unit_cost', $modelData) && (float) $record->unit_cost > 0
+            && abs((float) $modelData['unit_cost'] - (float) $record->unit_cost) / (float) $record->unit_cost > 0.5) {
+            $warnings['cost_jump'] = "The unit cost of {$record->code} goes from {$record->unit_cost} to {$modelData['unit_cost']}, more than half up or down; check it is not a typo (e.g. per gram vs per kilo). It changes the cost of every recipe using it.";
+        }
+
+        if ($record instanceof Artefact && in_array($modelData['state'] ?? null, [ArtefactStateEnum::DISCONTINUED->value, ArtefactStateEnum::DORMANT->value])) {
+            $openJobOrders = JobOrder::whereIn('state', JobOrderStateEnum::open())
+                ->whereHas('jobOrderItems', fn ($query) => $query->where('artefact_id', $record->id))
+                ->get(['id', 'reference'])
+                ->map(fn (JobOrder $jobOrder) => $jobOrder->reference ?? '#'.$jobOrder->id);
+            if ($openJobOrders->isNotEmpty()) {
+                $warnings['open_job_orders'] = "{$record->code} is still in open job orders: ".$openJobOrders->implode(', ').'. They are not cancelled by this.';
+            }
+        }
+
+        return $warnings;
     }
 
     /**
@@ -238,6 +296,10 @@ class ProductionRecordsTool extends Tool
 
         $orgStock = OrgStock::where('organisation_id', $production->organisation_id)->where('stock_id', $stock->id)->first()
             ?? StoreOrgStock::make()->action($production->organisation, $stock);
+
+        if ($taken = Artefact::where('org_stock_id', $orgStock->id)->value('code')) {
+            throw ValidationException::withMessages(['new_sko' => "The SKO {$orgStock->code} already exists and is the SKO of artefact {$taken}. Edit {$taken} instead."]);
+        }
 
         return [
             'org_stock_id'  => $orgStock->id,
@@ -333,6 +395,7 @@ class ProductionRecordsTool extends Tool
             'create'       => $schema->boolean()->description('true to create the record with this code'),
             'new_sko'      => $schema->object()->description('New artefact only, when its SKO does not exist yet: {units: trade units per SKO, name?: SKO name, description?: trade unit description}. Creates the stock and trade unit (group-wide, with the artefact code) and the SKO in this organisation'),
             'request_text' => $schema->string()->description('The user\'s request, verbatim; required when writing'),
+            'accept'       => $schema->array()->items($schema->string())->description('Warning codes the user has read and agreed to, exactly as a previous refusal listed them. Never send one the user has not seen'),
         ];
     }
 }

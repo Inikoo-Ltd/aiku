@@ -24,7 +24,7 @@ Navrchu sú dva filtre:
 
 Váš výber sa zapamätá. Vpravo sa pri každom sklade zobrazuje jeho **miestny čas**. „Dnes“, „včera“ a „rovnaký deň“ vždy znamenajú kalendár daného skladu, nie UTC. Kým je stránka otvorená, každú minútu si načíta čerstvé údaje. Tlačidlo **Live** ich načíta okamžite.
 
-Pri vybraných **všetkých skladoch** je pod súčtom na každej dlaždici krátky kód každého skladu (napríklad *ED 7 · PAR 20*). Kliknutím na kód otvoríte zoznam daného skladu. Pri jednom vybranom sklade je odkazom samotné veľké číslo.
+Pri vybraných **všetkých skladoch** je pod súčtom na každej dlaždici krátky kód každého skladu (napríklad *ED 7 · PAR 20*). Kliknutím kamkoľvek na dlaždicu, fázu toku alebo číslo otvoríte jeho zoznam. Pri jednom vybranom sklade, alebo keď má niečo iba jeden sklad, sa zoznam otvorí hneď; inak sa malá ponuka opýta, ktorý sklad, aj s počtom. Kód pod súčtom otvorí zoznam daného skladu priamo. Čas do expedície otvorí expedované objednávky obdobia, najpomalšie prvé; každý pruh veku otvorí otvorené dodacie listy daného veku; *Nepočítané 90 dní* otvorí tieto lokácie, najprv nikdy nepočítané; čísla vychystávačov a balenia otvoria dnes vychystané riadky, nevychystané riadky a zabalené dodacie listy (prácu, nie kto ju urobil); a čísla vratiek otvoria spracované riadky tohto mesiaca a vratky s každým dôvodom.
 
 ## Needs attention now (Vyžaduje pozornosť hneď)
 

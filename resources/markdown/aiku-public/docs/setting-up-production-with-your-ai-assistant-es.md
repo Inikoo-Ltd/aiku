@@ -296,6 +296,21 @@ Luego indica adónde va cada una en la misma petición que los pasos nuevos:
 
 Si de verdad quieres descartar los ingredientes y añadirlos más tarde, dilo: *"descarta los ingredientes, añadiré la receta más tarde"*. Si cambias de opinión, el cambio se puede deshacer (ver más abajo).
 
+## Comprobaciones de seguridad
+
+Algunos cambios son fáciles de hacer mal sin querer, así que aiku los detiene hasta que hayas visto lo que hacen. El asistente te muestra entonces un aviso y no cambia nada. Si lo lees y aun así quieres el cambio, dilo (*"sí, lo sé, adelante"*) y solo entonces se guarda.
+
+| aiku se detiene y avisa cuando… | Ejemplo | Qué revisar |
+|---|---|---|
+| un cambio de receta **quitaría materias primas** de artefactos | sustituir PROD en ACLB-01 quita RAWM-03, RAWM-05, RAWM-06, BOKG-03, FLKG-06 y CST-427 | ¿Querías quitarlas, o deberían pasar a los pasos nuevos? |
+| se cambia una **familia entera** | *"la familia ACLB"* resulta ser 11 artefactos, listados uno a uno | ¿Es la familia correcta y quedan fuera los testers? |
+| un número parece una **errata** | unidades por artefacto 1667 en vez de 0.1667; un objetivo de 2.160 por hora; 500 kg de una materia prima por artefacto | ¿Está el punto decimal en su sitio? |
+| un **coste unitario** cambia más de la mitad | RAWM-90 de 6.40 a 64.00 | ¿Por kilo o por gramo? |
+| se **renombra** un artefacto | ACLB-14 pasa a ACLB-14M | Las etiquetas y hojas siguen llevando el código antiguo. |
+| un artefacto que sigue en **órdenes de trabajo abiertas** pasa a dormant o discontinued | ACLB-05 está en dos órdenes de trabajo abiertas | Esas órdenes no se cancelan con esto. |
+
+Un error se rechaza siempre: dar a un artefacto un **SKO que ya tiene otro artefacto**. Un SKO pertenece a un solo artefacto. Así es como acabó un ACLB-08 a medio hacer junto al ACLB-08_ real. Edita en su lugar el artefacto que ya tiene ese SKO.
+
 ## Deshacer un cambio
 
 Cada cambio que hace el asistente queda registrado: quién lo pidió, cuándo, tus palabras exactas y cómo estaba antes y después.

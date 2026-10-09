@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
@@ -24,6 +25,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePartnerShoppingListItem extends OrgAction
@@ -43,6 +45,12 @@ class StorePartnerShoppingListItem extends OrgAction
         );
 
         GetPartnerOrderCapacity::guardAdd($orgPartner, $orgStock);
+
+        if (PartnerSkoPrice::isOffLimitsToPartner($orgPartner, $orgStock->stock_id)) {
+            throw ValidationException::withMessages([
+                'org_stock' => __(':code is another customer\'s product, :partner does not sell it to us', ['partner' => $orgPartner->partner->name, 'code' => $orgStock->code]),
+            ]);
+        }
 
         $buyerOrgStock = $orgStock;
         if ($orgStock->organisation_id !== $orgPartner->organisation_id) {

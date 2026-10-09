@@ -5,7 +5,6 @@ type ProcurementSearchResultItem = {
 export type ProcurementSearchResults = Record<string, ProcurementSearchResultItem[]>
 
 const routeSections: { fragments: string[]; section: string }[] = [
-	{ fragments: [".agent_supplier_purchase_orders."], section: "agent_supplier_purchase_orders" },
 	{ fragments: [".org_supplier_products.", ".supplier_products."], section: "supplier_products" },
 	{ fragments: [".purchase_orders.", ".purchase-orders."], section: "purchase_orders" },
 	{ fragments: [".stock_deliveries.", ".stock-deliveries."], section: "stock_deliveries" },

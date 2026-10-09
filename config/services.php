@@ -127,6 +127,15 @@ return [
         'api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'dataforseo' => [
+        'login'    => env('DATAFORSEO_LOGIN'),
+        'password' => env('DATAFORSEO_PASSWORD'),
+    ],
+
+    'seo_api' => [
+        'monthly_budget' => (float) env('SEO_API_MONTHLY_BUDGET', 250),
+    ],
+
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
     ],

@@ -736,7 +736,7 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($stats['done'])->toBe($before['done'] + 1)
         ->and($stats['open'])->toBe($before['open'] + 1)
         ->and(count($stats['daily']))->toBe(8)
-        ->and(collect($stats['daily'])->last()['open'])->toBe($stats['open'])
+        ->and(collect($stats['daily'])->last()['open'])->toBe(collect($before['daily'])->last()['open'] + 1)
         ->and($stats['bucket'])->toBe('day')
         ->and(ShowTicketsReports::make()->handle($this->group, '1y')['bucket'])->toBe('week')
         ->and($today['created'])->toBeGreaterThanOrEqual(2)
@@ -869,14 +869,21 @@ test('assistant asks a QA user to check a ticket through MCP, with the comment a
     $qa->assignRole('qa');
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pay button missing', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
     UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+    $otherQa = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa->assignRole('qa');
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username])->assertHasErrors();
+    expect($ticket->refresh()->qa_status)->toBeNull();
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
 
     $notQa = User::factory()->create(['group_id' => $this->group->id]);
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $notQa->username])->assertHasErrors();
 
-    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => $qa->username.', '.$otherQa->username, 'comment' => 'Pay an order in warehouse'])->assertOk();
     $ticket->refresh();
     expect($ticket->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
-        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_user_id)->toBeNull()
+        ->and($ticket->qa_user_ids)->toEqualCanonicalizing([$qa->id, $otherQa->id])
         ->and($ticket->comments()->where('body', 'like', '%Pay an order in warehouse')->count())->toBe(1);
 
     UpdateTicket::make()->action($ticket, ['qa_status' => null]);
@@ -1401,7 +1408,7 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $reporter->id])->assertSessionHasErrors('qa_user_id');
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id, 'qa_note' => 'Try it with a voucher', 'images' => [UploadedFile::fake()->image('voucher.png')]])->assertRedirect();
     $requestComment = $ticket->comments()->latest('id')->first();
-    expect($ticket->refresh()->qa_user_id)->toBe($qa->id)
+    expect($ticket->refresh()->qa_user_ids)->toBe([$qa->id])
         ->and($requestComment->body)->toBe('QA check requested: Try it with a voucher')
         ->and($requestComment->getMedia('ticket_images'))->toHaveCount(1);
     actingAs($qa);
@@ -2985,19 +2992,31 @@ test('the QA queue can be narrowed to checks for anyone or for me', function () 
     $forAnyone = StoreTicket::make()->action($this->group, ['subject' => 'Check for anyone']);
     $forMe     = StoreTicket::make()->action($this->group, ['subject' => 'Check for me']);
     $forOther  = StoreTicket::make()->action($this->group, ['subject' => 'Check for someone else']);
-    UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
-    UpdateTicket::make()->action($forMe, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
-    UpdateTicket::make()->action($forOther, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $otherQa->id]);
+    $forBoth   = StoreTicket::make()->action($this->group, ['subject' => 'Check for both of us']);
+    $inProgress = ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value];
+    UpdateTicket::make()->action($forAnyone, $inProgress);
+    UpdateTicket::make()->action($forMe, [...$inProgress, 'qa_user_id' => $qa->id]);
+    UpdateTicket::make()->action($forOther, [...$inProgress, 'qa_user_id' => $otherQa->id]);
+    UpdateTicket::make()->action($forBoth, [...$inProgress, 'qa_user_ids' => [$qa->id, $otherQa->id]]);
 
     actingAs($qa);
     $references = fn (string $checker) => collect(get(route('grp.json.ticket.qa_queue', ['checker' => $checker]))->assertOk()->json())->pluck('reference')->all();
 
-    expect($references('all'))->toContain($forAnyone->reference, $forMe->reference, $forOther->reference)
-        ->and($references('anyone'))->toContain($forAnyone->reference)->not->toContain($forMe->reference, $forOther->reference)
-        ->and($references('me'))->toContain($forMe->reference)->not->toContain($forAnyone->reference, $forOther->reference);
+    expect($references('all'))->toContain($forAnyone->reference, $forMe->reference, $forOther->reference, $forBoth->reference)
+        ->and($references('anyone'))->toContain($forAnyone->reference)->not->toContain($forMe->reference, $forOther->reference, $forBoth->reference)
+        ->and($references('me'))->toContain($forMe->reference, $forBoth->reference)->not->toContain($forAnyone->reference, $forOther->reference);
 
     $mine = collect(get(route('grp.json.ticket.qa_queue', ['checker' => 'me']))->json())->firstWhere('reference', $forMe->reference);
-    expect($mine['qa_user_id'])->toBe($qa->id);
+    expect($mine['qa_user_ids'])->toBe([$qa->id]);
+    $both = collect(get(route('grp.json.ticket.qa_queue', ['checker' => 'me']))->json())->firstWhere('reference', $forBoth->reference);
+    expect($both['qa_user'])->toContain(', ');
+
+    expect($forBoth->refresh()->canBeClaimedForQaBy($qa))->toBeTrue()
+        ->and($forBoth->canBeClaimedForQaBy($otherQa))->toBeTrue()
+        ->and($forOther->refresh()->canBeClaimedForQaBy($qa))->toBeFalse();
+    patch(route('grp.models.ticket.update', $forBoth->id), ['qa_status' => 'checking'])->assertSessionHasNoErrors();
+    expect($forBoth->refresh()->qa_user_id)->toBe($qa->id)
+        ->and($forBoth->isQaHeldByAnotherThan($otherQa))->toBeTrue();
 
     get(route('grp.json.ticket.qa_queue', ['checker' => 'nobody']))->assertSessionHasErrors('checker');
 
@@ -3017,8 +3036,8 @@ test('the ticket list offers ownership by role and QA filters', function () {
     $forQa     = StoreTicket::make()->action($this->group, ['subject' => 'List QA for me']);
     $failed    = StoreTicket::make()->action($this->group, ['subject' => 'List QA failed']);
     $noQa      = StoreTicket::make()->action($this->group, ['subject' => 'List without QA', 'reporter_type' => 'User', 'reporter_id' => $qa->id]);
-    UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
-    UpdateTicket::make()->action($forQa, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
+    UpdateTicket::make()->action($forAnyone, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value]);
+    UpdateTicket::make()->action($forQa, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
     $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
     Ticket::whereIn('id', [$forAnyone->id, $forQa->id, $failed->id])->update(['status' => TicketStatusEnum::RESOLVED]);
 

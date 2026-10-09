@@ -10,7 +10,6 @@ namespace App\Actions\SupplyChain\SupplierProduct;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
@@ -19,6 +18,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
@@ -33,7 +33,6 @@ class UpdateSupplierProduct extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithSupplierProductJsonColumns;
-    use WithSupplyChainEditAuthorisation;
 
     private const UNAVAILABLE_STATES = [
         SupplierProductStateEnum::IN_PROCESS,
@@ -59,8 +58,12 @@ class UpdateSupplierProduct extends OrgAction
 
     public function handle(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false): SupplierProduct
     {
-        if (Arr::exists($modelData, 'state') && in_array($this->parseState($modelData['state']), self::UNAVAILABLE_STATES, true)) {
-            $modelData['is_available'] = false;
+        if (Arr::exists($modelData, 'state')) {
+            if (in_array($this->parseState($modelData['state']), self::UNAVAILABLE_STATES, true)) {
+                $modelData['is_available'] = false;
+            } elseif (!Arr::exists($modelData, 'is_available') && in_array($supplierProduct->state, self::UNAVAILABLE_STATES, true)) {
+                $modelData['is_available'] = true;
+            }
         }
 
         $modelData = $this->pullSupplierProductJsonColumns($modelData);
@@ -144,6 +147,19 @@ class UpdateSupplierProduct extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if (in_array($this->parseState($request->input('state')), [SupplierProductStateEnum::DISCONTINUING, SupplierProductStateEnum::DISCONTINUED], true)) {
+            return $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN->value);
+        }
+
+        return $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value);
     }
 
     public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct

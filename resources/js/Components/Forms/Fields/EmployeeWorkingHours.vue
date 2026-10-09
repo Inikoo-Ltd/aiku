@@ -8,7 +8,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlus, faTrash, faChevronCircleDown, faChevronCircleUp } from '@fal'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     form: any
@@ -173,6 +173,9 @@ const initFromForm = (val: any) => {
     groupDefs.forEach(({ key, isos }) => {
         syncGroupFromDays(key, isos)
         syncGroupBreaksFromDays(key, isos)
+        const first = days[isos[0]]
+        ui[key] = ui[key] || isos.some(iso => days[iso].working !== first.working
+            || !sameTime(days[iso].start, first.start) || !sameTime(days[iso].end, first.end))
     })
 
     setTimeout(() => hydrating = false)
@@ -295,8 +298,8 @@ watch(days, () => {
 
 <template>
     <div class="space-y-3">
-        <p v-if="isInherited" class="flex items-start gap-1.5 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800">
-            {{ trans("These are the organisation's hours. Saving gives this employee their own copy, which stops following the organisation's later changes.") }}
+        <p v-if="isInherited" class="flex items-start gap-1.5 rounded-md bg-[--app-accent-soft] px-3 py-2 text-xs text-[--app-accent-deep]">
+            {{ ctrans("These are the organisation's hours. Saving gives this employee their own copy, which stops following the organisation's later changes.") }}
         </p>
 
         <div class="border rounded-xl overflow-hidden bg-white">
@@ -305,8 +308,8 @@ watch(days, () => {
                 :style="gridStyle"
             >
                 <div></div>
-                <div>{{ trans('Start') }}</div>
-                <div>{{ trans('Finish') }}</div>
+                <div>{{ ctrans('Start') }}</div>
+                <div>{{ ctrans('Finish') }}</div>
             </div>
 
             <template v-for="g in groupDefs" :key="g.key">
@@ -316,18 +319,19 @@ watch(days, () => {
                             <button
                                 type="button"
                                 class="text-gray-400 hover:text-gray-700"
-                                :aria-label="trans('Show individual days')"
+                                v-tooltip="ui[g.key] ? ctrans('Hide individual days') : ctrans('Set each day separately')"
+                                :aria-label="ctrans('Set each day separately')"
                                 @click="ui[g.key] = !ui[g.key]"
                             >
                                 <FontAwesomeIcon :icon="ui[g.key] ? faChevronCircleUp : faChevronCircleDown" fixed-width />
                             </button>
                             <ToggleSwitch
                                 :modelValue="groupWorking(g.key)"
-                                v-tooltip="groupWorking(g.key) ? trans('Worked') : trans('Not worked')"
-                                :aria-label="trans('Worked')"
+                                v-tooltip="groupWorking(g.key) ? ctrans('Worked') : ctrans('Not worked')"
+                                :aria-label="ctrans('Worked')"
                                 @update:modelValue="setGroupWorking(g.key, $event)"
                             />
-                            {{ trans(g.label) }}
+                            {{ ctrans(g.label) }}
                         </div>
 
                         <div class="pr-3">
@@ -335,7 +339,7 @@ watch(days, () => {
                                 v-model="group[g.key].start"
                                 timeOnly fluid :showClear="true"
                                 :disabled="!groupWorking(g.key)"
-                                :placeholder="trans('Start')"
+                                :placeholder="ctrans('Start')"
                                 inputClass="text-sm"
                             />
                         </div>
@@ -345,7 +349,7 @@ watch(days, () => {
                                 v-model="group[g.key].end"
                                 timeOnly fluid :showClear="true"
                                 :disabled="!groupWorking(g.key)"
-                                :placeholder="trans('Finish')"
+                                :placeholder="ctrans('Finish')"
                                 inputClass="text-sm"
                             />
                         </div>
@@ -359,26 +363,26 @@ watch(days, () => {
                         >
                             <InputText
                                 v-model="b.name"
-                                :placeholder="trans('Break name (e.g. Lunch)')"
+                                :placeholder="ctrans('Break name (e.g. Lunch)')"
                                 class="text-sm flex-1 min-w-0"
                             />
-                            <DatePicker v-model="b.start" timeOnly fluid :placeholder="trans('Start')" inputClass="text-sm" class="w-24 shrink-0" />
+                            <DatePicker v-model="b.start" timeOnly fluid :placeholder="ctrans('Start')" inputClass="text-sm" class="w-24 shrink-0" />
                             <span class="text-gray-300 shrink-0">–</span>
-                            <DatePicker v-model="b.end" timeOnly fluid :placeholder="trans('End')" inputClass="text-sm" class="w-24 shrink-0" />
+                            <DatePicker v-model="b.end" timeOnly fluid :placeholder="ctrans('End')" inputClass="text-sm" class="w-24 shrink-0" />
                             <label class="flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap shrink-0 px-1">
                                 <Checkbox v-model="b.paid" :binary="true" />
-                                {{ trans('Paid') }}
+                                {{ ctrans('Paid') }}
                             </label>
                             <Button type="transparent" size="xs" :icon="faTrash" @click="removeGroupBreak(g.key, index)" />
                         </div>
 
                         <button
                             type="button"
-                            class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1"
+                            class="text-xs font-medium text-[--app-accent] hover:text-[--app-accent-deep] flex items-center gap-1.5 py-1"
                             @click="addGroupBreak(g.key)"
                         >
                             <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" fixed-width />
-                            {{ trans('Add break') }}
+                            {{ ctrans('Add break') }}
                         </button>
                     </div>
                 </div>
@@ -389,18 +393,18 @@ watch(days, () => {
                             <div class="flex items-center gap-2 pl-6 text-sm" :class="days[iso].working ? 'text-gray-600' : 'text-gray-400'">
                                 <ToggleSwitch
                                     :modelValue="days[iso].working"
-                                    v-tooltip="days[iso].working ? trans('Worked') : trans('Not worked')"
-                                    :aria-label="trans('Worked')"
+                                    v-tooltip="days[iso].working ? ctrans('Worked') : ctrans('Not worked')"
+                                    :aria-label="ctrans('Worked')"
                                     @update:modelValue="setDayWorking(iso, $event)"
                                 />
-                                {{ trans(dayLabels[iso]) }}
+                                {{ ctrans(dayLabels[iso]) }}
                             </div>
 
                             <div v-if="days[iso].working" class="pr-3">
                                 <DatePicker
                                     v-model="days[iso].start"
                                     timeOnly fluid :showClear="true"
-                                    :placeholder="trans('Start')"
+                                    :placeholder="ctrans('Start')"
                                     inputClass="text-sm"
                                 />
                             </div>
@@ -409,17 +413,17 @@ watch(days, () => {
                                 <DatePicker
                                     v-model="days[iso].end"
                                     timeOnly fluid :showClear="true"
-                                    :placeholder="trans('Finish')"
+                                    :placeholder="ctrans('Finish')"
                                     inputClass="text-sm"
                                 />
                             </div>
 
                             <div v-else class="col-span-2 text-sm italic text-gray-400">
-                                {{ trans('Not a working day') }}
+                                {{ ctrans('Not a working day') }}
                             </div>
 
                             <div v-if="days[iso].working && !(days[iso].start && days[iso].end)" class="col-span-3 pl-6 pt-1 text-xs text-gray-400">
-                                {{ trans('Without both a start and a finish this day is saved as not worked.') }}
+                                {{ ctrans('Without both a start and a finish this day is saved as not worked.') }}
                             </div>
                         </div>
 
@@ -431,26 +435,26 @@ watch(days, () => {
                             >
                                 <InputText
                                     v-model="b.name"
-                                    :placeholder="trans('Break name (e.g. Lunch)')"
+                                    :placeholder="ctrans('Break name (e.g. Lunch)')"
                                     class="text-sm flex-1 min-w-0"
                                 />
-                                <DatePicker v-model="b.start" timeOnly fluid :placeholder="trans('Start')" inputClass="text-sm" class="w-24 shrink-0" />
+                                <DatePicker v-model="b.start" timeOnly fluid :placeholder="ctrans('Start')" inputClass="text-sm" class="w-24 shrink-0" />
                                 <span class="text-gray-300 shrink-0">–</span>
-                                <DatePicker v-model="b.end" timeOnly fluid :placeholder="trans('End')" inputClass="text-sm" class="w-24 shrink-0" />
+                                <DatePicker v-model="b.end" timeOnly fluid :placeholder="ctrans('End')" inputClass="text-sm" class="w-24 shrink-0" />
                                 <label class="flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap shrink-0 px-1">
                                     <Checkbox v-model="b.paid" :binary="true" />
-                                    {{ trans('Paid') }}
+                                    {{ ctrans('Paid') }}
                                 </label>
                                 <Button type="transparent" size="xs" :icon="faTrash" @click="removeBreak(iso, index)" />
                             </div>
 
                             <button
                                 type="button"
-                                class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1"
+                                class="text-xs font-medium text-[--app-accent] hover:text-[--app-accent-deep] flex items-center gap-1.5 py-1"
                                 @click="addBreak(iso)"
                             >
                                 <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" fixed-width />
-                                {{ trans('Add break') }}
+                                {{ ctrans('Add break') }}
                             </button>
                         </div>
                     </div>

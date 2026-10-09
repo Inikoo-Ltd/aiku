@@ -71,6 +71,8 @@ Pridávanie sa odmietne v troch prípadoch, zámerne: zoznam dosiahol **budget**
 
 Keď partner [odošle zásielku do svojho skladu](/docs/fulfilling-partner-orders-sk), pod záložkou **Stock deliveries** vášho partnera sa objaví prichádzajúce **stock delivery**. Nechajte ho tak, kým hovorí confirmed alebo dispatched — zrkadlí predávajúceho sklad a aktualizuje sa samo. Keď škatule fyzicky dorazia: **receive**, skontrolujte a uložte na lokácie presne tak, ako pri akejkoľvek inej dodávke od dodávateľa. Čokoľvek chýba alebo je poškodené, sa rieši po prevzatí, voči prepojenej faktúre — ako peniaze fungujú, nájdete v [prehľade](/docs/ordering-from-a-partner-organisation-sk).
 
+Keď partner expeduje, každý riadok príde s už vyplnenými dávkami, ktoré partner vyskladnil: rovnaký kód dávky a dátum minimálnej trvanlivosti, prepočítané na vaše SKO. Pri kontrole ich len potvrdíte, alebo opravíte, ak tovar hovorí inak, a naskladnením idú tieto dávky na vaše regály.
+
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Zistiť, čo treba nakúpiť:</b> vaša organizácia → <b>Procurement → Partners</b> → otvorte partnera → <b>Shopping</b> (panel) → prechádzajte rizikové dlaždice.</li>

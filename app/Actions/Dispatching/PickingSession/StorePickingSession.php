@@ -46,12 +46,14 @@ class StorePickingSession extends OrgAction
         return DB::transaction(function () use ($warehouse, $modelData, $queued) {
             $deliveryNoteIds      = Arr::pull($modelData, 'delivery_notes');
             $validDeliveryNoteIds = DeliveryNote::whereIn('id', $deliveryNoteIds)
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get()
                 ->filter(function ($deliveryNote) {
                     return $deliveryNote->pickingSessions->isEmpty()
                         && in_array($deliveryNote->state, [
                             DeliveryNoteStateEnum::UNASSIGNED,
-                            DeliveryNoteStateEnum::QUEUED->value
+                            DeliveryNoteStateEnum::QUEUED
                         ]);
                 })
                 ->pluck('id')

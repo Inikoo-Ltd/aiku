@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Shop\External\Shopify\ConnectShopifyExternalShop;
+use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersInShop;
 use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
@@ -107,6 +109,12 @@ class EditShop extends OrgAction
         $isExternal = $shop->type === ShopTypeEnum::EXTERNAL;
 
         $isWixConnected = $shop->engine === ShopEngineEnum::WIX && $shop->wixUser()->exists();
+
+        $externalShopifyUser   = $shop->engine === ShopEngineEnum::SHOPIFY ? $shop->externalShopifyUser : null;
+        $isShopifyDropshipping = (bool) $externalShopifyUser?->customer_id;
+        $isShopifyConnected    = $externalShopifyUser && !$isShopifyDropshipping && str_starts_with((string) $externalShopifyUser->password, ConnectShopifyExternalShop::SHOPIFY_ACCESS_TOKEN_PREFIX);
+        $shopifyAuthUrl        = $externalShopifyUser && !$isShopifyDropshipping ? ConnectShopifyExternalShop::make()->getAuthUrl($externalShopifyUser) : null;
+        $shopifyBlockedReason  = $externalShopifyUser ? ConnectShopifyExternalShop::make()->getShopifyExternalShopBlockedReason($externalShopifyUser) : null;
         $wixInstallUrl  = $shop->engine === ShopEngineEnum::WIX ? AuthenticateWixExternalShop::make()->getInstallUrlForShop($shop) : null;
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
@@ -134,7 +142,7 @@ class EditShop extends OrgAction
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
-            __('Shopify Keys'),
+            __('Shopify Settings'),
             __('Wix Settings'),
             __('Chat widget'),
         ];
@@ -388,6 +396,18 @@ class EditShop extends OrgAction
                             'information' => __('This would force related product categories under this shop to follow any updates done on master'),
                             'warningText' => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
                         ],
+                        'allow_stocks_to_be_shown_on_iris'  => [
+                            'label'       => __('Show Stock on Iris'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.allow_stocks_to_be_shown_on_iris', true),
+                            'information' => __('This would allow customers to view current stock when they hover on the stock status'),
+                        ],
+                        'allow_incoming_stocks_to_be_shown_on_iris'  => [
+                            'label'       => __('Show Incoming Stock on Iris'),
+                            'type'        => 'toggle',
+                            'value'       => data_get($shop->settings, 'catalog.allow_incoming_stocks_to_be_shown_on_iris', true),
+                            'information' => __('This would allow customers to view incoming stock when they hover on the stock status'),
+                        ]
                     ]
                 ] : [],
                 [
@@ -568,6 +588,13 @@ class EditShop extends OrgAction
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
+                        ],
+                        'zero_tax_invoice_footer' => [
+                            'type'        => 'textEditor',
+                            'label'       => __('Invoice footer when no VAT is charged'),
+                            'information' => __('Optional. Used instead of the invoice footer on invoices with 0 VAT, e.g. a reverse charge note. When empty, every invoice uses the invoice footer.'),
+                            'full'        => true,
+                            'value'       => $shop->zero_tax_invoice_footer
                         ],
                     ],
                 ],
@@ -835,14 +862,57 @@ class EditShop extends OrgAction
                             ],
                         ],
                         ShopEngineEnum::SHOPIFY => [
-                            'label'  => __('Shopify Keys'),
+                            'label'  => __('Shopify Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
-                                'shop_url' => [
-                                    'type'     => 'input',
-                                    'disabled' => true,
-                                    'label'    => __('Shopify Shop Url'),
-                                    'value'    => Arr::get($shop->settings, 'shopify.shop_url', ''),
+                                'shopify_store'           => [
+                                    'type'               => 'input_with_warning',
+                                    'label'              => __('Shopify store'),
+                                    'placeholder'        => 'your-store.myshopify.com',
+                                    'value'              => Arr::get($shop->settings, 'shopify.shop_url') ?: ($externalShopifyUser?->name ?? ''),
+                                    'information'        => __('The store\'s .myshopify.com address or its admin link. Saving links the store and opens the Shopify app install in a new tab; finish it logged in as the store owner.'),
+                                    'updateRoute'        => [
+                                        'name'       => 'grp.models.org.shop.shopify.connect',
+                                        'parameters' => [
+                                            'organisation' => $shop->organisation_id,
+                                            'shop'         => $shop->id,
+                                        ],
+                                    ],
+                                    'revisit_after_save' => true,
+                                    'showWarning'        => $shopifyBlockedReason || !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle'       => $shopifyBlockedReason
+                                        ? __('Orders, stock and shipping are not synced')
+                                        : __('We are having troubles connecting to the platform'),
+                                    'warningBody'        => $shopifyBlockedReason ?: __('Error Message').": ".$shop->external_shop_connection_error
+                                ],
+                                ...($shopifyAuthUrl ? [
+                                    'shopify__connect' => [
+                                        'type'        => 'action',
+                                        'label'       => __('Shopify store'),
+                                        'information' => $isShopifyConnected
+                                            ? __('Connected to :store.', ['store' => Arr::get($shop->settings, 'shopify.shop_url', '')])
+                                            : __('Not connected yet. Open the link logged in as the store owner to install the app.'),
+                                        'action'      => [
+                                            'type'  => 'button',
+                                            'style' => $isShopifyConnected ? 'tertiary' : 'save',
+                                            'label' => $isShopifyConnected ? __('Reconnect Shopify store') : __('Connect Shopify store'),
+                                            'route' => [
+                                                'url'       => $shopifyAuthUrl,
+                                                'openBlank' => true,
+                                            ],
+                                        ],
+                                    ],
+                                ] : []),
+                                'shopify_order_from_days' => [
+                                    'type'  => 'input',
+                                    'label' => __('Shopify Order From Days'),
+                                    'value' => (string) Arr::get($shop->settings, 'shopify.order_from_days', GetShopifyOrdersInShop::DEFAULT_ORDER_FROM_DAYS)
+                                ],
+                                'shopify_location_id'     => [
+                                    'type'        => 'input',
+                                    'label'       => __('Shopify stock location'),
+                                    'value'       => Arr::get($shop->settings, 'shopify.location_id', ''),
+                                    'information' => __('The Shopify location (gid://shopify/Location/…) whose stock Aiku keeps up to date. Left empty, the store\'s primary location is used.'),
                                 ],
                             ],
                         ],
