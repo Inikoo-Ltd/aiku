@@ -644,7 +644,7 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                 ],
-                $purchaseOrder->stockDeliveries()->exists() ? [] : [
+                $this->hasActiveStockDelivery($purchaseOrder) ? [] : [
                     'label'   => __('Cancel'),
                     'tooltip' => __('Cancel Purchase Order'),
                     'type'    => 'button',

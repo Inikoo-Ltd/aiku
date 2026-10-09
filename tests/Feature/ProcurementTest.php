@@ -108,6 +108,7 @@ use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\SendPartnerPurchaseOrderToSeller;
@@ -1648,6 +1649,17 @@ test('revert purchase order state to submitted', function ($purchaseOrder) {
 test('change purchase order state to cancelled', function ($purchaseOrder) {
     $purchaseOrder->refresh();
     expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::CONFIRMED)
+        ->and(collect(ShowPurchaseOrder::make()->getActions($purchaseOrder, false))->pluck('key'))->toContain('cancel_purchase_order');
+
+    $stockDelivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+
+    expect(collect(ShowPurchaseOrder::make()->getActions($purchaseOrder->refresh(), false))->pluck('key'))->not->toContain('cancel_purchase_order')
+        ->and(fn () => UpdatePurchaseOrderStateToCancelled::make()->action($purchaseOrder->refresh()))->toThrow(HttpException::class);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::RECEIVED]);
+    CancelStockDelivery::make()->action($stockDelivery->refresh());
+
+    expect($purchaseOrder->refresh()->state)->toEqual(PurchaseOrderStateEnum::CONFIRMED)
         ->and(collect(ShowPurchaseOrder::make()->getActions($purchaseOrder, false))->pluck('key'))->toContain('cancel_purchase_order');
 
     $this->patch(route('grp.models.purchase-order.cancel', $purchaseOrder->id), ['counterparty_informed' => 'no'])
