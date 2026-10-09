@@ -1422,3 +1422,12 @@ test('an ebay match that crashes marks its upload log failed instead of leaving 
     expect($log->status)->toBe(\App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum::FAIL)
         ->and($log->response)->toContain('eBay match crashed');
 });
+
+test('reset channel only resets shopify channels', function () {
+    $ebayChannel = storeConnectedEbayUser($this->customer, 'test-ebay-reset')->customerSalesChannel;
+    \App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteAllFulfilmentServices::shouldNotRun();
+
+    actingAs($this->user);
+    $this->patch(route('grp.models.customer_sales_channel.shopify_reset', ['customerSalesChannel' => $ebayChannel->id]))
+        ->assertSessionHasErrors('channel');
+});

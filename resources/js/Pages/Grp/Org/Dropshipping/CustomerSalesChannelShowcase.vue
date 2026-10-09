@@ -285,6 +285,7 @@ const isModalAddress = ref(false)
 				<ModalConfirmationDelete
 					v-if="
 						data?.can_edit &&
+						data?.platform?.type === 'shopify' &&
 						data?.customer_sales_channel?.can_connect_to_platform &&
 						!data?.customer_sales_channel?.platform_status
 					"

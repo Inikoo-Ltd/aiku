@@ -258,7 +258,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(action)="{ item }">
             <div v-if="item.status=='open'" class="space-y-1">
                 <ModalConfirmationDelete
-                    v-if="item.can_connect_to_platform && !item.platform_status"
+                    v-if="item.platform_type === 'shopify' && item.can_connect_to_platform && !item.platform_status"
                     :routeDelete="{
                         name: 'grp.models.customer_sales_channel.shopify_reset',
                         parameters: {
