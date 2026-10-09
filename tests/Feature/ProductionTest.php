@@ -2478,13 +2478,13 @@ describe('production reward pay bands', function () {
         expect(
             fn () => \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [
                 'quantity_made' => 0,
-                'activity_type' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::CLEANING->value,
+                'activity_type' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value,
             ])
         )->toThrow(\Illuminate\Validation\ValidationException::class);
 
         $closed = \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [
             'quantity_made'         => 0,
-            'activity_type'         => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::CLEANING->value,
+            'activity_type'         => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value,
             'non_productive_reason' => 'End of shift line clean',
         ]);
 
@@ -3729,7 +3729,7 @@ test('to restock leaves out stocks whose only products are exclusive to a privat
     $product->update(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'exclusive_for_customer_id' => $customer->id]);
 
     actingAs($this->guest->getUser());
-    $url   = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug]);
+    $url   = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug, 'perPage' => 1000]);
     $codes = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->pluck('stock_code');
 
     expect($codes())->not->toContain($orgStocks[0]->code);
@@ -3784,7 +3784,7 @@ test('to restock hides stocks one private customer took almost all of, once hydr
     $dispatch($orgStocks[1]->id, $small->id, 40);
 
     actingAs($this->guest->getUser());
-    $url   = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug]);
+    $url   = route('grp.org.productions.show.to_restock.index', [$this->organisation->slug, $this->production->slug, 'perPage' => 1000]);
     $codes = fn () => collect(get($url)->assertOk()->viewData('page')['props']['data']['data'])->pluck('stock_code');
 
     \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateTopCustomerShare::run($this->organisation);
