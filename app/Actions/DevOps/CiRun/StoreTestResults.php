@@ -23,7 +23,7 @@ class StoreTestResults
         $ciRun = CiRun::firstOrCreate(['github_run_id' => $modelData['run_id']], ['workflow' => 'Backend Tests']);
         $ciRun->update(['test_results' => Arr::except($modelData, ['run_id'])]);
 
-        BroadcastCiRunUpdated::dispatch($ciRun->github_run_id);
+        BroadcastCiRunUpdated::dispatch($ciRun);
 
         return $ciRun;
     }

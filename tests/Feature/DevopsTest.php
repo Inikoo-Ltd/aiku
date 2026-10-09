@@ -602,6 +602,9 @@ it('records github workflow runs, jobs and deploy task progress and shows them o
     $progress(['task' => 'deploy:migrate', 'state' => 'sideways'])->assertUnprocessable();
 
     Event::assertDispatchedTimes(App\Events\BroadcastCiRunUpdated::class, 8);
+    Event::assertDispatched(App\Events\BroadcastCiRunUpdated::class, fn (App\Events\BroadcastCiRunUpdated $event) => $event->broadcastWith()['deploy'] === [
+        'status' => 'in_progress', 'conclusion' => null, 'head_message' => '📈 Server metrics', 'deploy_done' => 1, 'deploy_total' => 30,
+    ]);
 
     $this->actingAs(createAdminGuest(createGroup())->getUser())
         ->get(route('grp.devops.dashboard'))
