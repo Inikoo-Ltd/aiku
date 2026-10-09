@@ -5,6 +5,7 @@ import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
+import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
 import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
@@ -44,9 +45,14 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
+    emailEditor?: 'aiku' | 'beefree'
+    websiteTheme?: { color: string[], fontFamily: string | null } | null
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     status: string
     publishRoute: routeType
     sendTestRoute: routeType
@@ -402,7 +408,7 @@ onMounted(() => {
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-3xl mb-3" fixed-width />
             <h2 class="text-lg font-semibold mb-2">{{ ctrans('Your email is not saved yet') }}</h2>
             <p class="text-gray-600 mb-4">
-                {{ ctrans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
+                {{ ctrans('Press Ctrl+S (⌘S on Mac) in the editor to publish your email, otherwise it cannot be sent.') }}
             </p>
             <div class="flex justify-center gap-x-2">
                 <Button type="tertiary" :label="ctrans('Review & send anyway')" @click="goToReviewAnyway" />
@@ -439,10 +445,15 @@ onMounted(() => {
 
     </Modal>
 
-    <!-- beefree -->
-    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <Beetree v-if="builder == 'beefree' && emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
         @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        :unpublished_layout="unpublished_layout" @ready="isBeefreeReady = $event" />
+
+    <!-- email workshop -->
+    <EmailWorkshop v-else-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
+        :snapshot="activeSnapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSendPublish"
+        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
         :unpublished_layout="unpublished_layout" @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->

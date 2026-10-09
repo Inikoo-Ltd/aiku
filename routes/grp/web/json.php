@@ -8,6 +8,7 @@
 
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
+use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
 use App\Actions\Web\Seo\Json\GetSeoKeywordHistory;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
@@ -230,6 +231,8 @@ Route::get('shop/{shop}/products-including-not-for-sale', GetProductsIncludingNo
 
 Route::get('shop/{shop}/products-beefree-search', GetProductsForBeefreeSearch::class)->name('shop.products_beefree_search');
 Route::get('shop/{shop}/dynamic-block-email-templates', GetDynamicBlockEmailTemplates::class)->name('shop.dynamic_block_email_templates');
+Route::get('shop/{shop}/gallery/logos', [IndexShopGalleryImages::class, 'logos'])->name('shop.gallery.logos');
+Route::get('shop/{shop}/gallery/catalogue', [IndexShopGalleryImages::class, 'catalogue'])->name('shop.gallery.catalogue');
 Route::get('shop/{shop:id}/products-for-vol-gr-gift', GetProductsForVolGrGift::class)->name('shop.products_for_vol_gr_gift');
 Route::get('shop/{shop:id}/voucher-customer-list-preview', GetVoucherCustomerListPreview::class)->name('shop.voucher_customer_list_preview');
 

@@ -10,11 +10,15 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Http\UploadedFile;
 use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Comms\Email\GetEmailWebsiteTheme;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
+use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\Email\StoreEmail;
 use App\Actions\Comms\Email\UpdateEmail;
 use App\Actions\Comms\EmailAddress\StoreEmailAddress;
@@ -101,9 +105,12 @@ use App\Actions\Comms\SubscriptionEvent\StoreSubscriptionEvent;
 use App\Actions\Comms\SubscriptionEvent\UpdateSubscriptionEvent;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\SysAdmin\Group\Seeders\SeedEmailSocialIcons;
+use App\Actions\Maintenance\Comms\RepairEmailSocialIcons;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
+use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
@@ -127,6 +134,7 @@ use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailCopy;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Helpers\Media;
 use App\Models\Comms\ExternalSubscriberEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
@@ -147,6 +155,7 @@ use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -186,6 +195,7 @@ use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\BackInStockReminderSnapshot;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -773,6 +783,55 @@ test('UI edit mailshot', function (Mailshot $mailShot) {
     });
 })->depends('update mailshot');
 
+test('seed email social icons stores each icon once in our own media', function () {
+    $this->artisan('group:seed_email_social_icons')->assertSuccessful();
+
+    $socialIcons = GetEmailSocialIcons::run($this->group);
+
+    expect($socialIcons)->toHaveCount(count(glob(resource_path('art/email_social_icons/*/*.png'))))
+        ->and($socialIcons['circle-color/facebook'])->toBeString()->not->toContain('getbee.io')
+        ->and(SeedEmailSocialIcons::run($this->group))->toBe(0);
+});
+
+test('repair email social icons swaps only beefree social icons for our seeded icons', function (Mailshot $mailShot) {
+    SeedEmailSocialIcons::run($this->group);
+    $beefreeIcon   = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png';
+    $unknownIcon   = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-white/facebook@2x.png';
+    $externalImage = 'https://example.com/banner.jpg';
+
+    $email = StoreEmail::make()->action($mailShot, null, [
+        'subject'               => 'Social icons repair',
+        'body'                  => 'Social icons repair',
+        'layout'                => [
+            'icons'  => [
+                ['image' => ['src' => $beefreeIcon]],
+                ['image' => ['src' => $unknownIcon]],
+            ],
+            'banner' => ['src' => $externalImage],
+        ],
+        'compiled_layout'       => "<img src=\"$beefreeIcon\"><img src=\"$externalImage\">",
+        'state'                 => 'active',
+        'builder'               => EmailBuilderEnum::BEEFREE,
+        'snapshot_state'        => SnapshotStateEnum::LIVE,
+        'snapshot_recyclable'   => true,
+        'snapshot_first_commit' => true,
+    ], strict: false);
+    $mailShot->update(['email_id' => $email->id]);
+
+    $result = RepairEmailSocialIcons::run($email->liveSnapshot);
+
+    $ownIcon  = GetEmailSocialIcons::run($this->group)['circle-color/facebook'];
+    $snapshot = $email->refresh()->liveSnapshot;
+    expect($result['replaced'])->toBe(1)
+        ->and($result['missing'])->toBe([$unknownIcon])
+        ->and($snapshot->layout['icons'][0])->toMatchArray(['image' => ['src' => $ownIcon], 'iconSet' => 'circle-color', 'name' => 'facebook'])
+        ->and($snapshot->layout['icons'][1]['image']['src'])->toBe($unknownIcon)
+        ->and($snapshot->layout['banner']['src'])->toBe($externalImage)
+        ->and($snapshot->compiled_layout)->toBe("<img src=\"$ownIcon\"><img src=\"$externalImage\">");
+
+    $this->artisan('repair:email-social-icons')->assertSuccessful();
+})->depends('update mailshot');
+
 test('UI show mailshot in workshop', function (Mailshot $mailShot) {
     $this->withoutExceptionHandling();
     UpdateGroupSettings::make()->action($this->group, [
@@ -811,11 +870,44 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
             ->has('snapshot')
             ->has('builder')
             ->has('imagesUploadRoute')
+            ->has('socialIcons')
             ->has('updateRoute')
             ->has('loadRoute')
             ->has('publishRoute')
             ->has('breadcrumbs');
     });
+})->depends('update mailshot');
+
+test('upload images to email from workshop', function (Mailshot $mailShot) {
+    $email = StoreEmail::make()->action($mailShot, null, [
+        'subject'               => 'Upload test',
+        'body'                  => 'Upload test',
+        'layout'                => ['body' => 'Upload test'],
+        'compiled_layout'       => 'xxx',
+        'state'                 => 'active',
+        'builder'               => EmailBuilderEnum::BEEFREE,
+        'snapshot_state'        => SnapshotStateEnum::LIVE,
+        'snapshot_recyclable'   => true,
+        'snapshot_first_commit' => true,
+    ], strict: false);
+
+    $uploadRoute = route('grp.models.email.images.store', ['email' => $email->id]);
+
+    $response = postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->image('hero.png', 20, 20)],
+    ])->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.source.original'))->toBeString()->not->toBeEmpty()
+        ->and($email->shop->images()->wherePivot('scope', 'email')->count())->toBe(1);
+
+    postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->create('brochure.pdf', 10, 'application/pdf')],
+    ])->assertUnprocessable();
+
+    postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->image('hero.webp', 20, 20)],
+    ])->assertUnprocessable();
 })->depends('update mailshot');
 
 test('mailshot hydrate', function (Mailshot $mailShot) {
@@ -977,6 +1069,11 @@ test('ensure email has unsubscribe link adds link when missing', function () {
 
 test('ensure email has unsubscribe link leaves existing link untouched', function () {
     $html = '<html><body>hello {{unsubscribe}}</body></html>';
+    expect(EnsureEmailHasUnsubscribeLink::run($html))->toBe($html);
+});
+
+test('ensure email has unsubscribe link accepts the workshop unsubscribe url tag', function () {
+    $html = '<html><body><a ses:no-track href="[Unsubscribe Url]" style="color:#fff">Unsubscribe</a></body></html>';
     expect(EnsureEmailHasUnsubscribeLink::run($html))->toBe($html);
 });
 
@@ -2293,8 +2390,143 @@ test('UI show mailshot template workshop', function (EmailTemplate $emailTemplat
             ->has('builder')
             ->has('snapshot')
             ->has('mergeTags')
+            ->where('imagesUploadRoute.name', 'grp.models.email-templates.images.store')
             ->has('breadcrumbs');
     });
+})->depends('update mailshot template');
+
+test('shop email editor defaults to beefree and can be switched to aiku', function (EmailTemplate $emailTemplate) {
+    $shop = $emailTemplate->shop;
+    $shop->update(['settings' => Arr::except($shop->settings ?? [], 'email_editor')]);
+
+    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
+    $trackingSettings = Arr::get($shop->settings, 'mailshot_tracking');
+
+    $this->patch(route('grp.models.org.shop.update', [$shop->organisation_id, $shop->id]), [
+        'email_editor' => 'aiku',
+    ])->assertRedirect();
+
+    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::AIKU)
+        ->and(Arr::get($shop->settings, 'mailshot_tracking'))->toBe($trackingSettings);
+
+    $this->get(route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->etc());
+
+    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('emailEditor', 'aiku')->etc());
+
+    $this->patch(route('grp.models.org.shop.update', [$shop->organisation_id, $shop->id]), [
+        'email_editor' => 'unlayer',
+    ])->assertSessionHasErrors('email_editor');
+
+    UpdateShop::make()->action($shop, ['email_editor' => 'beefree']);
+
+    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
+})->depends('update mailshot template');
+
+test('email workshop offers the shop website theme', function (EmailTemplate $emailTemplate) {
+    $shop    = $emailTemplate->shop;
+    $website = $shop->website;
+
+    expect(GetEmailWebsiteTheme::run(null))->toBeNull();
+
+    if (!$website) {
+        $this->markTestSkipped('The shop has no website in the test database');
+    }
+
+    $website->update(['published_layout' => [
+        ...($website->published_layout ?? []),
+        'theme' => [
+            'color'     => ['#A57FBC', '#FFFFFF', '#4B5058', '#FFFFFF', '#A57FBC', '#FFFFFF', '#cccccc', '#957A65'],
+            'container' => ['properties' => ['text' => ['fontFamily' => "'Raleway', sans-serif"]]],
+        ],
+    ]]);
+
+    expect(GetEmailWebsiteTheme::run($shop->refresh()))->toBe([
+        'color'      => ['#A57FBC', '#FFFFFF', '#4B5058', '#FFFFFF', '#A57FBC', '#FFFFFF', '#cccccc', '#957A65'],
+        'fontFamily' => "'Raleway', sans-serif",
+    ]);
+
+    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('websiteTheme.color.0', '#A57FBC')->etc());
+})->depends('update mailshot template');
+
+test('email gallery lists shop logos and catalogue images', function (EmailTemplate $emailTemplate) {
+    $shop = $emailTemplate->shop;
+
+    $this->getJson(route('grp.json.shop.gallery.logos', ['shop' => $shop->slug]))
+        ->assertSuccessful()
+        ->assertJsonStructure(['data', 'meta' => ['total'], 'links']);
+
+    $catalogue = $this->getJson(route('grp.json.shop.gallery.catalogue', ['shop' => $shop->slug]))
+        ->assertSuccessful()
+        ->assertJsonStructure(['data', 'meta' => ['total'], 'links']);
+
+    $firstImageName = $catalogue->json('data.0.name');
+    if ($firstImageName) {
+        $search = explode(' ', $firstImageName)[0];
+        expect(collect($this->getJson(route('grp.json.shop.gallery.catalogue', ['shop' => $shop->slug, 'filter' => ['global' => $search]]))->json('data'))->pluck('name')->map(fn (string $name) => strtolower($name)))
+            ->each->toContain(strtolower($search));
+    }
+
+    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('imageCategories.0.route.name', 'grp.json.shop.gallery.logos')
+            ->where('imageCategories.1.route.name', 'grp.json.shop.gallery.catalogue')
+            ->etc());
+})->depends('update mailshot template');
+
+test('upload images to email template from workshop', function (EmailTemplate $emailTemplate) {
+    $uploadRoute = route('grp.models.email-templates.images.store', ['emailTemplate' => $emailTemplate->id]);
+
+    $numberEmailImages = $emailTemplate->shop->images()->wherePivot('scope', 'email')->count();
+
+    $response = postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->image('template-hero.png', 20, 20)],
+    ])->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.source.original'))->toBeString()->not->toBeEmpty()
+        ->and($emailTemplate->shop->images()->wherePivot('scope', 'email')->count())->toBe($numberEmailImages + 1);
+
+    postJson($uploadRoute, [
+        'images' => [UploadedFile::fake()->create('brochure.pdf', 10, 'application/pdf')],
+    ])->assertUnprocessable();
+})->depends('update mailshot template');
+
+test('store email video thumbnail with play button from youtube link', function (EmailTemplate $emailTemplate) {
+    $youtubeThumbnail = imagecreatetruecolor(1280, 720);
+    imagefill($youtubeThumbnail, 0, 0, imagecolorallocate($youtubeThumbnail, 200, 30, 30));
+    ob_start();
+    imagejpeg($youtubeThumbnail);
+    $youtubeThumbnailJpeg = ob_get_clean();
+
+    Http::fake([
+        'i.ytimg.com/vi/mJUeplDOmOU/maxresdefault.jpg' => Http::response($youtubeThumbnailJpeg, 200, ['Content-Type' => 'image/jpeg']),
+        '*'                                            => Http::response('', 404),
+    ]);
+
+    $route = route('grp.models.email-templates.video-thumbnail.store', ['emailTemplate' => $emailTemplate->id]);
+    $payload = [
+        'video_url'         => 'https://www.youtube.com/watch?v=mJUeplDOmOU&t=10478s',
+        'thumbnail_url'     => null,
+        'ratio'             => '16-9',
+        'show_play_button'  => true,
+        'play_button_size'  => 64,
+        'play_button_color' => '#000000',
+        'play_icon_color'   => '#ffffff',
+    ];
+
+    $response = postJson($route, $payload)->assertSuccessful();
+
+    $media = Media::find($response->json('data.id'));
+    expect($response->json('data.source.original'))->toBeString()->not->toBeEmpty()
+        ->and($media->width)->toBe(1200)
+        ->and($media->height)->toBe(675)
+        ->and($emailTemplate->shop->images()->where('media.id', $media->id)->wherePivot('scope', 'email')->exists())->toBeTrue();
+
+    postJson($route, [...$payload, 'thumbnail_url' => 'https://169.254.169.254/latest/meta-data/x.jpg'])->assertUnprocessable();
+    postJson($route, [...$payload, 'play_button_color' => 'red'])->assertUnprocessable();
 })->depends('update mailshot template');
 
 test('index mailshot from other store templates excludes own shop', function (Shop $shop, Mailshot $mailshot) {

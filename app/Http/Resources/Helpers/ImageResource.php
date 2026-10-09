@@ -25,6 +25,7 @@ class ImageResource extends JsonResource
 
         $image          = $media->getImage();
         $imageThumbnail = $media->getImage()->resize(0, 48);
+        $imagePreview   = $media->getImage()->resize(320, 0);
 
         return [
             'id'                   => $media->id,
@@ -35,6 +36,7 @@ class ImageResource extends JsonResource
             'mime_type'            => $media->mime_type,
             'size'                 => NaturalLanguage::make()->fileSize($media->size),
             'thumbnail'            => GetPictureSources::run($imageThumbnail),
+            'preview'              => GetPictureSources::run($imagePreview),
             'source'               => GetPictureSources::run($image),
             'created_at'           => $media->created_at,
             'was_recently_created' => $media->wasRecentlyCreated,

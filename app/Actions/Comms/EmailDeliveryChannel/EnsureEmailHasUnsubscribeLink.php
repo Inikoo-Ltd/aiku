@@ -16,7 +16,7 @@ class EnsureEmailHasUnsubscribeLink
 
     public function handle(string $htmlEmail): string
     {
-        if (preg_match('/\{\{unsubscribe}}|\[unsubscribe]/i', $htmlEmail)) {
+        if (preg_match('/\{\{unsubscribe}}|\[unsubscribe(?: url)?]/i', $htmlEmail)) {
             return $htmlEmail;
         }
 

@@ -8,6 +8,9 @@
 
 namespace App\Actions\Comms\Outbox\UI;
 
+use App\Actions\Comms\Email\GetEmailWebsiteTheme;
+use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
+use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
 use App\Actions\Comms\EmailTemplate\UI\IndexOtherStoreEmailTemplates;
 use App\Actions\OrgAction;
@@ -135,9 +138,16 @@ class ShowOutboxWorkshop extends OrgAction
                 'snapshot' => $email->unpublishedSnapshot,
                 'builder' => $email->builder,
                 'imagesUploadRoute' => [
-                    'name' => 'grp.models.email-templates.images.store',
-                    'parameters' => $email->id
+                    'name' => 'grp.models.email.images.store',
+                    'parameters' => ['email' => $email->id]
                 ],
+                'videoThumbnailRoute' => [
+                    'name'       => 'grp.models.email.video-thumbnail.store',
+                    'parameters' => ['email' => $email->id]
+                ],
+                'emailEditor'         => $email->shop?->emailEditor()->value,
+                'websiteTheme'        => GetEmailWebsiteTheme::run($email->shop),
+                'imageCategories'     => IndexShopGalleryImages::categories($email->shop),
                 'updateRoute' => [
                     'name' => 'grp.models.shop.outboxes.workshop.update',
                     'parameters' => [
@@ -181,6 +191,7 @@ class ShowOutboxWorkshop extends OrgAction
                 ],
                 'mergeTags' => GetOutboxMergeTagByOutbox::run($this->outbox),
                 'status' => $email->outbox->state,
+                'socialIcons' => GetEmailSocialIcons::run($this->organisation->group),
                 'organisationSlug' => $this->organisation->slug,
                 'shopSlug' => $email->shop?->slug,
                 'shopId' => $email->shop_id,

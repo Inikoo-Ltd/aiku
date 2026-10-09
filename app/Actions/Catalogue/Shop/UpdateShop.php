@@ -34,6 +34,7 @@ use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
@@ -488,6 +489,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'chat_email_offline_replies')) {
             data_set($modelData, 'settings.chat.email_offline_replies', (bool) Arr::pull($modelData, 'chat_email_offline_replies'));
+        }
+
+        if (Arr::exists($modelData, 'email_editor')) {
+            data_set($modelData, 'settings.email_editor', Arr::pull($modelData, 'email_editor'));
         }
 
         $viewContactOptionsPanel = null;
@@ -1120,6 +1125,7 @@ class UpdateShop extends OrgAction
             'pre_order_pallet_rates.*.amount'                         => ['required', 'numeric', 'min:0'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'email_editor'                                            => ['sometimes', Rule::enum(EmailEditorEnum::class)],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],
             'access_key'                                              => ['sometimes', 'nullable', 'string'],
             'region'                                                  => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],

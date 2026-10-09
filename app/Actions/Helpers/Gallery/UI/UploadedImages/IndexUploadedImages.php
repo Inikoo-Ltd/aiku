@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Gallery\UI\UploadedImages;
 
+use App\Actions\Comms\Email\UploadImagesToEmail;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\ImageResource;
 use App\InertiaTable\InertiaTable;
@@ -22,7 +23,7 @@ use App\Services\QueryBuilder;
 
 class IndexUploadedImages extends OrgAction
 {
-    public function handle(Group $group, $prefix = null): LengthAwarePaginator
+    public function handle(Group $group, $prefix = null, string $collection = 'image'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -42,7 +43,7 @@ class IndexUploadedImages extends OrgAction
         return $queryBuilder
             ->defaultSort('media.name')
             ->where('group_id', $group->id)
-            ->where('collection_name', 'image')
+            ->where('collection_name', $collection)
             ->select(['media.name', 'media.id', 'size', 'mime_type', 'file_name', 'disk', 'media.slug', 'is_animated'])
             ->allowedSorts(['name', 'size'])
             ->allowedFilters([$globalSearch])
@@ -76,6 +77,13 @@ class IndexUploadedImages extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
         return $this->handle($this->group);
+    }
+
+    public function email(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group, collection: UploadImagesToEmail::MEDIA_SCOPE);
     }
 
 

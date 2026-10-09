@@ -2,11 +2,10 @@
 import { ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
+import GalleryDialog from "@/Components/Utils/GalleryManagement/GalleryDialog.vue"
 import Image from "@common/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import Modal from "@/Components/Utils/Modal.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
@@ -160,10 +159,8 @@ const deleteImage = () => {
             @click="(event) => { event.stopPropagation(); deleteImage() }" />
     </div>
 
-    <Modal :isOpen="isOpenGalleryImages" @onClose="() => (isOpenGalleryImages = false)" width="w-3/4">
-        <GalleryManagement :maxSelected="1" :tabs="['images_uploaded', 'stock_images']"
-            :closePopup="() => (isOpenGalleryImages = false)" @submitSelectedImages="onPickImage" />
-    </Modal>
+    <GalleryDialog v-model:visible="isOpenGalleryImages" :maxSelected="1" :tabs="['images_uploaded', 'stock_images']"
+        @submitSelectedImages="onPickImage" />
 </template>
 
 <style scoped></style>

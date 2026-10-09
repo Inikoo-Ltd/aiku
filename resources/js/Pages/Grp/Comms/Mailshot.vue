@@ -14,8 +14,9 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import MailshotShowcase from "@/Components/Showcases/Org/Mailshot/MailshotShowcase.vue";
 import { faEnvelope, faStop } from "@fas";
-import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock, faMousePointer } from "@fal";
+import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock, faMousePointer, faRedo, faTrashAlt, faArrowRight, faPencil } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
 import TableMailshotRecipients from "@/Components/Tables/TableMailshotRecipients.vue";
 import TableMailshotClickedLinks from "@/Components/Tables/TableMailshotClickedLinks.vue";
@@ -32,7 +33,7 @@ import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 
 
-library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock, faMousePointer);
+library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock, faMousePointer, faRedo, faTrashAlt, faArrowRight, faPencil);
 
 
 const props = defineProps<{
@@ -97,7 +98,6 @@ const filteredTabs = computed(() => {
 
 // Toggle switch state (second wave)
 const checked = ref(props.isSecondWaveActive ?? false)
-const isEditingSecond = ref(false)
 
 const subject = ref(props.secondwaveSubject ?? "")
 const hour = ref(props.secondwaveDelayHours ?? 48)
@@ -534,7 +534,6 @@ const handleSaveSecond = async () => {
     })
         .then((response) => {
             if (response.data) {
-                isEditingSecond.value = false
                 notify({
                     type: 'success',
                     title: ctrans('Success'),
@@ -642,6 +641,33 @@ const canFetchWaveAction = computed(() =>
 watch(() => props.isSecondWaveActive, v => checked.value = v)
 watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
 watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 48)
+
+const isSecondWaveSettingsDirty = computed(() =>
+    subject.value !== (props.secondwaveSubject ?? '') || hour.value !== (props.secondwaveDelayHours ?? 48)
+)
+
+const resetSecondWaveSettings = () => {
+    subject.value = props.secondwaveSubject ?? ''
+    hour.value = props.secondwaveDelayHours ?? 48
+}
+
+const hasSendingControls = computed(() =>
+    !!(shouldShowButtons.value || shouldShowCancelScheduleButton.value || shouldShowDeleteButton.value)
+)
+
+const hasMailshotControls = computed(() => hasSendingControls.value || (shouldShowWaveInfo.value && !!props.status))
+
+const sendingState = computed(() => {
+    const status = props.status?.toLowerCase()
+    if (status === 'ready') {
+        return { icon: 'fal fa-paper-plane', iconClass: 'bg-green-50 text-green-600', title: ctrans('Ready to send'), description: ctrans('Send it now, or schedule it for later.') }
+    }
+    if (status === 'scheduled') {
+        return { icon: 'fal fa-clock', iconClass: 'bg-blue-50 text-blue-600', title: ctrans('Scheduled'), description: ctrans('It will be sent automatically at the scheduled time.') }
+    }
+
+    return { icon: 'fal fa-pencil', iconClass: 'bg-amber-50 text-amber-600', title: ctrans('Draft'), description: ctrans('Compose and publish the email, then choose the recipients to send it.') }
+})
 watch(
     filteredTabs,
     (tabs) => {
@@ -665,54 +691,6 @@ watch(
                 @saved="subject => savedSubject = subject" />
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
-        <template #otherBefore>
-            <div class="flex" v-if="shouldShowButtons">
-                <ModalConfirmation :title="ctrans('Are you sure you want to send this mailshot?')"
-                    :description="ctrans('Please make sure your data or design is correct. This action will send an email to all customers')"
-                    isFullLoading>
-                    <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="ctrans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
-                            icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
-                    </template>
-                    <template #btn-yes>
-                        <Button :label="ctrans('Send now')" :loading="inProgress" :disabled="inProgress"
-                            @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
-                    </template>
-                </ModalConfirmation>
-                <Button :label="ctrans('Scheduled')" class="!border-l-none !rounded-l-none" icon="fal fa-clock"
-                    type="secondary" @click="handleSchedule($event)" :loading="scheduleInProgress" />
-            </div>
-        </template>
-        <template #other>
-            <ModalConfirmation v-if="shouldShowDeleteButton"
-                :title="ctrans('Are you sure you want to delete this mailshot?')"
-                :description="ctrans('This action cannot be undone. This will permanently delete this mailshot')"
-                isFullLoading>
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button :disabled="inProgress" icon="fal fa-trash-alt" type="negative" @click="changeModel" />
-                </template>
-                <template #btn-yes>
-                    <Button :label="ctrans('delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
-                        type="negative" icon="fal fa-trash-alt" />
-                </template>
-            </ModalConfirmation>
-
-            <ModalConfirmation @onYes="handleCancelSchedule" v-if="shouldShowCancelScheduleButton"
-                :title="ctrans('Are you sure you want to cancel this schedule?')"
-                :description="ctrans('This action will cancel the scheduled mailshot')" isFullLoading>
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button :label="ctrans('Cancel Schedule')" :disabled="inProgress"
-                        class="!border-r-none !rounded-r-none" icon="fal fa-clock" type="negative" @click="changeModel"
-                        :tooltip="ctrans('This can still be canceled before it starts sending')" />
-                </template>
-                <template #btn-yes>
-                    <Button :label="ctrans('Cancel Schedule')" :loading="inProgress" :disabled="inProgress"
-                        @click="handleCancelSchedule" type="negative" icon="fal fa-clock" />
-                </template>
-            </ModalConfirmation>
-
-        </template>
-
     </PageHeading>
 
     <!-- Schedule DateTime Picker Popover -->
@@ -766,43 +744,98 @@ watch(
         </div>
     </Popover>
     <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
-    <div class="mx-4 my-4 space-y-3" v-if="shouldShowWaveInfo && props.status">
-        <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
-         bg-gray-50 border border-gray-200">
-            <template v-if="shouldShowWaveInfo">
-                <span class="text-sm font-medium whitespace-nowrap transition" :class="canFetchWaveAction
-                    ? 'text-indigo-600 cursor-pointer hover:underline'
-                    : 'text-gray-700'" @click="canFetchWaveAction && handleFetchActionWave()">
-                    {{ waveLabel }}
-                </span>
-                <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
-                    v-if="!props.isHasParentMailshot && !showWaveSettings && props.status === 'sent' && props.secondWaveStatus === 'sent'">
-                    {{ ctrans('Recipients:') }} {{ numberSecondWaveRecipients }}
-                </span>
-            </template>
-            <template v-if="canCancelSecondWave && !isSecondWave">
-                <span class="text-sm text-gray-700">{{ secondWaveCancelText }}</span>
-                <ModalConfirmation
-                    :title="ctrans('Cancel the 2nd wave?')"
-                    :description="ctrans('The 2nd wave will not be sent. This cannot be turned back on.')"
-                    @modalClosedAction="resyncWaveToggle">
+    <div v-if="hasMailshotControls" class="mx-4 mt-4 grid grid-cols-1 gap-4" :class="shouldShowWaveInfo && hasSendingControls ? 'lg:grid-cols-2' : ''">
+        <section v-if="hasSendingControls" class="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="flex items-start justify-between gap-x-4">
+                <div class="flex items-start gap-x-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg" :class="sendingState.iconClass">
+                        <FontAwesomeIcon :icon="sendingState.icon" fixed-width aria-hidden="true" />
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">{{ sendingState.title }}</h3>
+                        <p class="text-sm text-gray-500">{{ sendingState.description }}</p>
+                    </div>
+                </div>
+                <div v-if="estimatedRecipients !== undefined && estimatedRecipients !== null && shouldShowButtons" class="shrink-0 text-right">
+                    <div class="text-lg font-semibold text-gray-900">{{ formatNumber(estimatedRecipients) }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans('estimated recipients') }}</div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                <template v-if="shouldShowButtons">
+                    <ModalConfirmation :title="ctrans('Are you sure you want to send this mailshot?')"
+                        :description="ctrans('Please make sure your data or design is correct. This action will send an email to all customers')"
+                        isFullLoading>
+                        <template #default="{ changeModel }">
+                            <Button :label="ctrans('Send now')" :disabled="inProgress" icon="fal fa-paper-plane" type="primary" @click="changeModel" />
+                        </template>
+                        <template #btn-yes>
+                            <Button :label="ctrans('Send now')" :loading="inProgress" :disabled="inProgress"
+                                @click="handleSendNow" type="primary" icon="fal fa-paper-plane" />
+                        </template>
+                    </ModalConfirmation>
+                    <Button :label="ctrans('Schedule')" icon="fal fa-clock" type="secondary" @click="handleSchedule($event)" :loading="scheduleInProgress" />
+                </template>
+
+                <ModalConfirmation v-if="shouldShowCancelScheduleButton" @onYes="handleCancelSchedule"
+                    :title="ctrans('Are you sure you want to cancel this schedule?')"
+                    :description="ctrans('This action will cancel the scheduled mailshot')" isFullLoading>
                     <template #default="{ changeModel }">
-                        <ToggleSwitch :key="waveToggleKey" :modelValue="checked"
-                            @update:modelValue="() => changeModel()" :disabled="isSavingToggle" />
+                        <Button :label="ctrans('Cancel schedule')" :disabled="inProgress" icon="fal fa-clock" type="negative" @click="changeModel"
+                            :tooltip="ctrans('This can still be canceled before it starts sending')" />
                     </template>
-                    <template #btn-yes="{ closeModal }">
-                        <Button :label="ctrans('Yes, cancel it')"
-                            @click="() => { closeModal(); handleToggleSecondWave(false) }" />
+                    <template #btn-yes>
+                        <Button :label="ctrans('Cancel schedule')" :loading="inProgress" :disabled="inProgress"
+                            @click="handleCancelSchedule" type="negative" icon="fal fa-clock" />
                     </template>
                 </ModalConfirmation>
-            </template>
-            <template v-if="showWaveSettings">
+
+                <div v-if="shouldShowDeleteButton" class="ml-auto">
                 <ModalConfirmation
+                    :title="ctrans('Are you sure you want to delete this mailshot?')"
+                    :description="ctrans('This action cannot be undone. This will permanently delete this mailshot')"
+                    isFullLoading>
+                    <template #default="{ changeModel }">
+                        <button type="button" class="flex items-center gap-x-1.5 rounded-md px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            :disabled="inProgress" @click="changeModel">
+                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                            {{ ctrans('Delete mailshot') }}
+                        </button>
+                    </template>
+                    <template #btn-yes>
+                        <Button :label="ctrans('Delete')" :loading="inProgress" :disabled="inProgress" @click="handleDelete"
+                            type="negative" icon="fal fa-trash-alt" />
+                    </template>
+                </ModalConfirmation>
+                </div>
+            </div>
+        </section>
+
+        <section v-if="shouldShowWaveInfo" class="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="flex items-start justify-between gap-x-4">
+                <div class="flex items-start gap-x-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--theme-color-4)_12%,white)] text-lg text-[var(--theme-color-4)]">
+                        <FontAwesomeIcon icon="fal fa-redo" fixed-width aria-hidden="true" />
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">
+                            {{ isHasParentMailshot ? ctrans('This is the 2nd wave') : ctrans('Second wave') }}
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            {{ isHasParentMailshot
+                                ? ctrans('Resent to recipients of the first mailshot who did not open it.')
+                                : ctrans('Send this email again to recipients who did not open it.') }}
+                        </p>
+                    </div>
+                </div>
+
+                <ModalConfirmation v-if="showWaveSettings"
                     :title="ctrans('Send this email again?')"
                     :description="ctrans('The same email will be sent again, :hours hours after this one, to everyone who has not opened it.', { hours: hour })"
                     @modalClosedAction="resyncWaveToggle">
                     <template #default="{ changeModel }">
-                        <ToggleSwitch :key="waveToggleKey" :modelValue="checked"
+                        <ToggleSwitch :key="waveToggleKey" :modelValue="checked" :aria-label="ctrans('Send a second wave')"
                             @update:modelValue="(value: boolean) => value ? changeModel() : handleToggleSecondWave(false)"
                             :disabled="isSavingToggle" />
                     </template>
@@ -812,27 +845,60 @@ watch(
                     </template>
                 </ModalConfirmation>
 
-                <Button v-if="checked" type="edit" :label="ctrans('Edit')" class="!px-2 !py-1 text-xs h-8"
-                    @click="isEditingSecond = !isEditingSecond" />
+                <ModalConfirmation v-else-if="canCancelSecondWave && !isSecondWave"
+                    :title="ctrans('Cancel the 2nd wave?')"
+                    :description="ctrans('The 2nd wave will not be sent. This cannot be turned back on.')"
+                    @modalClosedAction="resyncWaveToggle">
+                    <template #default="{ changeModel }">
+                        <ToggleSwitch :key="waveToggleKey" :modelValue="checked" :aria-label="ctrans('Second wave')"
+                            @update:modelValue="() => changeModel()" :disabled="isSavingToggle" />
+                    </template>
+                    <template #btn-yes="{ closeModal }">
+                        <Button :label="ctrans('Yes, cancel it')"
+                            @click="() => { closeModal(); handleToggleSecondWave(false) }" />
+                    </template>
+                </ModalConfirmation>
+            </div>
 
-                <span class="h-4 w-px bg-gray-300"></span>
-                <template v-if="checked">
-                    <label class="block text-sm text-gray-600 mb-1 font-medium">{{ ctrans('Subject') }}</label>
-                    <InputText v-model="subject" :placeholder="ctrans('Subject')" :disabled="!checked || !isEditingSecond"
-                        class="!h-8 !py-1 !text-sm w-44" />
+            <div v-if="showWaveSettings && checked" class="mt-4 grid grid-cols-1 gap-3 border-t border-gray-100 pt-4 sm:grid-cols-[1fr_auto]">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-gray-700">{{ ctrans('Subject of the 2nd wave') }}</span>
+                    <InputText v-model="subject" :placeholder="ctrans('Subject')" class="!h-9 w-full !text-sm" />
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-gray-700">{{ ctrans('Send after') }}</span>
+                    <span class="flex items-center gap-x-2">
+                        <InputNumber v-model="hour" :min="1" inputClass="!h-9 !text-sm text-center w-20" />
+                        <span class="text-sm text-gray-600">{{ ctrans('hours') }}</span>
+                    </span>
+                </label>
+                <div v-if="isSecondWaveSettingsDirty" class="flex justify-end gap-x-2 sm:col-span-2">
+                    <Button type="tertiary" :label="ctrans('Reset')" @click="resetSecondWaveSettings" />
+                    <Button type="save" @click="handleSaveSecond" :loading="loading" />
+                </div>
+            </div>
 
-                    <div class="flex items-center gap-1 shrink-0">
-                        <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
-                            inputClass="!h-8 !py-1 !text-sm text-center w-20" />
-                        <span class="text-sm font-medium text-gray-700 whitespace-nowrap">{{ ctrans('hours') }}</span>
-                    </div>
+            <div v-else-if="canCancelSecondWave && !isSecondWave" class="mt-4 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                {{ secondWaveCancelText }}
+            </div>
 
-                    <Button v-if="isEditingSecond" type="save" @click="handleSaveSecond" :loading="loading" />
-                </template>
-            </template>
-        </div>
-
+            <div v-if="canFetchWaveAction || (!isHasParentMailshot && !showWaveSettings && status === 'sent' && secondWaveStatus === 'sent')"
+                class="mt-4 flex items-center justify-between gap-x-3 border-t border-gray-100 pt-4">
+                <span v-if="!isHasParentMailshot && !showWaveSettings && status === 'sent' && secondWaveStatus === 'sent'" class="flex items-center gap-x-1.5 text-sm text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-users" fixed-width aria-hidden="true" />
+                    {{ formatNumber(numberSecondWaveRecipients) }} {{ ctrans('recipients in the 2nd wave') }}
+                </span>
+                <span v-else />
+                <button v-if="canFetchWaveAction" type="button"
+                    class="flex items-center gap-x-1.5 text-sm font-medium text-[var(--theme-color-4)] hover:underline disabled:opacity-50"
+                    :disabled="loadingFetch" @click="handleFetchActionWave">
+                    {{ isHasParentMailshot ? ctrans('View first wave') : ctrans('View 2nd wave') }}
+                    <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+        </section>
     </div>
+
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" v-bind="currentTab === 'showcase' ? {
         liveStats,
         ownShopTemplates: props.ownShopTemplates,

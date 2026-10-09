@@ -29,6 +29,7 @@ use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -42,6 +43,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\LaravelOptions\Options;
 use App\Models\Ordering\SalesChannel;
 
 class EditShop extends OrgAction
@@ -950,6 +952,21 @@ class EditShop extends OrgAction
                         ] : [],
                     ],
                 ] : [],
+                [
+                    'label'  => __('Email editor'),
+                    'icon'   => 'fal fa-envelope',
+                    'fields' => [
+                        'email_editor' => [
+                            'type'        => 'radio',
+                            'label'       => __('Editor used to design emails'),
+                            'value'       => $shop->emailEditor()->value,
+                            'options'     => Options::forEnum(EmailEditorEnum::class),
+                            'required'    => true,
+                            'columns'     => 1,
+                            'information' => __('Applies to newsletters, marketing mailshots, prospect mailshots, outbox emails and email templates of this shop. Both editors open the same designs.'),
+                        ],
+                    ],
+                ],
                 [
                     'label'  => __('AWS-SES configuration'),
                     'icon'   => 'fa-light fa-key',

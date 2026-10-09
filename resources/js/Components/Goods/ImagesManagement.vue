@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faMusic, faPencil, faPhotoVideo, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
 import AudioWaveform from "@/Components/Pure/AudioWaveform.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
+import GalleryDialog from "@/Components/Utils/GalleryManagement/GalleryDialog.vue"
 import Image from "@common/Components/Image.vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
@@ -684,11 +684,8 @@ function onDeleteFilesInList(categoryBox: any) {
     </div>
 
 
-    <Dialog v-model:visible="isModalGallery" modal :header="ctrans('Select Images')" class="w-full max-w-5xl"
-        dismissableMask>
-        <GalleryManagement :tabs="['images_uploaded', 'stock_images']"
-            @submitSelectedImages="onPickGalleryImages" />
-    </Dialog>
+    <GalleryDialog v-model:visible="isModalGallery" :header="ctrans('Select Images')" :tabs="['images_uploaded', 'stock_images']"
+        @submitSelectedImages="onPickGalleryImages" />
 
     <Dialog v-model:visible="isModalEditVideo" modal header="Edit Video Link" :style="{ width: '40rem' }">
 

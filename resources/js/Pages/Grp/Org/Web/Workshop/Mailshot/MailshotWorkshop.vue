@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch, inject , onMounted} from 'vue'
-import type { Component } from "vue";
+import { ref, reactive, computed, watch, inject , onMounted} from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
+import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
 import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
@@ -18,37 +18,37 @@ import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faSyncAlt, faLink } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faThLarge, faLink } from '@fal'
 import { faUserCog } from '@fas'
 import MailshotJourney from '@/Components/Navigation/MailshotJourney.vue'
 import MailshotSubjectEdit from '@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue'
 import MailshotUtmLinks from '@/Components/Workshop/Mailshot/MailshotUtmLinks.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { data } from "autoprefixer"
 import { useTabChange } from "@/Composables/tab-change";
-import TableEmailTemplate from "@/Components/Tables/TableEmailTemplate.vue";
-import TablePreviousMailshots from "@/Components/Tables/TablePreviousMailshots.vue"
-import TableOtherStoreMailshots from "@/Components/Tables/TableOtherStoreMailshots.vue"
-import TemplateGallery from "@/Components/Mailshot/TemplateGallery.vue"
-import { faThLarge, faList } from '@fal'
+import TemplatePicker from "@/Components/Mailshot/TemplatePicker.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { usePage } from "@inertiajs/vue3"
 
-library.add(faThLarge, faList, faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
+library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faExclamationTriangle)
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
+    emailEditor?: 'aiku' | 'beefree'
+    websiteTheme?: { color: string[], fontFamily: string | null } | null
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
     snapshot: routeType
     unpublished_layout: any
     compiledLayout: string | null
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     mergeContents: Array<any> | null
     status: string
     publishRoute: routeType
@@ -69,8 +69,12 @@ const props = defineProps<{
 
 const isUtmLinksModalOpen = ref(false)
 
-const mailshotSavedSubject = ref(props.mailshot.subject)
-const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotSavedSubject.value }))
+const mailshotData = reactive({ ...props.mailshot })
+const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotData.subject }))
+
+const onMailshotSaved = (savedMailshot: { subject: string, name: string | null, preview_text: string | null }) => {
+    Object.assign(mailshotData, savedMailshot)
+}
 
 const isPublished = ref(!!props.compiledLayout)
 const showUnpublishedWarning = ref(false)
@@ -95,6 +99,7 @@ const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
 const _beefree = ref()
 const _unlayer = ref()
+const _emailWorkshop = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
 const visibleUnsubscribeWarningModal = ref(false)
@@ -326,27 +331,6 @@ const tabData = computed(() => {
 const handleTabUpdate = (tabSlug: string) =>
     useTabChange(tabSlug, currentTab)
 
-const templateView = ref<'gallery' | 'list'>((localStorage.getItem('mailshot-template-view') as 'gallery' | 'list') ?? 'gallery')
-
-const setTemplateView = (view: 'gallery' | 'list') => {
-    templateView.value = view
-    localStorage.setItem('mailshot-template-view', view)
-}
-
-const component = computed(() => {
-    if (templateView.value === 'gallery') {
-        return TemplateGallery
-    }
-
-    const components: Component = {
-        templates: TableEmailTemplate,
-        other_store_templates: TableEmailTemplate,
-        previous_mailshots: TablePreviousMailshots,
-        other_store_mailshots: TableOtherStoreMailshots,
-    };
-    return components[currentTab.value];
-});
-
 const onSelectTemplateSnapshot = (snapshot: any) => {
     activeSnapshot.value = snapshot
     isModalCloneTemplateEmail.value = false
@@ -376,16 +360,16 @@ onMounted(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHeadData">
         <template #afterTitle>
-            <MailshotSubjectEdit :mailshot="mailshot" :updateMailshotRoute="updateMailshotRoute"
-                :suggestCopyRoute="suggestCopyRoute" @saved="subject => mailshotSavedSubject = subject" />
+            <MailshotSubjectEdit :mailshot="mailshotData" :updateMailshotRoute="updateMailshotRoute"
+                :suggestCopyRoute="suggestCopyRoute" @saved="(subject, savedMailshot) => onMailshotSaved(savedMailshot)" />
         </template>
         <template #afterTitle2>
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
-        <template #otherBefore>
+        <template v-if="builder == 'beefree' && emailEditor === 'beefree'" #otherBefore>
             <Button @click="() => isModalCloneTemplateEmail = true" :label="ctrans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
+                :icon="faThLarge" :disabled="!isBeefreeReady" />
         </template>
         <template #button-utm="{ action }">
             <Button :label="action.label" type="tertiary" :icon="faLink" @click="isUtmLinksModalOpen = true" />
@@ -400,56 +384,52 @@ onMounted(() => {
         :updateUtmLinkRoute="updateUtmLinkRoute" :updateUtmSettingsRoute="updateUtmSettingsRoute"
         @onClose="isUtmLinksModalOpen = false" />
 
-    <Modal :isOpen="showUnpublishedWarning" @onClose="showUnpublishedWarning = false" width="w-full max-w-md">
-        <div class="p-2 text-center">
+    <Dialog v-model:visible="showUnpublishedWarning" modal dismissableMask :draggable="false" :showHeader="false"
+        :style="{ width: '28rem' }" :breakpoints="{ '640px': '95vw' }">
+        <div class="pt-6 text-center">
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-3xl mb-3" fixed-width />
             <h2 class="text-lg font-semibold mb-2">{{ ctrans('Your email is not saved yet') }}</h2>
             <p class="text-gray-600 mb-4">
-                {{ ctrans('Press the SAVE button in the editor to publish your email, otherwise it cannot be sent.') }}
+                {{ ctrans('Press Ctrl+S (⌘S on Mac) in the editor to publish your email, otherwise it cannot be sent.') }}
             </p>
             <div class="flex justify-center gap-x-2">
                 <Button type="tertiary" :label="ctrans('Review & send anyway')" @click="goToReviewAnyway" />
                 <Button :label="ctrans('Keep editing')" @click="showUnpublishedWarning = false" />
             </div>
         </div>
-    </Modal>
+    </Dialog>
 
-    <Modal :isOpen="isModalCloneTemplateEmail" @onClose="isModalCloneTemplateEmail = false" width="w-full max-w-6xl">
-
-        <div class="flex items-start justify-between gap-x-4">
-            <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" class="flex-1" />
-            <div class="flex items-center rounded-md border border-gray-300 overflow-hidden shrink-0">
-                <button
-                    v-tooltip="ctrans('Gallery')"
-                    class="px-2 py-1"
-                    :class="templateView === 'gallery' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
-                    @click="setTemplateView('gallery')">
-                    <FontAwesomeIcon icon="fal fa-th-large" fixed-width aria-hidden="true" />
-                </button>
-                <button
-                    v-tooltip="ctrans('List')"
-                    class="px-2 py-1"
-                    :class="templateView === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
-                    @click="setTemplateView('list')">
-                    <FontAwesomeIcon icon="fal fa-list" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-        </div>
-
-
-        <component :is="component" :key="currentTab + templateView" :data="tabData" :tab="currentTab"
+    <Dialog v-model:visible="isModalCloneTemplateEmail" modal :draggable="false" :header="ctrans('Choose a template')"
+        :style="{ width: '80rem' }" :breakpoints="{ '1360px': '95vw' }"
+        :pt="{ header: { class: '!px-5 !py-3 border-b border-gray-200' }, content: { class: '!px-5 !pb-5 !pt-2' } }">
+        <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+        <TemplatePicker :key="currentTab" :data="tabData" :tab="currentTab"
             @select-snapshot="onSelectTemplateSnapshot" />
+    </Dialog>
 
-    </Modal>
+    <template v-if="builder == 'beefree'">
+        <Beetree v-if="emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
+            :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
+            @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
+            ref="_beefree" @ready="isBeefreeReady = $event" />
 
-    <!-- beefree -->
-    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
-        :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
-        @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
-        ref="_beefree" @ready="isBeefreeReady = $event" />
+        <EmailWorkshop v-else :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
+            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
+            :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
+            @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"
+            :mailshot="mailshotData" :updateMailshotRoute="updateMailshotRoute" @mailshotSaved="onMailshotSaved"
+            ref="_emailWorkshop">
+            <template #toolbar>
+                <button type="button" class="flex h-8 items-center gap-x-1.5 rounded px-3 text-[13px] text-gray-700 hover:bg-gray-100"
+                    @click="isModalCloneTemplateEmail = true">
+                    <FontAwesomeIcon :icon="faThLarge" fixed-width aria-hidden="true" />
+                    {{ ctrans('Choose template') }}
+                </button>
+            </template>
+        </EmailWorkshop>
+    </template>
 
-    <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" ref="_unlayer" />
 

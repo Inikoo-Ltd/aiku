@@ -3,6 +3,7 @@ import { ref, computed, watch, inject } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
+import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
 import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
@@ -30,9 +31,14 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     builder: string
     imagesUploadRoute: routeType
+    videoThumbnailRoute?: routeType
+    emailEditor?: 'aiku' | 'beefree'
+    websiteTheme?: { color: string[], fontFamily: string | null } | null
+    imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
     snapshot: routeType
     mergeTags: Array<any>
+    socialIcons?: Record<string, string>
     sendTestRoute: routeType
     storeTemplateRoute: routeType
     deleteTemplateRoute: routeType
@@ -227,9 +233,13 @@ const handleDelete = async () => {
         </template>
     </PageHeading>
 
-    <!-- beefree -->
-    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
+    <Beetree v-if="builder == 'beefree' && emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
         :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSave"
+        :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
+
+    <!-- email workshop -->
+    <EmailWorkshop v-else-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
+        :snapshot="snapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSave"
         :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <div v-else>
