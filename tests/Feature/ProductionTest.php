@@ -2534,6 +2534,24 @@ describe('production reward pay bands', function () {
             ->and($closed->is_under_target)->toBeFalse();
     });
 
+    test('a short session well above a low step target is not flagged', function () {
+        AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+            'manufacture_task_id' => $this->manufactureTask->id,
+            'position'            => 1,
+            'units_per_artefact'  => 1,
+            'standard_rate'       => 1,
+        ]);
+
+        $openSession = makePayBandSession($this->payBandJobOrderItemTask, 0, 1);
+        $openSession->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN, 'started_at' => now()->subMinute(), 'ended_at' => null, 'break_minutes' => 0]);
+
+        $closed = CloseManufactureTaskSession::make()->action($openSession, ['quantity_made' => 1])->refresh();
+
+        expect((float) $closed->standard_rate)->toBe(1.0)
+            ->and($closed->paidHours())->toBeLessThan(0.1)
+            ->and($closed->is_under_target)->toBeFalse();
+    });
+
     test('a session closed below its step target is flagged and a manager logs the reason', function () {
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
