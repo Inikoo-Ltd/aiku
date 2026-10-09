@@ -115,16 +115,6 @@ class IndexWebsitePageViews extends OrgAction
         };
     }
 
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        abort_unless($shop->website, 404);
-
-        $this->website = $shop->website;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($this->website);
-    }
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inVisitor(Organisation $organisation, Shop $shop, WebsiteVisitor $websiteVisitor, ActionRequest $request): LengthAwarePaginator
     {

@@ -175,7 +175,7 @@ class IndexOrgSuppliers extends OrgAction
                 'title'       => '(' . $this->parent->code . ') ' . __('Suppliers'),
                 'pageHead'    => [
                     'title' => $title,
-                    'model' => $this->parent->code,
+                    'model' => $isAgent ? null : $this->parent->code,
                     'icon'  => [
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'title' => $title,

@@ -26,6 +26,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -185,7 +186,7 @@ class IndexOrgSupplierProducts extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
+                ->withLabelRecord($parent instanceof Organisation && $parent->type === OrganisationTypeEnum::AGENT ? [__('Product'), __('Products')] : [__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
@@ -239,10 +240,10 @@ class IndexOrgSupplierProducts extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $orgSupplierProducts, ActionRequest $request): Response
     {
-        $title         = __('Supplier Products');
+        $title         = $this->parent instanceof Organisation && $this->parent->type === OrganisationTypeEnum::AGENT ? __('Products') : __('Supplier Products');
         $icon          = [
             'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier Products'),
+            'title' => $title,
         ];
         $subNavigation = null;
         $afterTitle    = null;
@@ -277,7 +278,7 @@ class IndexOrgSupplierProducts extends OrgAction
                 'title'       => match (true) {
                     $this->parent instanceof OrgSupplier => '('.$this->parent->supplier->code.') '.__('Supplier Products'),
                     $this->parent instanceof OrgAgent    => '('.$this->parent->agent->organisation->code.') '.__('Supplier Products'),
-                    default                              => __('Supplier Products'),
+                    default                              => $title,
                 },
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
@@ -309,12 +310,13 @@ class IndexOrgSupplierProducts extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (array $routeParameters = []) {
+        $headCrumbLabel = Organisation::where('slug', Arr::get($routeParameters, 'organisation'))->value('type') === OrganisationTypeEnum::AGENT ? __('Products') : __('Supplier Products');
+        $headCrumb      = function (array $routeParameters = []) use ($headCrumbLabel) {
             return [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'label' => __('Supplier Products'),
+                        'label' => $headCrumbLabel,
                         'icon'  => 'fal fa-bars',
                         'route' => $routeParameters,
                     ],

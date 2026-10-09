@@ -19,7 +19,7 @@ use App\Actions\Web\Seo\UI\ShowSeoBacklinks;
 use App\Actions\Web\Seo\UI\ShowSeoCompetitors;
 use App\Actions\Web\Seo\UI\ShowSeoKeywords;
 use App\Actions\Web\Website\UI\ShowSeoDashboard;
-use App\Actions\Web\WebsiteNotFoundPath\UI\IndexWebsiteNotFoundPaths;
+use App\Actions\Web\Website\UI\RedirectToSeoDashboardTab;
 use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
 use Illuminate\Support\Facades\Route;
 
@@ -113,14 +113,14 @@ Route::prefix('{shop}')->name('show.')
             ->name("seo.")
             ->group(function () {
                 Route::get('', ShowSeoDashboard::class)->name('dashboard');
-                Route::get('visitors', [IndexWebsiteVisitors::class, 'inSeo'])->name('visitors.index');
+                Route::get('visitors', RedirectToSeoDashboardTab::class)->name('visitors.index');
                 Route::get('visitors/webpages/{webpage}', [IndexWebsiteVisitors::class, 'inSeoWebpage'])->name('visitors.webpage')->withoutScopedBindings();
-                Route::get('page-views', IndexWebsitePageViews::class)->name('page_views.index');
+                Route::get('page-views', RedirectToSeoDashboardTab::class)->name('page_views.index');
                 Route::get('page-views/visitors/{websiteVisitor}', [IndexWebsitePageViews::class, 'inVisitor'])->name('page_views.visitor')->withoutScopedBindings();
         Route::get('site-audit', ShowSiteAudit::class)->name('site_audit.show');
         Route::get('site-audit/issues/{issueType}', IndexSiteAuditIssuePages::class)->name('site_audit.issue');
         Route::get('site-audit/suggestions', IndexSeoContentSuggestions::class)->name('site_audit.suggestions');
-        Route::get('missing-pages', IndexWebsiteNotFoundPaths::class)->name('not_found.index');
+        Route::get('missing-pages', RedirectToSeoDashboardTab::class)->name('not_found.index');
         Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
         Route::get('backlinks', ShowSeoBacklinks::class)->name('backlinks.show');
         Route::get('competitors', ShowSeoCompetitors::class)->name('competitors.show');

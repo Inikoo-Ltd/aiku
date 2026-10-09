@@ -27,6 +27,7 @@ type PageViewRow = {
 
 defineProps<{
     data: object
+    tab?: string
 }>()
 
 const routeParams = route().params as Record<string, string>
@@ -68,7 +69,7 @@ const pageTypeLabel = (pageType: string | null) => pageType ? pageType.charAt(0)
 </script>
 
 <template>
-    <Table :resource="data">
+    <Table :resource="data" :name="tab">
         <template #cell(viewed_at)="{ item: pageView }: { item: PageViewRow }">
             <span class="whitespace-nowrap tabular-nums text-gray-700">{{ useFormatTime(pageView.viewed_at, { formatTime: "short-datetime" }) }}</span>
         </template>

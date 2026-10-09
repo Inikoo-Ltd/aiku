@@ -199,17 +199,6 @@ class IndexWebsiteVisitors extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inSeo(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        abort_unless($shop->website, 404);
-
-        $this->website = $shop->website;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($this->website);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
     public function inSeoWebpage(Organisation $organisation, Shop $shop, Webpage $webpage, ActionRequest $request): LengthAwarePaginator
     {
         abort_unless($shop->website && $webpage->website_id === $shop->website->id, 404);
