@@ -659,7 +659,7 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
-        $pageTitle = $this->isSentView ? __('Sent to :partner', ['partner' => $this->orgPartner->partner->name]) : __('Ongoing PO');
+        $pageTitle = $this->isSentView ? __('Orders at :partner factory', ['partner' => $this->orgPartner->partner->name]) : __('Basket');
         $pageIcon  = $this->isSentView ? 'fa-paper-plane' : 'fa-shopping-basket';
 
         return Inertia::render(
@@ -673,7 +673,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                         'title' => $pageTitle,
                     ],
                     'model'         => $this->orgPartner->partner->name,
-                    'title'         => $this->isSentView ? __('Sent') : __('Ongoing PO'),
+                    'title'         => $this->isSentView ? __('Orders') : __('Basket'),
                     'actions'       => [
                         [
                             'type'  => 'button',
@@ -767,7 +767,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                             'name'       => $this->isSentView ? 'grp.org.procurement.org_partners.show.shopping_list.sent' : 'grp.org.procurement.org_partners.show.shopping_list.index',
                             'parameters' => $routeParameters,
                         ],
-                        'label' => $this->isSentView ? __('Sent') : __('Ongoing PO'),
+                        'label' => $this->isSentView ? __('Orders') : __('Basket'),
                         'icon'  => $this->isSentView ? 'fal fa-paper-plane' : 'fal fa-shopping-basket',
                     ],
                 ],

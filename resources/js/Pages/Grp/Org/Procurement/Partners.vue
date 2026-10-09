@@ -244,7 +244,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 										item.type === 'stock_delivery'
 											? ctrans('Stock delivery')
 											: item.type === 'shopping_list'
-												? ctrans('Ongoing PO')
+												? ctrans('Basket')
 												: ctrans('Purchase order')
 									" />
 								<div class="min-w-0 flex-1">
@@ -319,7 +319,7 @@ const createPurchaseOrder = (partner: PartnerCard) => {
 						)
 					"
 					class="ml-auto whitespace-nowrap text-gray-500 hover:text-gray-900 hover:underline">
-					{{ ctrans("Ongoing PO") }}
+					{{ ctrans("Basket") }}
 				</Link>
 				<Link
 					v-else-if="olderPurchaseOrders(partner)"
