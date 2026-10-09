@@ -6058,3 +6058,58 @@ test('EPR flow lines classify received stock deliveries and dispatched delivery 
         ->where('completeness.rows.0.units_out', 24)
         ->where('completeness.rows.0.share', 100));
 });
+
+test('the UK packaging workbook loads as legacy packaging per trade unit, own brand by code prefix and candle glass left out', function () {
+    $sko = function (string $code, int $units, ?string $tariff = null) {
+        $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, StoreStock::make()->action($this->group, Stock::factory()->definition()));
+        $orgStock->update(['code' => $code]);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => $units]]);
+
+        return $tradeUnit;
+    };
+    $prefix  = 'Lg'.Str::random(5);
+    $bowl    = $sko("$prefix-01", 4);
+    $candle  = $sko("X$prefix-02", 1);
+    $nothing = $sko("X$prefix-03", 1);
+
+    $book   = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet  = $book->getActiveSheet()->setTitle('Products');
+    $sheet->fromArray([
+        ['Sku', 'SKO description', 'Tariff code', 'SKO weight (Kg)', 'Units per SKO', 'Weight shown in website (Kg)', 'Locations', 'Plastic (G)', 'Glass (G)', 'Paper (G)', 'aluminium (G)', 'Steel (G)', 'Wood (G)', 'Other (G)'],
+        ["$prefix-01", 'Bowls', '6912', null, 4, null, null, 8, 0, 100, 0, 0, 0, 0],
+        ["X$prefix-02", 'Candle', '3406000000', null, 1, null, null, 0, 1000, 112, 0, 0, 0, 0],
+        ["X$prefix-03", 'Nothing', null, null, 1, null, null, 0, 0, 0, 0, 0, 0, 0],
+        ['NOT-IN-AIKU-'.$prefix, 'Missing', null, null, 1, null, null, 5, 0, 0, 0, 0, 0, 0],
+    ]);
+    $book->createSheet()->setTitle('AWA-Family')->fromArray([[$prefix]]);
+    $path = tempnam(sys_get_temp_dir(), 'epr').'.xlsx';
+    (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($path);
+
+    $stats = \App\Actions\Goods\Packaging\ImportLegacyUkPackaging::run($this->organisation, $path, true);
+    unlink($path);
+
+    $bowlFamily   = $bowl->refresh()->packagingFamily()->with('components')->first();
+    $candleFamily = $candle->refresh()->packagingFamily()->with('components')->first();
+
+    expect($stats['families'])->toBe(2)
+        ->and($stats['no_weights'])->toBe(1)
+        ->and($stats['candle_glass_removed'])->toBe(["X$prefix-02"])
+        ->and($stats['sko_not_in_aiku'])->toBe(['NOT-IN-AIKU-'.$prefix])
+        ->and($nothing->refresh()->packaging_family_id)->toBeNull()
+        ->and($bowlFamily->source)->toBe(\App\Enums\Goods\Packaging\PackagingFamilySourceEnum::LEGACY_UK_2026)
+        ->and($bowlFamily->brand_ownership)->toBe(\App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum::OWN_BRAND)
+        ->and($bowlFamily->components->mapWithKeys(fn ($component) => [$component->material_category->value => (float)$component->weight_g])->sortKeys()->all())->toBe(['paper_cardboard' => 25.0, 'plastic' => 2.0])
+        ->and($candleFamily->brand_ownership)->toBe(\App\Enums\Goods\Packaging\PackagingBrandOwnershipEnum::UNBRANDED)
+        ->and($candleFamily->components->map(fn ($component) => [$component->material_category->value, (float)$component->weight_g])->all())->toBe([['paper_cardboard', 112.0]]);
+
+    \App\Actions\Goods\Packaging\ImportLegacyUkPackaging::make()->handle($this->organisation, (function () use ($book) {
+        $path = tempnam(sys_get_temp_dir(), 'epr').'.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($path);
+
+        return $path;
+    })(), true);
+
+    expect($bowl->refresh()->packaging_family_id)->toBe($bowlFamily->id)
+        ->and($bowlFamily->components()->count())->toBe(2);
+});
