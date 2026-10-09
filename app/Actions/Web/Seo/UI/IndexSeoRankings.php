@@ -73,6 +73,7 @@ class IndexSeoRankings extends OrgAction
 
         $this->attachSearchConsolePositions($shop, $rankings);
         $this->attachCompetitorPositions($rankings);
+        $this->attachWatchesAndAlerts($rankings);
 
         return $rankings;
     }
@@ -95,6 +96,34 @@ class IndexSeoRankings extends OrgAction
             ->pluck('position', 'keyword');
 
         $rankings->getCollection()->each(fn (SeoTrackedKeyword $trackedKeyword) => $trackedKeyword->setAttribute('search_console_position', $positions[$trackedKeyword->keyword] ?? null));
+    }
+
+    private function attachWatchesAndAlerts(LengthAwarePaginator $rankings): void
+    {
+        $ids = $rankings->getCollection()->pluck('id')->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        $watched = DB::table('seo_keyword_watchers')
+            ->whereIn('tracked_keyword_id', $ids)
+            ->where('user_id', request()->user()?->id)
+            ->pluck('tracked_keyword_id')
+            ->flip();
+
+        $alerts = DB::table('seo_ranking_alerts')
+            ->join('seo_tracked_keywords', function ($join) {
+                $join->on('seo_tracked_keywords.id', '=', 'seo_ranking_alerts.tracked_keyword_id')
+                    ->whereRaw('seo_ranking_alerts.date = seo_tracked_keywords.last_checked_at::date');
+            })
+            ->whereIn('seo_ranking_alerts.tracked_keyword_id', $ids)
+            ->pluck('seo_ranking_alerts.reason', 'seo_ranking_alerts.tracked_keyword_id');
+
+        $rankings->getCollection()->each(function (SeoTrackedKeyword $trackedKeyword) use ($watched, $alerts) {
+            $trackedKeyword->setAttribute('is_watched', $watched->has($trackedKeyword->id));
+            $trackedKeyword->setAttribute('alert', $alerts->get($trackedKeyword->id));
+        });
     }
 
     private function attachCompetitorPositions(LengthAwarePaginator $rankings): void

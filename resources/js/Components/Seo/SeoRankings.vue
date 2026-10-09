@@ -7,7 +7,13 @@
 import { computed, ref } from "vue"
 import { Link, router, usePage } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
+import Dialog from "primevue/dialog"
 import Tag from "primevue/tag"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBell } from "@fal"
+import { faBell as fasBell } from "@fas"
+import SeoKeywordHistoryChart from "@/Components/Seo/SeoKeywordHistoryChart.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -53,6 +59,10 @@ type RankingRow = {
     intent: string | null
     search_console_position: number | null
     competitor_positions: CompetitorPosition[]
+    is_watched: boolean
+    alert: string | null
+    history_route: routeType
+    watch_route: routeType
 }
 
 type RankingsData = {
@@ -67,6 +77,8 @@ type RankingsData = {
 }
 
 defineOptions({ inheritAttrs: false })
+
+library.add(faBell, fasBell)
 
 const props = defineProps<{
     data?: RankingsData
@@ -190,6 +202,26 @@ const change = (ranking: RankingRow) => {
     return difference > 0
         ? { text: `+${difference}`, class: "text-green-700" }
         : { text: `${difference}`, class: "text-red-700" }
+}
+
+const historyFor = ref<RankingRow | null>(null)
+
+const watching = ref<number | null>(null)
+
+const toggleWatch = (ranking: RankingRow) => {
+    router.post(route(ranking.watch_route.name, ranking.watch_route.parameters), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        only: [props.tab],
+        onStart: () => watching.value = ranking.id,
+        onFinish: () => watching.value = null,
+    })
+}
+
+const alertLabels: Record<string, string> = {
+    left_top_10: ctrans("Left the top 10"),
+    lost: ctrans("Out of the results"),
+    dropped: ctrans("Dropped"),
 }
 
 const urlPath = (url: string) => {
@@ -335,7 +367,26 @@ const urlPath = (url: string) => {
             <div class="mt-4">
                 <Table :resource="data.table" :name="tab">
                     <template #cell(keyword)="{ item: ranking }: { item: RankingRow }">
-                        <div class="text-gray-900">{{ ranking.keyword }}</div>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="text-left text-gray-900 underline-offset-2 hover:underline focus-visible:underline"
+                                v-tooltip="ctrans('Position history')"
+                                @click="historyFor = ranking">
+                                {{ ranking.keyword }}
+                            </button>
+                            <button
+                                type="button"
+                                :aria-pressed="ranking.is_watched"
+                                :disabled="watching === ranking.id"
+                                :aria-label="ranking.is_watched ? ctrans('Stop watching :keyword', { keyword: ranking.keyword }) : ctrans('Watch :keyword', { keyword: ranking.keyword })"
+                                v-tooltip="ranking.is_watched ? ctrans('You are told when it falls. Click to stop.') : ctrans('Watch: be told by notification and email when it leaves the top 10 or drops :places places', { places: 5 })"
+                                class="shrink-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]"
+                                :class="ranking.is_watched ? 'text-[--app-accent]' : 'text-gray-300 hover:text-gray-500'"
+                                @click="toggleWatch(ranking)">
+                                <FontAwesomeIcon :icon="ranking.is_watched ? fasBell : faBell" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
                         <div class="text-xs text-gray-500">{{ ranking.country_code }} · {{ ranking.device === "mobile" ? ctrans("Mobile") : ctrans("Desktop") }} · {{ ranking.frequency === "daily" ? ctrans("Daily") : ctrans("Weekly") }}</div>
                     </template>
 
@@ -346,6 +397,7 @@ const urlPath = (url: string) => {
                     <template #cell(change)="{ item: ranking }: { item: RankingRow }">
                         <span v-if="change(ranking)" class="tabular-nums" :class="change(ranking)!.class">{{ change(ranking)!.text }}</span>
                         <span v-else class="text-gray-400">-</span>
+                        <Tag v-if="ranking.alert" severity="danger" :value="alertLabels[ranking.alert] ?? ranking.alert" class="ml-1" />
                     </template>
 
                     <template #cell(search_console_position)="{ item: ranking }: { item: RankingRow }">
@@ -396,5 +448,9 @@ const urlPath = (url: string) => {
                 </Table>
             </div>
         </template>
+
+        <Dialog :visible="historyFor !== null" modal :header="historyFor ? ctrans('Google position of :keyword', { keyword: historyFor.keyword }) : ''" :style="{ width: 'min(56rem, 95vw)' }" @update:visible="(visible: boolean) => { if (!visible) historyFor = null }">
+            <SeoKeywordHistoryChart v-if="historyFor" :key="historyFor.id" :historyRoute="historyFor.history_route" />
+        </Dialog>
     </div>
 </template>

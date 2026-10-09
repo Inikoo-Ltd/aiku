@@ -540,11 +540,14 @@ linked from every SEO dashboard: the figures and the budget are the group's.
 Found on 9 October 2026 by comparing this plan with the marketing team's research ("AIKU SEO
 Strategy (Research)", 8 October 2026). None is built; each needs the team's go-ahead.
 
-- **Position history and alerts.** `seo_keyword_rankings` keeps every check, but the Rankings tab
-  shows only the latest position and its change. Add a position chart per keyword (with the Search
-  Console position beside it), and alerts when a keyword the team marks as important drops out of
-  the top 10 or loses more than a set number of places, as a notification in Aiku and an email.
-  No API cost.
+- **Position history and alerts.** Built on 9 October 2026. In the Rankings tab a keyword opens its
+  position chart (`GetSeoKeywordHistory`): every check, the competitors from the same checks and the
+  Search Console average of the same query per day, position 1 at the top and a gap where the
+  website was not in the results read. Anyone can watch a keyword (the bell, `seo_keyword_watchers`).
+  After each check `StoreSerpResult` writes a `seo_ranking_alerts` row when the keyword left the top
+  10, dropped out of the results read, or fell 5 places or more (`SeoRankingAlert::DROP_PLACES`);
+  the row shows as a tag in the table, and once the checks are collected `NotifySeoRankingAlerts`
+  sends each watcher one notification per shop, in the bell and by email. No API cost.
 - **Tracking depth per keyword.** Checks read the top 30 weekly or the top 20 daily. The research
   recommends daily top 100, about $486 a month for 2,700 keywords, against about $65 for top 100
   weekly. Let the team choose the depth per keyword (20, 30 or 100), so positions 31 to 100 are

@@ -562,6 +562,7 @@ use App\Actions\Web\Seo\RequestSeoContentSuggestions;
 use App\Actions\Web\Seo\DeleteSeoTrackedKeyword;
 use App\Actions\Web\Seo\RunSeoBacklinkFetch;
 use App\Actions\Web\Seo\RunSeoRankChecks;
+use App\Actions\Web\Seo\ToggleSeoKeywordWatch;
 use App\Actions\Web\Seo\UpdateSeoApiBudget;
 use App\Actions\Web\Seo\StoreSeoCompetitor;
 use App\Actions\Web\Seo\StoreSeoTrackedKeyword;
@@ -1319,6 +1320,7 @@ Route::post('group/{group:id}/organisation', StoreOrganisation::class)->name('or
 Route::patch('website-not-found-path/{websiteNotFoundPath:id}/ignored', UpdateWebsiteNotFoundPathIgnored::class)->name('website_not_found_path.ignored.update');
 Route::patch('seo-tracked-keyword/{seoTrackedKeyword:id}', UpdateSeoTrackedKeyword::class)->name('seo_tracked_keyword.update');
 Route::delete('seo-tracked-keyword/{seoTrackedKeyword:id}', DeleteSeoTrackedKeyword::class)->name('seo_tracked_keyword.delete');
+Route::post('seo-tracked-keyword/{seoTrackedKeyword:id}/watch', ToggleSeoKeywordWatch::class)->name('seo_tracked_keyword.watch');
 Route::delete('seo-competitor/{seoCompetitor:id}', DeleteSeoCompetitor::class)->name('seo_competitor.delete');
 Route::post('webpage/{webpage:id}/seo-content-suggestions', RequestSeoContentSuggestions::class)->name('webpage.seo_content_suggestions.store')->withoutScopedBindings();
 Route::patch('seo-content-suggestion/{seoContentSuggestion:id}/accept', AcceptSeoContentSuggestion::class)->name('seo_content_suggestion.accept');

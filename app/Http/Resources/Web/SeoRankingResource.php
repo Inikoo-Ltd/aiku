@@ -30,6 +30,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $intent
  * @property float|null $search_console_position
  * @property array|null $competitor_positions
+ * @property bool|null $is_watched
+ * @property string|null $alert
  */
 class SeoRankingResource extends JsonResource
 {
@@ -55,6 +57,10 @@ class SeoRankingResource extends JsonResource
             'intent'                  => $this->intent,
             'search_console_position' => $this->search_console_position !== null ? (float) $this->search_console_position : null,
             'competitor_positions'    => $this->competitor_positions ?? [],
+            'is_watched'              => (bool) $this->is_watched,
+            'alert'                   => $this->alert,
+            'history_route'           => ['name' => 'grp.json.seo_tracked_keyword.history', 'parameters' => [$this->id]],
+            'watch_route'             => ['name' => 'grp.models.seo_tracked_keyword.watch', 'parameters' => [$this->id]],
         ];
     }
 }
