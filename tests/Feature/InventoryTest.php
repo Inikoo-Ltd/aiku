@@ -158,6 +158,7 @@ use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Inventory\OrgStock\DiscontinueGroupOrgStocks;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
+use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
@@ -4060,6 +4061,23 @@ describe('discontinue preview', function () {
             ->and($preview[0]['webpages']['count'])->toBe(0)
             ->and($preview[0]['orders']['count'])->toBe(0)
             ->and($preview[0]['is_exclusive'])->toBeFalse();
+    });
+
+    test('preview lists the product web page with its state and public link', function () {
+        if (!$this->shop->website) {
+            createWebsite($this->shop);
+            $this->shop->refresh();
+        }
+        $this->product->refresh();
+        $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+        $orgStock = $this->product->orgStocks()->first();
+
+        $pages = collect(GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id])[0]['webpages']['pages']);
+        $page  = $pages->firstWhere('url', $webpage->url);
+
+        expect($page)->not->toBeNull()
+            ->and($page['state'])->toBe($webpage->state->value)
+            ->and($page['canonical_url'])->toBe($webpage->getCanonicalUrl());
     });
 
     test('preview route answers for the warehouse', function () {
