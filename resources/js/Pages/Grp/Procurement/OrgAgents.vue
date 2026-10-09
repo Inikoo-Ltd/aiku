@@ -6,10 +6,8 @@
 
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -21,7 +19,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faPeopleArrows,
 	faShoppingBasket,
-	faPlus,
 	faTruckContainer,
 	faBoxes,
 	faClipboardList,
@@ -30,7 +27,6 @@ import {
 library.add(
 	faPeopleArrows,
 	faShoppingBasket,
-	faPlus,
 	faTruckContainer,
 	faBoxes,
 	faClipboardList,
@@ -59,7 +55,6 @@ interface AgentCard {
 	country_name: string | null
 	currency_code: string | null
 	suppliers: number
-	open_agent_order: string | null
 	last_submitted_at: string | null
 	current: CurrentItem[]
 	pipeline: {
@@ -83,7 +78,6 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	currency_code: string
-	can_create_orders?: boolean
 	agents: AgentCard[]
 	cover?: Record<number, CoverBucket[]>
 }>()
@@ -182,28 +176,6 @@ const toggle = (agent: AgentCard, type: string) =>
 
 const visibleItems = (agent: AgentCard, type: CurrentItem["type"]) =>
 	isExpanded(agent, type) ? itemsOf(agent, type) : itemsOf(agent, type).slice(0, ROWS_SHOWN)
-
-const creatingFor = ref<number | null>(null)
-
-const createAgentOrder = (agent: AgentCard) => {
-	router.post(
-		route("grp.models.org-agent.agent-order.store", { orgAgent: agent.id }),
-		{},
-		{
-			onStart: () => (creatingFor.value = agent.id),
-			onFinish: () => (creatingFor.value = null),
-			onError: (errors) => {
-				notify({
-					title: ctrans("No agent order created"),
-					text:
-						Object.values(errors)[0] ??
-						ctrans("Something went wrong, please try again"),
-					type: "error",
-				})
-			},
-		}
-	)
-}
 </script>
 
 <template>
@@ -341,6 +313,17 @@ const createAgentOrder = (agent: AgentCard) => {
 									</tr>
 								</tbody>
 							</table>
+							<Link
+								:href="
+									agentUrl(
+										agent,
+										'grp.org.procurement.org_agents.show.shopping.dashboard'
+									)
+								"
+								class="flex items-center gap-1.5 border-t border-gray-200 px-2 py-1.5 font-medium text-gray-700 hover:bg-gray-50 hover:underline">
+								<FontAwesomeIcon icon="fal fa-shopping-basket" fixed-width />
+								{{ ctrans("Review and reorder") }}
+							</Link>
 						</div>
 						<div v-else class="text-xs text-emerald-700">
 							{{ ctrans("Nothing running out") }}
@@ -501,50 +484,6 @@ const createAgentOrder = (agent: AgentCard) => {
 						}}</span>
 					</div>
 				</section>
-			</div>
-
-			<div class="flex items-center gap-3 border-t border-gray-100 px-4 py-3">
-				<Link
-					v-if="agent.status"
-					:href="
-						agentUrl(agent, 'grp.org.procurement.org_agents.show.shopping.dashboard')
-					">
-					<Button
-						:label="ctrans('Go shopping')"
-						icon="fal fa-shopping-basket"
-						type="tertiary"
-						size="s"
-						class="whitespace-nowrap" />
-				</Link>
-				<Link
-					v-if="can_create_orders && agent.open_agent_order"
-					:href="
-						route('grp.org.procurement.org_agents.show.agent_orders.show', [
-							organisation,
-							agent.slug,
-							agent.open_agent_order,
-						])
-					">
-					<Button
-						:label="
-							ctrans('Add items to :reference', {
-								reference: agent.open_agent_order,
-							})
-						"
-						icon="fal fa-plus"
-						type="tertiary"
-						size="s"
-						class="whitespace-nowrap" />
-				</Link>
-				<Button
-					v-else-if="can_create_orders && agent.status"
-					:label="ctrans('New agent order')"
-					icon="fal fa-plus"
-					type="tertiary"
-					size="s"
-					:loading="creatingFor === agent.id"
-					class="whitespace-nowrap"
-					@click="createAgentOrder(agent)" />
 			</div>
 		</div>
 

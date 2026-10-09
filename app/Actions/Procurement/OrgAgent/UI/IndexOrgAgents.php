@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\OrgAgent\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\AgentOrder\ResolveAgentOrderReference;
 use App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets;
 use App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -77,7 +76,6 @@ class IndexOrgAgents extends OrgAction
             'country_name'         => $location[1] ?? null,
             'currency_code'        => $agent->currency?->code,
             'suppliers'            => (int) $orgAgent->stats?->number_org_suppliers,
-            'open_agent_order'     => ResolveAgentOrderReference::make()->openAgentOrderReference($orgAgent),
             'last_submitted_at'    => $this->lastSubmittedAt($orgAgent),
             'pipeline'             => $this->pipeline($orgAgent),
             'current'              => $this->agentOrderRows($orgAgent)->concat($this->stockDeliveryRows($orgAgent))->values()->all(),
@@ -260,7 +258,6 @@ class IndexOrgAgents extends OrgAction
                     ],
                 ],
                 'currency_code'     => $this->organisation->currency->code,
-                'can_create_orders' => $this->canEdit,
                 'agents'            => $orgAgents->map(fn (OrgAgent $orgAgent) => $this->agentCard($orgAgent))->all(),
                 'cover'             => Inertia::defer(fn () => $this->coverByAgent($orgAgents)),
             ],
