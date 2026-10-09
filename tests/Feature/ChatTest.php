@@ -8907,7 +8907,7 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/p3?format=metadata&metadataHeaders=From'));
     \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), '/messages/p3?format=full'));
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/p1?format=full'));
-    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'q=newer_than%3A12m') && str_contains(urldecode($request->url()), '-category:promotions'));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'q=newer_than%3A12m') && str_contains(urldecode($request->url()), '-category:promotions') && str_contains(urldecode($request->url()), '-subject:"transaction receipt"'));
     expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2', 'p3'])->count())->toBe(2)
         ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBe('page-2');
     \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(1);
@@ -8946,11 +8946,11 @@ test('the archive reads more of a mailbox an hour at night and at weekends, when
     $at('2026-10-06 10:00');
     expect($mailbox::readsPerHour())->toBe(2000);
     $at('2026-10-06 04:59');
-    expect($mailbox::readsPerHour())->toBe(10000);
+    expect($mailbox::readsPerHour())->toBe(6000);
     $at('2026-10-06 18:00');
-    expect($mailbox::readsPerHour())->toBe(10000);
+    expect($mailbox::readsPerHour())->toBe(6000);
     $at('2026-10-04 12:00');
-    expect($mailbox::readsPerHour())->toBe(10000);
+    expect($mailbox::readsPerHour())->toBe(6000);
 
     \Illuminate\Support\Carbon::setTestNow();
 });
