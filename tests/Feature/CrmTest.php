@@ -1771,6 +1771,30 @@ test('web registration files the tax number under the contact address country, n
         ->and($customer->taxNumber->number)->toBe('04851400400');
 });
 
+test('web registration rejects a bare dial code when the shop requires a phone number', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    $originalSettings = $this->shop->settings;
+    $this->shop->update(['settings' => data_set($originalSettings, 'registration.require_phone_number', true)]);
+
+    auth()->logout();
+    post(route('retina.register_from_standalone.store'), [
+        'contact_name'                  => 'Dial Code Only',
+        'email'                         => 'registration-dial-code@example.com',
+        'password'                      => 'password',
+        'phone'                         => '+46',
+        'is_opt_in'                     => true,
+        'is_whatsapp_newsletter_opt_in' => false,
+        'contact_address'               => Address::factory()->definition(),
+    ])->assertSessionHasErrors('phone');
+
+    expect(Customer::where('email', 'registration-dial-code@example.com')->exists())->toBeFalse();
+
+    $this->shop->update(['settings' => $originalSettings]);
+});
+
 test('a picked tax number country wins over the customer address country', function () {
     $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
         'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => Country::where('code', 'IT')->first()->id, 'country_code' => 'IT']),
