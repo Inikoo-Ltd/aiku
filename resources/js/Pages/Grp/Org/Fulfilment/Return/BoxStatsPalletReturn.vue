@@ -697,7 +697,7 @@ const base64HtmlToPdf = async (base64: string, index) => {
 								class="pointer-events-none inline-block h-5 w-5 transform bg-white rounded-full shadow transition duration-200 ease-in-out" />
 						</Switch>
 						<SwitchLabel as="span" class="ml-3">
-							{{ ctrans("Collection") }}
+							{{ ctrans("For collection") }}
 						</SwitchLabel>
 					</SwitchGroup>
 					<div v-else class="border-l-4 border-indigo-300 bg-indigo-50 px-2 py-0.5">

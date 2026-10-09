@@ -40,7 +40,7 @@ enum ChargeTypeEnum: string
             'gift_message'    => __('Gift message'),
             'other'           => __('Other'),
             'marketplace_fee' => __('Marketplace fee'),
-            'collection'      => __('Collection'),
+            'collection'      => __('For collection'),
             'discretionary'   => __('Discretionary'),
 
         ];

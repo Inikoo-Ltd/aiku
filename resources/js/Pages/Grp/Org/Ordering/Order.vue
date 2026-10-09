@@ -2034,7 +2034,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" :disabled="isPreOrderLocked" />
-                        <span class="text-sm text-gray-500">{{ ctrans("Collection") }}</span>
+                        <span class="text-sm text-gray-500">{{ ctrans("For collection") }}</span>
                     </div>
 
                     <div class="pl-1 pb-2 flex items-start w-full gap-x-2" v-if="box_stats?.customer?.tax_number?.number">
