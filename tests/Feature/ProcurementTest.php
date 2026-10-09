@@ -2674,7 +2674,10 @@ test('UI Index org agents', function () {
         $page
             ->component('Procurement/OrgAgents')
             ->has('title')
-            ->has('breadcrumbs', 3);
+            ->has('breadcrumbs', 3)
+            ->where('agents', fn ($agents) => collect($agents)->contains(fn ($agent) => $agent['slug'] === $this->orgAgent->slug && is_array($agent['current'])))
+            ->missing('cover')
+            ->loadDeferredProps(fn (AssertableInertia $page) => $page->has('cover'));
     });
 });
 
