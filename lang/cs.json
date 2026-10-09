@@ -31,7 +31,7 @@
     ":_fieldName of the Master": ":_fieldName Master",
     ":_fieldname stops following master": ":_fieldname přestává sledovat Master",
     ":_fieldname will follow master": ":_fieldname bude sledovat Master",
-    ":_order items ordered; :_dispatched items shipped": ":_objednat položky objednané; :_odesláno položky odeslané",
+    ":_order items ordered; :_dispatched items shipped": "Objednané položky: :_order; odeslané položky: :_dispatched",
     ":count kept, restored when back in stock": ":count rezervováno, doplníme po naskladnění",
     ":mailshotSubject is still in process": ":mailshotSubject se stále zpracovává",
     ":product has been added to favorites": ":product byl přidán do oblíbených",

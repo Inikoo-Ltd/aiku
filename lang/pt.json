@@ -34,7 +34,7 @@
     ":success products cloned successfully, :fails failed.": ":success produtos clonados com sucesso, :fails falharam.",
     ":timeCountdown left before link expires": ":timeCountdown restante antes do link expirar",
     ":total products cloned.": ":total produtos clonados.",
-    ":xcurrent of :xtarget products amount. Add :amountLeft to get free gift": "Adicione mais :amountLeft para receber a oferta gratuita",
+    ":xcurrent of :xtarget products amount. Add :amountLeft to get free gift": "Tem :xcurrent de :xtarget em produtos. Adicione mais :amountLeft para receber a oferta gratuita",
     "A free gift with orders over :amount": "Uma oferta gratuita em encomendas superiores a :amount",
     "A free gift with your order": "Uma oferta gratuita com a sua encomenda",
     "A fulfillment policy is a reusable template that sets a listing’s shipping services, costs, delivery options, and handling time so you don’t need to configure them manually for each item.": "Uma política de logística é um modelo reutilizável que define os serviços de envio, custos, opções de entrega e tempo de processamento de um anúncio, para que não precise de os configurar manualmente para cada item.",

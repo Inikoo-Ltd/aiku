@@ -40,7 +40,7 @@
     ":_fieldName of the Master": ":_fieldName-ul Master-ului",
     ":_fieldname stops following master": ":_fieldname nu mai urmărește master-ul",
     ":_fieldname will follow master": ":_fieldname va urma câmpul principal",
-    ":_order items ordered; :_dispatched items shipped": ":_comandați articolele comandate; :_expediate articole expediate",
+    ":_order items ordered; :_dispatched items shipped": "Articole comandate: :_order; articole expediate: :_dispatched",
     ":count day": ":count zi",
     ":count items waiting for CRM": ":count articole care așteaptă CRM",
     ":count items waiting for warehouse": ":count articole care așteaptă depozitul",

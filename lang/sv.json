@@ -4248,7 +4248,7 @@
     "Order any product in this department": "Beställ valfri produkt i den här avdelningen",
     "Order any product in this range": "Beställ valfri produkt i detta sortiment",
     "Order any product in this sub-department": "Beställ valfri produkt i denna underavdelning",
-    "Order before :_selectedDate will be marked": "Beställning före :_selectedDatum kommer att markeras",
+    "Order before :_selectedDate will be marked": "Beställningar före :_selectedDate kommer att markeras",
     "Order billing or delivery address is marked as forbidden": "Fakturerings- eller leveransadress för ordern är markerad som förbjuden",
     "Order cancellation request has been accepted.": "Begäran om annullering av order har godkänts.",
     "Order cancellation request has been rejected. Processed orders can not be cancelled": "Begäran om orderavbokning har avvisats. Bearbetade ordrar kan inte avbokas.",

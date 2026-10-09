@@ -23,7 +23,7 @@
     ":_fieldName of the Master": ":_fieldName головного елемента",
     ":_fieldname stops following master": ":_fieldname перестає слідувати за головним",
     ":_fieldname will follow master": ":_fieldname буде слідувати за головним",
-    ":_order items ordered; :_dispatched items shipped": ":_замовити замовлені товари; :_відправлені товари відправлені",
+    ":_order items ordered; :_dispatched items shipped": "Замовлено товарів: :_order; відправлено товарів: :_dispatched",
     ":count kept, restored when back in stock": ":count зарезервовано, поповнимо, коли з’явиться в наявності",
     ":mailshotSubject is still in process": ":mailshotSubject все ще в процесі обробки",
     ":n or more": ":n чи більше",
