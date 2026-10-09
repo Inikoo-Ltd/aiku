@@ -748,6 +748,8 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($stats['reporters'])->toBeArray()
         ->and($stats['assignees_total']['created'])->toBe($stats['created'])
         ->and(collect($stats['by_status'])->sum('total'))->toBe($stats['created'])
+        ->and(collect($stats['by_time_of_day'])->sum(2))->toBe($stats['created'])
+        ->and(ShowTicketsReports::make()->handle($this->group, '1w', timezone: 'Asia/Kuala_Lumpur')['by_time_of_day'])->not->toBe($stats['by_time_of_day'])
         ->and($stats['resolvers_total']['done'])->toBe($before['resolvers_total']['done']);
 
     $oldTicket = StoreTicket::make()->action($this->group, ['subject' => 'Old but resolved now', 'assignee_id' => $this->user->id]);
