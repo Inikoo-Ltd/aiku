@@ -1105,7 +1105,7 @@ const onChangeInsurance = async (val: boolean) => {
         <div class="md:hidden">
             <Button
                 @click="() => isModalProductListOpen = false"
-                :label="ctrans('Complete')"
+                :label="ctrans('Done')"
                 type="tertiary"
                 full
             />

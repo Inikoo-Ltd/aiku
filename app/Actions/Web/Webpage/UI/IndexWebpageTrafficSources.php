@@ -72,7 +72,7 @@ class IndexWebpageTrafficSources extends OrgAction
                 ->column(key: 'type', label: __('Source'), canBeHidden: false, sortable: true)
                 ->column(key: 'group', label: __('Channel'))
                 ->column(key: 'arrivals', label: __('Arrivals'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'share', label: __('Share'), align: 'right')
+                ->column(key: 'share', label: __('Share of total'), align: 'right')
                 ->column(key: 'first_arrivals', label: __('First visit'), sortable: true, align: 'right')
                 ->column(key: 'returning_arrivals', label: __('Returning'), sortable: true, align: 'right')
                 ->column(key: 'customers', label: __('Customers'), sortable: true, align: 'right')

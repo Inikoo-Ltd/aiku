@@ -362,7 +362,7 @@ const sortedAgents = computed(() => sortRows(props.stats.agents, "agents"))
 const topicColumns = [
 	{ key: "label", label: ctrans("Topic") },
 	{ key: "conversations", label: ctrans("Conversations") },
-	{ key: "share", label: ctrans("Share") },
+	{ key: "share", label: ctrans("Share of total") },
 	{ key: "unanswered", label: ctrans("Unanswered") },
 	{ key: "website", label: ctrans("Website") },
 	{ key: "email", label: ctrans("Email") },

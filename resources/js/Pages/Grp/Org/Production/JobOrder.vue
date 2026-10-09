@@ -229,7 +229,7 @@ function formatDuration(seconds: number) {
 const subJobStateLabels: Record<SubJob["state"], string> = {
     assigned: ctrans("Assigned"),
     in_progress: ctrans("In progress"),
-    complete: ctrans("Complete"),
+    complete: ctrans("Completed"),
 }
 
 const subJobStateClasses: Record<SubJob["state"], string> = {
