@@ -64,6 +64,7 @@ class StockDeliveryServiceInvoice extends Model implements HasMedia
     {
         return $this->belongsToMany(StockDelivery::class, 'stock_delivery_service_invoice_allocations')
             ->withPivot('amount')
-            ->withTimestamps();
+            ->withTimestamps()
+            ->orderBy('stock_delivery_service_invoice_allocations.id');
     }
 }

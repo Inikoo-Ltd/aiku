@@ -7344,7 +7344,7 @@ describe('partner shopping list', function () {
         expect($orderedIds)->toContain($item->id);
 
         $sentCount = fn () => collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
-            ->viewData('page')['props']['pageHead']['subNavigation'])->firstWhere('label', 'Sent')['number'];
+            ->viewData('page')['props']['pageHead']['subNavigation'])->firstWhere('label', 'Orders')['number'];
         $withPiece = $sentCount();
         $rest->forceDelete();
 
@@ -7738,7 +7738,8 @@ describe('partner shopping list', function () {
         $seller->update(['is_manufacturing_hub' => true]);
         $production = Production::where('organisation_id', $seller->id)->first()
             ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
-        $buyer        = $this->agent->organisation;
+        $buyer        = Organisation::where('code', 'prc2')->first()
+            ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
         $buyerPartner = OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $seller->id)->first()
             ?? StoreOrgPartner::make()->action($buyer, $seller);
         $buyerOrgStock = createOrgStocks($buyer, [$this->buyerOrgStock->stock])[0];
@@ -11519,7 +11520,7 @@ test('an org stock linked to several supplier products answers with its preferre
 
     $buckets       = GetPartnerStockCoverBuckets::make();
     $partnerCarton = (int) DB::selectOne(
-        'select '.(new ReflectionMethod($buckets, 'partnerCartonSkos'))->invoke($buckets).' as carton from org_stocks p, (select 1 as packed_in) os where p.id = ?',
+        'select '.(new ReflectionMethod($buckets, 'partnerCartonSkosSql'))->invoke($buckets).' as carton from org_stocks p, (select 1 as packed_in) os where p.id = ?',
         [$sellerStock->id]
     )->carton;
     $action        = IndexPurchaseOrderTransactions::make();
