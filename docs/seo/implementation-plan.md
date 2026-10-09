@@ -468,29 +468,24 @@ Similarweb API (licensed, priced) for competitor traffic before building it.
 
 ### 3.6 Top pages
 
-**Today.** The Webpages tab of the SEO dashboard lists webpages with Aiku's traffic for the
-dashboard interval and, since 1.1, Search Console clicks, impressions and position. It shows no
-comparison with an earlier period.
+Built on 9 October 2026. The Webpages tab of the SEO dashboard is now Top pages
+(`IndexWebpagesPerformance`).
 
-**Build.** Turn the Webpages tab into Top pages, one column group at a time as the data arrives:
-
-| Columns | Source | Can start |
-| --- | --- | --- |
-| Visitors, page views and their % change against the previous period of the same length | `webpage_time_series_records` | Now |
-| Search clicks, impressions and their % change, position and its change, number of queries | `search_console_page_days`, `search_console_page_queries` | Now |
-| Referring domains and backlinks | `seo_backlinks` (3.1) | With 3.1 |
-| AI prompts that cite the page, and by how many models | `seo_ai_citations` (3.3) | With 3.3 |
-
-- The previous period ends the day before the dashboard interval starts and has the same number of
-  days. Search Console data ends 3 days before today, so its comparison uses its own last day, not
-  today.
-- The change is shown in % with its direction, and as the absolute difference on hover, because a
-  page going from 2 visitors to 4 is +100% and means nothing. Hide the % below a minimum (for example
-  20 visitors or clicks in either period) and show only the difference.
-- Filters: Growing, Dropping, New (no traffic in the previous period), Lost (no traffic now).
-  Sorted by traffic by default; sorting by change finds the biggest drops.
-- The prompts column opens the list of prompts and models that cited the page; the referring
-  domains column opens the backlinks to the page.
+- For the dashboard interval and the period before it (same number of days, ending the day before
+  the interval starts): visitors and page views from `webpage_time_series_records`; Search Console
+  clicks, impressions and position from `search_console_page_days`, whose periods end on the last
+  day Search Console has data for, not today. With the interval set to All there is nothing to
+  compare with, and the table says so.
+- Each figure shows its change under it: a percentage, or the plain difference when both periods
+  are under 20 (`MIN_FOR_PERCENT`), with the previous value and the difference on hover. Position
+  shows the places gained or lost.
+- Filters Growing, Dropping, New (no visitors before) and Lost (no visitors now), on visitors.
+  Growing and Dropping sort by the change, so the biggest drops come first. Lost pages are listed
+  even with no traffic in the interval.
+- New columns: Queries (different Google searches the page appeared for) and Referring domains
+  (from `seo_backlinks` of 3.1, our own websites left out; that list holds one link per linking
+  domain plus the new, lost and broken ones, so it counts domains better than links).
+- Waits for 3.3: the AI prompts that cite each page.
 
 ### Phase 3 is done when
 
