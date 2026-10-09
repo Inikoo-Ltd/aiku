@@ -24,6 +24,7 @@ use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\Maintenance\Procurement\SplitAgentPurchaseOrders;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
+use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
@@ -9619,6 +9620,50 @@ test('stock put away from a delivery is valued at the line price, then at the la
         ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
 
     $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+test('a placed agent container is costed from its agent invoice and completes itself once our organisation adds the customs', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-COST-'.Str::random(6), [10, 20]);
+    $stockDelivery->updateQuietly(['agent_id' => $this->agent->id]);
+    $items = $stockDelivery->items()->orderBy('id')->get();
+    $items[0]->updateQuietly(['net_amount' => 100]);
+    $items[1]->updateQuietly(['net_amount' => 300]);
+
+    $invoice = StoreAgentInvoice::make()->handle($this->agent, $stockDelivery->refresh());
+    UpdateAgentInvoiceCharges::make()->handle($invoice, ['charges' => [
+        ['description' => 'Sea freight', 'type' => 'freight', 'amount' => 50],
+        ['description' => 'Commission', 'type' => 'other', 'amount' => 40],
+    ]]);
+
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    foreach ($stockDelivery->items()->orderBy('id')->get() as $index => $item) {
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => $index === 0 ? 10 : 15]);
+        SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($this, $item)->id]);
+    }
+
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+    $costs         = $stockDelivery->costs()->get();
+
+    expect((float) $items[0]->cost_items)->toBe(100.0)
+        ->and((float) $items[1]->cost_items)->toBe(225.0)
+        ->and((float) $costs->firstWhere('type', StockDeliveryCostTypeEnum::SHIPPING)->amount)->toBe(50.0)
+        ->and((float) $costs->where('type', StockDeliveryCostTypeEnum::EXTRA)->sum('amount'))->toBe(40.0)
+        ->and((float) $costs->firstWhere('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->amount)->toBe(490.0)
+        ->and($stockDelivery->is_costed)->toBeFalse();
+
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'amount' => 65, 'received_at' => now()]);
+
+    $stockDelivery = $stockDelivery->fresh();
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and((float) $items->sum('cost_extra'))->toEqualWithDelta(40, 0.001)
+        ->and((float) $items->sum('cost_shipping'))->toEqualWithDelta(50, 0.001)
+        ->and((float) $items->sum('cost_duties'))->toEqualWithDelta(65 / (float) ($stockDelivery->org_exchange ?: 1), 0.02)
+        ->and((float) $items[1]->cost_extra)->toBeGreaterThan((float) $items[0]->cost_extra)
+        ->and(ApplyAgentInvoiceCosting::run($stockDelivery))->toBeNull();
 });
 
 function placedStockDeliveryWithTwoLines($test, string $code): StockDelivery

@@ -33,8 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $goods_amount
  * @property string $charges_amount
  * @property string $total_amount
- * @property array<int, array{org_stock_id: int|null, code: string|null, name: string|null, quantity: float, unit_price: float, amount: float}> $lines
- * @property array<int, array{description: string, amount: float}> $charges
+ * @property array<int, array{stock_delivery_item_id: int, org_stock_id: int|null, code: string|null, name: string|null, quantity: float, unit_price: float, amount: float}> $lines
+ * @property array<int, array{description: string, type: string, amount: float}> $charges
  */
 class AgentInvoice extends Model
 {

@@ -25,6 +25,7 @@ use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AgentInvoice\UI\GetAgentContainerInvoiceData;
 use App\Actions\Traits\Authorisations\WithGoodsInBookInAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -72,8 +73,9 @@ class ShowStockDelivery extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit          = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-        $this->canEditPayments  = $this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit");
-        $this->canUpdateCosting = $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting");
+        $isAgent                = $this->organisation->type === OrganisationTypeEnum::AGENT;
+        $this->canEditPayments  = !$isAgent && ($this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit"));
+        $this->canUpdateCosting = !$isAgent && $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting");
         $this->canBookIn        = $this->authToBookIn($request, 'incoming.%d.edit');
         $this->canUnreceive     = $this->authToBookIn($request, 'supervisor-incoming.%d');
 
