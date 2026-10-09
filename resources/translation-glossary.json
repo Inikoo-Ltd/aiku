@@ -849,6 +849,7 @@
         "Set up Vol/GR Gift": "Vol/GR-Geschenk einrichten",
         "Set value to 0": "Wert auf 0 setzen",
         "Share": "Teilen",
+        "Share of total": "Anteil",
         "Ship with Faire": "Versand mit Faire",
         "Shipment": "Sendung",
         "Shipment should be set before finalizing.": "Die Sendung sollte vor dem Abschluss festgelegt werden.",
@@ -2152,6 +2153,7 @@
         "Set the address to follow collection.": "Establezca la dirección para la recogida.",
         "Set up your outbox": "Configure su bandeja de salida",
         "Settled": "Liquidado",
+        "Share of total": "Proporción",
         "Share your experience with this ": "Comparta su experiencia con este ",
         "Ship with Faire": "Enviar con Faire",
         "Shipper": "Transportista",
@@ -3498,6 +3500,7 @@
         "Set to active": "Définir comme actif",
         "Set up GR Amnesty": "Mettre en place une amnistie GR",
         "Set up Vol/GR Gift": "Configurer le cadeau Vol/GR",
+        "Share of total": "Part",
         "Shift not enabled for your account": "Les plannings d'équipe ne sont pas activés pour votre compte",
         "Shipper": "Transporteur",
         "Shippers": "Transporteurs",
@@ -3869,21 +3872,6 @@
         "working": "en activité"
     },
     "hi": {
-        "Balance": "शेष राशि",
-        "Charge": "शुल्क",
-        "Charges": "शुल्क",
-        "Dispatch": "डिस्पैच",
-        "Dispatched": "डिस्पैच किया गया",
-        "Goods In": "माल प्राप्ति",
-        "Handling": "हैंडलिंग",
-        "Order": "ऑर्डर",
-        "Orders": "ऑर्डर्स",
-        "Pick": "पिक करें",
-        "Picked": "पिक किया गया",
-        "Picking": "पिकिंग",
-        "Slots": "स्थान",
-        "Stock": "स्टॉक",
-        "Draft": "ड्राफ़्ट",
         " Products for sale": " बिक्री के लिए उत्पाद",
         " Slots": " स्थान",
         " is handling this chat": " इस चैट को संभाल रहा है",
@@ -4270,6 +4258,7 @@
         "BETA VERSION": "बीटा वर्ज़न",
         "Back side": "पीछे की ओर",
         "Backup supplier": "बैकअप आपूर्तिकर्ता",
+        "Balance": "शेष राशि",
         "Balance due": "बकाया राशि",
         "Balance paid": "शेष राशि का भुगतान हो गया",
         "Bank transfer": "बैंक ट्रांसफ़र",
@@ -4354,11 +4343,13 @@
         "Channel name": "चैनल का नाम",
         "Channels never credited a customer": "ऐसे चैनल जिनसे कभी किसी ग्राहक को क्रेडिट नहीं मिला",
         "Channels with no row in this shop": "ऐसे चैनल जिनकी इस दुकान में कोई पंक्ति नहीं है",
+        "Charge": "शुल्क",
         "Charge (%)": "शुल्क (%)",
         "Charge :chargeLabel successfully removed": "शुल्क :chargeLabel सफलतापूर्वक हटा दिया गया",
         "Charge name for internal use. But will be displayed to user if the label is empty": "आंतरिक उपयोग के लिए शुल्क का नाम। लेबल खाली होने पर यही उपयोगकर्ता को दिखाया जाएगा",
         "Charge on delivery": "डिलीवरी पर शुल्क",
         "Charged at the order's own rate, no override": "ऑर्डर की अपनी दर पर शुल्क लिया गया, कोई ओवरराइड नहीं",
+        "Charges": "शुल्क",
         "Chat Agents": "चैट एजेंट",
         "Chat Support": "चैट सपोर्ट",
         "Chat panel color": "चैट पैनल का रंग",
@@ -5010,9 +5001,11 @@
         "Discretionary discount percentage": "विवेकाधीन छूट प्रतिशत",
         "Discretionary discount percentage: (%)": "विवेकाधीन छूट प्रतिशत: (%)",
         "Dismissal proposed": "बर्खास्तगी प्रस्तावित",
+        "Dispatch": "डिस्पैच",
         "Dispatch Require Shipping": "डिस्पैच के लिए शिपिंग आवश्यक",
         "Dispatch Stock Delivery": "स्टॉक डिलीवरी डिस्पैच करें",
         "Dispatch the order": "ऑर्डर डिस्पैच करें",
+        "Dispatched": "डिस्पैच किया गया",
         "Dispatched Date": "डिस्पैच की तारीख",
         "Dispatched Today": "आज डिस्पैच किया गया",
         "Dispatched at": "डिस्पैच का समय",
@@ -5068,6 +5061,7 @@
         "Download template (.xlsx)": "टेम्पलेट डाउनलोड करें (.xlsx)",
         "Download template .xlsx": "टेम्पलेट डाउनलोड करें .xlsx",
         "Download will start shortly...": "डाउनलोड जल्द ही शुरू होगा...",
+        "Draft": "ड्राफ़्ट",
         "Draft Initiated:": "ड्राफ़्ट शुरू हुआ:",
         "Draft — workers cannot see these tasks until the order is released to the floor": "ड्राफ़्ट — जब तक ऑर्डर फ़्लोर पर जारी नहीं होता, कर्मचारी ये कार्य नहीं देख सकते",
         "Drag & drop images or click": "इमेज ड्रैग और ड्रॉप करें या क्लिक करें",
@@ -5755,6 +5749,7 @@
         "Golden product": "गोल्डन उत्पाद",
         "Good | Covers 15–50% of revenue in last 90 days": "अच्छा | पिछले 90 दिनों के राजस्व का 15–50% कवर करता है",
         "Goods": "माल",
+        "Goods In": "माल प्राप्ति",
         "Goods Out": "माल निकासी",
         "Goods in": "माल प्राप्ति",
         "Goods in clerk": "माल प्राप्ति क्लर्क",
@@ -5786,6 +5781,7 @@
         "Half Day Morning": "आधा दिन (सुबह)",
         "Half day leave is applied to one date only.": "आधे दिन की छुट्टी केवल एक तारीख पर लागू होती है।",
         "Half day leave must be a single date.": "आधे दिन की छुट्टी केवल एक तारीख की होनी चाहिए।",
+        "Handling": "हैंडलिंग",
         "Handling At": "हैंडलिंग का समय",
         "Hanging": "हैंगिंग",
         "Hard & Soft Bounced Emails": "हार्ड और सॉफ़्ट बाउंस ईमेल",
@@ -7036,6 +7032,7 @@
         "Option value": "विकल्प मान",
         "Or delete the channel and try again": "या चैनल हटाकर फिर से प्रयास करें",
         "Or enter this code on your Authenticator App": "या यह कोड अपने Authenticator ऐप में दर्ज करें",
+        "Order": "ऑर्डर",
         "Order :n+ from :category range to get :percentage off": ":percentage छूट पाने के लिए :category रेंज से :n+ ऑर्डर करें",
         "Order :quantity more to get :free free": ":free मुफ़्त पाने के लिए :quantity और ऑर्डर करें",
         "Order :quantity to get :free free": ":free मुफ़्त पाने के लिए :quantity ऑर्डर करें",
@@ -7109,6 +7106,7 @@
         "Ordering": "ऑर्डरिंग",
         "Ordering dashboard": "ऑर्डरिंग डैशबोर्ड",
         "Ordering over the available stock, the excess waits for the warehouse": "उपलब्ध स्टॉक से अधिक ऑर्डर करने पर, अतिरिक्त मात्रा गोदाम की प्रतीक्षा करती है",
+        "Orders": "ऑर्डर्स",
         "Orders Excesses Payment": "ऑर्डर का अतिरिक्त भुगतान",
         "Orders and invoices short by up to this amount are treated as paid, so tiny differences are not chased. Maximum 1.": "इस राशि तक कम भुगतान वाले ऑर्डर और इनवॉइस को भुगतान किया हुआ माना जाता है, ताकि छोटे अंतरों के पीछे न पड़ना पड़े। अधिकतम 1।",
         "Orders backlog": "लंबित ऑर्डर्स",
@@ -7318,6 +7316,7 @@
         "Periods run from midnight UTC": "अवधियाँ मध्यरात्रि UTC से शुरू होती हैं",
         "Permanently delete this agent?": "क्या इस एजेंट को स्थायी रूप से हटाना है?",
         "Person in Contact": "संपर्क व्यक्ति",
+        "Pick": "पिक करें",
         "Pick a block in the Layer tab to edit its style.": "स्टाइल संपादित करने के लिए लेयर टैब में कोई ब्लॉक चुनें।",
         "Pick a catalouge as a data preview": "डेटा पूर्वावलोकन के लिए एक कैटलॉग चुनें",
         "Pick a date and time above to see when this email will be sent": "यह ईमेल कब भेजा जाएगा, यह देखने के लिए ऊपर तारीख और समय चुनें",
@@ -7332,6 +7331,7 @@
         "Pick the blocks you want to keep, the result is what the page will look like": "जिन ब्लॉकों को आप रखना चाहते हैं उन्हें चुनें, पृष्ठ बिल्कुल वैसा ही दिखेगा",
         "Pick the remaining :remaining without scanning them one by one": "शेष :remaining को एक-एक करके स्कैन किए बिना पिक करें",
         "Pick this delivery note by scanning the items": "आइटम स्कैन करके इस डिलीवरी नोट को पिक करें",
+        "Picked": "पिक किया गया",
         "Picked :quantity x :code from :location": ":quantity x :code को :location से पिक किया गया",
         "Picked :quantity x :code from :location for :reference": ":quantity x :code को :location से :reference के लिए पिक किया गया",
         "Picked :quantity x :code from :location for :reference, :remaining still to pick": ":quantity x :code को :location से :reference के लिए पिक किया गया, :remaining अभी पिक करना शेष है",
@@ -7350,6 +7350,7 @@
         "Picker Performance": "पिकर प्रदर्शन",
         "Picker list route is not available": "पिकर सूची रूट उपलब्ध नहीं है",
         "Pickers": "पिकर",
+        "Picking": "पिकिंग",
         "Picking Finished": "पिकिंग पूरी हुई",
         "Picking Order": "पिकिंग क्रम",
         "Picking Session": "पिकिंग सत्र",
@@ -8027,6 +8028,7 @@
         "Settlement tolerance": "निपटान टॉलरेंस",
         "Setup Recipients": "प्राप्तकर्ता सेट करें",
         "Setup checklist": "सेटअप चेकलिस्ट",
+        "Share of total": "हिस्सा",
         "Shift Schedule": "शिफ़्ट शेड्यूल",
         "Shift Schedules": "शिफ़्ट शेड्यूल",
         "Shipments": "शिपमेंट",
@@ -8062,6 +8064,7 @@
         "Slack": "Slack",
         "Slack Channels": "Slack चैनल",
         "Slack Setting": "Slack सेटिंग",
+        "Slots": "स्थान",
         "Small Print": "स्मॉल प्रिंट",
         "Social clerk": "सोशल मीडिया क्लर्क",
         "Social supervisor": "सोशल मीडिया पर्यवेक्षक",
@@ -8096,6 +8099,7 @@
         "Step offers": "स्टेप ऑफ़र",
         "Still Picking": "अभी भी पिकिंग हो रही है",
         "Still picking": "अभी भी पिकिंग हो रही है",
+        "Stock": "स्टॉक",
         "Stock (SKU)": "स्टॉक (SKU)",
         "Stock Audited": "स्टॉक का ऑडिट किया गया",
         "Stock Available": "उपलब्ध स्टॉक",
@@ -11969,6 +11973,7 @@
         "Picked": "पिक गरिएको",
         "Picking": "पिकिङ",
         "React with a 👍 and close when the customer only thanks us": "ग्राहकले धन्यवाद मात्र दिएमा 👍 प्रतिक्रिया दिएर बन्द गर्नुहोस्",
+        "Share of total": "हिस्सा",
         "Slots": "स्थान",
         "So we can sort this out as soon as we open, please send us:": "हामी खुल्नेबित्तिकै यो मिलाउन सकौं भनेर कृपया हामीलाई पठाउनुहोस्:",
         "Start by adding your first product category to this list.": "यस सूचीमा आफ्नो पहिलो उत्पादन श्रेणी थपेर सुरु गर्नुहोस्।",
@@ -15201,6 +15206,7 @@
         "Set to inactive": "Nonaktifkan",
         "Settled": "Lunas",
         "Share": "Bagikan",
+        "Share of total": "Proporsi",
         "Shipment": "Kiriman",
         "Shipment has been deleted.": "Kiriman telah dihapus.",
         "Shipment has deleted.": "Kiriman telah dihapus.",
@@ -16475,6 +16481,7 @@
         "Set of :count items, packed together": "Súprava :count položiek, zabalených spolu",
         "Settled": "Uhradené",
         "Share": "Zdieľať",
+        "Share of total": "Podiel",
         "Shipper": "Prepravca",
         "Shipping Cost: ": "Náklady na dopravu: ",
         "Shipping to": "Doručenie do",
@@ -18470,6 +18477,7 @@
         "Setting": "Configuração",
         "Settled": "Liquidado",
         "Share": "Partilhar",
+        "Share of total": "Proporção",
         "Ship with Faire": "Enviar com Faire",
         "Shipment has been deleted.": "O envio foi eliminado.",
         "Shipment has deleted.": "O envio foi eliminado.",
@@ -20775,6 +20783,7 @@
         "Set up shop's website": "设置店铺网站",
         "Setting": "设置",
         "Settled": "已结清",
+        "Share of total": "占比",
         "Shipment": "货件",
         "Shipment has been deleted.": "货件已删除。",
         "Shipment should be set before finalizing.": "完成前必须先设置货件。",
@@ -21492,5 +21501,39 @@
         "with refunds": "含退款",
         "working": "在职",
         "workshop": "工作室"
+    },
+    "bg": {
+        "Share of total": "Дял"
+    },
+    "cs": {
+        "Share of total": "Podíl"
+    },
+    "hr": {
+        "Share of total": "Udio"
+    },
+    "hu": {
+        "Share of total": "Arány"
+    },
+    "it": {
+        "Complete": "Completo",
+        "Share of total": "Quota"
+    },
+    "ja": {
+        "Share of total": "割合"
+    },
+    "nl": {
+        "Share of total": "Aandeel"
+    },
+    "pl": {
+        "Share of total": "Udział"
+    },
+    "ro": {
+        "Share of total": "Pondere"
+    },
+    "sv": {
+        "Share of total": "Andel"
+    },
+    "uk": {
+        "Share of total": "Частка"
     }
 }
