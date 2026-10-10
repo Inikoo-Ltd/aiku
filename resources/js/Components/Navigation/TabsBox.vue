@@ -100,8 +100,8 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                     flexBasis: 0,
                     flexShrink: 0,
                     minWidth: 'max-content',
-                    backgroundColor: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] + '22' : 'transparent',
-                    color: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] : 'inherit',
+                    backgroundColor: box.tabs.length === 1 && box.tabs[0].tab_slug === currentTab ? layoutStore.app.theme[4] + '22' : 'transparent',
+                    color: box.tabs.length === 1 && box.tabs[0].tab_slug === currentTab ? layoutStore.app.theme[4] : 'inherit',
                     borderColor: box.tabs.some(tab => tab.tab_slug === currentTab) ? layoutStore.app.theme[4] : 'inherit'
                 }"
             >
@@ -112,7 +112,9 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                 </div>
                 
                 <div class="flex gap-x-4 justify-evenly">
-                    <div v-for="tab in box.tabs" class="flex flex-col items-center">
+                    <div v-for="tab in box.tabs" class="flex flex-col items-center rounded-md px-1 pb-0.5"
+                        :style="box.tabs.length > 1 && tab.tab_slug === currentTab ? { backgroundColor: layoutStore.app.theme[4] + '22', color: layoutStore.app.theme[4], boxShadow: 'inset 0 0 0 1px ' + layoutStore.app.theme[4] } : {}"
+                    >
                         <div
                             @click="onChangeTab(tab.tab_slug)"
                             class="group tabular-nums relative cursor-pointer text-xl px-2"

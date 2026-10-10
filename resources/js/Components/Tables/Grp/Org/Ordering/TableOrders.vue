@@ -9,11 +9,11 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Order } from "@/types/order"
 import type { Links, Meta } from "@/types/Table"
-import { useFormatTime } from "@/Composables/useFormatTime"
+import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe, faClock, faCheckCircle, faCheck } from "@fal"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe, faClock, faCheckCircle, faCheck, faHandPaper, faBoxOpen, faCircle, faAdjust, faPlusCircle, faUndoAlt, faQuestionCircle } from "@fal"
 import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
@@ -25,7 +25,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import { computed, inject, ref } from "vue"
 
-library.add(faCheck, faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
+library.add(faCircle, faAdjust, faPlusCircle, faUndoAlt, faQuestionCircle, faCheckCircle, faCheck, faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
 
 const props = defineProps<{
     data: {
@@ -37,6 +37,7 @@ const props = defineProps<{
     tab?: string
     useTopPagination?: boolean
     productionReviewBulkRoute?: routeType | null
+    payInNet?: boolean
 }>()
 
 const selectedOrders = ref<{[key: string]: boolean}>({})
@@ -62,6 +63,10 @@ const markSelectedAsReviewed = () => {
 }
 
 const locale = useLocaleStore()
+
+const progressPercentage = (order: any) => order.warehouse_progress?.lines
+    ? Math.round(100 * order.warehouse_progress.lines_handled / order.warehouse_progress.lines)
+    : 0
 
 function orderHref(order: Order) {
     const url = orderRoute(order) as unknown as string
@@ -286,7 +291,8 @@ const setNewMarkerDate = (newVal: Date) => {
         </template>
 
         <template #cell(state)="{ item: order }">
-            <Icon :data="order.state_icon" />
+            <FontAwesomeIcon v-if="order.state === 'in_warehouse'" v-tooltip="ctrans('Ready to be picked: picking has not started')" :icon="faClock" class="text-gray-500" fixed-width aria-hidden="true" />
+            <Icon v-else :data="order.state_icon" />
             <FontAwesomeIcon v-if="order.is_export" v-tooltip="ctrans('Export')" :icon="faGlobe" class="ml-1 text-[--app-accent]" fixed-width />
         </template>
 
@@ -381,10 +387,11 @@ const setNewMarkerDate = (newVal: Date) => {
         </template>
 
         <template #cell(customer_name)="{ item: order }">
-            <Link v-if="order.customer_slug" :href="customerRoute(order)" class="secondaryLink">
+            <Link v-if="order.customer_slug" :href="customerRoute(order)" class="secondaryLink inline-block max-w-[24ch] truncate align-bottom"
+                v-tooltip="order.customer_name?.length > 24 ? order.customer_name : undefined">
                 {{ order["customer_name"] }}
             </Link>
-            <div v-else>
+            <div v-else class="max-w-[24ch] truncate" v-tooltip="order.customer_name?.length > 24 ? order.customer_name : undefined">
                 {{ order["customer_name"] }}
             </div>
         </template>
@@ -411,8 +418,73 @@ const setNewMarkerDate = (newVal: Date) => {
         </template>
 
         <template #cell(submitted_at)="{ item: order }">
-            <div class="text-right">
+            <div class="whitespace-nowrap text-right">
                 {{ order.submitted_at ? useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: "aiku" }) : '-' }}
+            </div>
+        </template>
+
+        <template #cell(net_amount)="{ item: order }">
+            <div class="flex items-center justify-end gap-1.5 whitespace-nowrap tabular-nums">
+                <Icon v-if="payInNet && order.pay_icon" :data="order.pay_icon" />
+                {{ locale.currencyFormat(order.currency_code || '', order.net_amount) }}
+            </div>
+        </template>
+
+        <template #cell(stage_since)="{ item: order }">
+            <span v-if="order.stage_since"
+                v-tooltip="(order.is_stuck ? ctrans('Stuck: in this stage since :date', { date: useFormatTime(order.stage_since, { localeCode: locale.language.code, formatTime: 'aiku' }) }) : ctrans('In this stage since :date', { date: useFormatTime(order.stage_since, { localeCode: locale.language.code, formatTime: 'aiku' }) }))"
+                class="whitespace-nowrap"
+                :class="order.is_stuck ? 'rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-700' : 'text-gray-600'">
+                {{ useRangeFromNow(order.stage_since, { localeCode: locale.language.code }) }}
+            </span>
+        </template>
+
+        <template #cell(warehouse_progress)="{ item: order }">
+            <div v-if="order.warehouse_progress" class="flex flex-wrap items-center justify-end gap-1.5 text-xs">
+                <div v-tooltip="order.warehouse_progress.is_packing
+                        ? ctrans(':done of :total picked lines packed', { done: order.warehouse_progress.lines_handled, total: order.warehouse_progress.lines })
+                        : ctrans(':done of :total lines dealt with by the picker', { done: order.warehouse_progress.lines_handled, total: order.warehouse_progress.lines })"
+                    class="flex items-center gap-1.5 whitespace-nowrap tabular-nums text-gray-600">
+                    <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div class="h-full rounded-full transition-all"
+                            :class="progressPercentage(order) === 100 ? 'bg-green-500' : 'bg-green-400'"
+                            :style="{ width: progressPercentage(order) + '%' }" />
+                    </div>
+                    <span class="w-9 text-right">{{ progressPercentage(order) }}%</span>
+                    <span class="w-10 text-right text-gray-400">({{ order.warehouse_progress.lines }})</span>
+                </div>
+                <span v-if="order.warehouse_progress.lines_waiting_stock"
+                    v-tooltip="ctrans('The picker could not find these lines and is waiting for the warehouse. Customer service has not been told.')"
+                    class="whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700">
+                    {{ ctrans(":count waiting for stock", { count: order.warehouse_progress.lines_waiting_stock }) }}
+                </span>
+                <span v-if="order.warehouse_progress.lines_waiting_cs"
+                    v-tooltip="ctrans('Lines the picker sent to customer service to decide')"
+                    class="whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700">
+                    {{ ctrans(":count with customer service", { count: order.warehouse_progress.lines_waiting_cs }) }}
+                </span>
+            </div>
+        </template>
+
+        <template #cell(picker_name)="{ item: order }">
+            <div class="min-w-40 whitespace-nowrap text-xs leading-5 text-gray-600">
+                <div v-if="order.picker_name" v-tooltip="ctrans('Picker')">
+                    <FontAwesomeIcon :icon="faHandPaper" class="text-gray-400" fixed-width aria-hidden="true" />
+                    {{ order.picker_name }}
+                </div>
+                <div v-if="order.packer_name && ['packed', 'finalised'].includes(order.state)" v-tooltip="ctrans('Packer')">
+                    <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width aria-hidden="true" />
+                    {{ order.packer_name }}
+                </div>
+            </div>
+        </template>
+
+        <template #cell(packer_name)="{ item: order }">
+            <div class="min-w-40 whitespace-nowrap text-xs text-gray-600">
+                <template v-if="order.packer_name">
+                    <FontAwesomeIcon :icon="faBoxOpen" fixed-width aria-hidden="true" />
+                    {{ order.packer_name }}
+                </template>
             </div>
         </template>
 
@@ -429,57 +501,37 @@ const setNewMarkerDate = (newVal: Date) => {
                 {{ ctrans("For Collection") }}
             </div>
 
-            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
-                <div class="group w-fit whitespace-nowrap ">
-                    <!-- Delivery Note -->
-                    <template v-if="order.shipping_data?.[0].delivery_note_reference">
-                        <Link
-                            :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
-                            class="secondaryLink"
-                            v-tooltip="ctrans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
-                        >
-                            <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
-                        </Link>
-                    </template>
-
-                    <template v-if="order.shipping_data?.[0].trackings?.[0]">
-                        <span>
-                            <span class="opacity-70">|</span>
-                            <img v-if="order.shipping_data?.[0].shipper_slug"
-                                :src="
-                                    order.shipping_data?.[0].shipper_slug
-                                        ? `/assets/shipper_logo/${order.shipping_data?.[0].shipper_slug}.png`
-                                        : null
-                                "
-                                :alt="order.shipping_data?.[0].shipper_label"
-                                class="ml-1 h-4 w-4 object-contain inline-block"
-                                :title="order.shipping_data?.[0].shipper_label"
-                                v-tooltip="order.shipping_data?.[0].shipper_label"
-                                loading="lazy" decoding="async"
-                            />
-                            {{ order.shipping_data?.[0].shipper_slug }}:
-                        </span>
-                        <span v-tooltip="order.shipping_data?.[0].trackings?.[0]" class="max-w-96 truncate inline-block align-middle">
-                            <a v-if="order.shipping_data?.[0].tracking_urls.length"
-                                :href="order.shipping_data?.[0].tracking_urls[0]"
-                                class="underline"
-                                target="_blank"
-                                rel="noopener"
-                            >
-                                {{ order.shipping_data?.[0].trackings?.[0] }}
-                                <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                            </a>
-
-                            <span v-else>
-                                {{ order.shipping_data?.[0].trackings?.[0] }}
-                            </span>
-                        </span>
-                    </template>
+            <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="py-1 pr-2">
+                <div class="flex items-center gap-1.5 whitespace-nowrap text-xs text-gray-600">
+                    <Link
+                        v-if="order.shipping_data?.[0].delivery_note_reference"
+                        :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
+                        class="secondaryLink"
+                        v-tooltip="ctrans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
+                    >
+                        <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" />
+                    </Link>
+                    <img v-if="order.shipping_data?.[0].shipper_slug"
+                        :src="`/assets/shipper_logo/${order.shipping_data?.[0].shipper_slug}.png`"
+                        :alt="order.shipping_data?.[0].shipper_label"
+                        class="h-4 w-4 object-contain"
+                        loading="lazy" decoding="async"
+                    />
+                    <span>{{ order.shipping_data?.[0].shipper_label }}</span>
+                    <CopyButton :text="order.shipping_data?.[0].trackings?.[0]" />
                 </div>
-                <CopyButton
-                    v-if="order.shipping_data?.[0].trackings?.[0]"
-                    :text="order.shipping_data?.[0].trackings?.[0]"
-                />
+                <div class="group whitespace-nowrap text-[10px] leading-4 tabular-nums text-gray-500">
+                    <a v-if="order.shipping_data?.[0].tracking_urls?.length"
+                        :href="order.shipping_data?.[0].tracking_urls[0]"
+                        class="hover:underline"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        {{ order.shipping_data?.[0].trackings?.[0] }}
+                        <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" aria-hidden="true" />
+                    </a>
+                    <span v-else>{{ order.shipping_data?.[0].trackings?.[0] }}</span>
+                </div>
             </div>
             <div v-else>
 

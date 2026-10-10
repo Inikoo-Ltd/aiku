@@ -60,6 +60,130 @@ class IndexOrders extends OrgAction
 
     private ?string $bucket = null;
 
+    public const int BACKLOG_STUCK_AFTER_WORKING_DAYS = 2;
+
+    protected const array BACKLOG_STAGE_BUCKETS = ['submitted_unpaid', 'submitted_paid', 'in_warehouse', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised'];
+
+    protected const array BACKLOG_ATTENTION = ['stuck', 'waiting_stock', 'waiting_cs'];
+
+    protected const string STAGE_SINCE_SQL = "coalesce(case orders.state when 'submitted' then orders.submitted_at when 'in_warehouse' then orders.in_warehouse_at when 'handling' then orders.handling_at when 'handling_blocked' then orders.handling_blocked_at when 'picked' then orders.picked_at when 'packing' then orders.packing_at when 'packed' then orders.packed_at when 'finalised' then orders.finalised_at end, orders.in_warehouse_at, orders.submitted_at)";
+
+    protected const string WAITING_LINES_SQL = "exists (select 1 from delivery_note_order join delivery_notes on delivery_notes.id = delivery_note_order.delivery_note_id join delivery_note_items on delivery_note_items.delivery_note_id = delivery_notes.id where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null and delivery_notes.state not in ('cancelled', 'dispatched') and delivery_note_items.%s)";
+
+    public static function stuckCutoff(): Carbon
+    {
+        return Carbon::now()->subWeekdays(self::BACKLOG_STUCK_AFTER_WORKING_DAYS);
+    }
+
+    public function showsStage(?string $bucket): bool
+    {
+        return in_array($bucket, self::BACKLOG_STAGE_BUCKETS);
+    }
+
+    protected function attentionSql(string $element): string
+    {
+        return match ($element) {
+            'waiting_stock' => sprintf(self::WAITING_LINES_SQL, 'has_waiting_warehouse'),
+            'waiting_cs'    => sprintf(self::WAITING_LINES_SQL, 'has_waiting_crm'),
+            default         => self::STAGE_SINCE_SQL." < '".self::stuckCutoff()->toDateTimeString()."'",
+        };
+    }
+
+    protected function attentionEngine($query, array $elements): void
+    {
+        $query->where(function ($query) use ($elements) {
+            foreach ($elements as $element) {
+                $query->orWhereRaw($this->attentionSql($element));
+            }
+        });
+    }
+
+    /**
+     * How many orders of the bucket sit too long in their stage, or hold lines the picker could not pick.
+     *
+     * @param array{scope?: ?string, channel?: ?string, production_review?: ?string} $current
+     * @return array{stuck: int, waiting_stock: int, waiting_cs: int, total: int, oldest_since: ?string}
+     */
+    public function backlogAttentionCounts(Group|Organisation|Shop $parent, string $bucket, array $current = []): array
+    {
+        $this->bucket = $bucket;
+        $query        = $this->baseQuery($parent);
+        $this->applyBucket($query, $parent, null);
+
+        if (!empty($current['scope'])) {
+            $query->where('orders.is_export', $current['scope'] === 'export');
+        }
+        if (!empty($current['channel'])) {
+            $this->channelEngine($query, [$current['channel']]);
+        }
+        if (!empty($current['production_review'])) {
+            $this->productionReviewEngine($query, [$current['production_review']]);
+        }
+        if (!empty($current['payment'])) {
+            $this->paymentEngine($query, [$current['payment']]);
+        }
+
+        $row = $query->toBase()
+            ->selectRaw(
+                'count(*) filter (where '.$this->attentionSql('stuck').') as stuck, '
+                .'count(*) filter (where '.$this->attentionSql('waiting_stock').') as waiting_stock, '
+                .'count(*) filter (where '.$this->attentionSql('waiting_cs').') as waiting_cs, '
+                .'count(*) as total, min('.self::STAGE_SINCE_SQL.') as oldest_since'
+            )
+            ->first();
+
+        return [
+            'stuck'         => (int) $row->stuck,
+            'waiting_stock' => (int) $row->waiting_stock,
+            'waiting_cs'    => (int) $row->waiting_cs,
+            'total'         => (int) $row->total,
+            'oldest_since'  => $row->oldest_since ? Carbon::parse($row->oldest_since)->toIso8601String() : null,
+        ];
+    }
+
+    /**
+     * The orders nobody is moving: per stage how many are stuck or hold unpickable lines, and the ones waiting longest.
+     * Unpaid orders wait on the customer, not on us, so they stay out.
+     *
+     * @return array{stuck_after_working_days: int, stages: array<int, array<string, mixed>>, oldest: array<int, array<string, mixed>>}
+     */
+    public function backlogAttention(Group|Organisation|Shop $parent): array
+    {
+        $stages = [];
+        foreach (array_diff(self::BACKLOG_STAGE_BUCKETS, ['submitted_unpaid']) as $bucket) {
+            $stages[] = ['tab' => $bucket] + $this->backlogAttentionCounts($parent, $bucket);
+        }
+
+        $this->bucket = null;
+        $oldest       = $this->baseQuery($parent)->toBase()
+            ->where(function ($query) {
+                $query->whereIn('orders.state', array_diff(self::BACKLOG_STAGE_BUCKETS, ['submitted_unpaid', 'submitted_paid']))
+                    ->orWhere(fn ($query) => $query->where('orders.state', OrderStateEnum::SUBMITTED->value)->whereIn('orders.pay_status', Order::PAY_SETTLED_STATUSES));
+            })
+            ->whereNull('orders.deleted_at')
+            ->whereRaw($this->attentionSql('stuck'))
+            ->selectRaw('orders.reference, orders.slug, orders.state, customers.name as customer_name, shops.slug as shop_slug, organisations.slug as organisation_slug, '.self::STAGE_SINCE_SQL.' as stage_since')
+            ->orderBy('stage_since')
+            ->limit(5)
+            ->get()
+            ->map(fn ($order) => [
+                'reference'         => $order->reference,
+                'slug'              => $order->slug,
+                'tab'               => $order->state === OrderStateEnum::SUBMITTED->value ? 'submitted_paid' : $order->state,
+                'customer_name'     => $order->customer_name,
+                'shop_slug'         => $order->shop_slug,
+                'organisation_slug' => $order->organisation_slug,
+                'stage_since'       => Carbon::parse($order->stage_since)->toIso8601String(),
+            ])
+            ->all();
+
+        return [
+            'stuck_after_working_days' => self::BACKLOG_STUCK_AFTER_WORKING_DAYS,
+            'stages'                   => $stages,
+            'oldest'                   => $oldest,
+        ];
+    }
+
     protected function getElementGroups(Group|Organisation|Shop|Customer|CustomerClient $parent): array
     {
         return [
@@ -149,6 +273,13 @@ class IndexOrders extends OrgAction
      */
     protected const string PARTNER_ORDER_SQL = "(customers.as_organisation_id is not null or coalesce(sales_channels.code, '') = 'intercompany')";
 
+    protected const string PAID_ORDER_SQL = "orders.pay_status in ('paid', 'no_need')";
+
+    protected function paymentEngine($query, array $elements): void
+    {
+        $query->whereRaw((in_array('paid', $elements) ? '' : 'not ').'coalesce('.self::PAID_ORDER_SQL.', false)');
+    }
+
     protected function channelEngine($query, array $elements): void
     {
         if (in_array('partner', $elements)) {
@@ -192,6 +323,12 @@ class IndexOrders extends OrgAction
                 engine: $this->channelEngine(...),
                 prefix: $prefix
             );
+            $query->whereElementGroup(
+                key: 'payment',
+                allowedElements: ['paid', 'unpaid'],
+                engine: $this->paymentEngine(...),
+                prefix: $prefix
+            );
             if ($this->usesProductionReview($parent)) {
                 $query->whereElementGroup(
                     key: 'production_review',
@@ -202,7 +339,29 @@ class IndexOrders extends OrgAction
             }
         }
 
-        return $query->defaultSort('-orders.date')
+        $showsStage = $this->showsStage($this->bucket);
+        if ($showsStage) {
+            $query->whereElementGroup(
+                key: 'attention',
+                allowedElements: self::BACKLOG_ATTENTION,
+                engine: $this->attentionEngine(...),
+                prefix: $prefix
+            );
+            $query->leftJoinLateral(
+                DB::table('delivery_note_order')
+                    ->join('delivery_notes', 'delivery_notes.id', 'delivery_note_order.delivery_note_id')
+                    ->leftJoin('delivery_note_items', fn ($join) => $join->on('delivery_note_items.delivery_note_id', 'delivery_notes.id')->where('delivery_note_items.state', '!=', 'cancelled'))
+                    ->leftJoin('users as pickers', 'pickers.id', 'delivery_notes.picker_user_id')
+                    ->leftJoin('users as packers', 'packers.id', 'delivery_notes.packer_user_id')
+                    ->whereColumn('delivery_note_order.order_id', 'orders.id')
+                    ->whereNull('delivery_notes.deleted_at')
+                    ->whereNotIn('delivery_notes.state', ['cancelled', 'dispatched'])
+                    ->selectRaw('count(delivery_note_items.id) as lines, count(*) filter (where delivery_note_items.is_handled) as lines_handled, count(*) filter (where delivery_note_items.quantity_picked > 0) as lines_to_pack, count(*) filter (where delivery_note_items.quantity_packed > 0) as lines_packed, count(*) filter (where delivery_note_items.has_waiting_warehouse) as lines_waiting_stock, count(*) filter (where delivery_note_items.has_waiting_crm) as lines_waiting_cs, max(pickers.contact_name) as picker_name, max(packers.contact_name) as packer_name'),
+                'warehouse_progress'
+            );
+        }
+
+        return $query->defaultSort($showsStage ? 'stage_since' : '-orders.date')
             ->select([
                 'orders.id',
                 'orders.slug',
@@ -256,10 +415,21 @@ class IndexOrders extends OrgAction
                 'sales_channels.name as sales_channel_name',
                 'sales_channels.code as sales_channel_code',
                 DB::raw('exists(select 1 from pre_orders where pre_orders.order_id = orders.id) as is_pre_order'),
+                ...($showsStage ? [
+                    DB::raw(self::STAGE_SINCE_SQL.' as stage_since'),
+                    'warehouse_progress.lines as warehouse_lines',
+                    'warehouse_progress.lines_handled as warehouse_lines_handled',
+                    'warehouse_progress.lines_to_pack as warehouse_lines_to_pack',
+                    'warehouse_progress.lines_packed as warehouse_lines_packed',
+                    'warehouse_progress.lines_waiting_stock as warehouse_lines_waiting_stock',
+                    'warehouse_progress.lines_waiting_cs as warehouse_lines_waiting_cs',
+                    'warehouse_progress.picker_name',
+                    'warehouse_progress.packer_name',
+                ] : []),
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->leftJoin('users as production_reviewers', 'orders.production_reviewed_by', 'production_reviewers.id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at', 'production_reviewed_at']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at', 'production_reviewed_at', ...($showsStage ? ['stage_since'] : [])]) // Ensure `id` is the first sort column
             ->withBetweenDates([$this->getBucketDateColumn($this->bucket ?? null)])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -384,29 +554,33 @@ class IndexOrders extends OrgAction
      * Live destination, channel and production review split of the bucket, one indexed aggregate per page load instead of a hydrated stat.
      * Each split follows the selection of the other ones, so the numbers match the list the user would get by clicking.
      *
-     * @param array{scope?: ?string, channel?: ?string, production_review?: ?string} $current
-     * @return array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}, production_review?: array{reviewed: int, unreviewed: int}}
+     * @param array{scope?: ?string, channel?: ?string, payment?: ?string, production_review?: ?string, attention?: ?string} $current
+     * @return array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}, payment: array{paid: int, unpaid: int}, production_review?: array{reviewed: int, unreviewed: int}}
      */
     public function backlogFilterCounts(Group|Organisation|Shop $parent, string $bucket, array $current = []): array
     {
         $this->bucket = $bucket;
         $query        = $this->baseQuery($parent);
         $this->applyBucket($query, $parent, null);
+        if (!empty($current['attention'])) {
+            $this->attentionEngine($query, [$current['attention']]);
+        }
 
         $withReview = $this->usesProductionReview($parent);
 
         $counts = [
             'scope'   => ['domestic' => 0, 'export' => 0],
             'channel' => ['direct' => 0, 'partner' => 0],
+            'payment' => ['paid' => 0, 'unpaid' => 0],
         ];
         if ($withReview) {
             $counts['production_review'] = ['reviewed' => 0, 'unreviewed' => 0];
         }
 
-        $groupBy = 'orders.is_export, '.self::PARTNER_ORDER_SQL.($withReview ? ', orders.production_reviewed_at is not null' : '');
+        $groupBy = 'orders.is_export, '.self::PARTNER_ORDER_SQL.', coalesce('.self::PAID_ORDER_SQL.', false)'.($withReview ? ', orders.production_reviewed_at is not null' : '');
 
         $rows = $query->toBase()
-            ->selectRaw('orders.is_export, '.self::PARTNER_ORDER_SQL.' as is_partner, '.($withReview ? 'orders.production_reviewed_at is not null' : 'false').' as is_reviewed, count(*) as count')
+            ->selectRaw('orders.is_export, '.self::PARTNER_ORDER_SQL.' as is_partner, coalesce('.self::PAID_ORDER_SQL.', false) as is_paid, '.($withReview ? 'orders.production_reviewed_at is not null' : 'false').' as is_reviewed, count(*) as count')
             ->groupByRaw($groupBy)
             ->get();
 
@@ -414,6 +588,7 @@ class IndexOrders extends OrgAction
             $values = [
                 'scope'   => $row->is_export ? 'export' : 'domestic',
                 'channel' => $row->is_partner ? 'partner' : 'direct',
+                'payment' => $row->is_paid ? 'paid' : 'unpaid',
             ];
             if ($withReview) {
                 $values['production_review'] = $row->is_reviewed ? 'reviewed' : 'unreviewed';
@@ -520,7 +695,13 @@ class IndexOrders extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), sortable: true);
-            if ($this->usesProductionReview($parent)) {
+            $showsCustomer        = $parent instanceof Shop || $parent instanceof Organisation || $parent instanceof Group;
+            $customerNextToOrder = $showsCustomer && in_array($bucket, OrdersBacklogTabsEnum::values());
+            if ($customerNextToOrder) {
+                $table->column(key: 'customer_name', label: __('Customer'), sortable: true);
+                $table->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency');
+            }
+            if ($this->usesProductionReview($parent) && !$customerNextToOrder) {
                 $table->column(key: 'production_reviewed_at', label: __('Production review'), sortable: true);
             }
 
@@ -535,6 +716,19 @@ class IndexOrders extends OrgAction
                 ]
             )) {
                 $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
+                if ($this->showsStage($bucket)) {
+                    $table->column(key: 'stage_since', label: __('In this stage'), sortable: true);
+                    if (!in_array($bucket, ['submitted_paid', 'submitted_unpaid'])) {
+                        if (!in_array($bucket, ['packed', 'finalised'])) {
+                            $table->column(key: 'warehouse_progress', label: __('Progress'), align: 'right');
+                        }
+                        if ($bucket == 'packing') {
+                            $table->column(key: 'packer_name', label: __('Packer'));
+                        } else {
+                            $table->column(key: 'picker_name', label: in_array($bucket, ['packed', 'finalised']) ? __('Picker / Packer') : __('Picker'));
+                        }
+                    }
+                }
             } else {
                 $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
                 if ($parent instanceof Customer || $parent instanceof CustomerClient) {
@@ -547,7 +741,7 @@ class IndexOrders extends OrgAction
             }
 
 
-            if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof Group) {
+            if ($showsCustomer && !$customerNextToOrder) {
                 $table->column(key: 'customer_name', label: __('Customer'), sortable: true);
             }
             if ($parent instanceof Organisation || $parent instanceof Group) {
@@ -556,9 +750,18 @@ class IndexOrders extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), sortable: true);
             }
-            $table->column(key: 'pay_detailed_status', label: __('Payment'), sortable: true);
-            $table->column(key: 'delivery', label: __('Delivery'));
-            $table->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency');
+            if ($this->usesProductionReview($parent) && $customerNextToOrder) {
+                $table->column(key: 'production_reviewed_at', label: __('Production review'), sortable: true);
+            }
+            if (!$customerNextToOrder) {
+                $table->column(key: 'pay_detailed_status', label: __('Payment'), sortable: true);
+            }
+            if (!in_array($bucket, ['submitted_unpaid', 'submitted_paid', 'in_warehouse', 'handling', 'handling_blocked', 'picked', 'packing'])) {
+                $table->column(key: 'delivery', label: __('Delivery'));
+            }
+            if (!$customerNextToOrder) {
+                $table->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency');
+            }
         };
     }
 

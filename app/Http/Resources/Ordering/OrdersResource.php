@@ -8,11 +8,13 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $slug
@@ -102,6 +104,8 @@ class OrdersResource extends JsonResource
             $payDetailedStatusTooltip = $payDetailedStatus;
         }
 
+        $isPacking = in_array($this->state, [OrderStateEnum::PACKING, OrderStateEnum::PACKED, OrderStateEnum::FINALISED], true);
+
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
@@ -127,6 +131,7 @@ class OrdersResource extends JsonResource
             'payment_status'              => $this->payment_status,
             'pay_detailed_status'         => $payDetailedStatus,
             'pay_detailed_status_tooltip' => $payDetailedStatusTooltip,
+            'pay_icon'                    => $this->pay_detailed_status ? [...OrderPayDetailedStatusEnum::typeIcon()[$this->pay_detailed_status->value], 'tooltip' => $payDetailedStatusTooltip] : null,
             'currency_code'               => $this->currency_code,
             'currency_id'                 => $this->currency_id,
             'organisation_name'           => $this->organisation_name,
@@ -157,6 +162,17 @@ class OrdersResource extends JsonResource
             'last_touch_at'               => $this->last_touch_at ?? null,
             'production_reviewed_at'      => $this->production_reviewed_at ?? null,
             'production_reviewed_by_name' => $this->production_reviewed_by_name ?? null,
+            'stage_since'                 => $this->stage_since ? Carbon::parse($this->stage_since)->toIso8601String() : null,
+            'is_stuck'                    => $this->stage_since && Carbon::parse($this->stage_since)->lt(IndexOrders::stuckCutoff()),
+            'warehouse_progress'          => $this->warehouse_lines ? [
+                'is_packing'          => $isPacking,
+                'lines'               => (int) ($isPacking ? $this->warehouse_lines_to_pack : $this->warehouse_lines),
+                'lines_handled'       => (int) ($isPacking ? $this->warehouse_lines_packed : $this->warehouse_lines_handled),
+                'lines_waiting_stock' => (int) $this->warehouse_lines_waiting_stock,
+                'lines_waiting_cs'    => (int) $this->warehouse_lines_waiting_cs,
+            ] : null,
+            'picker_name'                 => $this->picker_name ?? null,
+            'packer_name'                 => $this->packer_name ?? null,
         ];
     }
 }

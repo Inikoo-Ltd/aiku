@@ -6159,3 +6159,83 @@ test('production managers mark orders as production reviewed, one by one or in b
 
     $this->organisation->update(['is_manufacturing_hub' => $wasManufacturingHub]);
 });
+
+test('the orders backlog shows how long an order sits in its stage and flags the stuck ones and the lines waiting for stock', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $orderInWarehouse = function (): Order {
+        $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+        StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+        SubmitOrder::make()->action($order);
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+
+        $stock = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, \App\Models\Goods\Stock::factory()->definition());
+        $stock = \App\Actions\Goods\Stock\UpdateStock::make()->action($stock, ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]);
+        \App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem::make()->action($deliveryNote, [
+            'delivery_note_id'  => $deliveryNote->id,
+            'org_stock_id'      => \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock)->id,
+            'transaction_id'    => $order->transactions()->first()->id,
+            'quantity_required' => 10,
+        ]);
+
+        return $order->refresh();
+    };
+
+    $stuckOrder = $orderInWarehouse();
+    $freshOrder = $orderInWarehouse();
+    expect($stuckOrder->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($freshOrder->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+
+    $indexOrders = \App\Actions\Ordering\Order\UI\IndexOrders::make();
+    $before      = $indexOrders->backlogAttentionCounts($this->shop, 'in_warehouse');
+
+    Order::where('id', $stuckOrder->id)->update(['in_warehouse_at' => now()->subYears(30)]);
+    Order::where('id', $freshOrder->id)->update(['in_warehouse_at' => now()]);
+    \App\Models\Dispatching\DeliveryNoteItem::whereIn('delivery_note_id', $stuckOrder->deliveryNotes()->pluck('delivery_notes.id'))
+        ->update(['quantity_waiting_warehouse' => 1]);
+
+    $after = $indexOrders->backlogAttentionCounts($this->shop, 'in_warehouse');
+    expect($after['stuck'] - $before['stuck'])->toBe(1)
+        ->and($after['waiting_stock'] - $before['waiting_stock'])->toBe(1)
+        ->and($after['waiting_cs'])->toBe($before['waiting_cs']);
+
+    $url = route('grp.org.shops.show.ordering.backlog', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+        'tab'          => 'in_warehouse',
+    ]);
+
+    $pageFor = function (string $query) use ($url) {
+        $response = get($url.$query);
+        $response->assertOk();
+
+        return $response->viewData('page')['props'];
+    };
+
+    $props = $pageFor('');
+    $rows  = collect($props['in_warehouse']['data'])->keyBy('reference');
+    expect($rows->first()['reference'])->toBe($stuckOrder->reference)
+        ->and($rows[$stuckOrder->reference]['is_stuck'])->toBeTrue()
+        ->and($rows[$stuckOrder->reference]['warehouse_progress']['lines_waiting_stock'])->toBe(1)
+        ->and($rows[$freshOrder->reference]['is_stuck'])->toBeFalse()
+        ->and($rows[$freshOrder->reference]['warehouse_progress']['lines_waiting_stock'])->toBe(0)
+        ->and($props['backlog_filters']['counts']['attention']['stuck'])->toBe($after['stuck'])
+        ->and(collect($props['attention']['oldest'])->first()['reference'])->toBe($stuckOrder->reference)
+        ->and(collect($props['attention']['stages'])->firstWhere('tab', 'in_warehouse')['waiting_stock'])->toBe($after['waiting_stock']);
+
+    Order::where('id', $stuckOrder->id)->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    Order::where('id', $freshOrder->id)->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID]);
+    $paidOnly = $pageFor('&in_warehouse_elements[payment]=paid');
+    expect(collect($paidOnly['in_warehouse']['data'])->pluck('reference'))->toContain($stuckOrder->reference)->not->toContain($freshOrder->reference)
+        ->and(array_sum($paidOnly['backlog_filters']['counts']['payment']))->toBe($after['total'])
+        ->and($paidOnly['backlog_filters']['counts']['scope']['domestic'] + $paidOnly['backlog_filters']['counts']['scope']['export'])->toBe($paidOnly['backlog_filters']['counts']['payment']['paid'])
+        ->and($pageFor('&tab=submitted_paid')['backlog_filters']['counts'])->not->toHaveKey('payment');
+
+    foreach (['stuck', 'waiting_stock'] as $signal) {
+        $references = collect($pageFor('&in_warehouse_elements[attention]='.$signal)['in_warehouse']['data'])->pluck('reference');
+        expect($references)->toContain($stuckOrder->reference)->not->toContain($freshOrder->reference);
+    }
+});
