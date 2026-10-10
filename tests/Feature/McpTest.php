@@ -8,11 +8,18 @@
 
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\Masters\MasterAsset\StoreMasterAsset;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\UI\Profile\StoreProfileApiToken;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
@@ -30,6 +37,7 @@ use App\Actions\SysAdmin\McpSql\SyncMcpSqlRoles;
 use App\Mcp\Tools\DescribeTablesTool;
 use App\Mcp\Tools\EmployeeAttendanceTool;
 use App\Mcp\Tools\EmployeeDirectoryTool;
+use App\Mcp\Tools\FamilyPricingReviewTool;
 use App\Mcp\Tools\FamilySalesTool;
 use App\Mcp\Tools\GroupSalesTool;
 use App\Mcp\Tools\MailshotPerformanceTool;
@@ -1803,6 +1811,84 @@ describe('family related products tool', function () {
         ])->assertHasErrors(['NOPE-999']);
 
         expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe($before);
+    });
+});
+
+describe('family pricing review tool', function () {
+    beforeEach(function () {
+        $this->reviewMasterShop = StoreMasterShop::make()->action($this->group, [
+            'type' => ShopTypeEnum::B2B,
+            'code' => 'FPR-'.uniqid(),
+            'name' => 'Pricing review master shop',
+        ]);
+        $this->reviewMasterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
+        $masterDepartment = StoreMasterDepartment::make()->action($this->reviewMasterShop, [
+            'code' => 'FPRD-'.uniqid(),
+            'name' => 'Pricing review department',
+        ]);
+        $this->reviewMasterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+            'code' => 'FPRF-'.uniqid(),
+            'name' => 'Pricing review family',
+            'type' => MasterProductCategoryTypeEnum::FAMILY,
+        ]);
+
+        $this->reviewMasterAssets = collect([4, 6, 8])->map(function (int $price) {
+            $masterAsset = StoreMasterAsset::make()->action($this->reviewMasterFamily, [
+                'code'    => 'FPRP-'.uniqid(),
+                'name'    => 'Pricing review product',
+                'is_main' => true,
+                'type'    => MasterAssetTypeEnum::PRODUCT,
+                'price'   => $price,
+                'stocks'  => [],
+            ]);
+            $masterAsset->updateQuietly(['status' => true, 'master_prices' => ['GBP' => ['value' => (string) $price, 'independent' => false]]]);
+
+            return $masterAsset;
+        });
+    });
+
+    test('user without masters view permission is denied', function () {
+        $guest = guestWithoutPositions($this->group);
+
+        AikuServer::actingAs($guest->getUser())->tool(FamilyPricingReviewTool::class, [
+            'master_shop' => $this->reviewMasterShop->code,
+            'family'      => $this->reviewMasterFamily->code,
+        ])->assertHasErrors(['Permission denied.']);
+    });
+
+    test('admin gets every current product of the family with its master prices and the family totals', function () {
+        AikuServer::actingAs($this->user)->tool(FamilyPricingReviewTool::class, [
+            'master_shop' => strtolower($this->reviewMasterShop->code),
+            'family'      => strtolower($this->reviewMasterFamily->code),
+        ])
+            ->assertOk()
+            ->assertSee('"code":"'.$this->reviewMasterFamily->code.'"')
+            ->assertSee('"code":"'.$this->reviewMasterAssets[0]->code.'"')
+            ->assertSee('"code":"'.$this->reviewMasterAssets[1]->code.'"')
+            ->assertSee('"code":"'.$this->reviewMasterAssets[2]->code.'"')
+            ->assertSee('"currency":"GBP"')
+            ->assertSee('"master_prices":{"GBP":6')
+            ->assertSee('"unit_price_vs_family_median_pct":-33')
+            ->assertSee('"unit_price_vs_family_median_pct":0')
+            ->assertSee('"unit_price_vs_family_median_pct":33')
+            ->assertSee('"no_stock_linked":true')
+            ->assertSee('"family_totals":{"products":3,')
+            ->assertSee('"products_without_sales":[]')
+            ->assertSee('"products_no_stock_linked":["FPRP-');
+    });
+
+    test('an unknown family is refused with the closest codes', function () {
+        AikuServer::actingAs($this->user)->tool(FamilyPricingReviewTool::class, [
+            'master_shop' => $this->reviewMasterShop->code,
+            'family'      => 'FPRF-',
+        ])->assertHasErrors(['is not a master family code'])->assertSee($this->reviewMasterFamily->code);
+    });
+
+    test('an unknown master shop is refused with the codes that exist', function () {
+        AikuServer::actingAs($this->user)->tool(FamilyPricingReviewTool::class, [
+            'master_shop' => 'no-such-master-shop',
+            'family'      => $this->reviewMasterFamily->code,
+        ])->assertHasErrors(['does not match any master shop'])->assertSee($this->reviewMasterShop->code);
     });
 });
 
