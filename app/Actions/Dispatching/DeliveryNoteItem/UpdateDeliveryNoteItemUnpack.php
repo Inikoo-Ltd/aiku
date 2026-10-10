@@ -15,6 +15,7 @@ use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickingSession\UndoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteItemUnpack extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;

@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicke
 use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\Picking;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeletePicking extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     /**
      * @throws \Throwable
      */

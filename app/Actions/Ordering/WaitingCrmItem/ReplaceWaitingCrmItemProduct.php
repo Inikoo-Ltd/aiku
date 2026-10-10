@@ -15,6 +15,7 @@ use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithOrdersOrDispatchingAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReplaceWaitingCrmItemProduct extends OrgAction
 {
+    use WithOrdersOrDispatchingAuthorisation;
     /**
      * @throws \Throwable
      */
@@ -196,6 +198,7 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
      */
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): void
     {
+        $this->warehouse = $deliveryNoteItem->deliveryNote->warehouse;
         $this->initialisationFromShop($deliveryNoteItem->deliveryNote->shop, $request);
 
         $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);

@@ -42,6 +42,7 @@ class GetMiniDeliveryNote extends OrgAction
 
         return [
             'delivery_note' => [
+                'can_work'         => request()->user() instanceof \App\Models\SysAdmin\User && $deliveryNote->canBeWorkedOnBy(request()->user()),
                 'state'            => $deliveryNote->state,
                 'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
                 'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],

@@ -11,7 +11,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteLeaflet;
 use Lorisleiva\Actions\ActionRequest;
 
-trait WithDeliveryNoteWorkAuthorisation
+trait WithDeliveryNoteShipmentAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -26,6 +26,6 @@ trait WithDeliveryNoteWorkAuthorisation
             $deliveryNote = $request->route('deliveryNoteLeaflet')->deliveryNote;
         }
 
-        return $deliveryNote instanceof DeliveryNote && $deliveryNote->canBeWorkedOnBy($request->user());
+        return $deliveryNote instanceof DeliveryNote && $deliveryNote->canBeShippedBy($request->user());
     }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpsertPicking extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use AsAction;
     use WithAttributes;
 

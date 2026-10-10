@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteItemBoxes extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
 
     /**

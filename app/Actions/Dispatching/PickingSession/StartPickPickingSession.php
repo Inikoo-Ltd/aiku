@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\PickingSession;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StartPickPickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use WithActionUpdate;
 
     /**

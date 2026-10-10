@@ -45,8 +45,19 @@ class ExportDeliveryNoteTariffCodes extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo([
+            "orders.{$this->shop->id}.view",
+            "orders.{$this->shop->id}.edit",
+            "dispatching.{$this->warehouse->id}.view",
+            "fulfilment.{$this->warehouse->id}.view",
+        ]);
+    }
+
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): BinaryFileResponse|StreamedResponse
     {
+        $this->warehouse = $deliveryNote->warehouse;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote, $this->validatedData);

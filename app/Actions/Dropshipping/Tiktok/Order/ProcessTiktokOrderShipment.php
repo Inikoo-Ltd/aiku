@@ -13,6 +13,7 @@ use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\SysAdmin\User;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Fulfilment\PalletReturn;
@@ -133,6 +134,16 @@ class ProcessTiktokOrderShipment extends OrgAction
             'tracking' => $tiktokPackageTrackingNumber,
             'combined_label_url' => $tiktokShippingLabelUrl
         ]);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $deliveryNote = $request->route('deliveryNote');
+        if ($deliveryNote instanceof DeliveryNote && $request->user() instanceof User) {
+            return $deliveryNote->canBeShippedBy($request->user());
+        }
+
+        return true;
     }
 
     public function asController(ActionRequest $request, DeliveryNote $deliveryNote)

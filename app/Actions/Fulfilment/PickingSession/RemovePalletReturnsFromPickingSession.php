@@ -4,6 +4,7 @@ namespace App\Actions\Fulfilment\PickingSession;
 
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Models\Inventory\PickingSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class RemovePalletReturnsFromPickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

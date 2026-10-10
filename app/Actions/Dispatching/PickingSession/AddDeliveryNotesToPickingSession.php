@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToIn
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class AddDeliveryNotesToPickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

@@ -2390,7 +2390,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
                             <!-- Button: Get shipment from Faire/Tiktok -->
                             <div
-                                v-if="getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
+                                v-if="note.shipments_routes?.can_work !== false && getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
                                 class="flex items-center gap-2 text-sm mb-1"
                             >
 

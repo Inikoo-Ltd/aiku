@@ -6,6 +6,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicke
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SplitPicking extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use AsAction;
     use WithAttributes;
 

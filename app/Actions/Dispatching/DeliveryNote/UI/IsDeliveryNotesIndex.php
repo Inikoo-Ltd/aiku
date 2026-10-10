@@ -318,7 +318,7 @@ trait IsDeliveryNotesIndex
             $employee = GetUserCurrentEmployee::run(request()->user());
         }
         $pickerEmployee = null;
-        if ($employee) {
+        if ($employee && (!$parent instanceof Warehouse || $parent->canBeWorkedInBy(request()->user()))) {
             $pickerEmployee = $employee->jobPositions()->where('name', 'Picker')->first();
         }
 

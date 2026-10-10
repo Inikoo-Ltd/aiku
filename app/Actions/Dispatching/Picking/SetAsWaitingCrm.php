@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetAsWaitingCrm extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

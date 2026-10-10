@@ -370,7 +370,7 @@ class ShowOrder extends OrgAction
         }
 
         $redispatchRoute = null;
-        if ($firstDeliveryNote && $firstDeliveryNote->state == DeliveryNoteStateEnum::FINALISED) {
+        if ($firstDeliveryNote && $firstDeliveryNote->state == DeliveryNoteStateEnum::FINALISED && $firstDeliveryNote->canBeShippedBy($request->user())) {
             $redispatchRoute = [
                 'method'     => 'patch',
                 'name'       => 'grp.models.delivery_note.state.dispatched',

@@ -37,13 +37,13 @@ class PickPickingSessionItemByScan extends OrgAction
     protected User $user;
 
     /**
-     * The picking screen of a session is open to whoever works the session, so the only extra gate is
-     * the organisation opting into scanning. Without it the endpoint would stay live for
-     * organisations that never enabled the feature.
+     * Scanning is warehouse work: the user needs dispatching in the warehouse of the session, and the
+     * organisation must have opted into scanning or the endpoint would stay live where it was never enabled.
      */
     public function authorize(ActionRequest $request): bool
     {
-        return (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pick', false);
+        return (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pick', false)
+            && $this->warehouse->canBeWorkedInBy($request->user());
     }
 
     /**

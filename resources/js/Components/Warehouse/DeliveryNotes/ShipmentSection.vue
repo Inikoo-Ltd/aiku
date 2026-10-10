@@ -53,6 +53,7 @@ const props = withDefaults(defineProps<{
 		submit_route: routeType
 		fetch_route: routeType
 		delete_route: routeType
+		can_work?: boolean
 	}
 	shipper_directive?: {
 		locked_shipper_id: number | null
@@ -517,6 +518,8 @@ const onRetryPacketaWithSender = () => {
 }
 
 const isAskingCrm = ref(false)
+const canWork = computed(() => props.isEditable && props.shipments_routes?.can_work !== false)
+
 const deliveryNoteId = computed(() => props.shipments_routes?.submit_route?.parameters?.deliveryNote ?? null)
 
 const askCrmAboutShipment = async () => {
@@ -711,7 +714,7 @@ const onClickButtonShipmentPlatform = () => {
 
 
 						<div
-							v-else-if="isEditable"
+							v-else-if="canWork"
 							class="cursor-pointer px-2 py-1 lg:py-0 lg:px-1 absolute top-0 right-0 text-red-400 hover:text-red-700"
 							v-tooltip="ctrans('Remove shipment')"
 							@click="(e) => confirmdelete(e, shipment)">
@@ -724,7 +727,7 @@ const onClickButtonShipmentPlatform = () => {
 					</div>
 
 					<Button
-						v-if="shipment.is_printable"
+						v-if="shipment.is_printable && canWork"
 						@click="(e) => onPrintShipment(shipment)"
 						:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
 						icon="fal fa-print"
@@ -735,7 +738,7 @@ const onClickButtonShipmentPlatform = () => {
 				</li>
 			</ul>
 
-			<div v-if="isEditable" class="gap-2 mb-2 flex">
+			<div v-if="canWork" class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
 				<Button
 					v-if="!shipments.length && props.shipments_routes?.get_external_shipment_route?.name"

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PickAllItem extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithAttributes;
 
     protected DeliveryNoteItem $deliveryNoteItem;

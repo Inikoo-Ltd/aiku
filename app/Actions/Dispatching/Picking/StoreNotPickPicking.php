@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreNotPickPicking extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
 
     private DeliveryNoteItem $deliveryNoteItem;

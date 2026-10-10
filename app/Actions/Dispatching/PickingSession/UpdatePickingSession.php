@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Inventory\PickingSession;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(PickingSession $pickingSession, array $modelData): PickingSession
@@ -41,6 +43,7 @@ class UpdatePickingSession extends OrgAction
 
     public function action(PickingSession $pickingSession, array $modelData): PickingSession
     {
+        $this->asAction = true;
         $this->initialisationFromWarehouse($pickingSession->warehouse, $modelData);
         return $this->handle($pickingSession, $this->validatedData);
 

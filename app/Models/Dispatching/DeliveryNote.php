@@ -591,7 +591,19 @@ class DeliveryNote extends Model implements Auditable
             "supervisor-dispatching.$this->warehouse_id",
             "returns.$this->warehouse_id",
             "org-admin.$this->organisation_id",
-            "orders.$this->shop_id.edit",
+        ]);
+    }
+
+    public function canBeShippedBy(User $user): bool
+    {
+        return $this->canBeWorkedOnBy($user) || $user->authTo("orders.$this->shop_id.edit");
+    }
+
+    public function canBeUndispatchedBy(User $user): bool
+    {
+        return $user->authTo([
+            "supervisor-dispatching.$this->warehouse_id",
+            "org-admin.$this->organisation_id",
         ]);
     }
 

@@ -241,6 +241,7 @@ trait IsOrder
                     'shipper_directive'            => $this->getShipperDirective($deliveryNote),
                     'shipments'                    => ShipmentsResource::collection($deliveryNote->shipments)->resolve(),
                     'shipments_routes'             => [
+                        'can_work'     => request()->user() instanceof \App\Models\SysAdmin\User && $deliveryNote->canBeShippedBy(request()->user()),
                         'submit_route' => [
                             'name'       => 'grp.models.delivery_note.shipment.store',
                             'parameters' => [

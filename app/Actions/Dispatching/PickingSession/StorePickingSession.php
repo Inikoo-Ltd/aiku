@@ -15,6 +15,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
@@ -35,6 +36,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StorePickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

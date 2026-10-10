@@ -113,6 +113,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
     {
         $this->shopType = 'all';
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WaitingItemsTabsEnum::values());
+        $this->readOnly = $this->readOnly || !$warehouse->canBeWorkedInBy($request->user());
 
         return $this->handle($warehouse);
     }
@@ -122,6 +123,7 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
     {
         $this->shopType = $shopType;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WaitingItemsTabsEnum::values());
+        $this->readOnly = $this->readOnly || !$warehouse->canBeWorkedInBy($request->user());
 
         return $this->handle($warehouse);
     }

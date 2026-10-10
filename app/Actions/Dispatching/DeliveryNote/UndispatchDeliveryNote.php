@@ -60,7 +60,7 @@ class UndispatchDeliveryNote extends OrgAction
 
         $deliveryNote = $request->route('deliveryNote');
 
-        return $deliveryNote instanceof DeliveryNote && $deliveryNote->canBeCancelledBy($request->user());
+        return $deliveryNote instanceof DeliveryNote && $deliveryNote->canBeUndispatchedBy($request->user());
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void

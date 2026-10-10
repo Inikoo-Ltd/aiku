@@ -5,6 +5,7 @@ namespace App\Actions\Fulfilment\PickingSession;
 use App\Actions\Fulfilment\PalletReturn\PickingPalletReturn;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
@@ -15,6 +16,7 @@ use App\Models\SysAdmin\User;
 
 class StartPickFulfilmentPickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use WithActionUpdate;
 
     /**

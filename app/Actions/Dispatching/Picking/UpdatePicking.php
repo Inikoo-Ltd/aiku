@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicke
 use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
@@ -31,6 +32,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdatePicking extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

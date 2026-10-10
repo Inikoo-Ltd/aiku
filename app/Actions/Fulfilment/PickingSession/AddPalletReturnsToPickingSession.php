@@ -4,6 +4,7 @@ namespace App\Actions\Fulfilment\PickingSession;
 
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\PickingSession;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class AddPalletReturnsToPickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -24,6 +25,7 @@ use App\Actions\Audits\DispatchSimpleAudit;
 
 class UpdateDeliveryNoteItemPacking extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;

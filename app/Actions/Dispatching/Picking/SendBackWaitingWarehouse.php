@@ -5,6 +5,7 @@ namespace App\Actions\Dispatching\Picking;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithOrdersOrDispatchingAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SendBackWaitingWarehouse extends OrgAction
 {
+    use WithOrdersOrDispatchingAuthorisation;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -72,6 +74,7 @@ class SendBackWaitingWarehouse extends OrgAction
     {
         $this->user             = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->warehouse = $deliveryNoteItem->deliveryNote->warehouse;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);

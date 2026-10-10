@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteItem extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;

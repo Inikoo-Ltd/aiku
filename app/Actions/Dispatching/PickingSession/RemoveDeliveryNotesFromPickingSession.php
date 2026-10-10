@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUn
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingEditAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\PickingSession;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class RemoveDeliveryNotesFromPickingSession extends OrgAction
 {
+    use WithDispatchingEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

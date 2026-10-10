@@ -22,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetTempPickerToDeliveryNote extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithNoStrictRules;

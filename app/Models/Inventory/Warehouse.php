@@ -21,6 +21,7 @@ use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
@@ -254,5 +255,15 @@ class Warehouse extends Model implements Auditable
     public function returnDeliveryNotes(): HasMany
     {
         return $this->hasMany(ReturnDeliveryNote::class);
+    }
+
+    public function canBeWorkedInBy(User $user): bool
+    {
+        return $user->authTo([
+            "dispatching.$this->id.edit",
+            "supervisor-dispatching.$this->id",
+            "fulfilment.$this->id.edit",
+            "org-admin.$this->organisation_id",
+        ]);
     }
 }

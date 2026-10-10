@@ -241,10 +241,10 @@ onMounted(() => {
                 class="mr-3"
             />
 
-            <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
+            <Button v-if="data?.delivery_note?.can_work && props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
                 type="save" :label="isCollection ? ctrans('Finalise and set as Collected') : ctrans('Finalise and Dispatch')" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
-            <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'picked' || props.deliveryNote.delivery_note_state === 'packing')"
+            <Button v-if="data?.delivery_note?.can_work && props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'picked' || props.deliveryNote.delivery_note_state === 'packing')"
                 type="save" :label="ctrans('Set as packed')" size="sm" class="mx-3 whitespace-nowrap" :loading="loadingFinal"
                 @click="handleSetAsPacked" />
         </template>
@@ -333,7 +333,7 @@ onMounted(() => {
                         <div class="font-medium text-gray-700">
                             {{ ctrans("Parcels") }} ({{ data.delivery_note?.parcels?.length ?? 0 }})
                         </div>
-                        <div v-if="statesWithEditableParcels.includes(data.delivery_note?.state)"
+                        <div v-if="data.delivery_note?.can_work && statesWithEditableParcels.includes(data.delivery_note?.state)"
                             class="text-gray-500 cursor-pointer hover:text-gray-700"
                             @click="onOpenModalParcels">
                             {{ data.delivery_note?.parcels?.length ? ctrans("Edit") : ctrans("Add") }}

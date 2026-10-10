@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\Picking;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UndoSetAsWaitingWarehouse extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
 
     private DeliveryNoteItem $deliveryNoteItem;

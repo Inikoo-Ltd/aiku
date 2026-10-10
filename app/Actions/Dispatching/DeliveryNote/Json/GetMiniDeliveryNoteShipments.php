@@ -80,6 +80,7 @@ class GetMiniDeliveryNoteShipments extends OrgAction
                 'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : [],
                 'shipments_routes'           => [
                     ...$additionalShipmentRoutes,
+                    'can_work'    => request()->user() instanceof \App\Models\SysAdmin\User && $deliveryNote->canBeShippedBy(request()->user()),
                     'fetch_route' => [
                         'name'       => 'grp.json.shippers.index',
                         'parameters' => [

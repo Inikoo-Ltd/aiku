@@ -19,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteShipment extends OrgAction
 {
+    use WithShipmentWorkAuthorisation;
     use WithActionUpdate;
 
     public function handle(Shipment $shipment): void

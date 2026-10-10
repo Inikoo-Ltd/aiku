@@ -4,6 +4,7 @@ namespace App\Actions\Dispatching\Printer;
 
 use App\Actions\Dispatching\Shipment\FetchShipmentLabel;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\Shipment\WithShipmentWorkAuthorisation;
 use App\Actions\Traits\WithPrintNode;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class PrintShipmentLabel extends OrgAction
 {
+    use WithShipmentWorkAuthorisation;
     use WithPrintNode;
 
     /**

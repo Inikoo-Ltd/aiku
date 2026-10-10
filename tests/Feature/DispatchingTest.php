@@ -6225,3 +6225,64 @@ test('a picking session is closed to staff without dispatching or fulfilment in 
         \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
     }
 });
+
+test('picking and packing are warehouse work, the order page shipment and dispatch buttons stay with the shop orders permission, INI-073', function () {
+    $unguarded = collect(app('router')->getRoutes()->getRoutes())
+        ->filter(fn ($route) => str_starts_with((string) $route->getName(), 'grp.') && is_string($route->getAction('uses')) && !in_array('GET', $route->methods()))
+        ->map(fn ($route) => \Illuminate\Support\Str::before($route->getAction('uses'), '@'))
+        ->filter(fn (string $action) => \Illuminate\Support\Str::startsWith($action, [
+            'App\\Actions\\Dispatching\\Picking\\',
+            'App\\Actions\\Dispatching\\DeliveryNoteItem\\',
+            'App\\Actions\\Dispatching\\PickingSession\\',
+            'App\\Actions\\Dispatching\\Shipment\\DeleteShipment',
+            'App\\Actions\\Dispatching\\Printer\\PrintShipmentLabel',
+            'App\\Actions\\Dispatching\\DeliveryNote\\SetTempPickerToDeliveryNote',
+            'App\\Actions\\Ordering\\WaitingCrmItem\\ReplaceWaitingCrmItemProduct',
+        ]) && !method_exists($action, 'authorize'))
+        ->unique()->values()->all();
+    expect($unguarded)->toBe([]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 4);
+    $picking               = $item->pickings()->firstOrFail();
+
+    $packing     = fn () => $this->patch(route('grp.models.delivery_note_item.packing.store', $item->id), []);
+    $unlock      = fn () => $this->patch(route('grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker', [$this->organisation->slug, $this->shop->slug, $deliveryNote->slug]));
+    $unpick      = fn () => $this->delete(route('grp.models.picking.delete', $picking->id));
+    $doNotPick   = fn () => $this->post(route('grp.models.delivery_note_item.not_picking_from_waiting_crm.store', $item->id), []);
+    $tariffCodes = fn () => $this->get(route('grp.models.delivery_note.tariff_codes.export', $deliveryNote->id));
+
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ["crm.{$this->shop->id}.view", "orders.{$this->shop->id}.edit"]);
+        $packing()->assertForbidden();
+        $unlock()->assertForbidden();
+        $unpick()->assertForbidden();
+        $this->patch(route('grp.models.delivery_note.state.packing', $deliveryNote->id))->assertForbidden();
+        expect($picking->fresh())->not->toBeNull()
+            ->and($deliveryNote->canBeWorkedOnBy($this->user))->toBeFalse()
+            ->and($deliveryNote->canBeShippedBy($this->user))->toBeTrue()
+            ->and($this->patch(route('grp.models.delivery_note.state.dispatched', $deliveryNote->id))->status())->not->toBe(403)
+            ->and($doNotPick()->status())->not->toBe(403)
+            ->and($tariffCodes()->status())->not->toBe(403);
+
+        actingAsUserWithOnlyPermissions($this->user, ["crm.{$this->shop->id}.view"]);
+        $this->patch(route('grp.models.delivery_note.state.dispatched', $deliveryNote->id))->assertForbidden();
+        $doNotPick()->assertForbidden();
+        $tariffCodes()->assertForbidden();
+
+        actingAsUserWithOnlyPermissions($this->user, ["dispatching.{$this->warehouse->id}.view"]);
+        $packing()->assertForbidden();
+
+        actingAsUserWithOnlyPermissions($this->user, ["dispatching.{$this->warehouse->id}.edit"]);
+        expect($unlock()->status())->not->toBe(403)
+            ->and($packing()->status())->not->toBe(403)
+            ->and($doNotPick()->status())->not->toBe(403);
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+});

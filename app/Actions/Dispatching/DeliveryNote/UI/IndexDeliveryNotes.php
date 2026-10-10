@@ -69,7 +69,7 @@ class IndexDeliveryNotes extends OrgAction
         $isQueueBucket = in_array($this->bucket, ['unassigned', 'queued'], true);
         $isHiddenShop  = !in_array($this->shopType, ['b2b', 'external', self::PARTNERS_CHANNEL], true);
 
-        $todo = $isQueueBucket && $isHiddenShop;
+        $todo = $isQueueBucket && $isHiddenShop && $this->warehouse->canBeWorkedInBy(request()->user());
 
         $pickingSessionRoute = [
                     'name' => 'grp.models.warehouse.picking_session.store',

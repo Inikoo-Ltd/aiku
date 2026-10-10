@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingIte
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithOrdersOrDispatchingAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreNotPickPickingFromWaitingCrm extends OrgAction
 {
+    use WithOrdersOrDispatchingAuthorisation;
     use WithActionUpdate;
     use AutoIgnoreZeroQuantityItems;
 
@@ -76,6 +78,7 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): ?Picking
     {
         $this->deliveryNoteItem = $deliveryNoteItem;
+        $this->warehouse = $deliveryNoteItem->deliveryNote->warehouse;
         $this->initialisationFromShop($deliveryNoteItem->shop, $request);
 
         return $this->handle($deliveryNoteItem, $request->user(), $this->validatedData);

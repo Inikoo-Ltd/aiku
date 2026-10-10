@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingIte
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Ordering\Transaction\Traits\WithCalculateTransactionDiscount;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class PickAllItemFromWaitingWarehouse extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithCalculateTransactionDiscount;
 
     /**

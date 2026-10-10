@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingIte
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
 {
+    use WithDeliveryNoteWorkAuthorisation;
     use WithActionUpdate;
     use AutoIgnoreZeroQuantityItems;
 
