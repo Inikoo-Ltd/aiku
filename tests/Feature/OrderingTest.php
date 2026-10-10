@@ -6189,13 +6189,17 @@ test('the orders backlog shows how long an order sits in its stage and flags the
     expect($stuckOrder->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($freshOrder->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
 
+    $itemsOf = fn (Order $order) => \App\Models\Dispatching\DeliveryNoteItem::whereIn('delivery_note_id', $order->deliveryNotes()->pluck('delivery_notes.id'));
+    $itemsOf($stuckOrder)->update(['quantity_waiting_warehouse' => 0]);
+    $itemsOf($freshOrder)->update(['quantity_waiting_warehouse' => 0]);
+
     $indexOrders = \App\Actions\Ordering\Order\UI\IndexOrders::make();
     $before      = $indexOrders->backlogAttentionCounts($this->shop, 'in_warehouse');
 
     Order::where('id', $stuckOrder->id)->update(['in_warehouse_at' => now()->subYears(30)]);
     Order::where('id', $freshOrder->id)->update(['in_warehouse_at' => now()]);
-    \App\Models\Dispatching\DeliveryNoteItem::whereIn('delivery_note_id', $stuckOrder->deliveryNotes()->pluck('delivery_notes.id'))
-        ->update(['quantity_waiting_warehouse' => 1]);
+    $stuckLinesWaitingStock = $itemsOf($stuckOrder)->update(['quantity_waiting_warehouse' => 1]);
+    expect($stuckLinesWaitingStock)->toBeGreaterThan(0);
 
     $after = $indexOrders->backlogAttentionCounts($this->shop, 'in_warehouse');
     expect($after['stuck'] - $before['stuck'])->toBe(1)
@@ -6219,7 +6223,7 @@ test('the orders backlog shows how long an order sits in its stage and flags the
     $rows  = collect($props['in_warehouse']['data'])->keyBy('reference');
     expect($rows->first()['reference'])->toBe($stuckOrder->reference)
         ->and($rows[$stuckOrder->reference]['is_stuck'])->toBeTrue()
-        ->and($rows[$stuckOrder->reference]['warehouse_progress']['lines_waiting_stock'])->toBe(1)
+        ->and($rows[$stuckOrder->reference]['warehouse_progress']['lines_waiting_stock'])->toBe($stuckLinesWaitingStock)
         ->and($rows[$freshOrder->reference]['is_stuck'])->toBeFalse()
         ->and($rows[$freshOrder->reference]['warehouse_progress']['lines_waiting_stock'])->toBe(0)
         ->and($props['backlog_filters']['counts']['attention']['stuck'])->toBe($after['stuck'])
