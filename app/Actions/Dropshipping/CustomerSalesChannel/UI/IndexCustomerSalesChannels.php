@@ -106,6 +106,7 @@ class IndexCustomerSalesChannels extends OrgAction
             'customer_sales_channels.platform_status',
             'customer_sales_channels.is_blocked',
             'customer_sales_channels.connection_failure',
+            'customer_sales_channels.settings->woocommerce->stock_management_off as stock_management_off',
             'customer_sales_channels.number_customer_clients as number_clients',
             'customer_sales_channels.number_portfolios as number_portfolios',
             'customer_sales_channels.number_portfolio_broken as number_portfolio_broken',

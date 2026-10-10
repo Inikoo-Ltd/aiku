@@ -38,6 +38,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooComm
 use App\Actions\Dropshipping\WooCommerce\Product\RetryTimedOutWooUploads;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Events\UploadProductToSalesChannelProgressEvent;
@@ -1106,6 +1107,46 @@ test('the stock push batches the channel portfolios and records each product res
         ->and($dead->refresh()->stock_last_fail_updated_at)->not->toBeNull()
         ->and($dead->last_stock_value)->toBeNull()
         ->and($channel->refresh()->ban_stock_update_util)->toBeNull();
+});
+
+test('a store with stock management switched off fails the push and is flagged on the channel until it applies our stock', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $this->product->update(['available_quantity' => 11]);
+    $portfolio = wooPortfolio($channel, $this->product, '794', 'ignored-sku');
+
+    wooFake(['POST products/batch' => Http::response(['update' => [wooProduct(794, ['manage_stock' => false, 'stock_quantity' => 35])]])]);
+    UpdateWooCustomerSalesChannelPortfolio::run($channel, true);
+
+    expect($portfolio->refresh()->stock_last_updated_at)->toBeNull()
+        ->and($portfolio->stock_last_fail_updated_at)->not->toBeNull()
+        ->and($portfolio->last_stock_value)->toBeNull()
+        ->and(Arr::get($channel->refresh()->settings, 'woocommerce.stock_management_off'))->toBeTrue()
+        ->and(RetinaCustomerSalesChannelResource::make($channel)->toArray(request())['stock_management_off'])->toBeTrue();
+
+    $customer = $channel->customer;
+    $channel->update(['platform_status' => true]);
+    $staffRows = $this->withoutVite()
+        ->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.index', [$customer->organisation->slug, $customer->shop->slug, $customer->slug]))
+        ->assertOk()
+        ->inertiaProps('data.data');
+    expect(collect($staffRows)->firstWhere('id', $channel->id)['stock_management_off'])->toBeTrue();
+
+    wooFakeForPing();
+    CheckWooChannel::run($wooCommerceUser->refresh());
+    expect(Arr::get($channel->refresh()->settings, 'woocommerce.stock_management_off'))->toBeTrue();
+
+    wooFake(['POST products/batch' => Http::response(['update' => [wooProduct(794, ['stock_quantity' => 11])]])]);
+    UpdateWooCustomerSalesChannelPortfolio::run($channel, true);
+
+    expect($portfolio->refresh()->stock_last_updated_at)->not->toBeNull()
+        ->and((int) $portfolio->last_stock_value)->toBe(11)
+        ->and(Arr::get($channel->refresh()->settings, 'woocommerce.stock_management_off'))->toBeFalse();
+
+    $staffRows = $this->withoutVite()
+        ->get(route('grp.org.shops.show.crm.customers.show.customer_sales_channels.index', [$customer->organisation->slug, $customer->shop->slug, $customer->slug]))
+        ->inertiaProps('data.data');
+    expect(collect($staffRows)->firstWhere('id', $channel->id)['stock_management_off'])->toBeFalse();
 });
 
 test('a rejected batch bans the channel briefly unless the store says the request itself was wrong', function () {

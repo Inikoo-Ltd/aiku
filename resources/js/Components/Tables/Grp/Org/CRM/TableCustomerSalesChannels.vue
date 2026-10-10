@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUndoAlt, faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faUndoAlt)
+library.add(faUndoAlt, faExclamationTriangle)
 
 defineProps<{
     data: TableTS,
@@ -198,6 +198,10 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     <template v-if="item.connection_failure">
                         <FontAwesomeIcon v-tooltip="item.connection_failure" :icon="item.is_blocked ? 'fal fa-ban' : 'fal fa-unlink'" :class="item.is_blocked ? 'text-orange-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
                         <span class="sr-only">{{ item.connection_failure }}</span>
+                    </template>
+                    <template v-if="item.stock_management_off">
+                        <FontAwesomeIcon v-tooltip="ctrans('Stock management is switched off in the store, it ignores the stock we send')" icon="far fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                        <span class="sr-only">{{ ctrans('Stock management is switched off in the store, it ignores the stock we send') }}</span>
                     </template>
                 </template>
             </template>

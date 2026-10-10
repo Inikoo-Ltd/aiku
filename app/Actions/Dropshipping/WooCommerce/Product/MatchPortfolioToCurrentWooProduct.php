@@ -48,11 +48,15 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
         $portfolio->update(['errors_response' => null]);
 
         $quantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($portfolio->item, $portfolio->customerSalesChannel);
-        $wooCommerceUser->updateWooCommerceProduct($portfolio->platform_product_id, [
+        $response = $wooCommerceUser->updateWooCommerceProduct($portfolio->platform_product_id, [
             'manage_stock' => true,
             'stock_quantity' => $quantity,
             'stock_status' => $quantity > 0 ? 'instock' : 'outofstock'
         ]);
+
+        if (Arr::has($response, 'manage_stock')) {
+            UpdateBatchWooCustomerSalesChannelPortfolio::recordStockManagement($portfolio->customerSalesChannel, Arr::get($response, 'manage_stock') === false);
+        }
 
         UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
     }

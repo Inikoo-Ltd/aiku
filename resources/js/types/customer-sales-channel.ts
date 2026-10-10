@@ -33,6 +33,7 @@ export interface CustomerSalesChannel {
     exist_in_platform: boolean
     platform_status: boolean
     not_ready_reason?: string | null
+    stock_management_off?: boolean
 
     customer_company_name: string
     customer_slug: string

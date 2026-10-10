@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -51,6 +52,7 @@ class UpdateBatchWooCustomerSalesChannelPortfolio
 
         $processedQuantities = [];
         $erroredPlatformProductIds = [];
+        $storeIgnoresStock = false;
 
         foreach ($responseItems as $responseItem) {
             $platformProductId = Arr::get($responseItem, 'id');
@@ -61,6 +63,8 @@ class UpdateBatchWooCustomerSalesChannelPortfolio
 
             if (Arr::has($responseItem, 'error')) {
                 $erroredPlatformProductIds[] = (int) $platformProductId;
+            } elseif (Arr::get($responseItem, 'manage_stock') === false) {
+                $storeIgnoresStock = true;
             } else {
                 $processedQuantities[(int) $platformProductId] = (int) (Arr::get($responseItem, 'stock_quantity') ?? $requestedQuantities[(int) $platformProductId]);
             }
@@ -97,11 +101,28 @@ class UpdateBatchWooCustomerSalesChannelPortfolio
                 ]);
         }
 
+        if ($storeIgnoresStock || filled($processedQuantities)) {
+            self::recordStockManagement($customerSalesChannel, $storeIgnoresStock);
+        }
+
         if (filled($processedQuantities) && $customerSalesChannel->ban_stock_update_util !== null) {
             $customerSalesChannel->update([
                 'ban_stock_update_util' => null
             ]);
         }
+    }
+
+    public static function recordStockManagement(CustomerSalesChannel $customerSalesChannel, bool $isOff): void
+    {
+        if ((bool) Arr::get($customerSalesChannel->settings, 'woocommerce.stock_management_off') === $isOff) {
+            return;
+        }
+
+        $customerSalesChannel->refresh();
+
+        UpdateCustomerSalesChannel::run($customerSalesChannel, [
+            'settings' => ['woocommerce' => ['stock_management_off' => $isOff]],
+        ]);
     }
 
     public function handleFailedBatch(CustomerSalesChannel $customerSalesChannel, ?array $response): void

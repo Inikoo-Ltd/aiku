@@ -301,6 +301,14 @@ const layout = inject('layout', layoutStructure)
             </template>
 
             <div v-else>
+                <Message v-if="customer_sales_channel.stock_management_off" severity="warn" class="mt-5">
+                <div class="ml-2 font-normal text-sm">
+                    <div class="font-bold">{{ ctrans("Your store is ignoring the stock we send") }}</div>
+                    <div class="mt-1">
+                        {{ ctrans("Stock management is switched off in your WooCommerce store, so your products stay in stock there whatever we have. Switch it on in WooCommerce > Settings > Products > Inventory > Enable stock management.") }}
+                    </div>
+                </div>
+                </Message>
                 <!-- Notice: eBay will not list until the seller account is finished -->
                 <Message v-if="ebay_registration_notice" severity="error" class="mt-5">
                     <div class="ml-2 font-normal text-sm">

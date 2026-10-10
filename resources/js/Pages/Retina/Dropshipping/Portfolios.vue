@@ -1344,6 +1344,14 @@ const layout = inject("layout", layoutStructure)
 
 		<PlatformWarningNotConnected v-else :customer_sales_channel="customer_sales_channel" />
 	</div>
+	<Message v-if="customer_sales_channel.stock_management_off" severity="warn" class="m-4">
+	<div class="ml-2 font-normal text-sm">
+	    <div class="font-bold">{{ ctrans("Your store is ignoring the stock we send") }}</div>
+	    <div class="mt-1">
+	        {{ ctrans("Stock management is switched off in your WooCommerce store, so your products stay in stock there whatever we have. Switch it on in WooCommerce > Settings > Products > Inventory > Enable stock management.") }}
+	    </div>
+	</div>
+	</Message>
 	<div v-if="ebay_warehouse_policy_msg?.show_msg" class="flex justify-between mt-5 m-4">
 		<div class="w-full border-2 border-red-500 rounded-lg p-4 bg-red-50">
 			<div class="flex flex-col sm:flex-row sm:items-start">

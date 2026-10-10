@@ -134,6 +134,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'vat_rate'               => $taxCategory?->rate,
             'store_url' => $siteUrl,
             'not_ready_reason' => Arr::get($this->settings, $customerSalesChannels->platform->type->value.'.not_ready_reason'),
+            'stock_management_off' => (bool) Arr::get($this->settings, 'woocommerce.stock_management_off'),
             'platform_completion' => $platformCompletion,
             'tiktok_shop_has_no_warehouse' => $tiktokShopHasNoWarehouse,
             'reconnect_route' => $reconnectRoute,

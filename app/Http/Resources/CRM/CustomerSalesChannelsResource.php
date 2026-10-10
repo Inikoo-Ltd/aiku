@@ -35,6 +35,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $platform_status
  * @property mixed $is_blocked
  * @property WooCommerceConnectionFailureEnum|null $connection_failure
+ * @property mixed $stock_management_off
  * @property mixed $number_clients
  */
 class CustomerSalesChannelsResource extends JsonResource
@@ -65,6 +66,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'platform_status'         => $this->platform_status,
             'is_blocked'              => $this->is_blocked,
             'connection_failure'      => $this->connection_failure ? WooCommerceConnectionFailureEnum::labels()[$this->connection_failure->value] : null,
+            'stock_management_off'    => filter_var($this->stock_management_off, FILTER_VALIDATE_BOOLEAN),
             'customer_company_name'   => $this->customer_company_name ?? $this->customer_contact_name,
             'customer_slug'           => $this->customer_slug,
             'customer_id'             => $this->customer_id,
