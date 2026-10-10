@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithShopDashboardAuthorisation;
 use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShopSalesAnalysis extends OrgAction
 {
+    use WithShopDashboardAuthorisation;
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromShop($shop, $request);

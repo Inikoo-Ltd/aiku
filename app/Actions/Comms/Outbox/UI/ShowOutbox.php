@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Outbox\UI;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCommsAuthorisation;
 use App\Actions\Web\HasWorkshopAction;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\UI\Mail\OutboxTabsEnum;
@@ -34,6 +35,7 @@ use App\Http\Resources\Mail\OutboxEmailBulkRunsResource;
  */
 class ShowOutbox extends OrgAction
 {
+    use WithCommsAuthorisation;
     use HasWorkshopAction;
 
     /**
@@ -51,14 +53,6 @@ class ShowOutbox extends OrgAction
         return $outbox;
     }
 
-
-    public function inOrganisation(Organisation $organisation, Outbox $outbox, ActionRequest $request): Outbox
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(OutboxTabsEnum::values());
-
-        return $this->handle($outbox);
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, Outbox $outbox, ActionRequest $request): Outbox
@@ -173,7 +167,7 @@ class ShowOutbox extends OrgAction
                             'title' => __('Outbox')
                         ],
                     'iconRight' => $outbox->state->icon()[$outbox->state->value],
-                    'actions' => $actions,
+                    'actions' => $this->canEdit ? $actions : [],
                 ] + ($pageHeadAfterTitle ? ['afterTitle' => $pageHeadAfterTitle] : []),
                 'tabs'        => [
                     'current'    => $this->tab,

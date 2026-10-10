@@ -11,6 +11,7 @@ namespace App\Actions\Comms\EmailBulkRun\UI;
 
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCommsAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Organisation;
@@ -22,6 +23,7 @@ use App\Models\Comms\EmailBulkRun;
 
 class ShowEmailBulkRun extends OrgAction
 {
+    use WithCommsAuthorisation;
     public function handle(EmailBulkRun $emailBulkRun): EmailBulkRun
     {
         return $emailBulkRun;

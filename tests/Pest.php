@@ -676,6 +676,17 @@ function actingAsUserWithRoles(\App\Models\SysAdmin\User $user, array $roles): v
     \Pest\Laravel\actingAs($user->refresh());
 }
 
+function actingAsUserWithOnlyPermissions(\App\Models\SysAdmin\User $user, array $permissions): void
+{
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles([]);
+    $user->syncPermissions($permissions);
+    \Illuminate\Support\Facades\Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user->refresh());
+    \Pest\Laravel\actingAs($user->refresh());
+}
+
 /**
  * A line on a partner shopping list as the seller gets it: added by the buyer and submitted.
  */

@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingS
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -35,6 +36,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowPickingSession extends OrgAction
 {
+    use WithDispatchingAuthorisation;
     use AsAction;
     use WithInertia;
 

@@ -6200,3 +6200,28 @@ test('shipment packaging is reported as used and lines added by hand join the UK
         ->and($orgStock->refresh()->is_shipment_packaging)->toBeFalse()
         ->and($return()['lines'])->toBe([]);
 });
+
+test('a picking session is closed to staff without dispatching or fulfilment in its warehouse', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $url = route('grp.org.warehouses.show.dispatching.picking_sessions.show', [$this->organisation->slug, $this->warehouse->slug, $pickingSession->slug]);
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ["crm.{$this->shop->id}.view", "orders.{$this->shop->id}.edit"]);
+        get($url)->assertForbidden();
+
+        actingAsUserWithOnlyPermissions($this->user, ["dispatching.{$this->warehouse->id}.view"]);
+        get($url)->assertOk();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+});

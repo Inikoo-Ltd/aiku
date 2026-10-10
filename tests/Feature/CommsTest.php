@@ -4584,3 +4584,40 @@ test('a campaign whose channels all stopped does not stay in sending', function 
     expect($campaign->refresh()->state)->toBe(WhatsappCampaignStateEnum::STOPPED)
         ->and($campaign->stopped_at)->not->toBeNull();
 });
+
+test('comms pages need a permission for the shop, marketing staff of other shops read them and cannot open the workshop', function () {
+    $shop       = $this->shop;
+    $parameters = [$this->organisation->slug, $shop->slug];
+    $outbox     = $shop->outboxes()->where('model_type', '!=', 'Mailshot')->whereNotNull('code')->firstOrFail();
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ['group-reports']);
+        $this->get(route('grp.org.shops.show.dashboard.comms.dashboard', $parameters))->assertForbidden();
+        $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show', [...$parameters, $outbox->slug]))->assertForbidden();
+        $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.workshop', [...$parameters, $outbox->slug]))->assertForbidden();
+        $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show.email-bulk-runs.show', [...$parameters, $outbox->slug, 0]))->assertNotFound();
+
+        $permissionClass = app(\Spatie\Permission\PermissionRegistrar::class)->getPermissionClass();
+        if (!$permissionClass::where('name', 'marketing.999999999.view')->exists()) {
+            $permissionClass::where('name', "marketing.$shop->id.view")->firstOrFail()->replicate()->fill(['name' => 'marketing.999999999.view'])->save();
+        }
+        actingAsUserWithOnlyPermissions($this->user, ['marketing.999999999.view']);
+        $this->get(route('grp.org.shops.show.dashboard.comms.dashboard', $parameters))->assertOk();
+        $otherShopOutbox = $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show', [...$parameters, $outbox->slug]))->assertOk()->viewData('page')['props'];
+        expect($otherShopOutbox['pageHead']['actions'])->toBeEmpty();
+        $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.workshop', [...$parameters, $outbox->slug]))->assertForbidden();
+
+        foreach (["crm.$shop->id.view", "orders.$shop->id.view", "web.$shop->id.view", "marketing.$shop->id.view"] as $permission) {
+            actingAsUserWithOnlyPermissions($this->user, [$permission]);
+            $this->get(route('grp.org.shops.show.dashboard.comms.dashboard', $parameters))->assertOk();
+            $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show', [...$parameters, $outbox->slug]))->assertOk();
+        }
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+});

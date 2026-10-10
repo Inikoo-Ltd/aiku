@@ -2288,3 +2288,40 @@ test('a shop viewer sees category offers and related categories but none of the 
 
     actingAsUserWithRoles($this->user, $originalRoles);
 });
+
+test('family edit needs catalogue edit and the shop dashboard needs a permission for the shop', function () {
+    $shop       = $this->shop;
+    $parameters = [$this->organisation->slug, $shop->slug];
+    $familyEdit = route('grp.org.shops.show.catalogue.families.edit', [...$parameters, $this->family->slug]);
+    $dashboards = [
+        route('grp.org.shops.show.dashboard.show', $parameters),
+        route('grp.org.shops.show.dashboard.brands', $parameters),
+        route('grp.org.shops.show.dashboard.sales_analysis', $parameters),
+    ];
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ["products.$shop->id.view"]);
+        get($familyEdit)->assertForbidden();
+        get($dashboards[0])->assertOk();
+        get($dashboards[1])->assertOk();
+        get($dashboards[2])->assertRedirect();
+
+        actingAsUserWithOnlyPermissions($this->user, ["products.$shop->id.edit"]);
+        get($familyEdit)->assertOk();
+
+        actingAsUserWithOnlyPermissions($this->user, ["human-resources.{$this->organisation->id}.view", "shops-view.{$this->organisation->id}"]);
+        foreach ($dashboards as $dashboard) {
+            get($dashboard)->assertForbidden();
+        }
+
+        actingAsUserWithOnlyPermissions($this->user, ["accounting.{$this->organisation->id}.view"]);
+        get($dashboards[0])->assertOk();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+});

@@ -16,6 +16,7 @@ use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithShopDashboardAuthorisation;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
@@ -38,6 +39,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShop extends OrgAction
 {
+    use WithShopDashboardAuthorisation;
     use WithDashboard;
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;

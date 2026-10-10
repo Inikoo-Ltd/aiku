@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithCommsSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCommsAuthorisation;
 use App\Enums\UI\Mail\CommsDashboardTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowCommsDashboard extends OrgAction
 {
+    use WithCommsAuthorisation;
     use WithCommsSubNavigation;
 
 

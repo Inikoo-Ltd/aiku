@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -26,6 +27,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 
 class EditFamily extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithFamilyNavigation;
 
     public function handle(ProductCategory $family): ProductCategory
@@ -33,13 +35,6 @@ class EditFamily extends OrgAction
         return $family;
     }
 
-
-    public function inOrganisation(Organisation $organisation, ProductCategory $family, ActionRequest $request): ProductCategory
-    {
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($family);
-    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory

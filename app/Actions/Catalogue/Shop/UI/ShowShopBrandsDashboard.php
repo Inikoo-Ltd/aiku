@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithShopDashboardAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardDataDisplayTypeSettings;
@@ -30,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowShopBrandsDashboard extends OrgAction
 {
+    use WithShopDashboardAuthorisation;
     use WithDashboardPartnersTypeSettings;
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardDataDisplayTypeSettings;
