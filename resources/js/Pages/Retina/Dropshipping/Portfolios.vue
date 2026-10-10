@@ -2535,7 +2535,7 @@ const layout = inject("layout", layoutStructure)
 
 		<div class="mt-4 text-center text-sm text-gray-600">
 			{{
-				ctrans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
+				ctrans("This will overwrite :count products dimensions, are you sure want to continue ?", { count: totalProductsForDimensionUpdate })
 			}}
 		</div>
 

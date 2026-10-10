@@ -324,7 +324,7 @@ const dateColumnOptions = computed(() => [
 					</span>
 					<FontAwesomeIcon
 						v-if="deliveryNote.is_collection"
-						v-tooltip="ctrans('Collection')"
+						v-tooltip="ctrans('For collection')"
 						:icon="faMapMarkerAlt"
 						class="text-pink-500"
 						fixed-width

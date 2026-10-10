@@ -221,7 +221,7 @@ const warehouseDaysClass = (days?: number | null) => {
                     v-if="deliveryNote.is_collection"
                     class="border border-pink-500 text-pink-500 py-[0.15rem] px-[0.25rem] rounded-md ml-auto text-xs my-auto whitespace-nowrap"
                 >
-                    {{ ctrans('Collection') }}
+                    {{ ctrans('For collection') }}
                     <FontAwesomeIcon 
                         :icon="faMapMarkerAlt"
                         class="text-pink-500" fixed-width

@@ -260,7 +260,7 @@ onMounted(() => {
                     :disabled="props.order?.state !== 'creating'"
                 />
                 <span class="text-sm text-gray-500">
-                    {{ ctrans("Collection") }}
+                    {{ ctrans("For collection") }}
                     <InformationIcon :information="ctrans('Select this option if you would like to collect the order yourself or arrange your courier company to collect from our premises')" class="align-middle" />
                 </span>
             </div>

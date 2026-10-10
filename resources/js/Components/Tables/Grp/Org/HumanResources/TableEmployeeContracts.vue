@@ -60,7 +60,7 @@ function generateBalance(generateRoute: { name: string; parameters: object }) {
                         class="ml-2 text-xs"
                         :class="contract.balance.annual_remaining > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'"
                     >
-                        ({{ contract.balance.annual_remaining }} {{ ctrans('left') }})
+                        ({{ contract.balance.annual_remaining }} {{ ctrans('remaining') }})
                     </span>
                 </div>
                 <button
