@@ -24,6 +24,8 @@ use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Inventory\OrgStock;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
@@ -72,6 +74,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::PRODUCTION_RECORD => $this->revertProductionRecord($target, $mcpChange->before),
                 McpChangeTypeEnum::PRODUCTION_RECIPE => $this->revertProductionRecipes($mcpChange->before),
                 McpChangeTypeEnum::PLACED_ORDER => null,
+                McpChangeTypeEnum::MASTER_PRICES => $this->revertMasterPrices($mcpChange->before),
             };
 
             $mcpChange->update([
@@ -81,6 +84,20 @@ class RevertMcpChange
         });
 
         return $mcpChange;
+    }
+
+    private function revertMasterPrices(array $before): void
+    {
+        foreach ($before['prices'] as $masterAssetId => $prices) {
+            $updatePrices                    = UpdateMasterAssetPrices::make();
+            $updatePrices->forceAsyncCascade = true;
+            $updatePrices->action(MasterAsset::findOrFail($masterAssetId), [
+                'master_prices' => collect($prices)
+                    ->filter(fn (array $price) => (float) $price['value'] > 0)
+                    ->map(fn (array $price) => ['value' => (float) $price['value'], 'independent' => $price['independent']])
+                    ->all(),
+            ]);
+        }
     }
 
     private function revertRelatedProducts(array $target, array $before): void

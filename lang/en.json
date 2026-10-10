@@ -9594,7 +9594,7 @@
     "No tip: no stock linked": "No tip: no stock linked",
     "No tip: price changed by hand on :date, no new tip for :days days after that": "No tip: price changed by hand on :date, no new tip for :days days after that",
     "No tip: the cost on record is above the price, check the cost": "No tip: the cost on record is above the price, check the cost",
-    "No tip: stock cover is normal (:days days)": "No tip: stock cover is normal (:days days)",
+    "No tip: stock and sales look normal": "No tip: stock and sales look normal",
     "No tip: the AI is only :pct% sure of :change%": "No tip: the AI is only :pct% sure of :change%",
     "No tip: the AI keeps the price (:pct% sure)": "No tip: the AI keeps the price (:pct% sure)",
     "No tip: the fall in sales looks temporary (:pct% likely)": "No tip: the fall in sales looks temporary (:pct% likely)",

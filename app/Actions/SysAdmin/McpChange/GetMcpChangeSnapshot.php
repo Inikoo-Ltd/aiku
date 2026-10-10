@@ -47,6 +47,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PRODUCTION_RECORD => $this->productionRecord($target),
             McpChangeTypeEnum::PRODUCTION_RECIPE => $this->productionRecipes($target),
             McpChangeTypeEnum::PLACED_ORDER => $this->placedOrder($target),
+            McpChangeTypeEnum::MASTER_PRICES => $this->masterPrices($target),
         };
     }
 
@@ -77,6 +78,16 @@ class GetMcpChangeSnapshot
                 .$purchaseOrders->map(fn (string $purchaseOrder) => ', '.$purchaseOrder)->implode('');
         }
 
+        if ($type === McpChangeTypeEnum::MASTER_PRICES) {
+            $codes = DB::table('master_assets')->whereIn('id', $target['master_asset_ids'])->pluck('code', 'id');
+
+            return collect($snapshot['prices'])
+                ->map(fn (array $prices, $masterAssetId) => ($codes[$masterAssetId] ?? '#'.$masterAssetId).': '.collect(Arr::only($prices, ['GBP', 'EUR']) ?: $prices)
+                    ->map(fn (array $price, string $currencyCode) => $currencyCode.' '.$price['value'])
+                    ->implode(', '))
+                ->implode('; ');
+        }
+
         if ($type === McpChangeTypeEnum::PRODUCTION_RECORD) {
             return collect($snapshot)->map(fn ($value, $field) => $field.'='.($value ?? '-'))->implode(', ') ?: 'not there';
         }
@@ -102,6 +113,24 @@ class GetMcpChangeSnapshot
             ->pluck('code', 'id');
 
         return collect($snapshot['ids'])->map(fn ($id) => $codes[$id] ?? '#'.$id)->implode(', ') ?: '-';
+    }
+
+    /**
+     * Every currency of each master price with its hand-set mark, so a revert puts back exactly what was there.
+     */
+    private function masterPrices(array $target): array
+    {
+        return [
+            'prices' => DB::table('master_assets')
+                ->whereIn('id', $target['master_asset_ids'])
+                ->orderBy('id')
+                ->pluck('master_prices', 'id')
+                ->map(fn ($masterPrices) => collect(json_decode($masterPrices ?? '{}', true))
+                    ->map(fn ($price) => ['value' => (string) (float) ($price['value'] ?? 0), 'independent' => (bool) ($price['independent'] ?? false)])
+                    ->sortKeys()
+                    ->all())
+                ->all(),
+        ];
     }
 
     private function relatedProducts(array $target): array

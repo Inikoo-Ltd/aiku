@@ -1,92 +1,82 @@
 ---
 title: Cenové tipy
-summary: Ako aiku každú noc navrhuje zníženie alebo zvýšenie ceny hlavných produktov, čo ukazuje každý tip a ako ho použiť alebo zamietnuť.
-date: 2026-09-30
-source_date: 2026-09-30
+summary: Ako aiku každú noc označuje hlavné produkty, ktorých cena stojí za pozornosť, čo ukazuje každý tip, ako ho zamietnuť a ako prejsť a uložiť ceny s vaším AI asistentom.
+date: 2026-10-10
+source_date: 2026-10-10
 tags: masters, pricing, products, catalogue
 category: shop
 ---
 
 <aside class="tldr">
-Každú noc aiku prejde hlavné produkty, ktorých je <b>príliš veľa na sklade</b> alebo ktoré <b>sa míňajú</b>, vrátane nových položiek, a môže navrhnúť zmenu ceny. Tip je len návrh: <b>cena sa nezmení, kým ho niekto nepoužije a neuloží</b>. Tipy uvidíte na karte <b>Pricing</b>, najistejšie sú navrchu.
+Každú noc aiku označí hlavné produkty, pri ktorých <b>zásoby a predaj naznačujú, že cena stojí za pozornosť</b>. Tip <b>nikdy nenavrhuje cenu a nič nemení</b>: ukáže fakty a rozhodnutie nechá na vás. Tipy vidíte na karte <b>Pricing</b>. Pri rozhodovaní prejdite rodinu sami alebo so svojím AI asistentom, ktorý vie dohodnuté ceny aj uložiť.
 </aside>
 
 ## Ktoré produkty dostanú tip
 
-Cena hlavného produktu je rovnaká v každom obchode, ktorý ho predáva, preto aiku vezme dni zásob každej organizácie a spriemeruje ich podľa toho, **koľko každá organizácia predala za posledný rok**. Organizácia, ktorá predá väčšinu produktu, sa počíta najviac; tá, ktorá predá málo, takmer vôbec.
+Cena hlavného produktu je rovnaká vo všetkých obchodoch, ktoré ho predávajú, preto aiku berie dni zásob každej organizácie a spriemeruje ich podľa toho, **koľko každá organizácia predala za posledný rok**. Organizácia, ktorá predáva väčšinu produktu, váži najviac; tá, ktorá ho predáva málo, takmer nič.
 
-- **Zníženie ceny:** tento priemer je **120 dní zásob alebo viac**.
-- **Zvýšenie ceny:** tento priemer je **pod 45 dní**.
+Produkt je označený z jedného z troch dôvodov:
 
-**Nové položky** (bez predaja v tých istých mesiacoch pred rokom) dostanú tip, keď sú v predaji **60 dní**. Keďže nemajú minulý rok na porovnanie, AI ich posúdi podľa predaja od uvedenia na trh v porovnaní s ostatnými produktmi rodiny a podľa ceny v porovnaní s bežnou cenou rodiny a konkurencie.
+- **Zásoby na viac ako 18 mesiacov a klesajúci predaj** (*Over 18 months of stock, sales falling*): zásoby na 540 dní alebo viac a predaj nižší o 40 % alebo viac oproti minulému roku.
+- **Dochádza a predáva sa rýchlejšie** (*Running out, selling faster*): zásoby na menej ako 30 dní, predaj vyšší o 25 % alebo viac oproti minulému roku a nič na ceste od dodávateľov alebo partnerov.
+- **Predáva sa horšie ako zvyšok rodiny** (*Selling worse than its family*): rodina sa drží (pokles najviac o 10 %), kým tento produkt za ňou zaostáva o 50 bodov alebo viac, so zásobami aspoň na 120 dní.
+
+Označujú sa len produkty so skutočným predajom: aspoň 500 v mene skupiny za dvanásť mesiacov. V každom okamihu má tip približne 500 z 20 000 hlavných produktov.
 
 Niektoré produkty tip nikdy nedostanú:
 
 - produkty, ktoré sa za posledné dva roky nepredali vôbec;
+- nové položky, ktoré nemajú minulý rok na porovnanie;
+- produkty, ktorých cenu niekto ručne zmenil za posledných **30 dní**;
+- produkty, ktorých tip bol zamietnutý za posledných **30 dní**;
+- nadbytok zásob, keď je problém vo webe (stránky offline, chýbajúce obrázky alebo stránka rodiny stráca návštevníkov): stĺpec vtedy uvedie, čo je s webom zlé;
 - hlavný obchod Aroma.
 
-## Ako sa tip vypočíta
-
-Pri každom vhodnom produkte sa AI model pozrie na:
-
-- predaj po mesiacoch za posledné dva roky;
-- zásoby a dni zásob v každej organizácii a tovar na ceste od dodávateľov a partnerov;
-- dni, keď produkt nebol na sklade, pretože vypredanie znižuje predaj, no nie dopyt;
-- maržu nad nákladmi;
-- bežnú cenu ostatných produktov v tej istej rodine;
-- akcie prebiehajúce na produkte alebo jeho rodine;
-- predchádzajúce zmeny cien a to, ako sa predaj pohyboval v troch mesiacoch po každej z nich.
-
-Vyberie jednu možnosť: znížiť cenu o 15 %, 10 % alebo 5 %, nechať ju, alebo zvýšiť o 5 % alebo 10 %. Zároveň posúdi, či je pokles predaja **dočasný** (vypredanie, sezóna, jednorazová veľká objednávka minulý rok).
-
-aiku potom pred zobrazením čohokoľvek uplatní pevné pravidlá:
-
-- zmena musí ísť správnym smerom: zníženie len pri nadbytku zásob, zvýšenie len keď sa zásoby míňajú;
-- AI musí byť aspoň na 50 % istá, že sa cena má pohnúť týmto smerom. Svoj hlas rozdeľuje medzi viacero veľkostí zníženia alebo zvýšenia, preto sa veľkosti mieriace rovnakým smerom sčítajú a tipom je najpravdepodobnejšia z nich;
-- žiadne zníženie, keď pokles predaja vyzerá dočasne (u nových položiek sa nekontroluje, nemajú minulý rok);
-- zníženie nikdy nezníži cenu pod **náklady + 25 %**. Ak by to tak bolo, zníženie sa zmenší a dôvod to uvedie.
-
-Keď sa tip nezobrazí, stĺpec **Price tip** to sivým písmom vysvetlí, napríklad *No tip: stock cover is normal (80 days)* (bez tipu: zásoby sú v norme, 80 dní; zásoby nedávajú dôvod meniť cenu, samotná cena sa neposudzovala), *No tip: the AI keeps the price (71% sure)* (AI nechá cenu, istá na 71 %), *No tip: the fall in sales looks temporary (65% likely)* (pokles predaja vyzerá dočasne, s pravdepodobnosťou 65 %) alebo *No tip yet: new, on sale for 30 days* (zatiaľ bez tipu: nový, v predaji 30 dní).
+Keď sú zásoby a predaj v norme, posledný stĺpec zostane prázdny. Keď je produkt vynechaný z iného dôvodu, stĺpec to sivým písmom vysvetlí, napríklad *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that* (cena bola ručne zmenená 7. októbra, ďalších 30 dní bez nového tipu), *No tip yet: new, on sale for 30 days* (nový, v predaji 30 dní) alebo *No tip: the cost on record is above the price, check the cost* (evidovaný náklad je vyšší ako cena, skontrolujte náklad). Posledný znamená, že náklad produktu je nesprávny a treba ho opraviť.
 
 ## Čo tip ukazuje
 
-Na karte **Pricing** stĺpec **Price tip** (cenový tip) ukazuje:
+Na karte **Pricing** posledný stĺpec ukazuje dôvod jantárovou farbou. Kliknutím naň si prečítate fakty, jeden na riadok:
 
-- zmenu, napríklad **−10 %** oranžovou pri znížení alebo **+5 %** zelenou pri zvýšení;
-- ako si je AI istá, napríklad **72 % sure**;
-- odkaz **Dismiss** (zamietnuť).
+- dni zásob a zásoby na ceste;
+- predaj oproti minulému roku;
+- dni, keď bol produkt vypredaný;
+- maržu nad nákladmi a obvyklú cenu v jeho rodine;
+- bežiace akcie;
+- jeho miesto v rodine (poradie, podiel na predaji rodiny, vývoj rodiny oproti jeho vlastnému);
+- ako sa darí webu;
+- poslednú zmenu ceny a ako sa predaj pohol v troch mesiacoch po nej.
 
-Prejdením myšou nad zmenou si prečítate dôvod, napríklad: *Zásoby na 400 dní, spriemerované podľa predaja každej organizácie, predaj o 20 % nižší ako minulý rok, 20 kusov ďalej na ceste, marža 80 %, cena −10 % dňa 2025-03-10 zvýšila predaj o +25 %*. Dôvod je zostavený z uvedených čísel, takže každé si môžete overiť.
+Nie je tu žiadne percento ani tlačidlo Apply. Tip je upozornenie, nie cena.
 
-Produkty s tipom sú v zozname prvé, najistejšie navrchu. Kliknutím na hlavičku stĺpca zmeníte triedenie.
+Tipy sa každú noc počítajú nanovo. Ak sa zmenia zásoby alebo predaj, tip sa zmení alebo zmizne.
 
-Tipy sa počítajú znova každú noc. Ak sa zmenia zásoby alebo predaj, tip sa zmení alebo zmizne.
+## Rozhodnutie o cene
 
-## Použitie tipu
+Ceny sa zvyčajne určujú pre celú rodinu naraz, preto sa pozrite na rodinu, nielen na označený produkt. Môžete:
 
-1. Kliknite na zmenu (napríklad **−10 %**).
-2. Otvorí sa editor cien so všetkými menami už posunutými o toto percento.
-3. Skontrolujte ceny a upravte tie, ktoré chcete.
-4. Uložte.
+- upraviť ceny na tej istej karte **Pricing**, jeden produkt alebo viacero naraz, ako vždy;
+- alebo prejsť rodinu so svojím AI asistentom. Požiadajte ho napríklad: *„prejdi ceny rodiny ABC v hlavnom obchode aw“*. Prečíta zásoby, predaj, marže a minulé zmeny cien celej rodiny a preberie ich s vami.
 
-Nová cena sa dostane do každého obchodu bežnou aktualizáciou cien, presne ako keď cenu upravíte ručne. Zmena sa zapíše s vaším menom do histórie produktu.
+Keď sa rozhodnete, asistent vie **ceny uložiť za vás**. Najprv ukáže starú a novú cenu každého produktu a uloží až po vašom potvrdení. Ceny zadávate v hlavných menách; ostatné meny nasledujú podľa kurzu, okrem ručne nastavených, ktoré zostanú nedotknuté. Každé uloženie zostáva v zázname zmien AI s vaším menom a presnou požiadavkou a dá sa tam vrátiť späť.
 
-Asi **8 týždňov** po použití tipu aiku porovná predaj produktu v 8 týždňoch po zmene s 8 týždňami pred ňou a s rovnakými týždňami o rok skôr. Kým sa to nezmeria, produkt nedostane nový tip.
+Ukladanie cien cez asistenta vyžaduje prepínač **Can change master prices through their AI assistant**, ktorý administrátor zapne na stránke úpravy používateľa, popri editačnom prístupe k masters.
 
 ## Zamietnutie tipu
 
-Ak je tip nesprávny, kliknite na **Dismiss** a napíšte prečo, napríklad „Vianočná zásoba, predáva sa v decembri" alebo „cena dohodnutá s kľúčovým zákazníkom". Dôvod sa uchová, aby sa dali vylepšiť pravidlá.
+Ak tip nie je relevantný, kliknite naň, potom na **Not relevant** a napíšte prečo, napríklad „vianočný tovar, predáva sa v decembri“ alebo „túto položku dopredávame“. Dôvod sa uloží k produktu a ukáže sa každému, kto bude rodinu prechádzať nabudúce, vrátane vášho AI asistenta.
 
-Zamietnutý produkt nedostane nový tip **30 dní**. To isté platí pre cenu, ktorú niekto zmenil ručne: taký produkt nedostane tip 30 dní a stĺpec uvedie *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that* (bez tipu: cena bola ručne zmenená 7. októbra, ďalších 30 dní bez nového tipu). Produkt, ktorého evidovaný náklad je vyšší ako cena, namiesto tipu zobrazí *No tip: the cost on record is above the price, check the cost* (bez tipu: evidovaný náklad je vyšší ako cena, skontrolujte náklad), pretože každý návrh postavený na nesprávnom náklade by bol tiež nesprávny.
+Produkt so zamietnutým tipom nedostane nový tip **30 dní**.
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
-<li><b>Zobraziť tipy:</b> <b>Masters</b> → otvorte hlavný obchod → <b>Families</b> → otvorte rodinu → karta <b>Pricing</b> → stĺpec <b>Price tip</b>.</li>
-<li><b>Použiť:</b> kliknite na percento, skontrolujte ceny, uložte.</li>
-<li><b>Zamietnuť:</b> odkaz <b>Dismiss</b> pod percentom.</li>
+<li><b>Zobraziť tipy rodiny:</b> <b>Masters</b> → otvorte hlavný obchod → <b>Families</b> → otvorte rodinu → karta <b>Pricing</b> → posledný stĺpec.</li>
+<li><b>Zobraziť všetky tipy hlavného obchodu:</b> <b>Masters</b> → otvorte hlavný obchod → <b>Products</b> → karta <b>Price tips</b>.</li>
+<li><b>Zamietnuť tip:</b> kliknite na tip → <b>Not relevant</b> → napíšte prečo.</li>
+<li><b>Povoliť niekomu ukladať ceny cez asistenta:</b> <b>Sysadmin</b> → <b>Users</b> → upravte používateľa → <b>Can change master prices through their AI assistant</b>.</li>
 </ul>
 </aside>
 
 <aside class="permissions"><strong>Oprávnenia, ktoré potrebujete</strong>
-<p>Hlavné obchody sú na úrovni skupiny. Na zobrazenie tipov potrebujete prístup k masters na úrovni skupiny a editačný prístup k masters na ich použitie alebo zamietnutie.</p>
+<p>Hlavné obchody sú na úrovni skupiny. Na zobrazenie tipov potrebujete prístup k masters na úrovni skupiny a editačný prístup k masters na ich zamietnutie alebo zmenu cien. Ukladanie cien cez AI asistenta vyžaduje navyše prepínač uvedený vyššie.</p>
 </aside>

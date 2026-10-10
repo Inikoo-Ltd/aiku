@@ -8,6 +8,7 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipKindEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,8 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- * A markdown or markup Jev suggested for a master product (HELP-2331), kept so staff can apply or
- * dismiss it and so the sales after an applied change can be measured against the sales before.
+ * A master product flagged as worth a look at its price (HELP-2331, INI-075), with the facts behind
+ * the flag, kept so staff can turn it down with a reason. Earlier rows hold the percentage the first
+ * version suggested.
  * One open tip per master product at most; the nightly run refreshes it or expires it.
  *
  * @property int $id
@@ -24,11 +26,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $master_shop_id
  * @property int $master_asset_id
  * @property int $change percent, negative is a markdown
- * @property string $confidence probability Jev gave the chosen change
+ * @property string $confidence probability given to the change by the first version, 0 since tips are flags
  * @property array $probabilities
  * @property string|null $temporary_drop_probability
  * @property string $reason
- * @property array $state what Jev was shown
+ * @property array $state the facts the tip was built from
  * @property MasterAssetPriceTipStatusEnum $status
  * @property string $price base currency price when the tip was made
  * @property string|null $dismissed_reason
@@ -53,6 +55,7 @@ class MasterAssetPriceTip extends Model implements Auditable
 
     protected $casts = [
         'status'        => MasterAssetPriceTipStatusEnum::class,
+        'kind'          => MasterAssetPriceTipKindEnum::class,
         'probabilities' => 'array',
         'state'         => 'array',
         'outcome'       => 'array',

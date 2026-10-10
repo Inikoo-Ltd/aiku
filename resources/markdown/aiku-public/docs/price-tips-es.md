@@ -1,92 +1,82 @@
 ---
 title: Sugerencias de precio
-summary: Cómo sugiere aiku cada noche una rebaja o una subida de precio para los productos maestros, qué muestra cada sugerencia y cómo aplicarla o descartarla.
-date: 2026-09-30
-source_date: 2026-09-30
+summary: Cómo señala aiku cada noche los productos maestros cuyo precio merece una revisión, qué muestra cada sugerencia, cómo descartarla y cómo revisar y guardar precios con tu asistente de IA.
+date: 2026-10-10
+source_date: 2026-10-10
 tags: masters, pricing, products, catalogue
 category: shop
 ---
 
 <aside class="tldr">
-Cada noche aiku revisa los productos maestros que tienen <b>demasiado stock</b> o que se <b>están agotando</b>, incluidas las líneas nuevas, y puede sugerir un cambio de precio. Una sugerencia es solo eso: <b>ningún precio cambia hasta que alguien la aplica y guarda</b>. Las sugerencias aparecen en la pestaña <b>Pricing</b> (precios), con las más seguras primero.
+Cada noche aiku señala los productos maestros cuyo <b>stock y ventas indican que el precio merece una revisión</b>. Una sugerencia <b>nunca propone un precio ni cambia nada</b>: muestra los datos y deja la decisión en tus manos. Las ves en la pestaña <b>Pricing</b>. Para decidir, revisa la familia por tu cuenta o con tu asistente de IA, que también puede guardar los precios que acordéis.
 </aside>
 
 ## Qué productos reciben una sugerencia
 
-El precio de un producto maestro es el mismo en todas las tiendas que lo venden, así que aiku mira los días de stock de cada organización y hace la media ponderada por **lo que vendió cada organización en el último año**. La organización que vende la mayor parte del producto cuenta más; la que vende poco apenas cuenta.
+El precio de un producto maestro es el mismo en todas las tiendas que lo venden, así que aiku mira los días de stock de cada organización y hace la media según **cuánto vendió cada organización en el último año**. La organización que vende la mayor parte del producto es la que más cuenta; la que vende poco apenas cuenta.
 
-- **Rebaja (precio más bajo):** esa media es de **120 días de stock o más**.
-- **Subida (precio más alto):** esa media es **inferior a 45 días**.
+Un producto se señala por uno de estos tres motivos:
 
-Las **líneas nuevas** (sin ventas en esos mismos meses hace un año) reciben una sugerencia cuando llevan **60 días** a la venta. Al no haber un año anterior con el que comparar, la IA las juzga por sus ventas desde el lanzamiento frente al resto de la familia, y por su precio frente al precio habitual de la familia y de la competencia.
+- **Más de 18 meses de stock y ventas en descenso** (*Over 18 months of stock, sales falling*): 540 días de stock o más, y ventas un 40% o más por debajo del año anterior.
+- **Se agota y se vende más rápido** (*Running out, selling faster*): menos de 30 días de stock, ventas un 25% o más por encima del año anterior, y nada en camino de proveedores o socios.
+- **Se vende peor que el resto de su familia** (*Selling worse than its family*): la familia aguanta (baja como mucho un 10%) mientras este producto va 50 puntos o más por detrás, con al menos 120 días de stock.
 
-Algunos productos nunca reciben sugerencia:
+Solo se señalan productos con ventas reales: al menos 500 en la moneda del grupo en doce meses. En cualquier momento, unos 500 de los 20.000 productos maestros tienen una sugerencia.
 
-- productos que no han vendido nada en los últimos dos años;
+Algunos productos nunca reciben una sugerencia:
+
+- productos que no vendieron nada en los dos últimos años;
+- líneas nuevas, que no tienen año anterior con el que comparar;
+- productos cuyo precio alguien cambió a mano en los últimos **30 días**;
+- productos cuya sugerencia se descartó en los últimos **30 días**;
+- exceso de stock cuando el problema es la web (páginas fuera de línea, sin imágenes, o la página de la familia perdiendo visitas): la columna indica entonces qué falla en la web;
 - la tienda maestra Aroma.
 
-## Cómo se calcula la sugerencia
-
-Para cada producto que cumple las condiciones, un modelo de IA revisa:
-
-- las ventas mes a mes de los últimos dos años;
-- el stock y los días de stock en cada organización, y el stock en camino de proveedores y socios;
-- los días que el producto estuvo sin stock, porque quedarse sin stock baja las ventas sin bajar la demanda;
-- el margen sobre el coste;
-- el precio habitual de los demás productos de la misma familia;
-- las ofertas activas en el producto o en su familia;
-- los cambios de precio anteriores, y cómo se movieron las ventas en los tres meses siguientes a cada uno.
-
-Elige una de estas opciones: bajar el precio un 15%, 10% o 5%, mantenerlo, o subirlo un 5% o 10%. También juzga si una caída de las ventas es **temporal** (falta de stock, la temporada, un pedido grande puntual el año pasado).
-
-Antes de mostrar nada, aiku aplica reglas fijas:
-
-- el cambio debe ir en la dirección correcta: una rebaja solo cuando sobra stock, una subida solo cuando el stock se está agotando;
-- la IA debe estar al menos un 50% segura de que el precio debe moverse en esa dirección. Reparte su voto entre varios tamaños de rebaja o de subida, así que se suman los tamaños que apuntan en la misma dirección, y la sugerencia es el tamaño más probable entre ellos;
-- no hay rebaja cuando la caída de las ventas parece temporal (no se comprueba en las líneas nuevas, que no tienen año anterior);
-- una rebaja nunca lleva el precio por debajo de **coste + 25%**. Si lo hiciera, la rebaja se reduce, y el motivo lo indica.
-
-Cuando no se da ninguna sugerencia, la columna **Price tip** explica el motivo en gris, por ejemplo *No tip: stock cover is normal (80 days)* (sin sugerencia: la cobertura de stock es normal, 80 días; el stock no da motivo para mover el precio, y el precio en sí no se ha valorado), *No tip: the AI keeps the price (71% sure)* (la IA mantiene el precio, 71% segura), *No tip: the fall in sales looks temporary (65% likely)* (la caída de las ventas parece temporal, 65% probable) o *No tip yet: new, on sale for 30 days* (aún sin sugerencia: nuevo, a la venta desde hace 30 días).
+Cuando el stock y las ventas son normales, la última columna queda vacía. Cuando un producto se deja fuera por otro motivo, la columna lo explica en gris, por ejemplo *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that* (precio cambiado a mano el 7 de octubre, sin sugerencias durante los 30 días siguientes), *No tip yet: new, on sale for 30 days* (nuevo, a la venta desde hace 30 días) o *No tip: the cost on record is above the price, check the cost* (el coste registrado es superior al precio, revise el coste). Este último significa que el coste del producto es erróneo y hay que corregirlo.
 
 ## Qué muestra una sugerencia
 
-En la pestaña **Pricing**, la columna **Price tip** (sugerencia de precio) muestra:
+En la pestaña **Pricing**, la última columna muestra el motivo en ámbar. Pulsa sobre él para leer los datos, uno por línea:
 
-- el cambio, por ejemplo **−10%** en ámbar para una rebaja o **+5%** en verde para una subida;
-- lo segura que está la IA, por ejemplo **72% sure**;
-- un enlace **Dismiss** (descartar).
+- días de stock y stock en camino;
+- ventas frente al año anterior;
+- días que el producto estuvo sin stock;
+- el margen sobre el coste y el precio habitual en su familia;
+- ofertas activas;
+- su posición en la familia (puesto, parte de las ventas de la familia, tendencia de la familia frente a la suya);
+- cómo va la web;
+- el último cambio de precio y cómo se movieron las ventas en los tres meses siguientes.
 
-Pasa el ratón por encima del cambio para leer el motivo, por ejemplo: *Stock para 400 días, promediado según lo que vende cada organización, ventas un 20% por debajo del año pasado, 20 más en camino, 80% de margen, el precio −10% el 2025-03-10 movió las ventas +25%*. El motivo se construye con las cifras anteriores, así que puedes comprobar cada una.
+No hay porcentaje ni botón Apply. Una sugerencia es un aviso, no un precio.
 
-Los productos con sugerencia aparecen primero, con los más seguros arriba. Pulsa la cabecera de la columna para ordenar de otra manera.
+Las sugerencias se recalculan cada noche. Si el stock o las ventas cambian, la sugerencia cambia o desaparece.
 
-Las sugerencias se calculan de nuevo cada noche. Si cambian el stock o las ventas, la sugerencia cambia o desaparece.
+## Decidir el precio
 
-## Aplicar una sugerencia
+Los precios suelen fijarse para toda una familia a la vez, así que mira la familia, no solo el producto señalado. Puedes:
 
-1. Pulsa el cambio (por ejemplo **−10%**).
-2. Se abre el editor de precios con todas las monedas ya movidas por ese porcentaje.
-3. Comprueba los precios y ajusta los que quieras.
-4. Guarda.
+- editar los precios en la misma pestaña **Pricing**, un producto o muchos a la vez, como siempre;
+- o revisar la familia con tu asistente de IA. Pídele, por ejemplo, *«revisa los precios de la familia ABC en la tienda maestra aw»*. Lee el stock, las ventas, los márgenes y los cambios de precio anteriores de toda la familia y los comenta contigo.
 
-El nuevo precio llega a todas las tiendas mediante la actualización de precios normal, igual que cuando editas un precio a mano. El cambio queda registrado con tu nombre en el historial del producto.
+Cuando hayas decidido, el asistente puede **guardar los precios por ti**. Primero muestra el precio anterior y el nuevo de cada producto y solo guarda cuando lo confirmas. Das los precios en las monedas principales; las demás siguen por tipo de cambio, salvo las fijadas a mano, que no se tocan. Cada guardado queda en el registro de cambios de IA con tu nombre y tu petición exacta, y puede revertirse allí.
 
-Unas **8 semanas** después de aplicar una sugerencia, aiku compara las ventas del producto en las 8 semanas posteriores al cambio con las 8 semanas anteriores, y con las mismas semanas de un año antes. Ese producto no recibe una nueva sugerencia hasta que se haya medido.
+Guardar precios a través del asistente requiere el interruptor **Can change master prices through their AI assistant**, que un administrador activa en la página de edición del usuario, además del acceso de edición a masters.
 
 ## Descartar una sugerencia
 
-Si una sugerencia es incorrecta, pulsa **Dismiss** y escribe el motivo, por ejemplo "Stock de Navidad, se vende en diciembre" o "precio acordado con un cliente importante". El motivo se guarda, para poder mejorar las reglas.
+Si una sugerencia no es relevante, pulsa sobre ella, luego **Not relevant**, y escribe por qué, por ejemplo «stock de Navidad, se vende en diciembre» o «liquidando esta línea». El motivo se guarda con el producto y se muestra a quien revise la familia después, incluido tu asistente de IA.
 
-Un producto descartado no recibe una nueva sugerencia durante **30 días**. Lo mismo ocurre con un precio que alguien cambió a mano: ese producto no recibe sugerencias durante 30 días, y la columna dice *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that* (sin sugerencia: precio cambiado a mano el 7 de octubre, sin nuevas sugerencias durante los 30 días siguientes). Un producto cuyo coste registrado es superior a su precio muestra *No tip: the cost on record is above the price, check the cost* (sin sugerencia: el coste registrado es superior al precio, revise el coste) en lugar de una sugerencia, porque cualquier sugerencia basada en un coste erróneo también lo sería.
+Un producto cuya sugerencia se descartó no recibe otra durante **30 días**.
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
-<li><b>Ver las sugerencias:</b> <b>Masters</b> → abre la tienda maestra → <b>Families</b> → abre la familia → pestaña <b>Pricing</b> → columna <b>Price tip</b>.</li>
-<li><b>Aplicar:</b> pulsa el porcentaje, comprueba los precios, guarda.</li>
-<li><b>Descartar:</b> el enlace <b>Dismiss</b> bajo el porcentaje.</li>
+<li><b>Ver las sugerencias de una familia:</b> <b>Masters</b> → abre la tienda maestra → <b>Families</b> → abre la familia → pestaña <b>Pricing</b> → última columna.</li>
+<li><b>Ver todas las sugerencias de una tienda maestra:</b> <b>Masters</b> → abre la tienda maestra → <b>Products</b> → pestaña <b>Price tips</b>.</li>
+<li><b>Descartar una:</b> pulsa la sugerencia → <b>Not relevant</b> → escribe por qué.</li>
+<li><b>Permitir que alguien guarde precios con su asistente:</b> <b>Sysadmin</b> → <b>Users</b> → edita el usuario → <b>Can change master prices through their AI assistant</b>.</li>
 </ul>
 </aside>
 
 <aside class="permissions"><strong>Permisos que necesitas</strong>
-<p>Las tiendas maestras están a nivel de grupo. Necesitas acceso de nivel de grupo a masters para ver las sugerencias, y acceso de edición a masters para aplicarlas o descartarlas.</p>
+<p>Las tiendas maestras están a nivel de grupo. Necesitas acceso de nivel de grupo a masters para ver las sugerencias, y acceso de edición a masters para descartarlas o cambiar precios. Guardar precios a través de un asistente de IA requiere además el interruptor indicado arriba.</p>
 </aside>

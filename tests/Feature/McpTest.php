@@ -1892,6 +1892,105 @@ describe('family pricing review tool', function () {
     });
 });
 
+describe('master prices tool', function () {
+    beforeEach(function () {
+        $this->masterShop = App\Actions\Masters\MasterShop\StoreMasterShop::make()->action($this->group, [
+            'type' => App\Enums\Catalogue\Shop\ShopTypeEnum::B2B,
+            'code' => 'MPT-'.uniqid(),
+            'name' => 'Master prices tool shop',
+        ]);
+        $this->masterShop->update(['price_exchanges' => [
+            'GBP' => ['is_major' => true],
+            'EUR' => ['is_major' => true],
+            'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3, 'fraction_digits' => 2],
+            'CZK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 25, 'fraction_digits' => 0],
+        ]]);
+        $masterDepartment = App\Actions\Masters\MasterProductCategory\StoreMasterDepartment::make()->action($this->masterShop, [
+            'code' => 'MPD-'.uniqid(),
+            'name' => 'Master prices department',
+        ]);
+        $this->masterFamily = App\Actions\Masters\MasterProductCategory\StoreMasterFamily::make()->action($masterDepartment, [
+            'code' => 'MPF-'.uniqid(),
+            'name' => 'Master prices family',
+            'type' => App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum::FAMILY,
+        ]);
+        $this->masterAsset = App\Actions\Masters\MasterAsset\StoreMasterAsset::make()->action($this->masterFamily, [
+            'code'    => 'MP-'.uniqid(),
+            'name'    => 'Master prices product',
+            'is_main' => true,
+            'type'    => App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT,
+            'price'   => 10,
+            'stocks'  => [],
+        ]);
+        $this->masterAsset->updateQuietly(['status' => true, 'master_prices' => [
+            'GBP' => ['value' => '10', 'independent' => false],
+            'EUR' => ['value' => '12', 'independent' => false],
+            'PLN' => ['value' => '51.6', 'independent' => false],
+            'CZK' => ['value' => '333', 'independent' => true],
+        ]]);
+        $this->user->update(['can_use_mcp_prices' => true]);
+    });
+
+    test('a user not enrolled is refused and nothing changes', function () {
+        $this->user->update(['can_use_mcp_prices' => false]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\MasterPricesTool::class, [
+            'master_shop'  => $this->masterShop->slug,
+            'prices'       => [['code' => $this->masterAsset->code, 'prices' => ['EUR' => 11]]],
+            'request_text' => 'set it to 11',
+        ])->assertHasErrors(['Changing prices is not enabled for this user']);
+
+        expect(data_get($this->masterAsset->fresh()->master_prices, 'EUR.value'))->toEqual(12);
+    });
+
+    test('shows a family, saves main currencies, derives the others, leaves hand-set ones and can be reverted', function () {
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\MasterPricesTool::class, [
+            'master_shop' => strtolower($this->masterShop->code),
+            'family'      => strtolower($this->masterFamily->code),
+        ])->assertOk()->assertSee($this->masterAsset->code)->assertSee('CZK');
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\MasterPricesTool::class, [
+            'master_shop'  => $this->masterShop->slug,
+            'prices'       => [['code' => strtolower($this->masterAsset->code), 'prices' => ['EUR' => 11]]],
+            'request_text' => 'yes, save 11 euros',
+        ])->assertOk()->assertSee('-8.3');
+
+        $prices = $this->masterAsset->fresh()->master_prices;
+        expect(data_get($prices, 'EUR.value'))->toEqual(11)
+            ->and(data_get($prices, 'PLN.value'))->toEqual(47.3)
+            ->and(data_get($prices, 'CZK.value'))->toEqual(333)
+            ->and(data_get($prices, 'GBP.value'))->toEqual(10);
+
+        $change = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::MASTER_PRICES)->latest('id')->first();
+        expect($change->request_text)->toBe('yes, save 11 euros')
+            ->and($change->data['after_text'])->toContain('EUR 11')
+            ->and($change->canBeRevertedBy($this->user))->toBeTrue();
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $this->user);
+        $prices = $this->masterAsset->fresh()->master_prices;
+        expect(data_get($prices, 'EUR.value'))->toEqual(12)
+            ->and(data_get($prices, 'PLN.value'))->toEqual(51.6)
+            ->and($change->fresh()->reverted_at)->not->toBeNull();
+    });
+
+    test('unknown codes, other currencies and large changes save nothing until confirmed', function () {
+        $tool = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\MasterPricesTool::class, [
+            'master_shop'  => $this->masterShop->slug,
+            'request_text' => 'save',
+            ...$arguments,
+        ]);
+
+        $tool(['prices' => [['code' => $this->masterAsset->code, 'prices' => ['EUR' => 11]], ['code' => 'NOPE-999', 'prices' => ['EUR' => 5]]]])->assertHasErrors(['NOPE-999']);
+        $tool(['prices' => [['code' => $this->masterAsset->code, 'prices' => ['PLN' => 40]]]])->assertHasErrors(['main currencies']);
+        $tool(['prices' => [['code' => $this->masterAsset->code, 'prices' => ['EUR' => 11]], ['code' => strtolower($this->masterAsset->code), 'prices' => ['EUR' => 12.5]]]])->assertHasErrors(['more than once']);
+        $tool(['prices' => [['code' => $this->masterAsset->code, 'prices' => ['EUR' => 1.2]]]])->assertHasErrors(['large changes']);
+        expect(data_get($this->masterAsset->fresh()->master_prices, 'EUR.value'))->toEqual(12);
+
+        $tool(['prices' => [['code' => $this->masterAsset->code, 'prices' => ['EUR' => 1.2]]], 'allow_large_changes' => true])->assertOk();
+        expect(data_get($this->masterAsset->fresh()->master_prices, 'EUR.value'))->toEqual(1.2);
+    });
+});
+
 describe('ai changes log', function () {
     beforeEach(function () {
         [, $this->product] = createProduct($this->shop);

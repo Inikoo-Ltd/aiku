@@ -405,7 +405,6 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
-use App\Actions\Masters\MasterAsset\ApplyMasterAssetPriceTip;
 use App\Actions\Masters\Competitor\ReviewMasterAssetCompetitorProduct;
 use App\Actions\Masters\Competitor\StoreCompetitor;
 use App\Actions\Masters\Competitor\UpdateCompetitor;
@@ -880,7 +879,6 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
-Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/apply', ApplyMasterAssetPriceTip::class)->name('master_asset_price_tip.apply');
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
 Route::patch('competitor/{competitor:id}', UpdateCompetitor::class)->name('competitor.update');
 Route::patch('master-asset-competitor-product/{masterAssetCompetitorProduct:id}/review', ReviewMasterAssetCompetitorProduct::class)->name('master_asset_competitor_product.review');

@@ -21,8 +21,8 @@ import Image from "@common/Components/Image.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiplePriceCurrency from "@/Components/Pure/PureMultiplePriceCurrency.vue"
 import { useForm, router } from "@inertiajs/vue3"
-import { faPencil, faQuestionCircle, faSave } from "@fal"
-library.add(faExclamationTriangle, faSpinnerThird, faPencil, faQuestionCircle, faSave)
+import { faPencil, faSave } from "@fal"
+library.add(faExclamationTriangle, faSpinnerThird, faPencil, faSave)
 
 interface CurrencyValue {
     value: string | number | null
@@ -63,7 +63,7 @@ interface MasterProductPricing {
     sold: number
     customers: number
     sales_ly: string | number | null
-    price_tip: { id: number, change: number, confidence: number, reason: string } | null
+    price_tip: { id: number, label: string, reason: string } | null
     price_tip_note: string | null
 }
 
@@ -254,6 +254,10 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
 }
 
 const explainingTip = ref<MasterProductPricing | null>(null)
+
+const MAX_TRADE_UNITS_INLINE = 3
+const tradeUnitsOf = (masterProduct: MasterProductPricing): string[] => (masterProduct.trade_units_label ?? '').split(', ').filter(Boolean)
+const showingTradeUnits = ref<MasterProductPricing | null>(null)
 const givingFeedback = ref(false)
 const dismissForm = useForm({ dismissed_reason: '' })
 
@@ -275,22 +279,6 @@ const openExplain = (masterProduct: MasterProductPricing, event: Event) => {
     dismissForm.clearErrors()
     givingFeedback.value = false
     explainingTip.value = masterProduct
-}
-
-const isApplyingTip = ref(false)
-
-const applyTipNow = () => {
-    const masterAssetId = explainingTip.value!.id
-    router.patch(route('grp.models.master_asset_price_tip.apply', { masterAssetPriceTip: explainingTip.value!.price_tip!.id }), {}, {
-        preserveScroll: true,
-        onStart: () => { isApplyingTip.value = true },
-        onFinish: () => { isApplyingTip.value = false },
-        onSuccess: () => {
-            closeExplain()
-            subscribeCascade(masterAssetId)
-            router.reload({ only: ['pricing'] })
-        },
-    })
 }
 
 const closeExplain = () => {
@@ -548,7 +536,15 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                         class="ml-1 whitespace-nowrap rounded border border-emerald-300 px-1 py-px text-xs font-normal text-emerald-700 tabular-nums"
                         v-tooltip="ctrans('Trade units')"
                     >
-                        {{ masterProduct.trade_units_label }}
+                        <button
+                            v-if="tradeUnitsOf(masterProduct).length > MAX_TRADE_UNITS_INLINE"
+                            type="button"
+                            class="underline decoration-dotted underline-offset-2 hover:text-emerald-900"
+                            @click="showingTradeUnits = masterProduct"
+                        >
+                            {{ ctrans(':n different trade units', { n: `${tradeUnitsOf(masterProduct).length}` }) }}
+                        </button>
+                        <template v-else>{{ masterProduct.trade_units_label }}</template>
                         <span class="text-gray-600">| {{ locale.number(masterProduct.units) }} {{ masterProduct.unit }}</span>
                     </span>
                 </span>
@@ -624,7 +620,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                             />
                             <button
                                 type="button"
-                                class="text-sm text-gray-400 hover:text-indigo-600"
+                                class="text-sm text-gray-400 hover:text-[--app-accent]"
                                 v-tooltip="ctrans('Edit prices')"
                                 @click="openEdit(masterProduct, 'master_prices')"
                             >
@@ -664,31 +660,16 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </template>
 
         <template #cell(price_tip)="{ item: masterProduct }">
-            <div v-if="masterProduct.price_tip" class="grid grid-cols-[auto_auto] items-center justify-end gap-x-3 gap-y-0.5">
-                <template v-for="(code, index) in majorCurrencies ?? []" :key="code">
-                    <button
-                        v-if="index === 0"
-                        type="button"
-                        class="price-tip-trigger justify-self-end rounded border px-1 text-xs font-medium tabular-nums"
-                        :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
-                        v-tooltip="ctrans('Why this price?')"
-                        @click="openExplain(masterProduct, $event)"
-                    >
-                        {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
-                    </button>
-                    <span v-else-if="index === 1" class="flex items-center justify-end gap-x-1 whitespace-nowrap text-xs tabular-nums text-gray-400">
-                        <span v-tooltip="ctrans('How sure the AI is about this change')">{{ ctrans(':pct% sure', { pct: `${masterProduct.price_tip.confidence}` }) }}</span>
-                        <button type="button" class="price-tip-trigger text-indigo-500 hover:text-indigo-700" v-tooltip="ctrans('Why this price?')" :aria-label="ctrans('Why this price?')" @click="openExplain(masterProduct, $event)">
-                            <FontAwesomeIcon :icon="faQuestionCircle" fixed-width aria-hidden="true" />
-                        </button>
-                    </span>
-                    <span v-else />
-                    <span class="whitespace-nowrap text-right tabular-nums" :class="masterProduct.price_tip.change < 0 ? 'text-amber-700' : 'text-green-700'" v-tooltip="ctrans('Recommended price')">
-                        {{ masterProduct.master_prices?.[code]?.value != null ? formatMoney(Math.round(Number(masterProduct.master_prices[code].value) * (1 + masterProduct.price_tip.change / 100) * 100) / 100, code) : '' }}
-                    </span>
-                </template>
-            </div>
-            <div v-else-if="masterProduct.price_tip_note" class="ml-auto max-w-56 text-right text-xs text-gray-400">
+            <button
+                v-if="masterProduct.price_tip"
+                type="button"
+                class="price-tip-trigger ml-auto block w-36 rounded border border-amber-300 px-1.5 py-0.5 text-right text-xs font-medium text-amber-700 hover:bg-amber-50"
+                v-tooltip="ctrans('Worth a look: see why')"
+                @click="openExplain(masterProduct, $event)"
+            >
+                {{ masterProduct.price_tip.label }}
+            </button>
+            <div v-else-if="masterProduct.price_tip_note" class="ml-auto w-36 text-right text-xs text-gray-400">
                 {{ masterProduct.price_tip_note }}
             </div>
         </template>
@@ -707,7 +688,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                             </span>
                             <button
                                 type="button"
-                                class="text-sm text-gray-400 hover:text-indigo-600"
+                                class="text-sm text-gray-400 hover:text-[--app-accent]"
                                 v-tooltip="ctrans('Edit RRPs')"
                                 @click="openEdit(masterProduct, 'master_rrps')"
                             >
@@ -747,6 +728,16 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </template>
     </Table>
 
+    <Modal :isOpen="!!showingTradeUnits" @onClose="showingTradeUnits = null" width="w-full max-w-sm">
+        <div v-if="showingTradeUnits">
+            <div class="mb-1 text-sm font-medium text-gray-700">{{ showingTradeUnits.code }} — {{ ctrans('Trade units') }}</div>
+            <p class="mb-3 text-xs text-gray-500">{{ showingTradeUnits.name }}</p>
+            <ul class="divide-y divide-gray-100 text-sm tabular-nums text-gray-700">
+                <li v-for="tradeUnit in tradeUnitsOf(showingTradeUnits)" :key="tradeUnit" class="py-1">{{ tradeUnit }}</li>
+            </ul>
+        </div>
+    </Modal>
+
     <Modal :isOpen="!!editingProduct || bulkMode" @onClose="closeEdit" width="w-full max-w-xl">
         <div v-if="editForm">
             <div class="mb-3 text-sm font-medium text-gray-700">
@@ -782,46 +773,22 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
 
     <Teleport to="body">
         <form v-if="explainingTip?.price_tip" ref="tipPanel" class="fixed z-50 rounded-lg border border-gray-200 bg-white p-4 shadow-lg" :style="{ top: `${tipPanelPosition.top}px`, left: `${tipPanelPosition.left}px`, width: `${TIP_PANEL_WIDTH}px` }" @submit.prevent="submitDismiss">
-            <div class="mb-1 text-sm font-medium text-gray-700">
-                {{ ctrans('Why') }}
-                <span class="mx-0.5 rounded-full px-2 py-px text-xs font-semibold tabular-nums" :class="explainingTip.price_tip.change < 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">{{ explainingTip.price_tip.change > 0 ? '+' : '' }}{{ explainingTip.price_tip.change }}%</span>
-                — {{ explainingTip.code }}
-            </div>
-            <p class="mb-3 text-xs text-gray-500">{{ explainingTip.name }} · {{ ctrans(':pct% sure', { pct: `${explainingTip.price_tip.confidence}` }) }}</p>
+            <div class="mb-1 text-sm font-medium text-gray-700">{{ ctrans('Worth a look') }} — {{ explainingTip.code }}</div>
+            <p class="mb-1 text-xs text-gray-500">{{ explainingTip.name }}</p>
+            <p class="mb-3 text-sm font-medium text-amber-700">{{ explainingTip.price_tip.label }}</p>
             <ul class="list-disc space-y-0.5 pl-5 text-xs text-gray-700">
                 <li v-for="(line, index) in explainingTip.price_tip.reason.split(', ')" :key="index">{{ line }}</li>
             </ul>
-            <div class="mt-3 flex items-center justify-between gap-3 rounded-md bg-gray-50 px-3 py-2">
-                <div class="grid grid-cols-[auto_auto_auto_auto] items-center gap-x-2 gap-y-0.5 text-sm tabular-nums">
-                    <template v-for="code in (majorCurrencies ?? []).filter(code => explainingTip!.master_prices?.[code]?.value != null)" :key="code">
-                        <span class="text-right text-gray-500">{{ formatMoney(explainingTip!.master_prices[code].value, code) }}</span>
-                        <span class="text-gray-400">→</span>
-                        <span class="text-right font-semibold" :class="explainingTip!.price_tip!.change < 0 ? 'text-amber-700' : 'text-green-700'">
-                            {{ formatMoney(Math.round(Number(explainingTip!.master_prices[code].value) * (1 + explainingTip!.price_tip!.change / 100) * 100) / 100, code) }}
-                        </span>
-                        <span class="whitespace-nowrap pl-2 text-xs text-gray-500" v-tooltip="ctrans('Margin vs effective cost')">
-                            <template v-if="priceMarginPct(explainingTip!, code)">{{ priceMarginPct(explainingTip!, code) }} → {{ priceMarginPct(explainingTip!, code, explainingTip!.price_tip!.change) }}</template>
-                        </span>
-                    </template>
-                </div>
-                <span class="whitespace-nowrap rounded border px-1.5 py-px text-sm font-medium tabular-nums" :class="explainingTip.price_tip.change < 0 ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'">
-                    {{ explainingTip.price_tip.change > 0 ? '▲ +' : '▼ ' }}{{ explainingTip.price_tip.change }}%
-                </span>
-            </div>
-            <div class="mt-4 flex items-center justify-between gap-3">
-                <button v-if="!givingFeedback" type="button" class="text-xs text-gray-500 underline hover:text-gray-700" @click="givingFeedback = true">{{ ctrans('This tip is wrong') }}</button>
-                <span v-else />
-                <button type="button" :disabled="isApplyingTip" class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50" @click="applyTipNow">
-                    <FontAwesomeIcon :icon="isApplyingTip ? 'fad fa-spinner-third' : faSave" :class="{ 'animate-spin': isApplyingTip }" fixed-width aria-hidden="true" />
-                    {{ ctrans('Apply') }}
-                </button>
+            <p class="mt-3 text-xs text-gray-500">{{ ctrans('This is a pointer, not a price. Decide the price yourself, or review the whole family with your AI assistant.') }}</p>
+            <div v-if="!givingFeedback" class="mt-3">
+                <button type="button" class="text-xs text-gray-500 underline hover:text-gray-700" @click="givingFeedback = true">{{ ctrans('Not relevant') }}</button>
             </div>
             <div v-if="givingFeedback" class="mt-3 border-t border-gray-100 pt-3">
-                <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why is it wrong? The AI learns from it') }}</label>
+                <label for="dismissed_reason" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans('Why not? It is kept with the product and shown to whoever reviews the family next') }}</label>
                 <textarea id="dismissed_reason" v-model="dismissForm.dismissed_reason" rows="2" required maxlength="500" class="w-full rounded-md border-gray-300 text-sm" :placeholder="ctrans('e.g. Christmas stock, sells in December')" />
                 <p v-if="dismissForm.errors.dismissed_reason" class="mt-1 text-xs text-red-600">{{ dismissForm.errors.dismissed_reason }}</p>
                 <div class="mt-2 flex justify-end">
-                    <button type="submit" :disabled="dismissForm.processing" class="rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">{{ ctrans('Send and hide tip') }}</button>
+                    <button type="submit" :disabled="dismissForm.processing" class="rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50">{{ ctrans('Save and hide for 30 days') }}</button>
                 </div>
             </div>
         </form>

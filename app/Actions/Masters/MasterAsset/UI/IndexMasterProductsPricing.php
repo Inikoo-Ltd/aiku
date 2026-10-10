@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipKindEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
 use App\InertiaTable\InertiaTable;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -56,7 +57,7 @@ class IndexMasterProductsPricing extends OrgAction
             new class () implements Sort {
                 public function __invoke(Builder $query, bool $descending, string $property): void
                 {
-                    $query->orderByRaw('master_asset_price_tips.confidence '.($descending ? 'desc' : 'asc').' nulls last')
+                    $query->orderByRaw('master_asset_price_tips.id '.($descending ? 'desc' : 'asc').' nulls last')
                         ->orderBy('master_assets.code');
                 }
             }
@@ -116,8 +117,7 @@ class IndexMasterProductsPricing extends OrgAction
                 'master_asset_stats.number_customers_who_favourited as favourites',
                 'master_asset_stats.total_products_rebel_prices as price_rebels',
                 'master_asset_price_tips.id as price_tip_id',
-                'master_asset_price_tips.change as price_tip_change',
-                'master_asset_price_tips.confidence as price_tip_confidence',
+                'master_asset_price_tips.kind as price_tip_kind',
                 'master_asset_price_tips.reason as price_tip_reason',
                 'master_asset_stats.price_tip_check',
                 'master_families.code as master_family_code',
@@ -191,11 +191,11 @@ class IndexMasterProductsPricing extends OrgAction
         $masterAssets->getCollection()->each(function (MasterAsset $masterAsset) use ($isDropship) {
             $masterAsset->price_tip     = $masterAsset->price_tip_id ? [
                 'id'         => $masterAsset->price_tip_id,
-                'change'     => (int) $masterAsset->price_tip_change,
-                'confidence' => (int) round(100 * $masterAsset->price_tip_confidence),
-                'reason'     => $masterAsset->price_tip_reason,
+                'label'  => MasterAssetPriceTipKindEnum::labels()[$masterAsset->price_tip_kind] ?? __('Worth a look'),
+                'reason' => $masterAsset->price_tip_reason,
             ] : null;
-            $masterAsset->price_tip_note = $masterAsset->price_tip_id ? null : data_get(json_decode($masterAsset->price_tip_check ?? 'null', true), 'text');
+            $priceTipCheck               = json_decode($masterAsset->price_tip_check ?? 'null', true);
+            $masterAsset->price_tip_note = $masterAsset->price_tip_id || data_get($priceTipCheck, 'outcome') === 'nothing' ? null : data_get($priceTipCheck, 'text');
             $masterAsset->is_dropship   = $isDropship;
             $masterAsset->price_outlier = GetMasterAssetPriceOutlier::run($masterAsset->price, $masterAsset->units, $masterAsset->family_unit_price_median);
         });
@@ -232,7 +232,7 @@ class IndexMasterProductsPricing extends OrgAction
             $table
                 ->column(key: 'price', label: __('Price'), sortable: true, align: 'right')
                 ->column(key: 'rrp', label: __('RRP').'/'.($masterShop->type == ShopTypeEnum::DROPSHIPPING ? __('Outer') : __('Unit')), sortable: true, align: 'right')
-                ->column(key: 'price_tip', label: __('Price tip'), sortable: true, align: 'right')
+                ->column(key: 'price_tip', label: '', sortable: true, align: 'right')
                 ->defaultSort('-price_tip');
         };
     }

@@ -83,6 +83,10 @@ class McpChange extends Model
             return false;
         }
 
+        if ($this->type === McpChangeTypeEnum::MASTER_PRICES) {
+            return $user->authTo('masters.edit');
+        }
+
         $productionId = data_get($this->data, 'target.production_id');
         if (in_array($this->type, [McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE])) {
             $production = $productionId ? Production::find($productionId) : null;

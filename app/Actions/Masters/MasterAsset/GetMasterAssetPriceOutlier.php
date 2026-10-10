@@ -27,16 +27,22 @@ class GetMasterAssetPriceOutlier
 
     /**
      * Correlated subquery for a select on master_assets: median price per unit of the other
-     * current main products in the same master family, null when the family is too small.
+     * current main products in the same master family, null when the family is too small. The
+     * scalar price is in euros in every master shop, so a caller that shows the median next to
+     * prices in another currency passes that currency and gets the median of those master prices.
      */
-    public static function familyUnitPriceMedianSql(): string
+    public static function familyUnitPriceMedianSql(?string $currencyCode = null): string
     {
-        return "select percentile_cont(0.5) within group (order by siblings.price / siblings.units)
+        $price = $currencyCode && preg_match('/^[A-Z]{3}$/', $currencyCode)
+            ? "nullif(siblings.master_prices->'$currencyCode'->>'value', '')::numeric"
+            : 'siblings.price';
+
+        return "select percentile_cont(0.5) within group (order by $price / siblings.units)
                 from master_assets siblings
                 where siblings.master_family_id = master_assets.master_family_id
                   and siblings.id <> master_assets.id
                   and siblings.status and siblings.is_main
-                  and siblings.price > 0 and siblings.units > 0
+                  and $price > 0 and siblings.units > 0
                 having count(*) >= ".self::MINIMUM_SIBLINGS;
     }
 

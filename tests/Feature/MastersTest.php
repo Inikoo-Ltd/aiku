@@ -12,10 +12,9 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
-use App\Actions\Masters\MasterAsset\ApplyMasterAssetPriceTip;
 use App\Actions\Masters\MasterAsset\GenerateMasterAssetPriceTips;
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipKindEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
-use App\Models\Masters\MasterAssetPriceTip;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\DeleteMasterAsset;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
@@ -4281,7 +4280,7 @@ test('masters staff view and edit the catalogue of shops under a master and view
     }
 });
 
-describe('price tips from Jev, HELP-2331', function () {
+describe('price tips, HELP-2331 and INI-075', function () {
     beforeEach(function () {
         Config::set('services.openrouter.api_key', 'test-key');
 
@@ -4326,66 +4325,63 @@ describe('price tips from Jev, HELP-2331', function () {
         ];
     });
 
-    $fakeJev = function (string $choice, float $probability, float $temporaryDrop = 0.1) {
-        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
-        \Illuminate\Support\Facades\Http::fake([
-            'openrouter.ai/*' => \Illuminate\Support\Facades\Http::response(['answers' => [
-                'change'         => ['choice' => $choice, 'probabilities' => [$choice => $probability, 'hold' => round(1 - $probability, 2)]],
-                'temporary_drop' => ['noul' => $temporaryDrop],
-            ]]),
-        ]);
-    };
+    $overstocked = fn (array $signals): array => [...$signals, 'cover' => 600.0, 'sales' => 500.0, 'sales_last_year' => 1000.0];
 
-    test('a confident markdown on an overstocked product is stored with a reason built from the signals', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.72);
+    test('a product with over 18 months of stock and falling sales is flagged with the facts and no percentage', function () use ($overstocked) {
+        \Illuminate\Support\Facades\Http::fake();
+        $signals = $overstocked($this->tipSignals);
 
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $signals);
 
         expect($tip->status)->toBe(MasterAssetPriceTipStatusEnum::OPEN)
-            ->and($tip->change)->toBe(-10)
-            ->and((float) $tip->confidence)->toBe(0.72)
-            ->and((float) $tip->temporary_drop_probability)->toBe(0.1)
-            ->and($tip->reason)->toContain('400 days')
-            ->and($tip->reason)->toContain('sales down 20%')
+            ->and($tip->kind)->toBe(MasterAssetPriceTipKindEnum::OVERSTOCKED)
+            ->and($tip->change)->toBe(0)
+            ->and($tip->reason)->toContain('600 days')
+            ->and($tip->reason)->toContain('sales down 50%')
             ->and($tip->reason)->toContain('20 more on the way')
             ->and($tip->reason)->toContain('moved sales +25%')
-            ->and($tip->state['cover'])->toEqual(400)
-            ->and($this->tipMasterAsset->stats()->first()->price_tip_check['outcome'])->toBe('tip');
+            ->and($tip->state['cover'])->toEqual(600)
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'tip', 'text' => '']);
 
-        \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request['state']['product'] === 'PT Price tip product'
-            && array_keys($request['questions']) === ['change', 'temporary_drop']);
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $signals)->id)->toBe($tip->id);
 
-        $fakeJev('down_5', 0.8);
-        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals)->change)->toBe(-10);
-        \Illuminate\Support\Facades\Http::assertNothingSent();
-
-        $this->travel(GenerateMasterAssetPriceTips::RECHECK_DAYS + 1)->days();
-        $refreshed = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
-        expect($refreshed->id)->toBe($tip->id)->and($refreshed->change)->toBe(-5);
-
-        $fakeJev('hold', 0.9);
-        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'price' => 9.5]))->toBeNull()
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$signals, 'sales' => 900.0]))->toBeNull()
             ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::EXPIRED)
-            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toMatchArray([
-                'outcome'        => 'ai_hold',
-                'cover'          => 400,
-                'probabilities'  => ['hold' => 0.1],
-                'temporary_drop' => 0.1,
-            ]);
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'nothing', 'text' => 'No tip: stock and sales look normal']);
+
+        \Illuminate\Support\Facades\Http::assertNothingSent();
     });
 
-    test('a price staff changed by hand, or a cost above the price, gets no tip and says why', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.72);
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
-        \Illuminate\Support\Facades\Http::fake();
+    test('a product is flagged for too much stock, for running out, or for falling behind its family, and for nothing else', function () use ($overstocked) {
+        $signals    = $overstocked($this->tipSignals);
+        $noIncoming = [['organisation' => 'aw', 'days_of_cover' => 20, 'stock' => 5, 'sold_last_year' => 40, 'incoming' => 0, 'days_out_of_stock' => []]];
+        $runningOut = [...$signals, 'cover' => 20.0, 'sales' => 600.0, 'sales_last_year' => 400.0, 'organisations' => $noIncoming];
+        $behind     = [...$signals, 'cover' => 200.0, 'family' => ['rank' => 9, 'products' => 12, 'products_selling' => 12, 'share_pct' => 3, 'family_change_pct' => 0]];
+
+        expect(GenerateMasterAssetPriceTips::flag($signals))->toBe(MasterAssetPriceTipKindEnum::OVERSTOCKED)
+            ->and(GenerateMasterAssetPriceTips::flag([...$signals, 'cover' => 300.0]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::flag([...$signals, 'sales' => 800.0]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::flag([...$signals, 'sales' => 50.0, 'sales_last_year' => 100.0]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::flag([...$signals, 'sales_last_year' => 0.0, 'new' => true]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::flag($runningOut))->toBe(MasterAssetPriceTipKindEnum::RUNNING_OUT)
+            ->and(GenerateMasterAssetPriceTips::flag([...$runningOut, 'organisations' => $signals['organisations']]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::flag([...$runningOut, 'sales' => 420.0]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::flag($behind))->toBe(MasterAssetPriceTipKindEnum::BEHIND_FAMILY)
+            ->and(GenerateMasterAssetPriceTips::flag([...$behind, 'family' => [...$behind['family'], 'family_change_pct' => -40]]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::reason($runningOut, MasterAssetPriceTipKindEnum::RUNNING_OUT))->toStartWith('Stock runs out in 20 days')
+            ->and(GenerateMasterAssetPriceTips::reason($runningOut, MasterAssetPriceTipKindEnum::RUNNING_OUT))->toContain('sales up 50% on last year');
+    });
+
+    test('a price staff changed by hand, or a cost above the price, gets no tip and says why', function () use ($overstocked) {
+        $signals = $overstocked($this->tipSignals);
+        $tip     = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $signals);
 
         $changedAt = now()->subDays(5);
-        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'price_changed_at' => $changedAt->toDateString()]))->toBeNull()
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$signals, 'price_changed_at' => $changedAt->toDateString()]))->toBeNull()
             ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::EXPIRED)
             ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'price_changed', 'text' => 'No tip: price changed by hand on '.$changedAt->format('j M').', no new tip for 30 days after that'])
-            ->and(GenerateMasterAssetPriceTips::precheck([...$this->tipSignals, 'price_changed_at' => now()->subDays(GenerateMasterAssetPriceTips::MANUAL_CHANGE_QUIET_DAYS + 1)->toDateString()]))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::precheck([...$this->tipSignals, 'cost' => 170.82])['outcome'])->toBe('cost_above_price');
-        \Illuminate\Support\Facades\Http::assertNothingSent();
+            ->and(GenerateMasterAssetPriceTips::precheck([...$signals, 'price_changed_at' => now()->subDays(GenerateMasterAssetPriceTips::MANUAL_CHANGE_QUIET_DAYS + 1)->toDateString()]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::precheck([...$signals, 'cost' => 170.82])['outcome'])->toBe('cost_above_price');
 
         $audit = fn (?int $userId, array $newValues, int $daysAgo) => DB::table('audits')->insert([
             'group_id'       => $this->tipMasterAsset->group_id,
@@ -4408,59 +4404,14 @@ describe('price tips from Jev, HELP-2331', function () {
         expect(GenerateMasterAssetPriceTips::make()->lastManualPriceChanges([$this->tipMasterAsset->id])->all())->toBe([$this->tipMasterAsset->id => now()->subDays(3)->toDateString()]);
     });
 
-    test('a vote split over several sizes of cut is added up before judging how sure the AI is', function () {
-        $answers = fn (string $choice, array $probabilities) => [
-            'change'         => ['choice' => $choice, 'probabilities' => $probabilities],
-            'temporary_drop' => ['noul' => 0.1],
-        ];
-        $signals = $this->tipSignals;
+    test('lines on sale under 60 days and products that never sold are not looked at, and say why', function () use ($overstocked) {
+        $signals = $overstocked($this->tipSignals);
 
-        expect(GenerateMasterAssetPriceTips::decide($signals, $answers('hold', ['hold' => 0.3, 'down_5' => 0.2, 'down_10' => 0.3, 'down_15' => 0.2])))->toMatchArray(['change' => -10, 'confidence' => 0.7])
-            ->and(GenerateMasterAssetPriceTips::decide($signals, $answers('down_5', ['hold' => 0.4, 'down_5' => 0.3, 'down_10' => 0.3])))->toMatchArray(['change' => -5, 'confidence' => 0.6])
-            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('hold', ['hold' => 0.55, 'down_5' => 0.25, 'down_10' => 0.2]))['check']['text'])->toBe('No tip: the AI keeps the price (55% sure)')
-            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('up_5', ['hold' => 0.2, 'up_5' => 0.45, 'down_5' => 0.2, 'down_10' => 0.15]))['check']['text'])->toBe('No tip: the AI is only 35% sure of -5%')
-            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('up_5', ['hold' => 0.1, 'up_5' => 0.5, 'up_10' => 0.4]))['check']['text'])->toBe('No tip: the AI keeps the price (50% sure)')
-            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 20.0], $answers('hold', ['hold' => 0.4, 'up_5' => 0.35, 'up_10' => 0.25])))->toMatchArray(['change' => 5, 'confidence' => 0.6]);
-    });
-
-    test('guard rails turn down picks against the stock, unsure picks, temporary drops and markdowns below cost floor', function () {
-        $answers = fn (string $choice, float $probability, float $temporaryDrop = 0.1) => [
-            'change'         => ['choice' => $choice, 'probabilities' => [$choice => $probability]],
-            'temporary_drop' => ['noul' => $temporaryDrop],
-        ];
-        $signals = $this->tipSignals;
-
-        expect(GenerateMasterAssetPriceTips::decide($signals, $answers('up_5', 0.9)))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide($signals, $answers('down_10', 0.4)))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide($signals, $answers('down_10', 0.9, 0.7)))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cost' => 7.6], $answers('down_15', 0.9)))->toMatchArray(['change' => -5, 'capped' => true])
-            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cost' => 7.9], $answers('down_15', 0.9)))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 80.0], $answers('down_10', 0.9)))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 20.0], $answers('up_10', 0.8)))->toMatchArray(['change' => 10])
-            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 20.0], $answers('down_5', 0.8)))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('down_10', 0.9, 0.7))['check']['outcome'])->toBe('temporary_drop')
-            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('down_10', 0.4))['check']['text'])->toBe('No tip: the AI is only 40% sure of -10%');
-    });
-
-    test('lines on sale under 60 days and products with stock about right are never sent to Jev, and say why', function () {
-        \Illuminate\Support\Facades\Http::fake();
-
-        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'sales_last_year' => 0.0, 'new' => true, 'days_on_sale' => 30]))->toBeNull()
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$signals, 'sales_last_year' => 0.0, 'new' => true, 'days_on_sale' => 30]))->toBeNull()
             ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'too_new', 'text' => 'No tip yet: new, on sale for 30 days'])
-            ->and(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'cover' => 80.0]))->toBeNull()
-            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'stock_balanced', 'text' => 'No tip: stock cover is normal (80 days)']);
-
-        \Illuminate\Support\Facades\Http::assertNothingSent();
-    });
-
-    test('a new line on sale long enough gets a markdown without the temporary drop check, judged on its family', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.7, 0.9);
-
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'sales_last_year' => 0.0, 'new' => true, 'days_on_sale' => 120]);
-
-        expect($tip->change)->toBe(-10)
-            ->and($tip->reason)->toContain('new, on sale for 120 days')
-            ->and($tip->reason)->not->toContain('on last year');
+            ->and(GenerateMasterAssetPriceTips::precheck([...$signals, 'sales' => 0.0, 'sales_last_year' => 0.0])['outcome'])->toBe('no_sales')
+            ->and(GenerateMasterAssetPriceTips::precheck([...$signals, 'cover' => null])['outcome'])->toBe('no_recent_sales')
+            ->and(GenerateMasterAssetPriceTips::precheck([...$signals, 'cover' => null, 'organisations' => []])['outcome'])->toBe('no_stock');
     });
 
     test('stock cover is averaged over the organisations by what each sold in the last year', function () {
@@ -4475,48 +4426,8 @@ describe('price tips from Jev, HELP-2331', function () {
             ->and(GenerateMasterAssetPriceTips::salesWeightedCover([]))->toBeNull();
     });
 
-    test('when Jev cannot answer the open tip is kept and nothing new is stored', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.72);
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
-
-        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
-        \Illuminate\Support\Facades\Http::fake(['openrouter.ai/*' => \Illuminate\Support\Facades\Http::response('down', 503)]);
-        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals)?->id)->toBe($tip->id)
-            ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::OPEN);
-
-        Config::set('services.openrouter.api_key', null);
-        $tip->update(['status' => MasterAssetPriceTipStatusEnum::EXPIRED]);
-        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals))->toBeNull()
-            ->and(MasterAssetPriceTip::where('master_asset_id', $this->tipMasterAsset->id)->where('status', MasterAssetPriceTipStatusEnum::OPEN)->exists())->toBeFalse();
-    });
-
-    test('applying a tip moves every currency through the master price update, audited, and it is measured later', function () use ($fakeJev) {
-        Queue::fake();
-        $fakeJev('down_10', 0.72);
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
-
-        ApplyMasterAssetPriceTip::make()->action($tip, [], $this->adminGuest->getUser());
-
-        $masterAsset = $this->tipMasterAsset->fresh();
-        $tip->refresh();
-        expect((float) $masterAsset->master_prices['GBP']['value'])->toBe(9.0)
-            ->and((float) $masterAsset->master_prices['EUR']['value'])->toBe(10.8)
-            ->and($tip->status)->toBe(MasterAssetPriceTipStatusEnum::APPLIED)
-            ->and((float) $tip->applied_price)->toBe((float) $masterAsset->price)
-            ->and($tip->applied_by_user_id)->toBe($this->adminGuest->getUser()->id)
-            ->and($tip->audits()->where('new_values->status', 'applied')->exists())->toBeTrue();
-
-        expect(fn () => ApplyMasterAssetPriceTip::make()->action($tip, []))->toThrow(\Illuminate\Validation\ValidationException::class);
-
-        $tip->update(['applied_at' => now()->subDays(GenerateMasterAssetPriceTips::MEASURE_AFTER_DAYS + 1)]);
-        GenerateMasterAssetPriceTips::make()->measureOutcomes();
-        expect($tip->fresh()->measured_at)->not->toBeNull()
-            ->and($tip->fresh()->outcome)->toHaveKeys(['sales_before', 'sales_after', 'sales_after_last_year', 'sales_change_pct']);
-    });
-
-    test('staff dismiss a tip with a reason', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.72);
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+    test('staff turn a tip down with a reason, and the reason is kept for whoever reviews the family next', function () use ($overstocked) {
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $overstocked($this->tipSignals));
 
         \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => ''])
             ->assertSessionHasErrors('dismissed_reason');
@@ -4525,15 +4436,19 @@ describe('price tips from Jev, HELP-2331', function () {
             ->assertSessionHasNoErrors();
 
         $tip->refresh();
+        $feedback = GenerateMasterAssetPriceTips::make()->staffFeedback([], [$this->tipMasterAsset->master_family_id]);
+
         expect($tip->status)->toBe(MasterAssetPriceTipStatusEnum::DISMISSED)
             ->and($tip->dismissed_reason)->toBe('Christmas stock, sells in December')
             ->and($tip->dismissed_by_user_id)->toBe($this->adminGuest->getUser()->id)
-            ->and($tip->audits()->where('new_values->status', 'dismissed')->exists())->toBeTrue();
+            ->and($tip->audits()->where('new_values->status', 'dismissed')->exists())->toBeTrue()
+            ->and($feedback)->toHaveCount(1)
+            ->and($feedback->first()->dismissed_reason)->toBe('Christmas stock, sells in December')
+            ->and(GenerateMasterAssetPriceTips::make()->staffFeedback([], [0]))->toBeEmpty();
     });
 
-    test('the master shop lists every open price tip in one place', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.72);
-        GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+    test('the master shop lists every open price tip in one place', function () use ($overstocked) {
+        GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $overstocked($this->tipSignals));
         $masterShop = $this->tipMasterAsset->masterShop;
 
         get(route('grp.masters.master_shops.show.master_products.index', [$masterShop->slug, 'tab' => 'pricing']))
@@ -4544,7 +4459,8 @@ describe('price tips from Jev, HELP-2331', function () {
                     ->where('tabs.navigation.pricing.number', 1)
                     ->has('pricing.data', 1)
                     ->where('pricing.data.0.code', $this->tipMasterAsset->code)
-                    ->where('pricing.data.0.price_tip.change', -10)
+                    ->where('pricing.data.0.price_tip.label', 'Over 18 months of stock, sales falling')
+                    ->missing('pricing.data.0.price_tip.change')
                     ->where('pricing.data.0.master_family_code', $this->tipMasterAsset->masterFamily->code)
                     ->etc()
             );
@@ -4553,41 +4469,26 @@ describe('price tips from Jev, HELP-2331', function () {
             ->assertOk();
     });
 
-    test('a markdown is not tipped when the website is the problem, and the reason says how the website is doing', function () {
-        $answers = ['change' => ['choice' => 'down_10', 'probabilities' => ['down_10' => 0.9]], 'temporary_drop' => ['noul' => 0.1]];
+    test('too much stock is not flagged when the website is the problem, and the reason says how the website is doing', function () use ($overstocked) {
+        $signals = $overstocked($this->tipSignals);
         $healthy = ['shops' => 20, 'online' => 20, 'online_without_images' => 0, 'family_visitors' => 900, 'family_visitors_change_pct' => 5];
 
-        expect(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => $healthy], $answers))->toMatchArray(['change' => -10])
-            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online' => 14]], $answers))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'online_without_images' => 2]], $answers))->toBeNull()
-            ->and(GenerateMasterAssetPriceTips::decide([...$this->tipSignals, 'website' => [...$healthy, 'family_visitors_change_pct' => -40]], $answers))->toBeNull()
+        expect(GenerateMasterAssetPriceTips::verdict([...$signals, 'website' => $healthy])['kind'])->toBe(MasterAssetPriceTipKindEnum::OVERSTOCKED)
+            ->and(GenerateMasterAssetPriceTips::verdict([...$signals, 'website' => [...$healthy, 'online' => 14]])['check']['outcome'])->toBe('website')
+            ->and(GenerateMasterAssetPriceTips::verdict([...$signals, 'website' => [...$healthy, 'online_without_images' => 2]])['kind'])->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::verdict([...$signals, 'website' => [...$healthy, 'family_visitors_change_pct' => -40]])['kind'])->toBeNull()
             ->and(GenerateMasterAssetPriceTips::websiteReason($healthy))->toBe('website OK: online in 20 of 20 shops, family page visitors +5%')
             ->and(GenerateMasterAssetPriceTips::websiteReason([...$healthy, 'online' => 14, 'family_visitors_change_pct' => -40]))->toBe('website problem: offline in 6 of 20 shops, family page visitors -40%')
-            ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'offers' => ['Autumn 10% off', 'Older offer']], ['change' => -10, 'capped' => false]))->toContain('2 offers running, latest: Autumn 10% off')
+            ->and(GenerateMasterAssetPriceTips::reason([...$signals, 'offers' => ['Autumn 10% off', 'Older offer']], MasterAssetPriceTipKindEnum::OVERSTOCKED))->toContain('2 offers running, latest: Autumn 10% off')
             ->and(GenerateMasterAssetPriceTips::make()->websiteHealth([0]))->toBe([]);
     });
 
-    test('the reason puts the product among its family', function () {
+    test('the reason puts the product among its family', function () use ($overstocked) {
         $family = ['rank' => 26, 'products' => 31, 'products_selling' => 31, 'share_pct' => 1, 'family_change_pct' => -12];
 
         expect(GenerateMasterAssetPriceTips::familyReason($family, -10))->toBe('in the family: #26 of 31 by sales, 1% of family sales, family -12% vs this product -10%')
-            ->and(GenerateMasterAssetPriceTips::reason([...$this->tipSignals, 'family' => $family], ['change' => -10, 'capped' => false]))->toContain('in the family: #26 of 31')
+            ->and(GenerateMasterAssetPriceTips::reason([...$overstocked($this->tipSignals), 'family' => $family], MasterAssetPriceTipKindEnum::OVERSTOCKED))->toContain('in the family: #26 of 31')
             ->and(GenerateMasterAssetPriceTips::make()->familyContext([], collect()))->toBe([]);
-    });
-
-    test('why staff said a tip was wrong goes back to the AI for that product and its family', function () use ($fakeJev) {
-        $fakeJev('down_10', 0.72);
-        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
-
-        \Pest\Laravel\patch(route('grp.models.master_asset_price_tip.dismiss', ['masterAssetPriceTip' => $tip->id]), ['dismissed_reason' => 'Christmas stock, sells in December'])
-            ->assertRedirect();
-
-        $feedback = GenerateMasterAssetPriceTips::make()->staffFeedback([], [$this->tipMasterAsset->master_family_id]);
-
-        expect($feedback)->toHaveCount(1)
-            ->and($feedback->first()->dismissed_reason)->toBe('Christmas stock, sells in December')
-            ->and((int) $feedback->first()->change)->toBe(-10)
-            ->and(GenerateMasterAssetPriceTips::make()->staffFeedback([], [0]))->toBeEmpty();
     });
 });
 

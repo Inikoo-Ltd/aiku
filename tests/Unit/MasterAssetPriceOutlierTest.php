@@ -15,3 +15,9 @@ test('price per unit far from the family median is an outlier, HELP-3496', funct
         ->and(GetMasterAssetPriceOutlier::run(157.19, 1, null))->toBeNull()
         ->and(GetMasterAssetPriceOutlier::run(0, 1, 10))->toBeNull();
 });
+
+test('the family median is taken from the master prices of a currency when one is given, and from the scalar price otherwise', function () {
+    expect(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql('GBP'))->toContain("siblings.master_prices->'GBP'->>'value'")
+        ->and(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql())->toContain('order by siblings.price / siblings.units')
+        ->and(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql("x'; drop"))->toContain('order by siblings.price / siblings.units');
+});

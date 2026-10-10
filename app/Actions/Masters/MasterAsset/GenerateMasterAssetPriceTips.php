@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
-use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
@@ -17,6 +16,7 @@ use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetPriceTipKindEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Currency;
@@ -34,18 +34,14 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Nightly price tips (HELP-2331). For each master product whose stock, averaged over the
- * organisations by what each sold in the last year, is too high or running out, Jev is shown its
- * sales, stock, incoming goods, stock-outs, margin, family prices, running offers and past price
- * changes, and picks a change. New lines (no sales a year ago) are judged once on sale for
- * NEW_PRODUCT_MIN_DAYS, against their family and competitors. Jev only picks; the guard rails decide:
- * the direction must match the stock, a markdown never goes below cost x 1.25 and never follows a
- * drop Jev thinks is temporary. Only confident, non-hold picks are kept.
+ * Nightly price tips (HELP-2331, INI-075). A tip flags a master product worth a look and says why; it
+ * never names a price. Stock is averaged over the organisations by what each sold in the last year. A
+ * product is flagged when it holds a year and a half of stock while sales fall, when it is running out while
+ * sales rise and nothing is on the way, or when it sells much worse than a family that holds up. What to
+ * do about it is decided by the person, on their own or with their assistant and the whole family in view.
  *
- * Every product checked keeps the outcome of its last check, so a product without a tip says why. Jev is asked
- * about a product at most once every RECHECK_DAYS, sooner only when its price, stock direction, offers or the
- * staff feedback on it or its family change.
- * The same run measures applied tips once their measuring window has passed.
+ * Every product checked keeps the outcome of its last check, so a product without a tip says why. A price
+ * changed by hand, or a tip turned down, keeps the product quiet for a while.
  */
 class GenerateMasterAssetPriceTips
 {
@@ -59,21 +55,23 @@ class GenerateMasterAssetPriceTips
 
     public const array EXCLUDED_MASTER_SHOPS = ['aroma'];
 
-    public const float MINIMUM_MARKUP_OVER_COST = 1.25;
+    public const int OVERSTOCK_DAYS = 540;
 
-    public const float MIN_CONFIDENCE = 0.5;
+    public const int SALES_FALL_PCT = -40;
 
-    public const float TEMPORARY_DROP = 0.6;
+    public const int SHORT_DAYS = 30;
 
-    public const float OVERSTOCK_DAYS = 120;
+    public const int SALES_RISE_PCT = 25;
 
-    public const float SHORT_DAYS = 45;
+    public const int BEHIND_FAMILY_POINTS = 50;
+
+    public const int BEHIND_FAMILY_MIN_COVER_DAYS = 120;
+
+    public const int FAMILY_HOLDS_PCT = -10;
+
+    public const int MIN_SALES = 500;
 
     public const int NEW_PRODUCT_MIN_DAYS = 60;
-
-    public const int RECHECK_DAYS = 7;
-
-    public const int MINIMUM_CHANGE = 3;
 
     public const int DISMISSED_QUIET_DAYS = 30;
 
@@ -87,18 +85,7 @@ class GenerateMasterAssetPriceTips
 
     public const int WEBSITE_MIN_TRAFFIC_DAYS = 80;
 
-    public const int MEASURE_AFTER_DAYS = 56;
-
     private const int CHUNK = 100;
-
-    public const array OPTIONS = [
-        'down_15' => -15,
-        'down_10' => -10,
-        'down_5'  => -5,
-        'hold'    => 0,
-        'up_5'    => 5,
-        'up_10'   => 10,
-    ];
 
     /**
      * @param  array<int, int>  $masterAssetIds
@@ -129,8 +116,7 @@ class GenerateMasterAssetPriceTips
     }
 
     /**
-     * Ask Jev about one product and refresh or expire its open tip. When Jev cannot be reached
-     * the open tip is left as it is.
+     * Flag one product, refresh the flag it already has, or expire it when the reason is gone.
      *
      * @param  array<string, mixed>  $signals
      */
@@ -140,43 +126,24 @@ class GenerateMasterAssetPriceTips
             ->where('status', MasterAssetPriceTipStatusEnum::OPEN)
             ->first();
 
-        $direction   = static::direction($signals);
-        $fingerprint = $direction ? static::fingerprint($signals) : null;
+        $verdict = static::verdict($signals);
+        $kind    = $verdict['kind'];
+        $this->recordCheck($masterAsset, $verdict['check']);
 
-        if ($fingerprint && static::askedRecently($masterAsset, $fingerprint)) {
-            return $openTip;
-        }
-
-        $answers = $direction ? $this->ask($signals) : [];
-
-        if ($answers === null) {
-            return $openTip;
-        }
-
-        $verdict  = static::verdict($signals, $answers);
-        $decision = $verdict['decision'];
-        $this->recordCheck($masterAsset, $fingerprint ? [
-            ...$verdict['check'],
-            'fingerprint'    => $fingerprint,
-            'cover'          => $signals['cover'],
-            'probabilities'  => array_map('floatval', (array) Arr::get($answers, 'change.probabilities', [])),
-            'temporary_drop' => Arr::get($answers, 'temporary_drop.noul'),
-        ] : $verdict['check']);
-
-        if (!$decision) {
+        if (!$kind) {
             $openTip?->update(['status' => MasterAssetPriceTipStatusEnum::EXPIRED, 'expired_at' => now()]);
 
             return null;
         }
 
         $attributes = [
-            'change'                     => $decision['change'],
-            'confidence'                 => $decision['confidence'],
-            'probabilities'              => $decision['probabilities'],
-            'temporary_drop_probability' => $decision['temporary_drop_probability'],
-            'reason'                     => static::reason($signals, $decision),
-            'state'                      => $signals,
-            'price'                      => $signals['price'],
+            'kind'          => $kind,
+            'change'        => 0,
+            'confidence'    => 0,
+            'probabilities' => [],
+            'reason'        => static::reason($signals, $kind),
+            'state'         => $signals,
+            'price'         => $signals['price'],
         ];
 
         if ($openTip) {
@@ -195,32 +162,7 @@ class GenerateMasterAssetPriceTips
     }
 
     /**
-     * What makes Jev's answer go stale: the price, which way the stock points, the offers running and staff
-     * feedback. Sales and stock drift slowly and are picked up by the weekly recheck.
-     *
-     * @param  array<string, mixed>  $signals
-     */
-    public static function fingerprint(array $signals): string
-    {
-        return md5(json_encode([
-            round((float) ($signals['price'] ?? 0), 2),
-            static::direction($signals),
-            $signals['offers'] ?? [],
-            $signals['staff_feedback'] ?? [],
-        ]));
-    }
-
-    public static function askedRecently(MasterAsset $masterAsset, string $fingerprint): bool
-    {
-        $stats = MasterAssetStats::where('master_asset_id', $masterAsset->id)->first(['price_tip_check', 'price_tip_checked_at']);
-
-        return $stats
-            && data_get($stats->price_tip_check, 'fingerprint') === $fingerprint
-            && $stats->price_tip_checked_at?->gt(now()->subDays(self::RECHECK_DAYS));
-    }
-
-    /**
-     * @param  array{outcome: string, text: string, fingerprint?: string, cover?: float, probabilities?: array<string, float>, temporary_drop?: mixed}  $check
+     * @param  array{outcome: string, text: string}  $check
      */
     public function recordCheck(MasterAsset $masterAsset, array $check): void
     {
@@ -256,7 +198,7 @@ class GenerateMasterAssetPriceTips
     }
 
     /**
-     * Why a product is not put to Jev at all, or null when it is.
+     * Why a product is not looked at, or null when it is.
      *
      * @param  array<string, mixed>  $signals
      * @return array{outcome: string, text: string}|null
@@ -279,169 +221,90 @@ class GenerateMasterAssetPriceTips
             ],
             $cover === null && ($signals['organisations'] ?? []) => ['outcome' => 'no_recent_sales', 'text' => __('No tip: no sales last year in any organisation')],
             $cover === null => ['outcome' => 'no_stock', 'text' => __('No tip: no stock linked')],
-            $cover < self::OVERSTOCK_DAYS && !($cover > 0 && $cover < self::SHORT_DAYS) => [
-                'outcome' => 'stock_balanced',
-                'text'    => __('No tip: stock cover is normal (:days days)', ['days' => (int) $cover]),
-            ],
             default => null,
         };
     }
 
     /**
-     * Too much stock allows a markdown, stock running out a markup, anything else no tip. Stock is averaged
-     * over the organisations by what each sold in the last year, as the price is the same in all of them.
+     * Sales of the last twelve months against the twelve before, in percent. Null for a line with no last year.
      *
      * @param  array<string, mixed>  $signals
      */
-    public static function direction(array $signals): ?int
+    public static function trend(array $signals): ?int
     {
-        if (static::precheck($signals)) {
+        return ($signals['sales_last_year'] ?? 0) > 0
+            ? (int) round(100 * ($signals['sales'] / $signals['sales_last_year'] - 1))
+            : null;
+    }
+
+    /**
+     * What makes a product worth a look. Plain rules on stock, sales and the family, nothing that names a
+     * price: what to do about it is for the person, or for their assistant with the whole family in front of it.
+     *
+     * @param  array<string, mixed>  $signals
+     */
+    public static function flag(array $signals): ?MasterAssetPriceTipKindEnum
+    {
+        $trend = static::trend($signals);
+        if ($trend === null) {
             return null;
         }
 
-        return $signals['cover'] >= self::OVERSTOCK_DAYS ? -1 : 1;
+        $cover        = (float) $signals['cover'];
+        $incoming     = array_sum(array_column($signals['organisations'] ?? [], 'incoming'));
+        $familyChange = data_get($signals, 'family.family_change_pct');
+
+        return match (true) {
+            $cover >= self::OVERSTOCK_DAYS && $trend <= self::SALES_FALL_PCT && $signals['sales_last_year'] >= self::MIN_SALES => MasterAssetPriceTipKindEnum::OVERSTOCKED,
+            $cover > 0 && $cover < self::SHORT_DAYS && $trend >= self::SALES_RISE_PCT && $signals['sales'] >= self::MIN_SALES && $incoming <= 0 => MasterAssetPriceTipKindEnum::RUNNING_OUT,
+            $familyChange !== null && $familyChange >= self::FAMILY_HOLDS_PCT && $trend <= $familyChange - self::BEHIND_FAMILY_POINTS
+                && $signals['sales_last_year'] >= self::MIN_SALES && $cover >= self::BEHIND_FAMILY_MIN_COVER_DAYS => MasterAssetPriceTipKindEnum::BEHIND_FAMILY,
+            default => null,
+        };
     }
 
     /**
-     * @param  array<string, mixed>  $signals
-     * @param  array<string, mixed>|null  $answers
-     * @return array{change: int, confidence: float, probabilities: array<string, float>, temporary_drop_probability: float|null, capped: bool}|null
-     */
-    public static function decide(array $signals, ?array $answers): ?array
-    {
-        return static::verdict($signals, $answers)['decision'];
-    }
-
-    /**
-     * The tip kept, or null, with the outcome of the check staff see next to the product. Jev spreads its
-     * vote over several sizes of cut or rise, so the sizes pointing the way the stock does are added up
-     * before asking whether it is sure enough, and the most likely of them is the size tipped.
+     * The flag kept, or null, with the outcome of the check staff see next to the product.
      *
      * @param  array<string, mixed>  $signals
-     * @param  array<string, mixed>|null  $answers
-     * @return array{decision: array{change: int, confidence: float, probabilities: array<string, float>, temporary_drop_probability: float|null, capped: bool}|null, check: array{outcome: string, text: string}}
+     * @return array{kind: MasterAssetPriceTipKindEnum|null, check: array{outcome: string, text: string}}
      */
-    public static function verdict(array $signals, ?array $answers): array
+    public static function verdict(array $signals): array
     {
-        $noTip = fn (string $outcome, string $text) => ['decision' => null, 'check' => ['outcome' => $outcome, 'text' => $text]];
-
         if ($precheck = static::precheck($signals)) {
-            return ['decision' => null, 'check' => $precheck];
+            return ['kind' => null, 'check' => $precheck];
         }
 
-        $direction     = static::direction($signals);
-        $choice        = (string) Arr::get($answers, 'change.choice');
-        $probabilities = array_map('floatval', (array) Arr::get($answers, 'change.probabilities', []));
-        $temporaryDrop = Arr::get($answers, 'temporary_drop.noul');
-        $temporaryDrop = is_numeric($temporaryDrop) ? (float) $temporaryDrop : null;
+        $kind = static::flag($signals);
 
-        $withStock = array_filter(
-            $probabilities ?: [$choice => (float) Arr::get($answers, 'change.confidence', 0)],
-            fn (string $option) => (self::OPTIONS[$option] ?? 0) * $direction > 0,
-            ARRAY_FILTER_USE_KEY
-        );
-        uksort($withStock, fn (string $a, string $b) => [$withStock[$b], abs(self::OPTIONS[$a])] <=> [$withStock[$a], abs(self::OPTIONS[$b])]);
-        $change     = self::OPTIONS[array_key_first($withStock)] ?? 0;
-        $confidence = min(1.0, round(array_sum($withStock), 4));
-        $sure       = (int) round(100 * $confidence);
-        $keep       = (float) ($probabilities['hold'] ?? 0);
-
-        if ($change === 0 || ($confidence < self::MIN_CONFIDENCE && $confidence <= $keep)) {
-            return $noTip('ai_hold', __('No tip: the AI keeps the price (:pct% sure)', ['pct' => (int) round(100 * max($keep, (float) ($probabilities[$choice] ?? 0)))]));
+        if (!$kind) {
+            return ['kind' => null, 'check' => ['outcome' => 'nothing', 'text' => __('No tip: stock and sales look normal')]];
         }
 
-        if ($confidence < self::MIN_CONFIDENCE) {
-            return $noTip('unsure', __('No tip: the AI is only :pct% sure of :change%', ['pct' => $sure, 'change' => ($change > 0 ? '+' : '').$change]));
+        if ($kind !== MasterAssetPriceTipKindEnum::RUNNING_OUT && !static::websiteIsHealthy($signals['website'] ?? null)) {
+            return ['kind' => null, 'check' => ['outcome' => 'website', 'text' => __('No tip: :reason', ['reason' => static::websiteReason($signals['website'])])]];
         }
 
-        $capped = false;
-        if ($change < 0) {
-            if (!static::websiteIsHealthy($signals['website'] ?? null)) {
-                return $noTip('website', __('No tip: :reason', ['reason' => static::websiteReason($signals['website'])]));
-            }
-
-            if (!($signals['new'] ?? false) && ($temporaryDrop === null || $temporaryDrop >= self::TEMPORARY_DROP)) {
-                return $noTip('temporary_drop', __('No tip: the fall in sales looks temporary (:pct% likely)', ['pct' => (int) round(100 * ($temporaryDrop ?? 1))]));
-            }
-
-            if ($signals['cost'] ?? null) {
-                $floor = -(int) floor(100 * (1 - $signals['cost'] * self::MINIMUM_MARKUP_OVER_COST / $signals['price']));
-                if ($floor > $change) {
-                    $change = $floor;
-                    $capped = true;
-                }
-            }
-
-            if (-$change < self::MINIMUM_CHANGE) {
-                return $noTip('cost_floor', __('No tip: the price is already close to cost + 25%'));
-            }
-        }
-
-        return [
-            'decision' => [
-                'change'                     => $change,
-                'confidence'                 => round($confidence, 4),
-                'probabilities'              => $probabilities,
-                'temporary_drop_probability' => $temporaryDrop !== null ? round($temporaryDrop, 4) : null,
-                'capped'                     => $capped,
-            ],
-            'check'    => ['outcome' => 'tip', 'text' => ''],
-        ];
+        return ['kind' => $kind, 'check' => ['outcome' => 'tip', 'text' => '']];
     }
 
     /**
-     * @param  array<string, mixed>  $signals
-     * @return array<string, mixed>|null
-     */
-    private function ask(array $signals): ?array
-    {
-        return AskJev::make()->handle($signals, [
-            'change'         => [
-                'type'         => 'choice',
-                'instructions' => 'This product is sold wholesale to trade customers at one price in every country. Pick the price change most likely to earn the most gross profit over the next three months. Weigh stock cover and goods on order, the sales trend against last year and the season, days out of stock (lost sales, not lost demand), the margin, the price of similar products in the family, offers already running, how sales reacted to past price changes, and what competitors charge per unit (difference_pct below 0 means they are cheaper; a competitor selling to shoppers is compared with our recommended retail price). website says whether the product pages are online with images in every shop and, when known, how visitors to its family pages moved (last 90 days against the 90 before): when the pages are fine and family visitors hold up but this product sells less, the price is the likely cause; when pages are offline or family visitors fall, the website is the cause, not the price. family puts the product among its family over the last 12 months: its rank and share of family sales, and family sales against last year next to the product\'s own trend. Sales are supply and demand inside the family: a product falling behind a family that holds up is losing to its siblings and a cut can win it back; a product carrying the family, or growing faster than it, can take a higher price. staff_feedback lists earlier tips on this product or its family that staff rejected and why; do not repeat a change for a reason they gave. new is true for a product with no sales a year ago: there is no last year to compare with, so judge it on its sales over its days_on_sale against the rest of its family, and on its price against the family median and competitors. cover is the stock in days, averaged over the organisations by what each sold in the last year.',
-                'criteria'     => [
-                    'down_15' => 'Cut the price 15%: far too much stock, demand fell and is not coming back',
-                    'down_10' => 'Cut the price 10%: too much stock and falling demand',
-                    'down_5'  => 'Cut the price 5%: somewhat too much stock, demand soft',
-                    'hold'    => 'Keep the price: the evidence for a change is weak or mixed',
-                    'up_5'    => 'Raise the price 5%: stock is running out and demand is strong',
-                    'up_10'   => 'Raise the price 10%: stock is running out fast, demand is strong and the price is low for the family',
-                ],
-            ],
-            'temporary_drop' => [
-                'type'         => 'noul',
-                'instructions' => 'Is the drop in sales against last year temporary, explained by stock-outs, the season or a one-off order last year, rather than by weaker demand?',
-                'criteria'     => [
-                    'true'  => 'Temporary: stock-outs, season or a one-off explain it',
-                    'false' => 'Real: customers are buying less of it',
-                ],
-            ],
-        ]);
-    }
-
-    /**
-     * The reason staff read next to the tip, built from the signals (Jev does not write).
+     * The facts staff read next to the flag, built from the signals.
      *
      * @param  array<string, mixed>  $signals
-     * @param  array{change: int, capped: bool}  $decision
      */
-    public static function reason(array $signals, array $decision): string
+    public static function reason(array $signals, MasterAssetPriceTipKindEnum $kind): string
     {
         $parts = [];
 
-        $parts[] = $decision['change'] < 0
-            ? __('Stock for :days days, averaged by what each organisation sells', ['days' => $signals['cover'] >= 730 ? '730+' : (int) $signals['cover']])
-            : __('Stock runs out in :days days, averaged by what each organisation sells', ['days' => (int) ceil($signals['cover'])]);
+        $parts[] = $kind === MasterAssetPriceTipKindEnum::RUNNING_OUT
+            ? __('Stock runs out in :days days, averaged by what each organisation sells', ['days' => (int) ceil($signals['cover'])])
+            : __('Stock for :days days, averaged by what each organisation sells', ['days' => $signals['cover'] >= 730 ? '730+' : (int) $signals['cover']]);
 
-        $trend = null;
-        if ($signals['new'] ?? false) {
-            $parts[] = __('new, on sale for :days days', ['days' => (int) $signals['days_on_sale']]);
-        } else {
-            $trend   = (int) round(100 * ($signals['sales'] / $signals['sales_last_year'] - 1));
-            $parts[] = $trend >= 0
-                ? __('sales up :pct% on last year', ['pct' => $trend])
-                : __('sales down :pct% on last year', ['pct' => -$trend]);
-        }
+        $trend   = static::trend($signals);
+        $parts[] = $trend >= 0
+            ? __('sales up :pct% on last year', ['pct' => $trend])
+            : __('sales down :pct% on last year', ['pct' => -$trend]);
 
         $incoming = array_sum(array_column($signals['organisations'] ?? [], 'incoming'));
         if ($incoming > 0) {
@@ -489,15 +352,11 @@ class GenerateMasterAssetPriceTips
                 : __('competitors :pct% dearer per unit or more', ['pct' => $cheapestCompetitor['difference_pct']]);
         }
 
-        if ($decision['capped']) {
-            $parts[] = __('limited by the cost floor');
-        }
-
         return ucfirst(implode(', ', $parts));
     }
 
     /**
-     * What Jev sees for each product with stock in at least one organisation.
+     * What is known about each product with stock in at least one organisation.
      *
      * @param  array<int, int>  $masterAssetIds
      * @return array<int, array<string, mixed>>
@@ -511,7 +370,7 @@ class GenerateMasterAssetPriceTips
         $masterAssets = DB::table('master_assets')
             ->whereIn('id', $masterAssetIds)
             ->select(['id', 'code', 'name', 'units', 'master_prices', 'effective_cost', 'master_family_id'])
-            ->selectSub(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql(), 'family_unit_price_median')
+            ->selectSub(GetMasterAssetPriceOutlier::familyUnitPriceMedianSql($baseCurrencyCode), 'family_unit_price_median')
             ->get();
 
         $months       = collect(range(24, 1))->map(fn (int $monthsAgo) => now()->startOfMonth()->subMonths($monthsAgo)->format('Y-m'));
@@ -608,7 +467,7 @@ class GenerateMasterAssetPriceTips
                     ->take(5)
                     ->map(fn ($row) => [
                         'product'        => $row->code,
-                        'tip_change_pct' => (int) $row->change,
+                        'tip'            => $row->kind ? (MasterAssetPriceTipKindEnum::labels()[$row->kind] ?? $row->kind) : sprintf('%+d%%', $row->change),
                         'why_wrong'      => $row->dismissed_reason,
                         'date'           => Carbon::parse($row->dismissed_at)->toDateString(),
                     ])
@@ -833,7 +692,7 @@ class GenerateMasterAssetPriceTips
             ->where(fn ($query) => $query->whereIn('master_asset_price_tips.master_asset_id', $masterAssetIds)->orWhereIn('master_assets.master_family_id', $masterFamilyIds))
             ->orderByDesc('master_asset_price_tips.dismissed_at')
             ->limit(500)
-            ->get(['master_asset_price_tips.master_asset_id', 'master_assets.master_family_id', 'master_assets.code', 'master_asset_price_tips.change', 'master_asset_price_tips.dismissed_reason', 'master_asset_price_tips.dismissed_at']);
+            ->get(['master_asset_price_tips.master_asset_id', 'master_assets.master_family_id', 'master_assets.code', 'master_asset_price_tips.change', 'master_asset_price_tips.kind', 'master_asset_price_tips.dismissed_reason', 'master_asset_price_tips.dismissed_at']);
     }
 
     /**
@@ -941,65 +800,8 @@ class GenerateMasterAssetPriceTips
     }
 
     /**
-     * Applied tips whose window has passed: sales in the same number of days before and after
-     * the change, and the after window a year earlier, from the daily sales.
-     */
-    public function measureOutcomes(): int
-    {
-        $measured = 0;
-
-        MasterAssetPriceTip::where('status', MasterAssetPriceTipStatusEnum::APPLIED)
-            ->whereNull('measured_at')
-            ->where('applied_at', '<=', now()->subDays(self::MEASURE_AFTER_DAYS))
-            ->each(function (MasterAssetPriceTip $tip) use (&$measured) {
-                $appliedAt = $tip->applied_at->copy()->startOfDay();
-                $days      = self::MEASURE_AFTER_DAYS;
-
-                $before         = $this->dailySales($tip->master_asset_id, $appliedAt->copy()->subDays($days), $appliedAt);
-                $after          = $this->dailySales($tip->master_asset_id, $appliedAt, $appliedAt->copy()->addDays($days));
-                $afterLastYear  = $this->dailySales($tip->master_asset_id, $appliedAt->copy()->subYear(), $appliedAt->copy()->subYear()->addDays($days));
-                $beforeLastYear = $this->dailySales($tip->master_asset_id, $appliedAt->copy()->subYear()->subDays($days), $appliedAt->copy()->subYear());
-
-                $tip->update([
-                    'outcome'     => [
-                        'days'                          => $days,
-                        'sales_before'                  => $before['sales'],
-                        'sales_after'                   => $after['sales'],
-                        'sold_before'                   => $before['sold'],
-                        'sold_after'                    => $after['sold'],
-                        'sales_after_last_year'         => $afterLastYear['sales'],
-                        'sales_before_last_year'        => $beforeLastYear['sales'],
-                        'sales_change_pct'              => $before['sales'] > 0 ? round(100 * ($after['sales'] / $before['sales'] - 1), 1) : null,
-                        'sales_change_last_year_pct'    => $beforeLastYear['sales'] > 0 ? round(100 * ($afterLastYear['sales'] / $beforeLastYear['sales'] - 1), 1) : null,
-                    ],
-                    'measured_at' => now(),
-                ]);
-                $measured++;
-            });
-
-        return $measured;
-    }
-
-    /**
-     * @return array{sales: float, sold: int}
-     */
-    private function dailySales(int $masterAssetId, Carbon $from, Carbon $to): array
-    {
-        $totals = DB::table('master_asset_time_series as ts')
-            ->join('master_asset_time_series_records as r', 'r.master_asset_time_series_id', '=', 'ts.id')
-            ->where('ts.frequency', 'daily')
-            ->where('ts.master_asset_id', $masterAssetId)
-            ->where('r.from', '>=', $from)
-            ->where('r.from', '<', $to)
-            ->selectRaw('coalesce(sum(r.sales_grp_currency_external), 0) as sales, coalesce(sum(r.sold), 0) as sold')
-            ->first();
-
-        return ['sales' => round((float) $totals->sales, 2), 'sold' => (int) $totals->sold];
-    }
-
-    /**
-     * ponytail: one Jev call per product that passes the stock pre-screen, in chunks of 100 per job;
-     * widen the pre-screen (OVERSTOCK_DAYS, SHORT_DAYS) only if too few products get asked.
+     * ponytail: fixed thresholds for the whole catalogue, set on 10 Oct 2026 so about 500 of 20,000 products
+     * are flagged; move them per master shop only if one shop's flags turn out too many or too few to be read.
      */
     public function asCommand(Command $command): int
     {
@@ -1008,8 +810,6 @@ class GenerateMasterAssetPriceTips
         MasterAssetPriceTip::where('status', MasterAssetPriceTipStatusEnum::OPEN)
             ->whereHas('masterAsset', fn ($query) => $query->where('status', false))
             ->update(['status' => MasterAssetPriceTipStatusEnum::EXPIRED, 'expired_at' => now()]);
-
-        $command->info('Measured '.$this->measureOutcomes().' applied tips');
 
         $masterShops = MasterShop::whereNotIn('slug', self::EXCLUDED_MASTER_SHOPS)
             ->where('type', '!=', ShopTypeEnum::FULFILMENT)
@@ -1024,9 +824,8 @@ class GenerateMasterAssetPriceTips
                 ->whereNotExists(fn ($query) => $query->select(DB::raw(1))
                     ->from('master_asset_price_tips')
                     ->whereColumn('master_asset_price_tips.master_asset_id', 'master_assets.id')
-                    ->where(fn ($query) => $query
-                        ->where(fn ($query) => $query->where('status', MasterAssetPriceTipStatusEnum::DISMISSED)->where('dismissed_at', '>', now()->subDays(self::DISMISSED_QUIET_DAYS)))
-                        ->orWhere(fn ($query) => $query->where('status', MasterAssetPriceTipStatusEnum::APPLIED)->whereNull('measured_at'))))
+                    ->where('status', MasterAssetPriceTipStatusEnum::DISMISSED)
+                    ->where('dismissed_at', '>', now()->subDays(self::DISMISSED_QUIET_DAYS)))
                 ->pluck('id');
 
             foreach ($ids->chunk(self::CHUNK) as $chunk) {
